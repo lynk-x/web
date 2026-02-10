@@ -1,0 +1,31 @@
+.page {
+    min-height: 100vh;
+    background-color: var(--color-utility-primaryBackground);
+}
+
+.main {
+    padding: var(--spacing-md);
+}
+
+.container {
+    width: 100%;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}

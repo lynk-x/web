@@ -1,0 +1,98 @@
+.container {
+    min-height: 100vh;
+    background-color: var(--color-utility-primaryBackground);
+    color: var(--color-utility-primaryText);
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-md);
+    height: 64px;
+    background-color: var(--color-utility-primaryBackground);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (min-width: 768px) {
+    .header {
+        height: 80px;
+    }
+}
+
+.logo {
+    object-fit: cover;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-xl);
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.successIcon {
+    margin-bottom: var(--spacing-lg);
+}
+
+.title {
+    font-size: 28px;
+    color: var(--color-brand-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.message {
+    font-size: 16px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.8;
+    margin-bottom: var(--spacing-xl);
+    line-height: 1.5;
+}
+
+.orderRef {
+    background-color: var(--color-interface-surface);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+}
+
+.value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    letter-spacing: 0.05em;
+}
+
+.homeBtn {
+    background-color: transparent;
+    border: 1px solid var(--color-brand-primary);
+    color: var(--color-brand-primary);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.homeBtn:hover {
+    background-color: rgba(var(--color-brand-primary-rgb), 0.1);
+}
