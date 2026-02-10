@@ -2,7 +2,7 @@
 
 This is the web frontend for **Lynk-X**, a platform designed for seamless event interactions. It is built with **Next.js 15**, **React**, and **TypeScript**, focusing on a premium, responsive, and performant user experience.
 
-## 🚀 Features
+## Features
 
 - **Responsive Design**: Fully adaptable UI that works seamlessly on Mobile, Tablet, and Desktop.
 - **Event Discovery**: Grid-based event listing with search and filtering capabilities (Calendar, Categories, Tags).
@@ -13,14 +13,14 @@ This is the web frontend for **Lynk-X**, a platform designed for seamless event 
 - **Skeleton Loading**: Perceived performance optimizations with skeleton loaders for data fetching states.
 - **Shared Design System**: Uses a shared token system (colors, typography) synced with the mobile app via the `core` repository.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: Vanilla CSS Modules with CSS Variables (Design Tokens)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 
-## 📂 Project Structure
+## Project Structure
 
 ```bash
 web/
@@ -44,7 +44,7 @@ web/
 └── README.md            # Project documentation
 ```
 
-## 🏁 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -75,7 +75,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### 🏗 Building for Production
+### Building for Production
 
 To create an optimized production build:
 
@@ -85,7 +85,7 @@ npm run build
 
 This command compiles the application and checks for type errors.
 
-## 🎨 Design System
+## Design System
 
 The application uses a set of CSS variables defined in `src/app/globals.css`. These variables are derived from the shared `tokens.ts` generated from the `core` repository, ensuring consistency across Web and Mobile platforms.
 
@@ -96,7 +96,7 @@ Key variables include:
 - `--color-utility-primaryText`: Main text color.
 - `--spacing-md`, `--spacing-lg`: Standardized spacing units.
 
-## 🧩 Key Components
+## Key Components
 
 ### `EventCard`
 
