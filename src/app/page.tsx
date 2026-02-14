@@ -1,61 +1,51 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
-import Navbar from "@/components/Navbar";
+import { createClient } from '@/utils/supabase/server';
 import SearchBar from "@/components/SearchBar";
-import EventCard from "@/components/EventCard";
-import SkeletonEventCard from "@/components/SkeletonEventCard";
-import AppDrawer from "@/components/AppDrawer";
+import HeroSection from "@/components/HeroSection";
+import EventGrid from "@/components/EventGrid";
+import HomeLayout from "@/components/HomeLayout";
 import styles from "./page.module.css";
+import { Event } from "@/types";
 
-const EVENTS = [
-  { id: 1, name: "[1]", date: "[1]", category: "category", active: true },
-  { id: 2, name: "[1]", date: "[1]", category: "category", active: false },
-  { id: 3, name: "[1]", date: "[1]", category: "category", active: false },
-  { id: 4, name: "[1]", date: "[1]", category: "category", active: false },
-];
+export default async function Home() {
+  const supabase = await createClient();
 
-/**
- * Home page component that displays the main event feed.
- * It features a search bar, a responsive grid of event cards, and a navigation drawer with filters.
- * It also handles the initial data loading simulation.
- */
-export default function Home() {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Fetch events from Supabase
+  const { data: events } = await supabase
+    .from('events')
+    .select('*')
+    .eq('status', 'published')
+    .order('start_time', { ascending: true })
+    .limit(50); // Fetch more for pagination
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500); // Simulate 1.5s load time
-    return () => clearTimeout(timer);
-  }, []);
+  // Fallback Mock Data
+  const mockEvents = Array.from({ length: 14 }).map((_, i) => ({
+    id: `mock-${i}`,
+    title: `Event ${i + 1} Title`,
+    description: "This is a sample event description for development purposes.",
+    start_time: new Date().toISOString(),
+    cover_image_url: `https://images.unsplash.com/photo-${1540575467063 + i}-178a50c2df87`,
+    category: "Music",
+    currency: "KES",
+    low_price: 1000 + (i * 100)
+  }));
+
+  const allEvents = (events && events.length > 0) ? events : mockEvents;
+
+  // Split Logic: First 5 for Carousel, Rest for Grid
+  const carouselEvents = allEvents.slice(0, 5) as Event[];
+  const gridEvents = allEvents.slice(5) as Event[];
 
   return (
-    <div className={styles.page}>
-      <Navbar onMenuClick={() => setIsDrawerOpen(true)} />
-      <AppDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-      <main className={styles.main}>
-        <div className={styles.container}>
-          <SearchBar />
+    <HomeLayout>
+      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+        <SearchBar />
+      </div>
 
-          <div className={styles.grid}>
-            {isLoading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                <SkeletonEventCard key={index} />
-              ))
-              : EVENTS.map((event) => (
-                <EventCard
-                  key={event.id}
-                  name={event.name}
-                  date={event.date}
-                  category={event.category}
-                  isActive={event.active}
-                />
-              ))}
-          </div>
-        </div>
-      </main>
-    </div>
+      <HeroSection featuredEvents={carouselEvents} />
+
+      <div className={styles.container}>
+        <EventGrid events={gridEvents} itemsPerPage={8} />
+      </div>
+    </HomeLayout>
   );
 }

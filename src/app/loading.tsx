@@ -1,0 +1,49 @@
+import React from 'react';
+import HomeLayout from "@/components/HomeLayout";
+import SkeletonEventCard from "@/components/SkeletonEventCard";
+import styles from "./page.module.css";
+import SearchBar from "@/components/SearchBar";
+
+export default function Loading() {
+    return (
+        <HomeLayout>
+            <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+                <SearchBar />
+            </div>
+
+            {/* Hero Skeleton (Simple Placeholder) */}
+            <div style={{
+                width: '100%',
+                height: '70vh',
+                backgroundColor: '#f0f0f0',
+                borderRadius: '0 0 24px 24px',
+                marginBottom: '24px',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'loading 1.5s infinite'
+                }} />
+            </div>
+
+            <div className={styles.container}>
+                <div className={styles.grid}>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <SkeletonEventCard key={i} />
+                    ))}
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes loading {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+            `}</style>
+        </HomeLayout>
+    );
+}

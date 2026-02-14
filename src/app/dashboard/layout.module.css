@@ -1,0 +1,23 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--color-utility-primaryBackground);
+}
+
+.main {
+    flex: 1;
+    margin-left: 260px;
+    /* Width of sidebar */
+    padding: var(--spacing-xxl);
+    max-width: calc(100vw - 260px);
+}
+
+@media (max-width: 768px) {
+    .main {
+        margin-left: 0;
+        padding: var(--spacing-md);
+        max-width: 100%;
+        margin-bottom: 80px;
+        /* Space for mobile nav if we add one */
+    }
+}

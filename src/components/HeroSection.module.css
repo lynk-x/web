@@ -1,0 +1,207 @@
+.hero {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    /* Taller for impact */
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: var(--spacing-xl);
+    border-radius: 0 0 var(--radius-xxl) var(--radius-xxl);
+    background-color: #000;
+    /* Fallback */
+}
+
+.backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.backdropImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.2) 0%,
+            rgba(0, 0, 0, 0.5) 50%,
+            rgba(0, 0, 0, 0.9) 100%);
+}
+
+.contentWrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1200px;
+    padding: var(--spacing-xl);
+    display: flex;
+    justify-content: center;
+}
+
+.content {
+    text-align: center;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.tag {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--spacing-sm);
+    display: inline-block;
+}
+
+.title {
+    font-family: var(--font-heading);
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--color-utility-primaryText);
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    margin-bottom: var(--spacing-sm);
+}
+
+.description {
+    font-size: 20px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.9;
+    max-width: 700px;
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+.actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.primaryBtn {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    padding: 14px 40px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+}
+
+.primaryBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(32, 249, 40, 0.4);
+}
+
+.secondaryBtn {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-utility-primaryText);
+    padding: 12px 32px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 16px;
+    transition: background-color 0.2s, color 0.2s;
+    cursor: pointer;
+}
+
+.secondaryBtn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Controls */
+.controls {
+    position: absolute;
+    bottom: var(--spacing-xl);
+    left: 0;
+    width: 100%;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-xl);
+}
+
+.navBtn {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.navBtn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    border-color: var(--color-brand-primary);
+}
+
+.dots {
+    display: flex;
+    gap: 10px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.activeDot {
+    background-color: var(--color-brand-primary);
+    transform: scale(1.2);
+}
+
+@media (max-width: 768px) {
+    .hero {
+        height: 60vh;
+    }
+
+    .title {
+        font-size: 32px;
+    }
+
+    .description {
+        font-size: 16px;
+    }
+
+    .primaryBtn,
+    .secondaryBtn {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+
+    .navBtn {
+        width: 36px;
+        height: 36px;
+    }
+}
