@@ -8,15 +8,15 @@
 }
 
 .shimmer {
-    background: #f6f7f8;
+    background: rgba(255, 255, 255, 0.05);
     background-image: linear-gradient(to right,
-            #f6f7f8 0%,
-            #edeef1 20%,
-            #f6f7f8 40%,
-            #f6f7f8 100%);
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.08) 20%,
+            rgba(255, 255, 255, 0.05) 40%,
+            rgba(255, 255, 255, 0.05) 100%);
     background-repeat: no-repeat;
     background-size: 800px 100%;
-    animation-duration: 1.5s;
+    animation-duration: 2s;
     animation-fill-mode: forwards;
     animation-iteration-count: infinite;
     animation-name: shimmer;
@@ -25,18 +25,18 @@
 
 @keyframes shimmer {
     0% {
-        background-position: -468px 0;
+        background-position: -800px 0;
     }
 
     100% {
-        background-position: 468px 0;
+        background-position: 800px 0;
     }
 }
 
 .imagePlaceholder {
     aspect-ratio: 16 / 9;
     width: 100%;
-    background-color: #e2e8f0;
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .info {
@@ -57,7 +57,7 @@
 .line {
     height: 16px;
     border-radius: 4px;
-    background-color: #e2e8f0;
+    background-color: rgba(255, 255, 255, 0.05);
     margin-bottom: 8px;
 }
 
@@ -73,5 +73,5 @@
     width: 80px;
     height: 32px;
     border-radius: var(--radius-full);
-    background-color: #e2e8f0;
+    background-color: rgba(32, 249, 40, 0.1);
 }

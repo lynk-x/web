@@ -1,5 +1,5 @@
-import React from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
+import MobileNudge from '@/components/dashboard/MobileNudge';
 import styles from './layout.module.css';
 
 export default function DashboardLayout({
@@ -10,6 +10,7 @@ export default function DashboardLayout({
     return (
         <div className={styles.layout}>
             <Sidebar />
+            <MobileNudge />
             <main className={styles.main}>
                 {children}
             </main>

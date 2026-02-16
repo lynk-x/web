@@ -1,0 +1,90 @@
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.nudge {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(18, 18, 18, 0.95);
+    border: 1px solid rgba(32, 249, 40, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--spacing-md);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+}
+
+.icon {
+    background: rgba(32, 249, 40, 0.1);
+    color: var(--color-brand-primary);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.content {
+    flex: 1;
+}
+
+.title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-brand-primary);
+    margin-bottom: 8px;
+}
+
+.message {
+    font-size: 16px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Hide on desktop (1024px and up) */
+@media (min-width: 1024px) {
+    .backdrop {
+        display: none;
+    }
+}

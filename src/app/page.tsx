@@ -6,6 +6,8 @@ import HomeLayout from "@/components/HomeLayout";
 import styles from "./page.module.css";
 import { Event } from "@/types";
 
+import HomeClient from "@/components/HomeClient";
+
 export default async function Home() {
   const supabase = await createClient();
 
@@ -37,15 +39,10 @@ export default async function Home() {
 
   return (
     <HomeLayout>
-      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-        <SearchBar />
-      </div>
-
-      <HeroSection featuredEvents={carouselEvents} />
-
-      <div className={styles.container}>
-        <EventGrid events={gridEvents} itemsPerPage={8} />
-      </div>
+      <HomeClient
+        carouselEvents={carouselEvents}
+        gridEvents={gridEvents}
+      />
     </HomeLayout>
   );
 }

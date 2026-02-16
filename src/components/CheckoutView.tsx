@@ -7,26 +7,20 @@ import styles from '@/app/checkout/page.module.css';
 import Skeleton from './Skeleton';
 import { Event } from '@/types';
 import { useSearchParams } from 'next/navigation';
-
-interface CheckoutViewProps {
-    event?: Event;
-}
+import { useCart } from '@/context/CartContext';
 
 /**
  * CheckoutView component handling the final purchase step.
  * It displays an order summary, contact form, and payment details form.
  */
-const CheckoutView: React.FC<CheckoutViewProps> = ({ event }) => {
-    const searchParams = useSearchParams();
-    const ticketIndex = searchParams.get('ticketIndex');
+const CheckoutView: React.FC = () => {
+    const { items, getCartTotal, itemCount, removeFromCart } = useCart();
 
-    // Derived state from props + params
-    // In a real app, we'd fetch specific ticket types. For now, we infer availability.
-    const isVip = ticketIndex === '1';
-    const ticketName = isVip ? 'VIP All-Access' : 'Standard Ticket';
-    const ticketPrice = isVip ? (event?.low_price || 0) * 2 : (event?.low_price || 0); // Mock VIP pricing logic
-    const serviceFee = 200;
-    const total = ticketPrice + serviceFee;
+    // Derived state
+    const serviceFeePerItem = 200;
+    const totalServiceFee = itemCount * serviceFeePerItem;
+    const subtotal = getCartTotal();
+    const total = subtotal + totalServiceFee;
 
     const [isLoading, setIsLoading] = useState(true);
 
@@ -37,24 +31,55 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ event }) => {
         return () => clearTimeout(timer);
     }, []);
 
-    if (!event) {
-        return <div className={styles.container}><p>Event not found.</p></div>;
+    if (items.length === 0) {
+        return (
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <Link href="/" className={styles.backBtn}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </Link>
+                    <div className={styles.logoContainer}>
+                        <Image
+                            src="/images/lynk-x_text.png"
+                            alt="Lynk-X"
+                            width={200}
+                            height={60}
+                            className={styles.logo}
+                            priority
+                        />
+                    </div>
+                    <div style={{ width: 24 }}></div>
+                </header>
+                <main className={styles.content} style={{ textAlign: 'center', padding: '100px 20px' }}>
+                    <h2>Your cart is empty</h2>
+                    <p style={{ margin: '16px 0 32px', opacity: 0.7 }}>Looks like you haven't added any tickets yet.</p>
+                    <Link href="/" className={styles.payBtn} style={{ maxWidth: 200, margin: '0 auto' }}>
+                        Browse Events
+                    </Link>
+                </main>
+            </div>
+        );
     }
+
+    // Use the first item's currency for display (assuming single currency for now)
+    const currency = items[0]?.currency || 'KES';
 
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <Link href={`/event/${event.id}`} className={styles.backBtn}>
+                <Link href="/" className={styles.backBtn}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </Link>
-                <div style={{ width: 200, height: 60, position: 'relative' }}>
+                <div className={styles.logoContainer}>
                     <Image
                         src="/images/lynk-x_text.png"
                         alt="Lynk-X"
-                        fill
-                        style={{ objectFit: 'contain' }}
+                        width={200}
+                        height={60}
                         className={styles.logo}
                         priority
                     />
@@ -72,7 +97,6 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ event }) => {
                     <div className={styles.summaryColumn}>
                         <section className={styles.section}>
                             <h2 className={styles.sectionTitle}>Order Summary</h2>
-                            <h3 style={{ marginBottom: 16, fontSize: 18 }}>{event.title}</h3>
 
                             {isLoading ? (
                                 <>
@@ -83,17 +107,40 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ event }) => {
                                 </>
                             ) : (
                                 <>
+                                    {items.map((item) => (
+                                        <div key={item.id} style={{ marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, display: 'flex', gap: 12, alignItems: 'start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontWeight: 500 }}>
+                                                    <span>{item.eventTitle}</span>
+                                                    <span>{item.currency} {(item.price * item.quantity).toLocaleString()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, opacity: 0.7 }}>
+                                                    <span>{item.ticketType} x {item.quantity}</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => removeFromCart(item.id)}
+                                                style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', padding: 4, display: 'flex' }}
+                                                title="Remove item"
+                                            >
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+
                                     <div className={styles.summaryItem}>
-                                        <span>{ticketName} x 1</span>
-                                        <span>{event.currency} {ticketPrice.toLocaleString()}</span>
+                                        <span>Subtotal</span>
+                                        <span>{currency} {subtotal.toLocaleString()}</span>
                                     </div>
                                     <div className={styles.summaryItem}>
-                                        <span>Service Fee</span>
-                                        <span>{event.currency} {serviceFee.toLocaleString()}</span>
+                                        <span>Service Fees</span>
+                                        <span>{currency} {totalServiceFee.toLocaleString()}</span>
                                     </div>
                                     <div className={styles.total}>
                                         <span>Total</span>
-                                        <span>{event.currency} {total.toLocaleString()}</span>
+                                        <span>{currency} {total.toLocaleString()}</span>
                                     </div>
                                 </>
                             )}
@@ -143,7 +190,6 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ event }) => {
                                         <label className={styles.label}>M-Pesa Number</label>
                                         <input type="tel" className={styles.input} placeholder="+254 7..." />
                                     </div>
-                                    {/* Simplified for Guest Checkout MVP - focusing on Mpesa as primary for this region */}
                                     <p style={{ fontSize: 12, marginTop: 8, opacity: 0.7 }}>* Prompt will be sent to your phone</p>
                                 </>
                             )}
@@ -154,7 +200,7 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ event }) => {
                                 <Skeleton width="100%" height="56px" borderRadius="8px" />
                             ) : (
                                 <Link href="/checkout/confirmation" className={styles.payBtn}>
-                                    Confirm & Pay {event.currency} {total.toLocaleString()}
+                                    Confirm & Pay {currency} {total.toLocaleString()}
                                 </Link>
                             )}
                         </div>

@@ -15,7 +15,7 @@ export default function Loading() {
             <div style={{
                 width: '100%',
                 height: '70vh',
-                backgroundColor: '#f0f0f0',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 borderRadius: '0 0 24px 24px',
                 marginBottom: '24px',
                 position: 'relative',
@@ -24,9 +24,9 @@ export default function Loading() {
                 <div style={{
                     position: 'absolute',
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                    background: 'linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.08) 50%, transparent 75%)',
                     backgroundSize: '200% 100%',
-                    animation: 'loading 1.5s infinite'
+                    animation: 'loading 2s infinite linear'
                 }} />
             </div>
 

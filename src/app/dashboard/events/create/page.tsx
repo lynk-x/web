@@ -1,10 +1,24 @@
-import CreateEventForm from '@/components/dashboard/CreateEventForm';
+"use client";
+
+import React from 'react';
+import EventForm from '../EventForm';
+import { useRouter } from 'next/navigation';
 
 export default function CreateEventPage() {
+    const router = useRouter();
+
+    const handleCreate = async (data: any) => {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log("Creating event:", data);
+        router.push('/dashboard/events');
+    };
+
     return (
-        <div>
-            <h1 style={{ marginBottom: 32, fontSize: 28, fontWeight: 'bold' }}>Create New Event</h1>
-            <CreateEventForm />
-        </div>
+        <EventForm
+            pageTitle="Create New Event"
+            submitBtnText="Publish Event"
+            onSubmit={handleCreate}
+        />
     );
 }

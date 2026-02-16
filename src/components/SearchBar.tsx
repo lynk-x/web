@@ -1,13 +1,20 @@
 import React from 'react';
 import styles from './SearchBar.module.css';
 
-const SearchBar = () => {
+interface SearchBarProps {
+    onFocus?: () => void;
+    onBlur?: () => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onFocus, onBlur }) => {
     return (
         <div className={styles.searchContainer}>
             <input
                 type="text"
                 placeholder="Search for an event"
                 className={styles.input}
+                onFocus={onFocus}
+                onBlur={onBlur}
             />
             <div className={styles.icon}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -1,115 +1,177 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import styles from './page.module.css';
-import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend
-} from 'recharts';
 
-const data = [
-    { name: 'Mon', revenue: 4000 },
-    { name: 'Tue', revenue: 3000 },
-    { name: 'Wed', revenue: 2000 },
-    { name: 'Thu', revenue: 2780 },
-    { name: 'Fri', revenue: 1890 },
-    { name: 'Sat', revenue: 2390 },
-    { name: 'Sun', revenue: 3490 },
+// Extended mock data to demonstrate pagination
+const detailedInsights = [
+    { id: 1, event: 'Nairobi Tech Summit 2024', sold: 482, revenue: 124500, conversion: '3.2%', status: 'Active' },
+    { id: 2, event: 'AfroBeats Festival', sold: 340, revenue: 85000, conversion: '2.8%', status: 'Active' },
+    { id: 3, event: 'Startup Pitch Night', sold: 0, revenue: 0, conversion: '0%', status: 'Draft' },
+    { id: 4, event: 'Art & Wine Mixer', sold: 85, revenue: 21250, conversion: '4.1%', status: 'Past' },
+    { id: 5, event: 'Comedy Night Special', sold: 200, revenue: 50000, conversion: '5.0%', status: 'Active' },
+    { id: 6, event: 'Jazz in the Park', sold: 150, revenue: 37500, conversion: '2.5%', status: 'Past' },
+    { id: 7, event: 'Product Launch: Alpha', sold: 50, revenue: 0, conversion: 'N/A', status: 'Draft' },
+    { id: 8, event: 'Charity Gala Dinner', sold: 300, revenue: 300000, conversion: '4.8%', status: 'Active' },
 ];
-
-const ticketData = [
-    { name: 'VIP', value: 400 },
-    { name: 'Regular', value: 300 },
-    { name: 'Early Bird', value: 300 },
-    { name: 'Student', value: 200 },
-];
-
-const COLORS = ['#20F928', '#0088FE', '#FFBB28', '#FF8042'];
 
 export default function AnalyticsPage() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    // Filter data based on search
+    const filteredData = detailedInsights.filter(item =>
+        item.event.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
+        setCurrentPage(1); // Reset to first page on search
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handleExport = () => {
+        // Mock export functionality
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + "Event,Revenue,Tickets Sold\n"
+            + filteredData.map(e => `${e.event},${e.revenue},${e.sold}`).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "main_analytics_report.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <h1 className={styles.title}>Analytics & Reports</h1>
-                <p className={styles.subtitle}>Track your event performance and sales trends.</p>
+                <div>
+                    <h1 className={styles.title}>Analytics & Reports</h1>
+                    <p className={styles.subtitle}>Select an event to view detailed performance metrics.</p>
+                </div>
+                <div className={styles.actions}>
+                    {/* Search Bar */}
+                    <div className={styles.searchContainer}>
+                        <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Search events..."
+                            className={styles.searchInput}
+                            value={searchQuery}
+                            onChange={handleSearch}
+                        />
+                    </div>
+                    <button className={styles.exportBtn} onClick={handleExport}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Export Report
+                    </button>
+                </div>
             </header>
 
-            <div className={styles.grid}>
-                {/* Revenue Chart */}
-                <div className={styles.chartCard}>
-                    <h2 className={styles.chartTitle}>Revenue Overview (Last 7 Days)</h2>
-                    <div className={styles.chartContainer}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                                data={data}
-                                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            {/* Detailed Insights Table */}
+            <div className={styles.tableCard}>
+                <div className={styles.cardHeader}>
+                    <h2 className={styles.chartTitle}>All Events</h2>
+                    <span className={styles.resultCountShowing}>
+                        Showing {paginatedData.length} of {filteredData.length} events
+                    </span>
+                </div>
+
+                <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Tickets Sold</th>
+                                <th>Revenue</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'right' }}>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedData.length > 0 ? (
+                                paginatedData.map((item) => (
+                                    <tr key={item.id}>
+                                        <td className={styles.eventName}>{item.event}</td>
+                                        <td>{item.sold}</td>
+                                        <td className={styles.money}>KES {item.revenue.toLocaleString()}</td>
+                                        <td>
+                                            <span className={`${styles.badge} ${styles[item.status.toLowerCase()]}`}>
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <Link href={`/dashboard/analytics/event/${item.id}`} className={styles.viewLink} title="View Insights">
+                                                {/* Changed Icon to Bar Chart/Graph */}
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                                </svg>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className={styles.emptyState}>
+                                        No events found matching "{searchQuery}"
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className={styles.pagination}>
+                        <button
+                            className={styles.pageBtn}
+                            disabled={currentPage === 1}
+                            onClick={() => handlePageChange(currentPage - 1)}
+                        >
+                            Previous
+                        </button>
+                        {[...Array(totalPages)].map((_, index) => (
+                            <button
+                                key={index}
+                                className={`${styles.pageNumber} ${currentPage === index + 1 ? styles.activePage : ''}`}
+                                onClick={() => handlePageChange(index + 1)}
                             >
-                                <defs>
-                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#20F928" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#20F928" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" />
-                                <YAxis stroke="rgba(255,255,255,0.5)" />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1A1A1A', border: '1px solid #333' }}
-                                    itemStyle={{ color: '#20F928' }}
-                                />
-                                <Area type="monotone" dataKey="revenue" stroke="#20F928" fillOpacity={1} fill="url(#colorRevenue)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                                {index + 1}
+                            </button>
+                        ))}
+                        <button
+                            className={styles.pageBtn}
+                            disabled={currentPage === totalPages}
+                            onClick={() => handlePageChange(currentPage + 1)}
+                        >
+                            Next
+                        </button>
                     </div>
-                </div>
-
-                {/* Ticket Distribution */}
-                <div className={styles.chartCard}>
-                    <h2 className={styles.chartTitle}>Ticket Distribution</h2>
-                    <div className={styles.chartContainer}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={ticketData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {ticketData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1A1A1A', border: '1px solid #333' }}
-                                />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
-            <div className={styles.summaryGrid}>
-                <div className={styles.summaryCard}>
-                    <h3>Total Revenue</h3>
-                    <p className={styles.summaryValue}>KES 1,240,500</p>
-                </div>
-                <div className={styles.summaryCard}>
-                    <h3>Tickets Sold</h3>
-                    <p className={styles.summaryValue}>1,200</p>
-                </div>
-                <div className={styles.summaryCard}>
-                    <h3>Avg. Ticket Price</h3>
-                    <p className={styles.summaryValue}>KES 1,033</p>
-                </div>
-                <div className={styles.summaryCard}>
-                    <h3>Page Views</h3>
-                    <p className={styles.summaryValue}>45.2k</p>
-                </div>
+                )}
             </div>
         </div>
     );

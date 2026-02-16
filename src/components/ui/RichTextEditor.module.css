@@ -1,0 +1,101 @@
+.editorCheck {
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-md);
+    background-color: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.editorCheck:focus-within {
+    border-color: var(--color-brand-primary);
+}
+
+.editorCheck.error {
+    border-color: var(--color-interface-error) !important;
+}
+
+.menuBar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--color-interface-outline);
+}
+
+.menuButton {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.menuButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    opacity: 1;
+}
+
+.isActive {
+    background-color: rgba(32, 249, 40, 0.15);
+    color: var(--color-brand-primary);
+    opacity: 1;
+}
+
+.divider {
+    width: 1px;
+    height: 16px;
+    background-color: var(--color-interface-outline);
+    margin: 0 4px;
+}
+
+.contentArea {
+    min-height: 150px;
+    cursor: text;
+}
+
+.editorContent {
+    outline: none;
+    padding: 12px;
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.editorContent p {
+    margin-bottom: 0.5em;
+}
+
+.editorContent ul,
+.editorContent ol {
+    padding-left: 20px;
+    margin-bottom: 0.5em;
+}
+
+.editorContent h2 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
+}
+
+.editorContent h3 {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
+}
+
+/* Placeholder Extension Styles */
+.editorContent p.is-editor-empty:first-child::before {
+    color: rgba(255, 255, 255, 0.3);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}

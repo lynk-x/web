@@ -1,8 +1,80 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
 
+interface Event {
+    id: string;
+    name: string;
+    location: string;
+    time: string;
+    month: string;
+    day: string;
+    status: 'published' | 'draft' | 'past';
+}
+
+// Expanded mock data to test pagination
+const initialEvents: Event[] = [
+    { id: '1', name: 'Nairobi Tech Summit 2024', location: 'KICC', time: '9:00 AM', month: 'OCT', day: '12', status: 'published' },
+    { id: '2', name: 'AfroBeats Festival', location: 'Carnivore', time: '6:00 PM', month: 'NOV', day: '05', status: 'published' },
+    { id: '3', name: 'Startup Pitch Night', location: 'Westlands', time: '5:00 PM', month: 'DEC', day: '01', status: 'draft' },
+    { id: '4', name: 'Comedy Night Special', location: 'Movenpick', time: '7:30 PM', month: 'DEC', day: '15', status: 'published' },
+    { id: '5', name: 'Christmas Market', location: 'Karen', time: '10:00 AM', month: 'DEC', day: '24', status: 'draft' },
+    { id: '6', name: 'New Year Eve Bash', location: 'Sarit Centre', time: '8:00 PM', month: 'JAN', day: '31', status: 'published' },
+    { id: '7', name: 'Safaricom Jazz', location: 'Uhuru Gardens', time: '2:00 PM', month: 'FEB', day: '14', status: 'published' },
+];
+
 export default function DashboardOverview() {
+    const [filter, setFilter] = useState<'All' | 'Upcoming' | 'Past' | 'Draft'>('All');
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 4; // Show 4 events per page
+
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const filteredEvents = initialEvents.filter(event => {
+        if (filter === 'All') return true;
+        if (filter === 'Draft') return event.status === 'draft';
+        if (filter === 'Upcoming') return event.status === 'published';
+        return true;
+    });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+    const paginatedEvents = filteredEvents.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter]);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setOpenMenuId(null);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const toggleMenu = (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(openMenuId === id ? null : id);
+    };
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -39,48 +111,101 @@ export default function DashboardOverview() {
             </div>
 
             <div className={styles.contentGrid}>
-                <div className={styles.recentActivity}>
-                    <h2 className={styles.sectionTitle}>Recent Ticket Sales</h2>
-                    <div className={styles.activityList}>
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className={styles.activityItem}>
-                                <div className={styles.activityIcon}>🎟️</div>
-                                <div className={styles.activityInfo}>
-                                    <span className={styles.activityText}><strong>Alex M.</strong> bought 2x VIP for Tech Summit</span>
-                                    <span className={styles.activityTime}>{i * 15} mins ago</span>
+                <div className={styles.upcomingEvents}>
+                    <div className={styles.sectionHeader}>
+                        <div className={styles.sectionTitleRow}>
+                            <h2 className={styles.sectionTitle}>My Events</h2>
+                            <div className={styles.filterTabs}>
+                                {['All', 'Upcoming', 'Draft'].map((f) => (
+                                    <button
+                                        key={f}
+                                        className={`${styles.filterTab} ${filter === f ? styles.activeFilter : ''}`}
+                                        onClick={() => setFilter(f as any)}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <span className={styles.resultCount}>
+                            Showing {paginatedEvents.length} of {filteredEvents.length}
+                        </span>
+                    </div>
+                    <div className={styles.eventList}>
+                        {paginatedEvents.map(event => (
+                            <div key={event.id} className={styles.eventCard}>
+                                <div className={styles.eventContent}>
+                                    <div className={styles.eventDate}>
+                                        <span className={styles.month}>{event.month}</span>
+                                        <span className={styles.day}>{event.day}</span>
+                                    </div>
+                                    <div className={styles.eventInfo}>
+                                        <h3 className={styles.eventName}>{event.name}</h3>
+                                        <div className={styles.eventMeta}>{event.location} • {event.time}</div>
+                                    </div>
+                                    <div className={styles.eventStatus}>{event.status}</div>
                                 </div>
-                                <div className={styles.activityAmount}>+ KES 10,000</div>
+                                <div className={styles.cardActions}>
+                                    <Link href="/guests" className={styles.guestListLink} title="View Guest List">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                    </Link>
+                                    <button
+                                        className={styles.optionsBtn}
+                                        onClick={(e) => toggleMenu(e, event.id)}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="1"></circle>
+                                            <circle cx="12" cy="5" r="1"></circle>
+                                            <circle cx="12" cy="19" r="1"></circle>
+                                        </svg>
+                                    </button>
+                                    {openMenuId === event.id && (
+                                        <div className={styles.optionsMenu} ref={menuRef}>
+                                            <button className={styles.menuItem}>Edit Event</button>
+                                            <button className={styles.menuItem}>View Analytics</button>
+                                            <button className={styles.menuItem}>Duplicate</button>
+                                            <div className={styles.menuDivider}></div>
+                                            <button className={`${styles.menuItem} ${styles.deleteItem}`}>Delete</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
-                </div>
 
-                <div className={styles.upcomingEvents}>
-                    <h2 className={styles.sectionTitle}>Your Upcoming Events</h2>
-                    <div className={styles.eventList}>
-                        <div className={styles.eventCard}>
-                            <div className={styles.eventDate}>
-                                <span className={styles.month}>OCT</span>
-                                <span className={styles.day}>12</span>
-                            </div>
-                            <div className={styles.eventInfo}>
-                                <h3 className={styles.eventName}>Nairobi Tech Summit 2024</h3>
-                                <div className={styles.eventMeta}>KICC • 9:00 AM</div>
-                            </div>
-                            <div className={styles.eventStatus}>published</div>
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className={styles.pagination}>
+                            <button
+                                className={styles.pageBtn}
+                                disabled={currentPage === 1}
+                                onClick={() => handlePageChange(currentPage - 1)}
+                            >
+                                Previous
+                            </button>
+                            {[...Array(totalPages)].map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={`${styles.pageNumber} ${currentPage === index + 1 ? styles.activePage : ''}`}
+                                    onClick={() => handlePageChange(index + 1)}
+                                >
+                                    {index + 1}
+                                </button>
+                            ))}
+                            <button
+                                className={styles.pageBtn}
+                                disabled={currentPage === totalPages}
+                                onClick={() => handlePageChange(currentPage + 1)}
+                            >
+                                Next
+                            </button>
                         </div>
-                        <div className={styles.eventCard}>
-                            <div className={styles.eventDate}>
-                                <span className={styles.month}>NOV</span>
-                                <span className={styles.day}>05</span>
-                            </div>
-                            <div className={styles.eventInfo}>
-                                <h3 className={styles.eventName}>AfroBeats Festival</h3>
-                                <div className={styles.eventMeta}>Carnivore • 6:00 PM</div>
-                            </div>
-                            <div className={styles.eventStatus}>published</div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

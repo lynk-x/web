@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import styles from './AppDrawer.module.css';
 
 interface AppDrawerProps {
@@ -191,16 +192,8 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Action Buttons */}
-                <button className={styles.refreshBtn}>Refresh events</button>
+                <Link href="/dashboard" className={styles.refreshBtn}>Organizer Dashboard</Link>
 
-                {/* Footer */}
-                <footer className={styles.footer}>
-                    <div className={styles.footerLinks}>
-                        <span>Privacy policy</span>
-                        <span>Terms & condition</span>
-                    </div>
-                    <span className={styles.copyright}>©Lynk-x.app</span>
-                </footer>
             </div>
         </>
     );

@@ -41,6 +41,12 @@
     cursor: default;
 }
 
+.logoContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .logo {
     object-fit: cover;
 }
@@ -168,6 +174,7 @@
 .payBtn:active {
     opacity: 0.8;
 }
+
 @media (min-width: 1024px) {
     .footerActions {
         position: static;
