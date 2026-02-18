@@ -5,7 +5,8 @@ import React from 'react';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 /** The three dashboard modes the sidebar can display. */
-export type DashboardMode = 'events' | 'ads' | 'admin';
+export type { DashboardMode } from '@/types/shared';
+import type { DashboardMode } from '@/types/shared';
 
 /** A single navigation item rendered in the sidebar. */
 export interface NavItem {

@@ -7,6 +7,10 @@
 
 import type React from 'react';
 
+/** The three dashboard modes the sidebar can display. */
+export type DashboardMode = 'events' | 'ads' | 'admin';
+
+
 /** Available badge colour variants. */
 export type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'subtle' | 'primary' | 'neutral';
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import styles from './Sidebar.module.css';
-import type { DashboardMode } from './sidebarNav';
+import type { DashboardMode } from '@/types/shared';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

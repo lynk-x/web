@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './Sidebar.module.css';
 import { navItems } from './sidebarNav';
-import type { DashboardMode } from './sidebarNav';
+import type { DashboardMode } from '@/types/shared';
 import ModeSwitcher from './ModeSwitcher';
 import SidebarUserProfile from './SidebarUserProfile';
 

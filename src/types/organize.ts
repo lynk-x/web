@@ -66,3 +66,33 @@ export interface PerformanceEvent {
     conversion: string;
     status: string;
 }
+
+/** Form data for creating/editing an event. */
+export interface OrganizerEventFormData {
+    title: string;
+    description: string;
+    category: string;
+    tags: string[];
+    coverImage?: string;
+    isOnline: boolean;
+    location: string;
+    startDate: string;
+    startTime: string;
+    endDate: string;
+    endTime: string;
+    isPrivate: boolean;
+    isPaid: boolean;
+    limit: string;
+    tickets: OrganizerEventTicket[];
+}
+
+/** A ticket tier within the event form. */
+export interface OrganizerEventTicket {
+    name: string;
+    price: string;
+    quantity: string;
+    description?: string;
+    saleStart?: string;
+    saleEnd?: string;
+    maxPerOrder?: string;
+}

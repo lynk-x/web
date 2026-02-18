@@ -4,34 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import styles from './events.module.css';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
-interface Ticket {
-    name: string;
-    price: string;
-    quantity: string;
-    description?: string;
-    saleStart?: string;
-    saleEnd?: string;
-    maxPerOrder?: string;
-}
+import type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticket } from '@/types/organize';
 
-interface EventData {
-    title: string;
-    description: string;
-    category: string;
-    tags: string[];
-    coverImage?: string;
-    isOnline: boolean;
-    location: string;
-    startDate: string;
-    startTime: string;
-    endDate: string;
-    endTime: string;
-    isPrivate: boolean;
-    isPaid: boolean;
-    limit: string;
-    tickets: Ticket[];
-}
+// ─── Public Types ────────────────────────────────────────────────────────────
+
+export type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticket } from '@/types/organize';
 
 interface EventFormProps {
     initialData?: Partial<EventData>;
@@ -83,34 +62,29 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         tickets: []
     });
 
-    // Load Draft or Initial Data
+    // Local Storage for Drafts
+    const [draft, setDraft] = useLocalStorage<EventData | null>('event_draft', null);
+
+    // Load Initial Data or Draft
     useEffect(() => {
         if (initialData) {
             setFormData(prev => ({ ...prev, ...initialData }));
             if (initialData.coverImage) setCoverImagePreview(initialData.coverImage);
-        } else {
-            // Check for saved draft only in Create mode
-            const savedDraft = localStorage.getItem('event_draft');
-            if (savedDraft) {
-                try {
-                    setFormData(JSON.parse(savedDraft));
-                    setIsDraftLoaded(true);
-                } catch (e) {
-                    console.error("Failed to load draft", e);
-                }
-            }
+        } else if (!isEditMode && draft) {
+            setFormData(prev => ({ ...prev, ...draft }));
+            setIsDraftLoaded(true);
         }
-    }, [initialData]);
+    }, [initialData, isEditMode]); // Run once on mount or when initialData changes
 
     // Auto-Save Draft
     useEffect(() => {
-        if (!isEditMode && formData.title) { // Only save if there's at least a title, to avoid empty saves
+        if (!isEditMode && formData.title) {
             const timeoutId = setTimeout(() => {
-                localStorage.setItem('event_draft', JSON.stringify(formData));
+                setDraft(formData);
             }, 1000); // Debounce 1s
             return () => clearTimeout(timeoutId);
         }
-    }, [formData, isEditMode]);
+    }, [formData, isEditMode, setDraft]);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
