@@ -3,12 +3,8 @@
 import React from 'react';
 import styles from './BulkActionsBar.module.css';
 
-export interface BulkAction {
-    label: string;
-    onClick: () => void;
-    variant?: 'default' | 'danger' | 'success';
-    icon?: React.ReactNode;
-}
+export type { BulkAction } from '@/types/shared';
+import type { BulkAction } from '@/types/shared';
 
 interface BulkActionsBarProps {
     selectedCount: number;

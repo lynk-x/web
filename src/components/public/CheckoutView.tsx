@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from '@/app/checkout/page.module.css';
+import styles from './CheckoutView.module.css';
 import Skeleton from './Skeleton';
-import { Event } from '@/types';
-import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 
 /**

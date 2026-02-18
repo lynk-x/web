@@ -26,10 +26,6 @@ const HeroSection: React.FC<HeroProps> = ({ featuredEvents }) => {
         setCurrentIndex((prev) => (prev + 1) % featuredEvents.length);
     };
 
-    const prevSlide = () => {
-        setCurrentIndex((prev) => (prev - 1 + featuredEvents.length) % featuredEvents.length);
-    };
-
     if (!featuredEvents || featuredEvents.length === 0) return null;
 
     const currentEvent = featuredEvents[currentIndex];

@@ -3,7 +3,8 @@
 import React from 'react';
 import styles from './Badge.module.css';
 
-export type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'subtle' | 'primary' | 'neutral';
+export type { BadgeVariant } from '@/types/shared';
+import type { BadgeVariant } from '@/types/shared';
 
 interface BadgeProps {
     label: string;

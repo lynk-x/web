@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import ReportCard, { Report } from '@/components/admin/ReportCard';

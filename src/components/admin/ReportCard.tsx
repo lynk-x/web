@@ -3,15 +3,8 @@
 import React from 'react';
 import styles from './ReportCard.module.css';
 
-export interface Report {
-    id: string;
-    type: 'content' | 'bug' | 'user' | 'system';
-    title: string;
-    description: string;
-    date: string;
-    reporter: string;
-    status: 'open' | 'in_review' | 'resolved';
-}
+export type { Report } from '@/types/admin';
+import type { Report } from '@/types/admin';
 
 interface ReportCardProps {
     report: Report;

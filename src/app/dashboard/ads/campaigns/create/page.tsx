@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import CreateCampaignForm from '@/components/ads/CreateCampaignForm';
 import styles from '../../page.module.css'; // Reuse main dashboard styles for title
 

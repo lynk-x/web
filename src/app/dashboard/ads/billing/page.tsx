@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from '../../page.module.css';
 import AdsInvoiceTable, { Invoice } from '@/components/ads/AdsInvoiceTable';
 import TableToolbar from '@/components/shared/TableToolbar';

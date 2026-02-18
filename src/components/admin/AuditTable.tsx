@@ -3,23 +3,10 @@
 import React, { useState } from 'react';
 import styles from './AuditTable.module.css';
 import Pagination from '../shared/Pagination';
+import { getInitials } from '@/utils/format';
 
-export interface AuditLog {
-    id: string;
-    action: string;
-    actor: {
-        name: string;
-        email: string;
-        avatar?: string;
-    };
-    target: string;
-    targetType: string;
-    timestamp: string;
-    ipAddress: string;
-    userAgent: string;
-    changes?: Record<string, { old: any; new: any }>;
-    details?: string;
-}
+export type { AuditLog } from '@/types/admin';
+import type { AuditLog } from '@/types/admin';
 
 interface AuditTableProps {
     logs: AuditLog[];
@@ -38,10 +25,6 @@ const AuditTable: React.FC<AuditTableProps> = ({
 
     const toggleRow = (id: string) => {
         setExpandedRow(expandedRow === id ? null : id);
-    };
-
-    const getInitials = (name: string) => {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase();
     };
 
     return (

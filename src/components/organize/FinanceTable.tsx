@@ -2,22 +2,16 @@
 
 import React from 'react';
 import styles from './FinanceTable.module.css';
-import TableCheckbox from '../shared/TableCheckbox';
+import DataTable, { Column } from '../shared/DataTable';
 import Badge, { BadgeVariant } from '../shared/Badge';
-import TableRowActions, { ActionItem } from '../shared/TableRowActions';
-import Pagination from '../shared/Pagination';
 import { useToast } from '@/components/ui/Toast';
+import { formatString, formatCurrency } from '@/utils/format';
+import type { ActionItem } from '../shared/TableRowActions';
 
-export interface FinanceTransaction {
-    id: string;
-    event?: string; // Optional for admin view, required for organizer view if needed
-    date: string;
-    description: string;
-    amount: number | string; // Allow string for formatted values in mock data
-    type: 'payout' | 'refund' | 'fee' | 'subscription' | 'Ticket Sale' | 'Vendor Fee' | 'Sponsorship';
-    status: 'completed' | 'pending' | 'failed' | 'processing' | 'Completed' | 'Pending';
-    referenceId?: string;
-}
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type { FinanceTransaction } from '@/types/organize';
+import type { FinanceTransaction } from '@/types/organize';
 
 interface FinanceTableProps {
     transactions: FinanceTransaction[];
@@ -29,6 +23,38 @@ interface FinanceTableProps {
     onPageChange?: (page: number) => void;
 }
 
+// ─── Variant Helpers ─────────────────────────────────────────────────────────
+
+const getStatusVariant = (status: string): BadgeVariant => {
+    switch (status.toLowerCase()) {
+        case 'completed': return 'success';
+        case 'pending': return 'warning';
+        case 'failed': return 'error';
+        default: return 'neutral';
+    }
+};
+
+const getTypeVariant = (type: string): BadgeVariant => {
+    switch (type.toLowerCase()) {
+        case 'ticket_sale':
+        case 'ticket sale': return 'success';
+        case 'payout': return 'info';
+        case 'refund': return 'warning';
+        case 'commission':
+        case 'fee': return 'primary';
+        case 'subscription': return 'info';
+        case 'vendor fee': return 'warning';
+        case 'sponsorship': return 'success';
+        default: return 'neutral';
+    }
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+/**
+ * Organizer finance/revenue table.
+ * Displays transaction details, amounts, types, and statuses.
+ */
 const FinanceTable: React.FC<FinanceTableProps> = ({
     transactions,
     selectedIds,
@@ -36,70 +62,88 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
     onSelectAll,
     currentPage = 1,
     totalPages = 1,
-    onPageChange
+    onPageChange,
 }) => {
     const { showToast } = useToast();
-    const getStatusVariant = (status: string): BadgeVariant => {
-        switch (status) {
-            case 'completed': return 'success';
-            case 'pending': return 'warning';
-            case 'failed': return 'error';
-            case 'processing': return 'info';
-            default: return 'neutral';
-        }
-    };
 
-    const getTypeVariant = (type: string): BadgeVariant => {
-        switch (type) {
-            case 'subscription': return 'primary';
-            case 'payout': return 'success';
-            case 'refund': return 'warning';
-            case 'fee': return 'neutral';
-            default: return 'neutral';
-        }
-    };
+    /** Column definitions for the finance table. */
+    const columns: Column<FinanceTransaction>[] = [
+        {
+            header: 'Transaction',
+            render: (tx) => (
+                <div>
+                    <div style={{ fontWeight: 500 }}>{tx.description}</div>
+                    {(tx.reference || tx.referenceId) && (
+                        <div style={{ fontSize: '12px', opacity: 0.5 }}>Ref: {tx.reference || tx.referenceId}</div>
+                    )}
+                    {tx.event && (
+                        <div style={{ fontSize: '12px', opacity: 0.5 }}>{tx.event}</div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            header: 'Type',
+            render: (tx) => <Badge label={formatString(tx.type)} variant={getTypeVariant(tx.type)} />,
+        },
+        {
+            header: 'Amount',
+            render: (tx) => {
+                const displayAmount = typeof tx.amount === 'string'
+                    ? tx.amount
+                    : formatCurrency(tx.amount);
+                const isNegative = tx.type === 'refund' || tx.type === 'commission' || tx.type === 'fee';
+                return (
+                    <div className={styles.amount} data-type={tx.type}>
+                        {isNegative && typeof tx.amount === 'number'
+                            ? `-${formatCurrency(tx.amount)}`
+                            : displayAmount
+                        }
+                    </div>
+                );
+            },
+        },
+        {
+            header: 'Date',
+            render: (tx) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{tx.date}</div>,
+        },
+        {
+            header: 'Status',
+            render: (tx) => <Badge label={tx.status} variant={getStatusVariant(tx.status)} showDot />,
+        },
+    ];
 
-    const formatCurrency = (amount: number | string, type: string) => {
-        const isNegative = type === 'payout' || type === 'refund' || type === 'Refund';
-        const numAmount = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]+/g, "")) : amount;
-        const formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(numAmount));
-        return isNegative ? `-${formatted}` : `+${formatted}`;
-    };
-
-    const formatString = (str: string) => {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    };
-
-    const allSelected = transactions.length > 0 && selectedIds?.size === transactions.length;
-    const isIndeterminate = (selectedIds?.size || 0) > 0 && !allSelected;
-
-    const getTransactionActions = (tx: FinanceTransaction): ActionItem[] => {
+    /** Row-level actions for each transaction. */
+    const getActions = (tx: FinanceTransaction): ActionItem[] => {
         const actions: ActionItem[] = [
             {
-                label: 'View Details',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => showToast(`Opening transaction ${tx.id}...`, 'info')
-            }
+                label: 'View Receipt',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
+                onClick: () => showToast(`Opening receipt for ${tx.reference}...`, 'info'),
+            },
         ];
 
-        if (tx.status === 'pending') {
+        if (tx.status === 'Pending' && tx.type === 'payout') {
             actions.push({
-                label: 'Approve',
+                label: 'Process Payout',
+                variant: 'success',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                 onClick: () => {
-                    showToast(`Approving transaction ${tx.id}...`, 'info');
-                    setTimeout(() => showToast('Transaction approved.', 'success'), 1000);
+                    showToast('Processing payout...', 'info');
+                    setTimeout(() => showToast('Payout processed successfully.', 'success'), 1500);
                 },
-                variant: 'success'
             });
+        }
+
+        if (tx.type === 'ticket_sale' && tx.status === 'Completed') {
             actions.push({
-                label: 'Reject',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                label: 'Issue Refund',
+                variant: 'danger',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>,
                 onClick: () => {
-                    showToast(`Rejecting transaction ${tx.id}...`, 'info');
-                    setTimeout(() => showToast('Transaction rejected.', 'error'), 1000);
+                    showToast('Initiating refund...', 'info');
+                    setTimeout(() => showToast('Refund processed.', 'warning'), 1500);
                 },
-                variant: 'danger'
             });
         }
 
@@ -107,87 +151,18 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
     };
 
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.table}>
-                <thead>
-                    <tr>
-                        <th style={{ width: '40px' }}>
-                            <TableCheckbox
-                                checked={allSelected}
-                                onChange={() => onSelectAll && onSelectAll()}
-                                indeterminate={isIndeterminate}
-                                disabled={!onSelectAll}
-                            />
-                        </th>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Type</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {transactions.map((tx) => (
-                        <tr key={tx.id} className={selectedIds?.has(tx.id) ? styles.rowSelected : ''}>
-                            <td>
-                                <TableCheckbox
-                                    checked={selectedIds?.has(tx.id) || false}
-                                    onChange={() => onSelect && onSelect(tx.id)}
-                                />
-                            </td>
-                            <td>
-                                <div style={{ fontSize: '13px' }}>{tx.date}</div>
-                            </td>
-                            <td>
-                                <div className={styles.transactionInfo}>
-                                    <span className={styles.description}>{tx.description}</span>
-                                    {tx.referenceId && <span className={styles.meta}>Ref: {tx.referenceId}</span>}
-                                </div>
-                            </td>
-                            <td>
-                                <Badge
-                                    label={formatString(tx.type)}
-                                    variant={getTypeVariant(tx.type)}
-                                />
-                            </td>
-                            <td>
-                                <span className={`${styles.amount} ${tx.type === 'payout' || tx.type === 'refund' ? styles.amountNegative : styles.amountPositive}`}>
-                                    {formatCurrency(tx.amount, tx.type)}
-                                </span>
-                            </td>
-                            <td>
-                                <Badge
-                                    label={formatString(tx.status)}
-                                    variant={getStatusVariant(tx.status)}
-                                    showDot
-                                />
-                            </td>
-                            <td>
-                                <div className={styles.actions}>
-                                    <TableRowActions actions={getTransactionActions(tx)} />
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                    {transactions.length === 0 && (
-                        <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', padding: '32px', opacity: 0.5 }}>
-                                No transactions found matching criteria.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            {onPageChange && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={onPageChange}
-                />
-            )}
-        </div>
+        <DataTable<FinanceTransaction>
+            data={transactions}
+            columns={columns}
+            getActions={getActions}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            emptyMessage="No transactions found matching criteria."
+        />
     );
 };
 

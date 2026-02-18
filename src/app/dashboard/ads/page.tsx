@@ -1,9 +1,7 @@
 "use client";
 
-import React from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
-import AdsCampaignTable from '@/components/ads/AdsCampaignTable';
 
 // Mock Data
 const stats = [
@@ -13,35 +11,7 @@ const stats = [
     { label: 'Avg. CTR', value: '4.18%', change: '+0.5%', isPositive: true },
 ];
 
-const activeCampaigns = [
-    {
-        id: '1',
-        name: 'Summer Music Festival Promo',
-        status: 'active',
-        impressions: '12.5k',
-        clicks: '650',
-        spent: '$450.00',
-        image: '' // Placeholder
-    },
-    {
-        id: '2',
-        name: 'Tech Summit Early Bird',
-        status: 'active',
-        impressions: '8.2k',
-        clicks: '420',
-        spent: '$320.50',
-        image: ''
-    },
-    {
-        id: '3',
-        name: 'Weekend Jazz Night',
-        status: 'paused',
-        impressions: '5.1k',
-        clicks: '180',
-        spent: '$150.00',
-        image: ''
-    }
-];
+
 
 export default function AdsDashboard() {
     return (

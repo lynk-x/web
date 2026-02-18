@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import styles from './page.module.css';
 import { Guest } from '@/types/guest';

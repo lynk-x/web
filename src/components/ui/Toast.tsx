@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import styles from './Toast.module.css';
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type { ToastType } from '@/types/shared';
+import type { ToastType } from '@/types/shared';
 
 interface Toast {
     id: string;

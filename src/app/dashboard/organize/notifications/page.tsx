@@ -1,16 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from './page.module.css';
 import NotificationTable, { NotificationItem } from '@/components/organize/NotificationTable';
-
-interface NotificationSetting {
-    id: string;
-    label: string;
-    description: string;
-    email: boolean;
-    push: boolean;
-}
 
 
 export default function NotificationsPage() {

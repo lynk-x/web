@@ -1,4 +1,3 @@
-import React from 'react';
 import HomeLayout from "@/components/public/HomeLayout";
 import SkeletonEventCard from "@/components/public/SkeletonEventCard";
 import styles from "./page.module.css";

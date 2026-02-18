@@ -2,16 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export interface CartItem {
-    id: string; // Composite key: eventId-ticketType
-    eventId: string;
-    eventTitle: string;
-    ticketType: string;
-    price: number;
-    quantity: number;
-    currency: string;
-    image?: string;
-}
+export type { CartItem } from '@/types/cart';
+import type { CartItem } from '@/types/cart';
 
 interface CartContextType {
     items: CartItem[];

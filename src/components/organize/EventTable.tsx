@@ -2,23 +2,17 @@
 
 import React from 'react';
 import styles from './EventTable.module.css';
-import adminStyles from '../../app/dashboard/admin/page.module.css';
-import TableCheckbox from '../shared/TableCheckbox';
+import DataTable, { Column } from '../shared/DataTable';
 import Badge, { BadgeVariant } from '../shared/Badge';
-import TableRowActions, { ActionItem } from '../shared/TableRowActions';
-import Pagination from '../shared/Pagination';
 import { useToast } from '../ui/Toast';
+import { formatString } from '@/utils/format';
+import type { ActionItem } from '../shared/TableRowActions';
 
-export interface Event {
-    id: string;
-    title: string;
-    organizer: string;
-    date: string;
-    location: string;
-    status: 'active' | 'pending' | 'past' | 'rejected';
-    attendees: number;
-    thumbnailUrl?: string;
-}
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+import type { OrganizerEvent } from '@/types/organize';
+/** Re-exported as `Event` for backward compatibility. */
+export type Event = OrganizerEvent;
 
 interface EventTableProps {
     events: Event[];
@@ -30,6 +24,24 @@ interface EventTableProps {
     onPageChange?: (page: number) => void;
 }
 
+// ─── Variant Helpers ─────────────────────────────────────────────────────────
+
+const getStatusVariant = (status: string): BadgeVariant => {
+    switch (status) {
+        case 'active': return 'success';
+        case 'pending': return 'warning';
+        case 'past': return 'neutral';
+        case 'rejected': return 'error';
+        default: return 'neutral';
+    }
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+/**
+ * Admin event management table.
+ * Displays events with thumbnails, dates, location details, and moderation actions.
+ */
 const EventTable: React.FC<EventTableProps> = ({
     events,
     selectedIds,
@@ -37,28 +49,49 @@ const EventTable: React.FC<EventTableProps> = ({
     onSelectAll,
     currentPage = 1,
     totalPages = 1,
-    onPageChange
+    onPageChange,
 }) => {
-    const getStatusVariant = (status: string): BadgeVariant => {
-        switch (status) {
-            case 'active': return 'success';
-            case 'pending': return 'warning';
-            case 'past': return 'neutral';
-            case 'rejected': return 'error';
-            default: return 'neutral';
-        }
-    };
-
-    const formatStatus = (status: string) => {
-        return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    };
-
-    const allSelected = events.length > 0 && selectedIds?.size === events.length;
-    const isIndeterminate = (selectedIds?.size || 0) > 0 && !allSelected;
-
     const { showToast } = useToast();
 
-    const getEventActions = (event: Event): ActionItem[] => {
+    /** Column definitions for the event moderation table. */
+    const columns: Column<Event>[] = [
+        {
+            header: 'Event',
+            render: (event) => (
+                <div className={styles.eventInfo}>
+                    <div className={styles.thumbnail} style={event.thumbnailUrl ? { backgroundImage: `url(${event.thumbnailUrl})` } : {}}>
+                        {!event.thumbnailUrl && <div className={styles.thumbnailPlaceholder}>IMG</div>}
+                    </div>
+                    <div className={styles.eventDetails}>
+                        <span className={styles.eventTitle}>{event.title}</span>
+                        <span className={styles.eventOrganizer}>by {event.organizer}</span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            header: 'Date & Time',
+            render: (event) => <div style={{ fontSize: '13px' }}>{event.date}</div>,
+        },
+        {
+            header: 'Details',
+            render: (event) => (
+                <div style={{ fontSize: '13px', opacity: 0.8 }}>
+                    <div>{event.location}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.6 }}>{event.attendees} attendees</div>
+                </div>
+            ),
+        },
+        {
+            header: 'Status',
+            render: (event) => (
+                <Badge label={formatString(event.status)} variant={getStatusVariant(event.status)} showDot />
+            ),
+        },
+    ];
+
+    /** Row-level actions for each event. */
+    const getActions = (event: Event): ActionItem[] => {
         const actions: ActionItem[] = [
             {
                 label: 'View Details',
@@ -107,86 +140,18 @@ const EventTable: React.FC<EventTableProps> = ({
     };
 
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.table}>
-                <thead>
-                    <tr>
-                        <th style={{ width: '40px' }}>
-                            <TableCheckbox
-                                checked={allSelected}
-                                onChange={() => onSelectAll && onSelectAll()}
-                                indeterminate={isIndeterminate}
-                                disabled={!onSelectAll}
-                            />
-                        </th>
-                        <th>Event</th>
-                        <th>Date & Time</th>
-                        <th>Details</th>
-                        <th>Status</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {events.map((event) => (
-                        <tr key={event.id} className={selectedIds?.has(event.id) ? styles.rowSelected : ''}>
-                            <td>
-                                <TableCheckbox
-                                    checked={selectedIds?.has(event.id) || false}
-                                    onChange={() => onSelect && onSelect(event.id)}
-                                />
-                            </td>
-                            <td>
-                                <div className={styles.eventInfo}>
-                                    <div className={styles.thumbnail} style={event.thumbnailUrl ? { backgroundImage: `url(${event.thumbnailUrl})` } : {}}>
-                                        {!event.thumbnailUrl && <div className={styles.thumbnailPlaceholder}>IMG</div>}
-                                    </div>
-                                    <div className={styles.eventDetails}>
-                                        <span className={styles.eventTitle}>{event.title}</span>
-                                        <span className={styles.eventOrganizer}>by {event.organizer}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div style={{ fontSize: '13px' }}>{event.date}</div>
-                            </td>
-                            <td>
-                                <div style={{ fontSize: '13px', opacity: 0.8 }}>
-                                    <div>{event.location}</div>
-                                    <div style={{ fontSize: '11px', opacity: 0.6 }}>{event.attendees} attendees</div>
-                                </div>
-                            </td>
-                            <td>
-                                <Badge
-                                    label={formatStatus(event.status)}
-                                    variant={getStatusVariant(event.status)}
-                                    showDot
-                                />
-                            </td>
-                            <td>
-                                <div className={styles.actions}>
-                                    <TableRowActions actions={getEventActions(event)} />
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                    {events.length === 0 && (
-                        <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', padding: '32px', opacity: 0.5 }}>
-                                No events found matching criteria.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            {onPageChange && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={onPageChange}
-                />
-            )}
-        </div>
+        <DataTable<Event>
+            data={events}
+            columns={columns}
+            getActions={getActions}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            emptyMessage="No events found matching criteria."
+        />
     );
 };
 

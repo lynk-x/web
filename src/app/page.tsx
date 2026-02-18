@@ -1,11 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
-import SearchBar from "@/components/public/SearchBar";
-import HeroSection from "@/components/public/HeroSection";
-import EventGrid from "@/components/public/EventGrid";
 import HomeLayout from "@/components/public/HomeLayout";
-import styles from "./page.module.css";
 import { Event } from "@/types";
-
 import HomeClient from "@/components/public/HomeClient";
 
 export default async function Home() {

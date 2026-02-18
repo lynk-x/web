@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import EventForm from '../EventForm';
 import { useRouter } from 'next/navigation';
 

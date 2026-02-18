@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import styles from './page.module.css'; // Using local styles
+import { useState } from 'react';
+import styles from './page.module.css';
 import FinanceTable, { FinanceTransaction } from '@/components/organize/FinanceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
-import Pagination from '@/components/shared/Pagination';
 import { useToast } from '@/components/ui/Toast';
 
 // Mock Data for Organizer Revenue

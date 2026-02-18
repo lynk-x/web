@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './page.module.css';
-import adminStyles from '../../page.module.css'; // Use admin page module for some shared styles if needed, or stick to local
 import Link from 'next/link';
 import AdsCampaignTable, { AdsCampaign } from '@/components/ads/AdsCampaignTable';
 import TableToolbar from '@/components/shared/TableToolbar';

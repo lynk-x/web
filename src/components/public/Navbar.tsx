@@ -18,7 +18,7 @@ interface NavbarProps {
  * @param {NavbarProps} props - Component properties.
  */
 const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
-    const { itemCount } = useCart();
+    useCart();
     return (
         <nav className={styles.navbar}>
             <div className={styles.container}>

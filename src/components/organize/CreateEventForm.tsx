@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import styles from './CreateEventForm.module.css';
-import Link from 'next/link';
 
 interface TicketType {
     name: string;
@@ -19,7 +18,7 @@ const CreateEventForm = () => {
     const [category, setCategory] = useState('General');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
-    const [coverUrl, setCoverUrl] = useState<string | null>(null);
+    const [coverUrl,] = useState<string | null>(null);
 
     // Step 2: Logistics
     const [isOnline, setIsOnline] = useState(false);

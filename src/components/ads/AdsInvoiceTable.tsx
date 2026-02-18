@@ -1,18 +1,16 @@
 "use client";
 
 import React from 'react';
-import styles from './AdsInvoiceTable.module.css';
+import DataTable, { Column } from '../shared/DataTable';
 import Badge, { BadgeVariant } from '../shared/Badge';
-import TableRowActions, { ActionItem } from '../shared/TableRowActions';
-import Pagination from '../shared/Pagination';
 import { useToast } from '@/components/ui/Toast';
+import { formatString } from '@/utils/format';
+import type { ActionItem } from '../shared/TableRowActions';
 
-export interface Invoice {
-    id: string;
-    date: string;
-    amount: string;
-    status: 'paid' | 'pending' | 'overdue';
-}
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type { Invoice } from '@/types/ads';
+import type { Invoice } from '@/types/ads';
 
 interface AdsInvoiceTableProps {
     invoices: Invoice[];
@@ -21,24 +19,55 @@ interface AdsInvoiceTableProps {
     onPageChange?: (page: number) => void;
 }
 
+// ─── Variant Helpers ─────────────────────────────────────────────────────────
+
+const getStatusVariant = (status: string): BadgeVariant => {
+    switch (status) {
+        case 'paid': return 'success';
+        case 'pending': return 'warning';
+        case 'overdue': return 'error';
+        default: return 'neutral';
+    }
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+/**
+ * Ads billing invoice table.
+ * Displays invoice dates, amounts, payment status, and download/view actions.
+ */
 const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
     invoices,
     currentPage = 1,
     totalPages = 1,
-    onPageChange
+    onPageChange,
 }) => {
     const { showToast } = useToast();
 
-    const getStatusVariant = (status: string): BadgeVariant => {
-        switch (status) {
-            case 'paid': return 'success';
-            case 'pending': return 'warning';
-            case 'overdue': return 'error';
-            default: return 'neutral';
-        }
-    };
+    /** Column definitions for the invoice table. */
+    const columns: Column<Invoice>[] = [
+        {
+            header: 'Date',
+            render: (invoice) => <div>{invoice.date}</div>,
+        },
+        {
+            header: 'Amount',
+            render: (invoice) => <div>{invoice.amount}</div>,
+        },
+        {
+            header: 'Status',
+            render: (invoice) => (
+                <Badge
+                    label={formatString(invoice.status)}
+                    variant={getStatusVariant(invoice.status)}
+                    showDot
+                />
+            ),
+        },
+    ];
 
-    const getInvoiceActions = (invoice: Invoice): ActionItem[] => [
+    /** Row-level actions for each invoice. */
+    const getActions = (invoice: Invoice): ActionItem[] => [
         {
             label: 'Download PDF',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
@@ -55,53 +84,15 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
     ];
 
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.table}>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {invoices.map((invoice) => (
-                        <tr key={invoice.id}>
-                            <td>{invoice.date}</td>
-                            <td>{invoice.amount}</td>
-                            <td>
-                                <Badge
-                                    label={invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                                    variant={getStatusVariant(invoice.status)}
-                                    showDot
-                                />
-                            </td>
-                            <td>
-                                <div className={styles.actions}>
-                                    <TableRowActions actions={getInvoiceActions(invoice)} />
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                    {invoices.length === 0 && (
-                        <tr>
-                            <td colSpan={4} style={{ textAlign: 'center', padding: '24px', opacity: 0.5 }}>
-                                No invoices found.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            {onPageChange && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={onPageChange}
-                />
-            )}
-        </div>
+        <DataTable<Invoice>
+            data={invoices}
+            columns={columns}
+            getActions={getActions}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            emptyMessage="No invoices found."
+        />
     );
 };
 

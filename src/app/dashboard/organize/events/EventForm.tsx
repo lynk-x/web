@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import styles from './events.module.css';
-import Link from 'next/link';
 
 interface Ticket {
     name: string;
@@ -62,7 +61,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
     // Image State
-    const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+    const [, setCoverImageFile] = useState<File | null>(null);
     const [coverImagePreview, setCoverImagePreview] = useState<string | null>(initialData?.coverImage || null);
 
     // Form State

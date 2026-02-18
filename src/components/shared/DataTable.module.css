@@ -1,0 +1,63 @@
+/**
+ * DataTable.module.css
+ *
+ * Unified base styles for the generic DataTable component.
+ * Domain-specific cell styles (e.g. user avatar, event date pill)
+ * remain in each table's own CSS module and are applied via the
+ * column `render` functions.
+ */
+
+.tableContainer {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    overflow: visible;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--color-utility-primaryText);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.rowSelected {
+    background-color: rgba(32, 249, 40, 0.05) !important;
+}
+
+/* Actions column — right-aligned */
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Empty state row */
+.emptyState {
+    text-align: center;
+    padding: 32px;
+    opacity: 0.5;
+}

@@ -3,16 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './TableRowActions.module.css';
 
-export type ActionItem =
-    | { divider: true }
-    | {
-        label: string;
-        icon?: React.ReactNode;
-        onClick: () => void;
-        variant?: 'default' | 'danger' | 'success';
-        disabled?: boolean;
-        divider?: never;
-    };
+export type { ActionItem } from '@/types/shared';
+import type { ActionItem } from '@/types/shared';
 
 interface TableRowActionsProps {
     actions: ActionItem[];

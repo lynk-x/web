@@ -1,24 +1,16 @@
 "use client";
 
 import React from 'react';
-import styles from './ForumTable.module.css';
-import adminStyles from '../../app/dashboard/admin/page.module.css';
-import TableCheckbox from '../shared/TableCheckbox';
+import DataTable, { Column } from '../shared/DataTable';
 import Badge, { BadgeVariant } from '../shared/Badge';
-import TableRowActions, { ActionItem } from '../shared/TableRowActions';
-import Pagination from '../shared/Pagination';
 import { useToast } from '@/components/ui/Toast';
+import { formatString } from '@/utils/format';
+import type { ActionItem } from '../shared/TableRowActions';
 
-export interface ForumThread {
-    id: string;
-    title: string;
-    author: string;
-    category: 'general' | 'announcements' | 'support' | 'feedback';
-    status: 'active' | 'locked' | 'flagged' | 'hidden';
-    replies: number;
-    views: number;
-    lastActivity: string;
-}
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type { ForumThread } from '@/types/admin';
+import type { ForumThread } from '@/types/admin';
 
 interface ForumTableProps {
     threads: ForumThread[];
@@ -30,6 +22,33 @@ interface ForumTableProps {
     onPageChange?: (page: number) => void;
 }
 
+// ─── Variant Helpers ─────────────────────────────────────────────────────────
+
+const getStatusVariant = (status: string): BadgeVariant => {
+    switch (status) {
+        case 'active': return 'success';
+        case 'locked': return 'neutral';
+        case 'flagged': return 'warning';
+        case 'hidden': return 'error';
+        default: return 'neutral';
+    }
+};
+
+const getCategoryVariant = (category: string): BadgeVariant => {
+    switch (category) {
+        case 'announcements': return 'info';
+        case 'support': return 'warning';
+        case 'feedback': return 'success';
+        default: return 'neutral';
+    }
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+/**
+ * Admin forum thread management table.
+ * Displays thread details, categories, statuses, and provides moderation actions.
+ */
 const ForumTable: React.FC<ForumTableProps> = ({
     threads,
     selectedIds,
@@ -37,42 +56,60 @@ const ForumTable: React.FC<ForumTableProps> = ({
     onSelectAll,
     currentPage = 1,
     totalPages = 1,
-    onPageChange
+    onPageChange,
 }) => {
     const { showToast } = useToast();
-    const getStatusVariant = (status: string): BadgeVariant => {
-        switch (status) {
-            case 'active': return 'success';
-            case 'locked': return 'neutral';
-            case 'flagged': return 'warning';
-            case 'hidden': return 'error';
-            default: return 'neutral';
-        }
-    };
 
-    const getCategoryVariant = (category: string): BadgeVariant => {
-        switch (category) {
-            case 'announcements': return 'info';
-            case 'support': return 'warning';
-            case 'feedback': return 'success';
-            default: return 'neutral';
-        }
-    };
+    /** Column definitions for the forum table. */
+    const columns: Column<ForumThread>[] = [
+        {
+            header: 'Thread',
+            render: (thread) => (
+                <div>
+                    <div style={{ fontWeight: 500 }}>{thread.title}</div>
+                    <div style={{ fontSize: '12px', opacity: 0.6 }}>
+                        by <span style={{ color: 'var(--color-brand-primary)' }}>{thread.author}</span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            header: 'Category',
+            render: (thread) => (
+                <Badge label={formatString(thread.category)} variant={getCategoryVariant(thread.category)} />
+            ),
+        },
+        {
+            header: 'Status',
+            render: (thread) => (
+                <Badge label={formatString(thread.status)} variant={getStatusVariant(thread.status)} showDot />
+            ),
+        },
+        {
+            header: 'Stats',
+            render: (thread) => (
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                    <div>{thread.replies} replies</div>
+                    <div style={{ opacity: 0.6 }}>{thread.views} views</div>
+                </div>
+            ),
+        },
+        {
+            header: 'Last Activity',
+            render: (thread) => (
+                <div style={{ fontSize: '13px', opacity: 0.8 }}>{thread.lastActivity}</div>
+            ),
+        },
+    ];
 
-    const formatString = (str: string) => {
-        return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    };
-
-    const allSelected = threads.length > 0 && selectedIds?.size === threads.length;
-    const isIndeterminate = (selectedIds?.size || 0) > 0 && !allSelected;
-
-    const getThreadActions = (thread: ForumThread): ActionItem[] => {
+    /** Row-level moderation actions for each thread. */
+    const getActions = (thread: ForumThread): ActionItem[] => {
         const actions: ActionItem[] = [
             {
                 label: 'View Thread',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => showToast(`Opening thread: ${thread.title}...`, 'info')
-            }
+                onClick: () => showToast(`Opening thread: ${thread.title}...`, 'info'),
+            },
         ];
 
         if (thread.status !== 'locked') {
@@ -82,7 +119,7 @@ const ForumTable: React.FC<ForumTableProps> = ({
                 onClick: () => {
                     showToast('Locking thread...', 'info');
                     setTimeout(() => showToast('Thread locked.', 'info'), 1000);
-                }
+                },
             });
         } else {
             actions.push({
@@ -91,7 +128,7 @@ const ForumTable: React.FC<ForumTableProps> = ({
                 onClick: () => {
                     showToast('Unlocking thread...', 'info');
                     setTimeout(() => showToast('Thread unlocked.', 'success'), 1000);
-                }
+                },
             });
         }
 
@@ -102,7 +139,7 @@ const ForumTable: React.FC<ForumTableProps> = ({
                 onClick: () => {
                     showToast('Hiding thread...', 'info');
                     setTimeout(() => showToast('Thread hidden.', 'warning'), 1000);
-                }
+                },
             });
         }
 
@@ -113,97 +150,25 @@ const ForumTable: React.FC<ForumTableProps> = ({
             onClick: () => {
                 showToast(`Deleting thread: ${thread.title}...`, 'info');
                 setTimeout(() => showToast('Thread deleted.', 'success'), 1500);
-            }
+            },
         });
 
         return actions;
     };
 
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.table}>
-                <thead>
-                    <tr>
-                        <th style={{ width: '40px' }}>
-                            <TableCheckbox
-                                checked={allSelected}
-                                onChange={() => onSelectAll && onSelectAll()}
-                                indeterminate={isIndeterminate}
-                                disabled={!onSelectAll}
-                            />
-                        </th>
-                        <th>Thread</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Stats</th>
-                        <th>Last Activity</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {threads.map((thread) => (
-                        <tr key={thread.id} className={selectedIds?.has(thread.id) ? styles.rowSelected : ''}>
-                            <td>
-                                <TableCheckbox
-                                    checked={selectedIds?.has(thread.id) || false}
-                                    onChange={() => onSelect && onSelect(thread.id)}
-                                />
-                            </td>
-                            <td>
-                                <div className={styles.threadInfo}>
-                                    <div className={styles.threadTitle}>{thread.title}</div>
-                                    <div className={styles.threadMeta}>
-                                        by <span style={{ color: 'var(--color-brand-primary)' }}>{thread.author}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <Badge
-                                    label={formatString(thread.category)}
-                                    variant={getCategoryVariant(thread.category)}
-                                />
-                            </td>
-                            <td>
-                                <Badge
-                                    label={formatString(thread.status)}
-                                    variant={getStatusVariant(thread.status)}
-                                    showDot
-                                />
-                            </td>
-                            <td>
-                                <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                                    <div>{thread.replies} replies</div>
-                                    <div style={{ opacity: 0.6 }}>{thread.views} views</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div style={{ fontSize: '13px', opacity: 0.8 }}>{thread.lastActivity}</div>
-                            </td>
-                            <td>
-                                <div className={styles.actions}>
-                                    <TableRowActions actions={getThreadActions(thread)} />
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                    {threads.length === 0 && (
-                        <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', padding: '32px', opacity: 0.5 }}>
-                                No threads found matching criteria.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            {onPageChange && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={onPageChange}
-                />
-            )}
-        </div>
+        <DataTable<ForumThread>
+            data={threads}
+            columns={columns}
+            getActions={getActions}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            emptyMessage="No threads found matching criteria."
+        />
     );
 };
 

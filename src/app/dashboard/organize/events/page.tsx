@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
-import styles from './page.module.css'; // Using local styles for cleaner encapsulation
-import EventTable, { Event } from '@/components/organize/EventTable'; // Moved to organize folder
+import { useState } from 'react';
+import styles from './page.module.css';
+import EventTable, { Event } from '@/components/organize/EventTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { ToastProvider, useToast } from '@/components/ui/Toast';
+import { useToast } from '@/components/ui/Toast';
 
 // Mock Data for Organizer Events
 const mockEvents: Event[] = [
