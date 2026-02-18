@@ -1,0 +1,106 @@
+.container {
+    position: relative;
+    display: inline-block;
+}
+
+.trigger {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    padding: 6px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trigger:hover,
+.trigger.active {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-interface-outline);
+}
+
+.dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background-color: #1a1a1a;
+    /* Darker background for depth */
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-md);
+    min-width: 180px;
+    z-index: 100;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menuItem {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    color: var(--color-utility-primaryText);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    opacity: 0.8;
+}
+
+.menuItem:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.05);
+    opacity: 1;
+}
+
+.menuItem:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+}
+
+.danger {
+    color: #e57373 !important;
+}
+
+.danger:hover:not(:disabled) {
+    background-color: rgba(229, 115, 115, 0.1) !important;
+}
+
+.success {
+    color: #81c784 !important;
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--color-interface-outline);
+    margin: 4px 0;
+}

@@ -1,0 +1,145 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 0;
+}
+
+.tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-interface-outline);
+    padding-bottom: 1px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.tab {
+    background: transparent;
+    border: none;
+    padding: 12px 20px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.activeTab {
+    opacity: 1;
+    color: var(--color-brand-primary);
+}
+
+.activeTab::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--color-brand-primary);
+}
+
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.statCard {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.statLabel {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.statValue {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+}
+
+.statChange {
+    font-size: 12px;
+    color: var(--color-interface-success);
+}
+
+.statNote {
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+.exportBtn {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exportBtn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.bulkActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.bulkBtn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-utility-primaryText);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bulkBtn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}

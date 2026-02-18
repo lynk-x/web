@@ -1,0 +1,334 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.header {
+    margin-bottom: var(--spacing-sm);
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.statCard {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s, border-color 0.2s;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-brand-primary);
+}
+
+.statLabel {
+    font-size: 13px;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-utility-primaryText);
+}
+
+.statValue {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+}
+
+.statChange {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.positive {
+    color: var(--color-interface-success);
+}
+
+.negative {
+    color: var(--color-interface-error);
+}
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--color-utility-primaryText);
+}
+
+/* --- Shared Standardized UI Classes --- */
+
+/* Buttons */
+.btnPrimary {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btnPrimary:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+.btnSecondary {
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnSecondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+}
+
+/* Choice Chips / Filters */
+.chip {
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.7;
+}
+
+.chip:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    opacity: 1;
+}
+
+.chipActive {
+    background-color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    opacity: 1;
+    font-weight: 600;
+}
+
+.select:focus {
+    border-color: var(--color-brand-primary);
+}
+
+.input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input:focus {
+    border-color: var(--color-brand-primary);
+    background-color: transparent;
+}
+
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus,
+.input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--color-interface-surface) inset !important;
+    -webkit-text-fill-color: var(--color-utility-primaryText) !important;
+}
+
+.label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-utility-primaryText);
+    opacity: 0.7;
+}
+
+.select {
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.select:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.select:focus {
+    border-color: var(--color-brand-primary);
+}
+
+.filterGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filterSelect {
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.filterSelect:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.filterSelect:focus {
+    border-color: var(--color-brand-primary);
+}
+
+/* Pagination */
+.paginationContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid var(--color-interface-outline);
+}
+
+.paginationBtn {
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.paginationBtn:hover:not(:disabled) {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+}
+
+.paginationBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.paginationPage {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.paginationPage:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.activePage {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    font-weight: 600;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    border-bottom: 1px solid var(--color-interface-outline);
+    margin-bottom: var(--spacing-lg);
+}
+
+.tab {
+    background: transparent;
+    border: none;
+    padding: 12px 20px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.tabActive {
+    opacity: 1;
+    color: var(--color-brand-primary);
+}
+
+.tabActive::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--color-brand-primary);
+}

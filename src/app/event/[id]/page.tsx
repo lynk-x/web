@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import EventDetailsView from '@/components/EventDetailsView';
+import EventDetailsView from '@/components/public/EventDetailsView';
 import { notFound } from 'next/navigation';
 
 export default async function EventPage({ params }: { params: { id: string } }) {

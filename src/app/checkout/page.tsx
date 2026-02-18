@@ -1,4 +1,4 @@
-import CheckoutView from '@/components/CheckoutView';
+import CheckoutView from '@/components/public/CheckoutView';
 import { Suspense } from 'react';
 
 

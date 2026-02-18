@@ -1,0 +1,80 @@
+.tableContainer {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    overflow: visible;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--color-utility-primaryText);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.rowSelected {
+    background-color: rgba(var(--color-brand-primary-rgb), 0.05) !important;
+}
+
+.campaignInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.campaignName {
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--color-utility-primaryText);
+}
+
+.campaignDates {
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+}
+
+.metricValue {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.metricLabel {
+    font-size: 11px;
+    opacity: 0.6;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+/* Actions wrapper */
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}

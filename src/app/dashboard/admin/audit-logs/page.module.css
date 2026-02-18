@@ -1,0 +1,120 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.header {
+    margin-bottom: var(--spacing-sm);
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-interface-outline);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.search {
+    flex: 1;
+    min-width: 280px;
+    position: relative;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-interface-outline);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.filters {
+    display: flex;
+    gap: 12px;
+}
+
+/* Date Range Picker (Mock Style) */
+.datePickerBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.datePickerBtn:hover {
+    border-color: var(--color-brand-primary);
+}
+
+.filterSelect {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 32px 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.filterSelect:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
+}
+
+.exportBtn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-utility-primaryText);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.exportBtn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}

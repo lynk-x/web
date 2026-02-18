@@ -1,0 +1,75 @@
+.tableContainer {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    overflow: visible;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--color-utility-primaryText);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.rowSelected {
+    background-color: rgba(var(--color-brand-primary-rgb), 0.05) !important;
+}
+
+.transactionInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.description {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.meta {
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.amount {
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+}
+
+.amountPositive {
+    color: var(--color-interface-success);
+}
+
+.amountNegative {
+    color: var(--color-utility-primaryText);
+}
+
+/* Row Actions wrapper */
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}

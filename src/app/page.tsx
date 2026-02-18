@@ -1,12 +1,12 @@
 import { createClient } from '@/utils/supabase/server';
-import SearchBar from "@/components/SearchBar";
-import HeroSection from "@/components/HeroSection";
-import EventGrid from "@/components/EventGrid";
-import HomeLayout from "@/components/HomeLayout";
+import SearchBar from "@/components/public/SearchBar";
+import HeroSection from "@/components/public/HeroSection";
+import EventGrid from "@/components/public/EventGrid";
+import HomeLayout from "@/components/public/HomeLayout";
 import styles from "./page.module.css";
 import { Event } from "@/types";
 
-import HomeClient from "@/components/HomeClient";
+import HomeClient from "@/components/public/HomeClient";
 
 export default async function Home() {
   const supabase = await createClient();

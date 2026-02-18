@@ -17,6 +17,47 @@
     justify-content: center;
     padding: 0 var(--spacing-lg);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modeSwitcherPill {
+    display: flex;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    margin: var(--spacing-md) var(--spacing-md) 0;
+    border-radius: var(--radius-md);
+    gap: 4px;
+}
+
+.modeBtn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--color-utility-primaryText);
+    padding: 6px 0;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.modeBtn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.activeMode {
+    background-color: var(--color-interface-surface);
+    color: var(--color-brand-primary);
+    opacity: 1;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.activeMode:hover {
+    background-color: var(--color-interface-surface);
 }
 
 .nav {
@@ -49,8 +90,15 @@
 .active {
     background-color: var(--color-brand-primary);
     color: var(--color-utility-secondaryText);
+    /* Assuming this is white or a contrasting text color */
     opacity: 1;
     font-weight: 600;
+}
+
+.active:hover {
+    background-color: var(--color-brand-primary);
+    /* Keep the same background on hover */
+    color: var(--color-utility-secondaryText);
 }
 
 .footer {
@@ -88,8 +136,31 @@
     color: var(--color-utility-primaryText);
 }
 
-.userRole {
+.userEmail {
     font-size: 12px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
+}
+
+.logoutBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-utility-primaryText);
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-left: auto;
+    /* Push to the right */
+}
+
+.logoutBtn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-interface-error);
+    /* Optional: make it red on hover for logout */
 }

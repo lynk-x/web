@@ -1,0 +1,75 @@
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.audienceCard {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.audienceCard:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.audienceInfo {
+    flex: 1;
+}
+
+.audienceName {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--color-utility-primaryText);
+}
+
+.audienceDetails {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+    color: var(--color-utility-primaryText);
+}
+
+.tags {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.typeTag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.05);
+    font-size: 11px;
+    color: var(--color-utility-primaryText);
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.sizeInfo {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.editBtn {
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.editBtn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}

@@ -1,0 +1,87 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.assetCard {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.assetCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-interface-outline-active);
+}
+
+.preview {
+    height: 150px;
+    background-color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+}
+
+.previewText {
+    font-size: 12px;
+}
+
+.cardContent {
+    padding: 12px;
+}
+
+.assetName {
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-utility-primaryText);
+}
+
+.assetMeta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.6;
+    color: var(--color-utility-primaryText);
+}
+
+.uploadCard {
+    border: 1px dashed var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 216px;
+    /* Match approximate height of other cards */
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s;
+    background-color: rgba(255, 255, 255, 0.02);
+    color: var(--color-utility-primaryText);
+}
+
+.uploadCard:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+}
+
+.uploadIcon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.uploadText {
+    font-size: 13px;
+    font-weight: 500;
+}

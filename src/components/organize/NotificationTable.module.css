@@ -1,0 +1,91 @@
+.tableContainer {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-top: var(--spacing-lg);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--color-utility-primaryText);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.iconCell {
+    width: 48px;
+    text-align: center;
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.emailIcon {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+}
+
+.alertIcon {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+.successIcon {
+    background-color: rgba(32, 249, 40, 0.1);
+    color: var(--color-brand-primary);
+}
+
+.title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.description {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.time {
+    opacity: 0.5;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.read {
+    opacity: 0.6;
+}
+
+.unread {
+    font-weight: 600;
+}

@@ -1,8 +1,8 @@
 import React from 'react';
-import HomeLayout from "@/components/HomeLayout";
-import SkeletonEventCard from "@/components/SkeletonEventCard";
+import HomeLayout from "@/components/public/HomeLayout";
+import SkeletonEventCard from "@/components/public/SkeletonEventCard";
 import styles from "./page.module.css";
-import SearchBar from "@/components/SearchBar";
+import SearchBar from "@/components/public/SearchBar";
 
 export default function Loading() {
     return (

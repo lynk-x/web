@@ -1,0 +1,69 @@
+.tableContainer {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--color-utility-primaryText);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.eventName {
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+}
+
+.money {
+    font-family: var(--font-heading);
+    font-weight: 600;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.viewLink {
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    padding: 6px;
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.viewLink:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    opacity: 1;
+    color: var(--color-brand-primary);
+}

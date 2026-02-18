@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import HomeLayout from "@/components/HomeLayout";
+import HomeLayout from "@/components/public/HomeLayout";
 
 export default function PrivacyPage() {
     return (

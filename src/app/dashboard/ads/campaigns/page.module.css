@@ -1,0 +1,88 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+.createBtn {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.createBtn:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+/* Toolbar & Filters */
+.toolbarContainer {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.7;
+    text-transform: capitalize;
+}
+
+.chip:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    opacity: 1;
+}
+
+.chipActive {
+    background-color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    opacity: 1;
+    font-weight: 600;
+}
+
+.chipActive:hover {
+    background-color: var(--color-brand-primary);
+    opacity: 0.9;
+}
+
+/* Toolbar and List styles removed as they are now handled by shared components */

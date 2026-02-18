@@ -7,21 +7,22 @@
 .header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
 }
 
 .title {
-    font-family: var(--font-heading);
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--color-utility-primaryText);
-    margin-bottom: var(--spacing-xs);
+    margin: 0;
 }
 
 .subtitle {
+    font-size: 14px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    font-size: 16px;
+    margin-top: 4px;
 }
 
 .createBtn {
@@ -110,336 +111,73 @@
     opacity: 0.5;
 }
 
-.viewAllLink {
-    color: var(--color-brand-primary);
-    font-size: 14px;
+
+/* --- Shared Standardized UI Classes --- */
+
+.btnPrimary {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
     font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     text-decoration: none;
 }
 
-.recentActivity,
-.upcomingEvents {
-    background-color: var(--color-interface-surface);
-    border: 1px solid var(--color-interface-outline);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
+.btnPrimary:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
 }
 
-.activityList {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-}
-
-.activityItem {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.activityItem:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.activityIcon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: rgba(32, 249, 40, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-}
-
-.activityInfo {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.activityText {
-    font-size: 14px;
-    color: var(--color-utility-primaryText);
-}
-
-.activityTime {
-    font-size: 12px;
-    opacity: 0.5;
-}
-
-.activityAmount {
-    font-weight: 600;
-    color: var(--color-interface-success);
-}
-
-.sectionTitleRow {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-lg);
-}
-
-.filterTabs {
-    display: flex;
-    gap: 4px;
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 4px;
-    border-radius: var(--radius-md);
-}
-
-.filterTab {
-    padding: 4px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-utility-primaryText);
-    opacity: 0.6;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.filterTab:hover {
-    opacity: 0.8;
-}
-
-.activeFilter {
-    background-color: var(--color-interface-surface);
-    opacity: 1;
-    color: var(--color-brand-primary);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.eventList {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-}
-
-.eventCard {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--spacing-md);
-    background-color: rgba(255, 255, 255, 0.03);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    border: 1px solid transparent;
-    transition: border-color 0.2s;
-    position: relative;
-}
-
-.eventContent {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    flex: 1;
-    cursor: pointer;
-}
-
-.cardActions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    position: relative;
-}
-
-.guestListLink {
-    color: var(--color-utility-primaryText);
-    opacity: 0.5;
-    padding: 8px;
-    border-radius: var(--radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.guestListLink:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    opacity: 1;
-    color: var(--color-brand-primary);
-}
-
-.optionsBtn {
-    color: var(--color-utility-primaryText);
-    opacity: 0.5;
-    padding: 8px;
-    border-radius: var(--radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-}
-
-.optionsBtn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    opacity: 1;
-    color: var(--color-utility-primaryText);
-}
-
-.optionsMenu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 4px;
-    background-color: var(--color-interface-surface);
-    border: 1px solid var(--color-interface-outline);
-    border-radius: var(--radius-md);
-    padding: 4px;
-    min-width: 160px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-}
-
-.menuItem {
-    padding: 8px 12px;
-    text-align: left;
-    background: transparent;
-    border: none;
-    color: var(--color-utility-primaryText);
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: background-color 0.2s;
-}
-
-.menuItem:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.menuDivider {
-    height: 1px;
-    background-color: var(--color-interface-outline);
-    margin: 4px 0;
-}
-
-.deleteItem {
-    color: var(--color-interface-error);
-}
-
-.deleteItem:hover {
-    background-color: rgba(255, 0, 0, 0.1);
-}
-
-.eventCard:hover {
-    border-color: var(--color-brand-primary);
-}
-
-.eventDate {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: var(--color-interface-surface);
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-interface-outline);
-}
-
-.month {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--color-brand-primary);
-    text-transform: uppercase;
-}
-
-.day {
-    font-size: 18px;
-    font-weight: 700;
-}
-
-.eventInfo {
-    flex: 1;
-}
-
-.eventName {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.eventMeta {
-    font-size: 12px;
-    opacity: 0.6;
-}
-
-.eventStatus {
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: 700;
-    background-color: rgba(32, 249, 40, 0.1);
-    color: var(--color-brand-primary);
-    padding: 4px 8px;
-    border-radius: var(--radius-full);
-}
-
-.pagination {
-    display: flex;
-    justify-content: flex-end;
-    /* Aligned right as requested */
-    align-items: center;
-    gap: 8px;
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.pageBtn {
+.chip {
     background: transparent;
     border: 1px solid var(--color-interface-outline);
     color: var(--color-utility-primaryText);
-    padding: 6px 12px;
+    padding: 8px 16px;
     border-radius: var(--radius-md);
     font-size: 13px;
     cursor: pointer;
     transition: all 0.2s;
+    opacity: 0.7;
 }
 
-.pageBtn:hover:not(:disabled) {
-    border-color: var(--color-brand-primary);
-    color: var(--color-brand-primary);
-}
-
-.pageBtn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.pageNumber {
-    background: transparent;
-    border: none;
-    color: var(--color-utility-primaryText);
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    transition: all 0.2s;
-}
-
-.pageNumber:hover {
+.chip:hover {
     background-color: rgba(255, 255, 255, 0.05);
+    opacity: 1;
 }
 
-.activePage {
+.chipActive {
     background-color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
     color: var(--color-utility-secondaryText);
+    opacity: 1;
     font-weight: 600;
 }
 
-.activePage:hover {
-    background-color: var(--color-brand-primary);
+.filterGroup {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.filterSelect {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+.filterSelect:focus {
+    border-color: var(--color-brand-primary);
 }

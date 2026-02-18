@@ -29,3 +29,22 @@
         grid-template-columns: repeat(4, 1fr);
     }
 }
+
+.searchWrapper {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.heroWrapper {
+    height: auto;
+    overflow: hidden;
+    opacity: 1;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 40px;
+}
+
+.heroHidden {
+    height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+}
