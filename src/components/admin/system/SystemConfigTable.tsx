@@ -2,7 +2,7 @@
 
 import React from 'react';
 import styles from './SystemConfigTable.module.css';
-import DataTable, { Column } from '../shared/DataTable';
+import DataTable, { Column } from '../../shared/DataTable';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

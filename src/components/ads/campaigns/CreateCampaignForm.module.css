@@ -2,8 +2,8 @@
     background-color: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    max-width: 800px;
+    padding: 40px;
+    max-width: 2000px;
     margin: 0 auto;
 }
 
@@ -63,7 +63,7 @@
 }
 
 .stepLabel {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
@@ -95,12 +95,12 @@
 .input,
 .textarea,
 .select {
-    padding: var(--spacing-md);
+    padding: 14px 20px;
     border-radius: var(--radius-md);
     border: 1px solid var(--color-interface-outline);
     background-color: rgba(255, 255, 255, 0.05);
     color: var(--color-utility-primaryText);
-    font-size: 14px;
+    font-size: 16px;
     transition: border-color 0.2s;
 }
 
@@ -131,10 +131,10 @@
 }
 
 .btn {
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 14px 32px;
     border-radius: var(--radius-full);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     border: none;
     transition: all 0.2s;

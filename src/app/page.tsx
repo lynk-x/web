@@ -8,10 +8,10 @@ export default async function Home() {
 
   // Fetch events from Supabase
   const { data: events } = await supabase
-    .from('events')
+    .from('public_events_view')
     .select('*')
     .eq('status', 'published')
-    .order('start_time', { ascending: true })
+    .order('start_datetime', { ascending: true })
     .limit(50); // Fetch more for pagination
 
   // Fallback Mock Data
@@ -19,8 +19,8 @@ export default async function Home() {
     id: `mock-${i}`,
     title: `Event ${i + 1} Title`,
     description: "This is a sample event description for development purposes.",
-    start_time: new Date().toISOString(),
-    cover_image_url: `https://images.unsplash.com/photo-${1540575467063 + i}-178a50c2df87`,
+    start_datetime: new Date().toISOString(),
+    thumbnail_url: `https://images.unsplash.com/photo-${1540575467063 + i}-178a50c2df87`,
     category: "Music",
     currency: "KES",
     low_price: 1000 + (i * 100)

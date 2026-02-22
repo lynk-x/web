@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import styles from '../../page.module.css';
-import AdsInvoiceTable, { Invoice } from '@/components/ads/AdsInvoiceTable';
+import Link from 'next/link';
+import AdsInvoiceTable, { Invoice } from '@/components/ads/billing/AdsInvoiceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 
@@ -36,20 +37,20 @@ export default function AdsBillingPage() {
                 <section className={styles.section} style={{ padding: '24px', backgroundColor: 'var(--color-interface-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-interface-outline)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                         <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Payment Methods</h2>
-                        <button className={styles.createBtn} style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => showToast('Opening add payment method dialog...', 'info')}>+ Add Method</button>
+                        <Link href="/dashboard/ads/billing/payment-methods" className={styles.createBtn} style={{ fontSize: '12px', padding: '6px 12px', textDecoration: 'none' }}>+ Add Method</Link>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}>
-                        <div style={{ width: '40px', height: '25px', backgroundColor: '#fff', borderRadius: '4px' }}></div>
+                        <div style={{ width: '40px', height: '25px', backgroundColor: '#e0e0e0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#666', fontWeight: 'bold' }}>VISA</div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 500 }}>Visa ending in 4242</div>
                             <div style={{ fontSize: '12px', opacity: 0.6 }}>Expires 12/28 • Default</div>
                         </div>
-                        <button
-                            style={{ background: 'transparent', border: 'none', color: 'var(--color-utility-primaryText)', opacity: 0.5, cursor: 'pointer' }}
-                            onClick={() => showToast('Redirecting to payment method editor...', 'info')}
+                        <Link
+                            href="/dashboard/ads/billing/payment-methods"
+                            style={{ background: 'transparent', border: 'none', color: 'var(--color-utility-primaryText)', opacity: 0.5, cursor: 'pointer', fontSize: '14px', textDecoration: 'none' }}
                         >
                             Edit
-                        </button>
+                        </Link>
                     </div>
                 </section>
 

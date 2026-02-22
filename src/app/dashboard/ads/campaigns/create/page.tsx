@@ -1,6 +1,6 @@
 "use client";
 
-import CreateCampaignForm from '@/components/ads/CreateCampaignForm';
+import CreateCampaignForm from '@/components/ads/campaigns/CreateCampaignForm';
 import styles from '../../page.module.css'; // Reuse main dashboard styles for title
 
 export default function CreateCampaignPage() {

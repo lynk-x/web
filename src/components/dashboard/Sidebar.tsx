@@ -9,6 +9,7 @@ import { navItems } from './sidebarNav';
 import type { DashboardMode } from '@/types/shared';
 import ModeSwitcher from './ModeSwitcher';
 import SidebarUserProfile from './SidebarUserProfile';
+import OrganizationSwitcher from './OrganizationSwitcher';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -62,6 +63,9 @@ const Sidebar = () => {
                     style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
                 />
             </Link>
+
+            {/* Organization Switcher */}
+            <OrganizationSwitcher />
 
             {/* Mode Switcher */}
             <ModeSwitcher mode={mode} onModeChange={handleModeChange} />

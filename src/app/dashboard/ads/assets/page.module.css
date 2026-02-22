@@ -4,6 +4,51 @@
     gap: 20px;
 }
 
+.filterBar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-interface-outline);
+}
+
+.filterGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filterLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+    opacity: 0.8;
+}
+
+.filterChip {
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 500;
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filterChip:hover {
+    border-color: var(--color-brand-primary);
+}
+
+.filterChipActive {
+    background-color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+}
+
 .assetCard {
     background-color: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
@@ -84,4 +129,158 @@
 .uploadText {
     font-size: 13px;
     font-weight: 500;
+}
+
+/* Delete Button */
+.cardHeader {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.assetCard:hover .cardHeader {
+    opacity: 1;
+}
+
+.deleteBtn {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ff4d4f;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+    background: #ff4d4f;
+    color: white;
+    transform: scale(1.1);
+}
+
+.assetCard {
+    position: relative;
+}
+
+/* Size Selection Modal Styles (Simple) */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modalTitle {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--color-utility-primaryText);
+}
+
+.modalSubtitle {
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    margin-bottom: 24px;
+}
+
+.sizeGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.sizeOption {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sizeOption:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-brand-primary);
+}
+
+.sizeOptionActive {
+    border-color: var(--color-brand-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.sizeName {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+}
+
+.sizeValue {
+    font-size: 12px;
+    opacity: 0.6;
+    color: var(--color-utility-primaryText);
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cancelBtn {
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    cursor: pointer;
+}
+
+.continueBtn {
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    border: none;
+    cursor: pointer;
+}
+
+.continueBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

@@ -50,14 +50,6 @@ export default function AdsSettingsPage() {
                         <label className={styles.label}>Contact Email</label>
                         <input type="email" className={styles.input} defaultValue="john@doe.com" />
                     </div>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Timezone</label>
-                        <select className={styles.select}>
-                            <option>(GMT+03:00) Nairobi</option>
-                            <option>(GMT+00:00) London</option>
-                            <option>(GMT-05:00) New York</option>
-                        </select>
-                    </div>
                 </section>
 
                 {/* Business Details */}

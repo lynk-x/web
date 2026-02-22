@@ -16,7 +16,7 @@ interface EventFormProps {
     initialData?: Partial<EventData>;
     pageTitle: string;
     submitBtnText: string;
-    onSubmit: (data: EventData) => Promise<void>;
+    onSubmit: (data: EventData, file?: File | null) => Promise<void>;
     isEditMode?: boolean;
 }
 
@@ -40,8 +40,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
     // Image State
-    const [, setCoverImageFile] = useState<File | null>(null);
-    const [coverImagePreview, setCoverImagePreview] = useState<string | null>(initialData?.coverImage || null);
+    const [thumbnailUrlFile, setThumbnailUrlFile] = useState<File | null>(null);
+    const [thumbnailUrlPreview, setThumbnailUrlPreview] = useState<string | null>(initialData?.thumbnailUrl || null);
 
     // Form State
     const [formData, setFormData] = useState<EventData>({
@@ -49,7 +49,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         description: '',
         category: 'Arts&Entertainment', // Default to first valid category
         tags: [],
-        coverImage: '',
+        thumbnailUrl: '',
         isOnline: false,
         location: '',
         startDate: '',
@@ -69,7 +69,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     useEffect(() => {
         if (initialData) {
             setFormData(prev => ({ ...prev, ...initialData }));
-            if (initialData.coverImage) setCoverImagePreview(initialData.coverImage);
+            if (initialData.thumbnailUrl) setThumbnailUrlPreview(initialData.thumbnailUrl);
         } else if (!isEditMode && draft) {
             setFormData(prev => ({ ...prev, ...draft }));
             setIsDraftLoaded(true);
@@ -170,20 +170,20 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setCoverImageFile(file);
+            setThumbnailUrlFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setCoverImagePreview(reader.result as string);
-                setFormData(prev => ({ ...prev, coverImage: reader.result as string }));
+                setThumbnailUrlPreview(reader.result as string);
+                setFormData(prev => ({ ...prev, thumbnailUrl: reader.result as string }));
             };
             reader.readAsDataURL(file);
         }
     };
 
     const handleRemoveImage = () => {
-        setCoverImageFile(null);
-        setCoverImagePreview(null);
-        setFormData(prev => ({ ...prev, coverImage: '' }));
+        setThumbnailUrlFile(null);
+        setThumbnailUrlPreview(null);
+        setFormData(prev => ({ ...prev, thumbnailUrl: '' }));
     };
 
     // Tag Logic
@@ -251,8 +251,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         }
 
         setLoading(true);
-        // Note: Actual file upload should happen here, returning a URL to set in formData
-        await onSubmit(formData);
+        await onSubmit(formData, thumbnailUrlFile);
         setLoading(false);
     };
 
@@ -317,9 +316,9 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                 {activeTab === 'cover' && (
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Cover Image</h2>
-                        {coverImagePreview ? (
+                        {thumbnailUrlPreview ? (
                             <div className={styles.imagePreviewContainer} style={{ position: 'relative', width: '100%', height: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <img src={coverImagePreview} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={thumbnailUrlPreview} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '8px' }}>
                                     <label htmlFor="cover-upload-change" className={styles.secondaryBtn} style={{ cursor: 'pointer', background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}>
                                         Change

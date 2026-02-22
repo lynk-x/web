@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import ReportCard, { Report } from '@/components/admin/ReportCard';
-import SystemHealth from '@/components/admin/SystemHealth';
-import LogConsole from '@/components/admin/LogConsole';
-import SystemConfigTable from '@/components/admin/SystemConfigTable';
+import ReportCard, { Report } from '@/components/admin/system/ReportCard';
+import SystemHealth from '@/components/admin/system/SystemHealth';
+import LogConsole from '@/components/admin/system/LogConsole';
+import SystemConfigTable from '@/components/admin/system/SystemConfigTable';
 
 // Mock Bug Reports (moved from old Reports page)
 const mockBugs: Report[] = [

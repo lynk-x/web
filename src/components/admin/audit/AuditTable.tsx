@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './AuditTable.module.css';
-import Pagination from '../shared/Pagination';
+import Pagination from '../../shared/Pagination';
 import { getInitials } from '@/utils/format';
 
 export type { AuditLog } from '@/types/admin';

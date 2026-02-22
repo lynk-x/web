@@ -2,14 +2,15 @@ export interface Event {
     id: string;
     title: string;
     description: string;
-    start_time: string;
-    end_time: string;
+    start_datetime: string;
+    end_datetime: string;
     location_name: string;
-    cover_image_url?: string;
+    thumbnail_url?: string;
     category?: string;
+    account_id?: string;
+    organizer_name?: string;
     low_price?: number;
     currency?: string;
-    organizer_id?: string;
     is_featured?: boolean;
 }
 

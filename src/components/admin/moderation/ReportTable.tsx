@@ -2,11 +2,11 @@
 
 import React from 'react';
 import styles from './ReportTable.module.css';
-import DataTable, { Column } from '../shared/DataTable';
-import Badge, { BadgeVariant } from '../shared/Badge';
+import DataTable, { Column } from '../../shared/DataTable';
+import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { formatString } from '@/utils/format';
-import type { ActionItem } from '../shared/TableRowActions';
+import type { ActionItem } from '../../shared/TableRowActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

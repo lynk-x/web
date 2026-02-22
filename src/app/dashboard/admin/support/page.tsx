@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import TicketTable, { Ticket } from '@/components/admin/TicketTable';
+import TicketTable, { Ticket } from '@/components/admin/support/TicketTable';
 
 // Mock Data
 const mockTickets: Ticket[] = [

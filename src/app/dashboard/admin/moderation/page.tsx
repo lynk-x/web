@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import ReportTable, { Report } from '@/components/admin/ReportTable';
+import ReportTable, { Report } from '@/components/admin/moderation/ReportTable';
 
 // Mock Data
 const mockReports: Report[] = [

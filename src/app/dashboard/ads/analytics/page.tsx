@@ -1,7 +1,7 @@
 "use client";
 
 import styles from './page.module.css';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Mock Data for Charts
 const performanceData = [
@@ -12,13 +12,6 @@ const performanceData = [
     { name: 'Fri', impressions: 1890, clicks: 480 },
     { name: 'Sat', impressions: 2390, clicks: 380 },
     { name: 'Sun', impressions: 3490, clicks: 430 },
-];
-
-const demographicsData = [
-    { name: '18-24', value: 2400 },
-    { name: '25-34', value: 4567 },
-    { name: '35-44', value: 1398 },
-    { name: '45+', value: 9800 },
 ];
 
 export default function AnalyticsPage() {
@@ -83,32 +76,6 @@ export default function AnalyticsPage() {
                             <Area type="monotone" dataKey="clicks" stroke="rgba(255, 255, 255, 0.4)" fillOpacity={1} fill="url(#colorClick)" strokeWidth={2} />
                         </AreaChart>
                     </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Secondary Charts */}
-            <div className={styles.gridSection}>
-                <div className={styles.chartSection}>
-                    <h2 className={styles.sectionTitle}>Demographics (Age)</h2>
-                    <div style={{ width: '100%', height: 300 }}>
-                        <ResponsiveContainer>
-                            <BarChart data={demographicsData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} />
-                                <Bar dataKey="value" fill="#20f928" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Placeholder for Map or Device stats */}
-                <div className={styles.chartSection}>
-                    <h2 className={styles.sectionTitle}>Device Breakdown</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', opacity: 0.5 }}>
-                        Pie Chart Placeholder
-                    </div>
                 </div>
             </div>
         </div>

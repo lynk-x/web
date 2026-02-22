@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import AuditTable, { AuditLog } from '@/components/admin/AuditTable';
+import AuditTable, { AuditLog } from '@/components/admin/audit/AuditTable';
 
 // Mock Data
 const mockAuditLogs: AuditLog[] = [

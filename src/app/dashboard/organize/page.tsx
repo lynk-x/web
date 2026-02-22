@@ -3,40 +3,121 @@
 import React, { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
-// Imports removed as table is gone
-
-// State and logic removed as table is gone
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
+import { formatCurrency } from '@/utils/format';
 
 export default function DashboardOverview() {
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const supabase = createClient();
+
+    const [stats, setStats] = useState({
+        revenue: 0,
+        ticketsSold: 0,
+        activeEvents: 0,
+        upcomingEvents: 0,
+        pastEvents: 0
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!activeAccount) return;
+            setIsLoading(true);
+
+            try {
+                // Fetch events and their aggregated ticket tiers for this account
+                const { data: events, error } = await supabase
+                    .from('events')
+                    .select(`
+                        status,
+                        ticket_tiers(
+                            price,
+                            quantity_sold
+                        )
+                    `)
+                    .eq('account_id', activeAccount.id);
+
+                if (error) throw error;
+
+                let revenue = 0;
+                let ticketsSold = 0;
+                let activeCount = 0;
+                let upcomingCount = 0;
+                let pastCount = 0;
+
+                events?.forEach((ev: any) => {
+                    // Count event statuses
+                    if (ev.status === 'published') { // Adjust based on your enum, e.g. active/published
+                        activeCount++;
+                        upcomingCount++; // Assuming published means upcoming for MVP
+                    } else if (ev.status === 'cancelled') {
+                        pastCount++; // Simplification
+                    }
+
+                    // Tally revenue and tickets
+                    if (ev.ticket_tiers) {
+                        ev.ticket_tiers.forEach((tier: any) => {
+                            ticketsSold += tier.quantity_sold || 0;
+                            revenue += (tier.quantity_sold || 0) * (tier.price || 0);
+                        });
+                    }
+                });
+
+                setStats({
+                    revenue,
+                    ticketsSold,
+                    activeEvents: activeCount,
+                    upcomingEvents: upcomingCount,
+                    pastEvents: pastCount
+                });
+
+            } catch (error) {
+                console.error("Dashboard overview fetch error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (!isOrgLoading && activeAccount) {
+            fetchDashboardData();
+        } else if (!isOrgLoading && !activeAccount) {
+            setIsLoading(false);
+        }
+    }, [isOrgLoading, activeAccount]);
     return (
         <div className={styles.container}>
             <header className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>Welcome back, John 👋</h1>
+                    <h1 className={styles.title}>
+                        {activeAccount ? `Welcome back to ${activeAccount.name} 👋` : 'Welcome back 👋'}
+                    </h1>
                     <p className={styles.subtitle}>Here is what is happening with your events today.</p>
                 </div>
-                <div className={styles.headerActions}>
-                    <Link href="/dashboard/organize/events/create" className={styles.btnPrimary}>
-                        + New Event
-                    </Link>
-                </div>
+
             </header>
 
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
                     <span className={styles.statLabel}>Total Revenue</span>
-                    <div className={styles.statValue}>KES 124,500</div>
-                    <span className={`${styles.statChange} ${styles.positive}`}>+12% from last month</span>
+                    <div className={styles.statValue}>
+                        {isLoading ? '...' : formatCurrency(stats.revenue)}
+                    </div>
                 </div>
                 <div className={styles.statCard}>
                     <span className={styles.statLabel}>Tickets Sold</span>
-                    <div className={styles.statValue}>482</div>
-                    <span className={`${styles.statChange} ${styles.positive}`}>+24 new today</span>
+                    <div className={styles.statValue}>
+                        {isLoading ? '...' : stats.ticketsSold.toLocaleString()}
+                    </div>
                 </div>
                 <div className={styles.statCard}>
                     <span className={styles.statLabel}>Active Events</span>
-                    <div className={styles.statValue}>3</div>
-                    <span className={styles.statNote}>2 upcoming, 1 live</span>
+                    <div className={styles.statValue}>
+                        {isLoading ? '...' : stats.activeEvents}
+                    </div>
+                    <span className={styles.statNote}>
+                        {isLoading ? '' : `${stats.upcomingEvents} upcoming`}
+                    </span>
                 </div>
                 <div className={styles.statCard}>
                     <span className={styles.statLabel}>Page Views</span>
@@ -64,28 +145,7 @@ export default function DashboardOverview() {
                 </div>
             </section>
 
-            {/* Recent Activity Feed */}
-            <section className={styles.activitySection}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Recent Activity</h2>
-                    <Link href="/dashboard/organize/notifications" className={styles.viewAllLink}>View All</Link>
-                </div>
-                <div className={styles.activityFeed}>
-                    {[
-                        { id: 1, text: 'You sold 5 VIP tickets for "Nairobi Tech Summit"', time: '2 mins ago' },
-                        { id: 2, text: 'New comment on "AfroBeats Festival"', time: '1 hour ago' },
-                        { id: 3, text: '"Startup Pitch Night" was approved', time: '3 hours ago' },
-                        { id: 4, text: 'Payout of KES 45,000 processed', time: 'Yesterday' },
-                    ].map(activity => (
-                        <div key={activity.id} className={styles.activityItem}>
-                            <div className={styles.activityContent}>
-                                <p className={styles.activityText}>{activity.text}</p>
-                                <span className={styles.activityTime}>{activity.time}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
+
         </div>
     );
 }

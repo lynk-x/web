@@ -1,11 +1,12 @@
 "use client";
 
 import React from 'react';
-import DataTable, { Column } from '../shared/DataTable';
-import Badge, { BadgeVariant } from '../shared/Badge';
+import DataTable, { Column } from '../../shared/DataTable';
+import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
+import { useRouter } from 'next/navigation';
 import { formatString } from '@/utils/format';
-import type { ActionItem } from '../shared/TableRowActions';
+import type { ActionItem } from '../../shared/TableRowActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
     onPageChange,
 }) => {
     const { showToast } = useToast();
+    const router = useRouter();
 
     /** Column definitions for the invoice table. */
     const columns: Column<Invoice>[] = [
@@ -79,7 +81,7 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
         {
             label: 'View Details',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-            onClick: () => showToast(`Opening invoice ${invoice.id} details...`, 'info')
+            onClick: () => router.push(`/dashboard/ads/billing/invoices/${invoice.id}`)
         }
     ];
 

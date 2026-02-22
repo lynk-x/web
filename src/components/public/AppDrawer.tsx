@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './AppDrawer.module.css';
+import { useFilters } from '@/context/FilterContext';
 
 interface AppDrawerProps {
     /** Whether the drawer is currently open. */
@@ -18,11 +19,12 @@ interface AppDrawerProps {
  * @param {AppDrawerProps} props - Component properties.
  */
 const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
-    // Changed to array for multi-selection
-    const [selectedCategories, setSelectedCategories] = useState<string[]>(['Arts & Entertainment']);
-    const [selectedTags, setSelectedTags] = useState<string[]>(['Weekend']);
-    // Changed to array for multi-selection
-    const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+    const {
+        selectedCategories, setSelectedCategories,
+        selectedTags, setSelectedTags,
+        selectedDates, setSelectedDates
+    } = useFilters();
+
     const [viewStartDate, setViewStartDate] = useState<Date>(new Date());
     const [calendarDays, setCalendarDays] = useState<Date[]>([]);
 

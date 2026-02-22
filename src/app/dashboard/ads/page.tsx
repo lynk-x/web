@@ -21,11 +21,7 @@ export default function AdsDashboard() {
                     <h1 className={styles.title}>Welcome back, John 👋</h1>
                     <p className={styles.subtitle}>Manage your campaigns and track performance.</p>
                 </div>
-                <div className={styles.headerActions}>
-                    <Link href="/dashboard/ads/campaigns/create" className={styles.btnPrimary}>
-                        + Create Campaign
-                    </Link>
-                </div>
+
             </header>
 
             {/* Key Metrics */}
@@ -45,9 +41,7 @@ export default function AdsDashboard() {
             <section className={styles.quickActions}>
                 <h2 className={styles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
-                    <Link href="/dashboard/ads/campaigns/create" className={styles.actionCard}>
-                        <span className={styles.actionLabel}>Create Campaign</span>
-                    </Link>
+
                     <Link href="/dashboard/ads/assets" className={styles.actionCard}>
                         <span className={styles.actionLabel}>Ad Assets</span>
                     </Link>

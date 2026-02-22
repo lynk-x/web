@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import ContentTable, { ContentItem } from '@/components/admin/ContentTable';
+import ContentTable, { ContentItem } from '@/components/admin/content/ContentTable';
 
 // Mock Data
 const mockContent: ContentItem[] = [

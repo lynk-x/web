@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-const AdminMap = dynamic(() => import('@/components/admin/AdminMap'), { ssr: false });
+const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), { ssr: false });
 
 // Mock Data
 const stats = [

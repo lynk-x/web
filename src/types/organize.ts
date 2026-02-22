@@ -73,7 +73,7 @@ export interface OrganizerEventFormData {
     description: string;
     category: string;
     tags: string[];
-    coverImage?: string;
+    thumbnailUrl?: string;
     isOnline: boolean;
     location: string;
     startDate: string;
@@ -88,6 +88,7 @@ export interface OrganizerEventFormData {
 
 /** A ticket tier within the event form. */
 export interface OrganizerEventTicket {
+    id?: string;
     name: string;
     price: string;
     quantity: string;

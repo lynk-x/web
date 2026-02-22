@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
-import AdsCampaignTable, { AdsCampaign } from '@/components/ads/AdsCampaignTable';
+import AdsCampaignTable, { AdsCampaign } from '@/components/ads/campaigns/AdsCampaignTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import ForumTable, { ForumThread } from '@/components/admin/ForumTable';
+import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
 
 // Mock Data
 const mockThreads: ForumThread[] = [

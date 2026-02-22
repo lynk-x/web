@@ -2,16 +2,18 @@
 
 import React from 'react';
 import styles from './AdsCampaignTable.module.css';
-import DataTable, { Column } from '../shared/DataTable';
-import Badge, { BadgeVariant } from '../shared/Badge';
+import DataTable, { Column } from '../../shared/DataTable';
+import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { formatString } from '@/utils/format';
-import type { ActionItem } from '../shared/TableRowActions';
+import type { ActionItem } from '../../shared/TableRowActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type { AdsCampaign } from '@/types/ads';
 import type { AdsCampaign } from '@/types/ads';
+
+import { useRouter } from 'next/navigation';
 
 interface AdsCampaignTableProps {
     campaigns: AdsCampaign[];
@@ -52,6 +54,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
     onPageChange,
 }) => {
     const { showToast } = useToast();
+    const router = useRouter();
 
     /** Column definitions for the ads campaign table. */
     const columns: Column<AdsCampaign>[] = [
@@ -98,14 +101,9 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
     const getActions = (campaign: AdsCampaign): ActionItem[] => {
         const actions: ActionItem[] = [
             {
-                label: 'View Analytics',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
-                onClick: () => showToast(`Loading analytics for ${campaign.name}...`, 'info'),
-            },
-            {
                 label: 'Edit Campaign',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-                onClick: () => showToast(`Opening editor for ${campaign.name}...`, 'info'),
+                onClick: () => router.push(`/dashboard/ads/campaigns/${campaign.id}/edit`),
             },
         ];
 

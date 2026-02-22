@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import CampaignTable, { Campaign } from '@/components/admin/CampaignTable';
+import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
 
 // Mock Data
 const mockCampaigns: Campaign[] = [

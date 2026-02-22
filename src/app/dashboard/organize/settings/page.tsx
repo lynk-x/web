@@ -1,20 +1,71 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import { useToast } from '@/components/ui/Toast';
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
 
 export default function OrganizerSettingsPage() {
     const { showToast } = useToast();
-    const [isSaving, setIsSaving] = useState(false);
+    const { activeAccount, refreshAccounts } = useOrganization();
+    const supabase = createClient();
 
-    const handleSave = () => {
+    // Form State
+    const [isSaving, setIsSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        website: '',
+        description: '',
+        support_email: '',
+        phone_number: ''
+    });
+
+    // Load active account data into form
+    useEffect(() => {
+        if (activeAccount) {
+            setFormData({
+                name: activeAccount.name || '',
+                website: activeAccount.website || '',
+                description: activeAccount.description || '',
+                support_email: activeAccount.support_email || '',
+                phone_number: activeAccount.phone_number || ''
+            });
+        }
+    }, [activeAccount]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!activeAccount) return;
+
         setIsSaving(true);
-        showToast('Saving organizer preferences...', 'info');
-        setTimeout(() => {
+        try {
+            const { error } = await supabase
+                .from('accounts')
+                .update({
+                    name: formData.name,
+                    website: formData.website,
+                    description: formData.description,
+                    support_email: formData.support_email,
+                    phone_number: formData.phone_number
+                })
+                .eq('id', activeAccount.id);
+
+            if (error) throw error;
+
+            showToast('Organizer settings updated successfully.', 'success');
+            if (refreshAccounts) await refreshAccounts(); // Update the global context
+
+        } catch (error: any) {
+            console.error("Error updating settings:", error);
+            showToast(error.message || 'Failed to update settings.', 'error');
+        } finally {
             setIsSaving(false);
-            showToast('Organizer settings updated.', 'success');
-        }, 1500);
+        }
     };
 
     return (
@@ -44,15 +95,15 @@ export default function OrganizerSettingsPage() {
                     <h2 className={styles.sectionTitle}>Organization Profile</h2>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Organization Name</label>
-                        <input type="text" className={styles.input} defaultValue="Lynk-X Events" />
+                        <input type="text" name="name" className={styles.input} value={formData.name} onChange={handleInputChange} />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Website URL</label>
-                        <input type="text" className={styles.input} defaultValue="https://lynk-x.com" />
+                        <input type="text" name="website" className={styles.input} value={formData.website} onChange={handleInputChange} placeholder="https://" />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Organization Bio</label>
-                        <textarea className={styles.textarea} defaultValue="Official event organizer for premium experiences in East Africa." />
+                        <textarea name="description" className={styles.textarea} value={formData.description} onChange={handleInputChange} placeholder="Tell attendees about your organization..." />
                     </div>
                 </section>
 
@@ -61,11 +112,11 @@ export default function OrganizerSettingsPage() {
                     <h2 className={styles.sectionTitle}>Support Contact</h2>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Support Email</label>
-                        <input type="email" className={styles.input} defaultValue="support@lynk-x.com" />
+                        <input type="email" name="support_email" className={styles.input} value={formData.support_email} onChange={handleInputChange} placeholder="support@domain.com" />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Support Phone</label>
-                        <input type="text" className={styles.input} defaultValue="+254 712 345678" />
+                        <input type="text" name="phone_number" className={styles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
                     </div>
                 </section>
             </div>

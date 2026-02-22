@@ -1,5 +1,8 @@
+"use client";
+
 import React from 'react';
 import styles from './SearchBar.module.css';
+import { useFilters } from '@/context/FilterContext';
 
 interface SearchBarProps {
     onFocus?: () => void;
@@ -7,12 +10,16 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onFocus, onBlur }) => {
+    const { searchTerm, setSearchTerm } = useFilters();
+
     return (
         <div className={styles.searchContainer}>
             <input
                 type="text"
                 placeholder="Search for an event"
                 className={styles.input}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={onFocus}
                 onBlur={onBlur}
             />

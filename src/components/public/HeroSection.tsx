@@ -42,7 +42,7 @@ const HeroSection: React.FC<HeroProps> = ({ featuredEvents }) => {
                     transition={{ duration: 0.8 }}
                 >
                     <img
-                        src={currentEvent.cover_image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87"}
+                        src={currentEvent.thumbnail_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87"}
                         alt="Hero Backdrop"
                         className={styles.backdropImage}
                     />

@@ -7,7 +7,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     const { id } = await params;
 
     const { data: event, error } = await supabase
-        .from('events')
+        .from('public_events_view')
         .select('*')
         .eq('id', id)
         .single();
@@ -23,14 +23,15 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                 id: id,
                 title: isMock ? `Event ${mockIndex + 1} Title` : "Nairobi Tech Summit 2024",
                 description: "Join the biggest tech innovators in East Africa for a 3-day summit on AI, Blockchain, and the Future of Work. This is a sample description to demonstrate the layout.",
-                start_time: new Date().toISOString(),
-                end_time: new Date(Date.now() + 86400000).toISOString(), // +1 day
+                start_datetime: new Date().toISOString(),
+                end_datetime: new Date(Date.now() + 86400000).toISOString(), // +1 day
                 location_name: "KICC, Nairobi",
-                cover_image_url: `https://images.unsplash.com/photo-${1540575467063 + mockIndex}-178a50c2df87`,
+                thumbnail_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80",
                 category: "Technology",
-                low_price: 1000 + (mockIndex * 100),
+                account_id: "mock-org",
+                organizer_name: "Mock Organization",
+                low_price: 50,
                 currency: "KES",
-                organizer_id: "mock-org"
             };
             return <EventDetailsView event={mockEvent} />;
         }

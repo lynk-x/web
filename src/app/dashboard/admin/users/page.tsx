@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import UserTable, { User } from '@/components/admin/UserTable';
+import UserTable, { User } from '@/components/admin/users/UserTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';

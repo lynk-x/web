@@ -3,7 +3,7 @@
 import React from 'react';
 import styles from '../page.module.css';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import OutreachPreview from '@/components/admin/OutreachPreview';
+import OutreachPreview from '@/components/admin/outreach/OutreachPreview';
 
 export default function AdminOutreachPage() {
     const [subject, setSubject] = React.useState('');

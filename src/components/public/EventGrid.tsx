@@ -43,11 +43,11 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
                         key={event.id}
                         id={event.id}
                         name={event.title}
-                        date={new Date(event.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        date={new Date(event.start_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         category={event.category || 'General'}
                         isActive={false}
                         price={(event.low_price && event.currency) ? `${event.currency} ${event.low_price}` : 'Free'}
-                        image={event.cover_image_url}
+                        image={event.thumbnail_url}
                     />
                 ))}
             </div>

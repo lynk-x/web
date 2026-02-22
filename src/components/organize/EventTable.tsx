@@ -22,6 +22,9 @@ interface EventTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    onEdit?: (event: Event) => void;
+    onDelete?: (event: Event) => void;
+    onStatusChange?: (event: Event, newStatus: 'draft' | 'published' | 'cancelled') => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -50,6 +53,9 @@ const EventTable: React.FC<EventTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    onEdit,
+    onDelete,
+    onStatusChange
 }) => {
     const { showToast } = useToast();
 
@@ -96,45 +102,51 @@ const EventTable: React.FC<EventTableProps> = ({
             {
                 label: 'View Details',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => showToast(`Viewing details for ${event.title}`, 'info')
-            },
-            {
-                label: 'Edit Event',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-                onClick: () => showToast(`Redirecting to edit ${event.title}...`, 'info')
+                onClick: () => showToast(`Viewing details for ${event.title}`, 'info') // Usually a link to public page
             }
         ];
 
-        if (event.status === 'pending') {
+        if (onEdit) {
             actions.push({
-                label: 'Approve',
+                label: 'Edit Event',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
+                onClick: () => onEdit(event)
+            });
+        }
+
+        if (event.status === 'pending' && onStatusChange) {
+            actions.push({
+                label: 'Publish',
                 variant: 'success',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                onClick: () => showToast(`Event "${event.title}" approved!`, 'success')
-            });
-            actions.push({
-                label: 'Reject',
-                variant: 'danger',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                onClick: () => showToast(`Event "${event.title}" rejected.`, 'error')
+                onClick: () => onStatusChange(event, 'published')
             });
         }
 
-        if (event.status === 'active') {
+        if (event.status === 'active' && onStatusChange) {
             actions.push({
                 label: 'Suspend',
-                variant: 'danger',
+                variant: 'default',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
-                onClick: () => showToast(`Event "${event.title}" has been suspended.`, 'warning')
+                onClick: () => onStatusChange(event, 'draft')
+            });
+
+            actions.push({
+                label: 'Cancel Event',
+                variant: 'danger',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                onClick: () => onStatusChange(event, 'cancelled')
             });
         }
 
-        actions.push({
-            label: 'Delete Event',
-            variant: 'danger',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
-            onClick: () => showToast(`Initiating deletion for ${event.title}...`, 'error')
-        });
+        if (onDelete) {
+            actions.push({
+                label: 'Delete Event',
+                variant: 'danger',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
+                onClick: () => onDelete(event)
+            });
+        }
 
         return actions;
     };

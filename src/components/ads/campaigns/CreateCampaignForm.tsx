@@ -5,10 +5,27 @@ import styles from './CreateCampaignForm.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function CreateCampaignForm() {
+export interface CampaignData {
+    id?: string;
+    name: string;
+    budget: string;
+    startDate: string;
+    endDate: string;
+    adTitle: string;
+    adText: string;
+    targetUrl: string;
+    imageUrl?: string;
+}
+
+interface CreateCampaignFormProps {
+    initialData?: CampaignData;
+    isEditing?: boolean;
+}
+
+export default function CreateCampaignForm({ initialData, isEditing = false }: CreateCampaignFormProps) {
     const router = useRouter();
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CampaignData>(initialData || {
         name: '',
         budget: '',
         startDate: '',
@@ -33,10 +50,10 @@ export default function CreateCampaignForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         // Here we would submit the data to the backend
-        console.log('Submitting campaign:', formData);
+        console.log(isEditing ? 'Updating campaign:' : 'Launching campaign:', formData);
 
         // Mock successful submission
-        router.push('/dashboard/ads');
+        router.push('/dashboard/ads/campaigns');
     };
 
     const steps = [
@@ -211,9 +228,9 @@ export default function CreateCampaignForm() {
                 {/* Action Buttons */}
                 <div className={styles.actions}>
                     {step === 1 ? (
-                        <Link href="/dashboard/ads" className={styles.btnSecondary} style={{ display: 'inline-block', textDecoration: 'none', lineHeight: '20px' }}>
+                        <button type="button" onClick={() => router.back()} className={`${styles.btn} ${styles.btnSecondary}`}>
                             Cancel
-                        </Link>
+                        </button>
                     ) : (
                         <button type="button" onClick={prevStep} className={`${styles.btn} ${styles.btnSecondary}`}>
                             Back

@@ -1,25 +1,27 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import EventTable, { Event } from '@/components/organize/EventTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
-
-// Mock Data for Organizer Events
-const mockEvents: Event[] = [
-    { id: '1', title: 'Nairobi Tech Summit', organizer: 'You', date: 'Oct 12, 2025 • 9:00 AM', location: 'KICC, Nairobi', status: 'active', attendees: 1250, thumbnailUrl: '/images/event1.jpg' },
-    { id: '2', title: 'Mombasa Music Fest', organizer: 'You', date: 'Nov 05, 2025 • 4:00 PM', location: 'Mama Ngina Waterfront', status: 'pending', attendees: 0, thumbnailUrl: '/images/event2.jpg' },
-    { id: '3', title: 'Kisumu Art Expo', organizer: 'You', date: 'Dec 10, 2025 • 10:00 AM', location: 'Kisumu Museum', status: 'past', attendees: 450, thumbnailUrl: '/images/event3.jpg' },
-    { id: '4', title: 'Nakuru Rugby Sevens', organizer: 'You', date: 'Jan 15, 2026 • 2:00 PM', location: 'ASK Showground', status: 'rejected', attendees: 0, thumbnailUrl: '/images/event4.jpg' },
-    { id: '5', title: 'Eldoret Marathon', organizer: 'You', date: 'Feb 20, 2026 • 6:00 AM', location: 'Eldoret Town', status: 'active', attendees: 3000, thumbnailUrl: '/images/event5.jpg' },
-];
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
+import type { OrganizerEvent } from '@/types/organize';
 
 // Main Component
 export default function OrganizerEventsPage() {
     const { showToast } = useToast();
+    const router = useRouter();
+    const supabase = createClient();
+    const { activeAccount, isLoading: isOrgLoading, accounts } = useOrganization();
+
+    // Data State
+    const [events, setEvents] = useState<OrganizerEvent[]>([]);
+    const [isLoadingEvents, setIsLoadingEvents] = useState(true);
 
     // Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -32,15 +34,65 @@ export default function OrganizerEventsPage() {
     const [itemsPerPage] = useState(2); // Reduced for pagination visibility
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // Initialization & Data Fetching
+    useEffect(() => {
+        if (!isOrgLoading) {
+            if (accounts.length === 0) {
+                router.push('/dashboard/onboarding');
+            } else if (activeAccount) {
+                fetchEvents();
+            }
+        }
+    }, [isOrgLoading, accounts.length, activeAccount, router]);
+
+    const fetchEvents = async () => {
+        setIsLoadingEvents(true);
+        try {
+            const { data, error } = await supabase
+                .from('public_events_view')
+                .select('*')
+                .eq('account_id', activeAccount?.id);
+
+            if (error) throw error;
+
+            // Map DB format to OrganizerEvent table format
+            const formattedEvents: OrganizerEvent[] = (data || []).map(e => {
+                // Determine table status from db event_status ('draft', 'published', 'completed', etc)
+                // In a real app we'd unify these types, but for now we map them for the UI table
+                let uiStatus: OrganizerEvent['status'] = 'active';
+                if (e.status === 'draft') uiStatus = 'pending';
+                if (e.status === 'completed' || e.status === 'archived') uiStatus = 'past';
+
+                return {
+                    id: e.id,
+                    title: e.title,
+                    organizer: e.organizer_name || 'Organization',
+                    date: new Date(e.start_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                    location: e.location_name,
+                    status: uiStatus,
+                    attendees: 0, // Fallback until we aggregate ticket sales
+                    thumbnailUrl: e.cover_image_url
+                };
+            });
+
+            setEvents(formattedEvents);
+        } catch (error) {
+            console.error("Error fetching events:", error);
+            showToast('Failed to load events.', 'error');
+        } finally {
+            setIsLoadingEvents(false);
+        }
+    };
+
     // Filter Logic
-    const filteredEvents = mockEvents.filter(event => {
+    const filteredEvents = events.filter(event => {
         const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             event.location.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStatus = statusFilter === 'all'
             ? true
             : statusFilter === 'draft'
-                ? event.status === 'pending' || event.status === 'rejected' // Mapping draft concepts to existing statuses
+                ? event.status === 'pending' || event.status === 'rejected'
                 : event.status === statusFilter;
 
         return matchesSearch && matchesStatus;
@@ -85,12 +137,59 @@ export default function OrganizerEventsPage() {
         }
     };
 
-    const confirmDelete = () => {
-        // Here you would call your API to delete the events
-        showToast(`Successfully deleted ${selectedIds.size} events.`, 'success');
-        setSelectedIds(new Set());
-        // In a real app, you'd reload data here
+    const confirmDelete = async () => {
+        showToast('Processing deletion...', 'info');
+        try {
+            // Delete from events table directly (triggers will cascade where safe, or reject where RESTRICTED)
+            const { error } = await supabase
+                .from('events')
+                .delete()
+                .in('id', Array.from(selectedIds));
+
+            if (error) throw error;
+
+            showToast(`Successfully deleted ${selectedIds.size} events.`, 'success');
+            setSelectedIds(new Set());
+            fetchEvents(); // Reload
+        } catch (error: any) {
+            console.error("Delete failed:", error);
+            showToast(error.message || 'Failed to delete events. Check if tickets have been sold.', 'error');
+        } finally {
+            setIsDeleteModalOpen(false);
+        }
     };
+
+    // --- Row Actions ---
+    const handleEdit = (event: OrganizerEvent) => {
+        router.push(`/dashboard/organize/events/edit/${event.id}`);
+    };
+
+    const handleStatusChange = async (event: OrganizerEvent, newStatus: string) => {
+        try {
+            const { error } = await supabase
+                .from('events')
+                .update({ status: newStatus })
+                .eq('id', event.id);
+
+            if (error) throw error;
+            showToast(`Event status updated to ${newStatus}.`, 'success');
+            fetchEvents();
+        } catch (error: any) {
+            console.error("Status update failed:", error);
+            showToast('Failed to update event status.', 'error');
+        }
+    };
+
+    const handleDeleteSingle = (event: OrganizerEvent) => {
+        setSelectedIds(new Set([event.id]));
+        setIsDeleteModalOpen(true);
+    };
+
+    if (isOrgLoading || isLoadingEvents) {
+        return <div className={styles.dashboardPage} style={{ padding: '40px' }}>Loading Dashboard...</div>;
+    }
+
+    if (!activeAccount) return null; // Let router redirection handle it
 
     return (
         <div className={styles.dashboardPage}>
@@ -164,6 +263,9 @@ export default function OrganizerEventsPage() {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteSingle}
+                    onStatusChange={handleStatusChange as any}
                 />
             </div>
 
