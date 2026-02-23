@@ -161,6 +161,12 @@
     font-weight: 600;
 }
 
+.chipActive:hover {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    opacity: 0.9;
+}
+
 .filterGroup {
     display: flex;
     gap: 8px;

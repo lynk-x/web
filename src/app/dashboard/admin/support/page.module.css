@@ -128,6 +128,12 @@
     opacity: 1;
 }
 
+.activeFilter:hover {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    opacity: 0.9;
+}
+
 .bulkActions {
     display: flex;
     align-items: center;

@@ -144,7 +144,7 @@ export default function AdminModerationPage() {
         <div className={styles.container}>
             <header className={styles.header}>
                 <div>
-                    <h1 className={adminStyles.title}>Content Moderation</h1>
+                    <h1 className={adminStyles.title}>Moderation Overview</h1>
                     <p className={adminStyles.subtitle}>Review and manage flagged content and users.</p>
                 </div>
             </header>

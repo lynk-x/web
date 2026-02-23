@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import styles from './events.module.css';
+import styles from './EventForm.module.css';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-
+import BackButton from '@/components/shared/BackButton';
 import type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticket } from '@/types/organize';
 
 // ─── Public Types ────────────────────────────────────────────────────────────
@@ -38,6 +38,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const [activeTab, setActiveTab] = useState<Tab>('cover');
     const [tagInput, setTagInput] = useState('');
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
 
     // Image State
     const [thumbnailUrlFile, setThumbnailUrlFile] = useState<File | null>(null);
@@ -76,15 +77,59 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         }
     }, [initialData, isEditMode]); // Run once on mount or when initialData changes
 
-    // Auto-Save Draft
+    // Auto-Save Draft & Dirty Check
     useEffect(() => {
+        // Simple dirty check
+        const hasInitialData = !!initialData && Object.keys(initialData).length > 0;
+        const baseData = hasInitialData ? initialData : {
+            title: '',
+            description: '',
+            category: 'Arts&Entertainment',
+            tags: [],
+            thumbnailUrl: '',
+            isOnline: false,
+            location: '',
+            startDate: '',
+            startTime: '',
+            endDate: '',
+            endTime: '',
+            isPrivate: false,
+            isPaid: false,
+            limit: '',
+            tickets: []
+        };
+
+        const currentDataString = JSON.stringify(formData);
+        const baseDataString = JSON.stringify({ ...baseData, ...initialData }); // Approximation
+
+        // More robust dirty check for this complex form
+        const checkIfDirty = () => {
+            if (formData.title !== (baseData.title || '')) return true;
+            if (formData.description !== (baseData.description || '')) return true;
+            if (formData.location !== (baseData.location || '')) return true;
+            if (formData.tickets.length !== (baseData.tickets?.length || 0)) return true;
+            return false;
+        };
+
+        const dirty = checkIfDirty();
+        setIsDirty(dirty);
+
+        if (dirty) {
+            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+                e.preventDefault();
+                e.returnValue = '';
+            };
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+        }
+
         if (!isEditMode && formData.title) {
             const timeoutId = setTimeout(() => {
                 setDraft(formData);
             }, 1000); // Debounce 1s
             return () => clearTimeout(timeoutId);
         }
-    }, [formData, isEditMode, setDraft]);
+    }, [formData, isEditMode, setDraft, initialData]);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -278,10 +323,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         <div className={styles.container}>
             {/* ... (existing header) ... */}
             <header className={styles.header}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button onClick={() => router.back()} className={styles.cancelBtn} style={{ padding: '8px', border: 'none' }} title="Go Back">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    </button>
+                <div>
+                    <BackButton label="Back to Events" isDirty={isDirty} />
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <h1 className={styles.title}>{pageTitle}</h1>
@@ -364,12 +407,16 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 <input
                                     type="text"
                                     name="title"
-                                    className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
+                                    className={`${styles.input} ${errors.title ? 'input-error' : (formData.title ? 'input-success' : '')}`}
                                     placeholder="Give it a short, distinct name"
                                     value={formData.title}
                                     onChange={handleInputChange}
                                 />
-                                <p className={styles.errorMessage}>{errors.title}</p>
+                                {errors.title ? (
+                                    <p className="validation-hint error">{errors.title}</p>
+                                ) : formData.title ? (
+                                    <p className="validation-hint success">Looks Good!</p>
+                                ) : null}
                             </div>
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                                 <label className={styles.label}>Description</label>

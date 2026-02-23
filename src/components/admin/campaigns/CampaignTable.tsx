@@ -2,6 +2,7 @@
 
 import React from 'react';
 import styles from './CampaignTable.module.css';
+import { useRouter } from 'next/navigation';
 import DataTable, { Column } from '../../shared/DataTable';
 import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
@@ -52,6 +53,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
     onPageChange,
 }) => {
     const { showToast } = useToast();
+    const router = useRouter();
 
     /** Column definitions for the campaign table. */
     const columns: Column<Campaign>[] = [
@@ -105,7 +107,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
             {
                 label: 'View Details',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => showToast(`Opening campaign details for ${campaign.name}...`, 'info'),
+                onClick: () => router.push(`/dashboard/admin/campaigns/${campaign.id}`),
             },
         ];
 

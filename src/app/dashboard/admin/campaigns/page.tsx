@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
+import Link from 'next/link';
 
 // Mock Data
 const mockCampaigns: Campaign[] = [
@@ -104,10 +105,12 @@ export default function AdminCampaignsPage() {
         <div className={styles.container}>
             <header className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>Ad Campaign Oversight</h1>
+                    <h1 className={styles.title}>Ad Campaign Management</h1>
                     <p className={adminStyles.subtitle}>Review and moderate all advertising campaigns across the platform.</p>
                 </div>
-                <button className={adminStyles.btnPrimary}>+ Create Campaign</button>
+                <Link href="/dashboard/admin/campaigns/create">
+                    <button className={adminStyles.btnPrimary}>+ Create Campaign</button>
+                </Link>
             </header>
 
             <TableToolbar

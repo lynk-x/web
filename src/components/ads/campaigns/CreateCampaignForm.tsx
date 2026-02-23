@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './CreateCampaignForm.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,12 +20,19 @@ export interface CampaignData {
 interface CreateCampaignFormProps {
     initialData?: CampaignData;
     isEditing?: boolean;
+    redirectPath?: string;
+    onDirtyChange?: (isDirty: boolean) => void;
 }
 
-export default function CreateCampaignForm({ initialData, isEditing = false }: CreateCampaignFormProps) {
+export default function CreateCampaignForm({
+    initialData,
+    isEditing = false,
+    redirectPath = '/dashboard/ads/campaigns',
+    onDirtyChange
+}: CreateCampaignFormProps) {
     const router = useRouter();
-    const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState<CampaignData>(initialData || {
+    const [activeTab, setActiveTab] = useState('details');
+    const defaultData = initialData || {
         name: '',
         budget: '',
         startDate: '',
@@ -34,7 +41,24 @@ export default function CreateCampaignForm({ initialData, isEditing = false }: C
         adText: '',
         targetUrl: '',
         imageUrl: ''
-    });
+    };
+    const [formData, setFormData] = useState<CampaignData>(defaultData);
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+    // Dirty Check
+    useEffect(() => {
+        const isDirty = JSON.stringify(formData) !== JSON.stringify(defaultData);
+        onDirtyChange?.(isDirty);
+
+        if (isDirty) {
+            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+                e.preventDefault();
+                e.returnValue = '';
+            };
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+        }
+    }, [formData, onDirtyChange]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -42,43 +66,72 @@ export default function CreateCampaignForm({ initialData, isEditing = false }: C
             ...prev,
             [name]: value
         }));
+        if (!touched[name]) {
+            setTouched(prev => ({ ...prev, [name]: true }));
+        }
     };
 
-    const nextStep = () => setStep(prev => prev + 1);
-    const prevStep = () => setStep(prev => prev - 1);
+    const nextTab = (tab: string) => setActiveTab(tab);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         // Here we would submit the data to the backend
         console.log(isEditing ? 'Updating campaign:' : 'Launching campaign:', formData);
 
+        onDirtyChange?.(false);
         // Mock successful submission
-        router.push('/dashboard/ads/campaigns');
+        router.push(redirectPath);
     };
 
-    const steps = [
-        { number: 1, label: 'Campaign Details' },
-        { number: 2, label: 'Ad Creative' },
-        { number: 3, label: 'Review & Launch' }
-    ];
+    const getInputClass = (name: string, baseClass: string) => {
+        if (!touched[name]) return baseClass;
+        const isValid = !!formData[name as keyof typeof formData];
+        return `${baseClass} ${isValid ? 'input-success' : 'input-error'}`;
+    };
+
+    const renderValidationHint = (name: string) => {
+        if (!touched[name]) return null;
+        const isValid = !!formData[name as keyof typeof formData];
+        return isValid ? (
+            <div className="validation-hint success">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Valid
+            </div>
+        ) : (
+            <div className="validation-hint error">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                Required
+            </div>
+        );
+    };
 
     return (
         <div className={styles.container}>
-            {/* Stepper */}
-            <div className={styles.stepper}>
-                {steps.map((s) => (
-                    <div key={s.number} className={`${styles.step} ${step === s.number ? styles.activeStep : ''} ${step > s.number ? styles.completedStep : ''}`}>
-                        <div className={styles.stepNumber}>
-                            {step > s.number ? '✓' : s.number}
-                        </div>
-                        <span className={styles.stepLabel}>{s.label}</span>
-                    </div>
-                ))}
+            {/* Tabs */}
+            <div className={styles.tabs}>
+                <div
+                    className={`${styles.tabItem} ${activeTab === 'details' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('details')}
+                >
+                    Campaign Details
+                </div>
+                <div
+                    className={`${styles.tabItem} ${activeTab === 'creative' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('creative')}
+                >
+                    Ad Creative
+                </div>
+                <div
+                    className={`${styles.tabItem} ${activeTab === 'review' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('review')}
+                >
+                    Review & Launch
+                </div>
             </div>
 
             <form onSubmit={handleSubmit}>
-                {/* Step 1: Campaign Details */}
-                {step === 1 && (
+                {/* Tab: Campaign Details */}
+                {activeTab === 'details' && (
                     <div className={styles.formSection}>
                         <div className={styles.inputGroup}>
                             <label className={styles.label} htmlFor="name">Campaign Name</label>
@@ -86,12 +139,13 @@ export default function CreateCampaignForm({ initialData, isEditing = false }: C
                                 type="text"
                                 id="name"
                                 name="name"
-                                className={styles.input}
+                                className={getInputClass('name', styles.input)}
                                 placeholder="e.g. Summer Festival Promo"
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 required
                             />
+                            {renderValidationHint('name')}
                         </div>
 
                         <div className={styles.inputGroup}>
@@ -137,8 +191,8 @@ export default function CreateCampaignForm({ initialData, isEditing = false }: C
                     </div>
                 )}
 
-                {/* Step 2: Ad Creative */}
-                {step === 2 && (
+                {/* Tab: Ad Creative */}
+                {activeTab === 'creative' && (
                     <div className={styles.formSection}>
                         <div className={styles.inputGroup}>
                             <label className={styles.label} htmlFor="adTitle">Ad Headline</label>
@@ -196,8 +250,8 @@ export default function CreateCampaignForm({ initialData, isEditing = false }: C
                     </div>
                 )}
 
-                {/* Step 3: Review */}
-                {step === 3 && (
+                {/* Tab: Review */}
+                {activeTab === 'review' && (
                     <div className={styles.formSection}>
                         <h3>Review Campaign</h3>
                         <div className={styles.previewCard}>
@@ -226,28 +280,36 @@ export default function CreateCampaignForm({ initialData, isEditing = false }: C
                 )}
 
                 {/* Action Buttons */}
-                <div className={styles.actions}>
-                    {step === 1 ? (
-                        <button type="button" onClick={() => router.back()} className={`${styles.btn} ${styles.btnSecondary}`}>
-                            Cancel
-                        </button>
-                    ) : (
-                        <button type="button" onClick={prevStep} className={`${styles.btn} ${styles.btnSecondary}`}>
-                            Back
-                        </button>
-                    )}
+                <div className={styles.actions} style={{ justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '12px', flexDirection: 'row-reverse' }}>
+                        {activeTab === 'details' && (
+                            <button type="button" onClick={() => nextTab('creative')} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                Next: Ad Creative
+                            </button>
+                        )}
+                        {activeTab === 'creative' && (
+                            <button type="button" onClick={() => nextTab('review')} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                Next: Review
+                            </button>
+                        )}
+                        {activeTab === 'review' && (
+                            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
+                                Launch Campaign
+                            </button>
+                        )}
 
-                    {step < 3 ? (
-                        <button type="button" onClick={nextStep} className={`${styles.btn} ${styles.btnPrimary}`}>
-                            Next Step
-                        </button>
-                    ) : (
-                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
-                            Launch Campaign
-                        </button>
-                    )}
+                        {(activeTab === 'creative' || activeTab === 'review') && (
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab(activeTab === 'creative' ? 'details' : 'creative')}
+                                className={`${styles.btn} ${styles.btnSecondary}`}
+                            >
+                                Back
+                            </button>
+                        )}
+                    </div>
                 </div>
             </form>
-        </div>
+        </div >
     );
 }

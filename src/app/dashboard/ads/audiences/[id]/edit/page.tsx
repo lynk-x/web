@@ -1,8 +1,9 @@
 "use client";
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import AudienceForm from '@/components/ads/audiences/AudienceForm';
-import styles from '../../page.module.css';
+import BackButton from '@/components/shared/BackButton';
+import styles from '@/app/dashboard/ads/page.module.css';
 
 // Mock Data - In a real app this would come from an API/Database
 const mockAudiences = [
@@ -14,6 +15,7 @@ const mockAudiences = [
 
 export default function EditAudiencePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const [isDirty, setIsDirty] = useState(false);
 
     // Find audience by ID
     const audience = mockAudiences.find(a => a.id === id);
@@ -30,12 +32,13 @@ export default function EditAudiencePage({ params }: { params: Promise<{ id: str
         <div className={styles.container}>
             <header className={styles.header}>
                 <div>
+                    <BackButton label="Back to Audiences" isDirty={isDirty} />
                     <h1 className={styles.title}>Edit Audience</h1>
                     <p className={styles.subtitle}>Update targeting criteria for "{audience.name}".</p>
                 </div>
             </header>
 
-            <AudienceForm initialData={audience} isEditing={true} />
+            <AudienceForm initialData={audience} isEditing={true} onDirtyChange={setIsDirty} />
         </div>
     );
 }

@@ -3,8 +3,7 @@
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-xl);
     padding: 40px;
-    max-width: 1100px;
-    margin: 0 auto;
+    width: 100%;
 }
 
 .formSection {
@@ -31,7 +30,7 @@
     padding: 14px 20px;
     border-radius: var(--radius-md);
     border: 1px solid var(--color-interface-outline);
-    background-color: var(--color-interface-surface);
+    background-color: rgba(255, 255, 255, 0.05);
     color: var(--color-utility-primaryText);
     font-size: 16px;
     transition: border-color 0.2s;

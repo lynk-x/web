@@ -97,3 +97,14 @@ export interface OrganizerEventTicket {
     saleEnd?: string;
     maxPerOrder?: string;
 }
+
+/** An attendee in the event's attendee list. */
+export interface Attendee {
+    id: string;
+    name: string;
+    email: string;
+    ticketType: string;
+    purchaseDate: string;
+    status: 'checked_in' | 'registered' | 'cancelled';
+    orderId: string;
+}

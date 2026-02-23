@@ -3,10 +3,12 @@
 import React from 'react';
 import styles from './EventTable.module.css';
 import DataTable, { Column } from '../shared/DataTable';
+import { useRouter } from 'next/navigation';
 import Badge, { BadgeVariant } from '../shared/Badge';
 import { useToast } from '../ui/Toast';
 import { formatString } from '@/utils/format';
 import type { ActionItem } from '../shared/TableRowActions';
+import { exportToCSV } from '@/utils/export';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -58,6 +60,7 @@ const EventTable: React.FC<EventTableProps> = ({
     onStatusChange
 }) => {
     const { showToast } = useToast();
+    const router = useRouter();
 
     /** Column definitions for the event moderation table. */
     const columns: Column<Event>[] = [
@@ -102,7 +105,12 @@ const EventTable: React.FC<EventTableProps> = ({
             {
                 label: 'View Details',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => showToast(`Viewing details for ${event.title}`, 'info') // Usually a link to public page
+                onClick: () => router.push(`/event/${event.id}`)
+            },
+            {
+                label: 'Attendee List',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
+                onClick: () => router.push(`/dashboard/organize/events/${event.id}/attendees`)
             }
         ];
 
@@ -114,29 +122,31 @@ const EventTable: React.FC<EventTableProps> = ({
             });
         }
 
-        if (event.status === 'pending' && onStatusChange) {
-            actions.push({
-                label: 'Publish',
-                variant: 'success',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                onClick: () => onStatusChange(event, 'published')
-            });
-        }
+        if (onStatusChange) {
+            if (event.status === 'pending') {
+                actions.push({
+                    label: 'Publish',
+                    variant: 'success',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+                    onClick: () => onStatusChange(event, 'published')
+                });
+            }
 
-        if (event.status === 'active' && onStatusChange) {
-            actions.push({
-                label: 'Suspend',
-                variant: 'default',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
-                onClick: () => onStatusChange(event, 'draft')
-            });
+            if (event.status === 'active') {
+                actions.push({
+                    label: 'Suspend',
+                    variant: 'default',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
+                    onClick: () => onStatusChange(event, 'draft')
+                });
 
-            actions.push({
-                label: 'Cancel Event',
-                variant: 'danger',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                onClick: () => onStatusChange(event, 'cancelled')
-            });
+                actions.push({
+                    label: 'Cancel Event',
+                    variant: 'danger',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                    onClick: () => onStatusChange(event, 'cancelled')
+                });
+            }
         }
 
         if (onDelete) {
@@ -147,6 +157,25 @@ const EventTable: React.FC<EventTableProps> = ({
                 onClick: () => onDelete(event)
             });
         }
+
+        actions.push({
+            label: 'View Logs',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>,
+            onClick: () => {
+                showToast(`Opening audit logs for ${event.title}...`, 'info');
+                router.push(`/dashboard/admin/audit-logs?search=${encodeURIComponent(event.title)}`);
+            }
+        });
+
+        actions.push({
+            label: 'Export as CSV',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+            onClick: () => {
+                showToast(`Exporting data for ${event.title}`, 'info');
+                exportToCSV([event], `event_export_${event.id}`);
+                showToast('Export successful.', 'success');
+            }
+        });
 
         return actions;
     };

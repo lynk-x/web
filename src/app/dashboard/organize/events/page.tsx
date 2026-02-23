@@ -247,7 +247,7 @@ export default function OrganizerEventsPage() {
                 selectedCount={selectedIds.size}
                 onCancel={() => setSelectedIds(new Set())}
                 actions={[
-                    { label: 'Guest List', onClick: () => showToast(`Generating guest list for ${selectedIds.size} events...`, 'info'), variant: 'default' },
+                    { label: 'Attendee List', onClick: () => showToast(`Generating attendee list for ${selectedIds.size} events...`, 'info'), variant: 'default' },
                     { label: 'Delete', onClick: () => handleBulkAction('delete'), variant: 'danger' },
                     { label: 'Duplicate', onClick: () => handleBulkAction('duplicate'), variant: 'default' }
                 ]}

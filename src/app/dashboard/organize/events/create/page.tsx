@@ -1,6 +1,6 @@
 "use client";
 
-import EventForm from '../EventForm';
+import EventForm from '@/components/organize/EventForm';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';

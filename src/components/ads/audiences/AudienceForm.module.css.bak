@@ -1,0 +1,141 @@
+.container {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.formSection {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+}
+
+.input,
+.select,
+.textarea {
+    padding: 14px 20px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-interface-outline);
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--color-utility-primaryText);
+    font-size: 16px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
+    background-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 4px rgba(0, 255, 0, 0.05);
+}
+
+.textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.locationSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.locationGrid {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr;
+    gap: 16px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-interface-outline);
+}
+
+.btn {
+    padding: 14px 32px;
+    border-radius: var(--radius-full);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btnPrimary {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+}
+
+.btnPrimary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btnSecondary {
+    background-color: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+}
+
+.btnSecondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.estimateCard {
+    background: linear-gradient(135deg, rgba(32, 249, 40, 0.1) 0%, rgba(32, 249, 40, 0.02) 100%);
+    border: 1px solid rgba(32, 249, 40, 0.3);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    margin-top: 16px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.estimateTitle {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-brand-primary);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.estimateValue {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--color-utility-primaryText);
+    margin: 8px 0;
+}
+
+.estimateSub {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 4px;
+}

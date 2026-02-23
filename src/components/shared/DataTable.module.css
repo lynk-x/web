@@ -10,8 +10,8 @@
 .tableContainer {
     background-color: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
-    border-radius: var(--radius-lg);
-    overflow: visible;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
 }
 
 .table {
@@ -46,7 +46,7 @@
 }
 
 .rowSelected {
-    background-color: rgba(32, 249, 40, 0.05) !important;
+    background-color: rgba(var(--color-brand-primary-rgb), 0.05) !important;
 }
 
 /* Actions column — right-aligned */

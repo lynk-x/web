@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import TicketTable, { Ticket } from '@/components/admin/support/TicketTable';
+import Link from 'next/link';
 
 // Mock Data
 const mockTickets: Ticket[] = [
@@ -108,12 +109,14 @@ export default function AdminSupportPage() {
                     <h1 className={adminStyles.title}>Support Desk</h1>
                     <p className={adminStyles.subtitle}>Track, prioritize, and resolve user tickets.</p>
                 </div>
-                <button className={adminStyles.btnPrimary}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Create Ticket
-                </button>
+                <Link href="/dashboard/admin/support/create">
+                    <button className={adminStyles.btnPrimary}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Create Ticket
+                    </button>
+                </Link>
             </header>
 
             {/* Quick Stats */}

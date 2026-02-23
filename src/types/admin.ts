@@ -46,17 +46,17 @@ export interface ContentItem {
     author: string;
     lastUpdated: string;
     status: 'published' | 'draft' | 'archived';
+    content?: string;
 }
 
-/** A forum thread visible to admins. */
 export interface ForumThread {
     id: string;
     title: string;
-    author: string;
-    category: 'general' | 'announcements' | 'support' | 'feedback';
+    eventName: string;
     status: 'active' | 'locked' | 'flagged' | 'hidden';
-    replies: number;
-    views: number;
+    announcementsCount: number;
+    liveChatsCount: number;
+    mediaCount: number;
     lastActivity: string;
 }
 

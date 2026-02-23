@@ -82,6 +82,7 @@
 
 .chipActive:hover {
     background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
     opacity: 0.9;
 }
 
