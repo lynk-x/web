@@ -26,13 +26,26 @@ interface ForumTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Maps `forum_status` schema enum values to badge colour variants.
+ * Note: casing matches the DB enum exactly (Open, Read_only, Archived).
+ */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
-        case 'active': return 'success';
-        case 'locked': return 'neutral';
-        case 'flagged': return 'warning';
-        case 'hidden': return 'error';
+        case 'Open': return 'success';
+        case 'Read_only': return 'warning';
+        case 'Archived': return 'subtle';
         default: return 'neutral';
+    }
+};
+
+/** Human-readable label for the forum_status enum. */
+const formatForumStatus = (status: string): string => {
+    switch (status) {
+        case 'Open': return 'Open';
+        case 'Read_only': return 'Read Only';
+        case 'Archived': return 'Archived';
+        default: return status;
     }
 };
 
@@ -83,7 +96,8 @@ const ForumTable: React.FC<ForumTableProps> = ({
         {
             header: 'Status',
             render: (thread) => (
-                <Badge label={formatString(thread.status)} variant={getStatusVariant(thread.status)} showDot />
+                // forum_status enum: Open | Read_only | Archived
+                <Badge label={formatForumStatus(thread.status)} variant={getStatusVariant(thread.status)} showDot />
             ),
         },
         {

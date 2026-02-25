@@ -6,16 +6,20 @@ import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
 
-// Mock Data
+/**
+ * Mock forums — aligned to `forum_status` schema enum.
+ * Note: the exact casing of the enum is preserved (Open, Read_only, Archived).
+ * When wiring up: `supabase.from('forums').select('*, event:events!event_id(title)')`
+ */
 const mockThreads: ForumThread[] = [
-    { id: '1', title: 'Summer Fest General Discussion', eventName: 'Summer Fest 2025', status: 'active', announcementsCount: 5, liveChatsCount: 120, mediaCount: 45, lastActivity: '2 hours ago' },
-    { id: '2', title: 'Tech Summit Backstage', eventName: 'Tech Summit 2025', status: 'active', announcementsCount: 12, liveChatsCount: 85, mediaCount: 120, lastActivity: '10 mins ago' },
-    { id: '3', title: 'Marathon Runners Hub', eventName: 'City Marathon', status: 'active', announcementsCount: 3, liveChatsCount: 450, mediaCount: 300, lastActivity: '1 hour ago' },
-    { id: '4', title: 'Jazz Night Chat', eventName: 'Smooth Jazz Night', status: 'flagged', announcementsCount: 1, liveChatsCount: 20, mediaCount: 5, lastActivity: '5 mins ago' },
-    { id: '5', title: 'Foodies Expo Forum', eventName: 'Gourmet Expo', status: 'active', announcementsCount: 8, liveChatsCount: 340, mediaCount: 210, lastActivity: '1 day ago' },
-    { id: '6', title: 'Oldies Concert Q&A', eventName: 'Retro Hits Live', status: 'locked', announcementsCount: 0, liveChatsCount: 0, mediaCount: 15, lastActivity: '1 week ago' },
-    { id: '7', title: 'Charity Auction Room', eventName: 'Annual Charity Gala', status: 'active', announcementsCount: 6, liveChatsCount: 95, mediaCount: 80, lastActivity: '6 hours ago' },
-    { id: '8', title: 'Gaming Tourney Talk', eventName: 'Elite Gaming Op', status: 'hidden', announcementsCount: 4, liveChatsCount: 1200, mediaCount: 500, lastActivity: '2 days ago' },
+    { id: '1', title: 'Summer Fest General Discussion', eventName: 'Summer Fest 2025', status: 'Open', announcementsCount: 5, liveChatsCount: 120, mediaCount: 45, lastActivity: '2 hours ago' },
+    { id: '2', title: 'Tech Summit Backstage', eventName: 'Tech Summit 2025', status: 'Open', announcementsCount: 12, liveChatsCount: 85, mediaCount: 120, lastActivity: '10 mins ago' },
+    { id: '3', title: 'Marathon Runners Hub', eventName: 'City Marathon', status: 'Open', announcementsCount: 3, liveChatsCount: 450, mediaCount: 300, lastActivity: '1 hour ago' },
+    { id: '4', title: 'Jazz Night Chat', eventName: 'Smooth Jazz Night', status: 'Read_only', announcementsCount: 1, liveChatsCount: 20, mediaCount: 5, lastActivity: '5 mins ago' },
+    { id: '5', title: 'Foodies Expo Forum', eventName: 'Gourmet Expo', status: 'Open', announcementsCount: 8, liveChatsCount: 340, mediaCount: 210, lastActivity: '1 day ago' },
+    { id: '6', title: 'Oldies Concert Q&A', eventName: 'Retro Hits Live', status: 'Read_only', announcementsCount: 0, liveChatsCount: 0, mediaCount: 15, lastActivity: '1 week ago' },
+    { id: '7', title: 'Charity Auction Room', eventName: 'Annual Charity Gala', status: 'Open', announcementsCount: 6, liveChatsCount: 95, mediaCount: 80, lastActivity: '6 hours ago' },
+    { id: '8', title: 'Gaming Tourney Talk', eventName: 'Elite Gaming Op', status: 'Archived', announcementsCount: 4, liveChatsCount: 1200, mediaCount: 500, lastActivity: '2 days ago' },
 ];
 
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -27,14 +31,17 @@ export default function AdminForumsPage() {
     const { showToast } = useToast();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Filter Logic
+    // Filter Logic — aligned to forum_status enum (Open | Read_only | Archived)
     const filteredThreads = mockThreads.filter(thread => {
-        return thread.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = thread.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             thread.eventName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || thread.status === statusFilter;
+        return matchesSearch && matchesStatus;
     });
 
     // Pagination Logic
@@ -44,11 +51,11 @@ export default function AdminForumsPage() {
         currentPage * itemsPerPage
     );
 
-    // Reset pagination when filter changes
+    // Reset pagination when search OR status filter changes
     useEffect(() => {
         setCurrentPage(1);
-        setSelectedThreadIds(new Set()); // Clear selection on filter change
-    }, [searchTerm]);
+        setSelectedThreadIds(new Set());
+    }, [searchTerm, statusFilter]);
 
     // Selection Logic
     const handleSelectThread = (id: string) => {
@@ -156,7 +163,25 @@ export default function AdminForumsPage() {
                 searchPlaceholder="Search forum name or event..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            />
+            >
+                {/* Status filter chips — aligned to forum_status schema enum */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                        { value: 'all', label: 'All' },
+                        { value: 'Open', label: 'Open' },
+                        { value: 'Read_only', label: 'Read Only' },
+                        { value: 'Archived', label: 'Archived' },
+                    ].map(({ value, label }) => (
+                        <button
+                            key={value}
+                            className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
+                            onClick={() => setStatusFilter(value)}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </TableToolbar>
 
             <BulkActionsBar
                 selectedCount={selectedThreadIds.size}

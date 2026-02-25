@@ -6,15 +6,25 @@ import styles from './page.module.css';
 
 const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), { ssr: false });
 
-// Mock Data
+/**
+ * Overview stat cards — each maps to a real schema entity.
+ * TODO: Replace mock values with live Supabase aggregates when wiring up.
+ *   - revenue:   SUM(reporting_amount) FROM transactions WHERE category = 'incoming'
+ *   - events:    COUNT(*) FROM events WHERE status IN ('published', 'active')
+ *   - campaigns: COUNT(*) FROM ad_campaigns WHERE status = 'draft'
+ *   - tickets:   COUNT(*) FROM support_tickets WHERE status IN ('open', 'in_progress')
+ *   - payouts:   COUNT(*) FROM payouts WHERE status = 'requested'
+ *   - configs:   system_config WHERE key = 'is_maintenance_mode'
+ */
 const stats = [
     { label: 'Total Revenue', value: '$45,200', change: '+12%', isPositive: true, href: '/dashboard/admin/finance' },
     { label: 'Active Events', value: '856', change: '+3.1%', isPositive: true, href: '/dashboard/admin/events' },
     { label: 'Pending Campaigns', value: '14', change: 'Needs Approval', isPositive: false, color: '#fdd835', href: '/dashboard/admin/campaigns' },
-    { label: 'Open Tickets', value: '24', change: '3 High Priority', isPositive: false, color: '#e57373', href: '/dashboard/admin/support' },
-    { label: 'Flagged Content', value: '8', change: 'Requires Review', isPositive: false, color: '#ffb74d', href: '/dashboard/admin/moderation' },
-    { label: 'System Health', value: '99.9%', change: 'Operational', isPositive: true, color: '#81c784', href: '/dashboard/admin/system' },
+    { label: 'Support Tickets', value: '24', change: '3 High Priority', isPositive: false, color: '#e57373', href: '/dashboard/admin/support' },
+    { label: 'Pending Payouts', value: '6', change: 'Awaiting Review', isPositive: false, color: '#ffb74d', href: '/dashboard/admin/finance' },
+    { label: 'System Health', value: '99.9%', change: 'Operational', isPositive: true, color: '#81c784', href: '/dashboard/admin/system-configs' },
 ];
+
 
 export default function AdminDashboard() {
     return (

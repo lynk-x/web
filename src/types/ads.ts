@@ -9,6 +9,8 @@
 export interface AdsCampaign {
     id: string;
     name: string;
+    /** From `ad_type` enum */
+    type: 'banner' | 'interstitial' | 'feed_card' | 'map_pin';
     status: 'active' | 'paused' | 'draft' | 'completed' | 'scheduled';
     /** Combined date range string, e.g. "Oct 12 - Oct 20, 2024" */
     dates: string;

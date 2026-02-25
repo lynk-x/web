@@ -20,9 +20,11 @@ interface AttendeeTableProps {
 
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
-        case 'checked_in': return 'success';
-        case 'registered': return 'info';
-        case 'cancelled': return 'error';
+        case 'used': return 'success';
+        case 'valid': return 'info';
+        case 'transferred': return 'warning';
+        case 'cancelled':
+        case 'expired': return 'error';
         default: return 'neutral';
     }
 };
@@ -49,12 +51,12 @@ const AttendeeTable: React.FC<AttendeeTableProps> = ({
             ),
         },
         {
-            header: 'Ticket Type',
-            render: (attendee) => <span>{attendee.ticketType}</span>,
+            header: 'Ticket Tier',
+            render: (attendee) => <span>{attendee.tierName}</span>,
         },
         {
-            header: 'Order ID',
-            render: (attendee) => <code style={{ fontSize: '12px', opacity: 0.8 }}>{attendee.orderId}</code>,
+            header: 'Ticket Code',
+            render: (attendee) => <code style={{ fontSize: '12px', opacity: 0.8 }}>{attendee.ticketCode}</code>,
         },
         {
             header: 'Purchased On',
@@ -64,7 +66,7 @@ const AttendeeTable: React.FC<AttendeeTableProps> = ({
             header: 'Status',
             render: (attendee) => (
                 <Badge
-                    label={attendee.status === 'checked_in' ? 'Checked In' : formatString(attendee.status)}
+                    label={attendee.status === 'used' ? 'Checked In' : formatString(attendee.status)}
                     variant={getStatusVariant(attendee.status)}
                     showDot
                 />
@@ -74,10 +76,10 @@ const AttendeeTable: React.FC<AttendeeTableProps> = ({
 
     const getActions = (attendee: Attendee): ActionItem[] => [
         {
-            label: attendee.status === 'checked_in' ? 'Unmark Check-in' : 'Check In',
+            label: attendee.status === 'used' ? 'Undo Check-in' : 'Check In',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
             onClick: () => {
-                const action = attendee.status === 'checked_in' ? 'Unmarked' : 'Checked in';
+                const action = attendee.status === 'used' ? 'Unmarked' : 'Checked in';
                 showToast(`${action} ${attendee.name}`, 'success');
             },
         },

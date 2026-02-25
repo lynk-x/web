@@ -6,7 +6,7 @@ import DataTable, { Column } from '../shared/DataTable';
 import Badge, { BadgeVariant } from '../shared/Badge';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
-import { formatString } from '@/utils/format';
+import { formatString, formatCurrency } from '@/utils/format';
 import type { ActionItem } from '../shared/TableRowActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -61,11 +61,20 @@ const EventsTable: React.FC<EventsTableProps> = ({
         },
         {
             header: 'Tickets',
-            render: (event) => <div style={{ fontSize: '13px' }}>{event.tickets}</div>,
+            render: (event) => (
+                <div style={{ fontSize: '13px' }}>
+                    <span style={{ fontWeight: 600 }}>{event.attendees}</span>
+                    <span style={{ opacity: 0.5 }}> / {event.capacity === 0 ? '∞' : event.capacity}</span>
+                </div>
+            ),
         },
         {
             header: 'Revenue',
-            render: (event) => <div style={{ fontWeight: 500 }}>{event.revenue}</div>,
+            render: (event) => (
+                <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)' }}>
+                    {formatCurrency(event.revenue)}
+                </div>
+            ),
         },
         {
             header: 'Status',

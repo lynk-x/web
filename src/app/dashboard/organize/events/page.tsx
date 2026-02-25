@@ -37,13 +37,19 @@ export default function OrganizerEventsPage() {
     // Initialization & Data Fetching
     useEffect(() => {
         if (!isOrgLoading) {
-            if (accounts.length === 0) {
-                router.push('/dashboard/onboarding');
-            } else if (activeAccount) {
+            if (activeAccount) {
                 fetchEvents();
+            } else {
+                // Load mock data if no active account
+                setEvents([
+                    { id: '1', title: 'Summer Festival 2024', organizer: 'Organization', date: 'Aug 15, 2024, 08:00 PM', location: 'Central Park', status: 'active', attendees: 1540 },
+                    { id: '2', title: 'Tech Startup Mixer', organizer: 'Organization', date: 'Sep 10, 2024, 06:00 PM', location: 'Innovation Hub', status: 'published', attendees: 0 },
+                    { id: '3', title: 'Winter Gala', organizer: 'Organization', date: 'Dec 05, 2024, 07:00 PM', location: 'Grand Hotel', status: 'draft', attendees: 0 }
+                ] as OrganizerEvent[]);
+                setIsLoadingEvents(false);
             }
         }
-    }, [isOrgLoading, accounts.length, activeAccount, router]);
+    }, [isOrgLoading, activeAccount]);
 
     const fetchEvents = async () => {
         setIsLoadingEvents(true);
@@ -60,8 +66,8 @@ export default function OrganizerEventsPage() {
                 // Determine table status from db event_status ('draft', 'published', 'completed', etc)
                 // In a real app we'd unify these types, but for now we map them for the UI table
                 let uiStatus: OrganizerEvent['status'] = 'active';
-                if (e.status === 'draft') uiStatus = 'pending';
-                if (e.status === 'completed' || e.status === 'archived') uiStatus = 'past';
+                if (e.status === 'draft') uiStatus = 'draft';
+                if (e.status === 'completed' || e.status === 'archived') uiStatus = 'completed';
 
                 return {
                     id: e.id,
@@ -92,8 +98,10 @@ export default function OrganizerEventsPage() {
         const matchesStatus = statusFilter === 'all'
             ? true
             : statusFilter === 'draft'
-                ? event.status === 'pending' || event.status === 'rejected'
-                : event.status === statusFilter;
+                ? event.status === 'draft'
+                : statusFilter === 'past'
+                    ? event.status === 'completed' || event.status === 'archived' || event.status === 'cancelled'
+                    : event.status === 'active' || event.status === 'published';
 
         return matchesSearch && matchesStatus;
     });
@@ -188,8 +196,6 @@ export default function OrganizerEventsPage() {
     if (isOrgLoading || isLoadingEvents) {
         return <div className={styles.dashboardPage} style={{ padding: '40px' }}>Loading Dashboard...</div>;
     }
-
-    if (!activeAccount) return null; // Let router redirection handle it
 
     return (
         <div className={styles.dashboardPage}>

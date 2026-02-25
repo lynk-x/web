@@ -26,26 +26,34 @@ interface FinanceTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
+/** Maps `payment_status` enum to badge colour variants (all lowercase). */
 const getStatusVariant = (status: string): BadgeVariant => {
-    switch (status.toLowerCase()) {
+    switch (status) {
         case 'completed': return 'success';
         case 'pending': return 'warning';
         case 'failed': return 'error';
+        case 'cancelled': return 'subtle';
+        case 'refunded': return 'warning';
         default: return 'neutral';
     }
 };
 
+/**
+ * Maps `transaction_reason` enum to badge colour variants.
+ * All 10 schema values are handled explicitly.
+ */
 const getTypeVariant = (type: string): BadgeVariant => {
-    switch (type.toLowerCase()) {
-        case 'ticket_sale':
-        case 'ticket sale': return 'success';
-        case 'payout': return 'info';
-        case 'refund': return 'warning';
-        case 'commission':
-        case 'fee': return 'primary';
+    switch (type) {
+        case 'ticket_sale': return 'success';
         case 'subscription': return 'info';
-        case 'vendor fee': return 'warning';
-        case 'sponsorship': return 'success';
+        case 'ad_campaign_payment': return 'primary';
+        case 'organizer_payment': return 'success';
+        case 'ad_refund': return 'warning';
+        case 'ticket_refund': return 'warning';
+        case 'subscription_refund': return 'warning';
+        case 'dispute_settlement': return 'error';
+        case 'escrow_release': return 'neutral';
+        case 'payout_withdrawal': return 'info';
         default: return 'neutral';
     }
 };
@@ -94,7 +102,14 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
                 const displayAmount = typeof tx.amount === 'string'
                     ? tx.amount
                     : formatCurrency(tx.amount);
-                const isNegative = tx.type === 'refund' || tx.type === 'commission' || tx.type === 'fee';
+                // Outgoing reasons are shown as negative amounts
+                const isNegative = (
+                    tx.type === 'ticket_refund' ||
+                    tx.type === 'ad_refund' ||
+                    tx.type === 'subscription_refund' ||
+                    tx.type === 'dispute_settlement' ||
+                    tx.type === 'payout_withdrawal'
+                );
                 return (
                     <div className={styles.amount} data-type={tx.type}>
                         {isNegative && typeof tx.amount === 'number'
@@ -125,7 +140,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
             },
         ];
 
-        if (tx.status === 'Pending' && tx.type === 'payout') {
+        if (tx.status === 'pending' && tx.type === 'payout_withdrawal') {
             actions.push({
                 label: 'Process Payout',
                 variant: 'success',
@@ -137,7 +152,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
             });
         }
 
-        if (tx.type === 'ticket_sale' && tx.status === 'Completed') {
+        if (tx.type === 'ticket_sale' && tx.status === 'completed') {
             actions.push({
                 label: 'Issue Refund',
                 variant: 'danger',

@@ -7,15 +7,19 @@ import Link from 'next/link';
 import adminStyles from '../page.module.css';
 import EventTable, { Event } from '@/components/organize/EventTable';
 
-// Mock Data
+/**
+ * Mock events — aligned to `event_status` schema enum.
+ * When wiring up: `supabase.from('events').select('*, profiles!organizer_id(display_name)')`
+ */
 const mockEvents: Event[] = [
-    { id: 'mock-1', title: 'Summer Music Festival', organizer: 'Global Beats', date: '2025-07-15 · 14:00', location: 'Central Park, NY', status: 'active', attendees: 5200 },
-    { id: 'mock-2', title: 'Tech Innovators Summit', organizer: 'TechDaily', date: '2025-08-10 · 09:00', location: 'Convention Center, SF', status: 'pending', attendees: 0 },
-    { id: 'mock-3', title: 'Local Art Showcase', organizer: 'Community Arts', date: '2025-06-20 · 18:00', location: 'City Gallery', status: 'past', attendees: 150 },
-    { id: 'mock-4', title: 'Charity Run 5K', organizer: 'RunForGood', date: '2025-09-05 · 07:00', location: 'Riverside Park', status: 'active', attendees: 850 },
-    { id: 'mock-5', title: 'Unauthorized Rave', organizer: 'Anon Party', date: '2025-07-20 · 22:00', location: 'Abandoned Warehouse', status: 'rejected', attendees: 0 },
-    { id: 'mock-6', title: 'Cooking Workshop', organizer: 'Chef Mario', date: '2025-07-01 · 10:00', location: 'Culinary School', status: 'active', attendees: 25 },
-    { id: 'mock-7', title: 'Startup Pitch Night', organizer: 'Venture Hub', date: '2025-07-25 · 19:00', location: 'Innovation Lab', status: 'pending', attendees: 0 },
+    { id: 'mock-1', title: 'Summer Music Festival', organizer: 'Global Beats', date: '2025-07-15 · 14:00', location: 'Central Park, NY', status: 'active', attendees: 5200, eventCode: 'SMF-25', isPrivate: false },
+    { id: 'mock-2', title: 'Tech Innovators Summit', organizer: 'TechDaily', date: '2025-08-10 · 09:00', location: 'Convention Center, SF', status: 'published', attendees: 0, eventCode: 'TIS-25', isPrivate: false },
+    { id: 'mock-3', title: 'Local Art Showcase', organizer: 'Community Arts', date: '2025-06-20 · 18:00', location: 'City Gallery', status: 'completed', attendees: 150, eventCode: 'LAS-25', isPrivate: false },
+    { id: 'mock-4', title: 'Charity Run 5K', organizer: 'RunForGood', date: '2025-09-05 · 07:00', location: 'Riverside Park', status: 'active', attendees: 850, eventCode: 'CR5K-25', isPrivate: false },
+    { id: 'mock-5', title: 'VIP Product Launch', organizer: 'Anon Party', date: '2025-07-20 · 22:00', location: 'Rooftop Venue', status: 'cancelled', attendees: 0, eventCode: 'VPL-25', isPrivate: true },
+    { id: 'mock-6', title: 'Cooking Workshop', organizer: 'Chef Mario', date: '2025-07-01 · 10:00', location: 'Culinary School', status: 'active', attendees: 25, eventCode: 'CW-25', isPrivate: false },
+    { id: 'mock-7', title: 'Startup Pitch Night', organizer: 'Venture Hub', date: '2025-07-25 · 19:00', location: 'Innovation Lab', status: 'draft', attendees: 0, eventCode: 'SPN-25', isPrivate: false },
+    { id: 'mock-8', title: 'Year-End Gala 2024', organizer: 'City Events', date: '2024-12-31 · 20:00', location: 'Grand Ballroom', status: 'archived', attendees: 600, eventCode: 'YEG-24', isPrivate: false },
 ];
 
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -163,7 +167,28 @@ export default function AdminEventsPage() {
                 searchPlaceholder="Search events or organizers..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            />
+            >
+                {/* Filter chips aligned to event_status enum values */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                        { value: 'all', label: 'All' },
+                        { value: 'draft', label: 'Draft' },
+                        { value: 'published', label: 'Published' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'completed', label: 'Completed' },
+                        { value: 'archived', label: 'Archived' },
+                        { value: 'cancelled', label: 'Cancelled' },
+                    ].map(({ value, label }) => (
+                        <button
+                            key={value}
+                            className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
+                            onClick={() => setStatusFilter(value)}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </TableToolbar>
 
             <BulkActionsBar
                 selectedCount={selectedEventIds.size}

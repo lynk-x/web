@@ -26,10 +26,14 @@ interface CampaignTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Maps `campaign_status` enum to badge colour variants.
+ * active | draft | paused | rejected | completed
+ */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'active': return 'success';
-        case 'pending': return 'warning';
+        case 'draft': return 'warning';
         case 'paused': return 'info';
         case 'rejected': return 'error';
         case 'completed': return 'neutral';
@@ -63,7 +67,28 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
                 <div>
                     <div style={{ fontWeight: 500 }}>{campaign.name}</div>
                     <div style={{ fontSize: '12px', opacity: 0.6 }}>{campaign.client}</div>
+                    {campaign.campaignRef && (
+                        // campaign_ref — unique ad campaign identifier
+                        <div style={{ fontSize: '11px', opacity: 0.4, fontFamily: 'monospace' }}>{campaign.campaignRef}</div>
+                    )}
                 </div>
+            ),
+        },
+        {
+            header: 'Ad Type',
+            // From `ad_type` enum: banner | interstitial | feed_card | map_pin
+            render: (campaign) => (
+                campaign.adType
+                    ? <Badge
+                        label={campaign.adType.replace('_', ' ').toUpperCase()}
+                        variant={
+                            campaign.adType === 'banner' ? 'neutral' :
+                                campaign.adType === 'interstitial' ? 'info' :
+                                    campaign.adType === 'feed_card' ? 'warning' :
+                            /* map_pin */                        'success'
+                        }
+                    />
+                    : <span style={{ opacity: 0.3, fontSize: '12px' }}>—</span>
             ),
         },
         {
@@ -109,9 +134,15 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
                 onClick: () => router.push(`/dashboard/admin/campaigns/${campaign.id}`),
             },
+            {
+                label: 'Ad Assets',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
+                onClick: () => router.push(`/dashboard/admin/campaigns/${campaign.id}/assets`),
+            },
         ];
 
-        if (campaign.status === 'pending') {
+        // Draft campaigns can be approved (set to active) by admin
+        if (campaign.status === 'draft') {
             actions.push(
                 {
                     label: 'Approve',

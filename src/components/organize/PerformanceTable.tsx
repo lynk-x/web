@@ -5,6 +5,7 @@ import Link from 'next/link';
 import styles from './PerformanceTable.module.css';
 import DataTable, { Column } from '../shared/DataTable';
 import Badge, { BadgeVariant } from '../shared/Badge';
+import { formatCurrency } from '@/utils/format';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -51,15 +52,19 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
         },
         {
             header: 'Tickets Sold',
-            render: (item) => <div>{item.sold}</div>,
+            render: (item) => <div style={{ fontWeight: 500 }}>{item.ticketsSold}</div>,
         },
         {
             header: 'Revenue',
-            render: (item) => <span className={styles.money}>KES {item.revenue.toLocaleString()}</span>,
+            render: (item) => <span className={styles.money}>{formatCurrency(item.totalRevenue)}</span>,
+        },
+        {
+            header: 'Conversion',
+            render: (item) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{item.conversionRate}</div>,
         },
         {
             header: 'Status',
-            render: (item) => <Badge label={item.status} variant={getStatusVariant(item.status)} />,
+            render: (item) => <Badge label={item.status} variant={getStatusVariant(item.status)} showDot />,
         },
         {
             header: 'Action',

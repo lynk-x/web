@@ -63,6 +63,10 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             render: (campaign) => <div style={{ fontWeight: 500 }}>{campaign.name}</div>,
         },
         {
+            header: 'Type',
+            render: (campaign) => <Badge label={formatString(campaign.type)} variant="subtle" />,
+        },
+        {
             header: 'Status',
             render: (campaign) => (
                 <Badge label={formatString(campaign.status)} variant={getStatusVariant(campaign.status)} showDot />

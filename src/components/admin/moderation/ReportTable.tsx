@@ -25,20 +25,28 @@ interface ReportTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
-const getTypeVariant = (type: string): BadgeVariant => {
-    switch (type) {
-        case 'content': return 'primary';
-        case 'bug': return 'warning';
-        case 'user': return 'info';
-        case 'system': return 'subtle';
+/**
+ * Maps the derived `targetType` field to a badge colour.
+ * In the DB, this comes from whichever of the three target FK columns is non-null:
+ *   target_user_id → 'user', target_event_id → 'event', target_message_id → 'message'
+ */
+const getTargetTypeVariant = (targetType: string): BadgeVariant => {
+    switch (targetType) {
+        case 'user': return 'error';   // User reports are high-sensitivity
+        case 'event': return 'warning'; // Event reports need review
+        case 'message': return 'info';    // Message/chat reports
         default: return 'neutral';
     }
 };
 
+/**
+ * Maps `report_status` enum values to badge colours.
+ * Schema enum: pending | investigating | resolved | dismissed
+ */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
-        case 'open': return 'error';
-        case 'in_review': return 'warning';
+        case 'pending': return 'warning';
+        case 'investigating': return 'info';
         case 'resolved': return 'success';
         case 'dismissed': return 'subtle';
         default: return 'neutral';
@@ -65,8 +73,14 @@ const ReportTable: React.FC<ReportTableProps> = ({
     /** Column definitions for the report table. */
     const columns: Column<Report>[] = [
         {
-            header: 'Type',
-            render: (report) => <Badge label={formatString(report.type)} variant={getTypeVariant(report.type)} />,
+            // Derived from whichever target FK column is non-null in `reports` table
+            header: 'Target Type',
+            render: (report) => (
+                <Badge
+                    label={report.targetType.toUpperCase()}
+                    variant={getTargetTypeVariant(report.targetType)}
+                />
+            ),
         },
         {
             header: 'Report Details',
@@ -74,6 +88,10 @@ const ReportTable: React.FC<ReportTableProps> = ({
                 <div className={styles.reportInfo}>
                     <div className={styles.title}>{report.title}</div>
                     <div className={styles.description}>{report.description}</div>
+                    {report.reasonId && (
+                        // reason_id FK references report_reasons table
+                        <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>Reason: {report.reasonId}</div>
+                    )}
                 </div>
             ),
         },
@@ -87,6 +105,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
         },
         {
             header: 'Status',
+            // report_status enum: pending | investigating | resolved | dismissed
             render: (report) => (
                 <Badge label={formatString(report.status)} variant={getStatusVariant(report.status)} showDot />
             ),
@@ -102,6 +121,19 @@ const ReportTable: React.FC<ReportTableProps> = ({
                 onClick: () => showToast('Opening report details...', 'info'),
             },
         ];
+
+        // Promote report to 'investigating' if it's still pending
+        if (report.status === 'pending') {
+            actions.push({
+                label: 'Begin Investigation',
+                variant: 'default',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+                onClick: () => {
+                    showToast('Marking as investigating...', 'info');
+                    setTimeout(() => showToast('Report status set to investigating.', 'info'), 1000);
+                },
+            });
+        }
 
         if (report.status !== 'resolved') {
             actions.push({
@@ -126,7 +158,8 @@ const ReportTable: React.FC<ReportTableProps> = ({
             });
         }
 
-        if (report.type === 'user') {
+        // Ban User only available on reports targeting a user (targetType === 'user')
+        if (report.targetType === 'user') {
             actions.push({
                 label: 'Ban User',
                 variant: 'danger',

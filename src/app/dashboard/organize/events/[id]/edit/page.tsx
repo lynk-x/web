@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import EventForm from '../../EventForm';
+import EventForm from '@/components/organize/EventForm';
 import { useRouter, useParams } from 'next/navigation';
 
 import type { OrganizerEventFormData } from '@/types/organize';

@@ -26,12 +26,17 @@ interface UserTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Maps `user_type` schema enum values to badge colour variants.
+ * Covers: admin | organizer | advertiser | attendee | platform
+ */
 const getRoleVariant = (role: string): BadgeVariant => {
     switch (role) {
         case 'admin': return 'primary';
         case 'organizer': return 'success';
         case 'advertiser': return 'info';
-        default: return 'neutral';
+        case 'platform': return 'warning';
+        default: return 'neutral'; // attendee
     }
 };
 
@@ -79,6 +84,23 @@ const UserTable: React.FC<UserTableProps> = ({
         {
             header: 'Role',
             render: (user) => <Badge label={user.role} variant={getRoleVariant(user.role)} />,
+        },
+        {
+            header: 'Verification',
+            // From `profiles.verification_status` enum: none | verified | official
+            render: (user) => {
+                const v = user.verificationStatus ?? 'none';
+                const variant: BadgeVariant = v === 'official' ? 'primary' : v === 'verified' ? 'success' : 'subtle';
+                return <Badge label={v} variant={variant} />;
+            },
+        },
+        {
+            header: 'Plan',
+            // From `profiles.subscription_tier` enum: free | pro
+            render: (user) => {
+                const tier = user.subscriptionTier ?? 'free';
+                return <Badge label={tier.toUpperCase()} variant={tier === 'pro' ? 'warning' : 'subtle'} />;
+            },
         },
         {
             header: 'Status',

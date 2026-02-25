@@ -13,10 +13,9 @@ export default function DashboardOverview() {
 
     const [stats, setStats] = useState({
         revenue: 0,
-        ticketsSold: 0,
-        activeEvents: 0,
-        upcomingEvents: 0,
-        pastEvents: 0
+        sellThroughRate: 0,
+        checkInRate: 0,
+        teamSize: 0,
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -26,50 +25,56 @@ export default function DashboardOverview() {
             setIsLoading(true);
 
             try {
-                // Fetch events and their aggregated ticket tiers for this account
-                const { data: events, error } = await supabase
-                    .from('events')
-                    .select(`
-                        status,
-                        ticket_tiers(
-                            price,
-                            quantity_sold
-                        )
-                    `)
-                    .eq('account_id', activeAccount.id);
+                // Fetch events, tickets, and team info
+                const [eventsRes, teamRes] = await Promise.all([
+                    supabase
+                        .from('events')
+                        .select(`
+                            id,
+                            status,
+                            attendee_count,
+                            ticket_tiers(
+                                price,
+                                quantity_total,
+                                quantity_sold
+                            )
+                        `)
+                        .eq('account_id', activeAccount.id),
+                    supabase
+                        .from('account_members')
+                        .select('id', { count: 'exact' })
+                        .eq('account_id', activeAccount.id)
+                ]);
 
-                if (error) throw error;
+                if (eventsRes.error) throw eventsRes.error;
 
                 let revenue = 0;
+                let totalCapacity = 0;
                 let ticketsSold = 0;
-                let activeCount = 0;
-                let upcomingCount = 0;
-                let pastCount = 0;
+                let totalCheckedIn = 0;
 
-                events?.forEach((ev: any) => {
-                    // Count event statuses
-                    if (ev.status === 'published') { // Adjust based on your enum, e.g. active/published
-                        activeCount++;
-                        upcomingCount++; // Assuming published means upcoming for MVP
-                    } else if (ev.status === 'cancelled') {
-                        pastCount++; // Simplification
-                    }
+                eventsRes.data?.forEach((ev: any) => {
+                    // Total Checked in comes directly from event stats
+                    totalCheckedIn += ev.attendee_count || 0;
 
-                    // Tally revenue and tickets
                     if (ev.ticket_tiers) {
                         ev.ticket_tiers.forEach((tier: any) => {
                             ticketsSold += tier.quantity_sold || 0;
+                            totalCapacity += tier.quantity_total || 0;
                             revenue += (tier.quantity_sold || 0) * (tier.price || 0);
                         });
                     }
                 });
 
+                const sellThroughRate = totalCapacity > 0 ? (ticketsSold / totalCapacity) * 100 : 0;
+                const checkInRate = ticketsSold > 0 ? (totalCheckedIn / ticketsSold) * 100 : 0;
+                const teamSize = teamRes.count || 1; // Fallback to 1 for the owner
+
                 setStats({
                     revenue,
-                    ticketsSold,
-                    activeEvents: activeCount,
-                    upcomingEvents: upcomingCount,
-                    pastEvents: pastCount
+                    sellThroughRate,
+                    checkInRate,
+                    teamSize
                 });
 
             } catch (error) {
@@ -82,9 +87,15 @@ export default function DashboardOverview() {
         if (!isOrgLoading && activeAccount) {
             fetchDashboardData();
         } else if (!isOrgLoading && !activeAccount) {
+            setStats({
+                revenue: 24500,
+                sellThroughRate: 85.4,
+                checkInRate: 92.1,
+                teamSize: 4
+            });
             setIsLoading(false);
         }
-    }, [isOrgLoading, activeAccount]);
+    }, [isOrgLoading, activeAccount, supabase]);
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -105,24 +116,27 @@ export default function DashboardOverview() {
                     </div>
                 </div>
                 <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Tickets Sold</span>
+                    <span className={styles.statLabel}>Sell-Through Rate</span>
                     <div className={styles.statValue}>
-                        {isLoading ? '...' : stats.ticketsSold.toLocaleString()}
+                        {isLoading ? '...' : `${stats.sellThroughRate.toFixed(1)}%`}
                     </div>
+                    <span className={styles.statNote}>Tickets sold / Capacity</span>
                 </div>
                 <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Active Events</span>
+                    <span className={styles.statLabel}>Check-In Rate</span>
                     <div className={styles.statValue}>
-                        {isLoading ? '...' : stats.activeEvents}
+                        {isLoading ? '...' : `${stats.checkInRate.toFixed(1)}%`}
                     </div>
-                    <span className={styles.statNote}>
-                        {isLoading ? '' : `${stats.upcomingEvents} upcoming`}
-                    </span>
+                    <span className={styles.statNote}>Attendees / Tickets Sold</span>
                 </div>
                 <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Page Views</span>
-                    <div className={styles.statValue}>12.5k</div>
-                    <span className={`${styles.statChange} ${styles.negative}`}>-2% from last week</span>
+                    <span className={styles.statLabel}>Team Size</span>
+                    <div className={styles.statValue}>
+                        {isLoading ? '...' : stats.teamSize}
+                    </div>
+                    <Link href="/dashboard/organize/settings" className={styles.statNote} style={{ textDecoration: 'underline' }}>
+                        Manage Team
+                    </Link>
                 </div>
             </div>
 

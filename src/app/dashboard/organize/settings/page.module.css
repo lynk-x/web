@@ -153,6 +153,84 @@
     color: var(--color-brand-primary);
 }
 
+/* 2FA & Security */
+.twoFactorContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.twoFactorInfo {
+    flex: 1;
+}
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+}
+
+.enabled {
+    background-color: rgba(32, 249, 40, 0.1);
+    color: var(--color-brand-primary);
+}
+
+.disabled {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-utility-primaryText);
+    opacity: 0.7;
+}
+
+.toggleBtn {
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-interface-outline);
+    background: transparent;
+    color: var(--color-utility-primaryText);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.toggleBtn:hover {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+}
+
+/* Danger Zone */
+.dangerZone {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dangerTitle {
+    color: var(--color-interface-error);
+}
+
+.deleteBtn {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-start;
+}
+
+.deleteBtn:hover {
+    background-color: #EF4444;
+    color: white;
+}
+
 @media (max-width: 900px) {
     .grid {
         grid-template-columns: 1fr;

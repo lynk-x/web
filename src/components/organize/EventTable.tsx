@@ -31,12 +31,18 @@ interface EventTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Maps `event_status` schema enum to badge colour variants.
+ * draft | published | active | completed | archived | cancelled
+ */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'active': return 'success';
-        case 'pending': return 'warning';
-        case 'past': return 'neutral';
-        case 'rejected': return 'error';
+        case 'published': return 'info';
+        case 'draft': return 'warning';
+        case 'completed': return 'neutral';
+        case 'archived': return 'subtle';
+        case 'cancelled': return 'error';
         default: return 'neutral';
     }
 };
@@ -72,7 +78,15 @@ const EventTable: React.FC<EventTableProps> = ({
                         {!event.thumbnailUrl && <div className={styles.thumbnailPlaceholder}>IMG</div>}
                     </div>
                     <div className={styles.eventDetails}>
-                        <span className={styles.eventTitle}>{event.title}</span>
+                        <span className={styles.eventTitle}>
+                            {event.title}
+                            {event.isPrivate && (
+                                // is_private flag from the events schema column
+                                <span style={{ marginLeft: '6px', display: 'inline-flex' }}>
+                                    <Badge label="PRIVATE" variant="subtle" />
+                                </span>
+                            )}
+                        </span>
                         <span className={styles.eventOrganizer}>by {event.organizer}</span>
                     </div>
                 </div>
@@ -88,6 +102,10 @@ const EventTable: React.FC<EventTableProps> = ({
                 <div style={{ fontSize: '13px', opacity: 0.8 }}>
                     <div>{event.location}</div>
                     <div style={{ fontSize: '11px', opacity: 0.6 }}>{event.attendees} attendees</div>
+                    {event.eventCode && (
+                        // event_code — unique share/lookup code on the events table
+                        <div style={{ fontSize: '11px', opacity: 0.5, fontFamily: 'monospace' }}>#{event.eventCode}</div>
+                    )}
                 </div>
             ),
         },
@@ -123,7 +141,8 @@ const EventTable: React.FC<EventTableProps> = ({
         }
 
         if (onStatusChange) {
-            if (event.status === 'pending') {
+            // Draft events can be published by admin
+            if (event.status === 'draft') {
                 actions.push({
                     label: 'Publish',
                     variant: 'success',

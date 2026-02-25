@@ -9,20 +9,25 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 
-// Mock Data
+/**
+ * Mock user data — aligned to `user_type` schema enum.
+ * When wiring up: `supabase.from('profiles').select('*, auth_user:auth.users!id(email)')`
+ * Note: email must come from auth.users via RPC or the admin API.
+ */
 const mockUsers: User[] = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'organizer', status: 'active', lastActive: '2 mins ago' },
-    { id: '2', name: 'Alice Smith', email: 'alice@business.com', role: 'advertiser', status: 'active', lastActive: '1 hr ago' },
-    { id: '3', name: 'Robert Admin', email: 'admin@lynk-x.com', role: 'admin', status: 'active', lastActive: 'Just now' },
-    { id: '4', name: 'Sarah User', email: 'sarah@gmail.com', role: 'user', status: 'active', lastActive: '2 days ago' },
-    { id: '5', name: 'Mike Spammer', email: 'mike@spam.net', role: 'user', status: 'suspended', lastActive: '5 days ago' },
-    { id: '6', name: 'Event Pro Ltd', email: 'contact@eventpro.com', role: 'organizer', status: 'active', lastActive: '3 hrs ago' },
-    { id: '7', name: 'Tech Ads Agency', email: 'ads@tech.com', role: 'advertiser', status: 'active', lastActive: '1 day ago' },
-    { id: '8', name: 'Jane Doe', email: 'jane@example.com', role: 'user', status: 'active', lastActive: '1 week ago' },
-    { id: '9', name: 'Bob Builder', email: 'bob@construction.com', role: 'organizer', status: 'active', lastActive: '2 weeks ago' },
-    { id: '10', name: 'Charlie Chef', email: 'charlie@foodie.com', role: 'user', status: 'partially_active', lastActive: '3 weeks ago' },
-    { id: '11', name: 'David Developer', email: 'david@code.com', role: 'admin', status: 'active', lastActive: '1 month ago' },
-    { id: '12', name: 'Eve Event', email: 'eve@events.com', role: 'organizer', status: 'suspended', lastActive: '2 months ago' },
+    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'organizer', status: 'active', lastActive: '2 mins ago', verificationStatus: 'verified', subscriptionTier: 'pro' },
+    { id: '2', name: 'Alice Smith', email: 'alice@business.com', role: 'advertiser', status: 'active', lastActive: '1 hr ago', verificationStatus: 'official', subscriptionTier: 'pro' },
+    { id: '3', name: 'Robert Admin', email: 'admin@lynk-x.com', role: 'admin', status: 'active', lastActive: 'Just now', verificationStatus: 'official', subscriptionTier: 'pro' },
+    { id: '4', name: 'Sarah Attendee', email: 'sarah@gmail.com', role: 'attendee', status: 'active', lastActive: '2 days ago', verificationStatus: 'none', subscriptionTier: 'free' },
+    { id: '5', name: 'Mike Spammer', email: 'mike@spam.net', role: 'attendee', status: 'suspended', lastActive: '5 days ago', verificationStatus: 'none', subscriptionTier: 'free' },
+    { id: '6', name: 'Event Pro Ltd', email: 'contact@eventpro.com', role: 'organizer', status: 'active', lastActive: '3 hrs ago', verificationStatus: 'verified', subscriptionTier: 'pro' },
+    { id: '7', name: 'Tech Ads Agency', email: 'ads@tech.com', role: 'advertiser', status: 'active', lastActive: '1 day ago', verificationStatus: 'official', subscriptionTier: 'pro' },
+    { id: '8', name: 'Jane Doe', email: 'jane@example.com', role: 'attendee', status: 'active', lastActive: '1 week ago', verificationStatus: 'none', subscriptionTier: 'free' },
+    { id: '9', name: 'Bob Builder', email: 'bob@construction.com', role: 'organizer', status: 'active', lastActive: '2 weeks ago', verificationStatus: 'none', subscriptionTier: 'free' },
+    { id: '10', name: 'Charlie Chef', email: 'charlie@foodie.com', role: 'attendee', status: 'partially_active', lastActive: '3 weeks ago', verificationStatus: 'none', subscriptionTier: 'free' },
+    { id: '11', name: 'David Developer', email: 'david@code.com', role: 'admin', status: 'active', lastActive: '1 month ago', verificationStatus: 'official', subscriptionTier: 'pro' },
+    { id: '12', name: 'Eve Event', email: 'eve@events.com', role: 'organizer', status: 'suspended', lastActive: '2 months ago', verificationStatus: 'verified', subscriptionTier: 'pro' },
+    { id: '13', name: 'Platform Bot', email: 'bot@lynk-x.com', role: 'platform', status: 'active', lastActive: 'Just now', verificationStatus: 'official', subscriptionTier: 'pro' },
 ];
 
 export default function AdminUsersPage() {
@@ -120,13 +125,20 @@ export default function AdminUsersPage() {
                 onSearchChange={setSearchTerm}
             >
                 <div className={adminStyles.filterGroup}>
-                    {['all', 'admin', 'organizer', 'advertiser', 'user'].map((role) => (
+                    {[
+                        { value: 'all', label: 'All Users' },
+                        { value: 'admin', label: 'Admins' },
+                        { value: 'organizer', label: 'Organizers' },
+                        { value: 'advertiser', label: 'Advertisers' },
+                        { value: 'attendee', label: 'Attendees' },
+                        { value: 'platform', label: 'Platform' },
+                    ].map(({ value, label }) => (
                         <button
-                            key={role}
-                            className={`${adminStyles.chip} ${roleFilter === role ? adminStyles.chipActive : ''}`}
-                            onClick={() => setRoleFilter(role)}
+                            key={value}
+                            className={`${adminStyles.chip} ${roleFilter === value ? adminStyles.chipActive : ''}`}
+                            onClick={() => setRoleFilter(value)}
                         >
-                            {role === 'all' ? 'All Users' : role.charAt(0).toUpperCase() + role.slice(1) + 's'}
+                            {label}
                         </button>
                     ))}
                 </div>

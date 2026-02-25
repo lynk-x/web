@@ -12,13 +12,13 @@ import type { Attendee } from '@/types/organize';
 
 // Mock Attendees Data
 const mockAttendees: Attendee[] = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', ticketType: 'VIP Experience', purchaseDate: '2024-05-15', status: 'checked_in', orderId: 'ORD-7721' },
-    { id: '2', name: 'Alice Smith', email: 'alice@business.com', ticketType: 'General Admission', purchaseDate: '2024-05-16', status: 'registered', orderId: 'ORD-7722' },
-    { id: '3', name: 'Robert Brown', email: 'robert@gmail.com', ticketType: 'Early Bird', purchaseDate: '2024-05-14', status: 'registered', orderId: 'ORD-7723' },
-    { id: '4', name: 'Sarah Wilson', email: 'sarah@design.co', ticketType: 'VIP Experience', purchaseDate: '2024-05-17', status: 'cancelled', orderId: 'ORD-7724' },
-    { id: '5', name: 'Michael Chen', email: 'm.chen@tech.com', ticketType: 'General Admission', purchaseDate: '2024-05-18', status: 'checked_in', orderId: 'ORD-7725' },
-    { id: '6', name: 'Emma Davis', email: 'emma.d@live.com', ticketType: 'Early Bird', purchaseDate: '2024-05-12', status: 'registered', orderId: 'ORD-7726' },
-    { id: '7', name: 'David Miller', email: 'david@miller.net', ticketType: 'General Admission', purchaseDate: '2024-05-19', status: 'registered', orderId: 'ORD-7727' },
+    { id: '1', name: 'John Doe', email: 'john@example.com', tierName: 'VIP Experience', purchaseDate: '2024-05-15', status: 'used', ticketCode: 'ORD-7721' },
+    { id: '2', name: 'Alice Smith', email: 'alice@business.com', tierName: 'General Admission', purchaseDate: '2024-05-16', status: 'valid', ticketCode: 'ORD-7722' },
+    { id: '3', name: 'Robert Brown', email: 'robert@gmail.com', tierName: 'Early Bird', purchaseDate: '2024-05-14', status: 'valid', ticketCode: 'ORD-7723' },
+    { id: '4', name: 'Sarah Wilson', email: 'sarah@design.co', tierName: 'VIP Experience', purchaseDate: '2024-05-17', status: 'cancelled', ticketCode: 'ORD-7724' },
+    { id: '5', name: 'Michael Chen', email: 'm.chen@tech.com', tierName: 'General Admission', purchaseDate: '2024-05-18', status: 'used', ticketCode: 'ORD-7725' },
+    { id: '6', name: 'Emma Davis', email: 'emma.d@live.com', tierName: 'Early Bird', purchaseDate: '2024-05-12', status: 'valid', ticketCode: 'ORD-7726' },
+    { id: '7', name: 'David Miller', email: 'david@miller.net', tierName: 'General Admission', purchaseDate: '2024-05-19', status: 'valid', ticketCode: 'ORD-7727' },
 ];
 
 export default function EventAttendeesPage({ params }: { params: { id: string } }) {
@@ -33,7 +33,7 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
     const filteredAttendees = mockAttendees.filter(a => {
         const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.orderId.toLowerCase().includes(searchTerm.toLowerCase());
+            a.ticketCode.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -95,7 +95,7 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
                 onSearchChange={setSearchTerm}
             >
                 <div className={styles.filters}>
-                    {['all', 'registered', 'checked_in', 'cancelled'].map(status => (
+                    {['all', 'valid', 'used', 'cancelled', 'transferred'].map(status => (
                         <button
                             key={status}
                             className={`${styles.filterChip} ${statusFilter === status ? styles.activeChip : ''}`}

@@ -76,22 +76,8 @@ export const navItems: Record<DashboardMode, NavItem[]> = {
                 </svg>
             )
         },
-        {
-            name: 'Notifications', href: '/dashboard/organize/notifications', icon: (
-                <svg {...svgProps}>
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            )
-        },
-        {
-            name: 'Security', href: '/dashboard/organize/security', icon: (
-                <svg {...svgProps}>
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            )
-        },
+
+
         {
             name: 'Settings', href: '/dashboard/organize/settings', icon: (
                 <svg {...svgProps}>
@@ -153,13 +139,7 @@ export const navItems: Record<DashboardMode, NavItem[]> = {
                 </svg>
             )
         },
-        {
-            name: 'Notifications', href: '/dashboard/ads/notifications', icon: (
-                <svg {...svgProps}>
-                    <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            )
-        },
+
         {
             name: 'Settings', href: '/dashboard/ads/settings', icon: (
                 <svg {...svgProps}>
@@ -216,21 +196,7 @@ export const navItems: Record<DashboardMode, NavItem[]> = {
             )
         },
         {
-            name: 'Moderation', href: '/dashboard/admin/moderation', icon: (
-                <svg {...svgProps}>
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            )
-        },
-        {
-            name: 'Outreach', href: '/dashboard/admin/outreach', icon: (
-                <svg {...svgProps}>
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            )
-        },
-        {
-            name: 'Content', href: '/dashboard/admin/content', icon: (
+            name: 'Communications', href: '/dashboard/admin/communications', icon: (
                 <svg {...svgProps}>
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -241,33 +207,34 @@ export const navItems: Record<DashboardMode, NavItem[]> = {
             )
         },
         {
-            name: 'Support', href: '/dashboard/admin/support', icon: (
+            name: 'Support & Safety', href: '/dashboard/admin/support', icon: (
                 <svg {...svgProps}>
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             )
         },
         {
-            name: 'Finance', href: '/dashboard/admin/finance', icon: (
+            name: 'Finance & Reports', href: '/dashboard/admin/finance', icon: (
                 <svg {...svgProps}>
                     <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             )
         },
+
+
         {
-            name: 'Integrations', href: '/dashboard/admin/integrations', icon: (
+            name: 'Regions & Compliance', href: '/dashboard/admin/regions-compliance', icon: (
                 <svg {...svgProps}>
-                    <path d="M5.5 8.5L9 12l-3.5 3.5L2 12l3.5-3.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 2l3.5 3.5L12 9L8.5 5.5L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M18.5 8.5L22 12l-3.5 3.5L15 12l3.5-3.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 15l3.5 3.5L12 22l-3.5-3.5L12 15z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             )
         },
         {
-            name: 'System', href: '/dashboard/admin/system', icon: (
+            name: 'System Configs', href: '/dashboard/admin/system-configs', icon: (
                 <svg {...svgProps}>
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

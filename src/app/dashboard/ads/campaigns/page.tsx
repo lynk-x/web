@@ -13,6 +13,7 @@ const allCampaigns: AdsCampaign[] = [
     {
         id: '1',
         name: 'Summer Music Festival Promo',
+        type: 'banner',
         dates: 'Oct 12 - Oct 20, 2024',
         status: 'active',
         impressions: '12.5k',
@@ -22,6 +23,7 @@ const allCampaigns: AdsCampaign[] = [
     {
         id: '2',
         name: 'Tech Summit Early Bird',
+        type: 'interstitial',
         dates: 'Sep 01 - Sep 30, 2024',
         status: 'active',
         impressions: '8.2k',
@@ -31,6 +33,7 @@ const allCampaigns: AdsCampaign[] = [
     {
         id: '3',
         name: 'Weekend Jazz Night',
+        type: 'feed_card',
         dates: 'Nov 05 - Nov 07, 2024',
         status: 'paused',
         impressions: '5.1k',
@@ -40,6 +43,7 @@ const allCampaigns: AdsCampaign[] = [
     {
         id: '4',
         name: 'Art Gallery Opening',
+        type: 'map_pin',
         dates: 'Dec 01 - Dec 15, 2024',
         status: 'draft',
         impressions: '-',

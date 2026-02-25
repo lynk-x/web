@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import FinanceTable, { FinanceTransaction } from '@/components/organize/FinanceTable';
+import PayoutTable from '@/components/organize/PayoutTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -14,14 +15,17 @@ export default function OrganizerRevenuePage() {
     const supabase = createClient();
 
     const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
+    const [payouts, setPayouts] = useState<any[]>([]); // Any for now, will map to Payout interface
     const [isLoading, setIsLoading] = useState(true);
+
+    const [activeTab, setActiveTab] = useState<'transactions' | 'payouts'>('transactions');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8; // Increased from 2 to 8 for real usage
+    const itemsPerPage = 8;
 
     // Fetch Transactions
     const fetchTransactions = async () => {
@@ -67,9 +71,32 @@ export default function OrganizerRevenuePage() {
                 }));
                 setTransactions(mappedTxs);
             }
+
+            // Also fetch Payouts for this account
+            const { data: payoutData, error: payoutError } = await supabase
+                .from('payouts')
+                .select('*')
+                .eq('account_id', activeAccount.id)
+                .order('created_at', { ascending: false });
+
+            if (payoutError) throw payoutError;
+
+            if (payoutData) {
+                const mappedPayouts = payoutData.map(p => ({
+                    id: p.id,
+                    recipient: p.account_name || activeAccount.name,
+                    amount: p.amount,
+                    status: p.status,
+                    requestedAt: new Date(p.created_at).toLocaleDateString(),
+                    reference: p.id.split('-')[0].toUpperCase(), // Simple ref generation from UUID
+                    notes: p.admin_notes
+                }));
+                setPayouts(mappedPayouts);
+            }
+
         } catch (error: any) {
-            console.error("Error fetching transactions:", error);
-            showToast('Failed to load transaction history.', 'error');
+            console.error("Error fetching financials:", error);
+            showToast('Failed to load financial history.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -81,6 +108,7 @@ export default function OrganizerRevenuePage() {
         } else if (!isOrgLoading && !activeAccount) {
             setIsLoading(false);
             setTransactions([]);
+            setPayouts([]);
         }
     }, [isOrgLoading, activeAccount]);
 
@@ -161,6 +189,22 @@ export default function OrganizerRevenuePage() {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className={styles.tabsContainer} style={{ borderBottom: '1px solid var(--color-interface-outline)', display: 'flex', gap: '24px', marginBottom: '24px', paddingBottom: '8px' }}>
+                <button
+                    onClick={() => { setActiveTab('transactions'); setCurrentPage(1); }}
+                    style={{ background: 'none', border: 'none', color: activeTab === 'transactions' ? 'var(--color-brand-primary)' : 'var(--color-utility-primaryText)', fontSize: '15px', fontWeight: activeTab === 'transactions' ? 600 : 400, borderBottom: activeTab === 'transactions' ? '2px solid var(--color-brand-primary)' : 'none', paddingBottom: '8px', marginBottom: '-9px', cursor: 'pointer', opacity: activeTab === 'transactions' ? 1 : 0.7 }}
+                >
+                    Transactions
+                </button>
+                <button
+                    onClick={() => { setActiveTab('payouts'); setCurrentPage(1); }}
+                    style={{ background: 'none', border: 'none', color: activeTab === 'payouts' ? 'var(--color-brand-primary)' : 'var(--color-utility-primaryText)', fontSize: '15px', fontWeight: activeTab === 'payouts' ? 600 : 400, borderBottom: activeTab === 'payouts' ? '2px solid var(--color-brand-primary)' : 'none', paddingBottom: '8px', marginBottom: '-9px', cursor: 'pointer', opacity: activeTab === 'payouts' ? 1 : 0.7 }}
+                >
+                    Payouts
+                </button>
+            </div>
+
             {isLoading ? (
                 <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading financials...</div>
             ) : transactions.length === 0 ? (
@@ -194,25 +238,39 @@ export default function OrganizerRevenuePage() {
                                 value={typeFilter}
                                 onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
                             >
-                                <option value="all">All Types</option>
-                                <option value="ticket sale">Ticket Sales</option>
-                                <option value="vendor fee">Vendor Fees</option>
-                                <option value="sponsorship">Sponsorships</option>
-                                <option value="refund">Refunds</option>
+                                <option value="all">All Reasons</option>
+                                <option value="ticket_sale">Ticket Sales</option>
+                                <option value="subscription">Subscriptions</option>
+                                <option value="ad_campaign_payment">Ad Payments</option>
+                                <option value="organizer_payment">Organizer Payments</option>
+                                <option value="ad_refund">Ad Refunds</option>
+                                <option value="ticket_refund">Ticket Refunds</option>
                             </select>
                         </div>
                     </TableToolbar>
 
                     <div className={styles.tableWrapper}>
-                        <FinanceTable
-                            transactions={paginatedTransactions}
-                            selectedIds={selectedIds}
-                            onSelect={handleSelect}
-                            onSelectAll={handleSelectAll}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
+                        {activeTab === 'transactions' ? (
+                            <FinanceTable
+                                transactions={paginatedTransactions}
+                                selectedIds={selectedIds}
+                                onSelect={handleSelect}
+                                onSelectAll={handleSelectAll}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                            />
+                        ) : (
+                            <PayoutTable
+                                payouts={payouts}
+                                selectedIds={selectedIds}
+                                onSelect={handleSelect}
+                                onSelectAll={handleSelectAll}
+                                currentPage={1}
+                                totalPages={1}
+                                onPageChange={() => { }}
+                            />
+                        )}
                     </div>
                 </>
             )}
