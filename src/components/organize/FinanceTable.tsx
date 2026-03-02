@@ -82,9 +82,9 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
             header: 'Transaction',
             render: (tx) => (
                 <div>
-                    <div style={{ fontWeight: 500 }}>{tx.description}</div>
-                    {(tx.reference || tx.referenceId) && (
-                        <div style={{ fontSize: '12px', opacity: 0.5 }}>Ref: {tx.reference || tx.referenceId}</div>
+                    <div style={{ fontWeight: 500 }}>{tx.description || formatString(tx.type)}</div>
+                    {tx.reference && (
+                        <div style={{ fontSize: '12px', opacity: 0.5 }}>Ref: {tx.reference}</div>
                     )}
                     {tx.event && (
                         <div style={{ fontSize: '12px', opacity: 0.5 }}>{tx.event}</div>
@@ -122,7 +122,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
         },
         {
             header: 'Date',
-            render: (tx) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{tx.date}</div>,
+            render: (tx) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{new Date(tx.date).toLocaleDateString()}</div>,
         },
         {
             header: 'Status',

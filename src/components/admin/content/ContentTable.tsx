@@ -22,6 +22,7 @@ interface ContentTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    isLoading?: boolean;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ const ContentTable: React.FC<ContentTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    isLoading = false
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -98,7 +100,7 @@ const ContentTable: React.FC<ContentTableProps> = ({
         {
             label: 'Edit',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-            onClick: () => router.push(`/dashboard/admin/content/edit/${item.id}`),
+            onClick: () => router.push(`/dashboard/admin/communications/edit/${item.id}`),
         },
         {
             label: 'Delete',
@@ -123,6 +125,7 @@ const ContentTable: React.FC<ContentTableProps> = ({
             totalPages={totalPages}
             onPageChange={onPageChange}
             emptyMessage="No content found matching criteria."
+            isLoading={isLoading}
         />
     );
 };

@@ -11,21 +11,21 @@ interface ReportCardProps {
 }
 
 const ReportCard: React.FC<ReportCardProps> = ({ report }) => {
-    const getTypeClass = (type: string) => {
+    const getTargetTypeClass = (type: string) => {
         switch (type) {
-            case 'content': return styles.typeContent;
-            case 'bug': return styles.typeBug;
+            case 'event': return styles.typeBug; // Reusing colors
             case 'user': return styles.typeUser;
-            case 'system': return styles.typeSystem;
+            case 'message': return styles.typeContent;
             default: return '';
         }
     };
 
     const getStatusIndicatorClass = (status: string) => {
         switch (status) {
-            case 'open': return styles.statusOpen;
-            case 'in_review': return styles.statusReview;
+            case 'pending': return styles.statusOpen;
+            case 'investigating': return styles.statusReview;
             case 'resolved': return styles.statusResolved;
+            case 'dismissed': return styles.statusDismissed;
             default: return '';
         }
     };
@@ -37,8 +37,8 @@ const ReportCard: React.FC<ReportCardProps> = ({ report }) => {
     return (
         <div className={styles.card}>
             <div className={styles.header}>
-                <span className={`${styles.typeBadge} ${getTypeClass(report.type)}`}>
-                    {report.type}
+                <span className={`${styles.typeBadge} ${getTargetTypeClass(report.targetType)}`}>
+                    {report.targetType}
                 </span>
                 <span className={styles.date}>{report.date}</span>
             </div>

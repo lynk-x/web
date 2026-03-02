@@ -8,18 +8,33 @@
 /** An advertiser-managed campaign. */
 export interface AdsCampaign {
     id: string;
-    name: string;
+    /** Internal DB field: title */
+    title: string;
     /** From `ad_type` enum */
     type: 'banner' | 'interstitial' | 'feed_card' | 'map_pin';
-    status: 'active' | 'paused' | 'draft' | 'completed' | 'scheduled';
-    /** Combined date range string, e.g. "Oct 12 - Oct 20, 2024" */
-    dates: string;
-    /** Display-ready string, e.g. "12.5k" or "650" */
-    impressions: string;
-    /** Display-ready string, e.g. "650" */
-    clicks: string;
-    /** Display-ready currency string, e.g. "$450.00" */
-    spent: string;
+    /** From `campaign_status` enum */
+    status: 'draft' | 'active' | 'paused' | 'completed' | 'rejected';
+    /** ISO dates from start_at and end_at */
+    start_at: string;
+    end_at: string;
+    /** Financials */
+    total_budget: number;
+    daily_limit?: number;
+    spent_amount: number;
+    /** Creative/Targeting */
+    target_url: string;
+    target_event_id?: string;
+    target_country_code?: string;
+    /** UI-only metrics (usually joined from analytics) */
+    metrics?: {
+        impressions: number;
+        clicks: number;
+        ctr: number;
+    };
+    /** Backward compatibility / UI display fields */
+    name?: string; // mapping from title
+    spent?: string; // formatted spent_amount
+    dates?: string; // formatted range
 }
 
 /** An advertising invoice. */

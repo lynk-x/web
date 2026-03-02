@@ -57,8 +57,8 @@ export default function AdminCreateEventPage() {
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
                     location_name: data.location || null,
-                    start_datetime: startDateTime,
-                    end_datetime: endDateTime,
+                    starts_at: startDateTime,
+                    ends_at: endDateTime,
                     thumbnail_url: uploadedThumbnailUrl,
                     status: 'published' // Default to published for MVP
                 })

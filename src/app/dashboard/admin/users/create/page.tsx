@@ -16,8 +16,11 @@ export default function CreateUserPage() {
                     <h1 className={styles.title}>Create New User</h1>
                     <p className={styles.subtitle}>Add a new member to the platform.</p>
                 </div>
+                <button type="submit" form="user-form" className={styles.btnPrimary}>
+                    Create User
+                </button>
             </header>
-            <UserForm onDirtyChange={setIsDirty} />
+            <UserForm formId="user-form" hideActions={true} onDirtyChange={setIsDirty} />
         </div>
     );
 }

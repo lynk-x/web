@@ -21,6 +21,8 @@ interface ReportTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    isLoading?: boolean;
+    getActions?: (report: Report) => ActionItem[];
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -67,6 +69,8 @@ const ReportTable: React.FC<ReportTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    isLoading = false,
+    getActions: customGetActions,
 }) => {
     const { showToast } = useToast();
 
@@ -101,7 +105,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
         },
         {
             header: 'Date',
-            render: (report) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{report.date}</div>,
+            render: (report) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{new Date(report.date).toLocaleDateString()}</div>,
         },
         {
             header: 'Status',
@@ -178,13 +182,14 @@ const ReportTable: React.FC<ReportTableProps> = ({
         <DataTable<Report>
             data={reports}
             columns={columns}
-            getActions={getActions}
+            getActions={customGetActions || getActions}
             selectedIds={selectedIds}
             onSelect={onSelect}
             onSelectAll={onSelectAll}
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            isLoading={isLoading}
             emptyMessage="No reports found matching criteria."
         />
     );

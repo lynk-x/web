@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export interface Account {
     id: string;
@@ -26,15 +27,20 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
+    const { user } = useAuth();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [activeAccountId, setStoredActiveAccountId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchAccounts = async () => {
+        if (!user) {
+            setAccounts([]);
+            setStoredActiveAccountId(null);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
-            const { data: userData } = await supabase.auth.getUser();
-            if (!userData.user) return;
 
             // Fetch accounts the user is a member of
             const { data, error } = await supabase
@@ -51,7 +57,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         phone_number
                     )
                 `)
-                .eq('user_id', userData.user.id);
+                .eq('user_id', user.id);
 
             if (error) {
                 console.error("Error fetching accounts:", error);
@@ -92,7 +98,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
     useEffect(() => {
         fetchAccounts();
-    }, []);
+    }, [user]);
 
     const setActiveAccountId = (id: string) => {
         if (accounts.some(a => a.id === id)) {

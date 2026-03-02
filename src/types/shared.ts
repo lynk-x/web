@@ -48,6 +48,8 @@ export interface Column<T> {
     render: (item: T) => React.ReactNode;
     /** Optional inline styles applied to the `<th>` element. */
     headerStyle?: React.CSSProperties;
+    /** Optional inline styles applied to the `<td>` element. */
+    cellStyle?: React.CSSProperties;
 }
 
 /** Props for the generic `DataTable` component. */
@@ -72,6 +74,8 @@ export interface DataTableProps<T extends { id: string | number }> {
     onPageChange?: (page: number) => void;
     /** Message shown when `data` is empty. */
     emptyMessage?: string;
+    /** Whether the table is in a loading state. */
+    isLoading?: boolean;
     /** Optional additional CSS class on the outermost container. */
     className?: string;
 }

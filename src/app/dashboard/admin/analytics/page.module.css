@@ -1,0 +1,141 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+/* ── Tab bar ── */
+.tabs {
+    display: flex;
+    gap: var(--spacing-md);
+    border-bottom: 1px solid var(--color-interface-outline);
+    padding-bottom: 2px;
+    flex-wrap: wrap;
+}
+
+.tabBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.tabBtn:hover {
+    opacity: 1;
+}
+
+.tabActive {
+    opacity: 1;
+    color: var(--color-brand-primary);
+}
+
+.tabActive::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--color-brand-primary);
+    border-radius: 2px;
+}
+
+.content {
+    min-height: 400px;
+}
+
+
+/* ── Section title ── */
+.sectionTitle {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ── Two-column layout for charts / tables side-by-side ── */
+.splitRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 860px) {
+    .splitRow {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Generic card wrapper ── */
+.card {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    border-color: var(--color-brand-primary);
+    transform: translateY(-2px);
+}
+
+/* ── Bar graph rows ── */
+.barRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.barLabel {
+    font-size: 13px;
+    opacity: 0.8;
+    width: 120px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.barTrack {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--color-brand-primary);
+    transition: width 0.4s ease;
+}
+
+.barValue {
+    font-size: 12px;
+    font-family: monospace;
+    opacity: 0.6;
+    width: 70px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Refreshed-at notice ── */
+.refreshNote {
+    font-size: 11px;
+    opacity: 0.35;
+    text-align: right;
+    margin-top: 8px;
+}

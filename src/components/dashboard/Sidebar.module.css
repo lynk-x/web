@@ -65,7 +65,24 @@
     padding: var(--spacing-lg) var(--spacing-md);
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.navGroup {
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing-xs);
+}
+
+.groupTitle {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-utility-primaryText);
+    opacity: 0.4;
+    padding: 0 var(--spacing-md) 4px;
 }
 
 .navItem {

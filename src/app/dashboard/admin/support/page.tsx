@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 
@@ -8,481 +9,307 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import FilterGroup from '@/components/dashboard/FilterGroup';
+import Tabs from '@/components/dashboard/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
-import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import ReportTable from '@/components/admin/moderation/ReportTable';
-import type { Report } from '@/types/admin';
+import AppFeedbackTab from '@/components/admin/support/AppFeedbackTab';
+import UserBlocksTab from '@/components/admin/support/UserBlocksTab';
+import ReportReasonsTab from '@/components/admin/support/ReportReasonsTab';
+import type { Report, Ticket } from '@/types/admin';
 
-// =============================================================================
-// Types — aligned to the `support_tickets` DB table
-// =============================================================================
+type SupportTab = 'tickets' | 'moderation' | 'app-feedback' | 'blocks' | 'report-reasons';
 
-/**
- * Mirrors the `support_tickets` table.
- * Priority and status values match the CHECK constraints in the schema.
- *
- * DB query (when wiring up):
- *   supabase.from('support_tickets')
- *     .select('*, requester:profiles!requester_id(display_name), assignee:profiles!assigned_to(display_name)')
- *     .order('created_at', { ascending: false })
- */
-interface Ticket {
-    id: string;
-    /** Plain-text subject line of the ticket */
-    subject: string;
-    /** Display name of the user who raised the ticket */
-    requester: string;
-    /** Triage level: low | medium | high | critical */
-    priority: 'low' | 'medium' | 'high' | 'critical';
-    /** Lifecycle stage: open | in_progress | resolved | closed */
-    status: 'open' | 'in_progress' | 'resolved' | 'closed';
-    /** Display name of the assigned admin/staff member */
-    assignedTo: string;
-    /** Human-readable relative timestamp (e.g. "1 hour ago") */
-    lastUpdated: string;
-}
-
-// =============================================================================
-// Mock Data — 9 rows mirroring realistic support ticket scenarios
-// Replace with a live Supabase query when integrating.
-// =============================================================================
-const mockTickets: Ticket[] = [
-    { id: '1024', subject: 'Unable to withdraw funds', requester: 'Alice Walker', priority: 'high', status: 'open', assignedTo: 'John Doe', lastUpdated: '1 hour ago' },
-    { id: '1023', subject: 'Event ticket not received after payment', requester: 'Bob Martinez', priority: 'high', status: 'in_progress', assignedTo: 'Jane Smith', lastUpdated: '3 hours ago' },
-    { id: '1022', subject: 'Cannot update organizer profile photo', requester: 'Carol White', priority: 'medium', status: 'open', assignedTo: 'Unassigned', lastUpdated: '5 hours ago' },
-    { id: '1021', subject: 'Ad campaign rejected without explanation', requester: 'Dave Lee', priority: 'medium', status: 'resolved', assignedTo: 'John Doe', lastUpdated: '1 day ago' },
-    { id: '1020', subject: 'App crashes on iOS 17 on map screen', requester: 'Eve Chen', priority: 'critical', status: 'in_progress', assignedTo: 'Tech Team', lastUpdated: '2 days ago' },
-    { id: '1019', subject: 'Incorrect tax rate shown at checkout', requester: 'Frank Brown', priority: 'medium', status: 'open', assignedTo: 'Unassigned', lastUpdated: '2 days ago' },
-    { id: '1018', subject: 'Subscription renewal failed', requester: 'Grace Kim', priority: 'high', status: 'resolved', assignedTo: 'Jane Smith', lastUpdated: '3 days ago' },
-    { id: '1017', subject: 'Forum posts not showing for my event', requester: 'Henry Adams', priority: 'low', status: 'closed', assignedTo: 'John Doe', lastUpdated: '5 days ago' },
-    { id: '1016', subject: 'Two-factor authentication not working', requester: 'Isabella Scott', priority: 'high', status: 'open', assignedTo: 'Unassigned', lastUpdated: '1 week ago' },
-];
-
-/**
- * Mock data for the Moderation tab — aligned to `reports` DB table.
- *
- * `targetType` is derived from which of the three target FK columns is non-null:
- *   target_user_id → 'user', target_event_id → 'event', target_message_id → 'message'
- *
- * `status` uses `report_status` enum: pending | investigating | resolved | dismissed
- *
- * When wiring up:
- *   supabase.from('reports')
- *     .select('*, reporter:profiles!reporter_id(user_name), reason:report_reasons(category)')
- *     .order('created_at', { ascending: false })
- */
-const mockReports: Report[] = [
-    { id: 'r-1', targetType: 'user', targetId: 'u-1', title: 'Harassment in event chat', description: 'User sending threatening messages to attendees.', date: '1 hour ago', reporter: 'Alice Walker', status: 'pending', reasonId: 'harassment' },
-    { id: 'r-2', targetType: 'event', targetId: 'e-2', title: 'Misleading event description', description: 'Event listed as free but charges at the door.', date: '3 hours ago', reporter: 'Bob Martinez', status: 'investigating', reasonId: 'false_listing' },
-    { id: 'r-3', targetType: 'message', targetId: 'm-3', title: 'Spam messages in live chat', description: 'Bot-like account spamming referral links.', date: '5 hours ago', reporter: 'Carol White', status: 'pending', reasonId: 'spam' },
-    { id: 'r-4', targetType: 'user', targetId: 'u-4', title: 'Impersonation of official account', description: 'Account pretending to be @lynkx_official.', date: '1 day ago', reporter: 'Dave Lee', status: 'resolved', reasonId: 'impersonation' },
-    { id: 'r-5', targetType: 'event', targetId: 'e-5', title: 'Event cancelled, no refund issued', description: 'Organizer cancelled but kept ticket revenue.', date: '2 days ago', reporter: 'Eve Chen', status: 'investigating', reasonId: 'fraud' },
-    { id: 'r-6', targetType: 'message', targetId: 'm-6', title: 'Hate speech in forum', description: 'Multiple slurs directed at a community group.', date: '3 days ago', reporter: 'Frank Brown', status: 'dismissed', reasonId: 'hate_speech' },
-];
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/** Status badge colours mapped to schema CHECK values */
-const getStatusVariant = (status: Ticket['status']): BadgeVariant => {
-    switch (status) {
-        case 'open': return 'error';
-        case 'in_progress': return 'warning';
-        case 'resolved': return 'success';
-        case 'closed': return 'subtle';
-    }
-};
-
-/** Priority badge colours */
-const getPriorityVariant = (priority: Ticket['priority']): BadgeVariant => {
-    switch (priority) {
-        case 'critical': return 'error';
-        case 'high': return 'warning';
-        case 'medium': return 'info';
-        case 'low': return 'neutral';
-    }
-};
-
-/** Derive key metrics from the current ticket list */
-const getMetrics = (tickets: Ticket[]) => ({
-    open: tickets.filter(t => t.status === 'open').length,
-    inProgress: tickets.filter(t => t.status === 'in_progress').length,
-    resolved: tickets.filter(t => t.status === 'resolved').length,
-    critical: tickets.filter(t => t.priority === 'critical').length,
-});
-
-// =============================================================================
-// Component
-// =============================================================================
-
-export default function SupportPage() {
+function SupportContent() {
     const { showToast } = useToast();
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const supabase = useMemo(() => createClient(), []);
 
-    // Top-level tab: tickets vs moderation reports
-    const [activeTab, setActiveTab] = useState<'tickets' | 'moderation'>('tickets');
+    const initialTab = searchParams.get('tab') as SupportTab;
+    const [activeTab, setActiveTab] = useState<SupportTab>(
+        (initialTab && ['tickets', 'moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(initialTab))
+            ? initialTab
+            : 'moderation'
+    );
+    const [isLoading, setIsLoading] = useState(true);
 
-    // ── Tickets State ─────────────────────────────────────────────────
+    // ── Data State ────────────────────────────────────────────────────
+    const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [reports, setReports] = useState<Report[]>([]);
+
+    // ── Filtering State ───────────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [priorityFilter, setPriorityFilter] = useState('all');
-    const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    // ── Reports (Moderation) State ─────────────────────────────────
-    const [reportSearchTerm, setReportSearchTerm] = useState('');
-    const [reportStatusFilter, setReportStatusFilter] = useState('all');
-    const [selectedReportIds, setSelectedReportIds] = useState<Set<string>>(new Set());
-    const [reportPage, setReportPage] = useState(1);
-    const reportsPerPage = 5;
+    // Tab-specific filters
+    const [moderationFilter, setModerationFilter] = useState('all');
+    const [ticketFilter, setTicketFilter] = useState('all');
 
-    // Filter reports — report_status enum: pending | investigating | resolved | dismissed
-    const filteredReports = mockReports.filter(r => {
-        const matchesSearch = r.title.toLowerCase().includes(reportSearchTerm.toLowerCase()) ||
-            r.reporter.toLowerCase().includes(reportSearchTerm.toLowerCase());
-        const matchesStatus = reportStatusFilter === 'all' || r.status === reportStatusFilter;
-        return matchesSearch && matchesStatus;
-    });
-    const reportTotalPages = Math.ceil(filteredReports.length / reportsPerPage);
-    const paginatedReports = filteredReports.slice(
-        (reportPage - 1) * reportsPerPage,
-        reportPage * reportsPerPage
-    );
-
-    useEffect(() => { setReportPage(1); setSelectedReportIds(new Set()); }, [reportSearchTerm, reportStatusFilter]);
-
-    // ── Filter Logic ────────────────────────────────────────────────────────
-
-    const filteredTickets = mockTickets.filter(ticket => {
-        const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.requester.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
-        const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
-        return matchesSearch && matchesStatus && matchesPriority;
-    });
-
-    // ── Pagination ───────────────────────────────────────────────────────────
-
-    const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
-    const paginatedTickets = filteredTickets.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset page + selection when filters change
     useEffect(() => {
-        setCurrentPage(1);
-        setSelectedTicketIds(new Set());
-    }, [searchTerm, statusFilter, priorityFilter]);
-
-    // ── Selection Logic ──────────────────────────────────────────────────────
-
-    const handleSelectTicket = (id: string) => {
-        const next = new Set(selectedTicketIds);
-        next.has(id) ? next.delete(id) : next.add(id);
-        setSelectedTicketIds(next);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedTicketIds.size === paginatedTickets.length) {
-            setSelectedTicketIds(new Set());
-        } else {
-            setSelectedTicketIds(new Set(paginatedTickets.map(t => t.id)));
+        const tab = searchParams.get('tab') as SupportTab;
+        if (tab && ['tickets', 'moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(tab)) {
+            setActiveTab(tab);
         }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab: SupportTab) => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
     };
 
-    // ── Bulk Actions ─────────────────────────────────────────────────────────
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Fetch everything in parallel to populate stat cards
+            const [ticketsRes, reportsRes, feedbackRes] = await Promise.all([
+                supabase
+                    .from('support_tickets')
+                    .select('*')
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('reports')
+                    .select('*, reporter:profiles!reporter_id(user_name)')
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('app_feedback')
+                    .select('*, user:profiles(full_name)')
+                    .order('created_at', { ascending: false })
+            ]);
 
-    const handleBulkAssign = () => {
-        showToast(`Assigning ${selectedTicketIds.size} ticket(s)…`, 'info');
-        setTimeout(() => { showToast('Tickets assigned.', 'success'); setSelectedTicketIds(new Set()); }, 1000);
-    };
+            if (ticketsRes.error) throw ticketsRes.error;
+            if (reportsRes.error) throw reportsRes.error;
+            if (feedbackRes.error) throw feedbackRes.error;
 
-    const handleBulkResolve = () => {
-        showToast(`Resolving ${selectedTicketIds.size} ticket(s)…`, 'info');
-        setTimeout(() => { showToast('Tickets marked resolved.', 'success'); setSelectedTicketIds(new Set()); }, 1000);
-    };
+            setTickets(ticketsRes.data.map(t => ({
+                id: t.id,
+                reference: t.reference,
+                subject: t.subject,
+                requester: 'Anonymous',
+                priority: t.priority,
+                status: t.status,
+                lastUpdated: new Date(t.updated_at).toLocaleDateString()
+            })));
 
-    const handleBulkClose = () => {
-        showToast(`Closing ${selectedTicketIds.size} ticket(s)…`, 'info');
-        setTimeout(() => { showToast('Tickets closed.', 'success'); setSelectedTicketIds(new Set()); }, 1000);
-    };
+            setReports(reportsRes.data.map(r => ({
+                id: r.id,
+                targetType: r.target_user_id ? 'user' : r.target_event_id ? 'event' : 'message',
+                targetId: r.target_user_id || r.target_event_id || r.target_message_id,
+                title: `Report #${r.id.slice(0, 8)}`,
+                description: r.description,
+                date: new Date(r.created_at).toLocaleDateString(),
+                reporter: r.reporter?.user_name || 'Anonymous',
+                status: r.status,
+                reasonId: r.reason_id
+            })));
 
-    const bulkActions: BulkAction[] = [
-        { label: 'Assign', onClick: handleBulkAssign, variant: 'default' },
-        { label: 'Resolve', onClick: handleBulkResolve, variant: 'success' },
-        { label: 'Close', onClick: handleBulkClose, variant: 'danger' },
+
+        } catch (err: any) {
+            showToast(err.message || "Failed to load data", "error");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, showToast]);
+
+    useEffect(() => {
+        fetchData();
+    }, [activeTab, fetchData]);
+
+    // ── Ticket Actions ────────────────────────────────────────────────
+    const getTicketActions = (ticket: Ticket): ActionItem[] => [
+        {
+            label: 'View',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+            onClick: () => router.push(`/dashboard/admin/support/view/${ticket.id}`),
+        },
+        {
+            label: 'Edit',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
+            onClick: () => router.push(`/dashboard/admin/support/edit/${ticket.id}`),
+        },
+        {
+            label: 'Resolve',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+            onClick: async () => {
+                showToast(`Resolving ticket...`, 'info');
+                const { error } = await supabase.from('support_tickets').update({ status: 'resolved', updated_at: new Date().toISOString() }).eq('id', ticket.id);
+                if (error) showToast(error.message, 'error');
+                else {
+                    showToast(`Ticket resolved`, 'success');
+                    fetchData();
+                }
+            },
+            variant: 'success'
+        }
     ];
 
-    // ── Table Columns ────────────────────────────────────────────────────────
+    const getModerationActions = (report: Report): ActionItem[] => {
+        const actions: ActionItem[] = [
+            {
+                label: 'Investigate',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+                onClick: async () => {
+                    showToast('Starting investigation...', 'info');
+                    const { error } = await supabase.from('reports').update({ status: 'investigating', updated_at: new Date().toISOString() }).eq('id', report.id);
+                    if (error) showToast(error.message, 'error');
+                    else {
+                        showToast('Started investigation', 'info');
+                        fetchData();
+                    }
+                }
+            }
+        ];
 
-    const columns: Column<Ticket>[] = [
+        if (report.status !== 'resolved') {
+            actions.push({
+                label: 'Resolve',
+                variant: 'success',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+                onClick: async () => {
+                    showToast('Resolving report...', 'info');
+                    const { error } = await supabase.from('reports').update({ status: 'resolved', resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', report.id);
+                    if (error) showToast(error.message, 'error');
+                    else {
+                        showToast('Report resolved', 'success');
+                        fetchData();
+                    }
+                }
+            });
+        }
+
+        return actions;
+    };
+
+    const ticketColumns: Column<Ticket>[] = [
         {
             header: 'Subject',
-            render: (ticket) => (
+            render: t => (
                 <div>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>#{ticket.id} — {ticket.subject}</div>
-                    <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '2px' }}>Raised by {ticket.requester}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 600 }}>{t.subject}</span>
+                        <span style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', opacity: 0.6 }}>
+                            {t.reference}
+                        </span>
+                    </div>
+                    <div style={{ fontSize: 12, opacity: 0.6 }}>{t.requester}</div>
                 </div>
             )
         },
-        {
-            header: 'Priority',
-            render: (ticket) => (
-                <Badge label={ticket.priority.toUpperCase()} variant={getPriorityVariant(ticket.priority)} />
-            )
-        },
-        {
-            header: 'Status',
-            // Maps to CHECK constraint: open | in_progress | resolved | closed
-            render: (ticket) => (
-                <Badge label={ticket.status.replace('_', ' ').toUpperCase()} variant={getStatusVariant(ticket.status)} showDot />
-            )
-        },
-        {
-            header: 'Assigned To',
-            render: (ticket) => (
-                <div style={{ fontSize: '13px', opacity: ticket.assignedTo === 'Unassigned' ? 0.4 : 0.9 }}>
-                    {ticket.assignedTo}
-                </div>
-            )
-        },
-        {
-            header: 'Last Updated',
-            render: (ticket) => <div style={{ fontSize: '13px', opacity: 0.7 }}>{ticket.lastUpdated}</div>
-        },
+        { header: 'Priority', render: t => <Badge label={t.priority.toUpperCase()} variant={t.priority === 'critical' ? 'error' : t.priority === 'high' ? 'warning' : 'info'} /> },
+        { header: 'Status', render: t => <Badge label={t.status.toUpperCase()} variant={t.status === 'open' ? 'error' : 'success'} showDot /> },
+        { header: 'Updated', render: t => t.lastUpdated }
     ];
-
-    // ── Row Actions ──────────────────────────────────────────────────────────
-
-    const getRowActions = (ticket: Ticket): ActionItem[] => [
-        {
-            label: 'View Ticket',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-            onClick: () => router.push(`/dashboard/admin/support/${ticket.id}`),
-        },
-        {
-            label: ticket.status === 'resolved' || ticket.status === 'closed' ? 'Reopen' : 'Mark Resolved',
-            variant: ticket.status === 'resolved' || ticket.status === 'closed' ? 'default' : 'success',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-            onClick: () => showToast(`Toggling status for ticket #${ticket.id}`, 'info'),
-        },
-        {
-            label: 'Assign to Me',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
-            onClick: () => showToast(`Assigning ticket #${ticket.id} to you`, 'info'),
-        },
-    ];
-
-    // ── Metrics ──────────────────────────────────────────────────────────────
-
-    const metrics = getMetrics(mockTickets);
-
-    // ── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className={styles.container}>
-            <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ flex: '1 1 auto' }}>
-                    <h1 className={adminStyles.title}>Support &amp; Safety</h1>
-                    <p className={adminStyles.subtitle}>
-                        Manage support tickets raised by users and staff. Content moderation is handled by forum moderators.
-                    </p>
-                </div>
-                {activeTab === 'tickets' && (
-                    <button
-                        className={adminStyles.btnPrimary}
-                        onClick={() => router.push('/dashboard/admin/support/create')}
-                    >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        New Ticket
-                    </button>
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title="Support & Safety"
+                subtitle="Platform-wide moderation and user assistance."
+                actionLabel="Create Ticket"
+                onActionClick={() => router.push('/dashboard/admin/support/create')}
+                actionIcon={
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                }
+            />
+
+            <div className={sharedStyles.statsGrid}>
+                <StatCard
+                    label="Active Reports"
+                    value={reports.filter(r => r.status === 'pending' || r.status === 'investigating').length}
+                    change="Requires Attention"
+                    trend="negative"
+                />
+                <StatCard
+                    label="Open Tickets"
+                    value={tickets.filter(t => t.status === 'open').length}
+                    change="Help Desk"
+                    trend="neutral"
+                />
+                <StatCard
+                    label="App Health"
+                    value="Stable"
+                    change="Platform Verified"
+                    trend="positive"
+                />
+                <StatCard
+                    label="Escalations"
+                    value={tickets.filter(t => t.priority === 'critical' || t.priority === 'high').length}
+                    change="Urgent Priority"
+                    trend="negative"
+                />
+            </div>
+
+            <Tabs
+                options={[
+                    { id: 'moderation', label: 'Moderation' },
+                    { id: 'tickets', label: 'Tickets' },
+                    { id: 'app-feedback', label: 'App Feedback' },
+                    { id: 'blocks', label: 'User Blocks' },
+                    { id: 'report-reasons', label: 'Report Reasons' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={(id) => handleTabChange(id as any)}
+                className={styles.tabsReset}
+            />
+
+            <TableToolbar searchPlaceholder="Search..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
+                {activeTab === 'moderation' && (
+                    <FilterGroup
+                        options={['all', 'pending', 'investigating', 'resolved', 'dismissed'].map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))}
+                        currentValue={moderationFilter}
+                        onChange={setModerationFilter}
+                    />
                 )}
-            </header>
+                {activeTab === 'tickets' && (
+                    <FilterGroup
+                        options={['all', 'open', 'pending', 'resolved', 'closed'].map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))}
+                        currentValue={ticketFilter}
+                        onChange={setTicketFilter}
+                    />
+                )}
+            </TableToolbar>
 
-            {/* Sub-nav: Support Tickets | Moderation Reports */}
-            <div className={adminStyles.tabs}>
-                <button
-                    className={`${adminStyles.tab} ${activeTab === 'tickets' ? adminStyles.tabActive : ''}`}
-                    onClick={() => setActiveTab('tickets')}
-                >Support Tickets</button>
-                <button
-                    className={`${adminStyles.tab} ${activeTab === 'moderation' ? adminStyles.tabActive : ''}`}
-                    onClick={() => setActiveTab('moderation')}
-                >
-                    Moderation Reports
-                    {mockReports.filter(r => r.status === 'pending').length > 0 && (
-                        <span style={{ marginLeft: 6, background: 'rgba(239,68,68,0.25)', color: '#f87171', borderRadius: 32, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>
-                            {mockReports.filter(r => r.status === 'pending').length}
-                        </span>
+            {activeTab === 'moderation' && (
+                <ReportTable
+                    reports={reports.filter(r =>
+                        (moderationFilter === 'all' || r.status === moderationFilter) &&
+                        (r.title.toLowerCase().includes(searchTerm.toLowerCase()) || r.reporter.toLowerCase().includes(searchTerm.toLowerCase()))
                     )}
-                </button>
-            </div>
-
-            {/* ── Key Metrics ─────────────────────────────────────────── */}
-            <div className={adminStyles.statsGrid}>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>Open Tickets</span>
-                    <div className={adminStyles.statValue} style={{ color: '#e57373' }}>{metrics.open}</div>
-                </div>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>In Progress</span>
-                    <div className={adminStyles.statValue} style={{ color: '#fdd835' }}>{metrics.inProgress}</div>
-                </div>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>Resolved</span>
-                    <div className={adminStyles.statValue} style={{ color: '#81c784' }}>{metrics.resolved}</div>
-                </div>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>Critical Priority</span>
-                    <div className={adminStyles.statValue} style={{ color: '#ff5252' }}>{metrics.critical}</div>
-                </div>
-                <div className={adminStyles.statCard}>
-                    {/* Pending reports from the `reports` table — report_status = 'pending' */}
-                    <span className={adminStyles.statLabel}>Pending Reports</span>
-                    <div className={adminStyles.statValue} style={{ color: '#fdd835' }}>
-                        {mockReports.filter(r => r.status === 'pending').length}
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Support Tickets Tab ──────────────────────────────────── */}
-            {activeTab === 'tickets' && (<>
-
-                {/* ── Toolbar ──────────────────────────────────────────────── */}
-                <TableToolbar
-                    searchPlaceholder="Search tickets by subject or requester…"
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                >
-                    {/* Status filter — maps to schema CHECK values */}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {[
-                            { value: 'all', label: 'All Reports' },
-                            { value: 'pending', label: 'Pending' },
-                            { value: 'investigating', label: 'Investigating' },
-                            { value: 'resolved', label: 'Resolved' },
-                            { value: 'dismissed', label: 'Dismissed' },
-                        ].map(({ value, label }) => (
-                            <button
-                                key={value}
-                                className={`${adminStyles.chip} ${reportStatusFilter === value ? adminStyles.chipActive : ''}`}
-                                onClick={() => { setReportStatusFilter(value); setReportPage(1); }}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Priority filter — maps to schema CHECK values */}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {[
-                            { value: 'all', label: 'All Priority' },
-                            { value: 'critical', label: '🔴 Critical' },
-                            { value: 'high', label: '🟠 High' },
-                            { value: 'medium', label: '🟡 Medium' },
-                            { value: 'low', label: '🟢 Low' },
-                        ].map(({ value, label }) => (
-                            <button
-                                key={value}
-                                className={`${adminStyles.chip} ${priorityFilter === value ? adminStyles.chipActive : ''}`}
-                                onClick={() => setPriorityFilter(value)}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </TableToolbar>
-
-                {/* ── Bulk Actions ─────────────────────────────────────────── */}
-                <BulkActionsBar
-                    selectedCount={selectedTicketIds.size}
-                    actions={bulkActions}
-                    onCancel={() => setSelectedTicketIds(new Set())}
-                    itemTypeLabel="tickets"
+                    isLoading={isLoading}
+                    getActions={getModerationActions}
                 />
+            )}
 
-                {/* ── Table ────────────────────────────────────────────────── */}
+            {activeTab === 'tickets' && (
                 <DataTable<Ticket>
-                    data={paginatedTickets}
-                    columns={columns}
-                    getActions={getRowActions}
-                    selectedIds={selectedTicketIds}
-                    onSelect={handleSelectTicket}
-                    onSelectAll={handleSelectAll}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    emptyMessage="No support tickets found matching current filters."
+                    data={tickets.filter(t =>
+                        (ticketFilter === 'all' || t.status === ticketFilter) &&
+                        (t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || t.requester.toLowerCase().includes(searchTerm.toLowerCase()))
+                    )}
+                    columns={ticketColumns}
+                    getActions={getTicketActions}
+                    isLoading={isLoading}
                 />
-            </>)
-            }
+            )}
+        </div>
+    );
+}
 
-            {/* ── Moderation Reports Tab ── backed by `reports` table + report_status enum ── */}
-            {
-                activeTab === 'moderation' && (
-                    <>
-                        <TableToolbar
-                            searchPlaceholder="Search by title or reporter..."
-                            searchValue={reportSearchTerm}
-                            onSearchChange={setReportSearchTerm}
-                        >
-                            {/* report_status enum filter chips */}
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                {[
-                                    { value: 'all', label: 'All' },
-                                    { value: 'pending', label: 'Pending' },
-                                    { value: 'investigating', label: 'Investigating' },
-                                    { value: 'resolved', label: 'Resolved' },
-                                    { value: 'dismissed', label: 'Dismissed' },
-                                ].map(({ value, label }) => (
-                                    <button
-                                        key={value}
-                                        className={`${adminStyles.chip} ${reportStatusFilter === value ? adminStyles.chipActive : ''}`}
-                                        onClick={() => setReportStatusFilter(value)}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                        </TableToolbar>
-                        <BulkActionsBar
-                            selectedCount={selectedReportIds.size}
-                            actions={[
-                                { label: 'Begin Investigation', onClick: () => { showToast(`Investigating ${selectedReportIds.size} reports...`, 'info'); setTimeout(() => { showToast('Reports marked as investigating.', 'info'); setSelectedReportIds(new Set()); }, 1000); }, variant: 'default' },
-                                { label: 'Dismiss Selected', onClick: () => { showToast(`Dismissing ${selectedReportIds.size} reports...`, 'info'); setTimeout(() => { showToast('Reports dismissed.', 'warning'); setSelectedReportIds(new Set()); }, 1000); }, variant: 'danger' },
-                            ]}
-                            onCancel={() => setSelectedReportIds(new Set())}
-                            itemTypeLabel="reports"
-                        />
-                        <ReportTable
-                            reports={paginatedReports}
-                            selectedIds={selectedReportIds}
-                            onSelect={(id) => {
-                                const next = new Set(selectedReportIds);
-                                next.has(id) ? next.delete(id) : next.add(id);
-                                setSelectedReportIds(next);
-                            }}
-                            onSelectAll={() => {
-                                if (selectedReportIds.size === paginatedReports.length) {
-                                    setSelectedReportIds(new Set());
-                                } else {
-                                    setSelectedReportIds(new Set(paginatedReports.map(r => r.id)));
-                                }
-                            }}
-                            currentPage={reportPage}
-                            totalPages={reportTotalPages}
-                            onPageChange={setReportPage}
-                        />
-                    </>
-                )
-            }
-        </div >
+export default function SupportPage() {
+    return (
+        <Suspense fallback={<div className={adminStyles.loading}>Loading Support...</div>}>
+            <SupportContent />
+        </Suspense>
     );
 }

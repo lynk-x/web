@@ -1,29 +1,66 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import ContentForm from '@/components/admin/content/Form/ContentForm';
 import BackButton from '@/components/shared/BackButton';
 import styles from '@/app/dashboard/admin/page.module.css';
-
-// Mock data fetch
-const mockContent = [
-    { id: '1', title: 'Terms of Service', slug: '/terms', type: 'page', status: 'published', content: '<h2>Terms of Service</h2><p>Welcome to Lynk-X...</p>' },
-    { id: '4', title: 'Welcome to Lynk-X 2.0', slug: '/blog/welcome-v2', type: 'post', status: 'published', content: '<h2>Big News!</h2><p>We are excited to announce...</p>' },
-];
+import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { ContentItem } from '@/types/admin';
 
 export default function AdminEditContentPage() {
     const params = useParams();
+    const router = useRouter();
+    const { showToast } = useToast();
     const id = params.id as string;
+    const [item, setItem] = useState<ContentItem | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [isDirty, setIsDirty] = useState(false);
+    const supabase = createClient();
 
-    const item = mockContent.find(c => c.id === id) || {
-        title: 'Draft Content',
-        slug: '/draft',
-        type: 'page',
-        status: 'draft',
-        content: '<p>Standard mock content for editing...</p>'
-    };
+    useEffect(() => {
+        async function fetchItem() {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('cms_pages')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setItem({
+                        id: data.id,
+                        title: data.title,
+                        slug: data.slug,
+                        type: data.type,
+                        status: data.status,
+                        content: data.content,
+                        author: 'System',
+                        lastUpdated: new Date(data.updated_at).toLocaleDateString()
+                    });
+                }
+            } catch (err: any) {
+                showToast(err.message, 'error');
+                router.push('/dashboard/admin/communications?tab=content');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        if (id) fetchItem();
+    }, [id, supabase, router, showToast]);
+
+    if (isLoading) {
+        return (
+            <div className={styles.container}>
+                <div style={{ padding: '80px', textAlign: 'center', opacity: 0.5 }}>Loading content...</div>
+            </div>
+        );
+    }
+
+    if (!item) return null;
 
     return (
         <div className={styles.container}>
@@ -35,7 +72,7 @@ export default function AdminEditContentPage() {
                 </div>
             </header>
 
-            <ContentForm initialData={item as any} isEditing={true} onDirtyChange={setIsDirty} />
+            <ContentForm initialData={item} isEditing={true} onDirtyChange={setIsDirty} />
         </div>
     );
 }

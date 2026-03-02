@@ -4,16 +4,33 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { Event } from '@/types';
 import styles from './EventDetailsView.module.css';
+import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 
 interface EventDetailsViewProps {
     event: Event;
 }
 
+const mockDisclaimers: Disclaimer[] = [
+    {
+        id: 'd1',
+        title: 'Safety Waiver',
+        content: 'By attending this event, you acknowledge the inherent risks involved in large public gatherings. You agree to follow all safety protocols outlined by the organizers and local authorities.'
+    },
+    {
+        id: 'd2',
+        title: 'No Refund Policy',
+        content: 'All ticket sales are final. Refunds will only be issued if the event is officially cancelled by the organizer. In the event of rescheduling, tickets will remain valid for the new date.'
+    }
+];
+
 const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
+    const router = useRouter();
     const [isAboutExpanded, setIsAboutExpanded] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<number | null>(0);
+    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
     const toggleTicket = (index: number) => {
         if (selectedTicket === index) {
@@ -21,6 +38,18 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
         } else {
             setSelectedTicket(index);
         }
+    };
+
+    const handleGetTicketClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (selectedTicket !== null) {
+            setIsDisclaimerOpen(true);
+        }
+    };
+
+    const handleAcceptDisclaimer = () => {
+        setIsDisclaimerOpen(false);
+        router.push(`/checkout?eventId=${event.id}&ticketIndex=${selectedTicket}`);
     };
 
     // Format Date Range
@@ -155,15 +184,22 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
                     </div>
 
                     <div className={styles.footerActions}>
-                        <Link
-                            href={selectedTicket !== null ? `/checkout?eventId=${event.id}&ticketIndex=${selectedTicket}` : '#'}
+                        <button
+                            onClick={handleGetTicketClick}
                             className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
                         >
-                            Get ticket {selectedTicket !== null && `(KES ${selectedTicket === 0 ? (event.low_price || 0) : /* Logic for other tickets would go here */ (event.low_price || 0) * 2})`}
-                        </Link>
+                            Get ticket {selectedTicket !== null && `(KES ${selectedTicket === 0 ? (event.low_price || 0) : (event.low_price || 0) * 2})`}
+                        </button>
                     </div>
                 </motion.div>
             </div>
+
+            <DisclaimerModal
+                isOpen={isDisclaimerOpen}
+                disclaimers={mockDisclaimers}
+                onAccept={handleAcceptDisclaimer}
+                onClose={() => setIsDisclaimerOpen(false)}
+            />
         </motion.div>
     );
 };

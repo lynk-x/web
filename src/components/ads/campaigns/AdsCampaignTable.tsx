@@ -60,7 +60,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
     const columns: Column<AdsCampaign>[] = [
         {
             header: 'Campaign',
-            render: (campaign) => <div style={{ fontWeight: 500 }}>{campaign.name}</div>,
+            render: (campaign) => <div style={{ fontWeight: 500 }}>{campaign.title}</div>,
         },
         {
             header: 'Type',
@@ -76,7 +76,9 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             header: 'Spend',
             render: (campaign) => (
                 <div className={styles.metrics}>
-                    <span className={styles.metricValue}>{campaign.spent}</span>
+                    <span className={styles.metricValue}>
+                        ${campaign.spent_amount.toLocaleString()} / ${campaign.total_budget.toLocaleString()}
+                    </span>
                 </div>
             ),
         },
@@ -84,20 +86,26 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             header: 'Performance',
             render: (campaign) => (
                 <div className={styles.metrics}>
-                    <span className={styles.metricValue}>{campaign.impressions} Impr.</span>
+                    <span className={styles.metricValue}>
+                        {campaign.metrics?.impressions.toLocaleString() || '0'} Impr.
+                    </span>
                     <span className={styles.metricLabel}>
-                        {campaign.clicks} clicks
+                        {campaign.metrics?.clicks.toLocaleString() || '0'} clicks ({campaign.metrics?.ctr || '0'}% CTR)
                     </span>
                 </div>
             ),
         },
         {
             header: 'Dates',
-            render: (campaign) => (
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                    {campaign.dates}
-                </div>
-            ),
+            render: (campaign) => {
+                const start = new Date(campaign.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const end = new Date(campaign.end_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return (
+                    <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                        {start} - {end}
+                    </div>
+                );
+            },
         },
     ];
 
@@ -140,7 +148,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             variant: 'danger',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
             onClick: () => {
-                showToast(`Deleting campaign ${campaign.name}...`, 'info');
+                showToast(`Deleting campaign ${campaign.title}...`, 'info');
                 setTimeout(() => showToast('Campaign deleted.', 'success'), 1500);
             },
         });

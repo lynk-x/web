@@ -28,6 +28,7 @@ export interface OrganizerEvent {
     /** Whether the event is private — from `events.is_private` column */
     isPrivate?: boolean;
     thumbnailUrl?: string;
+    reportsCount?: number;
 }
 
 /** A row in the organizer events (overview) table. */
@@ -89,7 +90,13 @@ export interface Payout {
     status: 'requested' | 'processing' | 'completed' | 'failed' | 'rejected';
     /** ISO date string of the payout request */
     requestedAt: string;
-    /** Reference code (from `payout_ref_seq` e.g. PO-1001) */
+    /** From accounts.kyc_status - pending | submitted | approved | rejected | suspended */
+    kyc_status?: 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended';
+    /** Aligned to kyc_status logic: approved accounts are verified */
+    is_verified?: boolean;
+    /** JSON metadata for provider or audit details */
+    metadata?: any;
+    /** Reference code (from payout_ref_seq e.g. PO-1001) */
     reference?: string;
     /** Internal admin notes */
     notes?: string;

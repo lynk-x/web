@@ -1,0 +1,106 @@
+.container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: calc(var(--spacing-md) * -2);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.inputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.inputWrapper input.dateInput {
+    width: 150px;
+    padding-left: 36px;
+}
+
+.relative {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.calendarIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.4;
+    color: var(--color-utility-primaryText);
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.relative:focus-within .calendarIcon {
+    opacity: 0.9;
+    color: var(--color-brand-primary);
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+    filter: none;
+    /* Reset the global filter if any */
+    opacity: 0;
+    /* Hide it but keep it clickable over the whole input */
+}
+
+.label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.5;
+    white-space: nowrap;
+}
+
+.info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    opacity: 0.4;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

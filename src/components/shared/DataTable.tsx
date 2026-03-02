@@ -49,6 +49,7 @@ function DataTable<T extends { id: string | number }>({
     totalPages = 1,
     onPageChange,
     emptyMessage = 'No data found.',
+    isLoading = false,
     className = '',
 }: DataTableProps<T>) {
     const { allSelected, isIndeterminate } = useTableSelection(data, selectedIds);
@@ -82,7 +83,7 @@ function DataTable<T extends { id: string | number }>({
 
                         {/* Actions header */}
                         {getActions && (
-                            <th style={{ textAlign: 'right' }}>Actions</th>
+                            <th style={{ textAlign: 'right', paddingLeft: '0', width: '80px' }}>Actions</th>
                         )}
                     </tr>
                 </thead>
@@ -105,12 +106,12 @@ function DataTable<T extends { id: string | number }>({
 
                             {/* Data cells */}
                             {columns.map((col, idx) => (
-                                <td key={idx}>{col.render(item)}</td>
+                                <td key={idx} style={col.cellStyle}>{col.render(item)}</td>
                             ))}
 
                             {/* Row actions */}
                             {getActions && (
-                                <td>
+                                <td style={{ paddingLeft: '0', textAlign: 'right', width: '80px' }}>
                                     <div className={styles.actions}>
                                         <TableRowActions actions={getActions(item)} />
                                     </div>
@@ -119,8 +120,20 @@ function DataTable<T extends { id: string | number }>({
                         </tr>
                     ))}
 
+                    {/* Loading State */}
+                    {isLoading && (
+                        <tr>
+                            <td colSpan={totalColumns} className={styles.emptyState} style={{ opacity: 0.5 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <svg className={styles.spinner} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                                    Loading data...
+                                </div>
+                            </td>
+                        </tr>
+                    )}
+
                     {/* Empty state */}
-                    {data.length === 0 && (
+                    {!isLoading && data.length === 0 && (
                         <tr>
                             <td colSpan={totalColumns} className={styles.emptyState}>
                                 {emptyMessage}

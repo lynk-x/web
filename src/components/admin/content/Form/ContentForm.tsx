@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './ContentForm.module.css';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import { createClient } from '@/utils/supabase/client';
 import { ContentItem } from '@/types/admin';
 import { useToast } from '@/components/ui/Toast';
 
@@ -11,9 +12,10 @@ interface ContentFormProps {
     initialData?: Partial<ContentItem>;
     isEditing?: boolean;
     onDirtyChange?: (isDirty: boolean) => void;
+    showActions?: boolean;
 }
 
-export default function ContentForm({ initialData, isEditing = false, onDirtyChange }: ContentFormProps) {
+export default function ContentForm({ initialData, isEditing = false, onDirtyChange, showActions = true }: ContentFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
     const defaultData = {
@@ -97,21 +99,55 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
         );
     };
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
 
+        setIsSubmitting(true);
         showToast(isEditing ? 'Updating content...' : 'Creating content...', 'info');
 
-        // Mock successful submission
-        setTimeout(() => {
+        try {
+            const supabase = createClient();
+            const payload = {
+                title: formData.title,
+                slug: formData.slug,
+                type: formData.type,
+                status: formData.status,
+                content: formData.content,
+                updated_at: new Date().toISOString(),
+                // author_id would go here if we had auth context
+            };
+
+            let error;
+            if (isEditing && initialData?.id) {
+                const res = await supabase
+                    .from('cms_pages')
+                    .update(payload)
+                    .eq('id', initialData.id);
+                error = res.error;
+            } else {
+                const res = await supabase
+                    .from('cms_pages')
+                    .insert([payload]);
+                error = res.error;
+            }
+
+            if (error) throw error;
+
             showToast(isEditing ? 'Content updated successfully!' : 'Content created successfully!', 'success');
             onDirtyChange?.(false);
-            router.push('/dashboard/admin/content');
-        }, 1000);
+            router.push('/dashboard/admin/communications?tab=content');
+        } catch (err: any) {
+            showToast(err.message || 'An error occurred', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <form onSubmit={handleSubmit} className={styles.container}>
+        <form id="content-form" onSubmit={handleSubmit} className={styles.container}>
             <div className={styles.formGroup}>
                 <label className={styles.label}>Content Title</label>
                 <input
@@ -180,14 +216,16 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
                 </div>
             </div>
 
-            <div className={styles.actions}>
-                <button
-                    type="submit"
-                    className={`${styles.btn} ${styles.btnPrimary}`}
-                >
-                    {isEditing ? 'Save Changes' : 'Create Content'}
-                </button>
-            </div>
+            {showActions && (
+                <div className={styles.actions}>
+                    <button
+                        type="submit"
+                        className={`${styles.btn} ${styles.btnPrimary}`}
+                    >
+                        {isEditing ? 'Save Changes' : 'Create Content'}
+                    </button>
+                </div>
+            )}
         </form>
     );
 }

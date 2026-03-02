@@ -1,68 +1,84 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
 import AdsCampaignTable, { AdsCampaign } from '@/components/ads/campaigns/AdsCampaignTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
-
-// Mock Data
-const allCampaigns: AdsCampaign[] = [
-    {
-        id: '1',
-        name: 'Summer Music Festival Promo',
-        type: 'banner',
-        dates: 'Oct 12 - Oct 20, 2024',
-        status: 'active',
-        impressions: '12.5k',
-        clicks: '650',
-        spent: '$450.00',
-    },
-    {
-        id: '2',
-        name: 'Tech Summit Early Bird',
-        type: 'interstitial',
-        dates: 'Sep 01 - Sep 30, 2024',
-        status: 'active',
-        impressions: '8.2k',
-        clicks: '420',
-        spent: '$320.50',
-    },
-    {
-        id: '3',
-        name: 'Weekend Jazz Night',
-        type: 'feed_card',
-        dates: 'Nov 05 - Nov 07, 2024',
-        status: 'paused',
-        impressions: '5.1k',
-        clicks: '180',
-        spent: '$150.00',
-    },
-    {
-        id: '4',
-        name: 'Art Gallery Opening',
-        type: 'map_pin',
-        dates: 'Dec 01 - Dec 15, 2024',
-        status: 'draft',
-        impressions: '-',
-        clicks: '-',
-        spent: '$0.00',
-    }
-];
+import { useOrganization } from '@/context/OrganizationContext';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import FilterGroup from '@/components/dashboard/FilterGroup';
+import { createClient } from '@/utils/supabase/client';
 
 export default function CampaignsPage() {
     const { showToast } = useToast();
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const supabase = useMemo(() => createClient(), []);
+
+    const [campaigns, setCampaigns] = useState<AdsCampaign[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 2;
+    const itemsPerPage = 10;
+
+    const fetchCampaigns = useCallback(async () => {
+        if (!activeAccount) return;
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('ad_campaigns')
+                .select(`
+                    *,
+                    ad_analytics (interaction_type)
+                `)
+                .eq('account_id', activeAccount.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            const formatted: AdsCampaign[] = (data || []).map(c => {
+                const impressions = (c.ad_analytics || []).filter((a: any) => a.interaction_type === 'impression').length;
+                const clicks = (c.ad_analytics || []).filter((a: any) => a.interaction_type === 'click').length;
+
+                return {
+                    id: c.id,
+                    title: c.title,
+                    type: c.type,
+                    start_at: c.start_at,
+                    end_at: c.end_at,
+                    status: c.status,
+                    total_budget: Number(c.total_budget),
+                    spent_amount: Number(c.spent_amount),
+                    target_url: c.target_url || '',
+                    metrics: {
+                        impressions,
+                        clicks,
+                        ctr: impressions > 0 ? (clicks / impressions) * 100 : 0
+                    }
+                };
+            });
+            setCampaigns(formatted);
+        } catch (error: any) {
+            showToast(error.message || 'Failed to fetch campaigns', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeAccount, supabase, showToast]);
+
+    useEffect(() => {
+        if (!isOrgLoading) {
+            fetchCampaigns();
+        }
+    }, [isOrgLoading, fetchCampaigns]);
 
     // Filter Logic
-    const filteredCampaigns = allCampaigns.filter(c => {
-        const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredCampaigns = campaigns.filter(c => {
+        const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -98,20 +114,38 @@ export default function CampaignsPage() {
         }
     };
 
-    const handleBulkPause = () => {
+    const handleBulkPause = async () => {
         showToast(`Pausing ${selectedIds.size} campaigns...`, 'info');
-        setTimeout(() => {
-            showToast('Campaigns paused.', 'info');
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .update({ status: 'paused' })
+                .in('id', Array.from(selectedIds));
+
+            if (error) throw error;
+            showToast('Campaigns paused.', 'success');
             setSelectedIds(new Set());
-        }, 1000);
+            fetchCampaigns();
+        } catch (error: any) {
+            showToast(error.message || 'Failed to pause campaigns', 'error');
+        }
     };
 
-    const handleBulkDelete = () => {
+    const handleBulkDelete = async () => {
         showToast(`Deleting ${selectedIds.size} campaigns...`, 'info');
-        setTimeout(() => {
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .delete()
+                .in('id', Array.from(selectedIds));
+
+            if (error) throw error;
             showToast(`Successfully deleted ${selectedIds.size} campaigns.`, 'success');
             setSelectedIds(new Set());
-        }, 1000);
+            fetchCampaigns();
+        } catch (error: any) {
+            showToast(error.message || 'Failed to delete campaigns', 'error');
+        }
     };
 
     const bulkActions: BulkAction[] = [
@@ -120,36 +154,34 @@ export default function CampaignsPage() {
     ];
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Campaigns</h1>
-                    <p className={styles.subtitle}>Track and optimize your active advertising campaigns.</p>
-                </div>
-                <Link href="/dashboard/ads/campaigns/create" className={styles.createBtn}>
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title="Campaigns"
+                subtitle="Track and optimize your active advertising campaigns."
+                actionLabel="Create Campaign"
+                actionHref="/dashboard/ads/campaigns/create"
+                actionIcon={
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    Create Campaign
-                </Link>
-            </header>
+                }
+            />
 
             <TableToolbar
                 searchPlaceholder="Search campaigns..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div className={styles.toolbarContainer}>
-                    {['all', 'active', 'paused', 'draft'].map(status => (
-                        <button
-                            key={status}
-                            className={`${styles.chip} ${statusFilter === status ? styles.chipActive : ''}`}
-                            onClick={() => setStatusFilter(status)}
-                        >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </button>
-                    ))}
-                </div>
+                <FilterGroup
+                    options={[
+                        { value: 'all', label: 'All' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'paused', label: 'Paused' },
+                        { value: 'draft', label: 'Draft' },
+                    ]}
+                    currentValue={statusFilter}
+                    onChange={setStatusFilter}
+                />
             </TableToolbar>
 
             <div style={{ marginTop: '20px' }}>

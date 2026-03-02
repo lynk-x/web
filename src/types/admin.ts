@@ -17,8 +17,6 @@ export interface AuditLog {
     target: string;
     targetType: string;
     timestamp: string;
-    ipAddress: string;
-    userAgent: string;
     changes?: Record<string, { old: any; new: any }>;
     details?: string;
 }
@@ -38,8 +36,21 @@ export interface Campaign {
     status: 'active' | 'draft' | 'paused' | 'rejected' | 'completed';
     /** Aligned to `ad_type` enum: banner | interstitial | feed_card | map_pin */
     adType?: 'banner' | 'interstitial' | 'feed_card' | 'map_pin';
+    targetEventId?: string;
     startDate: string;
     endDate: string;
+}
+
+/** A log entry for a sent broadcast notification. */
+export interface BroadcastLog {
+    id: string;
+    type: 'system' | 'marketing' | 'mention' | 'event_update' | 'money_in' | 'money_out' | 'announcements' | 'livechats' | 'media';
+    subject: string;
+    message: string;
+    image_url?: string;
+    fcm_tokens_count: number;
+    targeting_type: 'global' | 'segmented' | 'direct';
+    created_at: string;
 }
 
 /** A content item in the CMS. */
@@ -56,6 +67,7 @@ export interface ContentItem {
 
 export interface ForumThread {
     id: string;
+    reference?: string;
     title: string;
     /** Forums are 1:1 with events in the schema */
     eventName: string;
@@ -72,6 +84,9 @@ export interface ForumThread {
     liveChatsCount: number;
     /** Count of `forum_media` attachments for this forum's event */
     mediaCount: number;
+    reportsCount: number;
+    escalatedCount: number;
+    oldestReportAt?: string;
     lastActivity: string;
 }
 
@@ -129,13 +144,15 @@ export interface EnvVar {
 /** A support ticket — mirrors the `support_tickets` DB table. */
 export interface Ticket {
     id: string;
+    reference?: string;
     subject: string;
     requester: string;
+    body?: string;
+    admin_notes?: string;
     /** Aligned to CHECK constraint in `support_tickets.priority` — includes critical */
     priority: 'critical' | 'high' | 'medium' | 'low';
     /** Aligned to CHECK constraint in `support_tickets.status` */
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
-    assignedTo?: string;
     lastUpdated: string;
 }
 
@@ -150,10 +167,59 @@ export interface User {
     /** No dedicated status column in schema yet — pending decision on suspension mechanism */
     status: 'active' | 'suspended' | 'partially_active';
     lastActive: string;
-    /** From `profiles.verification_status` enum: none | verified | official */
-    verificationStatus?: 'none' | 'verified' | 'official';
+    isVerified?: boolean;
     /** From `profiles.subscription_tier` enum: free | pro */
     subscriptionTier?: 'free' | 'pro';
+    reportsCount?: number;
+    userName?: string;
+    gender?: string;
+    countryCode?: string;
+    taxId?: string;
+    businessEmail?: string;
+    registrationNumber?: string;
+}
+
+/** A tax rate configuration. */
+export interface TaxRate {
+    id: string;
+    country_code: string;
+    name: string;
+    rate_percent: number;
+    is_inclusive: boolean;
+    is_active: boolean;
+    country_name?: string;
+    updated_at: string;
+}
+
+/** An exchange rate configuration. */
+export interface FXRate {
+    currency: string;
+    rate_to_base: number;
+    updated_at: string;
 }
 
 
+/** A legal document version. Mirrors `legal_documents` table. */
+export interface LegalDocument {
+    id: string;
+    type: 'terms_of_service' | 'privacy_policy' | 'organizer_agreement' | 'cookie_policy' | 'refund_policy';
+    version: string;
+    title: string;
+    content?: string;
+    is_active: boolean;
+    effective_date: string;
+    created_at?: string;
+}
+
+/** A system banner. Mirrors `system_banners` table. */
+export interface SystemBanner {
+    id: string;
+    title: string;
+    content: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    is_active: boolean;
+    starts_at: string;
+    ends_at?: string;
+    action_url?: string;
+    created_at?: string;
+}

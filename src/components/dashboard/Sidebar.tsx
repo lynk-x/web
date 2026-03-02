@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './Sidebar.module.css';
-import { navItems } from './sidebarNav';
+import { navGroups } from './sidebarNav';
 import type { DashboardMode } from '@/types/shared';
 import ModeSwitcher from './ModeSwitcher';
 import SidebarUserProfile from './SidebarUserProfile';
@@ -19,7 +19,7 @@ import OrganizationSwitcher from './OrganizationSwitcher';
  * Acts as an orchestrator that composes:
  * - Logo link
  * - `ModeSwitcher` — three-button pill for events / ads / admin
- * - Nav links driven by `navItems` from `sidebarNav.tsx`
+ * - Nav links driven by `navGroups` from `sidebarNav.tsx`
  * - `SidebarUserProfile` — footer user card
  *
  * Mode is derived from the current URL path and synchronized on navigation.
@@ -72,21 +72,28 @@ const Sidebar = () => {
 
             {/* Navigation Links */}
             <nav className={styles.nav}>
-                {navItems[mode].map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                        >
-                            <span style={{ color: 'inherit', display: 'flex', alignItems: 'center' }}>
-                                {item.icon}
-                            </span>
-                            <span>{item.name}</span>
-                        </Link>
-                    );
-                })}
+                {navGroups[mode].map((group, gIdx) => (
+                    <div key={gIdx} className={styles.navGroup}>
+                        {group.title && <div className={styles.groupTitle}>{group.title}</div>}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
+                            {group.items.map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                                    >
+                                        <span style={{ color: 'inherit', display: 'flex', alignItems: 'center' }}>
+                                            {item.icon}
+                                        </span>
+                                        <span>{item.name}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
             </nav>
 
             {/* User Footer */}

@@ -110,6 +110,18 @@ const EventTable: React.FC<EventTableProps> = ({
             ),
         },
         {
+            header: 'Reports',
+            render: (event) => (
+                <div style={{ fontSize: '13px' }}>
+                    {(event.reportsCount || 0) > 0 ? (
+                        <Badge label={`${event.reportsCount} Pending`} variant="error" showDot />
+                    ) : (
+                        <span style={{ opacity: 0.4 }}>0</span>
+                    )}
+                </div>
+            ),
+        },
+        {
             header: 'Status',
             render: (event) => (
                 <Badge label={formatString(event.status)} variant={getStatusVariant(event.status)} showDot />

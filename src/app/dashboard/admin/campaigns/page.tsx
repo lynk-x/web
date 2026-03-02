@@ -1,40 +1,109 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
+import AdAssetsTab from '@/components/admin/campaigns/AdAssetsTab';
+import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
 import Link from 'next/link';
-
-/**
- * Mock campaigns — aligned to `campaign_status` enum + `ad_type` enum.
- * When wiring up: `supabase.from('ad_campaigns').select('*, ad_assets(*)')`
- */
-const mockCampaigns: Campaign[] = [
-    { id: '1', campaignRef: 'CAMP-001', name: 'Summer Festival Promo', client: 'Global Beats', adType: 'banner', budget: 5000, spend: 3200, impressions: 150000, clicks: 4500, status: 'active', startDate: '2025-06-01', endDate: '2025-07-15' },
-    { id: '2', campaignRef: 'CAMP-002', name: 'Product Launch Q3', client: 'TechDaily', adType: 'feed_card', budget: 12000, spend: 0, impressions: 0, clicks: 0, status: 'draft', startDate: '2025-08-01', endDate: '2025-08-31' },
-    { id: '3', campaignRef: 'CAMP-003', name: 'Brand Awareness', client: 'Local Coffee', adType: 'map_pin', budget: 1000, spend: 850, impressions: 45000, clicks: 1200, status: 'paused', startDate: '2025-05-01', endDate: '2025-12-31' },
-    { id: '4', campaignRef: 'CAMP-004', name: 'Holiday Special', client: 'RetailGiant', adType: 'banner', budget: 25000, spend: 25000, impressions: 800000, clicks: 25000, status: 'completed', startDate: '2024-12-01', endDate: '2024-12-31' },
-    { id: '5', campaignRef: 'CAMP-005', name: 'Questionable Crypto Ad', client: 'Unknown Entity', adType: 'banner', budget: 500, spend: 0, impressions: 0, clicks: 0, status: 'rejected', startDate: '2025-07-01', endDate: '2025-07-07' },
-    { id: '6', campaignRef: 'CAMP-006', name: 'Back to School', client: 'Staples Center', adType: 'interstitial', budget: 8000, spend: 1200, impressions: 60000, clicks: 1800, status: 'active', startDate: '2025-08-15', endDate: '2025-09-15' },
-    { id: '7', campaignRef: 'CAMP-007', name: 'Flash Sale Alert', client: 'FashionAuto', adType: 'feed_card', budget: 2000, spend: 0, impressions: 0, clicks: 0, status: 'draft', startDate: '2025-06-20', endDate: '2025-06-25' },
-];
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
+import { createClient } from '@/utils/supabase/client';
 
-export default function AdminCampaignsPage() {
+import Tabs from '@/components/dashboard/Tabs';
+
+function CampaignsContent() {
+    const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    const initialTab = (searchParams.get('tab') as any) || 'campaigns';
+    const [activeTab, setActiveTab] = useState<'campaigns' | 'assets' | 'analytics'>(
+        ['campaigns', 'assets', 'analytics'].includes(initialTab) ? initialTab : 'campaigns'
+    );
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
     const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 8;
+
+    useEffect(() => {
+        const tab = searchParams.get('tab') as any;
+        if (tab && ['campaigns', 'assets', 'analytics'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab: 'campaigns' | 'assets' | 'analytics') => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    useEffect(() => {
+        const fetchCampaigns = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch campaigns with their account/client info and performance metrics
+                const { data, error } = await supabase
+                    .from('ad_campaigns')
+                    .select(`
+                        *,
+                        accounts!account_id(name),
+                        performance:mv_ad_campaign_performance(
+                            total_impressions,
+                            total_clicks,
+                            total_spend
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const mappedCampaigns: Campaign[] = (data || []).map((c: any) => {
+                    // Extract performance metrics from the view relation
+                    const perf = c.performance?.[0] || { total_impressions: 0, total_clicks: 0, total_spend: 0 };
+
+                    return {
+                        id: c.id,
+                        campaignRef: c.reference,
+                        name: c.title,
+                        client: c.accounts?.name || 'Unknown Client',
+                        adType: c.type,
+                        budget: parseFloat(c.total_budget),
+                        spend: parseFloat(c.spent_amount) || parseFloat(perf.total_spend) || 0,
+                        impressions: parseInt(perf.total_impressions) || 0,
+                        clicks: parseInt(perf.total_clicks) || 0,
+                        status: c.status,
+                        startDate: new Date(c.start_at).toLocaleDateString(),
+                        endDate: new Date(c.end_at).toLocaleDateString(),
+                    };
+                });
+
+                setCampaigns(mappedCampaigns);
+            } catch (err: any) {
+                console.error('Error fetching campaigns:', err);
+                showToast('Failed to load campaigns.', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCampaigns();
+    }, [supabase, showToast]);
 
     // Filter Logic
-    const filteredCampaigns = mockCampaigns.filter(campaign => {
+    const filteredCampaigns = campaigns.filter(campaign => {
         const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             campaign.client.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
@@ -76,33 +145,53 @@ export default function AdminCampaignsPage() {
         }
     };
 
-    const handleBulkApprove = () => {
-        showToast(`Approving ${selectedCampaignIds.size} campaigns...`, 'info');
-        setTimeout(() => {
-            showToast('Campaigns approved successfully.', 'success');
+    const handleBulkStatusUpdate = async (newStatus: string) => {
+        showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
+
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .in('id', Array.from(selectedCampaignIds));
+
+            if (error) throw error;
+
+            showToast(`Successfully moved ${selectedCampaignIds.size} campaigns to ${newStatus}.`, 'success');
+
+            // Refresh local state
+            setCampaigns(prev => prev.map(c =>
+                selectedCampaignIds.has(c.id) ? { ...c, status: newStatus as any } : c
+            ));
             setSelectedCampaignIds(new Set());
-        }, 1000);
+        } catch (err) {
+            showToast('Failed to update campaign status.', 'error');
+        }
     };
 
-    const handleBulkReject = () => {
-        showToast(`Rejecting ${selectedCampaignIds.size} campaigns...`, 'info');
-        setTimeout(() => {
-            showToast('Campaigns rejected.', 'error');
-            setSelectedCampaignIds(new Set());
-        }, 1000);
-    };
+    const handleBulkDelete = async () => {
+        if (!confirm(`Are you sure you want to delete ${selectedCampaignIds.size} campaigns?`)) return;
 
-    const handleBulkDelete = () => {
         showToast(`Deleting ${selectedCampaignIds.size} campaigns...`, 'info');
-        setTimeout(() => {
+
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .delete()
+                .in('id', Array.from(selectedCampaignIds));
+
+            if (error) throw error;
+
             showToast(`Successfully deleted ${selectedCampaignIds.size} campaigns.`, 'success');
+            setCampaigns(prev => prev.filter(c => !selectedCampaignIds.has(c.id)));
             setSelectedCampaignIds(new Set());
-        }, 1000);
+        } catch (err) {
+            showToast('Failed to delete campaigns.', 'error');
+        }
     };
 
     const bulkActions: BulkAction[] = [
-        { label: 'Approve Selected', onClick: handleBulkApprove, variant: 'success' },
-        { label: 'Reject Selected', onClick: handleBulkReject },
+        { label: 'Approve Selected', onClick: () => handleBulkStatusUpdate('active'), variant: 'success' },
+        { label: 'Reject Selected', onClick: () => handleBulkStatusUpdate('rejected') },
         { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
@@ -118,62 +207,104 @@ export default function AdminCampaignsPage() {
                 </Link>
             </header>
 
-            <TableToolbar
-                searchPlaceholder="Search campaigns or clients..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                {/* Ad Type filter */}
-                <select
-                    className={adminStyles.select}
-                    value={adTypeFilter}
-                    onChange={(e) => setAdTypeFilter(e.target.value)}
-                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.8)', color: 'white' }}
-                >
-                    <option value="all">All Ad Types</option>
-                    <option value="banner">Banner</option>
-                    <option value="interstitial">Interstitial</option>
-                    <option value="feed_card">Feed Card</option>
-                    <option value="map_pin">Map Pin</option>
-                </select>
+            {/* ── Tab switcher ── */}
+            <Tabs
+                options={[
+                    { id: 'campaigns', label: 'Campaigns' },
+                    { id: 'assets', label: 'Ad Assets' },
+                    { id: 'analytics', label: 'Analytics' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange as any}
+            />
 
-                {/* Status filter — aligned to campaign_status enum (draft replaces pending) */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
-                        { value: 'all', label: 'All Statuses' },
-                        { value: 'active', label: 'Active' },
-                        { value: 'draft', label: 'Draft' },
-                        { value: 'paused', label: 'Paused' },
-                        { value: 'rejected', label: 'Rejected' },
-                        { value: 'completed', label: 'Completed' },
-                    ].map(({ value, label }) => (
-                        <button
-                            key={value}
-                            className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
-                            onClick={() => setStatusFilter(value)}
+            {/* ── Campaigns tab (existing content) ── */}
+            {activeTab === 'campaigns' && (
+                <>
+                    <TableToolbar
+                        searchPlaceholder="Search campaigns or clients..."
+                        searchValue={searchTerm}
+                        onSearchChange={setSearchTerm}
+                    >
+                        {/* Ad Type filter */}
+                        <select
+                            className={adminStyles.select}
+                            value={adTypeFilter}
+                            onChange={(e) => setAdTypeFilter(e.target.value)}
+                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.8)', color: 'white' }}
                         >
-                            {label}
-                        </button>
-                    ))}
+                            <option value="all">All Ad Types</option>
+                            <option value="banner">Banner</option>
+                            <option value="interstitial">Interstitial</option>
+                            <option value="feed_card">Feed Card</option>
+                            <option value="map_pin">Map Pin</option>
+                        </select>
+
+                        {/* Status filter — aligned to campaign_status enum */}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {[
+                                { value: 'all', label: 'All Statuses' },
+                                { value: 'active', label: 'Active' },
+                                { value: 'draft', label: 'Draft' },
+                                { value: 'paused', label: 'Paused' },
+                                { value: 'rejected', label: 'Rejected' },
+                                { value: 'completed', label: 'Completed' },
+                            ].map(({ value, label }) => (
+                                <button
+                                    key={value}
+                                    className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
+                                    onClick={() => setStatusFilter(value)}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </TableToolbar>
+
+                    <BulkActionsBar
+                        selectedCount={selectedCampaignIds.size}
+                        actions={bulkActions}
+                        onCancel={() => setSelectedCampaignIds(new Set())}
+                        itemTypeLabel="campaigns"
+                    />
+
+                    {isLoading ? (
+                        <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading campaigns...</div>
+                    ) : (
+                        <CampaignTable
+                            campaigns={paginatedCampaigns}
+                            selectedIds={selectedCampaignIds}
+                            onSelect={handleSelectCampaign}
+                            onSelectAll={handleSelectAll}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* ── Ad Assets tab (new) ── */}
+            {activeTab === 'assets' && (
+                <div style={{ marginTop: '16px' }}>
+                    <AdAssetsTab />
                 </div>
-            </TableToolbar>
+            )}
 
-            <BulkActionsBar
-                selectedCount={selectedCampaignIds.size}
-                actions={bulkActions}
-                onCancel={() => setSelectedCampaignIds(new Set())}
-                itemTypeLabel="campaigns"
-            />
-
-            <CampaignTable
-                campaigns={paginatedCampaigns}
-                selectedIds={selectedCampaignIds}
-                onSelect={handleSelectCampaign}
-                onSelectAll={handleSelectAll}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            {/* ── Ad Analytics tab (new) ── */}
+            {activeTab === 'analytics' && (
+                <div style={{ marginTop: '16px' }}>
+                    <AdAnalyticsTab />
+                </div>
+            )}
         </div>
+    );
+}
+
+export default function AdminCampaignsPage() {
+    return (
+        <Suspense fallback={<div className={adminStyles.loading}>Loading Campaigns...</div>}>
+            <CampaignsContent />
+        </Suspense>
     );
 }

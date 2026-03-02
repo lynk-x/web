@@ -1,122 +1,131 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './page.module.css';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import type { PerformanceEvent } from '@/components/organize/PerformanceTable';
+import PerformanceTable, { type PerformanceEvent } from '@/components/organize/PerformanceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
 
-// Mock data for overall trend chart (Building a complex timeseries graph from SQL locally is out of scope for MVP Phase 1)
-// We will still keep this static for visual completeness while making the BarChart (event comparison) and Stats actual live data.
-
-// Mock data for trends
-const timeSeriesData = [
-    { name: 'Week 1', revenue: 45000, tickets: 120 },
-    { name: 'Week 2', revenue: 52000, tickets: 145 },
-    { name: 'Week 3', revenue: 38000, tickets: 95 },
-    { name: 'Week 4', revenue: 65000, tickets: 180 },
-    { name: 'Week 5', revenue: 85000, tickets: 230 },
-    { name: 'Week 6', revenue: 78000, tickets: 210 },
-];
+// timeSeriesData is now fetched from the database — see fetchAnalytics below
 
 export default function AnalyticsPage() {
     const { showToast } = useToast();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
     const [timeRange, setTimeRange] = useState('30');
     const [statusFilter, setStatusFilter] = useState('all');
     const [detailedInsights, setDetailedInsights] = useState<PerformanceEvent[]>([]);
+    // Real daily time series fetched from transactions
+    const [timeSeriesData, setTimeSeriesData] = useState<{ name: string; revenue: number; tickets: number }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const [analyticsStats, setAnalyticsStats] = useState([
-        { label: 'Total Revenue', value: 'KES 0', change: '0%', isPositive: true },
-        { label: 'Tickets Sold', value: '0', change: '0%', isPositive: true },
-        { label: 'Avg. Conversion', value: '0%', change: '0%', isPositive: false },
-        { label: 'Page Views', value: '0', change: '0%', isPositive: true },
+        { label: 'Total Revenue', value: 'KES 0', isPositive: true },
+        { label: 'Tickets Sold', value: '0', isPositive: true },
+        { label: 'Avg. Conversion', value: '0%', isPositive: false },
     ]);
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            // Fetch events with their ticket tiers nested
-            const { data, error } = await supabase
+            // ── Event-level performance ─────────────────────────────────────
+            const { data: eventsData, error: evErr } = await supabase
                 .from('events')
-                .select(`
-                    id, 
-                    title, 
-                    status, 
-                    ticket_tiers(
-                        price, 
-                        quantity_total, 
-                        quantity_sold
-                    )
-                `)
+                .select(`id, title, status, ticket_tiers(price, quantity_total, quantity_sold)`)
                 .eq('account_id', activeAccount.id);
 
-            if (error) throw error;
+            if (evErr) throw evErr;
 
             let totalAccRevenue = 0;
             let totalAccTicketsSold = 0;
             let totalAccCapacity = 0;
 
-            const mappedInsights: PerformanceEvent[] = data.map((eventData: any) => {
+            const mappedInsights: PerformanceEvent[] = (eventsData || []).map((eventData: any) => {
                 let eventRevenue = 0;
                 let eventSold = 0;
                 let eventTotalCapacity = 0;
 
-                if (eventData.ticket_tiers && eventData.ticket_tiers.length > 0) {
-                    eventData.ticket_tiers.forEach((tier: any) => {
-                        eventSold += tier.quantity_sold || 0;
-                        eventRevenue += (tier.quantity_sold || 0) * (tier.price || 0);
-                        eventTotalCapacity += tier.quantity_total || 0;
-                    });
-                }
+                (eventData.ticket_tiers || []).forEach((tier: any) => {
+                    eventSold += tier.quantity_sold || 0;
+                    eventRevenue += (tier.quantity_sold || 0) * (tier.price || 0);
+                    eventTotalCapacity += tier.quantity_total || 0;
+                });
 
                 totalAccRevenue += eventRevenue;
                 totalAccTicketsSold += eventSold;
                 totalAccCapacity += eventTotalCapacity;
 
-                const conversion = eventTotalCapacity > 0
-                    ? ((eventSold / eventTotalCapacity) * 100).toFixed(1) + '%'
-                    : 'N/A';
-
                 return {
                     id: eventData.id,
                     event: eventData.title,
-                    sold: eventSold,
-                    revenue: eventRevenue,
-                    conversion: conversion,
+                    ticketsSold: eventSold,
+                    totalRevenue: eventRevenue,
+                    conversionRate: eventTotalCapacity > 0 ? ((eventSold / eventTotalCapacity) * 100).toFixed(1) + '%' : 'N/A',
                     status: eventData.status
                 };
             });
 
             setDetailedInsights(mappedInsights);
 
-            // Map global stats
             const avgConversion = totalAccCapacity > 0
                 ? ((totalAccTicketsSold / totalAccCapacity) * 100).toFixed(1) + '%'
                 : '0%';
 
             setAnalyticsStats([
-                { label: 'Total Revenue', value: formatCurrency(totalAccRevenue), change: '+12.5%', isPositive: true },
-                { label: 'Tickets Sold', value: totalAccTicketsSold.toString(), change: '+8.1%', isPositive: true },
-                { label: 'Avg. Conversion', value: avgConversion, change: '-0.5%', isPositive: false },
-                { label: 'Page Views', value: '45.2k', change: '+24.3%', isPositive: true }, // Keep static mock
+                { label: 'Total Revenue', value: formatCurrency(totalAccRevenue), isPositive: true },
+                { label: 'Tickets Sold', value: totalAccTicketsSold.toString(), isPositive: true },
+                { label: 'Avg. Conversion', value: avgConversion, isPositive: false },
             ]);
 
-        } catch (error: any) {
-            console.error("Analytics fetch error:", error);
-            showToast('Failed to load performance metrics.', 'error');
+            // ── Daily revenue time series (last N days) ─────────────────────
+            const since = new Date();
+            since.setDate(since.getDate() - parseInt(timeRange, 10));
+
+            const { data: eventIds } = await supabase
+                .from('events')
+                .select('id')
+                .eq('account_id', activeAccount.id);
+
+            const ids = (eventIds || []).map((e: any) => e.id);
+
+            if (ids.length > 0) {
+                const { data: txData, error: txErr } = await supabase
+                    .from('transactions')
+                    .select('amount, created_at')
+                    .in('event_id', ids)
+                    .eq('category', 'incoming')
+                    .eq('status', 'completed')
+                    .gte('created_at', since.toISOString());
+
+                if (txErr) throw txErr;
+
+                // Group by day
+                const byDay: Record<string, number> = {};
+                (txData || []).forEach((tx: any) => {
+                    const day = new Date(tx.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+                    byDay[day] = (byDay[day] || 0) + tx.amount;
+                });
+
+                // Build sorted array for the chart
+                const series = Object.entries(byDay)
+                    .map(([name, revenue]) => ({ name, revenue, tickets: 0 }))
+                    .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+
+                setTimeSeriesData(series.length > 0 ? series : []);
+            }
+
+        } catch (err: any) {
+            showToast(err.message || 'Failed to load performance metrics.', 'error');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeAccount, supabase, showToast, timeRange]);
 
     useEffect(() => {
         if (!isOrgLoading && activeAccount) {
@@ -125,7 +134,7 @@ export default function AnalyticsPage() {
             setIsLoading(false);
             setDetailedInsights([]);
         }
-    }, [isOrgLoading, activeAccount, timeRange]); // Re-fetch optimally if date range changed backend logic
+    }, [isOrgLoading, activeAccount, fetchAnalytics]);
 
     // Filtered data for comparison chart
     const filteredData = detailedInsights.filter(item => {
@@ -138,7 +147,7 @@ export default function AnalyticsPage() {
         // Mock export functionality
         const csvContent = "data:text/csv;charset=utf-8,"
             + "Event,Revenue,Tickets Sold\n"
-            + filteredData.map(e => `${e.event},${e.revenue},${e.sold}`).join("\n");
+            + filteredData.map(e => `${e.event},${e.totalRevenue},${e.ticketsSold}`).join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -209,10 +218,6 @@ export default function AnalyticsPage() {
                             <div key={index} className={styles.statCard}>
                                 <span className={styles.statLabel}>{stat.label}</span>
                                 <div className={styles.statValue}>{stat.value}</div>
-                                <div className={`${styles.statChange} ${stat.isPositive ? styles.positive : styles.negative}`}>
-                                    {stat.isPositive ? '↑' : '↓'} {stat.change}
-                                    <span style={{ opacity: 0.6, color: 'var(--color-utility-primaryText)', marginLeft: '4px', fontSize: '12px' }}> vs last period</span>
-                                </div>
                             </div>
                         ))}
                     </div>
@@ -268,11 +273,19 @@ export default function AnalyticsPage() {
                                             cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
                                         />
-                                        <Bar dataKey="sold" fill="#20f928" radius={[4, 4, 0, 0]} barSize={40} />
+                                        <Bar dataKey="ticketsSold" fill="#20f928" radius={[4, 4, 0, 0]} barSize={40} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Per-event performance table */}
+                    <div className={styles.chartCard} style={{ marginTop: '8px' }}>
+                        <div className={styles.chartHeader}>
+                            <h2 className={styles.chartTitle}>Event Performance Breakdown</h2>
+                        </div>
+                        <PerformanceTable data={filteredData} />
                     </div>
                 </>
             )}

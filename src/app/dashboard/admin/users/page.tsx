@@ -1,45 +1,114 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
 import adminStyles from '../page.module.css';
 import UserTable, { User } from '@/components/admin/users/UserTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import FilterGroup from '@/components/dashboard/FilterGroup';
 import { useToast } from '@/components/ui/Toast';
+import { createClient } from '@/utils/supabase/client';
+import { formatRelativeTime } from '@/utils/format';
+import Tabs from '@/components/dashboard/Tabs';
 
-/**
- * Mock user data — aligned to `user_type` schema enum.
- * When wiring up: `supabase.from('profiles').select('*, auth_user:auth.users!id(email)')`
- * Note: email must come from auth.users via RPC or the admin API.
- */
-const mockUsers: User[] = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'organizer', status: 'active', lastActive: '2 mins ago', verificationStatus: 'verified', subscriptionTier: 'pro' },
-    { id: '2', name: 'Alice Smith', email: 'alice@business.com', role: 'advertiser', status: 'active', lastActive: '1 hr ago', verificationStatus: 'official', subscriptionTier: 'pro' },
-    { id: '3', name: 'Robert Admin', email: 'admin@lynk-x.com', role: 'admin', status: 'active', lastActive: 'Just now', verificationStatus: 'official', subscriptionTier: 'pro' },
-    { id: '4', name: 'Sarah Attendee', email: 'sarah@gmail.com', role: 'attendee', status: 'active', lastActive: '2 days ago', verificationStatus: 'none', subscriptionTier: 'free' },
-    { id: '5', name: 'Mike Spammer', email: 'mike@spam.net', role: 'attendee', status: 'suspended', lastActive: '5 days ago', verificationStatus: 'none', subscriptionTier: 'free' },
-    { id: '6', name: 'Event Pro Ltd', email: 'contact@eventpro.com', role: 'organizer', status: 'active', lastActive: '3 hrs ago', verificationStatus: 'verified', subscriptionTier: 'pro' },
-    { id: '7', name: 'Tech Ads Agency', email: 'ads@tech.com', role: 'advertiser', status: 'active', lastActive: '1 day ago', verificationStatus: 'official', subscriptionTier: 'pro' },
-    { id: '8', name: 'Jane Doe', email: 'jane@example.com', role: 'attendee', status: 'active', lastActive: '1 week ago', verificationStatus: 'none', subscriptionTier: 'free' },
-    { id: '9', name: 'Bob Builder', email: 'bob@construction.com', role: 'organizer', status: 'active', lastActive: '2 weeks ago', verificationStatus: 'none', subscriptionTier: 'free' },
-    { id: '10', name: 'Charlie Chef', email: 'charlie@foodie.com', role: 'attendee', status: 'partially_active', lastActive: '3 weeks ago', verificationStatus: 'none', subscriptionTier: 'free' },
-    { id: '11', name: 'David Developer', email: 'david@code.com', role: 'admin', status: 'active', lastActive: '1 month ago', verificationStatus: 'official', subscriptionTier: 'pro' },
-    { id: '12', name: 'Eve Event', email: 'eve@events.com', role: 'organizer', status: 'suspended', lastActive: '2 months ago', verificationStatus: 'verified', subscriptionTier: 'pro' },
-    { id: '13', name: 'Platform Bot', email: 'bot@lynk-x.com', role: 'platform', status: 'active', lastActive: 'Just now', verificationStatus: 'official', subscriptionTier: 'pro' },
-];
+type Tab = 'accounts' | 'profiles';
 
-export default function AdminUsersPage() {
+function UsersContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 10;
+
+    const initialTab = (searchParams.get('tab') as any) || 'accounts';
+    const [activeTab, setActiveTab] = useState<Tab>(
+        (['accounts', 'profiles'].includes(initialTab) ? initialTab : 'accounts') as Tab
+    );
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('mv_user_performance')
+                    .select(`
+                        *,
+                        profile:profiles!id (
+                            gender,
+                            country_code
+                        ),
+                        members:account_members (
+                            account:accounts (
+                                business_email,
+                                tax_id,
+                                registration_number
+                            )
+                        )
+                    `)
+                    .order('last_active_at', { ascending: false });
+
+                if (error) throw error;
+
+                const mappedUsers: User[] = (data || []).map((u: any) => ({
+                    id: u.id,
+                    name: u.full_name || u.user_name || 'Unknown User',
+                    email: u.email || 'no-email@lynk-x.com',
+                    role: u.role,
+                    status: u.status,
+                    lastActive: formatRelativeTime(u.last_active_at),
+                    isVerified: u.is_verified,
+                    subscriptionTier: u.subscription_tier,
+                    reportsCount: u.reports_count || 0,
+                    // New fields from profiles join
+                    userName: u.user_name,
+                    gender: u.profile?.gender,
+                    countryCode: u.profile?.country_code,
+                    // New fields from accounts join
+                    businessEmail: u.members?.[0]?.account?.business_email,
+                    taxId: u.members?.[0]?.account?.tax_id,
+                    registrationNumber: u.members?.[0]?.account?.registration_number
+                }));
+
+                setUsers(mappedUsers);
+            } catch (err: any) {
+                showToast('Failed to load user database.', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, [supabase, showToast]);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab') as any;
+        if (tab && ['accounts', 'profiles'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab as Tab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
 
     // Filter Logic
-    const filteredUsers = mockUsers.filter(user => {
+    const filteredUsers = users.filter(user => {
         const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesRole = roleFilter === 'all' || user.role === roleFilter;
@@ -56,17 +125,14 @@ export default function AdminUsersPage() {
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
-        setSelectedUserIds(new Set()); // Clear selection on filter change
+        setSelectedUserIds(new Set());
     }, [searchTerm, roleFilter]);
 
     // Selection Logic
     const handleSelectUser = (id: string) => {
         const newSelected = new Set(selectedUserIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
+        if (newSelected.has(id)) newSelected.delete(id);
+        else newSelected.add(id);
         setSelectedUserIds(newSelected);
     };
 
@@ -80,86 +146,107 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleBulkDelete = () => {
-        showToast(`Deleting ${selectedUserIds.size} users...`, 'info');
-        setTimeout(() => {
-            showToast(`Successfully deleted ${selectedUserIds.size} users.`, 'success');
-            setSelectedUserIds(new Set());
-        }, 1000);
-    };
+    const handleBulkStatusUpdate = async (newStatus: string) => {
+        showToast(`Updating ${selectedUserIds.size} users...`, 'info');
+        try {
+            const isActive = newStatus === 'active';
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_active: isActive, updated_at: new Date().toISOString() })
+                .in('id', Array.from(selectedUserIds));
 
-    const handleBulkSuspend = () => {
-        showToast(`Suspending ${selectedUserIds.size} users...`, 'info');
-        setTimeout(() => {
-            showToast(`Successfully suspended ${selectedUserIds.size} users.`, 'success');
+            if (error) throw error;
+
+            showToast(`Users ${newStatus} successfully.`, 'success');
+            setUsers(prev => prev.map(u =>
+                selectedUserIds.has(u.id) ? { ...u, status: newStatus as any } : u
+            ));
             setSelectedUserIds(new Set());
-        }, 1000);
+        } catch (err) {
+            showToast('Failed to update accounts.', 'error');
+        }
     };
 
     const bulkActions: BulkAction[] = [
-        { label: 'Suspend Selected', onClick: handleBulkSuspend },
-        { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
+        { label: 'Activate Selection', onClick: () => handleBulkStatusUpdate('active'), variant: 'success' },
+        { label: 'Suspend Selection', onClick: () => handleBulkStatusUpdate('suspended'), variant: 'danger' }
     ];
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={adminStyles.title}>User Management</h1>
-                    <p className={adminStyles.subtitle}>Monitor and manage platform users, roles, and account statuses.</p>
-                </div>
-                <Link href="/dashboard/admin/users/create" className={adminStyles.btnPrimary}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1="19" y1="8" x2="19" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1="22" y1="11" x2="16" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Add New User
-                </Link>
-            </header>
+        <>
+            <Tabs
+                options={[
+                    { id: 'accounts', label: 'Accounts' },
+                    { id: 'profiles', label: 'Profiles' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             <TableToolbar
                 searchPlaceholder="Search by name or email..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div className={adminStyles.filterGroup}>
-                    {[
+                <FilterGroup
+                    options={[
                         { value: 'all', label: 'All Users' },
                         { value: 'admin', label: 'Admins' },
                         { value: 'organizer', label: 'Organizers' },
                         { value: 'advertiser', label: 'Advertisers' },
                         { value: 'attendee', label: 'Attendees' },
                         { value: 'platform', label: 'Platform' },
-                    ].map(({ value, label }) => (
-                        <button
-                            key={value}
-                            className={`${adminStyles.chip} ${roleFilter === value ? adminStyles.chipActive : ''}`}
-                            onClick={() => setRoleFilter(value)}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
+                    ]}
+                    currentValue={roleFilter}
+                    onChange={setRoleFilter}
+                />
             </TableToolbar>
 
-            <BulkActionsBar
-                selectedCount={selectedUserIds.size}
-                actions={bulkActions}
-                onCancel={() => setSelectedUserIds(new Set())}
-                itemTypeLabel="users"
-            />
+            {activeTab === 'accounts' && (
+                <BulkActionsBar
+                    selectedCount={selectedUserIds.size}
+                    actions={bulkActions}
+                    onCancel={() => setSelectedUserIds(new Set())}
+                    itemTypeLabel="users"
+                />
+            )}
 
             <UserTable
                 users={paginatedUsers}
+                isLoading={isLoading}
                 selectedIds={selectedUserIds}
                 onSelect={handleSelectUser}
                 onSelectAll={handleSelectAll}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
+                view={activeTab}
             />
+        </>
+    );
+}
+
+export default function AdminUsersPage() {
+    return (
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title="User Management"
+                subtitle="Monitor and manage platform users, roles, and account statuses."
+                actionLabel="Add New User"
+                actionHref="/dashboard/admin/users/create"
+                actionIcon={
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <line x1="19" y1="8" x2="19" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <line x1="22" y1="11" x2="16" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                }
+            />
+
+            <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading Users...</div>}>
+                <UsersContent />
+            </Suspense>
         </div>
     );
 }

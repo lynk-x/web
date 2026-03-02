@@ -77,12 +77,24 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
         {
             header: 'Recipient',
             render: (payout) => (
-                <div>
-                    <div style={{ fontWeight: 500 }}>{payout.recipient}</div>
-                    {payout.notes && (
-                        // Admin note — e.g. KYC incomplete, bank details invalid
-                        <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>{payout.notes}</div>
-                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ fontWeight: 500 }}>{payout.recipient}</div>
+                        {payout.is_verified && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-brand-primary)" style={{ flexShrink: 0 }}>
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+                            </svg>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Badge
+                            label={(payout.kyc_status || 'pending').toUpperCase()}
+                            variant={payout.kyc_status === 'approved' ? 'success' : 'neutral'}
+                        />
+                        {payout.notes && (
+                            <div style={{ fontSize: '11px', opacity: 0.5 }}>{payout.notes}</div>
+                        )}
+                    </div>
                 </div>
             ),
         },
@@ -95,7 +107,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
         {
             header: 'Requested',
             render: (payout) => (
-                <span style={{ fontSize: '13px', opacity: 0.8 }}>{payout.requestedAt}</span>
+                <span style={{ fontSize: '13px', opacity: 0.8 }}>{new Date(payout.requestedAt).toLocaleDateString()}</span>
             ),
         },
         {

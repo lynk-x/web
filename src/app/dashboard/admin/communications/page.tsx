@@ -1,75 +1,142 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import ContentTable, { ContentItem } from '@/components/admin/content/ContentTable';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
+import { LegalDocument, SystemBanner, BroadcastLog } from '@/types/admin';
+import Tabs from '@/components/dashboard/Tabs';
 
-// Outreach Imports
-import RichTextEditor from '@/components/ui/RichTextEditor';
-import OutreachPreview from '@/components/admin/outreach/OutreachPreview';
-
+// ...
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
-import LegalDocTable, { LegalDocument } from '@/components/admin/content/LegalDocTable';
+import LegalDocTable from '@/components/admin/content/LegalDocTable';
+import Badge from '@/components/shared/Badge';
+import DataTable, { Column } from '@/components/shared/DataTable';
 
-/**
- * Mock content items for the Content & Pages tab.
- * When wiring up: `supabase.from('cms_pages').select('*')` (or your CMS source)
- */
-const mockContent: ContentItem[] = [
-    { id: '1', title: 'Terms of Service', slug: '/terms', type: 'page', author: 'Legal Team', lastUpdated: '2 weeks ago', status: 'published' },
-    { id: '2', title: 'Privacy Policy', slug: '/privacy', type: 'page', author: 'Legal Team', lastUpdated: '1 month ago', status: 'published' },
-    { id: '3', title: 'FAQ', slug: '/faq', type: 'page', author: 'Support Team', lastUpdated: '3 days ago', status: 'published' },
-    { id: '4', title: 'Welcome to Lynk-X 2.0', slug: '/blog/welcome-v2', type: 'post', author: 'Marketing', lastUpdated: '1 day ago', status: 'published' },
-    { id: '5', title: 'Maintenance Window', slug: '/announcements/maintenance-oct25', type: 'announcement', author: 'DevOps', lastUpdated: '5 hours ago', status: 'draft' },
-    { id: '6', title: 'Community Guidelines', slug: '/guidelines', type: 'page', author: 'Community Mgr', lastUpdated: '2 months ago', status: 'published' },
-    { id: '7', title: 'Top 10 Event Tips', slug: '/blog/event-tips', type: 'post', author: 'Content Team', lastUpdated: '1 week ago', status: 'draft' },
-    { id: '8', title: 'Legacy API Docs', slug: '/docs/api/v1', type: 'page', author: 'Tech Writers', lastUpdated: '1 year ago', status: 'archived' },
-];
-
-/**
- * Mock legal documents — aligned to `legal_documents` table + `legal_document_type` enum.
- * Type definition lives in LegalDocTable.tsx (imported above).
- * When wiring up:
- *   supabase.from('legal_documents').select('*').order('type, effective_date', { ascending: false })
- */
-const mockLegalDocs: LegalDocument[] = [
-    { id: 'ld-1', type: 'terms_of_service', version: 'v3.0', title: 'Terms of Service', is_active: true, effective_date: 'Jan 1, 2025' },
-    { id: 'ld-2', type: 'privacy_policy', version: 'v2.1', title: 'Privacy Policy', is_active: true, effective_date: 'Mar 15, 2025' },
-    { id: 'ld-3', type: 'organizer_agreement', version: 'v1.2', title: 'Organizer Agreement', is_active: true, effective_date: 'Feb 1, 2025' },
-    { id: 'ld-4', type: 'terms_of_service', version: 'v2.5', title: 'Terms of Service (prev)', is_active: false, effective_date: 'Jun 1, 2024' },
-    { id: 'ld-5', type: 'privacy_policy', version: 'v2.0', title: 'Privacy Policy (prev)', is_active: false, effective_date: 'Aug 10, 2024' },
-    { id: 'ld-6', type: 'organizer_agreement', version: 'v1.0', title: 'Organizer Agreement (v1)', is_active: false, effective_date: 'Jan 15, 2024' },
-];
-
-export default function AdminCommunicationsPage() {
+function CommunicationsContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
     const { showToast } = useToast();
+    const supabase = useMemo(() => createClient(), []);
 
-    // Top-Level Tabs — 'legal' backed by `legal_documents` table
-    const [activeTab, setActiveTab] = useState<'content' | 'notifications' | 'legal'>('content');
+    const initialTab = (searchParams.get('tab') as any) || 'broadcast';
+    const [activeTab, setActiveTab] = useState<'content' | 'broadcast' | 'legal' | 'banners'>(
+        ['content', 'broadcast', 'legal', 'banners'].includes(initialTab) ? initialTab : 'broadcast'
+    );
 
-    // ─── Legal Documents State ─── backed by `legal_documents` table ────────
+    useEffect(() => {
+        const tab = searchParams.get('tab') as any;
+        if (tab && ['content', 'broadcast', 'legal', 'banners'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab as any);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const [contents, setContents] = useState<ContentItem[]>([]);
+    const [legalDocs, setLegalDocs] = useState<LegalDocument[]>([]);
+    const [broadcastLogs, setBroadcastLogs] = useState<BroadcastLog[]>([]);
+    const [banners, setBanners] = useState<SystemBanner[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [cmsRes, legalRes, broadcastRes, bannerRes] = await Promise.all([
+                supabase.from('cms_pages').select('*').order('updated_at', { ascending: false }),
+                supabase.from('legal_documents').select('*').order('effective_date', { ascending: false }),
+                supabase.from('notification_broadcast_logs').select('*').order('created_at', { ascending: false }),
+                supabase.from('system_banners').select('*').order('starts_at', { ascending: false })
+            ]);
+
+            if (cmsRes.data) {
+                setContents(cmsRes.data.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    slug: item.slug,
+                    type: item.type,
+                    author: 'System',
+                    lastUpdated: new Date(item.updated_at).toLocaleDateString(),
+                    status: item.status,
+                    content: item.content
+                })));
+            }
+            if (legalRes.data) setLegalDocs(legalRes.data);
+            if (broadcastRes.data) setBroadcastLogs(broadcastRes.data);
+            if (bannerRes.data) setBanners(bannerRes.data);
+        } catch (error) {
+            console.error('Error fetching communications data:', error);
+            showToast('Failed to load some data', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, showToast]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+
+    // ─── Stats Calculation ──────────────────────────────────────────────
+    const stats = {
+        publishedPages: contents.filter(c => c.status === 'published').length,
+        activePolicies: legalDocs.filter(l => l.is_active).length,
+        totalNotifications: broadcastLogs.reduce((acc, log) => acc + (log.fcm_tokens_count || 0), 0),
+        activeBanners: banners.filter(b => b.is_active).length
+    };
+
+    // ─── Legal Documents State & Pagination ──────────────────────────────
     const [legalDocPage, setLegalDocPage] = useState(1);
     const legalDocsPerPage = 5;
-    const totalLegalPages = Math.ceil(mockLegalDocs.length / legalDocsPerPage);
-    const paginatedLegalDocs = mockLegalDocs.slice(
+    const totalLegalPages = Math.ceil(legalDocs.length / legalDocsPerPage);
+    const paginatedLegalDocs = legalDocs.slice(
         (legalDocPage - 1) * legalDocsPerPage,
         legalDocPage * legalDocsPerPage
     );
 
-    // ─── Content State ──────────────────────────────────────────────────
+    const handleToggleLegalActive = async (doc: LegalDocument) => {
+        try {
+            // If activating, deactivate others of the same type
+            if (!doc.is_active) {
+                await supabase
+                    .from('legal_documents')
+                    .update({ is_active: false })
+                    .eq('type', doc.type);
+            }
+
+            const { error } = await supabase
+                .from('legal_documents')
+                .update({ is_active: !doc.is_active })
+                .eq('id', doc.id);
+
+            if (error) throw error;
+            showToast(`${doc.title} ${!doc.is_active ? 'activated' : 'deactivated'}`, 'success');
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
+    // ─── Content State & Search ──────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 8;
 
-    // Filter Logic
-    const filteredContent = mockContent.filter(item => {
+    const filteredContent = contents.filter(item => {
         const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.slug.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = typeFilter === 'all' || item.type === typeFilter;
@@ -77,14 +144,12 @@ export default function AdminCommunicationsPage() {
         return matchesSearch && matchesType && matchesStatus;
     });
 
-    // Pagination Logic
     const totalPages = Math.ceil(filteredContent.length / itemsPerPage);
     const paginatedContent = filteredContent.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
 
-    // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
         setSelectedContentIds(new Set());
@@ -111,128 +176,250 @@ export default function AdminCommunicationsPage() {
         }
     };
 
-    const handleBulkPublish = () => {
-        showToast(`Publishing ${selectedContentIds.size} items...`, 'info');
-        setTimeout(() => {
-            showToast('Content published successfully.', 'success');
-            setSelectedContentIds(new Set());
-        }, 1000);
-    };
+    const handleBulkAction = async (action: 'publish' | 'archive' | 'delete') => {
+        const ids = Array.from(selectedContentIds);
+        showToast(`${action.charAt(0).toUpperCase() + action.slice(1)}ing items...`, 'info');
 
-    const handleBulkArchive = () => {
-        showToast(`Archiving ${selectedContentIds.size} items...`, 'info');
-        setTimeout(() => {
-            showToast('Content archived.', 'warning');
-            setSelectedContentIds(new Set());
-        }, 1000);
-    };
+        try {
+            let error;
+            if (action === 'delete') {
+                const res = await supabase.from('cms_pages').delete().in('id', ids);
+                error = res.error;
+            } else {
+                const res = await supabase.from('cms_pages').update({ status: action === 'publish' ? 'published' : 'archived' }).in('id', ids);
+                error = res.error;
+            }
 
-    const handleBulkDelete = () => {
-        showToast(`Deleting ${selectedContentIds.size} items...`, 'info');
-        setTimeout(() => {
-            showToast(`Successfully deleted ${selectedContentIds.size} items.`, 'success');
+            if (error) throw error;
+            showToast(`Bulk ${action} successful`, 'success');
             setSelectedContentIds(new Set());
-        }, 1000);
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
     };
 
     const bulkActions: BulkAction[] = [
-        { label: 'Publish Selected', onClick: handleBulkPublish, variant: 'success' },
-        { label: 'Archive Selected', onClick: handleBulkArchive },
-        { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
+        { label: 'Publish Selected', onClick: () => handleBulkAction('publish'), variant: 'success' },
+        { label: 'Archive Selected', onClick: () => handleBulkAction('archive') },
+        { label: 'Delete Selected', onClick: () => handleBulkAction('delete'), variant: 'danger' }
     ];
 
-    // ─── Outreach/Notifications State ─────────────────────────────────────
-    const [subject, setSubject] = useState('');
-    const [message, setMessage] = useState('');
-    /**
-     * `notification_type` enum from schema:
-     * system | social | marketing | event_update | money_in | money_out
-     */
-    const [notificationType, setNotificationType] = useState<
-        'system' | 'social' | 'marketing' | 'event_update' | 'money_in' | 'money_out'
-    >('system');
+    // ─── Broadcast Logs Handling ───────────────────────────────────────────
+    const [broadcastSearch, setBroadcastSearch] = useState('');
+    const filteredBroadcasts = broadcastLogs.filter(log =>
+        log.subject.toLowerCase().includes(broadcastSearch.toLowerCase()) ||
+        log.type.toLowerCase().includes(broadcastSearch.toLowerCase())
+    );
 
-    const handleSendNotification = () => {
-        showToast(`Sending ${notificationType} notification...`, 'info');
-        setTimeout(() => {
-            showToast('Notification Sent Successfully', 'success');
-            setSubject('');
-            setMessage('');
-        }, 1000);
+    const broadcastColumns: Column<BroadcastLog>[] = [
+        {
+            header: 'Subject',
+            render: (log) => (
+                <div style={{ fontWeight: 600 }}>{log.subject}</div>
+            ),
+        },
+        {
+            header: 'Type',
+            render: (log) => <Badge label={log.type.replace('_', ' ')} variant="info" />,
+        },
+        {
+            header: 'Targeting',
+            render: (log) => (
+                <div style={{ fontSize: '13px' }}>
+                    <span style={{ textTransform: 'capitalize' }}>{log.targeting_type}</span>
+                    {(log.fcm_tokens_count || 0) > 0 && (
+                        <span style={{ opacity: 0.6, marginLeft: '6px' }}>({log.fcm_tokens_count} tokens)</span>
+                    )}
+                </div>
+            ),
+        },
+        {
+            header: 'Sent Date',
+            render: (log) => (
+                <div style={{ fontSize: '12px', opacity: 0.6 }}>{new Date(log.created_at).toLocaleString()}</div>
+            ),
+        }
+    ];
+
+    // ─── Banner Logic ───
+    const liveBanner = banners.find(b => b.is_active);
+
+    const handleToggleBanner = async (banner: SystemBanner) => {
+        try {
+            const { error } = await supabase
+                .from('system_banners')
+                .update({ is_active: !banner.is_active })
+                .eq('id', banner.id);
+            if (error) throw error;
+            showToast(`Banner ${!banner.is_active ? 'activated' : 'deactivated'}`, 'success');
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
+    const handleDeleteBanner = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this banner?')) return;
+        try {
+            const { error } = await supabase.from('system_banners').delete().eq('id', id);
+            if (error) throw error;
+            showToast('Banner deleted', 'success');
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
     };
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
+            <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h1 className={styles.title}>Communications</h1>
+                    <h1 className={adminStyles.title}>Communications</h1>
                     <p className={adminStyles.subtitle}>Manage platform content, system notifications, and emails.</p>
                 </div>
-                {activeTab === 'content' && (
-                    <Link href="/dashboard/admin/content/create">
-                        <button className={adminStyles.btnPrimary}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            New Content
-                        </button>
-                    </Link>
+                {(activeTab === 'content' || activeTab === 'legal' || activeTab === 'banners' || activeTab === 'broadcast') && (
+                    <button
+                        className={adminStyles.btnPrimary}
+                        onClick={() => {
+                            if (activeTab === 'content') router.push('/dashboard/admin/communications/create');
+                            else if (activeTab === 'legal') router.push('/dashboard/admin/communications/legal/new');
+                            else if (activeTab === 'broadcast') router.push('/dashboard/admin/communications/broadcast/create');
+                            else router.push('/dashboard/admin/communications/banners/create');
+                        }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        {activeTab === 'content' ? 'New Content' : activeTab === 'legal' ? 'New Version' : activeTab === 'broadcast' ? 'New Broadcast' : 'Create Banner'}
+                    </button>
                 )}
             </header>
 
-            {/* Sub-Navigation Tabs */}
-            <div className={adminStyles.tabs}>
-                <button
-                    className={`${adminStyles.tab} ${activeTab === 'content' ? adminStyles.tabActive : ''}`}
-                    onClick={() => setActiveTab('content')}
-                >
-                    Content &amp; Pages
-                </button>
-                <button
-                    className={`${adminStyles.tab} ${activeTab === 'legal' ? adminStyles.tabActive : ''}`}
-                    onClick={() => setActiveTab('legal')}
-                >
-                    Legal Documents
-                </button>
-                <button
-                    className={`${adminStyles.tab} ${activeTab === 'notifications' ? adminStyles.tabActive : ''}`}
-                    onClick={() => setActiveTab('notifications')}
-                >
-                    User Notifications
-                </button>
+            <div className={adminStyles.statsGrid}>
+                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
+                    <span className={adminStyles.statLabel}>Published Pages</span>
+                    <span className={adminStyles.statValue}>{stats.publishedPages}</span>
+                    <span className={`${adminStyles.statChange} ${adminStyles.positive}`}>Live Assets</span>
+                </div>
+                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
+                    <span className={adminStyles.statLabel}>Active Policies</span>
+                    <span className={adminStyles.statValue}>{stats.activePolicies}</span>
+                    <span className={`${adminStyles.statChange} ${adminStyles.positive}`}>Legally Compliant</span>
+                </div>
+                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
+                    <span className={adminStyles.statLabel}>Notifications Sent</span>
+                    <span className={adminStyles.statValue}>{stats.totalNotifications >= 1000 ? (stats.totalNotifications / 1000).toFixed(1) + 'k' : stats.totalNotifications}</span>
+                    <span className={adminStyles.statLabel}>Historical Total</span>
+                </div>
+                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
+                    <span className={adminStyles.statLabel}>Active Banners</span>
+                    <span className={adminStyles.statValue}>{stats.activeBanners}</span>
+                    <span className={`${adminStyles.statChange} ${stats.activeBanners > 0 ? adminStyles.positive : ''}`}>System Alerts</span>
+                </div>
             </div>
+
+            {/* Sub-Navigation Tabs */}
+            <Tabs
+                options={[
+                    { id: 'broadcast', label: 'Broadcast Notifications' },
+                    { id: 'banners', label: 'System Banners' },
+                    { id: 'content', label: 'Content & Pages' },
+                    { id: 'legal', label: 'Legal Documents' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
+
+            {/* ─── TAB: BROADCAST ─── */}
+            {activeTab === 'broadcast' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <TableToolbar searchPlaceholder="Search history..." searchValue={broadcastSearch} onSearchChange={setBroadcastSearch} />
+                    <DataTable<BroadcastLog> data={filteredBroadcasts} columns={broadcastColumns} emptyMessage="No broadcast history found." isLoading={isLoading} />
+                </div>
+            )}
+
+            {/* ─── TAB: SYSTEM BANNERS ─── */}
+            {activeTab === 'banners' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Active & Scheduled Banners</h2>
+
+                        {liveBanner ? (
+                            <div style={{ marginBottom: '32px', padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-interface-outline)' }}>
+                                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.5, marginBottom: '12px', fontWeight: 600 }}>Live Banner Highlight</div>
+                                <div style={{
+                                    padding: '16px',
+                                    background: liveBanner.type === 'error' ? 'rgba(255, 77, 77, 0.08)' : liveBanner.type === 'warning' ? 'rgba(255, 193, 7, 0.08)' : 'rgba(32, 249, 40, 0.08)',
+                                    borderLeft: `4px solid var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})`,
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px'
+                                }}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={`var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})`} strokeWidth="2">
+                                        {liveBanner.type === 'success' ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="10" />}
+                                    </svg>
+                                    <div style={{ fontSize: '14px' }}>
+                                        <strong style={{ color: `var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})` }}>{liveBanner.title}:</strong> {liveBanner.content}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ marginBottom: '32px', padding: '24px', textAlign: 'center', opacity: 0.5, border: '1px dashed var(--color-interface-outline)', borderRadius: '12px' }}>
+                                No banners currently active.
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {banners.map(banner => (
+                                <div key={banner.id} className={adminStyles.statCard} style={{ cursor: 'default', display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '20px', padding: '16px 24px' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, fontSize: '15px' }}>{banner.title}</div>
+                                        <div style={{ fontSize: '13px', opacity: 0.6 }}>
+                                            {new Date(banner.starts_at).toLocaleDateString()} {banner.ends_at ? `- ${new Date(banner.ends_at).toLocaleDateString()}` : '(Ongoing)'}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <Badge label={banner.type.toUpperCase()} variant={banner.type as any} />
+                                        <Badge
+                                            label={banner.is_active ? 'Live' : 'Inactive'}
+                                            variant={banner.is_active ? 'success' : 'neutral'}
+                                            showDot={banner.is_active}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/banners/edit/${banner.id}`)}>Edit</button>
+                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: banner.is_active ? '#ff4d4d' : 'inherit' }} onClick={() => handleToggleBanner(banner)}>
+                                            {banner.is_active ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteBanner(banner.id)}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {banners.length === 0 && !isLoading && <div style={{ textAlign: 'center', padding: '16px 0', opacity: 0.5 }}>No banners found.</div>}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ─── TAB: CONTENT ─── */}
             {activeTab === 'content' && (
                 <>
-                    <TableToolbar
-                        searchPlaceholder="Search by title or slug..."
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <div className={styles.filterGroup}>
-                                {['all', 'page', 'post', 'announcement'].map(type => (
-                                    <button
-                                        key={type}
-                                        className={`${adminStyles.chip} ${typeFilter === type ? adminStyles.chipActive : ''}`}
-                                        onClick={() => setTypeFilter(type)}
-                                        style={{ textTransform: 'capitalize' }}
-                                    >
-                                        {type === 'all' ? 'All Types' : type + 's'}
-                                    </button>
-                                ))}
-                            </div>
+                    <TableToolbar searchPlaceholder="Search by title or slug..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
+                        <div className={adminStyles.filterGroup}>
+                            {['all', 'page', 'post', 'announcement'].map(type => (
+                                <button key={type} className={`${adminStyles.chip} ${typeFilter === type ? adminStyles.chipActive : ''}`} onClick={() => setTypeFilter(type)}>
+                                    {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1) + 's'}
+                                </button>
+                            ))}
                         </div>
                     </TableToolbar>
 
-                    <BulkActionsBar
-                        selectedCount={selectedContentIds.size}
-                        actions={bulkActions}
-                        onCancel={() => setSelectedContentIds(new Set())}
-                        itemTypeLabel="items"
-                    />
+                    <BulkActionsBar selectedCount={selectedContentIds.size} actions={bulkActions} onCancel={() => setSelectedContentIds(new Set())} itemTypeLabel="items" />
 
                     <ContentTable
                         items={paginatedContent}
@@ -242,97 +429,30 @@ export default function AdminCommunicationsPage() {
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
+                        isLoading={isLoading}
                     />
                 </>
             )}
 
             {/* ─── TAB: LEGAL DOCUMENTS ─── */}
-            {/* Backed by `legal_documents` table + `legal_document_type` enum */}
             {activeTab === 'legal' && (
-                <>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                        <button className={adminStyles.btnPrimary} onClick={() => showToast('Opening legal document editor...', 'info')}>
-                            + New Version
-                        </button>
-                    </div>
-                    <LegalDocTable
-                        documents={paginatedLegalDocs}
-                        currentPage={legalDocPage}
-                        totalPages={totalLegalPages}
-                        onPageChange={setLegalDocPage}
-                        onSetActive={(doc) =>
-                            showToast(`Activating ${doc.title} (${doc.version}) — deactivates current ${doc.type} version.`, 'success')
-                        }
-                    />
-                </>
-            )}
-
-            {/* ─── TAB: NOTIFICATIONS ─── */}
-            {/* `notification_type` enum: system | social | marketing | event_update | money_in | money_out */}
-            {activeTab === 'notifications' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    <div className={adminStyles.statCard} style={{ cursor: 'default', transform: 'none' }}>
-                        <h2 className={styles.sectionTitle} style={{ marginBottom: '24px' }}>New Push Notification</h2>
-                        <form style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} onSubmit={(e) => e.preventDefault()}>
-                            <div>
-                                <label className={adminStyles.label}>Notification Type</label>
-                                <select
-                                    className={adminStyles.select}
-                                    style={{ width: '100%' }}
-                                    value={notificationType}
-                                    onChange={(e) => setNotificationType(e.target.value as typeof notificationType)}
-                                >
-                                    {/* Aligned to `notification_type` schema enum */}
-                                    <option value="system">System</option>
-                                    <option value="social">Social</option>
-                                    <option value="marketing">Marketing</option>
-                                    <option value="event_update">Event Update</option>
-                                    <option value="money_in">Money In</option>
-                                    <option value="money_out">Money Out</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={adminStyles.label}>Subject</label>
-                                <input
-                                    type="text"
-                                    placeholder="Notification Title"
-                                    className={adminStyles.input}
-                                    value={subject}
-                                    onChange={(e) => setSubject(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className={adminStyles.label}>Message</label>
-                                <RichTextEditor
-                                    value={message}
-                                    onChange={setMessage}
-                                    placeholder="Type your alert message here..."
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                className={adminStyles.btnPrimary}
-                                style={{ alignSelf: 'flex-start' }}
-                                onClick={handleSendNotification}
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
-                                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                                Send Notification
-                            </button>
-                        </form>
-                    </div>
-
-                    <div className={adminStyles.statCard} style={{ cursor: 'default', transform: 'none' }}>
-                        <h2 className={styles.sectionTitle} style={{ marginBottom: '24px' }}>Audience Preview</h2>
-                        <OutreachPreview
-                            subject={subject}
-                            message={message}
-                            audience={notificationType}
-                        />
-                    </div>
-                </div>
+                <LegalDocTable
+                    documents={paginatedLegalDocs}
+                    currentPage={legalDocPage}
+                    totalPages={totalLegalPages}
+                    onPageChange={setLegalDocPage}
+                    onSetActive={handleToggleLegalActive}
+                    isLoading={isLoading}
+                />
             )}
         </div>
+    );
+}
+
+export default function AdminCommunicationsPage() {
+    return (
+        <Suspense fallback={<div className={adminStyles.loading}>Loading Communications...</div>}>
+            <CommunicationsContent />
+        </Suspense>
     );
 }

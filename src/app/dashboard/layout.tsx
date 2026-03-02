@@ -3,6 +3,7 @@ import MobileNudge from '@/components/dashboard/MobileNudge';
 import styles from './layout.module.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { OrganizationProvider } from '@/context/OrganizationContext';
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function DashboardLayout({
     children,
@@ -10,16 +11,18 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <OrganizationProvider>
-            <ToastProvider>
-                <div className={styles.layout}>
-                    <Sidebar />
-                    <MobileNudge />
-                    <main className={styles.main}>
-                        {children}
-                    </main>
-                </div>
-            </ToastProvider>
-        </OrganizationProvider>
+        <AuthProvider>
+            <OrganizationProvider>
+                <ToastProvider>
+                    <div className={styles.layout}>
+                        <Sidebar />
+                        <MobileNudge />
+                        <main className={styles.main}>
+                            {children}
+                        </main>
+                    </div>
+                </ToastProvider>
+            </OrganizationProvider>
+        </AuthProvider>
     );
 }

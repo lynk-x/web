@@ -73,3 +73,34 @@
     display: flex;
     justify-content: flex-end;
 }
+.amountContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.breakdownItem {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.5;
+    gap: 12px;
+}
+
+.netAmount {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.9;
+    padding-top: 2px;
+    color: var(--color-brand-primary);
+}

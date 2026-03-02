@@ -5,9 +5,11 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Circle } from 're
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { createClient } from '@/utils/supabase/client';
 
 // Custom Marker using app theme color
-const createCustomIcon = () => {
+const createCustomIcon = (isReported: boolean = false) => {
+    const color = isReported ? 'var(--color-interface-error)' : 'var(--color-brand-primary)';
     return L.divIcon({
         className: 'custom-marker',
         html: `
@@ -23,7 +25,7 @@ const createCustomIcon = () => {
                     position: absolute;
                     width: 20px;
                     height: 3px;
-                    background-color: var(--color-brand-primary);
+                    background-color: ${color};
                     transform: rotate(45deg);
                     border-radius: 2px;
                 "></div>
@@ -31,7 +33,7 @@ const createCustomIcon = () => {
                     position: absolute;
                     width: 20px;
                     height: 3px;
-                    background-color: var(--color-brand-primary);
+                    background-color: ${color};
                     transform: rotate(-45deg);
                     border-radius: 2px;
                 "></div>
@@ -52,31 +54,56 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
     return null;
 }
 
-// Expanded mock data to make clustering visible
-const mockLocations = [
-    { id: 1, name: "Nairobi Tech Summit", lat: -1.2921, lng: 36.8219, revenue: "KES 500,000" },
-    { id: 2, name: "Mombasa Music Fest", lat: -4.0435, lng: 39.6682, revenue: "KES 750,000" },
-    { id: 3, name: "Kisumu Art Expo", lat: -0.0917, lng: 34.7680, revenue: "KES 200,000" },
-    { id: 4, name: "Nakuru Rugby Sevens", lat: -0.3031, lng: 36.0800, revenue: "KES 350,000" },
-    { id: 5, name: "Eldoret Marathon", lat: 0.5143, lng: 35.2698, revenue: "KES 300,000" },
-    { id: 6, name: "Thika Motor Show", lat: -1.0388, lng: 37.0734, revenue: "KES 450,000" },
-    { id: 7, name: "Nairobi Food Festival", lat: -1.3000, lng: 36.7800, revenue: "KES 600,000" }, // Close to Nairobi Tech Summit
-    { id: 8, name: "Nairobi Jazz", lat: -1.2800, lng: 36.8100, revenue: "KES 550,000" }, // Close to Nairobi Tech Summit
-];
+interface EventLocation {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    revenue: number;
+    isReported: boolean;
+}
 
 export default function AdminMap() {
+    const supabase = createClient();
     const [isMounted, setIsMounted] = useState(false);
     const [zoom, setZoom] = useState(6);
+    const [locations, setLocations] = useState<EventLocation[]>([]);
 
     useEffect(() => {
         setIsMounted(true);
+
+        async function fetchLocations() {
+            const { data } = await supabase
+                .from('mv_event_performance')
+                .select('id, event_title, coordinates, revenue, reports_count')
+                .eq('status', 'published');
+
+            if (data) {
+                const mapped: EventLocation[] = data
+                    .filter(item => item.coordinates)
+                    .map(item => {
+                        // Supabase returns GeoJSON for PostGIS types
+                        const coords = item.coordinates as any;
+                        return {
+                            id: item.id,
+                            name: item.event_title,
+                            // GeoJSON is [lng, lat]
+                            lat: coords.coordinates[1],
+                            lng: coords.coordinates[0],
+                            revenue: Number(item.revenue) || 0,
+                            isReported: (Number(item.reports_count) || 0) > 0
+                        };
+                    });
+                setLocations(mapped);
+            }
+        }
+
+        fetchLocations();
     }, []);
 
     if (!isMounted) {
         return <div style={{ height: '100%', width: '100%', backgroundColor: '#1a1a1a' }}></div>;
     }
-
-    const customIcon = createCustomIcon();
 
     return (
         <div style={{ height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -98,7 +125,7 @@ export default function AdminMap() {
                     bounds={[[-90, -180], [90, 180]]}
                 />
 
-                {zoom >= 15 && mockLocations.map(loc => (
+                {zoom >= 15 && locations.map(loc => (
                     <Circle
                         key={`halo-${loc.id}`}
                         center={[loc.lat, loc.lng]}
@@ -123,11 +150,18 @@ export default function AdminMap() {
                         fillOpacity: 0.3,
                     }}
                 >
-                    {mockLocations.map(loc => (
-                        <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={customIcon}>
+                    {locations.map(loc => (
+                        <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={createCustomIcon(loc.isReported)}>
                             <Popup>
-                                <strong>{loc.name}</strong><br />
-                                Revenue: {loc.revenue}
+                                <div style={{ minWidth: '150px' }}>
+                                    <div style={{ fontWeight: 700, marginBottom: '4px', color: loc.isReported ? 'var(--color-interface-error)' : 'inherit' }}>
+                                        {loc.name}
+                                        {loc.isReported && <span style={{ marginLeft: '8px', fontSize: '10px', background: 'rgba(255, 0, 0, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>FLAGGED</span>}
+                                    </div>
+                                    <div style={{ fontSize: '13px', opacity: 0.8 }}>
+                                        Revenue: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES' }).format(loc.revenue)}
+                                    </div>
+                                </div>
                             </Popup>
                         </Marker>
                     ))}

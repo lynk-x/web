@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import FinanceTable, { FinanceTransaction } from '@/components/organize/FinanceTable';
 import PayoutTable from '@/components/organize/PayoutTable';
@@ -8,32 +9,57 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import Tabs from '@/components/dashboard/Tabs';
 
-export default function OrganizerRevenuePage() {
+function RevenueContent() {
     const { showToast } = useToast();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
 
-    const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
-    const [payouts, setPayouts] = useState<any[]>([]); // Any for now, will map to Payout interface
-    const [isLoading, setIsLoading] = useState(true);
+    const initialTab = (searchParams.get('tab') as any) || 'transactions';
+    const [activeTab, setActiveTab] = useState<'transactions' | 'payouts'>(
+        ['transactions', 'payouts'].includes(initialTab) ? initialTab : 'transactions'
+    );
 
-    const [activeTab, setActiveTab] = useState<'transactions' | 'payouts'>('transactions');
+    useEffect(() => {
+        const tab = searchParams.get('tab') as any;
+        if (tab && ['transactions', 'payouts'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
 
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab as any);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
+    const [payoutCurrentPage, setPayoutCurrentPage] = useState(1);
+    const payoutItemsPerPage = 8;
     const itemsPerPage = 8;
 
-    // Fetch Transactions
-    const fetchTransactions = async () => {
+    const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
+    const [payouts, setPayouts] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Payout request modal state
+    const [payoutAmount, setPayoutAmount] = useState('');
+
+    // ── fetchTransactions ──────────────────────────────────────────────────
+    const fetchTransactions = useCallback(async () => {
         if (!activeAccount) return;
         setIsLoading(true);
 
         try {
-            // First, get all event IDs for this account
+            // Get all event IDs for this account
             const { data: events, error: eventsError } = await supabase
                 .from('events')
                 .select('id, title')
@@ -43,13 +69,13 @@ export default function OrganizerRevenuePage() {
 
             if (!events || events.length === 0) {
                 setTransactions([]);
+                setIsLoading(false);
                 return;
             }
 
             const eventIds = events.map(e => e.id);
             const eventMap = new Map(events.map(e => [e.id, e.title]));
 
-            // Then, fetch transactions tied to these events
             const { data: txs, error: txError } = await supabase
                 .from('transactions')
                 .select('*')
@@ -58,21 +84,18 @@ export default function OrganizerRevenuePage() {
 
             if (txError) throw txError;
 
-            if (txs) {
-                const mappedTxs: FinanceTransaction[] = txs.map(tx => ({
-                    id: tx.id,
-                    event: eventMap.get(tx.event_id) || 'Unknown Event',
-                    description: tx.reason,
-                    type: tx.category as any, // Mapped locally
-                    amount: tx.amount,
-                    status: tx.status,
-                    date: new Date(tx.created_at).toLocaleDateString(),
-                    reference: tx.reference
-                }));
-                setTransactions(mappedTxs);
-            }
+            setTransactions((txs || []).map(tx => ({
+                id: tx.id,
+                event: eventMap.get(tx.event_id) || 'Unknown Event',
+                description: tx.reason,
+                type: tx.category as any,
+                amount: tx.amount,
+                status: tx.status,
+                date: new Date(tx.created_at).toLocaleDateString(),
+                reference: tx.reference
+            })));
 
-            // Also fetch Payouts for this account
+            // Payouts for this account
             const { data: payoutData, error: payoutError } = await supabase
                 .from('payouts')
                 .select('*')
@@ -81,27 +104,24 @@ export default function OrganizerRevenuePage() {
 
             if (payoutError) throw payoutError;
 
-            if (payoutData) {
-                const mappedPayouts = payoutData.map(p => ({
-                    id: p.id,
-                    recipient: p.account_name || activeAccount.name,
-                    amount: p.amount,
-                    status: p.status,
-                    requestedAt: new Date(p.created_at).toLocaleDateString(),
-                    reference: p.id.split('-')[0].toUpperCase(), // Simple ref generation from UUID
-                    notes: p.admin_notes
-                }));
-                setPayouts(mappedPayouts);
-            }
+            setPayouts((payoutData || []).map(p => ({
+                id: p.id,
+                recipient: activeAccount.name,
+                amount: p.amount,
+                status: p.status,
+                requestedAt: new Date(p.created_at).toLocaleDateString(),
+                reference: p.id.split('-')[0].toUpperCase(),
+                notes: p.admin_notes
+            })));
 
-        } catch (error: any) {
-            console.error("Error fetching financials:", error);
-            showToast('Failed to load financial history.', 'error');
+        } catch (err: any) {
+            showToast(err.message || 'Failed to load financial history.', 'error');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeAccount, supabase, showToast]);
 
+    // ── Effect ──────────────────────────────────────────────────────────────
     useEffect(() => {
         if (!isOrgLoading && activeAccount) {
             fetchTransactions();
@@ -110,30 +130,35 @@ export default function OrganizerRevenuePage() {
             setTransactions([]);
             setPayouts([]);
         }
-    }, [isOrgLoading, activeAccount]);
+    }, [isOrgLoading, activeAccount, fetchTransactions]);
 
+    // ── Request Payout ────────────────────────────────────────────────────
     const handleRequestPayout = async () => {
         if (!activeAccount) return;
-        showToast('Processing payout request...', 'info');
+        const parsed = parseFloat(payoutAmount);
+        if (!payoutAmount || isNaN(parsed) || parsed <= 0) {
+            showToast('Please enter a valid payout amount.', 'error');
+            return;
+        }
 
+        showToast('Submitting payout request…', 'info');
         try {
-            // For MVP, requesting a flat payout for demo purposes. 
-            // In a real app, logic would sum unpaid transactions and prompt for details.
             const { error } = await supabase
                 .from('payouts')
                 .insert({
                     account_id: activeAccount.id,
-                    amount: 5000,
+                    amount: parsed,
                     method: 'Bank Transfer',
                     account_name: activeAccount.name,
-                    account_number: 'PENDING-SETUP'
+                    account_number: 'PENDING-SETUP' // Organizer completes bank details separately
                 });
 
             if (error) throw error;
-            showToast('Payout request submitted securely.', 'success');
-        } catch (error: any) {
-            console.error("Payout error:", error);
-            showToast(error.message || 'Failed to submit payout request.', 'error');
+            showToast('Payout request submitted. Our team will review it shortly.', 'success');
+            setPayoutAmount('');
+            fetchTransactions(); // Refresh payout list
+        } catch (err: any) {
+            showToast(err.message || 'Failed to submit payout request.', 'error');
         }
     };
 
@@ -182,7 +207,16 @@ export default function OrganizerRevenuePage() {
                     <h1 className={styles.pageTitle}>Revenue & Payouts</h1>
                     <p className={styles.pageSubtitle}>Track your earnings and transaction history.</p>
                 </div>
-                <div className={styles.headerActions}>
+                {/* Payout request: inline amount input + button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                        type="number"
+                        min="1"
+                        placeholder="Amount (USD)"
+                        value={payoutAmount}
+                        onChange={(e) => setPayoutAmount(e.target.value)}
+                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '140px', fontSize: '14px' }}
+                    />
                     <button className={styles.primaryBtn} onClick={handleRequestPayout}>
                         Request Payout
                     </button>
@@ -190,20 +224,14 @@ export default function OrganizerRevenuePage() {
             </div>
 
             {/* Tabs */}
-            <div className={styles.tabsContainer} style={{ borderBottom: '1px solid var(--color-interface-outline)', display: 'flex', gap: '24px', marginBottom: '24px', paddingBottom: '8px' }}>
-                <button
-                    onClick={() => { setActiveTab('transactions'); setCurrentPage(1); }}
-                    style={{ background: 'none', border: 'none', color: activeTab === 'transactions' ? 'var(--color-brand-primary)' : 'var(--color-utility-primaryText)', fontSize: '15px', fontWeight: activeTab === 'transactions' ? 600 : 400, borderBottom: activeTab === 'transactions' ? '2px solid var(--color-brand-primary)' : 'none', paddingBottom: '8px', marginBottom: '-9px', cursor: 'pointer', opacity: activeTab === 'transactions' ? 1 : 0.7 }}
-                >
-                    Transactions
-                </button>
-                <button
-                    onClick={() => { setActiveTab('payouts'); setCurrentPage(1); }}
-                    style={{ background: 'none', border: 'none', color: activeTab === 'payouts' ? 'var(--color-brand-primary)' : 'var(--color-utility-primaryText)', fontSize: '15px', fontWeight: activeTab === 'payouts' ? 600 : 400, borderBottom: activeTab === 'payouts' ? '2px solid var(--color-brand-primary)' : 'none', paddingBottom: '8px', marginBottom: '-9px', cursor: 'pointer', opacity: activeTab === 'payouts' ? 1 : 0.7 }}
-                >
-                    Payouts
-                </button>
-            </div>
+            <Tabs
+                options={[
+                    { id: 'transactions', label: 'Transactions' },
+                    { id: 'payouts', label: 'Payouts' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             {isLoading ? (
                 <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading financials...</div>
@@ -262,18 +290,26 @@ export default function OrganizerRevenuePage() {
                             />
                         ) : (
                             <PayoutTable
-                                payouts={payouts}
+                                payouts={payouts.slice((payoutCurrentPage - 1) * payoutItemsPerPage, payoutCurrentPage * payoutItemsPerPage)}
                                 selectedIds={selectedIds}
                                 onSelect={handleSelect}
                                 onSelectAll={handleSelectAll}
-                                currentPage={1}
-                                totalPages={1}
-                                onPageChange={() => { }}
+                                currentPage={payoutCurrentPage}
+                                totalPages={Math.ceil(payouts.length / payoutItemsPerPage)}
+                                onPageChange={setPayoutCurrentPage}
                             />
                         )}
                     </div>
                 </>
             )}
         </div>
+    );
+}
+
+export default function OrganizerRevenuePage() {
+    return (
+        <Suspense fallback={<div className={styles.loading}>Loading Revenue...</div>}>
+            <RevenueContent />
+        </Suspense>
     );
 }

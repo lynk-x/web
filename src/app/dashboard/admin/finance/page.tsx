@@ -1,260 +1,486 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
-import FinanceTable, { FinanceTransaction } from '@/components/organize/FinanceTable';
-
-/**
- * Mock transactions — aligned to `transaction_reason` and `payment_status` schema enums.
- * When wiring up: `supabase.from('transactions').select('*').order('created_at', { ascending: false })`
- */
-const mockTransactions: FinanceTransaction[] = [
-    { id: '1', date: 'Oct 24, 2025', description: 'Premium Plan Subscription', amount: 49.00, type: 'subscription', category: 'incoming', status: 'completed', reference: 'SUB-8821' },
-    { id: '2', date: 'Oct 23, 2025', description: 'Organiser Payout — EventPro Ltd', amount: 1250.00, type: 'payout_withdrawal', category: 'outgoing', status: 'pending', reference: 'PO-9921' },
-    { id: '3', date: 'Oct 22, 2025', description: 'Ad Campaign #9921 Budget', amount: 500.00, type: 'ad_campaign_payment', category: 'incoming', status: 'completed', reference: 'AD-1123' },
-    { id: '4', date: 'Oct 21, 2025', description: 'Ticket Refund — #8821 (User Req)', amount: 25.00, type: 'ticket_refund', category: 'outgoing', status: 'pending', reference: 'RF-4412' },
-    { id: '5', date: 'Oct 20, 2025', description: 'Ticket Sale — Summer Festival', amount: 120.00, type: 'ticket_sale', category: 'incoming', status: 'completed', reference: 'TS-3321' },
-    { id: '6', date: 'Oct 19, 2025', description: 'Organiser Payment — Jane Events', amount: 320.00, type: 'organizer_payment', category: 'outgoing', status: 'completed', reference: 'OP-9918' },
-    { id: '7', date: 'Oct 18, 2025', description: 'Basic Plan Subscription', amount: 19.00, type: 'subscription', category: 'incoming', status: 'completed', reference: 'SUB-8819' },
-    { id: '8', date: 'Oct 18, 2025', description: 'Subscription Refund — Double Chg', amount: 49.00, type: 'subscription_refund', category: 'outgoing', status: 'completed', reference: 'RF-4410' },
-    { id: '9', date: 'Oct 17, 2025', description: 'Escrow Release — Event #4412', amount: 850.00, type: 'escrow_release', category: 'internal', status: 'completed', reference: 'ER-1001' },
-    { id: '10', date: 'Oct 16, 2025', description: 'Dispute Settlement — User Claim', amount: 75.00, type: 'dispute_settlement', category: 'outgoing', status: 'completed', reference: 'DS-0021' },
-];
-
-/**
- * Mock payouts — aligned to `payouts` table + `payout_status` enum.
- * When wiring up: `supabase.from('payouts').select('*, profile:profiles!profile_id(display_name)').order('created_at', { ascending: false })`
- */
-const mockPayouts: Payout[] = [
-    { id: 'po-1', recipient: 'EventPro Ltd', amount: 1250.00, status: 'requested', requestedAt: 'Oct 23, 2025', reference: 'PO-9921' },
-    { id: 'po-2', recipient: 'Jane Events', amount: 320.00, status: 'completed', requestedAt: 'Oct 19, 2025', reference: 'PO-9918' },
-    { id: 'po-3', recipient: 'Global Beats', amount: 4200.00, status: 'processing', requestedAt: 'Oct 15, 2025', reference: 'PO-9901' },
-    { id: 'po-4', recipient: 'Venture Hub', amount: 780.00, status: 'requested', requestedAt: 'Oct 10, 2025', reference: 'PO-9887' },
-    { id: 'po-5', recipient: 'Chef Mario', amount: 230.00, status: 'failed', requestedAt: 'Oct 05, 2025', reference: 'PO-9870', notes: 'Bank account details invalid' },
-    { id: 'po-6', recipient: 'TechDaily Org', amount: 1890.00, status: 'rejected', requestedAt: 'Sep 28, 2025', reference: 'PO-9855', notes: 'KYC not completed' },
-];
-
+import FinanceTable from '@/components/organize/FinanceTable';
+import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
+import TaxRateTable from '@/components/admin/finance/TaxRateTable';
+import FXRateTable from '@/components/admin/finance/FXRateTable';
 import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
+import Modal from '@/components/shared/Modal';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import Tabs from '@/components/dashboard/Tabs';
 import { useToast } from '@/components/ui/Toast';
-import type { Payout } from '@/types/organize';
-import PayoutTable from '@/components/admin/finance/PayoutTable';
+import { createClient } from '@/utils/supabase/client';
+import type { FinanceTransaction } from '@/types/organize';
+import type { TaxRate, FXRate } from '@/types/admin';
 
-export default function AdminFinancePage() {
+function FinanceContent() {
     const { showToast } = useToast();
-    const [activeTab, setActiveTab] = useState('overview');
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const supabase = useMemo(() => createClient(), []);
+
+    const initialTab = searchParams.get('tab') || 'transactions';
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Date range state
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+    // State for different datasets
+    const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
+    const [payouts, setPayouts] = useState<Payout[]>([]);
+    const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
+    const [fxRates, setFxRates] = useState<FXRate[]>([]);
+
+    // Selection state
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
     const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
-    const [payoutPage, setPayoutPage] = useState(1);
-    const itemsPerPage = 5;
 
-    // Filter Logic — tabs map to transaction_reason categories
-    const filteredTransactions = mockTransactions.filter(tx => {
-        const matchesSearch = tx.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (tx.reference && tx.reference.toLowerCase().includes(searchTerm.toLowerCase()));
-
-        let matchesTab = true;
-        if (activeTab === 'payouts') matchesTab = tx.type === 'payout_withdrawal' || tx.type === 'organizer_payment';
-        if (activeTab === 'refunds') matchesTab = tx.type === 'ticket_refund' || tx.type === 'ad_refund' || tx.type === 'subscription_refund';
-        if (activeTab === 'fees') matchesTab = tx.type === 'subscription' || tx.type === 'ad_campaign_payment';
-
-        return matchesSearch && matchesTab;
+    // Tax Modal state
+    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+    const [editingTaxRate, setEditingTaxRate] = useState<TaxRate | null>(null);
+    const [taxForm, setTaxForm] = useState({
+        name: '',
+        country_code: 'KE',
+        rate_percent: 0,
+        is_inclusive: true
     });
+    const [countries, setCountries] = useState<{ code: string, name: string }[]>([]);
 
-    // Payout filter + pagination (backed by `payouts` table)
-    const filteredPayouts = mockPayouts.filter((p: Payout) =>
-        p.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.reference && p.reference.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    const payoutTotalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
-    const paginatedPayouts = filteredPayouts.slice(
-        (payoutPage - 1) * itemsPerPage,
-        payoutPage * itemsPerPage
-    );
+    // FX State
+    const [isSyncingFX, setIsSyncingFX] = useState(false);
 
-    // Payout selection handlers
-    const handleSelectPayout = (id: string) => {
-        const next = new Set(selectedPayoutIds);
-        next.has(id) ? next.delete(id) : next.add(id);
-        setSelectedPayoutIds(next);
-    };
-    const handleSelectAllPayouts = () => {
-        if (selectedPayoutIds.size === paginatedPayouts.length) {
-            setSelectedPayoutIds(new Set());
-        } else {
-            const next = new Set(selectedPayoutIds);
-            paginatedPayouts.forEach(p => next.add(p.id));
-            setSelectedPayoutIds(next);
-        }
-    };
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-    const paginatedTransactions = filteredTransactions.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset pagination when tab or search changes
     useEffect(() => {
-        setCurrentPage(1);
+        const tab = searchParams.get('tab');
+        if (tab) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            if (['transactions', 'refunds', 'ad_revenue', 'subscriptions', 'escrow'].includes(activeTab)) {
+                let query = supabase.from('transactions').select(`
+                    *,
+                    event:events(title),
+                    sender:profiles!sender_id(full_name, user_name),
+                    recipient:profiles!recipient_id(full_name, user_name)
+                `);
+
+                if (activeTab === 'refunds') {
+                    query = query.in('reason', ['ticket_refund', 'ad_refund', 'subscription_refund']);
+                } else if (activeTab === 'ad_revenue') {
+                    query = query.eq('reason', 'ad_campaign_payment');
+                } else if (activeTab === 'subscriptions') {
+                    query = query.eq('reason', 'subscription');
+                } else if (activeTab === 'escrow') {
+                    query = query.eq('category', 'escrow');
+                }
+
+                if (startDate) {
+                    query = query.gte('created_at', new Date(startDate).toISOString());
+                }
+                if (endDate) {
+                    // Set end date to the end of the day
+                    const d = new Date(endDate);
+                    d.setHours(23, 59, 59, 999);
+                    query = query.lte('created_at', d.toISOString());
+                }
+
+                const { data, error } = await query.order('created_at', { ascending: false });
+                if (error) throw error;
+                setTransactions((data || []).map(tx => ({
+                    id: tx.id,
+                    description: `${tx.reason.replace(/_/g, ' ')} for ${tx.event?.title || 'System'}`,
+                    amount: tx.amount,
+                    date: tx.created_at,
+                    status: tx.status,
+                    type: tx.reason,
+                    category: tx.category,
+                    reference: tx.reference,
+                    event: tx.event?.title,
+                    sender: tx.sender?.full_name || tx.sender?.user_name,
+                    recipient: tx.recipient?.full_name || tx.recipient?.user_name
+                })));
+            } else if (activeTab === 'payouts') {
+                let query = supabase.from('payouts').select(`
+                    *,
+                    account:accounts(name, kyc_status, is_verified)
+                `);
+
+                if (startDate) {
+                    query = query.gte('created_at', new Date(startDate).toISOString());
+                }
+                if (endDate) {
+                    const d = new Date(endDate);
+                    d.setHours(23, 59, 59, 999);
+                    query = query.lte('created_at', d.toISOString());
+                }
+
+                const { data, error } = await query.order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setPayouts((data || []).map(p => ({
+                    id: p.id,
+                    recipient: p.account?.name || 'Unknown Account',
+                    amount: p.amount,
+                    status: p.status,
+                    requestedAt: p.created_at || p.processed_at || new Date().toISOString(),
+                    reference: p.reference,
+                    notes: p.admin_notes,
+                    kyc_status: p.account?.kyc_status,
+                    is_verified: p.account?.is_verified
+                })));
+            } else if (activeTab === 'taxes') {
+                const { data, error } = await supabase.from('tax_rates').select(`
+                    *,
+                    country:countries(name)
+                `).order('name');
+                if (error) throw error;
+                setTaxRates((data || []).map(t => ({
+                    ...t,
+                    country_name: t.country?.name || t.country_code
+                })));
+            } else if (activeTab === 'currencies') {
+                const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
+                if (error) throw error;
+                setFxRates(data || []);
+            }
+        } catch (error: any) {
+            showToast(error.message, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeTab, supabase, showToast, startDate, endDate]);
+
+    useEffect(() => {
+        fetchData();
         setSelectedTxIds(new Set());
-    }, [activeTab, searchTerm]);
-
-    // Selection Logic
-    const handleSelectTx = (id: string) => {
-        const newSelected = new Set(selectedTxIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedTxIds(newSelected);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedTxIds.size === paginatedTransactions.length) {
-            setSelectedTxIds(new Set());
-        } else {
-            const newSelected = new Set(selectedTxIds);
-            paginatedTransactions.forEach(tx => newSelected.add(tx.id));
-            setSelectedTxIds(newSelected);
-        }
-    };
-
-    const handleBulkApprove = () => {
-        showToast(`Approving ${selectedTxIds.size} transactions...`, 'info');
-        setTimeout(() => {
-            showToast('Transactions approved successfully.', 'success');
-            setSelectedTxIds(new Set());
-        }, 1000);
-    };
-
-    const handleBulkReject = () => {
-        showToast(`Rejecting ${selectedTxIds.size} transactions...`, 'info');
-        setTimeout(() => {
-            showToast('Transactions rejected.', 'error');
-            setSelectedTxIds(new Set());
-        }, 1000);
-    };
+        setSelectedPayoutIds(new Set());
+    }, [fetchData]);
 
     const handleBulkExport = () => {
-        showToast(`Preparing export for ${selectedTxIds.size} items...`, 'info');
-        setTimeout(() => {
-            showToast('Export ready! Downloading...', 'success');
-            setSelectedTxIds(new Set());
-        }, 1500);
+        showToast('Exporting data...', 'info');
+        setTimeout(() => showToast('Data exported successfully.', 'success'), 1500);
     };
 
-    const bulkActions: BulkAction[] = [
-        { label: 'Approve Selected', onClick: handleBulkApprove, variant: 'success' },
-        { label: 'Reject Selected', onClick: handleBulkReject, variant: 'danger' },
-        { label: 'Export Selected', onClick: handleBulkExport }
-    ];
+    const handleSaveTaxRate = async () => {
+        try {
+            const payload = {
+                ...taxForm,
+                rate_percent: Number(taxForm.rate_percent),
+                updated_at: new Date().toISOString()
+            };
+
+            if (editingTaxRate) {
+                const { error } = await supabase.from('tax_rates').update(payload).eq('id', editingTaxRate.id);
+                if (error) throw error;
+                showToast('Tax rate updated', 'success');
+            } else {
+                const { error } = await supabase.from('tax_rates').insert([payload]);
+                if (error) throw error;
+                showToast('Tax rate created', 'success');
+            }
+            setIsTaxModalOpen(false);
+            fetchData();
+        } catch (error: any) {
+            showToast(error.message, 'error');
+        }
+    };
+
+    const handleSyncFX = async () => {
+        setIsSyncingFX(true);
+        showToast('Syncing with global rates...', 'info');
+        // Simulated sync logic
+        setTimeout(() => {
+            setIsSyncingFX(false);
+            showToast('FX rates synchronized.', 'success');
+            fetchData();
+        }, 2000);
+    };
+
+    const getBulkActions = (): BulkAction[] => {
+        if (activeTab === 'payouts' && selectedPayoutIds.size > 0) {
+            return [
+                {
+                    label: 'Batch Approve',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+                    onClick: async () => {
+                        showToast(`Approving ${selectedPayoutIds.size} payouts...`, 'info');
+                        try {
+                            const { error } = await supabase
+                                .from('payouts')
+                                .update({ status: 'processing', updated_at: new Date().toISOString() })
+                                .in('id', Array.from(selectedPayoutIds));
+                            if (error) throw error;
+                            showToast('Batch approved — payouts marked as processing.', 'success');
+                            setSelectedPayoutIds(new Set());
+                            fetchData();
+                        } catch (err: any) {
+                            showToast(err.message || 'Failed to approve payouts.', 'error');
+                        }
+                    },
+                    variant: 'success'
+                }
+            ];
+        }
+        return [];
+    };
+
+    const renderActiveTab = () => {
+        if (activeTab === 'payouts') {
+            return (
+                <PayoutTable
+                    payouts={payouts.filter(p => p.recipient.toLowerCase().includes(searchTerm.toLowerCase()))}
+                    selectedIds={selectedPayoutIds}
+                    onSelect={(id) => {
+                        const next = new Set(selectedPayoutIds);
+                        next.has(id) ? next.delete(id) : next.add(id);
+                        setSelectedPayoutIds(next);
+                    }}
+                    onSelectAll={() => setSelectedPayoutIds(selectedPayoutIds.size === payouts.length ? new Set() : new Set(payouts.map(p => p.id)))}
+                />
+            );
+        }
+
+        if (activeTab === 'taxes') {
+            return (
+                <>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                        <button className={adminStyles.btnPrimary} onClick={() => {
+                            setEditingTaxRate(null);
+                            setTaxForm({ name: '', country_code: 'KE', rate_percent: 0, is_inclusive: true });
+                            setIsTaxModalOpen(true);
+                        }}>
+                            + Add Tax Rate
+                        </button>
+                    </div>
+                    <TaxRateTable
+                        data={taxRates.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))}
+                        isLoading={isLoading}
+                        onUpdate={fetchData}
+                        onEdit={(rate) => {
+                            setEditingTaxRate(rate);
+                            setTaxForm({
+                                name: rate.name,
+                                country_code: rate.country_code,
+                                rate_percent: rate.rate_percent,
+                                is_inclusive: rate.is_inclusive
+                            });
+                            setIsTaxModalOpen(true);
+                        }}
+                    />
+                </>
+            );
+        }
+
+        if (activeTab === 'currencies') {
+            return (
+                <>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                        <button
+                            className={adminStyles.btnSecondary}
+                            onClick={handleSyncFX}
+                            disabled={isSyncingFX}
+                        >
+                            <svg className={isSyncingFX ? adminStyles.spinner : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                                <path d="M23 4v6h-6M1 20v-6h6"></path>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            {isSyncingFX ? 'Syncing...' : 'Sync Live Rates'}
+                        </button>
+                    </div>
+                    <FXRateTable data={fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} onUpdate={fetchData} />
+                </>
+            );
+        }
+
+        return (
+            <FinanceTable
+                transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
+                selectedIds={selectedTxIds}
+                onSelect={(id) => {
+                    const next = new Set(selectedTxIds);
+                    next.has(id) ? next.delete(id) : next.add(id);
+                    setSelectedTxIds(next);
+                }}
+                onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
+            />
+        );
+    };
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={adminStyles.title}>Finance & Reports</h1>
-                    <p className={adminStyles.subtitle}>Track revenue, payouts, and platform fees.</p>
-                </div>
-                <button className={adminStyles.btnSecondary} onClick={() => {
-                    showToast('Generating financial report...', 'info');
-                    setTimeout(() => showToast('Financial report downloaded successfully.', 'success'), 2000);
-                }}>
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title="Finance"
+                subtitle="Monitor platform revenue, manage payouts, and configure financial settings."
+                actionLabel="Export Transactions"
+                onActionClick={handleBulkExport}
+                actionIcon={
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
-                    Export Report
-                </button>
-            </header>
+                }
+            />
 
-            <div className={adminStyles.statsGrid}>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>Total Revenue (MTD)</span>
-                    <span className={adminStyles.statValue}>$12,450.00</span>
-                    <span className={`${adminStyles.statChange} ${adminStyles.positive}`}>+15% vs last month</span>
-                </div>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>Pending Payouts</span>
-                    <span className={adminStyles.statValue}>$3,200.00</span>
-                    <span className={styles.statNote}>4 requests pending approval</span>
-                </div>
-                <div className={adminStyles.statCard}>
-                    <span className={adminStyles.statLabel}>Refund Rate</span>
-                    <span className={adminStyles.statValue}>1.2%</span>
-                    <span className={styles.statNote}>Below industry average (2.0%)</span>
-                </div>
+            <div className={sharedStyles.statsGrid}>
+                <StatCard
+                    label="Gross Volume"
+                    value={`$${transactions.filter(t => t.category === 'incoming').reduce((acc, t) => acc + Number(t.amount), 0).toLocaleString()}`}
+                    change="All incoming transactions"
+                    trend="positive"
+                />
+                <StatCard
+                    label="Ad Revenue"
+                    value={`$${transactions.filter(t => t.type === 'ad_campaign_payment').reduce((acc, t) => acc + Number(t.amount), 0).toLocaleString()}`}
+                    change="Live platform ads"
+                    trend="neutral"
+                />
+                <StatCard
+                    label="Subscriptions"
+                    value={`$${transactions.filter(t => t.type === 'subscription').reduce((acc, t) => acc + Number(t.amount), 0).toLocaleString()}`}
+                    change={`${transactions.filter(t => t.type === 'subscription').length} active plans`}
+                    trend="positive"
+                />
+                <StatCard
+                    label="Pending Payouts"
+                    value={`$${payouts.filter(p => p.status === 'requested').reduce((acc, p) => acc + Number(p.amount), 0).toLocaleString()}`}
+                    change={`${payouts.filter(p => p.status === 'requested').length} active requests`}
+                    trend="neutral"
+                />
             </div>
 
+
+
             <TableToolbar
-                searchPlaceholder="Search transactions..."
+                searchPlaceholder="Search..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div className={adminStyles.filterGroup}>
-                    <div className={adminStyles.tabs} style={{ margin: 0 }}>
-                        {['overview', 'payouts', 'refunds', 'fees'].map((tab) => (
-                            <button
-                                key={tab}
-                                className={`${adminStyles.tab} ${activeTab === tab ? adminStyles.tabActive : ''}`}
-                                onClick={() => setActiveTab(tab)}
-                            >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <Tabs
+                    options={[
+                        { id: 'transactions', label: 'All Transactions' },
+                        { id: 'refunds', label: 'Refunds' },
+                        { id: 'ad_revenue', label: 'Ad Revenue' },
+                        { id: 'subscriptions', label: 'Subscriptions' },
+                        { id: 'escrow', label: 'Escrow' },
+                        { id: 'payouts', label: 'Payout Requests' },
+                        { id: 'tax-rules', label: 'Tax Rules' },
+                        { id: 'fx-rates', label: 'FX Rates' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    className={styles.tabsReset}
+                />
             </TableToolbar>
 
-            {/* ── Payouts Tab — backed by `payouts` table + payout_status enum ── */}
-            {activeTab === 'payouts' ? (
-                <>
-                    <BulkActionsBar
-                        selectedCount={selectedPayoutIds.size}
-                        actions={[
-                            { label: 'Approve Selected', onClick: () => { showToast(`Approving ${selectedPayoutIds.size} payouts...`, 'info'); setTimeout(() => { showToast('Payouts approved.', 'success'); setSelectedPayoutIds(new Set()); }, 1200); }, variant: 'success' },
-                            { label: 'Reject Selected', onClick: () => { showToast(`Rejecting ${selectedPayoutIds.size} payouts...`, 'info'); setTimeout(() => { showToast('Payouts rejected.', 'error'); setSelectedPayoutIds(new Set()); }, 1000); }, variant: 'danger' },
-                        ]}
-                        onCancel={() => setSelectedPayoutIds(new Set())}
-                        itemTypeLabel="payouts"
-                    />
-                    <PayoutTable
-                        payouts={paginatedPayouts}
-                        selectedIds={selectedPayoutIds}
-                        onSelect={handleSelectPayout}
-                        onSelectAll={handleSelectAllPayouts}
-                        currentPage={payoutPage}
-                        totalPages={payoutTotalPages}
-                        onPageChange={setPayoutPage}
-                    />
-                </>
-            ) : (
-                /* ── Overview / Refunds / Fees — backed by `transactions` table ── */
-                <>
-                    <BulkActionsBar
-                        selectedCount={selectedTxIds.size}
-                        actions={bulkActions}
-                        onCancel={() => setSelectedTxIds(new Set())}
-                        itemTypeLabel="transactions"
-                    />
-                    <FinanceTable
-                        transactions={paginatedTransactions}
-                        selectedIds={selectedTxIds}
-                        onSelect={handleSelectTx}
-                        onSelectAll={handleSelectAll}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                    />
-                </>
+            {['transactions', 'ad_revenue', 'subscriptions', 'refunds', 'payouts'].includes(activeTab) && (
+                <DateRangeRow
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                />
             )}
+
+            {renderActiveTab()}
+
+            <BulkActionsBar
+                actions={getBulkActions()}
+                selectedCount={activeTab === 'payouts' ? selectedPayoutIds.size : 0}
+                onCancel={() => {
+                    setSelectedPayoutIds(new Set());
+                }}
+            />
+
+            <Modal
+                isOpen={isTaxModalOpen}
+                onClose={() => setIsTaxModalOpen(false)}
+                title={editingTaxRate ? 'Edit Tax Rate' : 'Add New Tax Rate'}
+                footer={
+                    <>
+                        <button className={adminStyles.btnSecondary} onClick={() => setIsTaxModalOpen(false)}>Cancel</button>
+                        <button className={adminStyles.btnPrimary} onClick={handleSaveTaxRate}>Save Rate</button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label className={adminStyles.label}>Rate Name</label>
+                        <input
+                            className={adminStyles.input}
+                            placeholder="e.g. VAT, Sales Tax"
+                            value={taxForm.name}
+                            onChange={e => setTaxForm({ ...taxForm, name: e.target.value })}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                            <label className={adminStyles.label}>Country</label>
+                            <select
+                                className={adminStyles.select}
+                                style={{ width: '100%' }}
+                                value={taxForm.country_code}
+                                onChange={e => setTaxForm({ ...taxForm, country_code: e.target.value })}
+                            >
+                                {countries.map(c => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={adminStyles.label}>Rate (%)</label>
+                            <input
+                                type="number"
+                                className={adminStyles.input}
+                                value={taxForm.rate_percent}
+                                onChange={e => setTaxForm({ ...taxForm, rate_percent: Number(e.target.value) })}
+                            />
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                        <input
+                            type="checkbox"
+                            checked={taxForm.is_inclusive}
+                            onChange={e => setTaxForm({ ...taxForm, is_inclusive: e.target.checked })}
+                        />
+                        <span style={{ fontSize: '14px', opacity: 0.8 }}>Inclusive of price</span>
+                    </div>
+                </div>
+            </Modal>
         </div>
+    );
+}
+
+export default function AdminFinancePage() {
+    return (
+        <Suspense fallback={<div className={adminStyles.loading}>Loading Finance...</div>}>
+            <FinanceContent />
+        </Suspense>
     );
 }

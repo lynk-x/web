@@ -3,55 +3,166 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import styles from './page.module.css';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), { ssr: false });
 
-/**
- * Overview stat cards — each maps to a real schema entity.
- * TODO: Replace mock values with live Supabase aggregates when wiring up.
- *   - revenue:   SUM(reporting_amount) FROM transactions WHERE category = 'incoming'
- *   - events:    COUNT(*) FROM events WHERE status IN ('published', 'active')
- *   - campaigns: COUNT(*) FROM ad_campaigns WHERE status = 'draft'
- *   - tickets:   COUNT(*) FROM support_tickets WHERE status IN ('open', 'in_progress')
- *   - payouts:   COUNT(*) FROM payouts WHERE status = 'requested'
- *   - configs:   system_config WHERE key = 'is_maintenance_mode'
- */
-const stats = [
-    { label: 'Total Revenue', value: '$45,200', change: '+12%', isPositive: true, href: '/dashboard/admin/finance' },
-    { label: 'Active Events', value: '856', change: '+3.1%', isPositive: true, href: '/dashboard/admin/events' },
-    { label: 'Pending Campaigns', value: '14', change: 'Needs Approval', isPositive: false, color: '#fdd835', href: '/dashboard/admin/campaigns' },
-    { label: 'Support Tickets', value: '24', change: '3 High Priority', isPositive: false, color: '#e57373', href: '/dashboard/admin/support' },
-    { label: 'Pending Payouts', value: '6', change: 'Awaiting Review', isPositive: false, color: '#ffb74d', href: '/dashboard/admin/finance' },
-    { label: 'System Health', value: '99.9%', change: 'Operational', isPositive: true, color: '#81c784', href: '/dashboard/admin/system-configs' },
-];
-
+interface DashboardStats {
+    escrow: number;
+    activeUsers: number;
+    proMembers: number;
+    pendingAds: number;
+    supportTickets: number;
+    moderationQueue: number;
+}
 
 export default function AdminDashboard() {
+    const supabase = useMemo(() => createClient(), []);
+    const [statsData, setStatsData] = useState<DashboardStats>({
+        escrow: 0,
+        activeUsers: 0,
+        proMembers: 0,
+        pendingAds: 0,
+        supportTickets: 0,
+        moderationQueue: 0
+    });
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchStats() {
+            try {
+                // 1. Fetch Escrow (Sum of all account balances)
+                const { data: escrowData } = await supabase
+                    .from('accounts')
+                    .select('wallet_balance');
+                const totalEscrow = (escrowData || []).reduce((acc, curr) => acc + (Number(curr.wallet_balance) || 0), 0);
+
+                // 2. Fetch Active Users Count
+                const { count: activeUsersCount } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('is_active', true);
+
+                // 3. Fetch Pro Members — subscription_tier lives on profiles, not accounts
+                const { count: proCount } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('subscription_tier', 'pro');
+
+                // 4. Fetch Pending Ad Campaigns (Draft status)
+                const { count: adCount } = await supabase
+                    .from('ad_campaigns')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'draft');
+
+                // 5. Fetch Open Support Tickets
+                const { count: ticketCount } = await supabase
+                    .from('support_tickets')
+                    .select('*', { count: 'exact', head: true })
+                    .in('status', ['open', 'in_progress']);
+
+                // 6. Fetch Moderation Queue (Pending reports)
+                const { count: reportsCount } = await supabase
+                    .from('reports')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'pending');
+
+                setStatsData({
+                    escrow: totalEscrow,
+                    activeUsers: activeUsersCount || 0,
+                    proMembers: proCount || 0,
+                    pendingAds: adCount || 0,
+                    supportTickets: ticketCount || 0,
+                    moderationQueue: reportsCount || 0
+                });
+            } catch (error) {
+                console.error('Error fetching dashboard stats:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchStats();
+    }, []);
+
+    const stats = [
+        {
+            label: 'Platform Escrow',
+            value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES', notation: 'compact' }).format(statsData.escrow),
+            change: 'Total Wallet Balances',
+            isPositive: true,
+            href: '/dashboard/admin/finance'
+        },
+        {
+            label: 'Active Users',
+            value: statsData.activeUsers.toLocaleString(),
+            change: '+Live Activity',
+            isPositive: true,
+            href: '/dashboard/admin/users'
+        },
+        {
+            label: 'Pro Members',
+            value: statsData.proMembers.toLocaleString(),
+            change: 'Premium Conversion',
+            isPositive: true,
+            href: '/dashboard/admin/users'
+        },
+        {
+            label: 'Ad Campaigns',
+            value: statsData.pendingAds.toLocaleString(),
+            change: 'Awaiting Approval',
+            isPositive: false,
+            color: 'var(--color-brand-primary)',
+            href: '/dashboard/admin/campaigns'
+        },
+        {
+            label: 'Support Tickets',
+            value: statsData.supportTickets.toLocaleString(),
+            change: 'Awaiting Response',
+            isPositive: false,
+            color: '#ffb74d',
+            href: '/dashboard/admin/support'
+        },
+        {
+            label: 'Moderation Queue',
+            value: statsData.moderationQueue.toLocaleString(),
+            change: 'Flagged Content',
+            isPositive: false,
+            color: 'var(--color-interface-error)',
+            href: '/dashboard/admin/support'
+        },
+    ];
+
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Admin Overview</h1>
-                    <p className={styles.subtitle}>Welcome back, Administrator. Here's what's happening today.</p>
-                </div>
-            </header>
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title="Admin Overview"
+                subtitle="Welcome back, Administrator. Here's what's happening today."
+            />
 
             {/* Key Metrics */}
-            <div className={styles.statsGrid}>
+            <div className={sharedStyles.statsGrid}>
                 {stats.map((stat, index) => (
-                    <Link key={index} href={stat.href} className={styles.statCard}>
-                        <span className={styles.statLabel}>{stat.label}</span>
-                        <div className={styles.statValue} style={stat.color ? { color: stat.color } : {}}>{stat.value}</div>
-                        <div className={`${styles.statChange} ${stat.isPositive ? styles.positive : styles.negative}`} style={stat.color ? { color: stat.color, opacity: 0.8 } : {}}>
-                            {stat.change}
-                        </div>
-                    </Link>
+                    <StatCard
+                        key={index}
+                        label={stat.label}
+                        value={stat.value}
+                        change={stat.change}
+                        isPositive={stat.isPositive}
+                        href={stat.href}
+                        isLoading={isLoading}
+                        color={stat.color}
+                    />
                 ))}
             </div>
 
             {/* Map Section */}
             <section style={{ marginTop: '24px' }}>
-                <h2 className={styles.sectionTitle}>Live Activity Map</h2>
+                <h2 className={sharedStyles.sectionTitle}>Live Activity Map</h2>
                 <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden', height: '500px', position: 'relative' }}>
                     <AdminMap />
                 </div>

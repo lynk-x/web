@@ -16,7 +16,8 @@ interface HomeClientProps {
 
 const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, gridEvents }) => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
-    const { searchTerm, selectedCategories, selectedDates } = useFilters();
+    const { searchTerm, selectedCategories, selectedDates, selectedTags } = useFilters();
+    const hasActiveFilters = searchTerm !== "" || selectedCategories.length > 0 || selectedDates.length > 0 || selectedTags.length > 0;
 
     const filteredGridEvents = gridEvents.filter(event => {
         // Search Filter
@@ -56,7 +57,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, gridEvents }) =
                 />
             </div>
 
-            <div className={`${styles.heroWrapper} ${isSearchFocused ? styles.heroHidden : ''}`}>
+            <div className={`${styles.heroWrapper} ${(isSearchFocused || hasActiveFilters) ? styles.heroHidden : ''}`}>
                 <HeroSection featuredEvents={carouselEvents} />
             </div>
 

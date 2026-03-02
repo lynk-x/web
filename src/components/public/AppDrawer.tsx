@@ -29,12 +29,8 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
     const [calendarDays, setCalendarDays] = useState<Date[]>([]);
 
     useEffect(() => {
-        // Initialize viewStartDate to the beginning of the current week (Sunday)
-        const today = new Date();
-        const currentDay = today.getDay();
-        const start = new Date(today);
-        start.setDate(today.getDate() - currentDay);
-        setViewStartDate(start);
+        // Initialize viewStartDate to exactly today
+        setViewStartDate(new Date());
     }, []);
 
     useEffect(() => {
@@ -93,7 +89,9 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
 
     const categories = [
         'Arts & Entertainment',
+        'Music & Nightlife',
         'Business & Professional',
+        'Tech & Innovation',
         'Sports & Games',
         'Food & Drinks',
         'Education & Training',
@@ -102,10 +100,41 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
         'Seasonal & Holiday'
     ];
 
-    const tags = [
+    const allTags = [
         'Afro-House', 'Networking', 'Workshop', 'Live Band', 'Outdoor',
-        'Wheelchair Accessible', 'Free WiFi', 'Parking', '18+ Only', 'Pet Friendly'
+        'Wheelchair Accessible', 'Family Friendly', 'Free WiFi', 'Parking', '18+ Only', 'Pet Friendly',
+        'Eco-Friendly', 'Sign Language', 'Nursing Room'
     ];
+
+    // Simulate DB category_tags relationships
+    const categoryTagMap: Record<string, string[]> = {
+        'Music & Nightlife': ['Afro-House', 'Live Band', '18+ Only', 'Outdoor'],
+        'Arts & Entertainment': ['Live Band', 'Workshop', 'Outdoor'],
+        'Business & Professional': ['Networking', 'Workshop'],
+        'Tech & Innovation': ['Networking', 'Workshop', 'Free WiFi'],
+        'Sports & Games': ['Outdoor', 'Family Friendly'],
+        'Health & Wellness': ['Workshop', 'Outdoor'],
+        'Community & Social': ['Family Friendly', 'Pet Friendly', 'Outdoor'],
+        'Seasonal & Holiday': ['Family Friendly', 'Outdoor'],
+        'Food & Drinks': ['Outdoor', 'Pet Friendly', 'Family Friendly']
+    };
+
+    // Global tags that always appear
+    const globalTags = ['Wheelchair Accessible', 'Parking', 'Eco-Friendly', 'Sign Language', 'Nursing Room'];
+
+    // Determine which tags to display
+    let categorizedTags: string[] = [];
+    const generalTagsDisplay: string[] = globalTags;
+
+    if (selectedCategories.length > 0) {
+        const recommendedTags = new Set<string>();
+        selectedCategories.forEach(cat => {
+            categoryTagMap[cat]?.forEach(tag => recommendedTags.add(tag));
+        });
+        categorizedTags = allTags.filter(tag => recommendedTags.has(tag) && !globalTags.includes(tag));
+    } else {
+        categorizedTags = allTags.filter(tag => !globalTags.includes(tag));
+    }
 
     return (
         <>
@@ -133,9 +162,12 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className={styles.calendarGrid}>
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                            <span key={day} className={styles.dayName}>{day}</span>
-                        ))}
+                        {Array.from({ length: 7 }).map((_, i) => {
+                            const d = new Date(viewStartDate);
+                            d.setDate(viewStartDate.getDate() + i);
+                            const dayName = d.toLocaleString('default', { weekday: 'short' });
+                            return <span key={i} className={styles.dayName}>{dayName}</span>;
+                        })}
 
                         {calendarDays.map((date, index) => {
                             const isToday = isSameDay(date, new Date());
@@ -180,8 +212,28 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
                 {/* Tags Section */}
                 <div className={styles.section}>
                     <h3 className={styles.sectionTitle}>Tags:</h3>
+
+                    {/* Categorized / Recommended Tags */}
                     <div className={styles.tagGrid}>
-                        {tags.map((tag) => (
+                        {categorizedTags.map((tag: string) => (
+                            <div
+                                key={tag}
+                                className={`${styles.tagPill} ${selectedTags.includes(tag) ? styles.tagPillSelected : ''}`}
+                                onClick={() => toggleTag(tag)}
+                            >
+                                {tag}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Gap line between categorized and general tags */}
+                    {categorizedTags.length > 0 && generalTagsDisplay.length > 0 && (
+                        <div className={styles.tagDivider} />
+                    )}
+
+                    {/* General / Amenity Tags at the bottom */}
+                    <div className={styles.tagGrid}>
+                        {generalTagsDisplay.map((tag: string) => (
                             <div
                                 key={tag}
                                 className={`${styles.tagPill} ${selectedTags.includes(tag) ? styles.tagPillSelected : ''}`}

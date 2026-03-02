@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
 import Link from 'next/link';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -9,7 +13,8 @@ import { formatCurrency } from '@/utils/format';
 
 export default function DashboardOverview() {
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
+    const router = useRouter();
 
     const [stats, setStats] = useState({
         revenue: 0,
@@ -87,74 +92,63 @@ export default function DashboardOverview() {
         if (!isOrgLoading && activeAccount) {
             fetchDashboardData();
         } else if (!isOrgLoading && !activeAccount) {
-            setStats({
-                revenue: 24500,
-                sellThroughRate: 85.4,
-                checkInRate: 92.1,
-                teamSize: 4
-            });
+            // No active org — show zero state rather than misleading mock data
+            setStats({ revenue: 0, sellThroughRate: 0, checkInRate: 0, teamSize: 0 });
             setIsLoading(false);
         }
     }, [isOrgLoading, activeAccount, supabase]);
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>
-                        {activeAccount ? `Welcome back to ${activeAccount.name} 👋` : 'Welcome back 👋'}
-                    </h1>
-                    <p className={styles.subtitle}>Here is what is happening with your events today.</p>
-                </div>
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title={activeAccount ? `Welcome back to ${activeAccount.name} 👋` : 'Welcome back 👋'}
+                subtitle="Here is what is happening with your events today."
+            />
 
-            </header>
-
-            <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Total Revenue</span>
-                    <div className={styles.statValue}>
-                        {isLoading ? '...' : formatCurrency(stats.revenue)}
-                    </div>
-                </div>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Sell-Through Rate</span>
-                    <div className={styles.statValue}>
-                        {isLoading ? '...' : `${stats.sellThroughRate.toFixed(1)}%`}
-                    </div>
-                    <span className={styles.statNote}>Tickets sold / Capacity</span>
-                </div>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Check-In Rate</span>
-                    <div className={styles.statValue}>
-                        {isLoading ? '...' : `${stats.checkInRate.toFixed(1)}%`}
-                    </div>
-                    <span className={styles.statNote}>Attendees / Tickets Sold</span>
-                </div>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Team Size</span>
-                    <div className={styles.statValue}>
-                        {isLoading ? '...' : stats.teamSize}
-                    </div>
-                    <Link href="/dashboard/organize/settings" className={styles.statNote} style={{ textDecoration: 'underline' }}>
-                        Manage Team
-                    </Link>
-                </div>
+            <div className={sharedStyles.statsGrid}>
+                <StatCard
+                    label="Total Revenue"
+                    value={isLoading ? '...' : formatCurrency(stats.revenue)}
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Sell-Through Rate"
+                    value={isLoading ? '...' : `${stats.sellThroughRate.toFixed(1)}%`}
+                    change="Tickets sold / Capacity"
+                    trend="neutral"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Check-In Rate"
+                    value={isLoading ? '...' : `${stats.checkInRate.toFixed(1)}%`}
+                    change="Attendees / Tickets Sold"
+                    trend="neutral"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Team Size"
+                    value={isLoading ? '...' : stats.teamSize}
+                    href="/dashboard/organize/settings?tab=team"
+                    change="Manage Team"
+                    trend="neutral"
+                    isLoading={isLoading}
+                />
             </div>
 
             {/* Quick Actions */}
             <section className={styles.quickActions}>
-                <h2 className={styles.sectionTitle}>Quick Actions</h2>
+                <h2 className={sharedStyles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
-                    <button className={styles.actionCard} onClick={() => console.log('Promote')}>
-                        <span className={styles.actionLabel}>Promote Event</span>
+                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/events/create')}>
+                        <span className={styles.actionLabel}>Create Event</span>
                     </button>
-                    <button className={styles.actionCard} onClick={() => console.log('Export')}>
-                        <span className={styles.actionLabel}>Export Report</span>
+                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/analytics')}>
+                        <span className={styles.actionLabel}>View Analytics</span>
                     </button>
-                    <button className={styles.actionCard} onClick={() => console.log('Messages')}>
-                        <span className={styles.actionLabel}>Check Messages</span>
+                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/revenue')}>
+                        <span className={styles.actionLabel}>View Revenue</span>
                     </button>
-                    <button className={styles.actionCard} onClick={() => console.log('Support')}>
-                        <span className={styles.actionLabel}>Help & Support</span>
+                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
+                        <span className={styles.actionLabel}>Manage Team</span>
                     </button>
                 </div>
             </section>

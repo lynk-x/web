@@ -1,52 +1,113 @@
 "use client";
 
 import styles from './page.module.css';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
 import Link from 'next/link';
-
-// Mock Data
-const stats = [
-    { label: 'Total Spend', value: '$1,240.50', change: '+12.5%', isPositive: true },
-    { label: 'Impressions', value: '45.2k', change: '+8.1%', isPositive: true },
-    { label: 'Clicks', value: '1,890', change: '-2.4%', isPositive: false },
-    { label: 'Avg. CTR', value: '4.18%', change: '+0.5%', isPositive: true },
-];
-
-
+import React, { useState, useEffect, useMemo } from 'react';
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
+import { formatCurrency } from '@/utils/format';
 
 export default function AdsDashboard() {
-    return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Welcome back, John 👋</h1>
-                    <p className={styles.subtitle}>Manage your campaigns and track performance.</p>
-                </div>
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const supabase = useMemo(() => createClient(), []);
+    const [isLoading, setIsLoading] = useState(true);
+    const [stats, setStats] = useState([
+        { label: 'Total Spend', value: '$0.00', isPositive: true },
+        { label: 'Impressions', value: '0', isPositive: true },
+        { label: 'Clicks', value: '0', isPositive: true },
+        { label: 'Avg. CTR', value: '0.00%', isPositive: true },
+    ]);
 
-            </header>
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (!activeAccount) return;
+            setIsLoading(true);
+            try {
+                // Get all campaign IDs for this account
+                const { data: campaigns } = await supabase
+                    .from('ad_campaigns')
+                    .select('id, spent_amount')
+                    .eq('account_id', activeAccount.id);
+
+                const campaignIds = (campaigns || []).map(c => c.id);
+                const totalSpend = (campaigns || []).reduce((acc, c) => acc + Number(c.spent_amount || 0), 0);
+
+                if (campaignIds.length === 0) {
+                    setStats([
+                        { label: 'Total Spend', value: formatCurrency(0), isPositive: true },
+                        { label: 'Impressions', value: '0', isPositive: true },
+                        { label: 'Clicks', value: '0', isPositive: true },
+                        { label: 'Avg. CTR', value: '0.00%', isPositive: true },
+                    ]);
+                    return;
+                }
+
+                // Get analytics for these campaigns
+                const { data: analytics } = await supabase
+                    .from('ad_analytics')
+                    .select('interaction_type')
+                    .in('campaign_id', campaignIds);
+
+                const impressions = (analytics || []).filter(a => a.interaction_type === 'impression').length;
+                const clicks = (analytics || []).filter(a => a.interaction_type === 'click').length;
+                const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+
+                setStats([
+                    { label: 'Total Spend', value: formatCurrency(totalSpend), isPositive: true },
+                    { label: 'Impressions', value: impressions.toLocaleString(), isPositive: true },
+                    { label: 'Clicks', value: clicks.toLocaleString(), isPositive: true },
+                    { label: 'Avg. CTR', value: `${ctr.toFixed(2)}%`, isPositive: true },
+                ]);
+            } catch (error) {
+                console.error('Error fetching ads stats:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (!isOrgLoading) {
+            fetchStats();
+        }
+    }, [activeAccount, isOrgLoading, supabase]);
+    return (
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title={activeAccount ? `Welcome back, ${activeAccount.name}` : 'Ads Dashboard'}
+                subtitle="Manage your campaigns and track performance."
+            />
 
             {/* Key Metrics */}
-            <div className={styles.statsGrid}>
+            <div className={sharedStyles.statsGrid}>
                 {stats.map((stat, index) => (
-                    <div key={index} className={styles.statCard}>
-                        <span className={styles.statLabel}>{stat.label}</span>
-                        <div className={styles.statValue}>{stat.value}</div>
-                        <div className={`${styles.statChange} ${stat.isPositive ? styles.positive : styles.negative}`}>
-                            {stat.change} <span style={{ opacity: 0.6, color: 'var(--color-utility-primaryText)' }}>vs last month</span>
-                        </div>
-                    </div>
+                    <StatCard
+                        key={index}
+                        label={stat.label}
+                        value={isLoading ? '...' : stat.value}
+                        change="Real-time data"
+                        trend="neutral"
+                        isLoading={isLoading}
+                    />
                 ))}
             </div>
 
             {/* Quick Actions */}
             <section className={styles.quickActions}>
-                <h2 className={styles.sectionTitle}>Quick Actions</h2>
+                <h2 className={sharedStyles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
-
-                    <Link href="/dashboard/ads/assets" className={styles.actionCard}>
-                        <span className={styles.actionLabel}>Ad Assets</span>
+                    <Link href="/dashboard/ads/campaigns/create" className={styles.actionCard}>
+                        <span className={styles.actionLabel}>Create Campaign</span>
                     </Link>
-                    <Link href="/dashboard/ads/audiences" className={styles.actionCard}>
-                        <span className={styles.actionLabel}>Audiences</span>
+                    <Link href="/dashboard/ads/campaigns" className={styles.actionCard}>
+                        <span className={styles.actionLabel}>Manage Campaigns</span>
+                    </Link>
+                    <Link href="/dashboard/ads/analytics" className={styles.actionCard}>
+                        <span className={styles.actionLabel}>View Analytics</span>
+                    </Link>
+                    <Link href="/dashboard/ads/assets" className={styles.actionCard}>
+                        <span className={styles.actionLabel}>Creative Library</span>
                     </Link>
                     <Link href="/dashboard/ads/billing" className={styles.actionCard}>
                         <span className={styles.actionLabel}>Billing & Payments</span>

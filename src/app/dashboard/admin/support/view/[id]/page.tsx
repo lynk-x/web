@@ -1,77 +1,127 @@
 "use client";
 
-import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import styles from './TicketView.module.css';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import styles from '../../page.module.css';
 import adminStyles from '../../../page.module.css';
 import { useToast } from '@/components/ui/Toast';
+import { createClient } from '@/utils/supabase/client';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
-import BackButton from '@/components/shared/BackButton';
-import { formatString } from '@/utils/format';
 
-// Mock data fetch
-const mockTickets = [
-    { id: '1024', subject: 'Unable to withdraw funds', requester: 'Alice Walker', priority: 'high', status: 'open', assignedTo: 'John Doe', lastUpdated: '1 hour ago', description: 'User reports that the withdrawal button remains disabled even after completing all verification steps.' },
-    { id: '1023', subject: 'Event banner not uploading', requester: 'EventPro Ltd', priority: 'medium', status: 'in_progress', assignedTo: 'Sarah Smith', lastUpdated: '3 hours ago', description: 'Organizer is getting a 413 Payload Too Large error when uploading a 3MB banner.' },
-];
-
-export default function AdminTicketDetailPage() {
-    const params = useParams();
+export default function ViewTicketPage() {
     const router = useRouter();
+    const { id } = useParams();
     const { showToast } = useToast();
-    const id = params.id as string;
+    const supabase = createClient();
 
-    const ticket = mockTickets.find(t => t.id === id) || mockTickets[0];
+    const [isLoading, setIsLoading] = useState(true);
+    const [ticket, setTicket] = useState<any>(null);
 
-    const handleResolve = () => {
-        showToast('Marking ticket as resolved...', 'info');
-        setTimeout(() => {
-            showToast('Ticket resolved.', 'success');
-            router.push('/dashboard/admin/support');
-        }, 1000);
-    };
+    useEffect(() => {
+        const fetchTicket = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('support_tickets')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                setTicket(data);
+            } catch (error: any) {
+                showToast(error.message || 'Failed to fetch ticket', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (id) fetchTicket();
+    }, [id, supabase, showToast]);
+
+    if (isLoading) {
+        return (
+            <div className={styles.container}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
+                    <svg className={adminStyles.spinner} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                </div>
+            </div>
+        );
+    }
+
+    if (!ticket) {
+        return (
+            <div className={styles.container}>
+                <SubPageHeader title="Ticket Not Found" />
+                <div className={adminStyles.pageCard}>
+                    <p>The requested ticket could not be found or has been deleted.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className={adminStyles.container}>
-            <header className={adminStyles.header}>
-                <BackButton />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                    <Badge label={`Ticket #${id}`} variant="neutral" className={styles.largeBadge} />
-                </div>
-                <div>
-                    <h1 className={adminStyles.title}>{ticket.subject}</h1>
-                    <p className={adminStyles.subtitle}>Requested by {ticket.requester} • Updated {ticket.lastUpdated}</p>
-                </div>
-            </header>
+        <div className={styles.container}>
+            <SubPageHeader
+                title={ticket.subject}
+                subtitle={`Ticket Reference: ${ticket.reference || ticket.id.slice(0, 8)}`}
+                primaryAction={{
+                    label: 'Edit Ticket',
+                    onClick: () => router.push(`/dashboard/admin/support/edit/${id}`)
+                }}
+            />
 
-            <div className={styles.detailCard}>
-                <div className={styles.metaGrid}>
-                    <div className={styles.metaItem}>
-                        <span className={styles.metaLabel}>Status</span>
-                        <Badge label={formatString(ticket.status)} variant={ticket.status === 'open' ? 'success' : 'warning'} showDot className={styles.largeBadge} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div className={adminStyles.pageCard}>
+                        <h3 className={adminStyles.label} style={{ opacity: 1, fontSize: '15px', marginBottom: '16px' }}>Description</h3>
+                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', opacity: 0.9 }}>
+                            {ticket.body || "No description provided."}
+                        </p>
                     </div>
-                    <div className={styles.metaItem}>
-                        <span className={styles.metaLabel}>Priority</span>
-                        <Badge label={ticket.priority} variant={ticket.priority === 'high' ? 'error' : 'warning'} className={styles.largeBadge} />
-                    </div>
-                    <div className={styles.metaItem}>
-                        <span className={styles.metaLabel}>Assigned Agent</span>
-                        <span className={styles.metaValue}>{ticket.assignedTo || 'Unassigned'}</span>
-                    </div>
-                </div>
 
-                <div className={styles.section}>
-                    <h3 className={styles.sectionTitle}>Issue Description</h3>
-                    <p className={styles.descriptionText}>{ticket.description}</p>
+                    <div className={adminStyles.pageCard}>
+                        <h3 className={adminStyles.label} style={{ opacity: 1, fontSize: '15px', marginBottom: '16px' }}>Internal Notes</h3>
+                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', opacity: 0.8, fontStyle: 'italic' }}>
+                            {ticket.admin_notes || "No internal notes preserved for this ticket."}
+                        </p>
+                    </div>
                 </div>
 
-                <div className={styles.actions}>
-                    <button className={adminStyles.btnPrimary} onClick={handleResolve}>
-                        Resolve Ticket
-                    </button>
-                    <button className={adminStyles.btnSecondary} onClick={() => router.push(`/dashboard/admin/support/edit/${id}`)}>
-                        Edit Status
-                    </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div className={adminStyles.pageCard}>
+                        <h3 className={adminStyles.label} style={{ opacity: 1, fontSize: '15px', marginBottom: '16px' }}>Metadata</h3>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <span className={adminStyles.label}>Status</span>
+                                <Badge
+                                    label={ticket.status.toUpperCase()}
+                                    variant={ticket.status === 'open' ? 'error' : 'success'}
+                                    showDot
+                                />
+                            </div>
+
+                            <div>
+                                <span className={adminStyles.label}>Priority</span>
+                                <Badge
+                                    label={ticket.priority.toUpperCase()}
+                                    variant={ticket.priority === 'critical' ? 'error' : ticket.priority === 'high' ? 'warning' : 'info'}
+                                />
+                            </div>
+
+                            <div>
+                                <span className={adminStyles.label}>Created At</span>
+                                <div style={{ fontSize: '14px' }}>{new Date(ticket.created_at).toLocaleString()}</div>
+                            </div>
+
+                            <div>
+                                <span className={adminStyles.label}>Last Updated</span>
+                                <div style={{ fontSize: '14px' }}>{new Date(ticket.updated_at).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

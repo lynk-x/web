@@ -11,6 +11,10 @@
     margin-bottom: var(--spacing-sm);
 }
 
+.tabsReset {
+    margin: 0 !important;
+}
+
 .title {
     font-size: 24px;
     font-weight: 700;

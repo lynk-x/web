@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DataTable, { Column } from '../../shared/DataTable';
 import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
-import { formatString } from '@/utils/format';
+import { formatString, formatRelativeTime } from '@/utils/format';
 import type { ActionItem } from '../../shared/TableRowActions';
 import { exportToCSV } from '@/utils/export';
 
@@ -22,6 +22,7 @@ interface ForumTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    onStatusChange?: (id: string, status: string) => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ const ForumTable: React.FC<ForumTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    onStatusChange,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -74,7 +76,14 @@ const ForumTable: React.FC<ForumTableProps> = ({
             header: 'Name',
             render: (thread) => (
                 <div>
-                    <div style={{ fontWeight: 500 }}>{thread.title}</div>
+                    <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {thread.title}
+                        {thread.reference && (
+                            <span style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', opacity: 0.5, fontWeight: 400 }}>
+                                {thread.reference}
+                            </span>
+                        )}
+                    </div>
                     <div style={{ fontSize: '12px', opacity: 0.6 }}>
                         for <span style={{ color: 'var(--color-brand-primary)' }}>{thread.eventName}</span>
                     </div>
@@ -92,6 +101,40 @@ const ForumTable: React.FC<ForumTableProps> = ({
         {
             header: 'Media',
             render: (thread) => <div style={{ fontSize: '13px' }}>{thread.mediaCount}</div>,
+        },
+        {
+            header: 'Monitor / Reports',
+            render: (thread) => {
+                if (thread.reportsCount === 0) return <span style={{ opacity: 0.4 }}>Health Good (0)</span>;
+
+                // Calculate age of oldest report
+                const oldestDate = thread.oldestReportAt ? new Date(thread.oldestReportAt) : null;
+                const hoursOld = oldestDate ? (new Date().getTime() - oldestDate.getTime()) / (1000 * 60 * 60) : 0;
+
+                // Determine urgency color
+                let urgencyColor = 'var(--color-status-success)'; // Not really used for >0
+                if (hoursOld > 24 || thread.escalatedCount > 0) urgencyColor = '#FF4444'; // Red for >24h or Escalated
+                else if (hoursOld > 12) urgencyColor = '#FFA500'; // Orange for >12h
+                else urgencyColor = '#FFD700'; // Yellow for recent
+
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Badge
+                                label={`${thread.reportsCount} Pending`}
+                                variant={thread.escalatedCount > 0 ? 'error' : 'warning'}
+                                showDot
+                            />
+                            {thread.escalatedCount > 0 && (
+                                <span style={{ fontSize: '9px', fontWeight: 800, color: '#FF4444', letterSpacing: '0.5px' }}>ESCALATED</span>
+                            )}
+                        </div>
+                        <div style={{ fontSize: '11px', color: urgencyColor, fontWeight: 500 }}>
+                            Oldest: {formatRelativeTime(thread.oldestReportAt || '')}
+                        </div>
+                    </div>
+                );
+            },
         },
         {
             header: 'Status',
@@ -119,7 +162,18 @@ const ForumTable: React.FC<ForumTableProps> = ({
             {
                 label: 'Set Read-only',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
-                onClick: () => showToast(`${thread.title} is now read-only.`, 'warning'),
+                onClick: () => {
+                    if (onStatusChange) onStatusChange(thread.id, 'Read_only');
+                    else showToast(`${thread.title} is now read-only.`, 'warning');
+                },
+            },
+            {
+                label: 'Archive Forum',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>,
+                onClick: () => {
+                    if (onStatusChange) onStatusChange(thread.id, 'Archived');
+                    else showToast(`${thread.title} archived.`, 'info');
+                },
             },
             {
                 label: 'View Logs',

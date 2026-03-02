@@ -1,35 +1,180 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
-import TicketForm from '@/components/admin/support/Form/TicketForm';
-import BackButton from '@/components/shared/BackButton';
-import styles from '@/app/dashboard/admin/page.module.css';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import styles from '../../page.module.css';
+import adminStyles from '../../../page.module.css';
+import { useToast } from '@/components/ui/Toast';
+import { createClient } from '@/utils/supabase/client';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 
-// Mock data fetch
-const mockTickets = [
-    { id: '1024', subject: 'Unable to withdraw funds', requester: 'Alice Walker', priority: 'high', status: 'open', assignedTo: 'John Doe', lastUpdated: '1 hour ago' },
-    { id: '1023', subject: 'Event banner not uploading', requester: 'EventPro Ltd', priority: 'medium', status: 'in_progress', assignedTo: 'Sarah Smith', lastUpdated: '3 hours ago' },
-];
+export default function EditTicketPage() {
+    const router = useRouter();
+    const { id } = useParams();
+    const { showToast } = useToast();
+    const supabase = createClient();
 
-export default function AdminEditTicketPage() {
-    const params = useParams();
-    const id = params.id as string;
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
 
-    const ticket = mockTickets.find(t => t.id === id) || mockTickets[0];
+    const [form, setForm] = useState({
+        subject: '',
+        priority: 'medium',
+        status: 'open',
+        body: '',
+        admin_notes: ''
+    });
+
+    useEffect(() => {
+        const fetchTicket = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('support_tickets')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setForm({
+                        subject: data.subject || '',
+                        priority: data.priority || 'medium',
+                        status: data.status || 'open',
+                        body: data.body || '',
+                        admin_notes: data.admin_notes || ''
+                    });
+                }
+            } catch (error: any) {
+                showToast(error.message || 'Failed to fetch ticket', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (id) fetchTicket();
+    }, [id, supabase, showToast]);
+
+    const handleChange = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }));
+        setIsDirty(true);
+    };
+
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setIsSaving(true);
+        try {
+            const { error } = await supabase
+                .from('support_tickets')
+                .update({
+                    subject: form.subject,
+                    priority: form.priority,
+                    status: form.status,
+                    body: form.body,
+                    admin_notes: form.admin_notes,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast('Ticket updated successfully', 'success');
+            setIsDirty(false);
+            router.push('/dashboard/admin/support');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to update ticket', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className={styles.container}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
+                    <svg className={adminStyles.spinner} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <BackButton label="Back to Support" isDirty={isDirty} />
-                    <h1 className={styles.title}>Edit Ticket #{id}</h1>
-                    <p className={styles.subtitle}>Updating support request from {ticket.requester}.</p>
-                </div>
-            </header>
+            <SubPageHeader
+                title="Edit Support Ticket"
+                subtitle={`Updating ticket reference: ${id?.toString().slice(0, 8)}`}
+                isDirty={isDirty}
+                primaryAction={{
+                    label: 'Update Ticket',
+                    onClick: () => handleSubmit(),
+                    isLoading: isSaving
+                }}
+            />
 
-            <TicketForm initialData={ticket as any} isEditing={true} onDirtyChange={setIsDirty} />
+            <div className={adminStyles.pageCard}>
+                <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <label className={adminStyles.label}>Subject</label>
+                        <input
+                            required
+                            className={adminStyles.input}
+                            value={form.subject}
+                            onChange={e => handleChange('subject', e.target.value)}
+                        />
+                    </div>
+
+                    <div>
+                        <label className={adminStyles.label}>Priority Level</label>
+                        <select
+                            className={adminStyles.select}
+                            value={form.priority}
+                            onChange={e => handleChange('priority', e.target.value)}
+                            style={{ width: '100%' }}
+                        >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className={adminStyles.label}>Processing Status</label>
+                        <select
+                            className={adminStyles.select}
+                            value={form.status}
+                            onChange={e => handleChange('status', e.target.value)}
+                            style={{ width: '100%' }}
+                        >
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <label className={adminStyles.label}>Detailed Description</label>
+                        <textarea
+                            className={adminStyles.input}
+                            value={form.body}
+                            onChange={e => handleChange('body', e.target.value)}
+                            rows={8}
+                        />
+                    </div>
+
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <label className={adminStyles.label}>Internal Workspace Notes</label>
+                        <textarea
+                            className={adminStyles.input}
+                            value={form.admin_notes}
+                            onChange={e => handleChange('admin_notes', e.target.value)}
+                            rows={4}
+                        />
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }

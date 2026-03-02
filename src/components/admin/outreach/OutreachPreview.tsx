@@ -7,9 +7,10 @@ interface OutreachPreviewProps {
     subject: string;
     message: string;
     audience: string;
+    imageUrl?: string;
 }
 
-const OutreachPreview: React.FC<OutreachPreviewProps> = ({ subject, message, audience }) => {
+const OutreachPreview: React.FC<OutreachPreviewProps> = ({ subject, message, audience, imageUrl }) => {
     const hasContent = subject.trim() !== '' || (message.trim() !== '' && message !== '<p></p>');
 
     return (
@@ -22,6 +23,15 @@ const OutreachPreview: React.FC<OutreachPreviewProps> = ({ subject, message, aud
             </div>
 
             <div className={styles.previewContent}>
+                {imageUrl && (
+                    <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden' }}>
+                        <img
+                            src={imageUrl}
+                            alt="Notification attachment"
+                            style={{ width: '100%', height: 'auto', display: 'block', border: '1px solid rgba(255,255,255,0.1)' }}
+                        />
+                    </div>
+                )}
                 {hasContent ? (
                     <div
                         dangerouslySetInnerHTML={{ __html: message || '<p>No content yet...</p>' }}

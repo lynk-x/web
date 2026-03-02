@@ -1,20 +1,62 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import styles from './page.module.css';
 import { useToast } from '@/components/ui/Toast';
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
 
 export default function AdsSettingsPage() {
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = () => {
+    // Form state
+    const [formData, setFormData] = useState({
+        name: '',
+        support_email: '',
+        business_name: '',
+        tax_id: '',
+        address: ''
+    });
+
+    useEffect(() => {
+        if (activeAccount) {
+            setFormData({
+                name: activeAccount.name || '',
+                support_email: (activeAccount as any).support_email || '',
+                business_name: (activeAccount as any).business_name || '',
+                tax_id: (activeAccount as any).tax_id || '',
+                address: (activeAccount as any).business_address || ''
+            });
+        }
+    }, [activeAccount]);
+
+    const handleSave = async () => {
+        if (!activeAccount) return;
         setIsSaving(true);
         showToast('Saving settings...', 'info');
-        setTimeout(() => {
-            setIsSaving(false);
+
+        try {
+            const { error } = await supabase
+                .from('accounts')
+                .update({
+                    name: formData.name,
+                    support_email: formData.support_email,
+                    business_name: formData.business_name,
+                    tax_id: formData.tax_id,
+                    business_address: formData.address
+                })
+                .eq('id', activeAccount.id);
+
+            if (error) throw error;
             showToast('Settings saved successfully.', 'success');
-        }, 1500);
+        } catch (error: any) {
+            showToast(error.message || 'Failed to save settings', 'error');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -44,11 +86,21 @@ export default function AdsSettingsPage() {
                     <h2 className={styles.sectionTitle}>Account Information</h2>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Account Name</label>
-                        <input type="text" className={styles.input} defaultValue="John's Ads Account" />
+                        <input
+                            type="text"
+                            className={styles.input}
+                            value={formData.name}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Contact Email</label>
-                        <input type="email" className={styles.input} defaultValue="john@doe.com" />
+                        <input
+                            type="email"
+                            className={styles.input}
+                            value={formData.support_email}
+                            onChange={e => setFormData({ ...formData, support_email: e.target.value })}
+                        />
                     </div>
                 </section>
 
@@ -57,15 +109,29 @@ export default function AdsSettingsPage() {
                     <h2 className={styles.sectionTitle}>Business Details</h2>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Legal Business Name</label>
-                        <input type="text" className={styles.input} defaultValue="John Doe Productions Ltd" />
+                        <input
+                            type="text"
+                            className={styles.input}
+                            value={formData.business_name}
+                            onChange={e => setFormData({ ...formData, business_name: e.target.value })}
+                        />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Tax ID / PIN</label>
-                        <input type="text" className={styles.input} placeholder="P051XXXXXX" defaultValue="P051234567W" />
+                        <input
+                            type="text"
+                            className={styles.input}
+                            value={formData.tax_id}
+                            onChange={e => setFormData({ ...formData, tax_id: e.target.value })}
+                        />
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Business Address</label>
-                        <textarea className={styles.textarea} defaultValue="Westlands, Nairobi, Kenya" />
+                        <textarea
+                            className={styles.textarea}
+                            value={formData.address}
+                            onChange={e => setFormData({ ...formData, address: e.target.value })}
+                        />
                     </div>
                 </section>
 

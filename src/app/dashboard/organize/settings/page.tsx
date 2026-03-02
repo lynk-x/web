@@ -1,24 +1,52 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import adminStyles from '../../admin/page.module.css'; // For shared tab styles if any, or we build our own
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
-import MemberTable from '@/components/organize/MemberTable'; // Need to create this
+import MemberTable from '@/components/organize/MemberTable';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import Tabs from '@/components/dashboard/Tabs';
 
-
-export default function OrganizerSettingsPage() {
+function SettingsContent() {
     const { showToast } = useToast();
     const { activeAccount, refreshAccounts } = useOrganization();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
 
-    const [activeTab, setActiveTab] = useState<'profile' | 'team'>('profile');
+    const initialTab = (searchParams.get('tab') as any) || 'profile';
+    const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'settings'>(
+        ['profile', 'team', 'settings'].includes(initialTab) ? initialTab : 'profile'
+    );
+
+    // Handle initial tab from query param and sync with state
+    useEffect(() => {
+        const tab = searchParams.get('tab') as any;
+        if (tab && ['profile', 'team', 'settings'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab as any);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
 
     // Form State
     const [isSaving, setIsSaving] = useState(false);
-    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+    // Change password state
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         website: '',
@@ -47,7 +75,6 @@ export default function OrganizerSettingsPage() {
 
     const handleSave = async () => {
         if (!activeAccount) return;
-
         setIsSaving(true);
         try {
             const { error } = await supabase
@@ -62,15 +89,54 @@ export default function OrganizerSettingsPage() {
                 .eq('id', activeAccount.id);
 
             if (error) throw error;
-
             showToast('Organizer settings updated successfully.', 'success');
-            if (refreshAccounts) await refreshAccounts(); // Update the global context
-
-        } catch (error: any) {
-            console.error("Error updating settings:", error);
-            showToast(error.message || 'Failed to update settings.', 'error');
+            if (refreshAccounts) await refreshAccounts();
+        } catch (err: any) {
+            showToast(err.message || 'Failed to update settings.', 'error');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    /** Update password via Supabase Auth. */
+    const handleChangePassword = async () => {
+        if (!newPassword || newPassword !== confirmPassword) {
+            showToast('Passwords do not match.', 'error');
+            return;
+        }
+        if (newPassword.length < 8) {
+            showToast('Password must be at least 8 characters.', 'error');
+            return;
+        }
+        setIsChangingPassword(true);
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            showToast('Password updated successfully.', 'success');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err: any) {
+            showToast(err.message || 'Failed to update password.', 'error');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
+    /** Soft-delete: deactivates the organizer account. */
+    const handleDeleteAccount = async () => {
+        if (!activeAccount) return;
+        try {
+            const { error } = await supabase
+                .from('accounts')
+                .update({ status: 'deactivated' })
+                .eq('id', activeAccount.id);
+
+            if (error) throw error;
+            showToast('Account deactivation requested. Our team will process this within 24 hours.', 'success');
+            setIsDeleteModalOpen(false);
+        } catch (err: any) {
+            showToast(err.message || 'Failed to deactivate account.', 'error');
         }
     };
 
@@ -95,27 +161,19 @@ export default function OrganizerSettingsPage() {
                 </button>
             </header>
 
-            {/* Sub-nav Tabs */}
-            <div className={styles.tabs} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '24px', marginBottom: '24px', paddingBottom: '0' }}>
-                <button
-                    className={`${styles.tab} ${activeTab === 'profile' ? styles.tabActive : ''}`}
-                    onClick={() => setActiveTab('profile')}
-                    style={{ background: 'transparent', border: 'none', borderBottom: activeTab === 'profile' ? '2px solid var(--color-primary)' : '2px solid transparent', color: activeTab === 'profile' ? 'white' : 'rgba(255,255,255,0.6)', padding: '0 0 12px 0', fontSize: '15px', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2sease' }}
-                >
-                    Profile & Settings
-                </button>
-                <button
-                    className={`${styles.tab} ${activeTab === 'team' ? styles.tabActive : ''}`}
-                    onClick={() => setActiveTab('team')}
-                    style={{ background: 'transparent', border: 'none', borderBottom: activeTab === 'team' ? '2px solid var(--color-primary)' : '2px solid transparent', color: activeTab === 'team' ? 'white' : 'rgba(255,255,255,0.6)', padding: '0 0 12px 0', fontSize: '15px', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2sease' }}
-                >
-                    Team Members
-                </button>
-            </div>
+            <Tabs
+                options={[
+                    { id: 'profile', label: 'Profile' },
+                    { id: 'team', label: 'Team Members' },
+                    { id: 'settings', label: 'Settings' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             {activeTab === 'profile' && (
-                <div className={styles.grid}>
-                    {/* Organization Profile */}
+                <div className={styles.columnLayout}>
+                    {/* Organization Profile & Support Contact */}
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Organization Profile</h2>
                         <div className={styles.formGroup}>
@@ -130,71 +188,18 @@ export default function OrganizerSettingsPage() {
                             <label className={styles.label}>Organization Bio</label>
                             <textarea name="description" className={styles.textarea} value={formData.description} onChange={handleInputChange} placeholder="Tell attendees about your organization..." />
                         </div>
-                    </section>
 
-                    {/* Contact Information */}
-                    <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Support Contact</h2>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Support Email</label>
-                            <input type="email" name="support_email" className={styles.input} value={formData.support_email} onChange={handleInputChange} placeholder="support@domain.com" />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Support Phone</label>
-                            <input type="text" name="phone_number" className={styles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
-                        </div>
-                    </section>
-
-                    {/* Security Data */}
-                    <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Change Password</h2>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Current Password</label>
-                            <input type="password" className={styles.input} placeholder="Enter current password" />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>New Password</label>
-                            <input type="password" className={styles.input} placeholder="Enter new password" />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Confirm New Password</label>
-                            <input type="password" className={styles.input} placeholder="Confirm new password" />
-                        </div>
-                        <button type="button" className={styles.secondaryBtn} style={{ alignSelf: 'flex-start', marginTop: '8px' }}>Update Password</button>
-                    </section>
-
-                    <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Two-Factor Authentication</h2>
-                        <div className={styles.twoFactorContent}>
-                            <div className={styles.twoFactorInfo}>
-                                <div className={`${styles.statusBadge} ${twoFactorEnabled ? styles.enabled : styles.disabled}`}>
-                                    {twoFactorEnabled ? (
-                                        <>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            Enabled
-                                        </>
-                                    ) : 'Disabled'}
-                                </div>
-                                <p className={styles.label} style={{ whiteSpace: 'normal', lineHeight: 1.5 }}>
-                                    Use an authenticator app (like Google Authenticator) to scan a QR code or receive a code via SMS to log in.
-                                </p>
+                        <div style={{ marginTop: '12px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
+                            <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0, opacity: 0.8 }}>Support Contact</h3>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>Support Email</label>
+                                <input type="email" name="support_email" className={styles.input} value={formData.support_email} onChange={handleInputChange} placeholder="support@domain.com" />
                             </div>
-                            <button
-                                type="button"
-                                className={styles.toggleBtn}
-                                onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                            >
-                                {twoFactorEnabled ? 'Disable' : 'Setup'}
-                            </button>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>Support Phone</label>
+                                <input type="text" name="phone_number" className={styles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
+                            </div>
                         </div>
-                    </section>
-
-                    <section className={`${styles.section} ${styles.dangerZone}`}>
-                        <h2 className={`${styles.sectionTitle} ${styles.dangerTitle}`}>Danger Zone</h2>
-                        <p className={styles.label} style={{ marginBottom: '16px', whiteSpace: 'normal', lineHeight: 1.5 }}>
-                            Permanently delete your account and all of your content. This action cannot be undone.
-                        </p>
-                        <button type="button" className={styles.deleteBtn}>Delete Account</button>
                     </section>
                 </div>
             )}
@@ -220,6 +225,67 @@ export default function OrganizerSettingsPage() {
                     <MemberTable />
                 </div>
             )}
+
+            {activeTab === 'settings' && (
+                <div className={styles.columnLayout}>
+                    {/* Security Data */}
+                    {/* Change Password */}
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Change Password</h2>
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>Current Password</label>
+                            <input type="password" className={styles.input} placeholder="Enter current password"
+                                value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>New Password</label>
+                            <input type="password" className={styles.input} placeholder="Min. 8 characters"
+                                value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>Confirm New Password</label>
+                            <input type="password" className={styles.input} placeholder="Repeat new password"
+                                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
+                        <button type="button" className={styles.secondaryBtn}
+                            style={{ alignSelf: 'flex-start', marginTop: '8px' }}
+                            onClick={handleChangePassword}
+                            disabled={isChangingPassword}
+                        >
+                            {isChangingPassword ? 'Updating…' : 'Update Password'}
+                        </button>
+                    </section>
+
+                    <section className={`${styles.section} ${styles.dangerZone}`}>
+                        <h2 className={`${styles.sectionTitle} ${styles.dangerTitle}`}>Danger Zone</h2>
+                        <p className={styles.label} style={{ marginBottom: '16px', whiteSpace: 'normal', lineHeight: 1.5 }}>
+                            Deactivates your organizer account and removes it from public listings. This cannot be undone without contacting support.
+                        </p>
+                        <button type="button" className={styles.deleteBtn} onClick={() => setIsDeleteModalOpen(true)}>Deactivate Account</button>
+                    </section>
+                </div>
+            )}
+
+
+
+            {/* Account deactivation confirmation */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteAccount}
+                title="Deactivate Organizer Account?"
+                message="Your organization will be removed from public listings. Ongoing events may be affected. Contact support to reverse this."
+                confirmLabel="Deactivate"
+                variant="danger"
+            />
         </div>
+    );
+}
+
+export default function OrganizerSettingsPage() {
+    return (
+        <Suspense fallback={<div className={styles.loading}>Loading Settings...</div>}>
+            <SettingsContent />
+        </Suspense>
     );
 }

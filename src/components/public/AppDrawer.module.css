@@ -114,7 +114,7 @@
     color: var(--color-utility-primaryText);
 }
 
-.dayCell:hover {
+.dayCell:not(.daySelected):hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--color-utility-primaryText);
 }
@@ -173,6 +173,14 @@
     gap: var(--spacing-sm);
 }
 
+.tagDivider {
+    width: 100%;
+    height: 1px;
+    background-color: var(--color-interface-outline);
+    margin: var(--spacing-md) 0;
+    opacity: 0.3;
+}
+
 .tagPill {
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-full);
@@ -186,7 +194,7 @@
     color: var(--color-utility-primaryText);
 }
 
-.tagPill:hover {
+.tagPill:not(.tagPillSelected):hover {
     border-color: var(--color-brand-primary);
     background-color: rgba(32, 249, 40, 0.1);
     color: var(--color-utility-primaryText);

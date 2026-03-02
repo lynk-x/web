@@ -17,9 +17,17 @@ interface UserFormProps {
     initialData?: UserFormData;
     isEditing?: boolean;
     onDirtyChange?: (isDirty: boolean) => void;
+    formId?: string;
+    hideActions?: boolean;
 }
 
-export default function UserForm({ initialData, isEditing = false, onDirtyChange }: UserFormProps) {
+export default function UserForm({
+    initialData,
+    isEditing = false,
+    onDirtyChange,
+    formId,
+    hideActions = false
+}: UserFormProps) {
     const router = useRouter();
     const defaultData: UserFormData = {
         name: '',
@@ -91,7 +99,7 @@ export default function UserForm({ initialData, isEditing = false, onDirtyChange
 
     return (
         <div className={styles.container}>
-            <form className={styles.form} onSubmit={handleSubmit}>
+            <form id={formId} className={styles.form} onSubmit={handleSubmit}>
                 <div className={styles.grid}>
                     <div className={styles.inputGroup}>
                         <label className={styles.label}>Full Name</label>
@@ -164,11 +172,13 @@ export default function UserForm({ initialData, isEditing = false, onDirtyChange
                     </div>
                 </div>
 
-                <div className={styles.actions}>
-                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
-                        {isEditing ? 'Save Changes' : 'Create User'}
-                    </button>
-                </div>
+                {!hideActions && (
+                    <div className={styles.actions}>
+                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
+                            {isEditing ? 'Save Changes' : 'Create User'}
+                        </button>
+                    </div>
+                )}
             </form>
         </div>
     );

@@ -134,11 +134,6 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
                 onClick: () => router.push(`/dashboard/admin/campaigns/${campaign.id}`),
             },
-            {
-                label: 'Ad Assets',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
-                onClick: () => router.push(`/dashboard/admin/campaigns/${campaign.id}/assets`),
-            },
         ];
 
         // Draft campaigns can be approved (set to active) by admin

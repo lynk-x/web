@@ -29,7 +29,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     .from('events')
                     .select(`
                         id, title, description, category_id, is_online, is_private, 
-                        location_name, start_datetime, end_datetime, thumbnail_url,
+                        location_name, starts_at, ends_at, thumbnail_url,
                         account_id,
                         ticket_tiers (
                             id, name, price, quantity_total, description, sales_start_at, sales_end_at, max_per_user
@@ -43,8 +43,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 setAccountId(event.account_id);
 
                 // Parse dates
-                const startDt = new Date(event.start_datetime);
-                const endDt = new Date(event.end_datetime);
+                const startDt = new Date(event.starts_at);
+                const endDt = new Date(event.ends_at);
 
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
@@ -131,8 +131,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
                     location_name: data.location || null,
-                    start_datetime: startDateTime,
-                    end_datetime: endDateTime,
+                    starts_at: startDateTime,
+                    ends_at: endDateTime,
                     thumbnail_url: uploadedThumbnailUrl,
                 })
                 .eq('id', eventId);

@@ -81,14 +81,6 @@ const AuditTable: React.FC<AuditTableProps> = ({
                                     <td colSpan={5}>
                                         <div className={styles.detailsContent}>
                                             <div className={styles.detailGrid}>
-                                                <div className={styles.detailItem}>
-                                                    <div className={styles.detailLabel}>IP Address</div>
-                                                    <div className={styles.detailValue}>{log.ipAddress}</div>
-                                                </div>
-                                                <div className={styles.detailItem}>
-                                                    <div className={styles.detailLabel}>User Agent</div>
-                                                    <div className={styles.detailValue}>{log.userAgent}</div>
-                                                </div>
                                             </div>
 
                                             {log.changes && (
