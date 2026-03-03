@@ -15,7 +15,7 @@ export default function AuthPage() {
         <div className={styles.container}>
             <div className={styles.logoWrapper}>
                 <Image
-                    src="/images/lynk-x_text.png"
+                    src="/lynk-x_text.svg"
                     alt="Lynk-X"
                     width={200}
                     height={60}

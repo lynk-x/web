@@ -96,7 +96,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
                 </Link>
                 <div className={styles.logoWrapper}>
                     <Image
-                        src="/images/lynk-x_text.png"
+                        src="/lynk-x_text.svg"
                         alt="Lynk-X"
                         width={200}
                         height={60}

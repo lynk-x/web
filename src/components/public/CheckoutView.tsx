@@ -14,13 +14,43 @@ import { useCart } from '@/context/CartContext';
 const CheckoutView: React.FC = () => {
     const { items, getCartTotal, itemCount, removeFromCart } = useCart();
 
+    const [isLoading, setIsLoading] = useState(true);
+
     // Derived state
     const serviceFeePerItem = 200;
     const totalServiceFee = itemCount * serviceFeePerItem;
     const subtotal = getCartTotal();
-    const total = subtotal + totalServiceFee;
 
-    const [isLoading, setIsLoading] = useState(true);
+    // Promo state
+    const [promoCode, setPromoCode] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null);
+    const [promoError, setPromoError] = useState('');
+
+    const discountAmount = appliedPromo?.discount || 0;
+    const total = subtotal + totalServiceFee - discountAmount;
+
+    const handleApplyPromo = () => {
+        if (!promoCode.trim()) return;
+
+        // Mocking promo code application
+        if (promoCode.toUpperCase() === 'LYNKX20') {
+            setAppliedPromo({ code: promoCode.toUpperCase(), discount: subtotal * 0.2 });
+            setPromoError('');
+            setPromoCode('');
+        } else {
+            setPromoError('Invalid promo code');
+            setAppliedPromo(null);
+        }
+    };
+
+    const handleRemovePromo = () => {
+        setAppliedPromo(null);
+    };
+
+    const handlePayment = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Handle checkout logic here
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -40,7 +70,7 @@ const CheckoutView: React.FC = () => {
                     </Link>
                     <div className={styles.logoContainer}>
                         <Image
-                            src="/images/lynk-x_text.png"
+                            src="/lynk-x_text.svg"
                             alt="Lynk-X"
                             width={200}
                             height={60}
@@ -48,7 +78,12 @@ const CheckoutView: React.FC = () => {
                             priority
                         />
                     </div>
-                    <div style={{ width: 24 }}></div>
+                    <div className={styles.securityIcon}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </div>
                 </header>
                 <main className={styles.emptyStateContainer}>
                     <h2 className={styles.emptyStateTitle}>Your cart is empty</h2>
@@ -74,7 +109,7 @@ const CheckoutView: React.FC = () => {
                 </Link>
                 <div className={styles.logoContainer}>
                     <Image
-                        src="/images/lynk-x_text.png"
+                        src="/lynk-x_text.svg"
                         alt="Lynk-X"
                         width={200}
                         height={60}
@@ -116,15 +151,17 @@ const CheckoutView: React.FC = () => {
                                                     <span>{item.ticketType} x {item.quantity}</span>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => removeFromCart(item.id)}
-                                                className={styles.removeBtn}
-                                                title="Remove item"
-                                            >
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                            </button>
+                                            {items.length > 0 && (
+                                                <button
+                                                    onClick={() => removeFromCart(item.id)}
+                                                    className={styles.removeBtn}
+                                                    title="Remove item"
+                                                >
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
 
@@ -136,6 +173,38 @@ const CheckoutView: React.FC = () => {
                                         <span>Service Fees</span>
                                         <span>{currency} {totalServiceFee.toLocaleString()}</span>
                                     </div>
+
+                                    {appliedPromo && (
+                                        <div className={`${styles.summaryItem} ${styles.discount}`}>
+                                            <div className={styles.appliedPromoInfo}>
+                                                <span>Promo: {appliedPromo.code}</span>
+                                                <button onClick={handleRemovePromo} className={styles.removePromoBtn}>Remove</button>
+                                            </div>
+                                            <span>-{currency} {appliedPromo.discount.toLocaleString()}</span>
+                                        </div>
+                                    )}
+
+                                    {!appliedPromo && (
+                                        <div className={styles.promoContainer}>
+                                            <div className={styles.promoInputWrapper}>
+                                                <input
+                                                    type="text"
+                                                    className={styles.promoInput}
+                                                    placeholder="Promo code"
+                                                    value={promoCode}
+                                                    onChange={(e) => setPromoCode(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+                                                />
+                                                <button
+                                                    onClick={handleApplyPromo}
+                                                    className={styles.applyBtn}
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                            {promoError && <p className={styles.promoError}>{promoError}</p>}
+                                        </div>
+                                    )}
                                     <div className={styles.total}>
                                         <span>Total</span>
                                         <span>{currency} {total.toLocaleString()}</span>

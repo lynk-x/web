@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Lynk-X | Event Interactions",
   description: "Experience the ultimate event app designed for seamless event interactions.",
   icons: {
-    icon: "/lynk-x_logo.png",
+    icon: "/lynk-x_logo.svg",
   },
 };
 

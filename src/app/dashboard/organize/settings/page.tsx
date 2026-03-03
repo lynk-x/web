@@ -205,25 +205,7 @@ function SettingsContent() {
             )}
 
             {activeTab === 'team' && (
-                <div className={styles.section} style={{ padding: 0, background: 'transparent', border: 'none' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                        <div>
-                            <h2 className={styles.sectionTitle} style={{ marginBottom: '4px' }}>Team Management</h2>
-                            <p className={styles.label} style={{ whiteSpace: 'normal' }}>Invite collaborators and manage access levels for your organization.</p>
-                        </div>
-                        <button className={styles.saveBtn} onClick={() => showToast('Inviting new member...', 'info')} style={{ background: 'white', color: 'black' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="8.5" cy="7" r="4"></circle>
-                                <line x1="20" y1="8" x2="20" y2="14"></line>
-                                <line x1="23" y1="11" x2="17" y2="11"></line>
-                            </svg>
-                            Invite Member
-                        </button>
-                    </div>
-
-                    <MemberTable />
-                </div>
+                <MemberTable />
             )}
 
             {activeTab === 'settings' && (

@@ -1,0 +1,106 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
+import styles from './page.module.css';
+
+export default function PlayPage() {
+    const [pin, setPin] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [flagChecked, setFlagChecked] = useState(false);
+    const [isFeatureEnabled, setIsFeatureEnabled] = useState(false);
+    const router = useRouter();
+    const supabase = createClient();
+
+    useEffect(() => {
+        const checkFeatureFlag = async () => {
+            const { data } = await supabase
+                .from('feature_flags')
+                .select('is_enabled')
+                .eq('key', 'live_quiz')
+                .single();
+            setIsFeatureEnabled(data?.is_enabled === true);
+            setFlagChecked(true);
+        };
+        checkFeatureFlag();
+    }, []);
+
+    const handleJoin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!pin || pin.length < 5) {
+            setError("We didn't recognize that game PIN. Please check and try again.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('questionnaires')
+                .select('id, type')
+                .eq('room_code', pin)
+                .single();
+
+            if (error || !data) {
+                throw new Error("We didn't recognize that game PIN. Please check and try again.");
+            }
+
+            // Note: Eventually we can route to a "waiting room" if we implement websockets.
+            // For now, this takes them directly into the quiz client.
+            router.push(`/quiz/${data.id}?pin=${pin}`);
+
+        } catch (err: any) {
+            setError(err.message);
+            setLoading(false); // Reset loading only on error, so button doesn't flash if successful
+        }
+    }
+
+    if (!flagChecked) return null;
+
+    if (!isFeatureEnabled) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.card}>
+                    <h2>Feature Disabled</h2>
+                    <p>Live quizzes are currently disabled by the administrator.</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={styles.container}>
+            <div className={styles.logoImgWrapper}>
+                <Image src="/lynk-x_text.svg" alt="Lynk-X" width={220} height={100} priority />
+            </div>
+            <div className={styles.logo}>Quiz<span>Live!</span></div>
+            <div className={styles.card}>
+                <form onSubmit={handleJoin} className={styles.form}>
+                    <input
+                        className={styles.input}
+                        type="text"
+                        maxLength={10}
+                        placeholder="Game PIN"
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} // Numeric only
+                        required
+                    />
+                    {error && <div className={styles.error}>{error}</div>}
+                    <button
+                        type="submit"
+                        className={styles.button}
+                        disabled={loading}
+                    >
+                        {loading ? 'Joining...' : 'Enter'}
+                    </button>
+                </form>
+            </div>
+            <div className={styles.footer}>
+            </div>
+        </div>
+    );
+}

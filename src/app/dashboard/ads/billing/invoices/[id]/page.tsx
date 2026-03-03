@@ -86,7 +86,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 <header className={styles.header}>
                     <div className={styles.logoArea}>
                         <Image
-                            src="/images/lynk-x_text.png"
+                            src="/lynk-x_text.svg"
                             alt="Lynk-X"
                             width={280}
                             height={60}
