@@ -23,6 +23,10 @@ interface AdsCampaignTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    /** Called when user requests a status change (pause / resume / launch) */
+    onStatusChange?: (id: string, newStatus: 'active' | 'paused') => void;
+    /** Called when user requests deletion of a single campaign */
+    onDelete?: (id: string, title: string) => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -52,6 +56,8 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    onStatusChange,
+    onDelete,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -123,10 +129,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             actions.push({
                 label: 'Pause Campaign',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>,
-                onClick: () => {
-                    showToast('Pausing campaign...', 'info');
-                    setTimeout(() => showToast('Campaign paused.', 'warning'), 1000);
-                },
+                onClick: () => onStatusChange?.(campaign.id, 'paused'),
             });
         }
 
@@ -135,11 +138,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
                 label: campaign.status === 'paused' ? 'Resume' : 'Launch',
                 variant: 'success',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
-                onClick: () => {
-                    const action = campaign.status === 'paused' ? 'Resuming' : 'Launching';
-                    showToast(`${action} campaign...`, 'info');
-                    setTimeout(() => showToast('Campaign is now active.', 'success'), 1000);
-                },
+                onClick: () => onStatusChange?.(campaign.id, 'active'),
             });
         }
 
@@ -147,10 +146,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             label: 'Delete',
             variant: 'danger',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            onClick: () => {
-                showToast(`Deleting campaign ${campaign.title}...`, 'info');
-                setTimeout(() => showToast('Campaign deleted.', 'success'), 1500);
-            },
+            onClick: () => onDelete?.(campaign.id, campaign.title),
         });
 
         return actions;

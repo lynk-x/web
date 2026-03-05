@@ -27,18 +27,21 @@ interface UserBlock {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+interface UserBlocksTabProps {
+    searchQuery?: string;
+}
+
 /**
  * Support tab for `user_blocks`.
  * Admin read-only view of who has blocked whom — useful for moderation investigation.
  * Admins can remove a block if it's being used to evade moderation restrictions.
  */
-export default function UserBlocksTab() {
+export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
     const [blocks, setBlocks] = useState<UserBlock[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
 
@@ -91,7 +94,7 @@ export default function UserBlocksTab() {
     };
 
     const filtered = blocks.filter(b => {
-        const q = searchTerm.toLowerCase();
+        const q = searchQuery.toLowerCase();
         return b.blocker_name.toLowerCase().includes(q) ||
             b.blocker_username.toLowerCase().includes(q) ||
             b.blocked_name.toLowerCase().includes(q) ||
@@ -138,7 +141,7 @@ export default function UserBlocksTab() {
                     Read-only view of active user blocks. Admins can remove a block if it is being used to evade moderation restrictions.
                 </div>
             </div>
-            <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }} />
+
             <DataTable<UserBlock>
                 data={paginated}
                 columns={columns}

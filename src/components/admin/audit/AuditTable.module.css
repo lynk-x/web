@@ -1,139 +1,233 @@
+/* Main Container */
 .tableContainer {
     background-color: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-lg);
-    overflow: visible;
+    overflow: hidden;
+    margin-top: 16px;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
-    /* Slightly smaller for density */
+    font-size: 14px;
 }
 
 .table th {
     text-align: left;
     padding: 12px 16px;
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: rgba(255, 255, 255, 0.02);
     border-bottom: 1px solid var(--color-interface-outline);
     color: var(--color-utility-primaryText);
     font-weight: 600;
-    opacity: 0.8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
 }
 
 .table td {
-    padding: 12px 16px;
+    padding: 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     color: var(--color-utility-primaryText);
-    vertical-align: middle;
 }
 
-.table tr:last-child td {
-    border-bottom: none;
+.row {
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
-.table tr:hover {
+.row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.expanded {
     background-color: rgba(255, 255, 255, 0.02);
 }
 
-.actionCell {
+/* Cells */
+.expandCell {
+    width: 40px;
+    text-align: center;
+}
+
+.chevron {
+    transition: transform 0.2s;
+    opacity: 0.5;
+}
+
+.rotate {
+    transform: rotate(90deg);
+}
+
+.actionName {
     font-weight: 600;
     color: var(--color-brand-primary);
 }
 
-.userCell {
+.actorInfo {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
-.avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.1);
+.miniAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-secondary));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+}
+
+.actorName {
+    font-weight: 500;
+    color: var(--color-utility-primaryText);
+}
+
+.actorEmail {
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+.targetInfo {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.targetType {
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.4;
     font-weight: 700;
 }
 
-.targetBadge {
-    background-color: rgba(255, 255, 255, 0.05);
+.targetName {
+    font-family: monospace;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.05);
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 11px;
-    color: var(--color-utility-primaryText);
-    opacity: 0.9;
 }
 
 .timestamp {
-    opacity: 0.6;
     font-size: 12px;
-}
-
-.detailsBtn {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--color-utility-primaryText);
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-    opacity: 0.7;
-}
-
-.detailsBtn:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    opacity: 1;
-    border-color: var(--color-interface-outline);
-}
-
-/* Expanded Details Row */
-.detailsRow {
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
-.detailsContainer {
-    padding: 16px;
-    border-left: 2px solid var(--color-brand-primary);
-    margin: 0 16px 16px 16px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 0 4px 4px 0;
-}
-
-.jsonView {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    color: #a5d6ff;
-    white-space: pre-wrap;
-    line-height: 1.5;
-}
-
-.metaGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-    margin-bottom: 16px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.metaItem label {
-    display: block;
-    font-size: 11px;
-    text-transform: uppercase;
     opacity: 0.5;
+}
+
+/* Detail Row */
+.detailRow td {
+    padding: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.detailsContent {
+    padding: 24px;
+    border-left: 2px solid var(--color-brand-primary);
+}
+
+.changesSection {
+    margin-bottom: 24px;
+}
+
+.changesTitle {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+    opacity: 0.6;
+}
+
+.changesGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.changeCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.fieldName {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-brand-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.diffWrapper {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    align-items: start;
+}
+
+.oldValue,
+.newValue {
+    padding: 12px;
+}
+
+.oldValue {
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.newValue {
+    background: rgba(0, 255, 0, 0.05);
+}
+
+.diffLabel {
+    display: block;
+    font-size: 9px;
+    font-weight: 800;
     margin-bottom: 4px;
+    opacity: 0.4;
 }
 
-.metaItem span {
-    font-size: 13px;
-    font-weight: 500;
+.diffPre {
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
-/* Pagination styles removed - using shared Pagination component */
+.diffArrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 20px;
+    opacity: 0.3;
+}
+
+.additionalDetails {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detailLabel {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 8px;
+}
+
+.detailValue {
+    font-family: monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    color: #a5d6ff;
+}

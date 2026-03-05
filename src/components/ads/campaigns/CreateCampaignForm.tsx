@@ -61,6 +61,7 @@ export default function CreateCampaignForm({
     };
     const [formData, setFormData] = useState<CampaignData>(defaultData);
     const [touched, setTouched] = useState<Record<string, boolean>>({});
+    const [formError, setFormError] = useState('');
 
     // Dirty Check
     useEffect(() => {
@@ -90,10 +91,65 @@ export default function CreateCampaignForm({
 
     const nextTab = (tab: string) => setActiveTab(tab);
 
+    const validateForm = (): boolean => {
+        if (!formData.title.trim()) {
+            setFormError('Campaign title is required.');
+            return false;
+        }
+        if (!formData.description.trim()) {
+            setFormError('Campaign description is required.');
+            return false;
+        }
+
+        const budget = parseFloat(formData.total_budget);
+        if (isNaN(budget) || budget <= 0) {
+            setFormError('Valid positive total budget is required.');
+            return false;
+        }
+
+        const limit = parseFloat(formData.daily_limit);
+        if (formData.daily_limit && (isNaN(limit) || limit <= 0 || limit > budget)) {
+            setFormError('Daily limit must be a positive number and cannot exceed total budget.');
+            return false;
+        }
+
+        if (!formData.start_at || !formData.end_at) {
+            setFormError('Both start date and end date are required.');
+            return false;
+        }
+
+        const start = new Date(formData.start_at);
+        const end = new Date(formData.end_at);
+        if (end <= start) {
+            setFormError('End date must be after start date.');
+            return false;
+        }
+
+        if (!formData.adHeadline.trim()) {
+            setFormError('Ad headline is required.');
+            return false;
+        }
+
+        if (!formData.target_url.trim() || !formData.target_url.startsWith('https://')) {
+            setFormError('A valid secure target URL (https://...) is required.');
+            return false;
+        }
+
+        setFormError('');
+        return true;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setFormError('');
+
         if (!activeAccount) {
             showToast('Please select an active account/organization first.', 'error');
+            return;
+        }
+
+        if (!validateForm()) {
+            showToast('Please review the form for errors.', 'error');
             return;
         }
 
@@ -432,34 +488,41 @@ export default function CreateCampaignForm({
 
                         {/* Action Buttons */}
                         <div className={styles.actions}>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                {(activeTab === 'creative' || activeTab === 'review') && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveTab(activeTab === 'creative' ? 'details' : 'creative')}
-                                        className={`${styles.btn} ${styles.btnSecondary}`}
-                                    >
-                                        Back
-                                    </button>
-                                )}
-                            </div>
+                            {formError && (
+                                <div style={{ color: 'var(--color-interface-error)', width: '100%', marginBottom: '16px', fontSize: '13px', textAlign: 'center' }}>
+                                    {formError}
+                                </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    {(activeTab === 'creative' || activeTab === 'review') && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab(activeTab === 'creative' ? 'details' : 'creative')}
+                                            className={`${styles.btn} ${styles.btnSecondary}`}
+                                        >
+                                            Back
+                                        </button>
+                                    )}
+                                </div>
 
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                {activeTab === 'details' && (
-                                    <button type="button" onClick={() => nextTab('creative')} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                        Next: Ad Creative
-                                    </button>
-                                )}
-                                {activeTab === 'creative' && (
-                                    <button type="button" onClick={() => nextTab('review')} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                        Next: Review
-                                    </button>
-                                )}
-                                {activeTab === 'review' && (
-                                    <button type="submit" disabled={isSubmitting} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                        {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Launch Campaign')}
-                                    </button>
-                                )}
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    {activeTab === 'details' && (
+                                        <button type="button" onClick={() => nextTab('creative')} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                            Next: Ad Creative
+                                        </button>
+                                    )}
+                                    {activeTab === 'creative' && (
+                                        <button type="button" onClick={() => nextTab('review')} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                            Next: Review
+                                        </button>
+                                    )}
+                                    {activeTab === 'review' && (
+                                        <button type="submit" disabled={isSubmitting} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                            {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Launch Campaign')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </form>

@@ -1,15 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { login, signup } from './actions';
 
 export default function AuthPage() {
+    const searchParams = useSearchParams();
+    const serverError = searchParams.get('error');
+    const serverMessage = searchParams.get('message');
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isLoginDetail, setIsLoginDetail] = useState(true); // Toggle between Login and "Create Account" view if needed, though design suggests one view
+    const [isLoginDetail, setIsLoginDetail] = useState(true);
+    const [formError, setFormError] = useState<string | null>(serverError || null);
+
+    // Clear out errors when switching tabs
+    useEffect(() => {
+        setFormError(serverError || null);
+    }, [isLoginDetail, serverError]);
 
     return (
         <div className={styles.container}>
@@ -34,20 +45,38 @@ export default function AuthPage() {
             <form
                 className={styles.form}
                 action={async (formData) => {
+                    setFormError(null);
                     if (!isLoginDetail) {
                         const password = formData.get('password') as string;
                         const confirmPassword = formData.get('confirmPassword') as string;
 
                         if (password !== confirmPassword) {
-                            alert("Passwords do not match");
+                            setFormError('Passwords do not match');
                             return;
                         }
+
+                        if (password.length < 6) {
+                            setFormError('Password must be at least 6 characters');
+                            return;
+                        }
+
                         await signup(formData);
                     } else {
                         await login(formData);
                     }
                 }}
             >
+                {formError && (
+                    <div style={{ color: 'var(--color-interface-error)', background: 'rgba(239,68,68,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
+                        {formError}
+                    </div>
+                )}
+
+                {serverMessage && !formError && (
+                    <div style={{ color: 'var(--color-interface-success)', background: 'rgba(34,197,94,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
+                        {serverMessage}
+                    </div>
+                )}
                 <div className={styles.inputWrapper}>
                     <input
                         name="email"

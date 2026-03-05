@@ -5,7 +5,9 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import adminStyles from '@/app/dashboard/admin/page.module.css';
+import FilterGroup from '@/components/dashboard/FilterGroup';
 import { createClient } from '@/utils/supabase/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,21 +42,26 @@ const statusVariant: Record<string, any> = {
     dismissed: 'neutral',
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+interface AppFeedbackTabProps {
+    searchQuery?: string;
+    statusFilter?: string;
+    categoryFilter?: string;
+}
 
 /**
  * Support tab for `app_feedback`.
  * Lets admins triage user-submitted bug reports and ratings.
  */
-export default function AppFeedbackTab() {
+export default function AppFeedbackTab({
+    searchQuery = '',
+    statusFilter = 'all',
+    categoryFilter = 'all'
+}: AppFeedbackTabProps) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
     const [items, setItems] = useState<AppFeedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [categoryFilter, setCategoryFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -98,13 +105,10 @@ export default function AppFeedbackTab() {
         }
     };
 
-    // Unique categories derived from data
-    const categories = Array.from(new Set(items.map(f => f.category))).sort();
-
     const filtered = items.filter(f => {
-        const matchSearch = f.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (f.submitter ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            f.category.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchSearch = f.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (f.submitter ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.category.toLowerCase().includes(searchQuery.toLowerCase());
         const matchStatus = statusFilter === 'all' || f.status === statusFilter;
         const matchCategory = categoryFilter === 'all' || f.category === categoryFilter;
         return matchSearch && matchStatus && matchCategory;
@@ -152,37 +156,15 @@ export default function AppFeedbackTab() {
     ];
 
     return (
-        <div>
-            <TableToolbar searchPlaceholder="Search feedback..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {['all', 'new', 'reviewed', 'resolved', 'dismissed'].map(s => (
-                        <button key={s} className={`${adminStyles.chip} ${statusFilter === s ? adminStyles.chipActive : ''}`} onClick={() => { setStatusFilter(s); setCurrentPage(1); }}>
-                            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-                        </button>
-                    ))}
-                </div>
-                {categories.length > 0 && (
-                    <select
-                        value={categoryFilter}
-                        onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.8)', color: 'white', fontSize: '13px' }}
-                    >
-                        <option value="all">All Categories</option>
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                )}
-            </TableToolbar>
-
-            <DataTable<AppFeedback>
-                data={paginated}
-                columns={columns}
-                getActions={getActions}
-                isLoading={isLoading}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                emptyMessage="No feedback submissions found."
-            />
-        </div>
+        <DataTable<AppFeedback>
+            data={paginated}
+            columns={columns}
+            getActions={getActions}
+            isLoading={isLoading}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            emptyMessage="No feedback submissions found."
+        />
     );
 }

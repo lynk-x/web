@@ -12,6 +12,7 @@ export interface Event {
     low_price?: number;
     currency?: string;
     is_featured?: boolean;
+    tags?: string[];
 }
 
 export interface Category {

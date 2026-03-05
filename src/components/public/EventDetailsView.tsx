@@ -5,12 +5,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 
 interface EventDetailsViewProps {
     event: Event;
+    ticketTiers?: any[];
 }
 
 const mockDisclaimers: Disclaimer[] = [
@@ -26,17 +28,19 @@ const mockDisclaimers: Disclaimer[] = [
     }
 ];
 
-const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
+const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers = [] }) => {
     const router = useRouter();
+    const { addToCart } = useCart();
+
     const [isAboutExpanded, setIsAboutExpanded] = useState(false);
-    const [selectedTicket, setSelectedTicket] = useState<number | null>(0);
+    const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
-    const toggleTicket = (index: number) => {
-        if (selectedTicket === index) {
+    const toggleTicket = (id: string) => {
+        if (selectedTicket === id) {
             setSelectedTicket(null);
         } else {
-            setSelectedTicket(index);
+            setSelectedTicket(id);
         }
     };
 
@@ -49,7 +53,22 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
 
     const handleAcceptDisclaimer = () => {
         setIsDisclaimerOpen(false);
-        router.push(`/checkout?eventId=${event.id}&ticketIndex=${selectedTicket}`);
+
+        // Find selected tier details
+        const selectedTier = ticketTiers.find(t => t.id === selectedTicket);
+        if (selectedTier) {
+            addToCart({
+                id: `${event.id}-ticket-${selectedTier.id}`,
+                eventId: event.id,
+                eventTitle: event.title,
+                ticketType: selectedTier.name,
+                price: selectedTier.price,
+                quantity: 1, // Defaulting to 1 for simplicity here, they can modify in future cart or checkout if allowed
+                currency: event.currency || 'KES',
+                image: event.thumbnail_url
+            });
+            router.push('/checkout');
+        }
     };
 
     // Format Date Range
@@ -168,19 +187,25 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
 
                         <h2 className={styles.ticketSectionTitle}>Tickets</h2>
 
-                        <div className={styles.ticketItem} onClick={() => toggleTicket(0)}>
-                            <div className={`${styles.checkbox} ${selectedTicket === 0 ? styles.checkboxChecked : ''}`}>
-                                {selectedTicket === 0 && (
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20 6L9 17L4 12" stroke="var(--color-utility-secondaryText)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                )}
-                            </div>
-                            <div className={styles.ticketDetails}>
-                                <div className={styles.ticketNamePrice}>Standard Ticket : {event.currency} {event.low_price}</div>
-                                <div className={styles.ticketDescription}>General admission to the event.</div>
-                            </div>
-                        </div>
+                        {ticketTiers.length === 0 ? (
+                            <p>No tickets currently available for this event.</p>
+                        ) : (
+                            ticketTiers.map(tier => (
+                                <div key={tier.id} className={styles.ticketItem} onClick={() => toggleTicket(tier.id)}>
+                                    <div className={`${styles.checkbox} ${selectedTicket === tier.id ? styles.checkboxChecked : ''}`}>
+                                        {selectedTicket === tier.id && (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M20 6L9 17L4 12" stroke="var(--color-utility-secondaryText)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <div className={styles.ticketDetails}>
+                                        <div className={styles.ticketNamePrice}>{tier.name} : {event.currency || 'KES'} {tier.price}</div>
+                                        <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
 
                     <div className={styles.footerActions}>
@@ -188,7 +213,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event }) => {
                             onClick={handleGetTicketClick}
                             className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
                         >
-                            Get ticket {selectedTicket !== null && `(KES ${selectedTicket === 0 ? (event.low_price || 0) : (event.low_price || 0) * 2})`}
+                            Get ticket {selectedTicket !== null && `(KES ${ticketTiers.find(t => t.id === selectedTicket)?.price || 0})`}
                         </button>
                     </div>
                 </motion.div>

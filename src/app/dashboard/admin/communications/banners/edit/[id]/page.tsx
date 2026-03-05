@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import styles from '../../page.module.css';
-import adminStyles from '../../../page.module.css';
+import adminStyles from '../../../../page.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import SubPageHeader from '@/components/shared/SubPageHeader';
@@ -105,7 +104,7 @@ export default function EditBannerPage() {
     }
 
     return (
-        <div className={styles.container}>
+        <div className={adminStyles.container}>
             <SubPageHeader
                 title="Edit System Banner"
                 subtitle={`Modifying ID: ${id}`}

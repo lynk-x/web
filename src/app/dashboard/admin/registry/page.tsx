@@ -15,7 +15,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import Tabs from '@/components/dashboard/Tabs';
 
 // ... types ...
-type Tab = 'library' | 'mapping' | 'disclaimer' | 'countries';
+type Tab = 'tags' | 'types' | 'logic' | 'events' | 'disclaimer' | 'countries';
 
 interface Country {
     id: string;
@@ -34,14 +34,15 @@ function RegistryContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const initialTab = (searchParams.get('tab') as any) || 'library';
+    const initialTab = (searchParams.get('tab') as any) || 'tags';
+    const validTabs: Tab[] = ['tags', 'types', 'logic', 'events', 'disclaimer', 'countries'];
     const [activeTab, setActiveTab] = useState<Tab>(
-        ['library', 'mapping', 'disclaimer', 'countries'].includes(initialTab) ? initialTab : 'library'
+        validTabs.includes(initialTab) ? initialTab : 'tags'
     );
 
     useEffect(() => {
         const tab = searchParams.get('tab') as any;
-        if (tab && ['library', 'mapping', 'disclaimer', 'countries'].includes(tab)) {
+        if (tab && validTabs.includes(tab)) {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -154,7 +155,7 @@ function RegistryContent() {
     // ── Render ─────────────────────────────────────────────────────────────
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} style={{ gap: '16px' }}>
             <header className={styles.header}>
                 <div>
                     <h1 className={adminStyles.title}>Registry &amp; Rules</h1>
@@ -164,8 +165,10 @@ function RegistryContent() {
 
             <Tabs
                 options={[
-                    { id: 'library', label: 'Tag Library' },
-                    { id: 'mapping', label: 'Logic & Mapping' },
+                    { id: 'tags', label: 'Tags Registry' },
+                    { id: 'types', label: 'Tag Types' },
+                    { id: 'logic', label: 'Category Logic' },
+                    { id: 'events', label: 'Event Mappings' },
                     { id: 'disclaimer', label: 'Compliance Rules' },
                     { id: 'countries', label: 'Supported Regions' }
                 ]}
@@ -174,15 +177,17 @@ function RegistryContent() {
             />
 
             <main className={styles.content}>
-                {activeTab === 'library' && <TagLibraryTab />}
-                {activeTab === 'mapping' && <MappingTab />}
+                {activeTab === 'tags' && <TagLibraryTab forceView="tags" />}
+                {activeTab === 'types' && <TagLibraryTab forceView="types" />}
+                {activeTab === 'logic' && <MappingTab forceView="category" />}
+                {activeTab === 'events' && <MappingTab forceView="event" />}
                 {activeTab === 'disclaimer' && (
-                    <div style={{ marginTop: '16px' }}>
+                    <>
                         <DisclaimerTable />
-                    </div>
+                    </>
                 )}
                 {activeTab === 'countries' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px',  }}>
                         <TableToolbar
                             searchPlaceholder="Search country name or code..."
                             searchValue={countrySearch}

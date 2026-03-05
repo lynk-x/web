@@ -10,6 +10,12 @@ interface AppDrawerProps {
     isOpen: boolean;
     /** Callback function to close the drawer. */
     onClose: () => void;
+    /** Dynamic categories from the database */
+    categoriesData?: any[];
+    /** Dynamic tags from the database */
+    tagsData?: any[];
+    /** Category to Tags mapping from the database */
+    categoryTagsMap?: any[];
 }
 
 /**
@@ -18,7 +24,13 @@ interface AppDrawerProps {
  *
  * @param {AppDrawerProps} props - Component properties.
  */
-const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
+const AppDrawer: React.FC<AppDrawerProps> = ({
+    isOpen,
+    onClose,
+    categoriesData = [],
+    tagsData = [],
+    categoryTagsMap = []
+}) => {
     const {
         selectedCategories, setSelectedCategories,
         selectedTags, setSelectedTags,
@@ -29,8 +41,12 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
     const [calendarDays, setCalendarDays] = useState<Date[]>([]);
 
     useEffect(() => {
-        // Initialize viewStartDate to exactly today
-        setViewStartDate(new Date());
+        // Initialize viewStartDate to the most recent Sunday
+        const today = new Date();
+        const sunday = new Date(today);
+        const day = today.getDay(); // Sunday is 0
+        sunday.setDate(today.getDate() - day);
+        setViewStartDate(sunday);
     }, []);
 
     useEffect(() => {
@@ -87,53 +103,44 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
         }
     };
 
-    const categories = [
-        'Arts & Entertainment',
-        'Music & Nightlife',
-        'Business & Professional',
-        'Tech & Innovation',
-        'Sports & Games',
-        'Food & Drinks',
-        'Education & Training',
-        'Health & Wellness',
-        'Community & Social',
-        'Seasonal & Holiday'
-    ];
+    // Format DB objects into expected string arrays
+    const categories = Array.from(new Set(categoriesData.map(c => c.name)));
+    const allTags = Array.from(new Set(tagsData.map(t => t.name)));
 
-    const allTags = [
-        'Afro-House', 'Networking', 'Workshop', 'Live Band', 'Outdoor',
-        'Wheelchair Accessible', 'Family Friendly', 'Free WiFi', 'Parking', '18+ Only', 'Pet Friendly',
-        'Eco-Friendly', 'Sign Language', 'Nursing Room'
-    ];
+    // Map the relationships
+    const _categoryTagMap: Record<string, string[]> = {};
 
-    // Simulate DB category_tags relationships
-    const categoryTagMap: Record<string, string[]> = {
-        'Music & Nightlife': ['Afro-House', 'Live Band', '18+ Only', 'Outdoor'],
-        'Arts & Entertainment': ['Live Band', 'Workshop', 'Outdoor'],
-        'Business & Professional': ['Networking', 'Workshop'],
-        'Tech & Innovation': ['Networking', 'Workshop', 'Free WiFi'],
-        'Sports & Games': ['Outdoor', 'Family Friendly'],
-        'Health & Wellness': ['Workshop', 'Outdoor'],
-        'Community & Social': ['Family Friendly', 'Pet Friendly', 'Outdoor'],
-        'Seasonal & Holiday': ['Family Friendly', 'Outdoor'],
-        'Food & Drinks': ['Outdoor', 'Pet Friendly', 'Family Friendly']
-    };
+    // Fallback logic removed as requested
 
-    // Global tags that always appear
-    const globalTags = ['Wheelchair Accessible', 'Parking', 'Eco-Friendly', 'Sign Language', 'Nursing Room'];
+
+    // Build map from category_tags junction and corresponding names
+    categoryTagsMap.forEach(ct => {
+        const cat = categoriesData.find(c => c.id === ct.category_id);
+        const tag = tagsData.find(t => t.id === ct.tag_id);
+        if (cat && tag) {
+            if (!_categoryTagMap[cat.name]) {
+                _categoryTagMap[cat.name] = [];
+            }
+            _categoryTagMap[cat.name].push(tag.name);
+        }
+    });
+
+    // Global tags (fallback logic if no specific global tag flag exists)
+    // We'll treat standard amenities as global or just return none if unspecified.
+    const globalTagsNames = tagsData.filter(t => t.is_official).map(t => t.name);
 
     // Determine which tags to display
     let categorizedTags: string[] = [];
-    const generalTagsDisplay: string[] = globalTags;
+    const generalTagsDisplay: string[] = globalTagsNames;
 
     if (selectedCategories.length > 0) {
         const recommendedTags = new Set<string>();
         selectedCategories.forEach(cat => {
-            categoryTagMap[cat]?.forEach(tag => recommendedTags.add(tag));
+            _categoryTagMap[cat]?.forEach(tag => recommendedTags.add(tag));
         });
-        categorizedTags = allTags.filter(tag => recommendedTags.has(tag) && !globalTags.includes(tag));
+        categorizedTags = allTags.filter(tag => recommendedTags.has(tag) && !globalTagsNames.includes(tag));
     } else {
-        categorizedTags = allTags.filter(tag => !globalTags.includes(tag));
+        categorizedTags = allTags.filter(tag => !globalTagsNames.includes(tag));
     }
 
     return (
@@ -162,12 +169,9 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className={styles.calendarGrid}>
-                        {Array.from({ length: 7 }).map((_, i) => {
-                            const d = new Date(viewStartDate);
-                            d.setDate(viewStartDate.getDate() + i);
-                            const dayName = d.toLocaleString('default', { weekday: 'short' });
-                            return <span key={i} className={styles.dayName}>{dayName}</span>;
-                        })}
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
+                            <span key={dayName} className={styles.dayName}>{dayName}</span>
+                        ))}
 
                         {calendarDays.map((date, index) => {
                             const isToday = isSameDay(date, new Date());

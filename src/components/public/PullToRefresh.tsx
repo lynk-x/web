@@ -89,7 +89,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={{ position: 'relative' }}
+            style={{ position: 'relative', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
         >
             {/* Loading Indicator */}
             <motion.div
@@ -120,7 +120,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
             </motion.div>
 
             {/* Content Content */}
-            <motion.div animate={controls}>
+            <motion.div animate={controls} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                 {children}
             </motion.div>
         </div>

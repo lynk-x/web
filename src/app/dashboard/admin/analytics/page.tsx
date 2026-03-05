@@ -131,38 +131,40 @@ function PlatformTab() {
     const maxFee = Math.max(...ledger.map(d => d.platform_fee_collected), 1);
     const maxTag = Math.max(...tags.map(t => t.use_count), 1);
 
-    if (isLoading) return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading platform data…</div>;
+    // Removed top-level early return so cards can show '...' loading state
+    // if (isLoading) return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading platform data…</div>;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
             {/* ── KPI snapshot ── */}
+            <div className={sharedStyles.statsGrid}>
+                <StatCard label="Total Users" value={overview ? overview.total_users.toLocaleString() : null} isLoading={isLoading} />
+                <StatCard
+                    label="Live Events"
+                    value={overview ? overview.live_events.toLocaleString() : null}
+                    change={overview ? `${overview.upcoming_events.toLocaleString()} upcoming` : '...'}
+                    trend="neutral"
+                    isLoading={isLoading}
+                />
+                <StatCard label="Tickets Sold" value={overview ? overview.total_tickets_sold.toLocaleString() : null} isLoading={isLoading} />
+                <StatCard
+                    label="Platform Revenue"
+                    value={overview ? `$${Number(overview.total_platform_revenue_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null}
+                    change="All-time (USD)"
+                    trend="neutral"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Open Reports"
+                    value={overview ? overview.open_reports.toLocaleString() : null}
+                    change="Needs attention"
+                    trend="negative"
+                    isLoading={isLoading}
+                />
+                <StatCard label="Active Campaigns" value={overview ? overview.active_campaigns.toLocaleString() : null} isLoading={isLoading} />
+            </div>
             {overview && (
-                <>
-                    <div className={sharedStyles.statsGrid}>
-                        <StatCard label="Total Users" value={overview.total_users.toLocaleString()} />
-                        <StatCard
-                            label="Live Events"
-                            value={overview.live_events.toLocaleString()}
-                            change={`${overview.upcoming_events.toLocaleString()} upcoming`}
-                            trend="neutral"
-                        />
-                        <StatCard label="Tickets Sold" value={overview.total_tickets_sold.toLocaleString()} />
-                        <StatCard
-                            label="Platform Revenue"
-                            value={`$${Number(overview.total_platform_revenue_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            change="All-time (USD)"
-                            trend="neutral"
-                        />
-                        <StatCard
-                            label="Open Reports"
-                            value={overview.open_reports.toLocaleString()}
-                            change="Needs attention"
-                            trend="negative"
-                        />
-                        <StatCard label="Active Campaigns" value={overview.active_campaigns.toLocaleString()} />
-                    </div>
-                    <p className={styles.refreshNote}>mv_platform_overview refreshed at {new Date(overview.computed_at).toLocaleTimeString()}</p>
-                </>
+                <p className={styles.refreshNote}>mv_platform_overview refreshed at {new Date(overview.computed_at).toLocaleTimeString()}</p>
             )}
 
             {/* ── Revenue ledger (last 30 days) + trending tags ── */}
@@ -337,10 +339,10 @@ function AdvertisingTab() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className={sharedStyles.statsGrid}>
-                <StatCard label="Total Impressions" value={totalImpressions.toLocaleString()} />
-                <StatCard label="Total Clicks" value={totalClicks.toLocaleString()} />
-                <StatCard label="Avg CTR" value={`${avgCtr.toFixed(2)}%`} change="Across all campaigns" trend="neutral" />
-                <StatCard label="Total Ad Spend" value={`$${totalSpend.toFixed(2)}`} change="USD billed" trend="neutral" />
+                <StatCard label="Total Impressions" value={totalImpressions.toLocaleString()} isLoading={isLoading} />
+                <StatCard label="Total Clicks" value={totalClicks.toLocaleString()} isLoading={isLoading} />
+                <StatCard label="Avg CTR" value={`${avgCtr.toFixed(2)}%`} change="Across all campaigns" trend="neutral" isLoading={isLoading} />
+                <StatCard label="Total Ad Spend" value={`$${totalSpend.toFixed(2)}`} change="USD billed" trend="neutral" isLoading={isLoading} />
             </div>
             <DataTable<CampaignPerf>
                 data={campaigns}
@@ -419,15 +421,16 @@ function SearchTab() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className={sharedStyles.statsGrid}>
-                <StatCard label="Total Searches (sample)" value={queries.length.toLocaleString()} change="Last 500 events" trend="neutral" />
-                <StatCard label="Avg Results" value={avgResults.toFixed(1)} change="Per search" trend="neutral" />
+                <StatCard label="Total Searches (sample)" value={queries.length.toLocaleString()} change="Last 500 events" trend="neutral" isLoading={isLoading} />
+                <StatCard label="Avg Results" value={avgResults.toFixed(1)} change="Per search" trend="neutral" isLoading={isLoading} />
                 <StatCard
                     label="Zero-Result Searches"
                     value={zeroResultQueries.length}
                     change={`${queries.length ? ((zeroResultQueries.length / queries.length) * 100).toFixed(1) : 0}% of searches`}
                     trend={zeroResultQueries.length > 0 ? "negative" : "neutral"}
+                    isLoading={isLoading}
                 />
-                <StatCard label="Unique Queries" value={topQueries.length} change="In top-500 sample" trend="neutral" />
+                <StatCard label="Unique Queries" value={topQueries.length} change="In top-500 sample" trend="neutral" isLoading={isLoading} />
             </div>
 
             <div className={styles.splitRow}>

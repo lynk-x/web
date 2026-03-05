@@ -12,6 +12,12 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         .eq('id', id)
         .single();
 
+    const { data: ticketTiers } = await supabase
+        .from('ticket_tiers')
+        .select('*')
+        .eq('event_id', id)
+        .order('price', { ascending: true });
+
     if (error || !event) {
         // Fallback for demo/development if ID matches our static featured one
         // Fallback for demo/development if ID matches our static featured one or is a mock card
@@ -33,11 +39,19 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                 low_price: 50,
                 currency: "KES",
             };
-            return <EventDetailsView event={mockEvent} />;
+
+            const mockTiers = [{
+                id: 'mock-tier-1',
+                name: 'Standard Ticket',
+                description: 'General admission',
+                price: 50
+            }];
+
+            return <EventDetailsView event={mockEvent} ticketTiers={mockTiers} />;
         }
 
         return notFound();
     }
 
-    return <EventDetailsView event={event} />;
+    return <EventDetailsView event={event} ticketTiers={ticketTiers || []} />;
 }

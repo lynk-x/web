@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styles from './PaymentMethodForm.module.css';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface PaymentMethodData {
     cardName: string;
@@ -13,12 +15,18 @@ export interface PaymentMethodData {
 }
 
 interface PaymentMethodFormProps {
+    /** The account to attach this payment method to. */
+    accountId: string;
+    /** Pre-created Supabase client passed in from the parent (avoids creating a second client). */
+    supabase: SupabaseClient;
     onSuccess?: () => void;
     onCancel?: () => void;
 }
 
-export default function PaymentMethodForm({ onSuccess, onCancel }: PaymentMethodFormProps) {
+export default function PaymentMethodForm({ accountId, supabase, onSuccess, onCancel }: PaymentMethodFormProps) {
     const router = useRouter();
+    const { showToast } = useToast();
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState<PaymentMethodData>({
         cardName: '',
         cardNumber: '',
@@ -26,6 +34,7 @@ export default function PaymentMethodForm({ onSuccess, onCancel }: PaymentMethod
         cvv: '',
         billingZip: ''
     });
+    const [formError, setFormError] = useState('');
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -49,13 +58,79 @@ export default function PaymentMethodForm({ onSuccess, onCancel }: PaymentMethod
         }
 
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (formError) setFormError('');
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const validateForm = (): boolean => {
+        if (!formData.cardName.trim()) {
+            setFormError('Cardholder name is required.');
+            return false;
+        }
+
+        const rawCard = formData.cardNumber.replace(/\s/g, '');
+        if (rawCard.length < 15 || rawCard.length > 16 || isNaN(Number(rawCard))) {
+            setFormError('Valid 15 or 16 digit card number is required.');
+            return false;
+        }
+
+        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.expiryDate)) {
+            setFormError('Valid expiry date (MM/YY) is required.');
+            return false;
+        }
+
+        if (formData.cvv.length < 3 || isNaN(Number(formData.cvv))) {
+            setFormError('Valid 3 or 4 digit CVV is required.');
+            return false;
+        }
+
+        if (!formData.billingZip.trim() || formData.billingZip.length < 5) {
+            setFormError('Valid billing zip code is required.');
+            return false;
+        }
+
+        return true;
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Saving payment method:', formData);
-        if (onSuccess) onSuccess();
-        else router.push('/dashboard/ads/billing');
+        if (!validateForm()) return;
+
+        setIsSaving(true);
+        try {
+            const rawCard = formData.cardNumber.replace(/\s/g, '');
+            const last4 = rawCard.slice(-4);
+
+            /**
+             * IMPORTANT: We never store the full PAN.
+             * In production this form would tokenise the card via Stripe/Paystack first;
+             * here we only persist presentation metadata (last4, expiry, holder name).
+             */
+            const { error } = await supabase
+                .from('account_payment_methods')
+                .insert({
+                    account_id: accountId,
+                    type: 'card',
+                    label: `Card ending in ${last4}`,
+                    is_default: false,
+                    metadata: {
+                        last4,
+                        expiry: formData.expiryDate,
+                        cardholder_name: formData.cardName,
+                        billing_zip: formData.billingZip
+                    }
+                });
+
+            if (error) throw error;
+
+            showToast('Payment method saved successfully.', 'success');
+            if (onSuccess) onSuccess();
+            else router.push('/dashboard/ads/billing');
+        } catch (err: any) {
+            setFormError(err.message || 'Failed to save payment method.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -145,16 +220,23 @@ export default function PaymentMethodForm({ onSuccess, onCancel }: PaymentMethod
                     />
                 </div>
 
+                {formError && (
+                    <div style={{ color: 'var(--color-interface-error)', fontSize: '13px', textAlign: 'center', marginBottom: '16px' }}>
+                        {formError}
+                    </div>
+                )}
+
                 <div className={styles.actions}>
                     <button
                         type="button"
                         className={`${styles.btn} ${styles.btnSecondary}`}
                         onClick={onCancel || (() => router.back())}
+                        disabled={isSaving}
                     >
                         Cancel
                     </button>
-                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
-                        Save Payment Method
+                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Payment Method'}
                     </button>
                 </div>
             </form>

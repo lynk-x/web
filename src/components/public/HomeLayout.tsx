@@ -9,16 +9,27 @@ import { FilterProvider } from "@/context/FilterContext";
 
 interface HomeLayoutProps {
     children: React.ReactNode;
+    categories?: any[];
+    tags?: any[];
+    categoryTags?: any[];
+    hideCart?: boolean;
+    showBack?: boolean;
 }
 
-const HomeLayout: React.FC<HomeLayoutProps> = ({ children }) => {
+const HomeLayout: React.FC<HomeLayoutProps> = ({ children, categories, tags, categoryTags, hideCart = false, showBack = false }) => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     return (
         <FilterProvider>
             <div className={styles.page}>
-                <Navbar onMenuClick={() => setIsDrawerOpen(true)} />
-                <AppDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+                <Navbar onMenuClick={() => setIsDrawerOpen(true)} hideCart={hideCart} showBack={showBack} />
+                <AppDrawer
+                    isOpen={isDrawerOpen}
+                    onClose={() => setIsDrawerOpen(false)}
+                    categoriesData={categories}
+                    tagsData={tags}
+                    categoryTagsMap={categoryTags}
+                />
                 <main className={styles.main}>
                     <PullToRefresh>
                         {children}

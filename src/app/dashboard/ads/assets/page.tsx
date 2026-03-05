@@ -40,20 +40,29 @@ export default function AdsAssetsPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('ad_assets')
-                .select('*, ad_campaigns(title)')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setAssets(data || []);
-
-            // Also fetch campaigns for the dropdown
+            // Fetch campaigns for this account first, then scope assets to those campaign IDs.
+            // This prevents assets from other accounts appearing in the library.
             const { data: campaignData } = await supabase
                 .from('ad_campaigns')
                 .select('id, title')
                 .eq('account_id', activeAccount.id);
-            setCampaigns(campaignData || []);
+            const ownCampaigns = campaignData || [];
+            setCampaigns(ownCampaigns);
+
+            if (ownCampaigns.length === 0) {
+                setAssets([]);
+                return;
+            }
+
+            const campaignIds = ownCampaigns.map(c => c.id);
+            const { data, error } = await supabase
+                .from('ad_assets')
+                .select('*, ad_campaigns(title)')
+                .in('campaign_id', campaignIds)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setAssets(data || []);
         } catch (error: any) {
             showToast(error.message || 'Failed to fetch assets', 'error');
         } finally {

@@ -272,7 +272,7 @@ function CommunicationsContent() {
     };
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} style={{ gap: '16px' }}>
             <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 className={adminStyles.title}>Communications</h1>
@@ -325,8 +325,8 @@ function CommunicationsContent() {
                 options={[
                     { id: 'broadcast', label: 'Broadcast Notifications' },
                     { id: 'banners', label: 'System Banners' },
-                    { id: 'content', label: 'Content & Pages' },
-                    { id: 'legal', label: 'Legal Documents' }
+                    { id: 'content', label: 'Info Pages' },
+                    { id: 'legal', label: 'Legals' }
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -334,7 +334,7 @@ function CommunicationsContent() {
 
             {/* ─── TAB: BROADCAST ─── */}
             {activeTab === 'broadcast' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <TableToolbar searchPlaceholder="Search history..." searchValue={broadcastSearch} onSearchChange={setBroadcastSearch} />
                     <DataTable<BroadcastLog> data={filteredBroadcasts} columns={broadcastColumns} emptyMessage="No broadcast history found." isLoading={isLoading} />
                 </div>
@@ -342,7 +342,7 @@ function CommunicationsContent() {
 
             {/* ─── TAB: SYSTEM BANNERS ─── */}
             {activeTab === 'banners' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Active & Scheduled Banners</h2>
 

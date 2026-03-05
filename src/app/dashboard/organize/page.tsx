@@ -10,17 +10,19 @@ import Link from 'next/link';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
+import { useToast } from '@/components/ui/Toast';
 
 export default function DashboardOverview() {
-    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const { showToast } = useToast();
+    const { activeAccount, accounts, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
 
-    const [stats, setStats] = useState({
-        revenue: 0,
-        sellThroughRate: 0,
-        checkInRate: 0,
-        teamSize: 0,
+    const [stats, setStats] = useState<any>({
+        revenue: null,
+        sellThroughRate: null,
+        checkInRate: null,
+        teamSize: null,
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -40,8 +42,8 @@ export default function DashboardOverview() {
                             attendee_count,
                             ticket_tiers(
                                 price,
-                                quantity_total,
-                                quantity_sold
+                                capacity,
+                                tickets_sold
                             )
                         `)
                         .eq('account_id', activeAccount.id),
@@ -64,9 +66,9 @@ export default function DashboardOverview() {
 
                     if (ev.ticket_tiers) {
                         ev.ticket_tiers.forEach((tier: any) => {
-                            ticketsSold += tier.quantity_sold || 0;
-                            totalCapacity += tier.quantity_total || 0;
-                            revenue += (tier.quantity_sold || 0) * (tier.price || 0);
+                            ticketsSold += tier.tickets_sold || 0;  // schema column
+                            totalCapacity += tier.capacity || 0;    // schema column
+                            revenue += (tier.tickets_sold || 0) * (tier.price || 0);
                         });
                     }
                 });
@@ -82,51 +84,54 @@ export default function DashboardOverview() {
                     teamSize
                 });
 
-            } catch (error) {
-                console.error("Dashboard overview fetch error:", error);
+            } catch (error: any) {
+                showToast(error.message || "Failed to load dashboard overview data.", "error");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        if (!isOrgLoading && activeAccount) {
-            fetchDashboardData();
-        } else if (!isOrgLoading && !activeAccount) {
-            // No active org — show zero state rather than misleading mock data
-            setStats({ revenue: 0, sellThroughRate: 0, checkInRate: 0, teamSize: 0 });
-            setIsLoading(false);
+        if (!isOrgLoading) {
+            if (activeAccount) {
+                fetchDashboardData();
+            } else if (accounts.length === 0) {
+                // Definitely no accounts, show zero state
+                setStats({ revenue: 0, sellThroughRate: 0, checkInRate: 0, teamSize: 0 });
+                setIsLoading(false);
+            }
+            // If accounts.length > 0 but activeAccount is missing, we wait (likely context sync)
         }
-    }, [isOrgLoading, activeAccount, supabase]);
+    }, [isOrgLoading, activeAccount, accounts, supabase]);
     return (
         <div className={sharedStyles.container}>
             <PageHeader
-                title={activeAccount ? `Welcome back to ${activeAccount.name} 👋` : 'Welcome back 👋'}
+                title={activeAccount ? `Welcome back to ${activeAccount.name} 👋` : 'Hi there👋...Ready to host events?'}
                 subtitle="Here is what is happening with your events today."
             />
 
             <div className={sharedStyles.statsGrid}>
                 <StatCard
                     label="Total Revenue"
-                    value={isLoading ? '...' : formatCurrency(stats.revenue)}
+                    value={stats.revenue !== null ? formatCurrency(stats.revenue, activeAccount?.default_currency || 'KES') : null}
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Sell-Through Rate"
-                    value={isLoading ? '...' : `${stats.sellThroughRate.toFixed(1)}%`}
+                    value={stats.sellThroughRate !== null ? `${stats.sellThroughRate.toFixed(1)}%` : null}
                     change="Tickets sold / Capacity"
                     trend="neutral"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Check-In Rate"
-                    value={isLoading ? '...' : `${stats.checkInRate.toFixed(1)}%`}
+                    value={stats.checkInRate !== null ? `${stats.checkInRate.toFixed(1)}%` : null}
                     change="Attendees / Tickets Sold"
                     trend="neutral"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Team Size"
-                    value={isLoading ? '...' : stats.teamSize}
+                    value={stats.teamSize !== null ? stats.teamSize : null}
                     href="/dashboard/organize/settings?tab=team"
                     change="Manage Team"
                     trend="neutral"

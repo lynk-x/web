@@ -169,3 +169,24 @@ export interface Attendee {
     /** Unique alphanumeric ticket code */
     ticketCode: string;
 }
+
+/** Account Payment Method configuration */
+export interface AccountPaymentMethod {
+    id: string;
+    account_id: string;
+    provider: string; // e.g., 'stripe_connect', 'mpesa', 'bank_transfer', 'paypal'
+    provider_identity: string; // Encrypted IBAN, Stripe Account ID, Mobile number
+    is_primary: boolean;
+    metadata?: any;
+    created_at: string;
+    updated_at: string;
+}
+
+/** Account Wallet for multi-currency balances */
+export interface AccountWallet {
+    id: string;
+    account_id: string;
+    currency: string;
+    balance: number;
+    updated_at: string;
+}

@@ -18,6 +18,10 @@ interface CategoryMapping {
     tag_name: string;
 }
 
+interface MappingTabProps {
+    forceView?: 'category' | 'event';
+}
+
 interface EventMapping {
     id: string;
     event_id: string;
@@ -26,7 +30,7 @@ interface EventMapping {
     tag_name: string;
 }
 
-export default function MappingTab() {
+export default function MappingTab({ forceView }: MappingTabProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = createClient();
@@ -34,7 +38,7 @@ export default function MappingTab() {
     const [categoryMappings, setCategoryMappings] = useState<CategoryMapping[]>([]);
     const [eventMappings, setEventMappings] = useState<EventMapping[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeSubTab, setActiveSubTab] = useState<'category' | 'event'>('category');
+    const activeSubTab = forceView || 'category';
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchMappings = useCallback(async () => {
@@ -83,8 +87,7 @@ export default function MappingTab() {
                 setEventMappings(mapped);
             }
         } catch (error: any) {
-            console.error("Fetch error:", error);
-            showToast(`Error fetching mappings: ${error.message}`, 'error');
+            showToast(error.message || "Failed to synchronize tag mappings.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -135,39 +138,6 @@ export default function MappingTab() {
 
     return (
         <div>
-            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <button
-                    onClick={() => setActiveSubTab('category')}
-                    style={{
-                        padding: '8px 4px',
-                        background: 'none',
-                        border: 'none',
-                        color: activeSubTab === 'category' ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.5)',
-                        borderBottom: activeSubTab === 'category' ? '2px solid var(--color-brand-primary)' : '2px solid transparent',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 600
-                    }}
-                >
-                    Category Logic
-                </button>
-                <button
-                    onClick={() => setActiveSubTab('event')}
-                    style={{
-                        padding: '8px 4px',
-                        background: 'none',
-                        border: 'none',
-                        color: activeSubTab === 'event' ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.5)',
-                        borderBottom: activeSubTab === 'event' ? '2px solid var(--color-brand-primary)' : '2px solid transparent',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 600
-                    }}
-                >
-                    Event Mappings
-                </button>
-            </div>
-
             <TableToolbar
                 searchPlaceholder={`Search ${activeSubTab === 'category' ? 'categories' : 'events'}...`}
                 searchValue={searchTerm}

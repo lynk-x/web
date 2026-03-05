@@ -34,7 +34,7 @@ export default function CampaignsPage() {
                 .from('ad_campaigns')
                 .select(`
                     *,
-                    ad_analytics (interaction_type)
+                    ad_analytics (interaction_type, cost_charged, created_at)
                 `)
                 .eq('account_id', activeAccount.id)
                 .order('created_at', { ascending: false });
@@ -153,6 +153,39 @@ export default function CampaignsPage() {
         { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
+    /** Single-row status change (pause or resume/launch). */
+    const handleStatusChange = async (id: string, newStatus: 'active' | 'paused') => {
+        const label = newStatus === 'paused' ? 'Pausing' : 'Activating';
+        showToast(`${label} campaign...`, 'info');
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .update({ status: newStatus })
+                .eq('id', id);
+            if (error) throw error;
+            showToast(`Campaign ${newStatus === 'paused' ? 'paused' : 'is now active'}.`, newStatus === 'paused' ? 'warning' : 'success');
+            fetchCampaigns();
+        } catch (err: any) {
+            showToast(err.message || 'Failed to update campaign status.', 'error');
+        }
+    };
+
+    /** Single-row delete. */
+    const handleSingleDelete = async (id: string, title: string) => {
+        showToast(`Deleting "${title}"...`, 'info');
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            showToast(`"${title}" deleted.`, 'success');
+            fetchCampaigns();
+        } catch (err: any) {
+            showToast(err.message || 'Failed to delete campaign.', 'error');
+        }
+    };
+
     return (
         <div className={sharedStyles.container}>
             <PageHeader
@@ -200,6 +233,8 @@ export default function CampaignsPage() {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleSingleDelete}
                 />
             </div>
         </div>

@@ -9,6 +9,9 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
+import { exportToCSV } from '@/utils/export';
+import StatCard from '@/components/dashboard/StatCard';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 
 // timeSeriesData is now fetched from the database — see fetchAnalytics below
 
@@ -24,10 +27,10 @@ export default function AnalyticsPage() {
     const [timeSeriesData, setTimeSeriesData] = useState<{ name: string; revenue: number; tickets: number }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const [analyticsStats, setAnalyticsStats] = useState([
-        { label: 'Total Revenue', value: 'KES 0', isPositive: true },
-        { label: 'Tickets Sold', value: '0', isPositive: true },
-        { label: 'Avg. Conversion', value: '0%', isPositive: false },
+    const [analyticsStats, setAnalyticsStats] = useState<any>([
+        { label: 'Total Revenue', value: null, isPositive: true },
+        { label: 'Tickets Sold', value: null, isPositive: true },
+        { label: 'Avg. Conversion', value: null, isPositive: false },
     ]);
 
     const fetchAnalytics = useCallback(async () => {
@@ -37,7 +40,7 @@ export default function AnalyticsPage() {
             // ── Event-level performance ─────────────────────────────────────
             const { data: eventsData, error: evErr } = await supabase
                 .from('events')
-                .select(`id, title, status, ticket_tiers(price, quantity_total, quantity_sold)`)
+                .select(`id, title, status, ticket_tiers(price, capacity, tickets_sold)`)
                 .eq('account_id', activeAccount.id);
 
             if (evErr) throw evErr;
@@ -52,9 +55,9 @@ export default function AnalyticsPage() {
                 let eventTotalCapacity = 0;
 
                 (eventData.ticket_tiers || []).forEach((tier: any) => {
-                    eventSold += tier.quantity_sold || 0;
-                    eventRevenue += (tier.quantity_sold || 0) * (tier.price || 0);
-                    eventTotalCapacity += tier.quantity_total || 0;
+                    eventSold += tier.tickets_sold || 0;
+                    eventRevenue += (tier.tickets_sold || 0) * (tier.price || 0);
+                    eventTotalCapacity += tier.capacity || 0;
                 });
 
                 totalAccRevenue += eventRevenue;
@@ -131,6 +134,13 @@ export default function AnalyticsPage() {
         if (!isOrgLoading && activeAccount) {
             fetchAnalytics();
         } else if (!isOrgLoading && !activeAccount) {
+            // No account — we stop loading but cards will show 0 if they remain at their initial state
+            // and we update them here to be empty values rather than '...'
+            setAnalyticsStats([
+                { label: 'Total Revenue', value: formatCurrency(0), isPositive: true },
+                { label: 'Tickets Sold', value: '0', isPositive: true },
+                { label: 'Avg. Conversion', value: '0%', isPositive: false },
+            ]);
             setIsLoading(false);
             setDetailedInsights([]);
         }
@@ -143,19 +153,22 @@ export default function AnalyticsPage() {
     });
 
     const handleExport = () => {
-        showToast('Preparing your analytics report...', 'info');
-        // Mock export functionality
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + "Event,Revenue,Tickets Sold\n"
-            + filteredData.map(e => `${e.event},${e.totalRevenue},${e.ticketsSold}`).join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `analytics_report_${timeRange}days.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('Report downloaded successfully.', 'success');
+        if (filteredData.length === 0) {
+            showToast('No data to export.', 'warning');
+            return;
+        }
+        showToast('Preparing analytics report...', 'info');
+        exportToCSV(
+            filteredData.map(e => ({
+                event: e.event,
+                tickets_sold: e.ticketsSold,
+                total_revenue: e.totalRevenue,
+                conversion_rate: e.conversionRate,
+                status: e.status
+            })),
+            `analytics_report_${timeRange}days`
+        );
+        showToast('Report downloaded.', 'success');
     };
 
     return (
@@ -206,21 +219,25 @@ export default function AnalyticsPage() {
                 </div>
             </TableToolbar>
 
+            {/* Stats Overview */}
+            <div className={sharedStyles.statsGrid}>
+                {analyticsStats.map((stat: any, index: number) => (
+                    <StatCard
+                        key={index}
+                        label={stat.label}
+                        value={stat.value}
+                        isLoading={isLoading}
+                        trend={stat.label === 'Total Revenue' ? 'positive' : 'neutral'}
+                    />
+                ))}
+            </div>
+
             {isLoading ? (
                 <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Aggregating Live Event Statistics...</div>
             ) : detailedInsights.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>No event data available to analyze yet.</div>
             ) : (
                 <>
-                    {/* Stats Overview */}
-                    <div className={styles.statsGrid}>
-                        {analyticsStats.map((stat, index) => (
-                            <div key={index} className={styles.statCard}>
-                                <span className={styles.statLabel}>{stat.label}</span>
-                                <div className={styles.statValue}>{stat.value}</div>
-                            </div>
-                        ))}
-                    </div>
 
                     {/* Charts Grid */}
                     <div className={styles.chartsGrid}>

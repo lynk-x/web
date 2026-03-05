@@ -11,27 +11,37 @@ import { useFilters } from '@/context/FilterContext';
 
 interface HomeClientProps {
     carouselEvents: Event[];
-    gridEvents: Event[];
+    allEvents: Event[];
 }
 
-const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, gridEvents }) => {
+const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents }) => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const { searchTerm, selectedCategories, selectedDates, selectedTags } = useFilters();
     const hasActiveFilters = searchTerm !== "" || selectedCategories.length > 0 || selectedDates.length > 0 || selectedTags.length > 0;
 
-    const filteredGridEvents = gridEvents.filter(event => {
+    // Base Grid: if no filters, only show everything AFTER the first 5 so we don't repeat the carousel.
+    // Otherwise, search everything!
+    const baseGridEvents = hasActiveFilters ? allEvents : allEvents.slice(5);
+
+    const filteredGridEvents = baseGridEvents.filter(event => {
         // Search Filter
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            const matchesTitle = event.title.toLowerCase().includes(term);
-            const matchesDesc = event.description?.toLowerCase().includes(term);
-            const matchesCat = event.category?.toLowerCase().includes(term);
-            if (!matchesTitle && !matchesDesc && !matchesCat) return false;
+            const matchesTitle = event.title?.toLowerCase().includes(term) || false;
+            const matchesDesc = event.description?.toLowerCase().includes(term) || false;
+            const matchesCat = event.category?.toLowerCase().includes(term) || false;
+            const matchesTags = event.tags?.some(tag => tag.toLowerCase().includes(term)) || false;
+            if (!matchesTitle && !matchesDesc && !matchesCat && !matchesTags) return false;
         }
 
         // Category Filter
         if (selectedCategories.length > 0) {
             if (!event.category || !selectedCategories.includes(event.category)) return false;
+        }
+
+        // Tag Filter
+        if (selectedTags.length > 0) {
+            if (!event.tags || !selectedTags.some(tag => event.tags?.includes(tag))) return false;
         }
 
         // Date Filter
@@ -43,6 +53,9 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, gridEvents }) =
                 d.getFullYear() === eventDate.getFullYear()
             );
             if (!matchesDate) return false;
+        } else if (selectedDates.length > 0) {
+            // If filtering by date but event has no date, hide it
+            return false;
         }
 
         return true;
@@ -65,9 +78,18 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, gridEvents }) =
                 <EventGrid events={filteredGridEvents} itemsPerPage={8} />
 
                 {filteredGridEvents.length === 0 && (
-                    <div style={{ padding: '60px 20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
-                        <h3>No events found matching your filters.</h3>
-                        <p style={{ fontSize: '14px', marginTop: '8px' }}>Try adjusting your categories, dates, or search term.</p>
+                    <div style={{ 
+                        padding: "100px 20px", 
+                        textAlign: "center", 
+                        color: "rgba(255,255,255,0.5)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexGrow: 1
+                    }}>
+                        <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#fff" }}>No events found matching your filters.</h3>
+                        <p style={{ fontSize: "14px", marginTop: "12px", opacity: 0.7 }}>Try adjusting your categories, dates, or search term.</p>
                     </div>
                 )}
             </div>

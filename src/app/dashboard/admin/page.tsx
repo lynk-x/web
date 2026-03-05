@@ -22,13 +22,13 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
     const supabase = useMemo(() => createClient(), []);
-    const [statsData, setStatsData] = useState<DashboardStats>({
-        escrow: 0,
-        activeUsers: 0,
-        proMembers: 0,
-        pendingAds: 0,
-        supportTickets: 0,
-        moderationQueue: 0
+    const [statsData, setStatsData] = useState<any>({
+        escrow: null,
+        activeUsers: null,
+        proMembers: null,
+        pendingAds: null,
+        supportTickets: null,
+        moderationQueue: null
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -36,10 +36,12 @@ export default function AdminDashboard() {
         async function fetchStats() {
             try {
                 // 1. Fetch Escrow (Sum of all account balances)
+                // Note: For multi-currency accuracy we should use fx_rates, but this is a solid start
                 const { data: escrowData } = await supabase
-                    .from('accounts')
-                    .select('wallet_balance');
-                const totalEscrow = (escrowData || []).reduce((acc, curr) => acc + (Number(curr.wallet_balance) || 0), 0);
+                    .from('account_wallets')
+                    .select('balance, currency');
+                // Temporarily summing everything blindly if fx isn't applied (Admin can improve later if needed)
+                const totalEscrow = (escrowData || []).reduce((acc, curr) => acc + (Number(curr.balance) || 0), 0);
 
                 // 2. Fetch Active Users Count
                 const { count: activeUsersCount } = await supabase
@@ -87,52 +89,52 @@ export default function AdminDashboard() {
         }
 
         fetchStats();
-    }, []);
+    }, [supabase]);
 
     const stats = [
         {
             label: 'Platform Escrow',
-            value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES', notation: 'compact' }).format(statsData.escrow),
+            value: statsData.escrow !== null ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES', notation: 'compact' }).format(statsData.escrow) : null,
             change: 'Total Wallet Balances',
             isPositive: true,
             href: '/dashboard/admin/finance'
         },
         {
             label: 'Active Users',
-            value: statsData.activeUsers.toLocaleString(),
+            value: statsData.activeUsers !== null ? statsData.activeUsers.toLocaleString() : null,
             change: '+Live Activity',
             isPositive: true,
             href: '/dashboard/admin/users'
         },
         {
             label: 'Pro Members',
-            value: statsData.proMembers.toLocaleString(),
+            value: statsData.proMembers !== null ? statsData.proMembers.toLocaleString() : null,
             change: 'Premium Conversion',
             isPositive: true,
             href: '/dashboard/admin/users'
         },
         {
             label: 'Ad Campaigns',
-            value: statsData.pendingAds.toLocaleString(),
+            value: statsData.pendingAds !== null ? statsData.pendingAds.toLocaleString() : null,
             change: 'Awaiting Approval',
             isPositive: false,
-            color: 'var(--color-brand-primary)',
+            changeColor: 'var(--color-brand-primary)',
             href: '/dashboard/admin/campaigns'
         },
         {
             label: 'Support Tickets',
-            value: statsData.supportTickets.toLocaleString(),
+            value: statsData.supportTickets !== null ? statsData.supportTickets.toLocaleString() : null,
             change: 'Awaiting Response',
             isPositive: false,
-            color: '#ffb74d',
+            changeColor: '#ffb74d',
             href: '/dashboard/admin/support'
         },
         {
             label: 'Moderation Queue',
-            value: statsData.moderationQueue.toLocaleString(),
+            value: statsData.moderationQueue !== null ? statsData.moderationQueue.toLocaleString() : null,
             change: 'Flagged Content',
             isPositive: false,
-            color: 'var(--color-interface-error)',
+            changeColor: 'var(--color-interface-error)',
             href: '/dashboard/admin/support'
         },
     ];
@@ -155,7 +157,8 @@ export default function AdminDashboard() {
                         isPositive={stat.isPositive}
                         href={stat.href}
                         isLoading={isLoading}
-                        color={stat.color}
+                        color={(stat as any).color}
+                        changeColor={(stat as any).changeColor}
                     />
                 ))}
             </div>

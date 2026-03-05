@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import styles from './page.module.css';
 import organizeStyles from '@/app/dashboard/organize/page.module.css';
 import BackButton from '@/components/shared/BackButton';
@@ -9,28 +9,57 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import AttendeeTable from '@/components/organize/attendees/AttendeeTable';
 import { useToast } from '@/components/ui/Toast';
 import type { Attendee } from '@/types/organize';
-
-// Mock Attendees Data
-const mockAttendees: Attendee[] = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', tierName: 'VIP Experience', purchaseDate: '2024-05-15', status: 'used', ticketCode: 'ORD-7721' },
-    { id: '2', name: 'Alice Smith', email: 'alice@business.com', tierName: 'General Admission', purchaseDate: '2024-05-16', status: 'valid', ticketCode: 'ORD-7722' },
-    { id: '3', name: 'Robert Brown', email: 'robert@gmail.com', tierName: 'Early Bird', purchaseDate: '2024-05-14', status: 'valid', ticketCode: 'ORD-7723' },
-    { id: '4', name: 'Sarah Wilson', email: 'sarah@design.co', tierName: 'VIP Experience', purchaseDate: '2024-05-17', status: 'cancelled', ticketCode: 'ORD-7724' },
-    { id: '5', name: 'Michael Chen', email: 'm.chen@tech.com', tierName: 'General Admission', purchaseDate: '2024-05-18', status: 'used', ticketCode: 'ORD-7725' },
-    { id: '6', name: 'Emma Davis', email: 'emma.d@live.com', tierName: 'Early Bird', purchaseDate: '2024-05-12', status: 'valid', ticketCode: 'ORD-7726' },
-    { id: '7', name: 'David Miller', email: 'david@miller.net', tierName: 'General Admission', purchaseDate: '2024-05-19', status: 'valid', ticketCode: 'ORD-7727' },
-];
+import { createClient } from '@/utils/supabase/client';
+import { exportToCSV } from '@/utils/export';
 
 export default function EventAttendeesPage({ params }: { params: { id: string } }) {
     const { showToast } = useToast();
+    const supabase = useMemo(() => createClient(), []);
+
+    const [attendees, setAttendees] = useState<Attendee[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
+    useEffect(() => {
+        const fetchAttendees = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('vw_attendees_list')
+                    .select('*')
+                    .eq('event_id', params.id)
+                    .order('purchase_date', { ascending: false });
+
+                if (error) throw error;
+
+                const mapped: Attendee[] = (data || []).map((row: any) => ({
+                    id: row.ticket_id,
+                    name: row.attendee_name || 'Anonymous',
+                    email: row.attendee_email || 'No email',
+                    tierName: row.tier_name,
+                    purchaseDate: new Date(row.purchase_date).toLocaleDateString(),
+                    status: row.ticket_status,
+                    ticketCode: row.ticket_code
+                }));
+
+                setAttendees(mapped);
+            } catch (err: any) {
+                showToast(err.message || 'Failed to load attendees.', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAttendees();
+        // supabase is memoized — safe to include in dependencies
+    }, [params.id, supabase, showToast]);
+
     // Filter Logic
-    const filteredAttendees = mockAttendees.filter(a => {
+    const filteredAttendees = attendees.filter(a => {
         const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.ticketCode.toLowerCase().includes(searchTerm.toLowerCase());
@@ -75,9 +104,16 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
         },
         {
             label: 'Export CSV',
-            onClick: () => showToast('Generating export...', 'info')
+            onClick: () => {
+                showToast('Generating export...', 'info');
+                exportToCSV(filteredAttendees, `attendees_export_${params.id}`);
+            }
         }
     ];
+
+    if (isLoading) {
+        return <div className={styles.container} style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading attendees...</div>;
+    }
 
     return (
         <div className={styles.container}>

@@ -28,10 +28,6 @@
     transition: transform 0.2s, opacity 0.2s;
 }
 
-.toast:hover {
-    transform: translateY(-2px);
-}
-
 .icon {
     display: flex;
     align-items: center;

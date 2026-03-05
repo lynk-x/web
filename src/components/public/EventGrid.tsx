@@ -26,13 +26,7 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
         }
     };
 
-    if (!events || events.length === 0) {
-        return (
-            <p style={{ textAlign: 'center', marginTop: '40px', color: '#666' }}>
-                <small>No events found.</small>
-            </p>
-        );
-    }
+    if (!events || events.length === 0) return null;
 
     return (
         <div className={styles.container}>

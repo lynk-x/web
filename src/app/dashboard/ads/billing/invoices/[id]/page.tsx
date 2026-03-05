@@ -1,9 +1,11 @@
 "use client";
 
-import React, { use } from 'react';
+import React, { use, useState, useEffect, useMemo } from 'react';
 import styles from './page.module.css';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
+import { useOrganization } from '@/context/OrganizationContext';
 
 // Types
 interface InvoiceItem {
@@ -21,60 +23,99 @@ interface InvoiceDetail {
     billedTo: {
         name: string;
         email: string;
-        address: string[];
     };
     items: InvoiceItem[];
     subtotal: string;
     tax: string;
     total: string;
-    paymentMethod: string;
+    currency: string;
 }
 
-// Mock Data
-const mockInvoice: InvoiceDetail = {
-    id: 'INV-2025-001',
-    date: 'Oct 01, 2025',
-    dueDate: 'Oct 15, 2025',
-    status: 'paid',
-    billedTo: {
-        name: 'John Doe',
-        email: 'john@example.com',
-        address: [
-            '123 Digital Avenue',
-            'Business District, NY 10001',
-            'United States'
-        ]
-    },
-    items: [
-        {
-            description: 'Summer Music Festival - Campaign Boost',
-            quantity: 1,
-            rate: '$350.00',
-            amount: '$350.00'
-        },
-        {
-            description: 'Ad Set Optimization Layout (Premium)',
-            quantity: 2,
-            rate: '$50.00',
-            amount: '$100.00'
-        }
-    ],
-    subtotal: '$450.00',
-    tax: '$0.00',
-    total: '$450.00',
-    paymentMethod: 'Visa ending in 4242'
-};
-
+/**
+ * Invoice detail page.
+ * Fetches a real transaction record by ID and renders it as a printable invoice.
+ * Falls back to a "not found" state if the transaction doesn't exist.
+ */
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const { id } = use(params);
+    const { activeAccount } = useOrganization();
+    const supabase = useMemo(() => createClient(), []);
 
-    // In a real app, we'd fetch the invoice using the ID
-    const invoice = { ...mockInvoice, id: id.startsWith('INV') ? id : `INV-2025-${id.padStart(3, '0')}` };
+    const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handlePrint = () => {
-        window.print();
-    };
+    useEffect(() => {
+        const fetchInvoice = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select('id, amount, status, created_at, currency, description, reason, profiles(full_name, email)')
+                    .eq('id', id)
+                    .maybeSingle();
+
+                if (error || !data) {
+                    setInvoice(null);
+                    return;
+                }
+
+                const profile = (data as any).profiles;
+                const amount = Number(data.amount);
+                const currency = data.currency || activeAccount?.default_currency || 'KES';
+                const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency });
+
+                setInvoice({
+                    id: data.id.slice(0, 8).toUpperCase(),
+                    date: new Date(data.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                    dueDate: new Date(data.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                    status: data.status === 'completed' ? 'paid' : data.status === 'pending' ? 'pending' : 'overdue',
+                    billedTo: {
+                        name: profile?.full_name || activeAccount?.name || 'Account Owner',
+                        email: profile?.email || ''
+                    },
+                    items: [
+                        {
+                            description: data.description || `Ad Campaign Payment (${data.reason || 'ad_campaign_payment'})`,
+                            quantity: 1,
+                            rate: formatter.format(amount),
+                            amount: formatter.format(amount)
+                        }
+                    ],
+                    subtotal: formatter.format(amount),
+                    tax: formatter.format(0),
+                    total: formatter.format(amount),
+                    currency
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInvoice();
+    }, [id, supabase, activeAccount]);
+
+    const handlePrint = () => window.print();
+
+    if (isLoading) {
+        return (
+            <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading invoice...</div>
+        );
+    }
+
+    if (!invoice) {
+        return (
+            <div style={{ paddingBottom: '40px' }}>
+                <button onClick={() => router.back()} className={`${styles.btn} ${styles.btnBack}`}>
+                    ← Back to Billing
+                </button>
+                <div className={styles.container} style={{ textAlign: 'center', padding: '60px' }}>
+                    <h1>Invoice Not Found</h1>
+                    <p style={{ opacity: 0.6 }}>This transaction record does not exist or you don&apos;t have permission to view it.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ paddingBottom: '40px' }}>
@@ -93,15 +134,15 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             style={{ objectFit: 'contain', width: '280px', height: 'auto' }}
                         />
                         <div style={{ fontSize: '12px', opacity: 0.6 }}>
-                            #todo: add company name<br />
-                            #todo: add address
+                            Lynk-X Ltd<br />
+                            Nairobi, Kenya
                         </div>
                     </div>
                     <div className={styles.invoiceMeta}>
                         <h1 className={styles.invoiceTitle}>Invoice</h1>
                         <div className={styles.metaItem}>
                             <span className={styles.metaLabel}>Invoice ID:</span>
-                            <strong>{invoice.id}</strong>
+                            <strong>INV-{invoice.id}</strong>
                         </div>
                         <div className={styles.metaItem}>
                             <span className={styles.metaLabel}>Date:</span>
@@ -124,17 +165,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <h2 className={styles.infoSectionTitle}>Billed To</h2>
                         <div className={styles.address}>
                             <strong>{invoice.billedTo.name}</strong><br />
-                            {invoice.billedTo.email}<br />
-                            {invoice.billedTo.address.map((line, i) => (
-                                <React.Fragment key={i}>{line}<br /></React.Fragment>
-                            ))}
+                            {invoice.billedTo.email}
                         </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                        <h2 className={styles.infoSectionTitle}>Payment Method</h2>
+                        <h2 className={styles.infoSectionTitle}>Transaction Reference</h2>
                         <div className={styles.address}>
-                            {invoice.paymentMethod}<br />
-                            Transaction ID: TXN_882910BB
+                            TXN-{id.slice(0, 8).toUpperCase()}
                         </div>
                     </div>
                 </div>
@@ -185,10 +222,6 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <button onClick={handlePrint} className={`${styles.btn} ${styles.btnPrint}`}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                             Print Invoice
-                        </button>
-                        <button className={`${styles.btn} ${styles.btnDownload}`}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Download PDF
                         </button>
                     </div>
                 </footer>

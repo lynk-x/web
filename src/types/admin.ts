@@ -153,6 +153,7 @@ export interface Ticket {
     priority: 'critical' | 'high' | 'medium' | 'low';
     /** Aligned to CHECK constraint in `support_tickets.status` */
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    assignedTo?: string;
     lastUpdated: string;
 }
 
@@ -222,4 +223,17 @@ export interface SystemBanner {
     ends_at?: string;
     action_url?: string;
     created_at?: string;
+}
+
+/** Global platform payment provider configuration */
+export interface PlatformPaymentProvider {
+    id: string;
+    provider_name: string;
+    display_name: string;
+    supported_currencies: string[];
+    processing_fee_percent: number;
+    logo_url?: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
 }

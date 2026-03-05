@@ -22,16 +22,17 @@ export default function AdsSettingsPage() {
     });
 
     useEffect(() => {
-        if (activeAccount) {
-            setFormData({
-                name: activeAccount.name || '',
-                support_email: (activeAccount as any).support_email || '',
-                business_name: (activeAccount as any).business_name || '',
-                tax_id: (activeAccount as any).tax_id || '',
-                address: (activeAccount as any).business_address || ''
-            });
-        }
-    }, [activeAccount]);
+        // Don't populate until the org context has finished resolving
+        if (isOrgLoading || !activeAccount) return;
+        const meta = (activeAccount as any).metadata || {};
+        setFormData({
+            name: activeAccount.name || '',
+            support_email: (activeAccount as any).support_email || '',
+            business_name: meta.business_name || '',
+            tax_id: meta.tax_id || '',
+            address: meta.business_address || ''
+        });
+    }, [isOrgLoading, activeAccount]);
 
     const handleSave = async () => {
         if (!activeAccount) return;
@@ -39,14 +40,20 @@ export default function AdsSettingsPage() {
         showToast('Saving settings...', 'info');
 
         try {
+            // business_name, tax_id, business_address don't exist as top-level columns;
+            // they are stored in the metadata JSONB field alongside any existing metadata.
+            const existingMeta = (activeAccount as any).metadata || {};
             const { error } = await supabase
                 .from('accounts')
                 .update({
                     name: formData.name,
                     support_email: formData.support_email,
-                    business_name: formData.business_name,
-                    tax_id: formData.tax_id,
-                    business_address: formData.address
+                    metadata: {
+                        ...existingMeta,
+                        business_name: formData.business_name,
+                        tax_id: formData.tax_id,
+                        business_address: formData.address
+                    }
                 })
                 .eq('id', activeAccount.id);
 

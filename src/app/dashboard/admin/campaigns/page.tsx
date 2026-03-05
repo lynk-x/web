@@ -76,7 +76,8 @@ function CampaignsContent() {
 
                     return {
                         id: c.id,
-                        campaignRef: c.reference,
+                        // ad_campaigns has no `reference` column — derive a short code from the UUID
+                        campaignRef: `CAM-${c.id.slice(0, 8).toUpperCase()}`,
                         name: c.title,
                         client: c.accounts?.name || 'Unknown Client',
                         adType: c.type,

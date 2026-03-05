@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
@@ -8,6 +8,8 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import { exportToCSV } from '@/utils/export';
+import StatCard from '@/components/dashboard/StatCard';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 
 interface CheckInLog {
@@ -23,48 +25,62 @@ interface CheckInLog {
 export default function CheckInLogsPage() {
     const { id: eventId } = useParams();
     const { showToast } = useToast();
-    const supabase = createClient();
+    // Memoize so the client reference is stable across re-renders
+    const supabase = useMemo(() => createClient(), []);
 
     const [logs, setLogs] = useState<CheckInLog[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState({ scanned: 0, remaining: 0, rejected: 0 });
+    const [stats, setStats] = useState<any>({ scanned: null, remaining: null, rejected: null });
 
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch from vw_attendees_list (Phase 18 View)
+            /**
+             * Query tickets directly with joins:
+             *  - ticket_tiers for tier name
+             *  - profiles!buyer_id for attendee name/email
+             *  - profiles!redeemed_by for the scanner name
+             * This replaces the vw_attendees_list view which doesn't expose redeemed_by.
+             */
             const { data, error } = await supabase
-                .from('vw_attendees_list')
-                .select('*')
+                .from('tickets')
+                .select(`
+                    id, code, status, redeemed_at,
+                    tier:ticket_tiers!tier_id(name),
+                    buyer:profiles!buyer_id(full_name, user_name),
+                    scanner:profiles!redeemed_by(full_name, user_name)
+                `)
                 .eq('event_id', eventId)
-                .order('purchase_date', { ascending: false });
+                .order('redeemed_at', { ascending: false, nullsFirst: false });
 
             if (error) throw error;
 
-            const mappedLogs: CheckInLog[] = (data || []).map(row => ({
-                id: row.ticket_id,
-                attendeeName: row.attendee_name || 'Anonymous',
-                attendeeAvatar: null, // Would require join with profiles avatar
-                ticketTier: row.tier_name,
-                status: row.ticket_status,
-                scannedBy: 'System', // This should come from a redeemed_by join
-                timestamp: new Date(row.purchase_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            const mappedLogs: CheckInLog[] = (data || []).map((row: any) => ({
+                id: row.id,
+                attendeeName: row.buyer?.full_name || row.buyer?.user_name || 'Anonymous',
+                attendeeAvatar: null,
+                ticketTier: row.tier?.name || 'Unknown Tier',
+                status: row.status,
+                // Real scanner name from the redeemed_by FK join
+                scannedBy: row.scanner?.full_name || row.scanner?.user_name || 'System',
+                timestamp: row.redeemed_at
+                    ? new Date(row.redeemed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    : '—'
             }));
 
             setLogs(mappedLogs);
 
-            // Calc Stats
             const scanned = mappedLogs.filter(l => l.status === 'used').length;
             setStats({
                 scanned,
                 remaining: mappedLogs.length - scanned,
-                rejected: 0 // Fetch from a separate error log table if exists
+                rejected: 0
             });
 
         } catch (err) {
-            console.error("Error fetching check-ins:", err);
-            showToast("Failed to load check-in logs", "error");
+            console.error('Error fetching check-ins:', err);
+            showToast('Failed to load check-in logs', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -171,7 +187,23 @@ export default function CheckInLogsPage() {
                     <p className={styles.subtitle}>Real-time scanner feed and manual entry logs for this event.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className={styles.btnSecondary} onClick={() => showToast('Exporting logs to CSV...', 'info')}>
+                    <button
+                        className={styles.btnSecondary}
+                        onClick={() => {
+                            if (logs.length === 0) { showToast('No logs to export.', 'warning'); return; }
+                            exportToCSV(
+                                logs.map(l => ({
+                                    attendee: l.attendeeName,
+                                    tier: l.ticketTier,
+                                    status: l.status,
+                                    scanned_by: l.scannedBy,
+                                    time: l.timestamp
+                                })),
+                                `checkins_export_${eventId}`
+                            );
+                            showToast('Export complete.', 'success');
+                        }}
+                    >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Export CSV
                     </button>
@@ -183,18 +215,23 @@ export default function CheckInLogsPage() {
             </header>
 
             <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Total Scanned</span>
-                    <span className={styles.statValue} style={{ color: 'var(--color-success)' }}>{stats.scanned}</span>
-                </div>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Remaining</span>
-                    <span className={styles.statValue}>{stats.remaining}</span>
-                </div>
-                <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Rejected Scans</span>
-                    <span className={styles.statValue} style={{ color: 'var(--color-error)' }}>{stats.rejected}</span>
-                </div>
+                <StatCard
+                    label="Total Scanned"
+                    value={stats.scanned}
+                    color="var(--color-interface-success)"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Remaining"
+                    value={stats.remaining}
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Rejected Scans"
+                    value={stats.rejected}
+                    color="var(--color-interface-error)"
+                    isLoading={isLoading}
+                />
             </div>
 
             <DataTable<CheckInLog>

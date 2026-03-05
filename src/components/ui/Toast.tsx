@@ -8,12 +8,13 @@ import type { ToastType } from '@/types/shared';
 
 interface Toast {
     id: string;
+    title?: string;
     message: string;
     type: ToastType;
 }
 
 interface ToastContextType {
-    showToast: (message: string, type: ToastType) => void;
+    showToast: (message: string, type: ToastType, title?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -29,10 +30,9 @@ export const useToast = () => {
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const showToast = useCallback((message: string, type: ToastType) => {
-        console.log('--- showToast CALLED ---', message, type);
+    const showToast = useCallback((message: string, type: ToastType, title?: string) => {
         const id = Math.random().toString(36).substring(2, 9);
-        const newToast: Toast = { id, message, type };
+        const newToast: Toast = { id, message, type, title };
 
         setToasts((prev) => [...prev, newToast]);
 

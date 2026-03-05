@@ -1,32 +1,112 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import styles from './InvoicePage.module.css';
-import adminStyles from '../../page.module.css';
 import { useToast } from '@/components/ui/Toast';
-import Badge from '@/components/shared/Badge';
 import BackButton from '@/components/shared/BackButton';
 import { formatCurrency } from '@/utils/format';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 
-// Mock data fetch
-const mockTransactions = [
-    { id: '1', date: 'Oct 24, 2025', description: 'Monthly Subscription - Premium Plan', amount: 49.00, type: 'subscription', status: 'completed', referenceId: 'SUB-8821' },
-    { id: '2', date: 'Oct 23, 2025', description: 'Payout to EventPro Ltd - Oct Earnings', amount: 1250.00, type: 'payout', status: 'pending', referenceId: 'PO-9921' },
-];
+interface TxDetail {
+    id: string;
+    date: string;
+    description: string;
+    amount: number;
+    currency: string;
+    type: string;
+    status: string;
+    referenceId: string;
+    senderName: string;
+    recipientName: string;
+    eventTitle: string;
+}
 
+/**
+ * Admin finance invoice detail page.
+ * Fetches the real transaction record by UUID and renders a printable invoice.
+ * Falls back to a "not found" state if the transaction doesn't exist.
+ */
 export default function AdminInvoicePage() {
     const params = useParams();
     const router = useRouter();
     const { showToast } = useToast();
+    const supabase = useMemo(() => createClient(), []);
     const id = params.id as string;
 
-    const tx = mockTransactions.find(t => t.id === id) || mockTransactions[0];
+    const [tx, setTx] = useState<TxDetail | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handlePrint = () => {
-        window.print();
-    };
+    useEffect(() => {
+        const fetchTransaction = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select(`
+                        id, amount, status, created_at, currency, description, reason, reference,
+                        event:events!event_id(title),
+                        sender:profiles!sender_id(full_name, user_name),
+                        recipient:profiles!recipient_id(full_name, user_name)
+                    `)
+                    .eq('id', id)
+                    .maybeSingle();
+
+                if (error || !data) {
+                    setTx(null);
+                    return;
+                }
+
+                const d = data as any;
+                setTx({
+                    id: d.id,
+                    date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                    description: d.description || d.reason?.replace(/_/g, ' ') || 'Platform Transaction',
+                    amount: Number(d.amount),
+                    currency: d.currency || 'KES',
+                    type: d.reason || 'transaction',
+                    status: d.status,
+                    referenceId: d.reference || `TXN-${d.id.slice(0, 8).toUpperCase()}`,
+                    senderName: d.sender?.full_name || d.sender?.user_name || 'Platform',
+                    recipientName: d.recipient?.full_name || d.recipient?.user_name || 'Platform',
+                    eventTitle: d.event?.title || '',
+                });
+            } catch (err: any) {
+                showToast(err.message || 'Failed to load invoice', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTransaction();
+    }, [id, supabase, showToast]);
+
+    const handlePrint = () => window.print();
+
+    if (isLoading) {
+        return (
+            <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
+                Loading invoice...
+            </div>
+        );
+    }
+
+    if (!tx) {
+        return (
+            <div style={{ paddingBottom: '40px' }}>
+                <div style={{ padding: '24px' }}>
+                    <BackButton label="Back to Finance" />
+                </div>
+                <div style={{ textAlign: 'center', padding: '60px' }}>
+                    <h1>Transaction Not Found</h1>
+                    <p style={{ opacity: 0.6 }}>This transaction does not exist or you don&apos;t have permission to view it.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency });
 
     return (
         <div style={{ paddingBottom: '40px' }}>
@@ -43,14 +123,14 @@ export default function AdminInvoicePage() {
                         />
                         <div style={{ fontSize: '12px', opacity: 0.6 }}>
                             Lynk-X Financial Operations<br />
-                            Main Headquarters, Digital City
+                            Nairobi, Kenya
                         </div>
                     </div>
                     <div className={styles.invoiceMeta}>
                         <h1 className={styles.invoiceTitle}>Invoice</h1>
                         <div className={styles.metaItem}>
                             <span className={styles.metaLabel}>Invoice ID:</span>
-                            <strong>{tx.referenceId || `TXN-${id}`}</strong>
+                            <strong>{tx.referenceId}</strong>
                         </div>
                         <div className={styles.metaItem}>
                             <span className={styles.metaLabel}>Date:</span>
@@ -68,16 +148,17 @@ export default function AdminInvoicePage() {
                     <div>
                         <h2 className={styles.infoSectionTitle}>Billing Details</h2>
                         <div className={styles.address}>
-                            <strong>Transaction Description:</strong><br />
-                            {tx.description}<br />
-                            <strong>Type:</strong> {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
+                            <strong>From:</strong> {tx.senderName}<br />
+                            <strong>To:</strong> {tx.recipientName}<br />
+                            {tx.eventTitle && <><strong>Event:</strong> {tx.eventTitle}<br /></>}
+                            <strong>Type:</strong> {tx.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                         </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                         <h2 className={styles.infoSectionTitle}>Reference</h2>
                         <div className={styles.address}>
-                            Platform Transaction ID: {id}<br />
-                            Internal Audit Code: AUD-77291
+                            Platform Transaction ID:<br />
+                            <strong style={{ fontSize: '11px', fontFamily: 'monospace' }}>{tx.id}</strong>
                         </div>
                     </div>
                 </div>
@@ -86,13 +167,13 @@ export default function AdminInvoicePage() {
                     <thead>
                         <tr>
                             <th>Description</th>
-                            <th style={{ textAlign: 'right' }}>Amount</th>
+                            <th style={{ textAlign: 'right' }}>Amount ({tx.currency})</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>{tx.description}</td>
-                            <td style={{ textAlign: 'right' }}>{formatCurrency(tx.amount)}</td>
+                            <td style={{ textAlign: 'right' }}>{formatter.format(tx.amount)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -101,15 +182,15 @@ export default function AdminInvoicePage() {
                     <div className={styles.totalsTable}>
                         <div className={styles.totalRow}>
                             <span className={styles.metaLabel}>Subtotal</span>
-                            <span>{formatCurrency(tx.amount)}</span>
+                            <span>{formatter.format(tx.amount)}</span>
                         </div>
                         <div className={styles.totalRow}>
                             <span className={styles.metaLabel}>Tax (0%)</span>
-                            <span>$0.00</span>
+                            <span>{formatter.format(0)}</span>
                         </div>
                         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
                             <span>Total Amount</span>
-                            <span>{formatCurrency(tx.amount)}</span>
+                            <span>{formatter.format(tx.amount)}</span>
                         </div>
                     </div>
                 </div>
@@ -123,7 +204,10 @@ export default function AdminInvoicePage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                             Print Invoice
                         </button>
-                        <button className={`${styles.btn} ${styles.btnDownload}`} onClick={() => showToast('Generating PDF...', 'info')}>
+                        <button
+                            className={`${styles.btn} ${styles.btnDownload}`}
+                            onClick={() => showToast('PDF generation coming soon.', 'info')}
+                        >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             Download PDF
                         </button>

@@ -27,19 +27,21 @@ interface EventTableProps {
     onEdit?: (event: Event) => void;
     onDelete?: (event: Event) => void;
     onStatusChange?: (event: Event, newStatus: 'draft' | 'published' | 'cancelled') => void;
+    isLoading?: boolean;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
 /**
  * Maps `event_status` schema enum to badge colour variants.
- * draft | published | active | completed | archived | cancelled
+ * draft | published | active | completed | archived | cancelled | suspended
  */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'active': return 'success';
         case 'published': return 'info';
         case 'draft': return 'warning';
+        case 'suspended': return 'error';  // Fix #6: now in schema enum
         case 'completed': return 'neutral';
         case 'archived': return 'subtle';
         case 'cancelled': return 'error';
@@ -63,7 +65,8 @@ const EventTable: React.FC<EventTableProps> = ({
     onPageChange,
     onEdit,
     onDelete,
-    onStatusChange
+    onStatusChange,
+    isLoading = false
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -190,12 +193,9 @@ const EventTable: React.FC<EventTableProps> = ({
         }
 
         actions.push({
-            label: 'View Logs',
+            label: 'Check-in Logs',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>,
-            onClick: () => {
-                showToast(`Opening audit logs for ${event.title}...`, 'info');
-                router.push(`/dashboard/admin/audit-logs?search=${encodeURIComponent(event.title)}`);
-            }
+            onClick: () => router.push(`/dashboard/organize/events/${event.id}/check-ins`)
         });
 
         actions.push({
@@ -222,6 +222,7 @@ const EventTable: React.FC<EventTableProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            isLoading={isLoading}
             emptyMessage="No events found matching criteria."
         />
     );

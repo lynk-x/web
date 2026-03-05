@@ -6,6 +6,7 @@ import Badge from '@/components/shared/Badge';
 import Toggle from '@/components/shared/Toggle';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import adminStyles from '@/app/dashboard/admin/page.module.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,8 @@ export default function ReportReasonsTab() {
     const columns: Column<ReportReason>[] = [
         {
             header: 'ID / Category',
+            headerStyle: { width: '180px' },
+            cellStyle: { width: '180px' },
             render: (r) => (
                 <div>
                     <div style={{ fontWeight: 600, fontSize: '13px', fontFamily: 'monospace' }}>{r.id}</div>
@@ -105,46 +108,60 @@ export default function ReportReasonsTab() {
         },
         {
             header: 'Description',
+            headerStyle: { width: '33%', textAlign: 'left' },
+            cellStyle: { width: '33%' },
             render: (r) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{r.description ?? <span style={{ opacity: 0.4 }}>—</span>}</div>,
         },
         {
             header: 'Active',
-            headerStyle: { width: '60px', textAlign: 'right', paddingRight: '0' },
-            cellStyle: { width: '60px', textAlign: 'right', paddingRight: '0' },
+            headerStyle: { textAlign: 'right', paddingRight: '16px' },
+            cellStyle: { textAlign: 'right', paddingRight: '16px' },
             render: (r) => <Toggle enabled={r.is_active} onChange={() => handleToggle(r)} />,
         },
     ];
 
     return (
         <div>
-            {/* ── Add New Row ── */}
-            <div style={{ marginBottom: '24px', padding: '20px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px' }}>Add Report Reason</div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <input
-                        placeholder="ID (e.g. hate_speech)"
-                        value={newId}
-                        onChange={e => setNewId(e.target.value)}
-                        style={{ flex: '1 1 140px', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '13px', fontFamily: 'monospace' }}
-                    />
-                    <input
-                        placeholder="Category (e.g. Hate & Harassment)"
-                        value={newCategory}
-                        onChange={e => setNewCategory(e.target.value)}
-                        style={{ flex: '2 1 200px', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '13px' }}
-                    />
-                    <input
-                        placeholder="Description (optional)"
-                        value={newDescription}
-                        onChange={e => setNewDescription(e.target.value)}
-                        style={{ flex: '3 1 240px', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '13px' }}
-                    />
+            <div style={{ marginBottom: '16px', padding: '24px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--color-interface-outline)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-utility-primaryText)' }}>Add New Report Reason</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '12px', alignItems: 'flex-end' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.5 }}>ID (slug)</label>
+                        <input
+                            placeholder="e.g. hate_speech"
+                            value={newId}
+                            onChange={e => setNewId(e.target.value)}
+                            className={adminStyles.input}
+                            style={{ margin: 0, fontFamily: 'monospace', fontSize: '13px' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.5 }}>Category Name</label>
+                        <input
+                            placeholder="e.g. Hate & Harassment"
+                            value={newCategory}
+                            onChange={e => setNewCategory(e.target.value)}
+                            className={adminStyles.input}
+                            style={{ margin: 0, fontSize: '13px' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.5 }}>Description (Optional)</label>
+                        <input
+                            placeholder="Explain the criteria for this category..."
+                            value={newDescription}
+                            onChange={e => setNewDescription(e.target.value)}
+                            className={adminStyles.input}
+                            style={{ margin: 0, fontSize: '13px' }}
+                        />
+                    </div>
                     <button
                         onClick={handleAdd}
                         disabled={isAdding}
-                        style={{ padding: '9px 20px', borderRadius: '8px', background: 'var(--color-brand-primary)', border: 'none', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: isAdding ? 0.6 : 1 }}
+                        className={adminStyles.btnPrimary}
+                        style={{ height: '42px', padding: '0 24px', borderRadius: '8px' }}
                     >
-                        {isAdding ? 'Adding...' : '+ Add'}
+                        {isAdding ? 'Adding...' : '+ Add Reason'}
                     </button>
                 </div>
             </div>

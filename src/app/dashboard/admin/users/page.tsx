@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
@@ -27,10 +27,11 @@ function UsersContent() {
 
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
     const [roleFilter, setRoleFilter] = useState('all');
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
     const itemsPerPage = 10;
 
     const initialTab = (searchParams.get('tab') as any) || 'accounts';
@@ -38,60 +39,77 @@ function UsersContent() {
         (['accounts', 'profiles'].includes(initialTab) ? initialTab : 'accounts') as Tab
     );
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            setIsLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .from('mv_user_performance')
-                    .select(`
-                        *,
-                        profile:profiles!id (
-                            gender,
-                            country_code
-                        ),
-                        members:account_members (
-                            account:accounts (
-                                business_email,
-                                tax_id,
-                                registration_number
-                            )
-                        )
-                    `)
-                    .order('last_active_at', { ascending: false });
+    const fetchUsers = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            let query = supabase
+                .from('mv_user_performance')
+                .select(`
+                    *,
+                    profile:profiles!id (
+                        gender,
+                        country_code
+                    )
+                `, { count: 'exact' });
 
-                if (error) throw error;
-
-                const mappedUsers: User[] = (data || []).map((u: any) => ({
-                    id: u.id,
-                    name: u.full_name || u.user_name || 'Unknown User',
-                    email: u.email || 'no-email@lynk-x.com',
-                    role: u.role,
-                    status: u.status,
-                    lastActive: formatRelativeTime(u.last_active_at),
-                    isVerified: u.is_verified,
-                    subscriptionTier: u.subscription_tier,
-                    reportsCount: u.reports_count || 0,
-                    // New fields from profiles join
-                    userName: u.user_name,
-                    gender: u.profile?.gender,
-                    countryCode: u.profile?.country_code,
-                    // New fields from accounts join
-                    businessEmail: u.members?.[0]?.account?.business_email,
-                    taxId: u.members?.[0]?.account?.tax_id,
-                    registrationNumber: u.members?.[0]?.account?.registration_number
-                }));
-
-                setUsers(mappedUsers);
-            } catch (err: any) {
-                showToast('Failed to load user database.', 'error');
-            } finally {
-                setIsLoading(false);
+            // Server-side Filtering
+            if (searchTerm.trim()) {
+                query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,user_name.ilike.%${searchTerm}%`);
             }
-        };
 
+            if (roleFilter !== 'all') {
+                query = query.eq('role', roleFilter);
+            }
+
+            // Pagination
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            const { data, error, count } = await query
+                .order('last_active_at', { ascending: false })
+                .range(from, to);
+
+            if (error) throw error;
+
+            const mappedUsers: User[] = (data || []).map((u: any) => ({
+                id: u.id,
+                name: u.full_name || u.user_name || 'Unknown User',
+                email: u.email || 'no-email@lynk-x.com',
+                role: u.role,
+                status: u.status,
+                lastActive: formatRelativeTime(u.last_active_at),
+                isVerified: u.is_verified,
+                subscriptionTier: u.subscription_tier,
+                reportsCount: u.reports_count || 0,
+                userName: u.user_name,
+                gender: u.profile?.gender,
+                countryCode: u.profile?.country_code,
+                // business_email, tax_id, registration_number do not exist on the accounts table
+                businessEmail: undefined,
+                taxId: undefined,
+                registrationNumber: undefined
+            }));
+
+            setUsers(mappedUsers);
+            setTotalCount(count || 0);
+        } catch (err: any) {
+            showToast('Failed to load user database.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, showToast, searchTerm, roleFilter, currentPage]);
+
+    useEffect(() => {
         fetchUsers();
-    }, [supabase, showToast]);
+    }, [fetchUsers]);
+
+    // Update searchTerm if URL changes
+    useEffect(() => {
+        const search = searchParams.get('search');
+        if (search !== null && search !== searchTerm) {
+            setSearchTerm(search);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         const tab = searchParams.get('tab') as any;
@@ -107,28 +125,8 @@ function UsersContent() {
         router.replace(`${pathname}?${params.toString()}`);
     };
 
-    // Filter Logic
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-        return matchesSearch && matchesRole;
-    });
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const paginatedUsers = filteredUsers.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset pagination when filter changes
-    useEffect(() => {
-        setCurrentPage(1);
-        setSelectedUserIds(new Set());
-    }, [searchTerm, roleFilter]);
-
-    // Selection Logic
     const handleSelectUser = (id: string) => {
         const newSelected = new Set(selectedUserIds);
         if (newSelected.has(id)) newSelected.delete(id);
@@ -137,14 +135,20 @@ function UsersContent() {
     };
 
     const handleSelectAll = () => {
-        if (selectedUserIds.size === paginatedUsers.length) {
+        if (selectedUserIds.size === users.length) {
             setSelectedUserIds(new Set());
         } else {
             const newSelected = new Set(selectedUserIds);
-            paginatedUsers.forEach(user => newSelected.add(user.id));
+            users.forEach(user => newSelected.add(user.id));
             setSelectedUserIds(newSelected);
         }
     };
+
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedUserIds(new Set());
+    }, [searchTerm, roleFilter]);
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
         showToast(`Updating ${selectedUserIds.size} users...`, 'info');
@@ -212,7 +216,7 @@ function UsersContent() {
             )}
 
             <UserTable
-                users={paginatedUsers}
+                users={users}
                 isLoading={isLoading}
                 selectedIds={selectedUserIds}
                 onSelect={handleSelectUser}

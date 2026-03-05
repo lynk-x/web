@@ -20,16 +20,6 @@ interface EventFormProps {
     isEditMode?: boolean;
 }
 
-const CATEGORIES = [
-    { id: 'Arts&Entertainment', name: 'Arts & Entertainment' },
-    { id: 'Business&Professional', name: 'Business & Professional' },
-    { id: 'Sports&Games', name: 'Sports & Games' },
-    { id: 'Food&Drinks', name: 'Food & Drinks' },
-    { id: 'Education&Training', name: 'Education & Training' },
-    { id: 'Health&Wellness', name: 'Health & Wellness' },
-    { id: 'Community&Social', name: 'Community & Social' },
-    { id: 'Seasonal&Holiday', name: 'Seasonal & Holiday' }
-];
 type Tab = 'cover' | 'basics' | 'time' | 'place' | 'tickets' | 'settings';
 
 export default function EventForm({ initialData, pageTitle, submitBtnText, onSubmit, isEditMode = false }: EventFormProps) {
@@ -37,8 +27,12 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>('cover');
     const [tagInput, setTagInput] = useState('');
+    const [suggestions, setSuggestions] = useState<{ id: string, name: string }[]>([]);
+    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
+    const [isPaidTicketingEnabled, setIsPaidTicketingEnabled] = useState(true);
 
     // Image State
     const [thumbnailUrlFile, setThumbnailUrlFile] = useState<File | null>(null);
@@ -48,7 +42,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const [formData, setFormData] = useState<EventData>({
         title: '',
         description: '',
-        category: 'Arts&Entertainment', // Default to first valid category
+        category: 'arts-entertainment', // Default to first valid category
         tags: [],
         thumbnailUrl: '',
         isOnline: false,
@@ -77,6 +71,35 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         }
     }, [initialData, isEditMode]); // Run once on mount or when initialData changes
 
+    // Fetch Data for Selects (Tags & Categories)
+    useEffect(() => {
+        const fetchData = async () => {
+            const { createClient } = await import('@/utils/supabase/client');
+            const supabase = createClient();
+
+            // Parallel fetch tags and categories
+            const [tagsRes, catsRes] = await Promise.all([
+                supabase.from('tags').select('id, name').eq('is_active', true),
+                supabase.from('event_categories').select('id, name').eq('is_active', true).order('name')
+            ]);
+
+            if (tagsRes.data) setSuggestions(tagsRes.data);
+            if (catsRes.data) setCategories(catsRes.data);
+
+            // Fetch Paid Ticketing Flag
+            const { data: flagData } = await supabase
+                .from('feature_flags')
+                .select('is_enabled')
+                .eq('key', 'paid_ticketing')
+                .single();
+
+            if (flagData) {
+                setIsPaidTicketingEnabled(flagData.is_enabled);
+            }
+        };
+        fetchData();
+    }, []);
+
     // Auto-Save Draft & Dirty Check
     useEffect(() => {
         // Simple dirty check
@@ -84,7 +107,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         const baseData = hasInitialData ? initialData : {
             title: '',
             description: '',
-            category: 'Arts&Entertainment',
+            category: 'arts-entertainment',
             tags: [],
             thumbnailUrl: '',
             isOnline: false,
@@ -232,11 +255,12 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     };
 
     // Tag Logic
-    const handleAddTag = () => {
-        // ... (existing tag logic)
-        if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-            setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+    const handleAddTag = (tagName?: string) => {
+        const tagToAdd = (tagName || tagInput).trim();
+        if (tagToAdd && !formData.tags.includes(tagToAdd)) {
+            setFormData(prev => ({ ...prev, tags: [...prev.tags, tagToAdd] }));
             setTagInput('');
+            setShowSuggestions(false);
         }
     };
 
@@ -251,8 +275,15 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         if (e.key === 'Enter') {
             e.preventDefault();
             handleAddTag();
+        } else if (e.key === 'Escape') {
+            setShowSuggestions(false);
         }
     };
+
+    const filteredSuggestions = suggestions.filter(tag =>
+        tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+        !formData.tags.includes(tag.name)
+    ).slice(0, 5); // Limit to top 5 for UI density
 
     // Ticket Logic
     const handleTicketChange = (index: number, field: keyof Ticket, value: string) => {
@@ -283,6 +314,13 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
             ...prev,
             tickets: prev.tickets.filter((_, i) => i !== index)
         }));
+    };
+
+    const handleDiscardDraft = () => {
+        if (confirm('Are you sure you want to discard your draft? This cannot be undone.')) {
+            setDraft(null);
+            window.location.reload();
+        }
     };
 
     const handleSubmit = async () => {
@@ -328,7 +366,12 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <h1 className={styles.title}>{pageTitle}</h1>
-                            {isDraftLoaded && !isEditMode && <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>Draft Restored</span>}
+                            {isDraftLoaded && !isEditMode && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '10px', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--color-brand-primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Draft Restored</span>
+                                    <button onClick={handleDiscardDraft} style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>Discard</button>
+                                </div>
+                            )}
                         </div>
                         <p className={styles.subtitle}>
                             {isEditMode ? 'Make changes to your event' : 'Create a new event from scratch'}
@@ -437,9 +480,13 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                     value={formData.category}
                                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                                 >
-                                    {CATEGORIES.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
+                                    {categories.length > 0 ? (
+                                        categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))
+                                    ) : (
+                                        <option value="">Loading categories...</option>
+                                    )}
                                 </select>
                             </div>
 
@@ -447,18 +494,38 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 <label className={styles.label}>Tags</label>
                                 <div className={styles.tagContainer}>
                                     <div className={styles.tagInputWrapper}>
-                                        <input
-                                            type="text"
-                                            className={styles.input}
-                                            placeholder="Add keywords (press Enter)..."
-                                            value={tagInput}
-                                            onChange={(e) => setTagInput(e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            style={{ flex: 1 }}
-                                        />
-                                        <button type="button" className={styles.generateBtn} onClick={handleAddTag}>
+                                        <div style={{ flex: 1, position: 'relative' }}>
+                                            <input
+                                                type="text"
+                                                className={styles.input}
+                                                placeholder="Type to search tags..."
+                                                value={tagInput}
+                                                onChange={(e) => {
+                                                    setTagInput(e.target.value);
+                                                    setShowSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                                onKeyDown={handleKeyDown}
+                                                style={{ width: '100%' }}
+                                            />
+                                            {showSuggestions && tagInput && filteredSuggestions.length > 0 && (
+                                                <div className={styles.suggestionsDropdown}>
+                                                    {filteredSuggestions.map(tag => (
+                                                        <div
+                                                            key={tag.id}
+                                                            className={styles.suggestionItem}
+                                                            onClick={() => handleAddTag(tag.name)}
+                                                        >
+                                                            {tag.name}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button type="button" className={styles.generateBtn} onClick={() => handleAddTag()}>
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path><line x1="16" y1="5" x2="22" y2="5"></line><line x1="19" y1="2" x2="19" y2="8"></line></svg>
-                                            Generate
+                                            Add
                                         </button>
                                     </div>
 
@@ -590,22 +657,30 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 </p>
                             </div>
 
-                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <div className={styles.toggleRow}>
-                                    <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            className={styles.checkbox}
-                                            checked={formData.isPaid}
-                                            onChange={() => handleToggle('isPaid')}
-                                        />
-                                        <strong>Paid Event</strong> (Requires tickets)
-                                    </label>
+                            {isPaidTicketingEnabled ? (
+                                <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                                    <div className={styles.toggleRow}>
+                                        <label className={styles.checkboxLabel}>
+                                            <input
+                                                type="checkbox"
+                                                className={styles.checkbox}
+                                                checked={formData.isPaid}
+                                                onChange={() => handleToggle('isPaid')}
+                                            />
+                                            <strong>Paid Event</strong> (Requires tickets)
+                                        </label>
+                                    </div>
+                                    <p style={{ fontSize: '13px', opacity: 0.6, marginTop: '8px', marginLeft: '32px' }}>
+                                        If unchecked, the event will be free for all attendees.
+                                    </p>
                                 </div>
-                                <p style={{ fontSize: '13px', opacity: 0.6, marginTop: '8px', marginLeft: '32px' }}>
-                                    If unchecked, the event will be free for all attendees.
-                                </p>
-                            </div>
+                            ) : (
+                                <div className={`${styles.inputGroup} ${styles.fullWidth}`} style={{ opacity: 0.5 }}>
+                                    <p style={{ fontSize: '13px', color: 'var(--color-brand-primary)', fontWeight: 600 }}>
+                                        Paid ticketing is currently disabled by administrator.
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         {formData.isPaid && (

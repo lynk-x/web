@@ -44,10 +44,8 @@ export default function DisclaimerTable() {
 
             if (error) throw error;
             setDisclaimers(data || []);
-        } catch (error: unknown) {
-            console.error("Fetch error:", error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            showToast(`Error fetching rules: ${errorMessage}`, 'error');
+        } catch (error: any) {
+            showToast(error.message || "Failed to load compliance rules. Please check your connection.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -66,10 +64,9 @@ export default function DisclaimerTable() {
 
             if (error) throw error;
             setDisclaimers(prev => prev.map(d => d.id === id ? { ...d, is_active: !currentValue } : d));
-            showToast(`Statut mis à jour`, 'success');
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            showToast(`Statut non mis à jour: ${errorMessage}`, 'error');
+            showToast(`Rule updated successfully.`, 'success');
+        } catch (error: any) {
+            showToast(error.message || `Failed to update rule status.`, 'error');
         }
     };
 

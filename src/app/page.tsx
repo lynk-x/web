@@ -7,36 +7,42 @@ export default async function Home() {
   const supabase = await createClient();
 
   // Fetch events from Supabase
-  const { data: events } = await supabase
-    .from('public_events_view')
-    .select('*')
-    .eq('status', 'published')
-    .order('start_datetime', { ascending: true })
-    .limit(50); // Fetch more for pagination
+  const [
+    { data: rawEvents, error },
+    { data: categories },
+    { data: tags },
+    { data: categoryTags }
+  ] = await Promise.all([
+    supabase.from('public_events_view').select('*').order('starts_at', { ascending: true }).limit(50),
+    supabase.from('event_categories').select('*').order('name'),
+    supabase.from('tags').select('*').order('name'),
+    supabase.from('category_tags').select('category_id, tag_id, is_primary')
+  ]);
 
-  // Fallback Mock Data
-  const mockEvents = Array.from({ length: 14 }).map((_, i) => ({
-    id: `mock-${i}`,
-    title: `Event ${i + 1} Title`,
-    description: "This is a sample event description for development purposes.",
-    start_datetime: new Date().toISOString(),
-    thumbnail_url: `https://images.unsplash.com/photo-${1540575467063 + i}-178a50c2df87`,
-    category: "Music",
-    currency: "KES",
-    low_price: 1000 + (i * 100)
-  }));
+  if (error) {
+    console.error('Error fetching events:', error);
+  }
 
-  const allEvents = (events && events.length > 0) ? events : mockEvents;
+  // Fallback Mock Data logic removed
+  const allEvents = (rawEvents || []).map(event => ({
+    ...event,
+    start_datetime: event.starts_at,
+    end_datetime: event.ends_at,
+    thumbnail_url: event.cover_image_url || event.thumbnail_url
+  })) as Event[];
 
-  // Split Logic: First 5 for Carousel, Rest for Grid
-  const carouselEvents = allEvents.slice(0, 5) as Event[];
-  const gridEvents = allEvents.slice(5) as Event[];
+  // Split Logic: First 5 for Carousel
+  const carouselEvents = allEvents.slice(0, 5);
 
   return (
-    <HomeLayout>
+    <HomeLayout
+      categories={categories || []}
+      tags={tags || []}
+      categoryTags={categoryTags || []}
+    >
       <HomeClient
         carouselEvents={carouselEvents}
-        gridEvents={gridEvents}
+        allEvents={allEvents}
       />
     </HomeLayout>
   );

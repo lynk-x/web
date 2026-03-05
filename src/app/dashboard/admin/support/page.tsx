@@ -52,6 +52,11 @@ function SupportContent() {
     const [moderationFilter, setModerationFilter] = useState('all');
     const [ticketFilter, setTicketFilter] = useState('all');
 
+    // App Feedback specific filters
+    const [feedbackStatusFilter, setFeedbackStatusFilter] = useState('all');
+    const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState('all');
+    const [feedbackCategories, setFeedbackCategories] = useState<string[]>([]);
+
     useEffect(() => {
         const tab = searchParams.get('tab') as SupportTab;
         if (tab && ['tickets', 'moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(tab)) {
@@ -73,7 +78,7 @@ function SupportContent() {
             const [ticketsRes, reportsRes, feedbackRes] = await Promise.all([
                 supabase
                     .from('support_tickets')
-                    .select('*')
+                    .select('*, requester:profiles!user_id(full_name, user_name, email)')
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('reports')
@@ -93,7 +98,11 @@ function SupportContent() {
                 id: t.id,
                 reference: t.reference,
                 subject: t.subject,
-                requester: 'Anonymous',
+                // Resolve requester name from the joined profiles row
+                requester: (t as any).requester?.full_name ||
+                    (t as any).requester?.user_name ||
+                    (t as any).requester?.email ||
+                    'Anonymous',
                 priority: t.priority,
                 status: t.status,
                 lastUpdated: new Date(t.updated_at).toLocaleDateString()
@@ -110,6 +119,11 @@ function SupportContent() {
                 status: r.status,
                 reasonId: r.reason_id
             })));
+
+            if (feedbackRes.data) {
+                const uniqueCats = Array.from(new Set(feedbackRes.data.map((f: any) => f.category))).sort();
+                setFeedbackCategories(uniqueCats as string[]);
+            }
 
 
         } catch (err: any) {
@@ -229,24 +243,28 @@ function SupportContent() {
                     value={reports.filter(r => r.status === 'pending' || r.status === 'investigating').length}
                     change="Requires Attention"
                     trend="negative"
+                    isLoading={isLoading}
                 />
                 <StatCard
                     label="Open Tickets"
                     value={tickets.filter(t => t.status === 'open').length}
                     change="Help Desk"
                     trend="neutral"
+                    isLoading={isLoading}
                 />
                 <StatCard
                     label="App Health"
                     value="Stable"
                     change="Platform Verified"
                     trend="positive"
+                    isLoading={isLoading}
                 />
                 <StatCard
                     label="Escalations"
                     value={tickets.filter(t => t.priority === 'critical' || t.priority === 'high').length}
                     change="Urgent Priority"
                     trend="negative"
+                    isLoading={isLoading}
                 />
             </div>
 
@@ -278,6 +296,26 @@ function SupportContent() {
                         onChange={setTicketFilter}
                     />
                 )}
+                {activeTab === 'app-feedback' && (
+                    <>
+                        <FilterGroup
+                            options={['all', 'new', 'reviewed', 'resolved', 'dismissed'].map(s => ({ value: s, label: s === 'all' ? 'All Statuses' : s.charAt(0).toUpperCase() + s.slice(1) }))}
+                            currentValue={feedbackStatusFilter}
+                            onChange={setFeedbackStatusFilter}
+                        />
+                        {feedbackCategories.length > 0 && (
+                            <select
+                                value={feedbackCategoryFilter}
+                                onChange={e => setFeedbackCategoryFilter(e.target.value)}
+                                className={adminStyles.select}
+                                style={{ width: 'auto', padding: '6px 12px', height: '36px', fontSize: '13px' }}
+                            >
+                                <option value="all">All Categories</option>
+                                {feedbackCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        )}
+                    </>
+                )}
             </TableToolbar>
 
             {activeTab === 'moderation' && (
@@ -301,6 +339,22 @@ function SupportContent() {
                     getActions={getTicketActions}
                     isLoading={isLoading}
                 />
+            )}
+
+            {activeTab === 'app-feedback' && (
+                <AppFeedbackTab
+                    searchQuery={searchTerm}
+                    statusFilter={feedbackStatusFilter}
+                    categoryFilter={feedbackCategoryFilter}
+                />
+            )}
+
+            {activeTab === 'blocks' && (
+                <UserBlocksTab searchQuery={searchTerm} />
+            )}
+
+            {activeTab === 'report-reasons' && (
+                <ReportReasonsTab />
             )}
         </div>
     );

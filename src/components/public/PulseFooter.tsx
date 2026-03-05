@@ -5,19 +5,6 @@ import Link from 'next/link';
 import styles from './PulseFooter.module.css';
 
 const PulseFooter: React.FC = () => {
-    const [ticketsSold, setTicketsSold] = useState(1243);
-
-    // Simulate live ticket sales
-    useEffect(() => {
-        const interval = setInterval(() => {
-            // Randomly increment by 1 or 2 tickets every few seconds
-            if (Math.random() > 0.6) {
-                setTicketsSold(prev => prev + Math.floor(Math.random() * 2) + 1);
-            }
-        }, 5000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     return (
         <footer className={styles.footer}>
@@ -29,10 +16,10 @@ const PulseFooter: React.FC = () => {
                         <div className={styles.liveDot} />
                         <div>
                             <div className={styles.statValue}>
-                                {ticketsSold.toLocaleString()}
+                                Live
                             </div>
                             <div className={styles.statLabel}>
-                                tickets sold today
+                                Discover upcoming events
                             </div>
                         </div>
                     </div>
@@ -41,10 +28,10 @@ const PulseFooter: React.FC = () => {
                         <div className={styles.liveDot} style={{ animationDelay: '1s', backgroundColor: 'var(--color-brand-secondary)' }} />
                         <div>
                             <div className={styles.statValue}>
-                                50k+
+                                Lynk-X
                             </div>
                             <div className={styles.statLabel}>
-                                active organizers
+                                Verified organizers
                             </div>
                         </div>
                     </div>

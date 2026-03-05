@@ -7,6 +7,8 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { formatCurrency } from '@/utils/format';
+import StatCard from '@/components/dashboard/StatCard';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -42,7 +44,13 @@ function AnalyticsContent() {
             const campaignIds = (campaigns || []).map(c => c.id);
             if (campaignIds.length === 0) {
                 setPerformanceData([]);
-                setKpis({ impressions: '0', clicks: '0', ctr: '0.00%', cpc: '$0.00' });
+                setKpis({
+                    impressions: '0',
+                    clicks: '0',
+                    ctr: '0.00%',
+                    // Use formatCurrency so the symbol matches the account's currency
+                    cpc: formatCurrency(0)
+                });
                 return;
             }
 
@@ -72,24 +80,30 @@ function AnalyticsContent() {
                 cpc: formatCurrency(cpc)
             });
 
-            // Process Chart Data (group by day)
-            const daysMap: Record<string, any> = {};
-            for (let i = 0; i < timeRange; i++) {
+            // Build a day-bucket map keyed by ISO date string (YYYY-MM-DD) so that entries
+            // from different weeks on a 30/90-day range don't collide on the same weekday key.
+            const daysMap: Record<string, { name: string; impressions: number; clicks: number; sortKey: number }> = {};
+            for (let i = timeRange - 1; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
-                const dateStr = d.toLocaleDateString('en-US', { weekday: 'short' });
-                daysMap[dateStr] = { name: dateStr, impressions: 0, clicks: 0, sortKey: d.getTime() };
+                // ISO key prevents weekday collisions across weeks
+                const isoKey = d.toISOString().slice(0, 10);
+                // Display label: e.g. "Mar 4" for long ranges, weekday for 7-day
+                const label = timeRange <= 7
+                    ? d.toLocaleDateString('en-US', { weekday: 'short' })
+                    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                daysMap[isoKey] = { name: label, impressions: 0, clicks: 0, sortKey: d.getTime() };
             }
 
             analytics.forEach(a => {
-                const dateStr = new Date(a.created_at).toLocaleDateString('en-US', { weekday: 'short' });
-                if (daysMap[dateStr]) {
-                    if (a.interaction_type === 'impression') daysMap[dateStr].impressions++;
-                    if (a.interaction_type === 'click') daysMap[dateStr].clicks++;
+                const isoKey = new Date(a.created_at).toISOString().slice(0, 10);
+                if (daysMap[isoKey]) {
+                    if (a.interaction_type === 'impression') daysMap[isoKey].impressions++;
+                    if (a.interaction_type === 'click') daysMap[isoKey].clicks++;
                 }
             });
 
-            setPerformanceData(Object.values(daysMap).sort((a: any, b: any) => a.sortKey - b.sortKey));
+            setPerformanceData(Object.values(daysMap).sort((a, b) => a.sortKey - b.sortKey));
 
         } catch (error: any) {
             showToast(error.message || 'Failed to fetch analytics', 'error');
@@ -133,27 +147,35 @@ function AnalyticsContent() {
             </header>
 
             {/* Overview Cards */}
-            <div className={styles.overviewCards}>
-                <div className={styles.card}>
-                    <span className={styles.cardTitle}>Total Impressions</span>
-                    <span className={styles.cardValue}>{isLoading ? '...' : kpis.impressions}</span>
-                    <span className={`${styles.cardChange} ${styles.positive}`}>Real-time</span>
-                </div>
-                <div className={styles.card}>
-                    <span className={styles.cardTitle}>Total Clicks</span>
-                    <span className={styles.cardValue}>{isLoading ? '...' : kpis.clicks}</span>
-                    <span className={`${styles.cardChange} ${styles.positive}`}>Real-time</span>
-                </div>
-                <div className={styles.card}>
-                    <span className={styles.cardTitle}>Click-Through Rate</span>
-                    <span className={styles.cardValue}>{isLoading ? '...' : kpis.ctr}</span>
-                    <span className={`${styles.cardChange} ${styles.positive}`}>Real-time</span>
-                </div>
-                <div className={styles.card}>
-                    <span className={styles.cardTitle}>Cost Per Click</span>
-                    <span className={styles.cardValue}>{isLoading ? '...' : kpis.cpc}</span>
-                    <span className={`${styles.cardChange} ${styles.positive}`}>Real-time</span>
-                </div>
+            <div className={sharedStyles.statsGrid}>
+                <StatCard
+                    label="Total Impressions"
+                    value={kpis.impressions}
+                    change="Real-time"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Total Clicks"
+                    value={kpis.clicks}
+                    change="Real-time"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Click-Through Rate"
+                    value={kpis.ctr}
+                    change="Real-time"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Cost Per Click"
+                    value={kpis.cpc}
+                    change="Real-time"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
             </div>
 
             {/* Main Chart */}

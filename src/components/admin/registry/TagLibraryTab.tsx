@@ -17,6 +17,10 @@ interface TagType {
     is_active: boolean;
 }
 
+interface TagLibraryTabProps {
+    forceView?: 'tags' | 'types';
+}
+
 interface Tag {
     id: string;
     name: string;
@@ -27,7 +31,7 @@ interface Tag {
     is_active: boolean;
 }
 
-export default function TagLibraryTab() {
+export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = createClient();
@@ -36,7 +40,7 @@ export default function TagLibraryTab() {
     const [tags, setTags] = useState<Tag[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeSubTab, setActiveSubTab] = useState<'tags' | 'types'>('tags');
+    const activeSubTab = forceView || 'tags';
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -49,8 +53,7 @@ export default function TagLibraryTab() {
             setTagTypes(typesRes.data || []);
             setTags(tagsRes.data || []);
         } catch (error: any) {
-            console.error("Fetch error:", error);
-            showToast(`Error fetching data: ${error.message}`, 'error');
+            showToast(error.message || "Failed to sync tag library data.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -182,39 +185,6 @@ export default function TagLibraryTab() {
 
     return (
         <div>
-            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <button
-                    onClick={() => { setActiveSubTab('tags'); setSearchTerm(''); }}
-                    style={{
-                        padding: '8px 4px',
-                        background: 'none',
-                        border: 'none',
-                        color: activeSubTab === 'tags' ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.5)',
-                        borderBottom: activeSubTab === 'tags' ? '2px solid var(--color-brand-primary)' : '2px solid transparent',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 600
-                    }}
-                >
-                    Tags Registry
-                </button>
-                <button
-                    onClick={() => { setActiveSubTab('types'); setSearchTerm(''); }}
-                    style={{
-                        padding: '8px 4px',
-                        background: 'none',
-                        border: 'none',
-                        color: activeSubTab === 'types' ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.5)',
-                        borderBottom: activeSubTab === 'types' ? '2px solid var(--color-brand-primary)' : '2px solid transparent',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 600
-                    }}
-                >
-                    Tag Types
-                </button>
-            </div>
-
             {activeSubTab === 'tags' ? (
                 <>
                     <TableToolbar

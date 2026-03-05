@@ -14,11 +14,11 @@ export default function AdsDashboard() {
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState([
-        { label: 'Total Spend', value: '$0.00', isPositive: true },
-        { label: 'Impressions', value: '0', isPositive: true },
-        { label: 'Clicks', value: '0', isPositive: true },
-        { label: 'Avg. CTR', value: '0.00%', isPositive: true },
+    const [stats, setStats] = useState<any[]>([
+        { label: 'Total Spend', value: null, isPositive: true },
+        { label: 'Impressions', value: null, isPositive: true },
+        { label: 'Clicks', value: null, isPositive: true },
+        { label: 'Avg. CTR', value: null, isPositive: true },
     ]);
 
     useEffect(() => {
@@ -35,9 +35,10 @@ export default function AdsDashboard() {
                 const campaignIds = (campaigns || []).map(c => c.id);
                 const totalSpend = (campaigns || []).reduce((acc, c) => acc + Number(c.spent_amount || 0), 0);
 
+                const currency = activeAccount?.default_currency || 'KES';
                 if (campaignIds.length === 0) {
                     setStats([
-                        { label: 'Total Spend', value: formatCurrency(0), isPositive: true },
+                        { label: 'Total Spend', value: formatCurrency(0, currency), isPositive: true },
                         { label: 'Impressions', value: '0', isPositive: true },
                         { label: 'Clicks', value: '0', isPositive: true },
                         { label: 'Avg. CTR', value: '0.00%', isPositive: true },
@@ -56,7 +57,7 @@ export default function AdsDashboard() {
                 const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
 
                 setStats([
-                    { label: 'Total Spend', value: formatCurrency(totalSpend), isPositive: true },
+                    { label: 'Total Spend', value: formatCurrency(totalSpend, currency), isPositive: true },
                     { label: 'Impressions', value: impressions.toLocaleString(), isPositive: true },
                     { label: 'Clicks', value: clicks.toLocaleString(), isPositive: true },
                     { label: 'Avg. CTR', value: `${ctr.toFixed(2)}%`, isPositive: true },
@@ -69,13 +70,23 @@ export default function AdsDashboard() {
         };
 
         if (!isOrgLoading) {
-            fetchStats();
+            if (activeAccount) {
+                fetchStats();
+            } else {
+                setStats([
+                    { label: 'Total Spend', value: formatCurrency(0), isPositive: true },
+                    { label: 'Impressions', value: '0', isPositive: true },
+                    { label: 'Clicks', value: '0', isPositive: true },
+                    { label: 'Avg. CTR', value: '0.00%', isPositive: true },
+                ]);
+                setIsLoading(false);
+            }
         }
     }, [activeAccount, isOrgLoading, supabase]);
     return (
         <div className={sharedStyles.container}>
             <PageHeader
-                title={activeAccount ? `Welcome back, ${activeAccount.name}` : 'Ads Dashboard'}
+                title={activeAccount ? `Welcome back, ${activeAccount.name}👋` : 'Hi there👋...Ready to post ads?'}
                 subtitle="Manage your campaigns and track performance."
             />
 
@@ -85,7 +96,7 @@ export default function AdsDashboard() {
                     <StatCard
                         key={index}
                         label={stat.label}
-                        value={isLoading ? '...' : stat.value}
+                        value={stat.value}
                         change="Real-time data"
                         trend="neutral"
                         isLoading={isLoading}

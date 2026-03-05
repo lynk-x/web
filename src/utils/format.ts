@@ -25,9 +25,9 @@ export function formatString(str: string): string {
  * @example formatCurrency(1234.5)   // "$1,234.50"
  * @example formatCurrency("500")    // "$500.00"
  */
-export function formatCurrency(amount: number | string): string {
+export function formatCurrency(amount: number | string, currency: string = 'USD'): string {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return num.toLocaleString('en-US', { style: 'currency', currency });
 }
 
 /**

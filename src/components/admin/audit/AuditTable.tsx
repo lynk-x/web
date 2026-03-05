@@ -86,17 +86,24 @@ const AuditTable: React.FC<AuditTableProps> = ({
                                             {log.changes && (
                                                 <div className={styles.changesSection}>
                                                     <div className={styles.changesTitle}>Changes</div>
-                                                    <div className={styles.changesTable}>
+                                                    <div className={styles.changesGrid}>
                                                         {Object.entries(log.changes).map(([field, delta]) => (
-                                                            <div key={field} className={styles.changeRow}>
-                                                                <div className={styles.field}>{field}</div>
-                                                                <div className={styles.from}>
-                                                                    <span>From:</span>
-                                                                    <code>{JSON.stringify(delta.old)}</code>
-                                                                </div>
-                                                                <div className={styles.to}>
-                                                                    <span>To:</span>
-                                                                    <code>{JSON.stringify(delta.new)}</code>
+                                                            <div key={field} className={styles.changeCard}>
+                                                                <div className={styles.fieldName}>{field.replace(/_/g, ' ')}</div>
+                                                                <div className={styles.diffWrapper}>
+                                                                    <div className={styles.oldValue}>
+                                                                        <span className={styles.diffLabel}>WAS</span>
+                                                                        <pre className={styles.diffPre}>
+                                                                            {typeof delta.old === 'object' ? JSON.stringify(delta.old, null, 2) : String(delta.old ?? 'null')}
+                                                                        </pre>
+                                                                    </div>
+                                                                    <div className={styles.diffArrow}>→</div>
+                                                                    <div className={styles.newValue}>
+                                                                        <span className={styles.diffLabel}>NOW</span>
+                                                                        <pre className={styles.diffPre}>
+                                                                            {typeof delta.new === 'object' ? JSON.stringify(delta.new, null, 2) : String(delta.new ?? 'null')}
+                                                                        </pre>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ))}

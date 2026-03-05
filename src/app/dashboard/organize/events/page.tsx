@@ -48,7 +48,7 @@ export default function OrganizerEventsPage() {
                 .select(`
                     id, title, status, starts_at, location_name, attendee_count,
                     thumbnail_url,
-                    ticket_tiers(quantity_sold, quantity_total)
+                    ticket_tiers(tickets_sold, capacity)
                 `)
                 .eq('account_id', activeAccount.id)
                 .order('starts_at', { ascending: false });
@@ -61,7 +61,8 @@ export default function OrganizerEventsPage() {
                 if (e.status === 'draft') uiStatus = 'draft';
                 if (['completed', 'archived', 'cancelled'].includes(e.status)) uiStatus = 'completed';
 
-                const ticketsSold = (e.ticket_tiers || []).reduce((acc: number, t: any) => acc + (t.quantity_sold || 0), 0);
+                // tickets_sold = number of tickets sold per tier (schema column)
+                const ticketsSold = (e.ticket_tiers || []).reduce((acc: number, t: any) => acc + (t.tickets_sold || 0), 0);
 
                 return {
                     id: e.id,
@@ -190,10 +191,6 @@ export default function OrganizerEventsPage() {
         setIsDeleteModalOpen(true);
     };
 
-    if (isOrgLoading || isLoadingEvents) {
-        return <div className={styles.dashboardPage} style={{ padding: '40px' }}>Loading Dashboard...</div>;
-    }
-
     return (
         <div className={sharedStyles.container}>
             <PageHeader
@@ -249,6 +246,7 @@ export default function OrganizerEventsPage() {
                     onEdit={handleEdit}
                     onDelete={handleDeleteSingle}
                     onStatusChange={handleStatusChange as any}
+                    isLoading={isLoadingEvents}
                 />
             </div>
 

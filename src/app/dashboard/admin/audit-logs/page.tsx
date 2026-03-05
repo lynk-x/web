@@ -13,59 +13,85 @@ export default function AdminAuditLogsPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [logs, setLogs] = useState<AuditLog[]>([]);
+    const [actionTypes, setActionTypes] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [totalCount, setTotalCount] = useState(0);
+    const itemsPerPage = 20;
 
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            // Server-side pagination: only fetch the current page from the DB
+            // to avoid loading thousands of rows into the browser at once.
+            let query = supabase
                 .from('audit_logs')
-                .select('*, actor:profiles!user_id(full_name, email)')
+                .select('*, actor:profiles!actor_id(full_name, user_name, email)', { count: 'exact' })
                 .order('created_at', { ascending: false });
+
+            // Apply server-side filter by action type when one is selected
+            if (actionFilter !== 'all') {
+                query = query.eq('action', actionFilter);
+            }
+
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            const { data, error, count } = await query.range(from, to);
 
             if (error) throw error;
 
-            setLogs(data.map((l: any) => ({
+            setLogs((data || []).map((l: any) => ({
                 id: l.id,
                 action: l.action,
                 actor: {
-                    name: l.actor?.full_name || 'System',
-                    email: l.actor?.email || ''
+                    name: l.actor?.full_name || l.actor?.user_name || 'System',
+                    email: l.actor?.email || 'N/A'
                 },
                 target: l.target_id?.slice(0, 8) || 'N/A',
                 targetType: l.target_type || 'Unknown',
                 timestamp: new Date(l.created_at).toLocaleString(),
-                details: l.details ? JSON.stringify(l.details) : undefined,
+                details: l.details ? JSON.stringify(l.details, null, 2) : undefined,
                 changes: l.changes
             })));
+
+            setTotalCount(count || 0);
+
+            // Populate action-type filter dropdown from a distinct RPC or a one-time fetch
+            const { data: actions } = await supabase.rpc('get_unique_audit_actions');
+            if (actions) {
+                setActionTypes(actions);
+            }
         } catch (err: any) {
-            showToast(err.message || "Failed to load logs", "error");
+            showToast(err.message || 'Failed to load logs', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, actionFilter, currentPage]);
 
     useEffect(() => {
         fetchLogs();
     }, [fetchLogs]);
 
+    // Reset to page 1 when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, actionFilter]);
+
+    // Client-side search is applied only to the current page of results
     const filteredLogs = logs.filter(log => {
-        const matchesSearch = log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        if (!searchTerm) return true;
+        return (
+            log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.actor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.target.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-        return matchesSearch && matchesAction;
+            log.target.toLowerCase().includes(searchTerm.toLowerCase())
+        );
     });
 
-    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-    const paginatedLogs = filteredLogs.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+
 
     return (
         <div className={styles.container}>
@@ -88,17 +114,15 @@ export default function AdminAuditLogsPage() {
                         onChange={(e) => setActionFilter(e.target.value)}
                     >
                         <option value="all">All Actions</option>
-                        {/* Values can be made dynamic based on DB content */}
-                        <option value="USER_SUSPEND">User Suspension</option>
-                        <option value="REFUND_APPROVE">Refund Approved</option>
-                        <option value="EVENT_EDIT">Event Edited</option>
-                        <option value="TICKET_USE">Ticket Scanned</option>
+                        {actionTypes.map(type => (
+                            <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                        ))}
                     </select>
                 </div>
             </TableToolbar>
 
             <AuditTable
-                logs={paginatedLogs}
+                logs={filteredLogs}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}

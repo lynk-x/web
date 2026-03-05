@@ -6,13 +6,14 @@ import styles from './DashboardShared.module.css';
 
 interface StatCardProps {
     label: string;
-    value: string | number;
+    value: string | number | null;
     change?: string;
     isPositive?: boolean;
     trend?: 'positive' | 'negative' | 'neutral';
     href?: string;
     isLoading?: boolean;
     color?: string;
+    changeColor?: string;
 }
 
 export default function StatCard({
@@ -23,29 +24,24 @@ export default function StatCard({
     trend,
     href,
     isLoading,
-    color
+    color,
+    changeColor
 }: StatCardProps) {
-    const CardContent = () => (
+    const isShowingLoading = isLoading || value === undefined || value === null;
+
+    const content = (
         <>
-            {isLoading ? (
-                <div style={{ margin: 'auto' }}>
-                    <svg className={styles.spinner} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                    </svg>
+            <span className={styles.statLabel}>{label}</span>
+            <div className={styles.statValue} style={color ? { color } : {}}>
+                {isShowingLoading ? '...' : value}
+            </div>
+            {change && (
+                <div className={`${styles.statChange} ${trend === 'positive' || (trend === undefined && isPositive === true) ? styles.positive :
+                    trend === 'negative' || (trend === undefined && isPositive === false) ? styles.negative :
+                        styles.neutral
+                    }`} style={changeColor ? { color: changeColor, opacity: 0.8 } : (color ? { color, opacity: 0.8 } : {})}>
+                    {change}
                 </div>
-            ) : (
-                <>
-                    <span className={styles.statLabel}>{label}</span>
-                    <div className={styles.statValue} style={color ? { color } : {}}>{value}</div>
-                    {change && (
-                        <div className={`${styles.statChange} ${trend === 'positive' || (trend === undefined && isPositive === true) ? styles.positive :
-                                trend === 'negative' || (trend === undefined && isPositive === false) ? styles.negative :
-                                    styles.neutral
-                            }`} style={color ? { color, opacity: 0.8 } : {}}>
-                            {change}
-                        </div>
-                    )}
-                </>
             )}
         </>
     );
@@ -53,14 +49,14 @@ export default function StatCard({
     if (href) {
         return (
             <Link href={href} className={`${styles.statCard} ${styles.clickable}`}>
-                <CardContent />
+                {content}
             </Link>
         );
     }
 
     return (
         <div className={styles.statCard}>
-            <CardContent />
+            {content}
         </div>
     );
 }

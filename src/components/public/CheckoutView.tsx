@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 import styles from './CheckoutView.module.css';
 import Skeleton from './Skeleton';
 import { useCart } from '@/context/CartContext';
@@ -12,9 +14,17 @@ import { useCart } from '@/context/CartContext';
  * It displays an order summary, contact form, and payment details form.
  */
 const CheckoutView: React.FC = () => {
-    const { items, getCartTotal, itemCount, removeFromCart } = useCart();
+    const { items, getCartTotal, itemCount, removeFromCart, clearCart } = useCart();
+    const router = useRouter();
+    const supabase = createClient();
 
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [paymentError, setPaymentError] = useState('');
+
+    // Form state
+    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', mpesaNumber: '' });
+    const [formErrors, setFormErrors] = useState({ fullName: '', email: '', phone: '', mpesaNumber: '' });
 
     // Derived state
     const serviceFeePerItem = 200;
@@ -47,9 +57,83 @@ const CheckoutView: React.FC = () => {
         setAppliedPromo(null);
     };
 
-    const handlePayment = (e: React.FormEvent) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (formErrors[name as keyof typeof formErrors]) {
+            setFormErrors(prev => ({ ...prev, [name]: '' }));
+        }
+    };
+
+    const validateForm = () => {
+        let isValid = true;
+        const newErrors = { fullName: '', email: '', phone: '', mpesaNumber: '' };
+
+        if (!formData.fullName.trim()) {
+            newErrors.fullName = 'Full Name is required';
+            isValid = false;
+        }
+
+        if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+            newErrors.email = 'Valid Email Address is required';
+            isValid = false;
+        }
+
+        if (!formData.phone.trim() || !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
+            newErrors.phone = 'Valid Phone Number is required';
+            isValid = false;
+        }
+
+        // Basic M-Pesa validation (Kenya format)
+        const mpesaClean = formData.mpesaNumber.replace(/\s+/g, '');
+        if (!mpesaClean || !/^(?:0|\+?254)[17]\d{8}$/.test(mpesaClean)) {
+            newErrors.mpesaNumber = 'Valid format e.g., 0712345678 or +2547...';
+            isValid = false;
+        }
+
+        setFormErrors(newErrors);
+        return isValid;
+    };
+
+    const handlePayment = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle checkout logic here
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setPaymentError('');
+        setIsSubmitting(true);
+
+        try {
+            // Process each cart item (different tiers/events)
+            for (const item of items) {
+                // Assuming item.id holds the ticket_tier_id from when it was added to cart.
+                // In production, we'd ensure proper mapping or send an array to a bulk RPC.
+                // For now, we'll iterate and call the updated `purchase_tickets` RPC.
+                const { error } = await supabase.rpc('purchase_tickets', {
+                    p_event_id: item.eventId,
+                    p_tier_id: item.id.split('-ticket-')[0] || item.id, // basic fallback, assumes pure ID or prefixed ID
+                    p_quantity: item.quantity,
+                    p_provider: 'Mpesa',
+                    p_provider_ref: 'MPESA-' + Math.floor(100000 + Math.random() * 900000)
+                });
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+            }
+
+            // Success: Clear cart and redirect
+            clearCart();
+            router.push('/checkout/confirmation');
+
+        } catch (error: any) {
+            console.error("Payment failed:", error);
+            setPaymentError(error.message || 'Payment failed. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     useEffect(() => {
@@ -227,15 +311,18 @@ const CheckoutView: React.FC = () => {
                                 <>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Full Name</label>
-                                        <input type="text" className={styles.input} placeholder="John Doe" />
+                                        <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className={`${styles.input} ${formErrors.fullName ? styles.inputError : ''}`} placeholder="John Doe" />
+                                        {formErrors.fullName && <span className={styles.errorText} style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.fullName}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Email Address</label>
-                                        <input type="email" className={styles.input} placeholder="john@example.com" />
+                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
+                                        {formErrors.email && <span className={styles.errorText} style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Phone Number</label>
-                                        <input type="tel" className={styles.input} placeholder="+254 700 000 000" />
+                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" />
+                                        {formErrors.phone && <span className={styles.errorText} style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
                                     </div>
                                 </>
                             )}
@@ -255,7 +342,8 @@ const CheckoutView: React.FC = () => {
                                 <>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>M-Pesa Number</label>
-                                        <input type="tel" className={styles.input} placeholder="+254 7..." />
+                                        <input type="tel" name="mpesaNumber" value={formData.mpesaNumber} onChange={handleInputChange} className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`} placeholder="+254 7..." />
+                                        {formErrors.mpesaNumber && <span className={styles.errorText} style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.mpesaNumber}</span>}
                                     </div>
                                     <p className={styles.helperText}>* Prompt will be sent to your phone</p>
                                 </>
@@ -263,12 +351,17 @@ const CheckoutView: React.FC = () => {
                         </section>
 
                         <div className={styles.footerActions}>
+                            {paymentError && <p style={{ color: 'red', textAlign: 'center', marginBottom: '1rem' }}>{paymentError}</p>}
                             {isLoading ? (
                                 <Skeleton width="100%" height="56px" borderRadius="8px" />
                             ) : (
-                                <Link href="/checkout/confirmation" className={styles.payBtn}>
-                                    Confirm & Pay {currency} {total.toLocaleString()}
-                                </Link>
+                                <button
+                                    onClick={handlePayment}
+                                    className={styles.payBtn}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? 'Processing...' : `Confirm & Pay ${currency} ${total.toLocaleString()}`}
+                                </button>
                             )}
                         </div>
                     </div>

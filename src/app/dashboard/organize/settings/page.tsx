@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import MemberTable from '@/components/organize/MemberTable';
+import PaymentMethodsManager from '@/components/organize/PaymentMethodsManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Tabs from '@/components/dashboard/Tabs';
 
@@ -19,14 +20,14 @@ function SettingsContent() {
     const pathname = usePathname();
 
     const initialTab = (searchParams.get('tab') as any) || 'profile';
-    const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'settings'>(
-        ['profile', 'team', 'settings'].includes(initialTab) ? initialTab : 'profile'
+    const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'payment-methods' | 'settings'>(
+        ['profile', 'team', 'payment-methods', 'settings'].includes(initialTab) ? initialTab : 'profile'
     );
 
     // Handle initial tab from query param and sync with state
     useEffect(() => {
         const tab = searchParams.get('tab') as any;
-        if (tab && ['profile', 'team', 'settings'].includes(tab)) {
+        if (tab && ['profile', 'team', 'payment-methods', 'settings'].includes(tab)) {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -129,7 +130,7 @@ function SettingsContent() {
         try {
             const { error } = await supabase
                 .from('accounts')
-                .update({ status: 'deactivated' })
+                .update({ is_active: false })   // Fix #4: accounts has no `status` column; use is_active
                 .eq('id', activeAccount.id);
 
             if (error) throw error;
@@ -165,6 +166,7 @@ function SettingsContent() {
                 options={[
                     { id: 'profile', label: 'Profile' },
                     { id: 'team', label: 'Team Members' },
+                    { id: 'payment-methods', label: 'Payment Methods' },
                     { id: 'settings', label: 'Settings' }
                 ]}
                 activeTab={activeTab}
@@ -206,6 +208,16 @@ function SettingsContent() {
 
             {activeTab === 'team' && (
                 <MemberTable />
+            )}
+
+            {activeTab === 'payment-methods' && (
+                <div className={styles.columnLayout}>
+                    {activeAccount ? (
+                        <PaymentMethodsManager accountId={activeAccount.id} />
+                    ) : (
+                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                    )}
+                </div>
             )}
 
             {activeTab === 'settings' && (

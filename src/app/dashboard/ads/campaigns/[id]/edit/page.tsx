@@ -1,48 +1,82 @@
 "use client";
 
-import { use } from 'react';
-import CreateCampaignForm from '@/components/ads/campaigns/CreateCampaignForm';
+import { use, useState, useEffect, useMemo } from 'react';
+import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
 import BackButton from '@/components/shared/BackButton';
 import styles from '../../page.module.css';
-
-// Mock Data
-const allCampaigns = [
-    {
-        id: '1',
-        title: 'Summer Music Festival Promo',
-        description: 'Internal description for summer festival promo',
-        type: 'banner' as const,
-        start_at: '2024-10-12',
-        end_at: '2024-10-20',
-        total_budget: '1000',
-        daily_limit: '100',
-        adHeadline: 'Summer Beats 2024',
-        target_url: 'https://lynk-x.com/fest',
-    },
-    {
-        id: '2',
-        title: 'Tech Summit Early Bird',
-        description: 'Internal description for tech summit',
-        type: 'interstitial' as const,
-        start_at: '2024-09-01',
-        end_at: '2024-09-30',
-        total_budget: '800',
-        daily_limit: '50',
-        adHeadline: 'Tech Summit 2024',
-        target_url: 'https://lynk-x.com/tech',
-    },
-];
+import { createClient } from '@/utils/supabase/client';
 
 export default function EditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const supabase = useMemo(() => createClient(), []);
 
-    // Find campaign by ID
-    const campaign = allCampaigns.find(c => c.id === id);
+    const [campaign, setCampaign] = useState<CampaignData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
-    if (!campaign) {
+    useEffect(() => {
+        /**
+         * Fetches the campaign and its primary ad asset from Supabase.
+         * Maps DB columns to the CampaignData shape expected by CreateCampaignForm.
+         */
+        const fetchCampaign = async () => {
+            setIsLoading(true);
+            const { data, error } = await supabase
+                .from('ad_campaigns')
+                .select(`
+                    id, title, description, type,
+                    total_budget, daily_limit,
+                    start_at, end_at,
+                    target_url, target_event_id, target_country_code,
+                    ad_assets (call_to_action, url, is_primary)
+                `)
+                .eq('id', id)
+                .single();
+
+            if (error || !data) {
+                setNotFound(true);
+                setIsLoading(false);
+                return;
+            }
+
+            // Find the primary asset for headline / image URL
+            const primaryAsset = (data.ad_assets as any[])?.find(a => a.is_primary) ?? (data.ad_assets as any[])?.[0];
+
+            setCampaign({
+                id: data.id,
+                title: data.title,
+                description: data.description || '',
+                type: data.type,
+                total_budget: String(data.total_budget),
+                daily_limit: data.daily_limit != null ? String(data.daily_limit) : '',
+                // Slice to YYYY-MM-DD for the date input
+                start_at: data.start_at ? data.start_at.slice(0, 10) : '',
+                end_at: data.end_at ? data.end_at.slice(0, 10) : '',
+                target_url: data.target_url || '',
+                target_event_id: data.target_event_id || '',
+                target_country_code: data.target_country_code || 'KE',
+                adHeadline: primaryAsset?.call_to_action || '',
+                adImageUrl: primaryAsset?.url || ''
+            });
+            setIsLoading(false);
+        };
+
+        fetchCampaign();
+    }, [id, supabase]);
+
+    if (isLoading) {
+        return (
+            <div className={styles.container} style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
+                Loading campaign...
+            </div>
+        );
+    }
+
+    if (notFound || !campaign) {
         return (
             <div className={styles.container}>
                 <h1 className={styles.title}>Campaign Not Found</h1>
+                <p className={styles.subtitle}>The campaign you are looking for does not exist or was deleted.</p>
             </div>
         );
     }

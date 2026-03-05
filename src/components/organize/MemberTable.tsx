@@ -134,13 +134,13 @@ export default function MemberTable() {
 
             if (error) throw error;
 
-            showToast(`Invitation sent to ${inviteEmail}`, "success");
+            showToast(`An access invite has been sent to ${inviteEmail}.`, "success", "Invite Sent");
             setIsInviteModalOpen(false);
             setInviteEmail('');
             setInviteRole('viewer');
             fetchMembers(); // refresh
         } catch (err: any) {
-            showToast(err.message || "Failed to send invitation. Make sure you are an owner/admin.", "error");
+            showToast(err.message || "We couldn't send the invitation. Please try again later.", "error", "Delivery Failed");
         } finally {
             setIsInviting(false);
         }
@@ -153,10 +153,10 @@ export default function MemberTable() {
                 p_invitation_id: invitationId
             });
             if (error) throw error;
-            showToast("Invitation revoked.", "success");
+            showToast("The pending invitation has been revoked.", "success", "Revoked");
             fetchMembers();
         } catch (err: any) {
-            showToast(err.message || "Failed to revoke invitation.", "error");
+            showToast(err.message || "Failed to revoke invitation.", "error", "Error");
         }
     };
 
@@ -170,10 +170,10 @@ export default function MemberTable() {
                 .eq('user_id', userId);
 
             if (error) throw error;
-            showToast("Member removed from organization.", "success");
+            showToast("Member access has been permanently removed.", "success", "Member Removed");
             fetchMembers();
         } catch (err: any) {
-            showToast(err.message || "Failed to remove member.", "error");
+            showToast(err.message || "Failed to remove member.", "error", "Error");
         }
     };
 

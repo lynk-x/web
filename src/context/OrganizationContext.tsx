@@ -13,6 +13,8 @@ export interface Account {
     description?: string;
     support_email?: string;
     phone_number?: string;
+    wallet_balance?: number;
+    default_currency?: string;
 }
 
 interface OrganizationContextType {
@@ -54,7 +56,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         website,
                         description,
                         support_email,
-                        phone_number
+                        phone_number,
+                        default_currency,
+                        account_wallets(currency, balance)
                     )
                 `)
                 .eq('user_id', user.id);
@@ -65,16 +69,25 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             }
 
             if (data && data.length > 0) {
-                const mappedAccounts: Account[] = data.map((member: any) => ({
-                    id: member.accounts.id,
-                    name: member.accounts.name,
-                    thumbnailUrl: member.accounts.thumbnail_url,
-                    role: member.role,
-                    website: member.accounts.website,
-                    description: member.accounts.description,
-                    support_email: member.accounts.support_email,
-                    phone_number: member.accounts.phone_number,
-                }));
+                const mappedAccounts: Account[] = data.map((member: any) => {
+                    const defaultCurrency = member.accounts.default_currency || 'KES';
+                    const wallets = member.accounts.account_wallets || [];
+                    const primaryWallet = wallets.find((w: any) => w.currency === defaultCurrency) || wallets[0];
+                    const walletBalance = primaryWallet ? Number(primaryWallet.balance) : 0;
+
+                    return {
+                        id: member.accounts.id,
+                        name: member.accounts.name,
+                        thumbnailUrl: member.accounts.thumbnail_url,
+                        role: member.role,
+                        website: member.accounts.website,
+                        description: member.accounts.description,
+                        support_email: member.accounts.support_email,
+                        phone_number: member.accounts.phone_number,
+                        default_currency: defaultCurrency,
+                        wallet_balance: walletBalance,
+                    };
+                });
 
                 setAccounts(mappedAccounts);
 

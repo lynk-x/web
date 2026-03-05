@@ -31,9 +31,12 @@ export default function EditEventPage() {
                     .from('events')
                     .select(`
                         id, title, description, category_id, is_online, is_private, 
-                        location_name, start_datetime, end_datetime, thumbnail_url,
+                        location_name, starts_at, ends_at, thumbnail_url,
                         ticket_tiers (
-                            id, name, price, quantity_total, description, sales_start_at, sales_end_at, max_per_user
+                            id, name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
+                        ),
+                        event_tags (
+                            tags (id, name)
                         )
                     `)
                     .eq('id', eventId)
@@ -43,8 +46,8 @@ export default function EditEventPage() {
                 if (eventError) throw eventError;
 
                 // Parse dates
-                const startDt = new Date(event.start_datetime);
-                const endDt = new Date(event.end_datetime);
+                const startDt = new Date(event.starts_at);
+                const endDt = new Date(event.ends_at);
 
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
@@ -55,18 +58,20 @@ export default function EditEventPage() {
                     id: t.id,
                     name: t.name,
                     price: t.price.toString(),
-                    quantity: t.quantity_total.toString(),
+                    quantity: t.capacity.toString(),
                     description: t.description || '',
                     saleStart: t.sales_start_at ? formatDate(new Date(t.sales_start_at)) : '',
                     saleEnd: t.sales_end_at ? formatDate(new Date(t.sales_end_at)) : '',
                     maxPerOrder: t.max_per_user?.toString() || ''
                 }));
 
+                const mappedTags = (event.event_tags || []).map((et: any) => et.tags?.name).filter(Boolean);
+
                 setInitialData({
                     title: event.title,
                     description: event.description,
                     category: event.category_id || '',
-                    tags: [], // Assuming tags are fetched separately if needed via event_tags
+                    tags: mappedTags,
                     thumbnailUrl: event.thumbnail_url || '',
                     isOnline: event.is_online,
                     location: event.location_name || '',
@@ -134,8 +139,8 @@ export default function EditEventPage() {
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
                     location_name: data.location || null,
-                    start_datetime: startDateTime,
-                    end_datetime: endDateTime,
+                    starts_at: startDateTime,
+                    ends_at: endDateTime,
                     thumbnail_url: uploadedThumbnailUrl,
                 })
                 .eq('id', eventId)
@@ -173,7 +178,7 @@ export default function EditEventPage() {
                     event_id: eventId,
                     name: t.name,
                     price: parseFloat(t.price),
-                    quantity_total: parseInt(t.quantity),
+                    capacity: parseInt(t.quantity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
                     currency: 'KES',
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
@@ -186,6 +191,39 @@ export default function EditEventPage() {
                     .upsert(ticketsToUpsert);
 
                 if (upsertError) throw upsertError;
+            }
+
+            // 5. Update Tags
+            // Delete current links
+            await supabase.from('event_tags').delete().eq('event_id', eventId);
+
+            if (data.tags.length > 0) {
+                const tagsToUpsert = data.tags.map(tag => ({
+                    name: tag,
+                    slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                    is_official: false,
+                    is_active: true
+                }));
+
+                const { data: resolvedTags, error: tagUpsertError } = await supabase
+                    .from('tags')
+                    .upsert(tagsToUpsert, { onConflict: 'slug' })
+                    .select('id');
+
+                if (tagUpsertError) throw tagUpsertError;
+
+                if (resolvedTags) {
+                    const eventTagsToInsert = resolvedTags.map(tag => ({
+                        event_id: eventId,
+                        tag_id: tag.id
+                    }));
+
+                    const { error: eventTagError } = await supabase
+                        .from('event_tags')
+                        .insert(eventTagsToInsert);
+
+                    if (eventTagError) console.error("Warning: Tag linking failed", eventTagError);
+                }
             }
 
             // Success

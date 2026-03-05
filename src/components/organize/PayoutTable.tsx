@@ -16,6 +16,7 @@ interface PayoutTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    isLoading?: boolean;
 }
 
 const getPayoutStatusVariant = (status: string): BadgeVariant => {
@@ -37,6 +38,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    isLoading = false,
 }) => {
     const { showToast } = useToast();
 
@@ -106,6 +108,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            isLoading={isLoading}
             emptyMessage="No payout requests found."
         />
     );

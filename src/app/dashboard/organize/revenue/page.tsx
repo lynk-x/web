@@ -3,13 +3,15 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import FinanceTable, { FinanceTransaction } from '@/components/organize/FinanceTable';
 import PayoutTable from '@/components/organize/PayoutTable';
-import TableToolbar from '@/components/shared/TableToolbar';
+import WalletsTable from '@/components/organize/WalletsTable';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import Tabs from '@/components/dashboard/Tabs';
+import StatCard from '@/components/dashboard/StatCard';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import { formatCurrency } from '@/utils/format';
 
 function RevenueContent() {
     const { showToast } = useToast();
@@ -19,14 +21,14 @@ function RevenueContent() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const initialTab = (searchParams.get('tab') as any) || 'transactions';
-    const [activeTab, setActiveTab] = useState<'transactions' | 'payouts'>(
-        ['transactions', 'payouts'].includes(initialTab) ? initialTab : 'transactions'
+    const initialTab = (searchParams.get('tab') as any) || 'wallets';
+    const [activeTab, setActiveTab] = useState<'payouts' | 'wallets'>(
+        ['payouts', 'wallets'].includes(initialTab) ? initialTab : 'wallets'
     );
 
     useEffect(() => {
         const tab = searchParams.get('tab') as any;
-        if (tab && ['transactions', 'payouts'].includes(tab)) {
+        if (tab && ['payouts', 'wallets'].includes(tab)) {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -37,64 +39,30 @@ function RevenueContent() {
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
     };
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [typeFilter, setTypeFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
     const [payoutCurrentPage, setPayoutCurrentPage] = useState(1);
     const payoutItemsPerPage = 8;
-    const itemsPerPage = 8;
 
-    const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
     const [payouts, setPayouts] = useState<any[]>([]);
+    const [wallets, setWallets] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Payout request modal state
     const [payoutAmount, setPayoutAmount] = useState('');
+    const [payoutCurrency, setPayoutCurrency] = useState('KES');
 
-    // ── fetchTransactions ──────────────────────────────────────────────────
-    const fetchTransactions = useCallback(async () => {
+    useEffect(() => {
+        if (activeAccount?.default_currency) {
+            setPayoutCurrency(activeAccount.default_currency);
+        }
+    }, [activeAccount?.default_currency]);
+
+    // ── fetchFinancialData ────────────────────────────────────────────────
+    const fetchFinancialData = useCallback(async () => {
         if (!activeAccount) return;
         setIsLoading(true);
 
         try {
-            // Get all event IDs for this account
-            const { data: events, error: eventsError } = await supabase
-                .from('events')
-                .select('id, title')
-                .eq('account_id', activeAccount.id);
-
-            if (eventsError) throw eventsError;
-
-            if (!events || events.length === 0) {
-                setTransactions([]);
-                setIsLoading(false);
-                return;
-            }
-
-            const eventIds = events.map(e => e.id);
-            const eventMap = new Map(events.map(e => [e.id, e.title]));
-
-            const { data: txs, error: txError } = await supabase
-                .from('transactions')
-                .select('*')
-                .in('event_id', eventIds)
-                .order('created_at', { ascending: false });
-
-            if (txError) throw txError;
-
-            setTransactions((txs || []).map(tx => ({
-                id: tx.id,
-                event: eventMap.get(tx.event_id) || 'Unknown Event',
-                description: tx.reason,
-                type: tx.category as any,
-                amount: tx.amount,
-                status: tx.status,
-                date: new Date(tx.created_at).toLocaleDateString(),
-                reference: tx.reference
-            })));
-
             // Payouts for this account
             const { data: payoutData, error: payoutError } = await supabase
                 .from('payouts')
@@ -114,23 +82,64 @@ function RevenueContent() {
                 notes: p.admin_notes
             })));
 
+            // Wallets for this account
+            const { data: walletData, error: walletError } = await supabase
+                .from('account_wallets')
+                .select('*')
+                .eq('account_id', activeAccount.id)
+                .order('currency');
+
+            if (walletError) throw walletError;
+            setWallets((walletData || []).map((w: any) => ({ ...w, id: w.currency })));
+
         } catch (err: any) {
-            showToast(err.message || 'Failed to load financial history.', 'error');
+            showToast(err.message || 'Failed to sync your financial records. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }
     }, [activeAccount, supabase, showToast]);
 
+    // Update default payout currency when wallets load
+    useEffect(() => {
+        if (wallets.length > 0) {
+            const hasCurrent = wallets.some(w => w.currency === payoutCurrency);
+            if (!hasCurrent) {
+                setPayoutCurrency(wallets[0].currency);
+            }
+        }
+    }, [wallets, payoutCurrency]);
+
+    const totalBalance = useMemo(() => {
+        if (isLoading && wallets.length === 0) return null;
+        return wallets.reduce((acc, w) => acc + Number(w.balance || 0), 0);
+    }, [wallets, isLoading]);
+
+    const pendingPayoutTotal = useMemo(() => {
+        if (isLoading && payouts.length === 0) return null;
+        return payouts
+            .filter(p => p.status === 'requested')
+            .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+    }, [payouts, isLoading]);
+
+    const totalProcessedPayouts = useMemo(() => {
+        if (isLoading && payouts.length === 0) return null;
+        return payouts
+            .filter(p => p.status === 'completed')
+            .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+    }, [payouts, isLoading]);
+
+    const currency = activeAccount?.default_currency || 'KES';
+
     // ── Effect ──────────────────────────────────────────────────────────────
     useEffect(() => {
         if (!isOrgLoading && activeAccount) {
-            fetchTransactions();
+            fetchFinancialData();
         } else if (!isOrgLoading && !activeAccount) {
             setIsLoading(false);
-            setTransactions([]);
             setPayouts([]);
+            setWallets([]);
         }
-    }, [isOrgLoading, activeAccount, fetchTransactions]);
+    }, [isOrgLoading, activeAccount, fetchFinancialData]);
 
     // ── Request Payout ────────────────────────────────────────────────────
     const handleRequestPayout = async () => {
@@ -143,42 +152,34 @@ function RevenueContent() {
 
         showToast('Submitting payout request…', 'info');
         try {
-            const { error } = await supabase
-                .from('payouts')
-                .insert({
-                    account_id: activeAccount.id,
-                    amount: parsed,
-                    method: 'Bank Transfer',
-                    account_name: activeAccount.name,
-                    account_number: 'PENDING-SETUP' // Organizer completes bank details separately
-                });
+            // First find the primary payout method
+            const { data: methodData, error: methodError } = await supabase
+                .from('account_payment_methods')
+                .select('id')
+                .eq('account_id', activeAccount.id)
+                .limit(1)
+                .single();
+
+            if (methodError || !methodData) {
+                showToast('Please set up a payment method before requesting a payout.', 'error');
+                return;
+            }
+
+            const { error } = await supabase.rpc('request_account_payout', {
+                p_account_id: activeAccount.id,
+                p_amount: parsed,
+                p_payout_method_id: methodData.id,
+                p_currency: payoutCurrency
+            });
 
             if (error) throw error;
             showToast('Payout request submitted. Our team will review it shortly.', 'success');
             setPayoutAmount('');
-            fetchTransactions(); // Refresh payout list
+            fetchFinancialData(); // Refresh payout list
         } catch (err: any) {
             showToast(err.message || 'Failed to submit payout request.', 'error');
         }
     };
-
-    // Filter Logic
-    const filteredTransactions = transactions.filter(tx => {
-        const matchesSearch = (tx.event?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-            tx.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesStatus = statusFilter === 'all' || tx.status.toLowerCase() === statusFilter;
-        const matchesType = typeFilter === 'all' || tx.type.toLowerCase() === typeFilter;
-
-        return matchesSearch && matchesStatus && matchesType;
-    });
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-    const paginatedTransactions = filteredTransactions.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
 
     // Selection Logic
     const handleSelect = (id: string) => {
@@ -192,10 +193,11 @@ function RevenueContent() {
     };
 
     const handleSelectAll = () => {
-        if (selectedIds.size === paginatedTransactions.length) {
+        const paginatedPayouts = payouts.slice((payoutCurrentPage - 1) * payoutItemsPerPage, payoutCurrentPage * payoutItemsPerPage);
+        if (selectedIds.size === paginatedPayouts.length) {
             setSelectedIds(new Set());
         } else {
-            setSelectedIds(new Set(paginatedTransactions.map(t => t.id)));
+            setSelectedIds(new Set(paginatedPayouts.map(t => t.id)));
         }
     };
 
@@ -209,13 +211,28 @@ function RevenueContent() {
                 </div>
                 {/* Payout request: inline amount input + button */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <select
+                        value={payoutCurrency}
+                        onChange={(e) => setPayoutCurrency(e.target.value)}
+                        className={styles.currencySelect}
+                    >
+                        {wallets.length > 0 ? (
+                            wallets.map(w => (
+                                <option key={w.currency} value={w.currency}>{w.currency}</option>
+                            ))
+                        ) : (
+                            <option value={activeAccount?.default_currency || 'KES'}>
+                                {activeAccount?.default_currency || 'KES'}
+                            </option>
+                        )}
+                    </select>
                     <input
                         type="number"
                         min="1"
-                        placeholder="Amount (USD)"
+                        placeholder="Amount"
                         value={payoutAmount}
                         onChange={(e) => setPayoutAmount(e.target.value)}
-                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '140px', fontSize: '14px' }}
+                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '120px', fontSize: '14px' }}
                     />
                     <button className={styles.primaryBtn} onClick={handleRequestPayout}>
                         Request Payout
@@ -223,85 +240,60 @@ function RevenueContent() {
                 </div>
             </div>
 
+            {/* Key Metrics */}
+            <div className={sharedStyles.statsGrid} style={{ marginBottom: '24px' }}>
+                <StatCard
+                    label="Active Balance"
+                    value={totalBalance !== null ? formatCurrency(totalBalance, currency) : null}
+                    change="Across all wallets"
+                    trend="neutral"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Pending Payouts"
+                    value={pendingPayoutTotal !== null ? formatCurrency(pendingPayoutTotal, currency) : null}
+                    change="Awaiting approval"
+                    trend="negative"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Total Payouts"
+                    value={totalProcessedPayouts !== null ? formatCurrency(totalProcessedPayouts, currency) : null}
+                    change="Total processed"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+            </div>
+
             {/* Tabs */}
             <Tabs
                 options={[
-                    { id: 'transactions', label: 'Transactions' },
+                    { id: 'wallets', label: 'Wallets' },
                     { id: 'payouts', label: 'Payouts' }
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
             />
 
-            {isLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading financials...</div>
-            ) : transactions.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>No recorded transactions yet.</div>
-            ) : (
-                <>
-                    {/* Toolbar */}
-                    <TableToolbar
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                        searchPlaceholder="Search transactions..."
-                    >
-                        <div className={styles.toolbarContainer}>
-                            {['all', 'completed', 'pending', 'failed'].map((status) => {
-                                const isActive = statusFilter === status;
-                                return (
-                                    <button
-                                        key={status}
-                                        onClick={() => { setStatusFilter(status); setCurrentPage(1); }}
-                                        className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
-                                    >
-                                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <div className={styles.filterGroup}>
-                            <select
-                                className={styles.filterSelect}
-                                value={typeFilter}
-                                onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
-                            >
-                                <option value="all">All Reasons</option>
-                                <option value="ticket_sale">Ticket Sales</option>
-                                <option value="subscription">Subscriptions</option>
-                                <option value="ad_campaign_payment">Ad Payments</option>
-                                <option value="organizer_payment">Organizer Payments</option>
-                                <option value="ad_refund">Ad Refunds</option>
-                                <option value="ticket_refund">Ticket Refunds</option>
-                            </select>
-                        </div>
-                    </TableToolbar>
-
-                    <div className={styles.tableWrapper}>
-                        {activeTab === 'transactions' ? (
-                            <FinanceTable
-                                transactions={paginatedTransactions}
-                                selectedIds={selectedIds}
-                                onSelect={handleSelect}
-                                onSelectAll={handleSelectAll}
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={setCurrentPage}
-                            />
-                        ) : (
-                            <PayoutTable
-                                payouts={payouts.slice((payoutCurrentPage - 1) * payoutItemsPerPage, payoutCurrentPage * payoutItemsPerPage)}
-                                selectedIds={selectedIds}
-                                onSelect={handleSelect}
-                                onSelectAll={handleSelectAll}
-                                currentPage={payoutCurrentPage}
-                                totalPages={Math.ceil(payouts.length / payoutItemsPerPage)}
-                                onPageChange={setPayoutCurrentPage}
-                            />
-                        )}
-                    </div>
-                </>
-            )}
+            <div className={styles.tableWrapper}>
+                {activeTab === 'payouts' ? (
+                    <PayoutTable
+                        payouts={payouts.slice((payoutCurrentPage - 1) * payoutItemsPerPage, payoutCurrentPage * payoutItemsPerPage)}
+                        selectedIds={selectedIds}
+                        onSelect={handleSelect}
+                        onSelectAll={handleSelectAll}
+                        currentPage={payoutCurrentPage}
+                        totalPages={Math.ceil(payouts.length / payoutItemsPerPage)}
+                        onPageChange={setPayoutCurrentPage}
+                        isLoading={isLoading}
+                    />
+                ) : (
+                    <WalletsTable
+                        data={wallets}
+                        isLoading={isLoading}
+                    />
+                )}
+            </div>
         </div>
     );
 }

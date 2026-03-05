@@ -57,8 +57,8 @@ export default function CreateEventPage() {
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
                     location_name: data.location || null,
-                    start_datetime: startDateTime,
-                    end_datetime: endDateTime,
+                    starts_at: startDateTime,
+                    ends_at: endDateTime,
                     thumbnail_url: uploadedThumbnailUrl,
                     status: 'published' // Default to published for MVP, usually 'draft' first
                 })
@@ -73,7 +73,7 @@ export default function CreateEventPage() {
                     event_id: newEvent.id,
                     name: t.name,
                     price: parseFloat(t.price),
-                    quantity_total: parseInt(t.quantity),
+                    capacity: parseInt(t.quantity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
                     currency: 'KES', // Defaulting for MVP
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
@@ -85,6 +85,37 @@ export default function CreateEventPage() {
                     .insert(ticketsToInsert);
 
                 if (ticketError) throw ticketError;
+            }
+
+            // 5. Link Tags
+            if (data.tags.length > 0 && newEvent) {
+                // First, ensure all tags exist (upsert by name/slug)
+                const tagsToUpsert = data.tags.map(tag => ({
+                    name: tag,
+                    slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                    is_official: false,
+                    is_active: true
+                }));
+
+                const { data: resolvedTags, error: tagUpsertError } = await supabase
+                    .from('tags')
+                    .upsert(tagsToUpsert, { onConflict: 'slug' })
+                    .select('id');
+
+                if (tagUpsertError) throw tagUpsertError;
+
+                if (resolvedTags) {
+                    const eventTagsToInsert = resolvedTags.map(tag => ({
+                        event_id: newEvent.id,
+                        tag_id: tag.id
+                    }));
+
+                    const { error: eventTagError } = await supabase
+                        .from('event_tags')
+                        .insert(eventTagsToInsert);
+
+                    if (eventTagError) console.error("Warning: Tag linking failed", eventTagError);
+                }
             }
 
             // Success Cleanup

@@ -8,9 +8,10 @@ import ConfigTab from '@/components/admin/settings/ConfigTab';
 import FeatureFlagTab from '@/components/admin/settings/FeatureFlagTab';
 import AdPricingTab from '@/components/admin/settings/AdPricingTab';
 import TaxRatesTab from '@/components/admin/settings/TaxRatesTab';
+import PaymentProvidersTab from '@/components/admin/settings/PaymentProvidersTab';
 import Tabs from '@/components/dashboard/Tabs';
 
-type Tab = 'config' | 'feature-flags' | 'ad-pricing' | 'tax-rates';
+type Tab = 'config' | 'feature-flags' | 'ad-pricing' | 'payment-providers' | 'tax-rates';
 
 function SettingsContent() {
     const searchParams = useSearchParams();
@@ -18,14 +19,14 @@ function SettingsContent() {
     const pathname = usePathname();
     const initialTab = searchParams.get('tab') as Tab;
     const [activeTab, setActiveTab] = useState<Tab>(
-        (initialTab && ['config', 'feature-flags', 'ad-pricing', 'tax-rates'].includes(initialTab))
+        (initialTab && ['config', 'feature-flags', 'ad-pricing', 'payment-providers', 'tax-rates'].includes(initialTab))
             ? initialTab
             : 'config'
     );
 
     useEffect(() => {
         const tab = searchParams.get('tab') as Tab;
-        if (tab && ['config', 'feature-flags', 'ad-pricing', 'tax-rates'].includes(tab)) {
+        if (tab && ['config', 'feature-flags', 'ad-pricing', 'payment-providers', 'tax-rates'].includes(tab)) {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -51,6 +52,7 @@ function SettingsContent() {
                     { id: 'config', label: 'System Config' },
                     { id: 'feature-flags', label: 'Feature Flags' },
                     { id: 'ad-pricing', label: 'Ad Pricing' },
+                    { id: 'payment-providers', label: 'Payment Providers' },
                     { id: 'tax-rates', label: 'Tax Rates' }
                 ]}
                 activeTab={activeTab}
@@ -61,6 +63,7 @@ function SettingsContent() {
                 {activeTab === 'config' && <ConfigTab />}
                 {activeTab === 'feature-flags' && <FeatureFlagTab />}
                 {activeTab === 'ad-pricing' && <AdPricingTab />}
+                {activeTab === 'payment-providers' && <PaymentProvidersTab />}
                 {activeTab === 'tax-rates' && <TaxRatesTab />}
             </main>
         </div>

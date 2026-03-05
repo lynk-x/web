@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import type { FinanceTransaction } from '@/types/organize';
 import type { TaxRate, FXRate } from '@/types/admin';
+import { exportToCSV } from '@/utils/export';
 
 function FinanceContent() {
     const { showToast } = useToast();
@@ -60,6 +61,16 @@ function FinanceContent() {
 
     // FX State
     const [isSyncingFX, setIsSyncingFX] = useState(false);
+
+    // Global Stats state
+    const [globalStats, setGlobalStats] = useState<any>({
+        grossVolume: null,
+        adRevenue: null,
+        subscriptionRevenue: null,
+        pendingPayouts: null,
+        activeSubscriptions: null,
+        payoutRequestCount: null
+    });
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -150,7 +161,7 @@ function FinanceContent() {
                     kyc_status: p.account?.kyc_status,
                     is_verified: p.account?.is_verified
                 })));
-            } else if (activeTab === 'taxes') {
+            } else if (activeTab === 'tax-rules') {
                 const { data, error } = await supabase.from('tax_rates').select(`
                     *,
                     country:countries(name)
@@ -160,11 +171,28 @@ function FinanceContent() {
                     ...t,
                     country_name: t.country?.name || t.country_code
                 })));
-            } else if (activeTab === 'currencies') {
+            } else if (activeTab === 'fx-rates') {
                 const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
                 if (error) throw error;
                 setFxRates(data || []);
             }
+
+            // Global Metrics (Separate from tab filtering)
+            const [grossRes, adRes, subRes, payoutRes] = await Promise.all([
+                supabase.from('transactions').select('amount').eq('status', 'completed'),
+                supabase.from('transactions').select('amount').eq('reason', 'ad_campaign_payment').eq('status', 'completed'),
+                supabase.from('transactions').select('amount').eq('reason', 'subscription').eq('status', 'completed'),
+                supabase.from('payouts').select('amount').eq('status', 'requested')
+            ]);
+
+            setGlobalStats({
+                grossVolume: (grossRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                adRevenue: (adRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                subscriptionRevenue: (subRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                pendingPayouts: (payoutRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                activeSubscriptions: (subRes.data || []).length, // approximate
+                payoutRequestCount: (payoutRes.data || []).length
+            });
         } catch (error: any) {
             showToast(error.message, 'error');
         } finally {
@@ -176,11 +204,38 @@ function FinanceContent() {
         fetchData();
         setSelectedTxIds(new Set());
         setSelectedPayoutIds(new Set());
-    }, [fetchData]);
 
+        // Fetch countries for the dropdown
+        const fetchCountries = async () => {
+            const { data } = await supabase.from('countries').select('code, name').order('name');
+            if (data) setCountries(data);
+        };
+        fetchCountries();
+    }, [fetchData, supabase]);
+
+    /**
+     * Exports the currently-loaded transactions to CSV.
+     * Uses the shared exportToCSV utility for consistency with other dashboard exports.
+     */
     const handleBulkExport = () => {
-        showToast('Exporting data...', 'info');
-        setTimeout(() => showToast('Data exported successfully.', 'success'), 1500);
+        if (transactions.length === 0) {
+            showToast('No transactions to export.', 'warning');
+            return;
+        }
+        showToast('Preparing CSV export...', 'info');
+        const rows = transactions.map(tx => ({
+            id: tx.id,
+            reference: tx.reference || '',
+            date: new Date(tx.date).toLocaleDateString(),
+            description: tx.description,
+            type: tx.type,
+            category: tx.category || '',
+            amount: tx.amount,
+            status: tx.status,
+            event: tx.event || '',
+        }));
+        exportToCSV(rows, `transactions_export_${new Date().toISOString().slice(0, 10)}`);
+        showToast('Export complete.', 'success');
     };
 
     const handleSaveTaxRate = async () => {
@@ -207,15 +262,24 @@ function FinanceContent() {
         }
     };
 
+    /**
+     * Syncs FX rates by calling the `sync_fx_rates` Supabase RPC.
+     * Falls back gracefully with a toast if the function is not yet deployed.
+     */
     const handleSyncFX = async () => {
         setIsSyncingFX(true);
         showToast('Syncing with global rates...', 'info');
-        // Simulated sync logic
-        setTimeout(() => {
-            setIsSyncingFX(false);
-            showToast('FX rates synchronized.', 'success');
+        try {
+            const { error } = await supabase.rpc('sync_fx_rates');
+            if (error) throw error;
+            showToast('FX rates synchronized successfully.', 'success');
             fetchData();
-        }, 2000);
+        } catch (err: any) {
+            // If the RPC doesn't exist yet, surface the error clearly instead of silently failing
+            showToast(err.message || 'FX sync function not available.', 'error');
+        } finally {
+            setIsSyncingFX(false);
+        }
     };
 
     const getBulkActions = (): BulkAction[] => {
@@ -262,7 +326,7 @@ function FinanceContent() {
             );
         }
 
-        if (activeTab === 'taxes') {
+        if (activeTab === 'tax-rules') {
             return (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
@@ -293,7 +357,7 @@ function FinanceContent() {
             );
         }
 
-        if (activeTab === 'currencies') {
+        if (activeTab === 'fx-rates') {
             return (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
@@ -347,27 +411,31 @@ function FinanceContent() {
             <div className={sharedStyles.statsGrid}>
                 <StatCard
                     label="Gross Volume"
-                    value={`$${transactions.filter(t => t.category === 'incoming').reduce((acc, t) => acc + Number(t.amount), 0).toLocaleString()}`}
-                    change="All incoming transactions"
+                    value={globalStats.grossVolume !== null ? `$${globalStats.grossVolume.toLocaleString()}` : null}
+                    change="All completed transactions"
                     trend="positive"
+                    isLoading={isLoading}
                 />
                 <StatCard
                     label="Ad Revenue"
-                    value={`$${transactions.filter(t => t.type === 'ad_campaign_payment').reduce((acc, t) => acc + Number(t.amount), 0).toLocaleString()}`}
+                    value={globalStats.adRevenue !== null ? `$${globalStats.adRevenue.toLocaleString()}` : null}
                     change="Live platform ads"
                     trend="neutral"
+                    isLoading={isLoading}
                 />
                 <StatCard
                     label="Subscriptions"
-                    value={`$${transactions.filter(t => t.type === 'subscription').reduce((acc, t) => acc + Number(t.amount), 0).toLocaleString()}`}
-                    change={`${transactions.filter(t => t.type === 'subscription').length} active plans`}
+                    value={globalStats.subscriptionRevenue !== null ? `$${globalStats.subscriptionRevenue.toLocaleString()}` : null}
+                    change={globalStats.activeSubscriptions !== null ? `${globalStats.activeSubscriptions} active entries` : '...'}
                     trend="positive"
+                    isLoading={isLoading}
                 />
                 <StatCard
                     label="Pending Payouts"
-                    value={`$${payouts.filter(p => p.status === 'requested').reduce((acc, p) => acc + Number(p.amount), 0).toLocaleString()}`}
-                    change={`${payouts.filter(p => p.status === 'requested').length} active requests`}
+                    value={globalStats.pendingPayouts !== null ? `$${globalStats.pendingPayouts.toLocaleString()}` : null}
+                    change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
                     trend="neutral"
+                    isLoading={isLoading}
                 />
             </div>
 
