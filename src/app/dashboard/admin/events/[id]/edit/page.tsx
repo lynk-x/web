@@ -32,7 +32,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                         location_name, starts_at, ends_at, thumbnail_url,
                         account_id,
                         ticket_tiers (
-                            id, name, price, quantity_total, description, sales_start_at, sales_end_at, max_per_user
+                            id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
                         )
                     `)
                     .eq('id', eventId)
@@ -53,9 +53,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
                 const mappedTickets: OrganizerEventTicket[] = (event.ticket_tiers || []).map((t: any) => ({
                     id: t.id,
-                    name: t.name,
+                    display_name: t.display_name,
                     price: t.price.toString(),
-                    quantity: t.quantity_total.toString(),
+                    capacity: t.capacity.toString(),
                     description: t.description || '',
                     saleStart: t.sales_start_at ? formatDate(new Date(t.sales_start_at)) : '',
                     saleEnd: t.sales_end_at ? formatDate(new Date(t.sales_end_at)) : '',
@@ -165,9 +165,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 const ticketsToUpsert = data.tickets.map((t) => ({
                     ...(t.id ? { id: t.id } : {}),
                     event_id: eventId,
-                    name: t.name,
+                    display_name: t.display_name,
                     price: parseFloat(t.price),
-                    quantity_total: parseInt(t.quantity),
+                    capacity: parseInt(t.capacity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
                     currency: 'KES',
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,

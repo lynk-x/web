@@ -23,8 +23,8 @@ export interface OrganizerEvent {
      */
     status: 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'cancelled';
     attendees: number;
-    /** Unique share/lookup code — from `events.event_code` column */
-    eventCode?: string;
+    /** Unique share/lookup code — from `events.reference` column */
+    eventReference?: string;
     /** Whether the event is private — from `events.is_private` column */
     isPrivate?: boolean;
     thumbnailUrl?: string;
@@ -147,9 +147,9 @@ export interface OrganizerEventFormData {
 /** A ticket tier within the event form. */
 export interface OrganizerEventTicket {
     id?: string;
-    name: string;
+    display_name: string;
     price: string;
-    quantity: string;
+    capacity: string;
     description?: string;
     saleStart?: string;
     saleEnd?: string;
@@ -162,7 +162,7 @@ export interface Attendee {
     name: string;
     email: string;
     /** From `ticket_tiers.name` */
-    tierName: string;
+    tierName: string; // Matches display_name in DB
     purchaseDate: string;
     /** 'valid' | 'used' | 'transferred' | 'cancelled' | 'expired' (matches `ticket_status` enum) */
     status: 'valid' | 'used' | 'transferred' | 'cancelled' | 'expired';

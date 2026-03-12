@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '../../page.module.css';
-import adminStyles from '../../../page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import SubPageHeader from '@/components/shared/SubPageHeader';
@@ -65,7 +64,7 @@ export default function CreateBroadcastPage() {
     };
 
     return (
-        <div className={styles.container}>
+        <div className={adminStyles.container}>
             <SubPageHeader
                 title="Create Broadcast Notification"
                 subtitle="Send a platform-wide alert or targeted notification."
@@ -77,15 +76,14 @@ export default function CreateBroadcastPage() {
                 }}
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            <div className={adminStyles.subPageGrid}>
                 <div className={adminStyles.pageCard}>
-                    <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '24px' }}>Notification Details</h2>
-                    <form style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} onSubmit={handleSendNotification}>
-                        <div>
+                    <h2 className={adminStyles.sectionTitle}>Notification Details</h2>
+                    <form className={adminStyles.form} onSubmit={handleSendNotification}>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Notification Type</label>
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={notificationType}
                                 onChange={(e) => handleChange(setNotificationType, e.target.value)}
                             >
@@ -97,7 +95,7 @@ export default function CreateBroadcastPage() {
                                 <option value="money_out">Billing (Payout)</option>
                             </select>
                         </div>
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Subject Line</label>
                             <input
                                 type="text"
@@ -108,18 +106,16 @@ export default function CreateBroadcastPage() {
                                 required
                             />
                         </div>
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Target FCM Tokens (Optional)</label>
                             <textarea
-                                className={adminStyles.input}
-                                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: '12px' }}
-                                rows={3}
+                                className={adminStyles.textarea}
                                 placeholder="One token per line to target specific devices..."
                                 value={fcmTokens}
                                 onChange={(e) => handleChange(setFcmTokens, e.target.value)}
                             />
                         </div>
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Image Attachment URL (Optional)</label>
                             <input
                                 type="text"
@@ -129,7 +125,7 @@ export default function CreateBroadcastPage() {
                                 onChange={(e) => handleChange(setImageUrl, e.target.value)}
                             />
                         </div>
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Message Content</label>
                             <RichTextEditor
                                 value={message}
@@ -140,14 +136,16 @@ export default function CreateBroadcastPage() {
                     </form>
                 </div>
 
-                <div className={adminStyles.pageCard}>
-                    <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '24px' }}>Live Preview</h2>
-                    <OutreachPreview
-                        subject={subject}
-                        message={message}
-                        imageUrl={imageUrl}
-                        audience={notificationType}
-                    />
+                <div className={adminStyles.formSection}>
+                    <div>
+                        <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
+                        <OutreachPreview
+                            subject={subject}
+                            message={message}
+                            imageUrl={imageUrl}
+                            audience={notificationType}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

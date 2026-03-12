@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import adminStyles from '../../../../page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import SubPageHeader from '@/components/shared/SubPageHeader';
@@ -116,18 +116,17 @@ export default function EditBannerPage() {
                 }}
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
+            <div className={adminStyles.subPageGrid}>
                 <div className={adminStyles.pageCard}>
-                    <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '24px' }}>Banner Details</h2>
+                    <h2 className={adminStyles.sectionTitle}>Banner Details</h2>
                     <form className={adminStyles.form} onSubmit={handleUpdateBanner}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                            <div>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Banner Type</label>
                                 <select
                                     className={adminStyles.select}
-                                    style={{ width: '100%' }}
                                     value={type}
-                                    onChange={(e) => handleChange(setType, e.target.value as any)}
+                                    onChange={(e) => handleChange(setType, e.target.value as 'info' | 'warning' | 'success' | 'danger')}
                                 >
                                     <option value="info">Information (Blue)</option>
                                     <option value="success">Success (Green)</option>
@@ -135,8 +134,8 @@ export default function EditBannerPage() {
                                     <option value="error">Error (Red)</option>
                                 </select>
                             </div>
-                            <div style={{ alignSelf: 'center' }}>
-                                <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                            <div className={adminStyles.inputGroup} style={{ alignSelf: 'center', paddingTop: '20px' }}>
+                                <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', margin: 0 }}>
                                     <input
                                         type="checkbox"
                                         checked={isActive}
@@ -147,7 +146,7 @@ export default function EditBannerPage() {
                             </div>
                         </div>
 
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Headline Title</label>
                             <input
                                 type="text"
@@ -159,12 +158,10 @@ export default function EditBannerPage() {
                             />
                         </div>
 
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Banner Message</label>
                             <textarea
-                                className={adminStyles.input}
-                                style={{ width: '100%' }}
-                                rows={3}
+                                className={adminStyles.textarea}
                                 placeholder="Describe the alert in detail..."
                                 value={content}
                                 onChange={(e) => handleChange(setContent, e.target.value)}
@@ -172,8 +169,8 @@ export default function EditBannerPage() {
                             />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                            <div>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Starts At</label>
                                 <input
                                     type="datetime-local"
@@ -183,7 +180,7 @@ export default function EditBannerPage() {
                                     required
                                 />
                             </div>
-                            <div>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Ends At (Optional)</label>
                                 <input
                                     type="datetime-local"
@@ -194,7 +191,7 @@ export default function EditBannerPage() {
                             </div>
                         </div>
 
-                        <div>
+                        <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Action URL (Optional)</label>
                             <input
                                 type="text"
@@ -207,9 +204,9 @@ export default function EditBannerPage() {
                     </form>
                 </div>
 
-                <div>
+                <div className={adminStyles.formSection}>
                     <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '24px' }}>Visual Preview</h2>
+                        <h2 className={adminStyles.sectionTitle}>Visual Preview</h2>
                         <div style={{
                             padding: '16px',
                             background: type === 'info' ? 'rgba(33, 150, 243, 0.1)' :
@@ -236,7 +233,7 @@ export default function EditBannerPage() {
                         </div>
 
                         <div style={{ marginTop: '24px', display: 'flex', gap: '8px' }}>
-                            <Badge label={type.toUpperCase()} variant={type as any} />
+                            <Badge label={type.toUpperCase()} variant={type as 'info' | 'warning' | 'success' | 'error'} />
                             {isActive && <Badge label="ACTIVE" variant="success" showDot />}
                             {!isActive && <Badge label="INACTIVE" variant="neutral" />}
                         </div>

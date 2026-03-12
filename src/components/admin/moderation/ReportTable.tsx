@@ -142,7 +142,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
         if (report.status !== 'resolved') {
             actions.push({
                 label: 'Mark Resolved',
-                variant: 'success',
+                variant: 'success' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                 onClick: () => {
                     showToast('Resolving report...', 'info');
@@ -166,7 +166,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
         if (report.targetType === 'user') {
             actions.push({
                 label: 'Ban User',
-                variant: 'danger',
+                variant: 'danger' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
                 onClick: () => {
                     showToast(`Banning user reported in ${report.id}...`, 'info');

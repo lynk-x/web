@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import styles from './page.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -10,6 +9,8 @@ import MemberTable from '@/components/organize/MemberTable';
 import PaymentMethodsManager from '@/components/organize/PaymentMethodsManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Tabs from '@/components/dashboard/Tabs';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 function SettingsContent() {
     const { showToast } = useToast();
@@ -19,55 +20,111 @@ function SettingsContent() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const initialTab = (searchParams.get('tab') as any) || 'profile';
-    const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'payment-methods' | 'settings'>(
-        ['profile', 'team', 'payment-methods', 'settings'].includes(initialTab) ? initialTab : 'profile'
+    const initialTab = (searchParams.get('tab') as string) || 'account';
+    const [activeTab, setActiveTab] = useState<'account' | 'team' | 'billing' | 'danger-zone'>(
+        (['account', 'team', 'billing', 'danger-zone'] as string[]).includes(initialTab) ? initialTab as 'account' | 'team' | 'billing' | 'danger-zone' : 'account'
     );
+    const [pendingTab, setPendingTab] = useState<string | null>(null);
 
-    // Handle initial tab from query param and sync with state
     useEffect(() => {
-        const tab = searchParams.get('tab') as any;
-        if (tab && ['profile', 'team', 'payment-methods', 'settings'].includes(tab)) {
-            setActiveTab(tab);
+        const tab = searchParams.get('tab') as string;
+        if (tab && ['account', 'team', 'billing', 'danger-zone'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
+
     const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as any);
+        if (isDirty && activeTab !== newTab) {
+            setPendingTab(newTab);
+            return;
+        }
+        confirmTabChange(newTab);
+    };
+
+    const confirmTabChange = (newTab: string) => {
+        setActiveTab(newTab as Extract<typeof activeTab, string>);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
+        setPendingTab(null);
     };
 
-    // Form State
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-    // Change password state
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         website: '',
         description: '',
         support_email: '',
-        phone_number: ''
+        phone_number: '',
+        // Business Profile
+        business_name: '',
+        tax_id: '',
+        registration_number: '',
+        billing_address: ''
     });
 
-    // Load active account data into form
+    const isDirty = useMemo(() => {
+        if (!activeAccount) return false;
+        const aa = activeAccount as any;
+        return (
+            formData.name !== (aa.name || '') ||
+            formData.website !== (aa.website || '') ||
+            formData.description !== (aa.description || '') ||
+            formData.support_email !== (aa.support_email || '') ||
+            formData.phone_number !== (aa.phone_number || '') ||
+            formData.business_name !== (aa.business_name || '') ||
+            formData.tax_id !== (aa.tax_id || '') ||
+            formData.registration_number !== (aa.registration_number || '') ||
+            formData.billing_address !== (aa.billing_address || '')
+        );
+    }, [formData, activeAccount]);
+
     useEffect(() => {
         if (activeAccount) {
-            setFormData({
-                name: activeAccount.name || '',
-                website: activeAccount.website || '',
-                description: activeAccount.description || '',
-                support_email: activeAccount.support_email || '',
-                phone_number: activeAccount.phone_number || ''
-            });
+            const fetchBusinessData = async () => {
+                const { data, error } = await supabase
+                    .from('business_profile')
+                    .select('*')
+                    .eq('account_id', activeAccount.id)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    setFormData({
+                        name: activeAccount.name || '',
+                        website: activeAccount.website || '',
+                        description: activeAccount.description || '',
+                        support_email: activeAccount.support_email || '',
+                        phone_number: activeAccount.phone_number || '',
+                        business_name: data.business_name || '',
+                        tax_id: data.tax_id || '',
+                        registration_number: data.registration_number || '',
+                        billing_address: typeof data.billing_address === 'string' ? data.billing_address : JSON.stringify(data.billing_address || '')
+                    });
+                    // Patch activeAccount in memory for dirty check (cast to any)
+                    const aa = activeAccount as any;
+                    aa.business_name = data.business_name || '';
+                    aa.tax_id = data.tax_id || '';
+                    aa.registration_number = data.registration_number || '';
+                    aa.billing_address = typeof data.billing_address === 'string' ? data.billing_address : JSON.stringify(data.billing_address || '');
+                } else {
+                    setFormData({
+                        name: activeAccount.name || '',
+                        website: activeAccount.website || '',
+                        description: activeAccount.description || '',
+                        support_email: activeAccount.support_email || '',
+                        phone_number: activeAccount.phone_number || '',
+                        business_name: '',
+                        tax_id: '',
+                        registration_number: '',
+                        billing_address: ''
+                    });
+                }
+            };
+            fetchBusinessData();
         }
-    }, [activeAccount]);
+    }, [activeAccount, supabase]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -78,19 +135,34 @@ function SettingsContent() {
         if (!activeAccount) return;
         setIsSaving(true);
         try {
-            const { error } = await supabase
+            // Update Accounts table
+            const { error: accError } = await supabase
                 .from('accounts')
                 .update({
-                    name: formData.name,
+                    display_name: formData.name,
+                    contact_email: formData.support_email,
                     website: formData.website,
                     description: formData.description,
-                    support_email: formData.support_email,
                     phone_number: formData.phone_number
                 })
                 .eq('id', activeAccount.id);
 
-            if (error) throw error;
-            showToast('Organizer settings updated successfully.', 'success');
+            if (accError) throw accError;
+
+            // Update Business Profile table
+            const { error: bizError } = await supabase
+                .from('business_profile')
+                .upsert({
+                    account_id: activeAccount.id,
+                    business_name: formData.business_name || formData.name, // Fallback to display name
+                    tax_id: formData.tax_id,
+                    registration_number: formData.registration_number,
+                    billing_address: formData.billing_address
+                });
+
+            if (bizError) throw bizError;
+
+            showToast('Settings saved successfully.', 'success');
             if (refreshAccounts) await refreshAccounts();
         } catch (err: any) {
             showToast(err.message || 'Failed to update settings.', 'error');
@@ -99,38 +171,13 @@ function SettingsContent() {
         }
     };
 
-    /** Update password via Supabase Auth. */
-    const handleChangePassword = async () => {
-        if (!newPassword || newPassword !== confirmPassword) {
-            showToast('Passwords do not match.', 'error');
-            return;
-        }
-        if (newPassword.length < 8) {
-            showToast('Password must be at least 8 characters.', 'error');
-            return;
-        }
-        setIsChangingPassword(true);
-        try {
-            const { error } = await supabase.auth.updateUser({ password: newPassword });
-            if (error) throw error;
-            showToast('Password updated successfully.', 'success');
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update password.', 'error');
-        } finally {
-            setIsChangingPassword(false);
-        }
-    };
 
-    /** Soft-delete: deactivates the organizer account. */
     const handleDeleteAccount = async () => {
         if (!activeAccount) return;
         try {
             const { error } = await supabase
                 .from('accounts')
-                .update({ is_active: false })   // Fix #4: accounts has no `status` column; use is_active
+                .update({ is_active: false })
                 .eq('id', activeAccount.id);
 
             if (error) throw error;
@@ -142,127 +189,117 @@ function SettingsContent() {
     };
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Organizer Settings</h1>
-                    <p className={styles.subtitle}>Configure your organization profile and application preferences.</p>
-                </div>
-                <button
-                    className={styles.saveBtn}
-                    onClick={handleSave}
-                    disabled={isSaving}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 3 7 8 15 8"></polyline>
-                    </svg>
-                    {isSaving ? 'Saving...' : 'Save Settings'}
-                </button>
-            </header>
-
-            <Tabs
-                options={[
-                    { id: 'profile', label: 'Profile' },
-                    { id: 'team', label: 'Team Members' },
-                    { id: 'payment-methods', label: 'Payment Methods' },
-                    { id: 'settings', label: 'Settings' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
+        <div className={adminStyles.container}>
+            <PageHeader
+                title="Organizer Settings"
+                subtitle="Configure your organization profile, team members, and advertising preferences."
+                actionLabel={isSaving ? "Saving..." : "Save Settings"}
+                onActionClick={handleSave}
+                actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>}
             />
 
-            {activeTab === 'profile' && (
-                <div className={styles.columnLayout}>
-                    {/* Organization Profile & Support Contact */}
-                    <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Organization Profile</h2>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Organization Name</label>
-                            <input type="text" name="name" className={styles.input} value={formData.name} onChange={handleInputChange} />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Website URL</label>
-                            <input type="text" name="website" className={styles.input} value={formData.website} onChange={handleInputChange} placeholder="https://" />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Organization Bio</label>
-                            <textarea name="description" className={styles.textarea} value={formData.description} onChange={handleInputChange} placeholder="Tell attendees about your organization..." />
-                        </div>
+            <div style={{ marginBottom: '24px' }}>
+                <Tabs
+                    options={[
+                        { id: 'account', label: 'Account' },
+                        { id: 'team', label: 'Team Members' },
+                        { id: 'billing', label: 'Billing' },
+                        { id: 'danger-zone', label: 'Danger Zone' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                />
+            </div>
 
-                        <div style={{ marginTop: '12px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
-                            <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0, opacity: 0.8 }}>Support Contact</h3>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Support Email</label>
-                                <input type="email" name="support_email" className={styles.input} value={formData.support_email} onChange={handleInputChange} placeholder="support@domain.com" />
+            <div className={adminStyles.container}>
+                {activeTab === 'account' && (
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Organization Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="name" className={adminStyles.input} value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Events" />
                             </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Support Phone</label>
-                                <input type="text" name="phone_number" className={styles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="email" name="support_email" className={adminStyles.input} value={formData.support_email} onChange={handleInputChange} placeholder="support@organization.com" />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Support Phone</label>
+                                <input type="text" name="phone_number" className={adminStyles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Website URL</label>
+                                <input type="text" name="website" className={adminStyles.input} value={formData.website} onChange={handleInputChange} placeholder="https://organization.com" />
+                            </div>
+
+                            <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
+                                <label className={adminStyles.label}>Description / Bio</label>
+                                <textarea name="description" className={adminStyles.textarea} value={formData.description} onChange={handleInputChange} placeholder="Tell attendees about your organization..." rows={2} />
+                            </div>
+
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Legal Name (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="business_name" className={adminStyles.input} value={formData.business_name} onChange={handleInputChange} placeholder="As registered with authorities" />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Tax ID / PIN (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="tax_id" className={adminStyles.input} value={formData.tax_id} onChange={handleInputChange} placeholder="VAT / EIN / KRA PIN" />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Registration Number (if business)</label>
+                                <input type="text" name="registration_number" className={adminStyles.input} value={formData.registration_number} onChange={handleInputChange} placeholder="Business License #" />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Legal Billing Address <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="billing_address" className={adminStyles.input} value={formData.billing_address} onChange={handleInputChange} placeholder="City, State, Country..." />
                             </div>
                         </div>
-                    </section>
-                </div>
-            )}
+                    </div>
+                )}
 
-            {activeTab === 'team' && (
-                <MemberTable />
-            )}
+                {activeTab === 'team' && (
+                    <div className={adminStyles.pageCard} style={{ gridColumn: '1 / -1' }}>
+                        <MemberTable />
+                    </div>
+                )}
 
-            {activeTab === 'payment-methods' && (
-                <div className={styles.columnLayout}>
-                    {activeAccount ? (
-                        <PaymentMethodsManager accountId={activeAccount.id} />
-                    ) : (
-                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
-                    )}
-                </div>
-            )}
+                {activeTab === 'billing' && (
+                    <div className={adminStyles.pageCard}>
+                        {activeAccount ? (
+                            <PaymentMethodsManager accountId={activeAccount.id} />
+                        ) : (
+                            <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                        )}
+                    </div>
+                )}
 
-            {activeTab === 'settings' && (
-                <div className={styles.columnLayout}>
-                    {/* Security Data */}
-                    {/* Change Password */}
-                    <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Change Password</h2>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Current Password</label>
-                            <input type="password" className={styles.input} placeholder="Enter current password"
-                                value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+                {activeTab === 'danger-zone' && (
+                    <>
+
+                        <div className={adminStyles.pageCard}>
+                            <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>
+                            <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
+                                Deactivates your organizer account and removes it from public listings. This action cannot be easily undone.
+                            </p>
+                            <button type="button" className={adminStyles.btnDanger} onClick={() => setIsDeleteModalOpen(true)}>Deactivate Account</button>
                         </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>New Password</label>
-                            <input type="password" className={styles.input} placeholder="Min. 8 characters"
-                                value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>Confirm New Password</label>
-                            <input type="password" className={styles.input} placeholder="Repeat new password"
-                                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                        </div>
-                        <button type="button" className={styles.secondaryBtn}
-                            style={{ alignSelf: 'flex-start', marginTop: '8px' }}
-                            onClick={handleChangePassword}
-                            disabled={isChangingPassword}
-                        >
-                            {isChangingPassword ? 'Updating…' : 'Update Password'}
-                        </button>
-                    </section>
+                    </>
+                )}
+            </div>
 
-                    <section className={`${styles.section} ${styles.dangerZone}`}>
-                        <h2 className={`${styles.sectionTitle} ${styles.dangerTitle}`}>Danger Zone</h2>
-                        <p className={styles.label} style={{ marginBottom: '16px', whiteSpace: 'normal', lineHeight: 1.5 }}>
-                            Deactivates your organizer account and removes it from public listings. This cannot be undone without contacting support.
-                        </p>
-                        <button type="button" className={styles.deleteBtn} onClick={() => setIsDeleteModalOpen(true)}>Deactivate Account</button>
-                    </section>
-                </div>
-            )}
+            <ConfirmationModal
+                isOpen={!!pendingTab}
+                onClose={() => setPendingTab(null)}
+                onConfirm={() => {
+                    if (pendingTab) confirmTabChange(pendingTab);
+                }}
+                title="Unsaved Changes"
+                message="You have unsaved changes. Are you sure you want to leave this tab and lose your progress?"
+                confirmLabel="Leave Tab"
+                variant="danger"
+            />
 
-
-
-            {/* Account deactivation confirmation */}
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
@@ -278,7 +315,7 @@ function SettingsContent() {
 
 export default function OrganizerSettingsPage() {
     return (
-        <Suspense fallback={<div className={styles.loading}>Loading Settings...</div>}>
+        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading Settings...</div>}>
             <SettingsContent />
         </Suspense>
     );

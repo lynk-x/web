@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
+import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/app/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
@@ -35,6 +36,7 @@ export default function AdAnalyticsTab() {
 
     const [rows, setRows] = useState<AnalyticsRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const [interactionFilter, setInteractionFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 14;
@@ -90,7 +92,11 @@ export default function AdAnalyticsTab() {
 
     useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
 
-    const filtered = interactionFilter === 'all' ? rows : rows.filter(r => r.interaction_type === interactionFilter);
+    const filtered = rows.filter(r => {
+        const matchesInteraction = interactionFilter === 'all' || r.interaction_type === interactionFilter;
+        const matchesSearch = r.campaign_title.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesInteraction && matchesSearch;
+    });
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -130,29 +136,21 @@ export default function AdAnalyticsTab() {
     const totalEvents = filtered.reduce((acc, r) => acc + r.event_count, 0);
 
     return (
-        <div>
-            {/* Summary row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
-                {[
-                    { label: 'Total Events (30d)', value: totalEvents.toLocaleString() },
-                    { label: 'Total Spend (30d)', value: `$${totalCost.toFixed(2)}` },
-                    { label: 'Avg Cost/Event', value: totalEvents ? `$${(totalCost / totalEvents).toFixed(4)}` : '—' },
-                ].map(({ label, value }) => (
-                    <div key={label} className={adminStyles.statCard} style={{ cursor: 'default' }}>
-                        <span className={adminStyles.statLabel}>{label}</span>
-                        <span className={adminStyles.statValue} style={{ fontSize: '22px' }}>{value}</span>
-                    </div>
-                ))}
-            </div>
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             {/* Filters */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                {[{ value: 'all', label: 'All' }, { value: 'impression', label: 'Impressions (CPM)' }, { value: 'click', label: 'Clicks (CPC)' }].map(({ value, label }) => (
-                    <button key={value} className={`${adminStyles.chip} ${interactionFilter === value ? adminStyles.chipActive : ''}`} onClick={() => { setInteractionFilter(value); setCurrentPage(1); }}>
-                        {label}
-                    </button>
-                ))}
-            </div>
+            <TableToolbar 
+                searchPlaceholder="Search campaign analytics..." 
+                searchValue={searchTerm} 
+                onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}
+            >
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[{ value: 'all', label: 'All' }, { value: 'impression', label: 'Impressions (CPM)' }, { value: 'click', label: 'Clicks (CPC)' }].map(({ value, label }) => (
+                        <button key={value} className={`${adminStyles.chip} ${interactionFilter === value ? adminStyles.chipActive : ''}`} onClick={() => { setInteractionFilter(value); setCurrentPage(1); }}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </TableToolbar>
 
             <DataTable<AnalyticsRow>
                 data={paginated}

@@ -2,16 +2,12 @@
 
 import { useMemo } from 'react';
 import PaymentMethodForm from '@/components/ads/billing/PaymentMethodForm';
-import styles from '../../page.module.css';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 
-/**
- * Add Payment Method page for the Ads dashboard.
- * Passes the active account ID and a Supabase client to PaymentMethodForm
- * so the form can persist the new method to `account_payment_methods`.
- */
 export default function AddPaymentMethodPage() {
     const { activeAccount, isLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
@@ -19,7 +15,7 @@ export default function AddPaymentMethodPage() {
 
     if (isLoading) {
         return (
-            <div className={styles.container}>
+            <div className={adminStyles.container}>
                 <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
                     Loading account...
                 </div>
@@ -29,7 +25,7 @@ export default function AddPaymentMethodPage() {
 
     if (!activeAccount) {
         return (
-            <div className={styles.container}>
+            <div className={adminStyles.container}>
                 <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
                     No active account found.
                 </div>
@@ -38,15 +34,14 @@ export default function AddPaymentMethodPage() {
     }
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Add Payment Method</h1>
-                    <p className={styles.subtitle}>Securely add a new card to your account for ad payments.</p>
-                </div>
-            </header>
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Add Payment Method"
+                subtitle="Securely add a new card to your account for ad payments."
+                backLabel="Back to Billing"
+            />
 
-            <div style={{ marginTop: '32px' }}>
+            <div className={adminStyles.pageCard} style={{ marginTop: '24px', maxWidth: '600px' }}>
                 <PaymentMethodForm
                     accountId={activeAccount.id}
                     supabase={supabase}

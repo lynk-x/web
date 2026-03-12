@@ -52,8 +52,8 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
                 .from('user_blocks')
                 .select(`
                     *,
-                    blocker:profiles!blocker_id(full_name, user_name),
-                    blocked:profiles!blocked_id(full_name, user_name)
+                    blocker:user_profile!blocker_id(full_name, user_name),
+                    blocked:user_profile!blocked_id(full_name, user_name)
                 `)
                 .order('created_at', { ascending: false });
             if (error) throw error;
@@ -128,7 +128,7 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
 
     const getActions = (b: UserBlock) => [
         {
-            label: 'Remove Block', variant: 'danger' as any,
+            label: 'Remove Block', variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
             onClick: () => handleRemoveBlock(b),
         },

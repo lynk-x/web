@@ -41,6 +41,12 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const activeSubTab = forceView || 'tags';
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeSubTab]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -102,6 +108,18 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
         t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const paginatedTags = filteredTags.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalTagPages = Math.ceil(filteredTags.length / itemsPerPage);
+
+    const paginatedTypes = filteredTypes.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalTypePages = Math.ceil(filteredTypes.length / itemsPerPage);
 
     const tagColumns: Column<Tag>[] = [
         {
@@ -169,7 +187,7 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
         { divider: true },
         {
             label: 'Delete Tag',
-            variant: 'danger',
+            variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
             onClick: () => showToast('Delete action coming soon', 'info'),
         }
@@ -184,7 +202,7 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
     ];
 
     return (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             {activeSubTab === 'tags' ? (
                 <>
                     <TableToolbar
@@ -197,10 +215,13 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
                         </button>
                     </TableToolbar>
                     <DataTable<any>
-                        data={filteredTags}
+                        data={paginatedTags}
                         columns={tagColumns}
                         getActions={getTagActions}
                         isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalTagPages}
+                        onPageChange={setCurrentPage}
                         emptyMessage="No tags found."
                     />
                 </>
@@ -216,10 +237,13 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
                         </button>
                     </TableToolbar>
                     <DataTable<any>
-                        data={filteredTypes}
+                        data={paginatedTypes}
                         columns={typeColumns}
                         getActions={getTypeActions}
                         isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalTypePages}
+                        onPageChange={setCurrentPage}
                         emptyMessage="No tag types defined."
                     />
                 </>

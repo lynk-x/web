@@ -51,6 +51,7 @@ export default function AdsAssetsPage() {
 
             if (ownCampaigns.length === 0) {
                 setAssets([]);
+                setIsLoading(false);
                 return;
             }
 
@@ -72,9 +73,13 @@ export default function AdsAssetsPage() {
 
     useEffect(() => {
         if (!isOrgLoading) {
-            fetchAssets();
+            if (activeAccount) {
+                fetchAssets();
+            } else {
+                setIsLoading(false);
+            }
         }
-    }, [isOrgLoading, fetchAssets]);
+    }, [isOrgLoading, activeAccount, fetchAssets]);
 
     const filteredAssets = assets.filter(asset => {
         if (selectedSize === 'All') return true;
@@ -156,14 +161,14 @@ export default function AdsAssetsPage() {
             const filePath = `${activeAccount!.id}/${Date.now()}.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('ad-assets')
+                .from('ad_assets')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
             // 2. Get Public URL
             const { data: { publicUrl } } = supabase.storage
-                .from('ad-assets')
+                .from('ad_assets')
                 .getPublicUrl(filePath);
 
             // 3. Insert into ad_assets
@@ -171,7 +176,7 @@ export default function AdsAssetsPage() {
                 .from('ad_assets')
                 .insert({
                     campaign_id: tempSelectedCampaignId,
-                    type: file.type.startsWith('video') ? 'video' : 'image',
+                    media_type: file.type.startsWith('video') ? 'video' : 'image',
                     url: publicUrl,
                     metadata: { // Custom field if it exists, otherwise skip or check schema
                         dimensions: tempSelectedSize,

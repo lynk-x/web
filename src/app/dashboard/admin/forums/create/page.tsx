@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './CreateForum.module.css';
-import adminStyles from '../page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import Link from 'next/link';
+
+import SubPageHeader from '@/components/shared/SubPageHeader';
 
 interface EventOption {
     id: string;
@@ -67,15 +69,15 @@ export default function CreateForumPage() {
     }, [supabase, showToast]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target as any;
+        const { name, value, type } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!formData.eventId) {
             showToast('Please select an event.', 'error');
             return;
@@ -124,17 +126,17 @@ export default function CreateForumPage() {
     const selectedEvent = events.find(e => e.id === formData.eventId);
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <Link href="/dashboard/admin/forums" className={styles.backLink}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-                        Back to Forums
-                    </Link>
-                    <h1 className={styles.title}>Initialize New Forum</h1>
-                    <p className={adminStyles.subtitle}>Link a dedicated community space to an existing event.</p>
-                </div>
-            </header>
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Initialize New Forum"
+                subtitle="Link a dedicated community space to an existing event."
+                backLabel="Back to Forums"
+                primaryAction={{
+                    label: isSubmitting ? 'Initializing...' : 'Initialize Forum',
+                    onClick: () => handleSubmit(),
+                    isLoading: isSubmitting
+                }}
+            />
 
             <div className={styles.layout}>
                 <div className={styles.formColumn}>

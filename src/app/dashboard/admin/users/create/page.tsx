@@ -1,26 +1,29 @@
 "use client";
 
 import UserForm from '@/components/admin/users/UserForm';
-import BackButton from '@/components/shared/BackButton';
-import styles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import { useState } from 'react';
 
 export default function CreateUserPage() {
     const [isDirty, setIsDirty] = useState(false);
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <BackButton label="Back to Users" isDirty={isDirty} />
-                    <h1 className={styles.title}>Create New User</h1>
-                    <p className={styles.subtitle}>Add a new member to the platform.</p>
-                </div>
-                <button type="submit" form="user-form" className={styles.btnPrimary}>
-                    Create User
-                </button>
-            </header>
-            <UserForm formId="user-form" hideActions={true} onDirtyChange={setIsDirty} />
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Create New User"
+                subtitle="Add a new member to the platform."
+                backLabel="Back to Users"
+                isDirty={isDirty}
+                primaryAction={{
+                    label: 'Create User',
+                    formId: 'user-form',
+                    type: 'submit'
+                }}
+            />
+            <div className={adminStyles.pageCard}>
+                <UserForm formId="user-form" hideActions={true} onDirtyChange={setIsDirty} />
+            </div>
         </div>
     );
 }

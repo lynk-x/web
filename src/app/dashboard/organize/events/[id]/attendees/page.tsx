@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import styles from './page.module.css';
-import organizeStyles from '@/app/dashboard/organize/page.module.css';
-import BackButton from '@/components/shared/BackButton';
+import { useToast } from '@/components/ui/Toast';
+import { createClient } from '@/utils/supabase/client';
+import { exportToCSV } from '@/utils/export';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import AttendeeTable from '@/components/organize/attendees/AttendeeTable';
-import { useToast } from '@/components/ui/Toast';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import type { Attendee } from '@/types/organize';
-import { createClient } from '@/utils/supabase/client';
-import { exportToCSV } from '@/utils/export';
 
 export default function EventAttendeesPage({ params }: { params: { id: string } }) {
     const { showToast } = useToast();
@@ -22,7 +21,7 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 10;
 
     useEffect(() => {
         const fetchAttendees = async () => {
@@ -55,7 +54,6 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
         };
 
         fetchAttendees();
-        // supabase is memoized — safe to include in dependencies
     }, [params.id, supabase, showToast]);
 
     // Filter Logic
@@ -111,30 +109,24 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
         }
     ];
 
-    if (isLoading) {
-        return <div className={styles.container} style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading attendees...</div>;
-    }
-
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <BackButton label="Back to Event" />
-                <div className={styles.headerTitle}>
-                    <h1 className={organizeStyles.title}>Attendee List</h1>
-                    <p className={organizeStyles.subtitle}>Manage registrations and check-ins for this event.</p>
-                </div>
-            </header>
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Attendee List"
+                subtitle="Manage registrations and check-ins for this event."
+                backLabel="Back to Event"
+            />
 
             <TableToolbar
                 searchPlaceholder="Search by name, email, or order ID..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div className={styles.filters}>
+                <div className={adminStyles.filterGroup}>
                     {['all', 'valid', 'used', 'cancelled', 'transferred'].map(status => (
                         <button
                             key={status}
-                            className={`${styles.filterChip} ${statusFilter === status ? styles.activeChip : ''}`}
+                            className={`${adminStyles.chip} ${statusFilter === status ? adminStyles.chipActive : ''}`}
                             onClick={() => setStatusFilter(status)}
                         >
                             {status === 'all' ? 'All' : status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
@@ -150,15 +142,23 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
                 itemTypeLabel="attendees"
             />
 
-            <AttendeeTable
-                attendees={paginatedAttendees}
-                selectedIds={selectedIds}
-                onSelect={handleSelect}
-                onSelectAll={handleSelectAll}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            <div style={{ marginTop: '16px' }}>
+                <AttendeeTable
+                    attendees={paginatedAttendees}
+                    selectedIds={selectedIds}
+                    onSelect={handleSelect}
+                    onSelectAll={handleSelectAll}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
+            {isLoading && (
+                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
+                    Loading attendees...
+                </div>
+            )}
         </div>
     );
 }

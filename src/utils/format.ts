@@ -76,3 +76,14 @@ export function formatRelativeTime(date: string | Date): string {
     if (minutes > 0) return `${minutes}m ago`;
     return 'Just now';
 }
+
+/**
+ * Formats a file size in bytes to a human-readable string (KB, MB, GB).
+ */
+export function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}

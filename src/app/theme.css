@@ -7,7 +7,9 @@
 
 :root {
   --color-brand-primary: #20f928;
+  --color-brand-primary-rgb: 32, 249, 40;
   --color-brand-secondary: #f9c920;
+  --color-brand-secondary-rgb: 249, 201, 32;
   --color-brand-tertiary: #322f35;
   --color-brand-alternate: #e0e3e7;
   --color-brand-userLocation: #FF0000;

@@ -1,64 +1,158 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import styles from './page.module.css';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import Tabs from '@/components/dashboard/Tabs';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import MemberTable from '@/components/organize/MemberTable';
+import PaymentMethodsManager from '@/components/organize/PaymentMethodsManager';
 
-export default function AdsSettingsPage() {
-    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+function AdsSettingsContent() {
+    const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const initialTab = (searchParams.get('tab') as string) || 'account';
+    const [activeTab, setActiveTab] = useState<'account' | 'team' | 'billing' | 'danger-zone'>(
+        (['account', 'team', 'billing', 'danger-zone'] as string[]).includes(initialTab) ? initialTab as 'account' | 'team' | 'billing' | 'danger-zone' : 'account'
+    );
+    const [pendingTab, setPendingTab] = useState<string | null>(null);
+
     const [isSaving, setIsSaving] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
         name: '',
+        website: '',
+        description: '',
         support_email: '',
+        phone_number: '',
+        // Business Profile
         business_name: '',
         tax_id: '',
-        address: ''
+        registration_number: '',
+        billing_address: ''
     });
 
+
     useEffect(() => {
-        // Don't populate until the org context has finished resolving
+        const tab = searchParams.get('tab') as string;
+        if (tab && ['account', 'team', 'billing', 'danger-zone'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
         if (isOrgLoading || !activeAccount) return;
-        const meta = (activeAccount as any).metadata || {};
-        setFormData({
-            name: activeAccount.name || '',
-            support_email: (activeAccount as any).support_email || '',
-            business_name: meta.business_name || '',
-            tax_id: meta.tax_id || '',
-            address: meta.business_address || ''
-        });
-    }, [isOrgLoading, activeAccount]);
+
+        const fetchAllData = async () => {
+            const { data: bizData, error: bizError } = await supabase
+                .from('business_profile')
+                .select('*')
+                .eq('account_id', activeAccount.id)
+                .maybeSingle();
+
+            setFormData({
+                name: activeAccount.name || '',
+                website: activeAccount.website || '',
+                description: activeAccount.description || '',
+                support_email: activeAccount.support_email || '',
+                phone_number: activeAccount.phone_number || '',
+                business_name: bizData?.business_name || '',
+                tax_id: bizData?.tax_id || '',
+                registration_number: bizData?.registration_number || '',
+                billing_address: typeof bizData?.billing_address === 'string' ? bizData.billing_address : JSON.stringify(bizData?.billing_address || '')
+            });
+
+            // Patch activeAccount in memory for dirty check (cast to any for compiler)
+            const patchedAccount = activeAccount as any;
+            patchedAccount.business_name = bizData?.business_name || '';
+            patchedAccount.tax_id = bizData?.tax_id || '';
+            patchedAccount.registration_number = bizData?.registration_number || '';
+            patchedAccount.billing_address = typeof bizData?.billing_address === 'string' ? bizData.billing_address : JSON.stringify(bizData?.billing_address || '');
+        };
+
+        fetchAllData();
+    }, [isOrgLoading, activeAccount, supabase]);
+
+    const isDirty = useMemo(() => {
+        if (!activeAccount) return false;
+        const aa = activeAccount as any;
+        return (
+            formData.name !== (aa.name || '') ||
+            formData.website !== (aa.website || '') ||
+            formData.description !== (aa.description || '') ||
+            formData.support_email !== (aa.support_email || '') ||
+            formData.phone_number !== (aa.phone_number || '') ||
+            formData.business_name !== (aa.business_name || '') ||
+            formData.tax_id !== (aa.tax_id || '') ||
+            formData.registration_number !== (aa.registration_number || '') ||
+            formData.billing_address !== (aa.billing_address || '')
+        );
+    }, [formData, activeAccount]);
+
+    const handleTabChange = (newTab: string) => {
+        if (isDirty && activeTab !== newTab) {
+            setPendingTab(newTab);
+            return;
+        }
+        confirmTabChange(newTab);
+    };
+
+    const confirmTabChange = (newTab: string) => {
+        setActiveTab(newTab as Extract<typeof activeTab, string>);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+        setPendingTab(null);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSave = async () => {
         if (!activeAccount) return;
         setIsSaving(true);
-        showToast('Saving settings...', 'info');
-
         try {
-            // business_name, tax_id, business_address don't exist as top-level columns;
-            // they are stored in the metadata JSONB field alongside any existing metadata.
-            const existingMeta = (activeAccount as any).metadata || {};
-            const { error } = await supabase
+            // Update Accounts Table
+            const { error: accError } = await supabase
                 .from('accounts')
                 .update({
-                    name: formData.name,
-                    support_email: formData.support_email,
-                    metadata: {
-                        ...existingMeta,
-                        business_name: formData.business_name,
-                        tax_id: formData.tax_id,
-                        business_address: formData.address
-                    }
+                    display_name: formData.name,
+                    website: formData.website,
+                    description: formData.description,
+                    contact_email: formData.support_email,
+                    phone_number: formData.phone_number
                 })
                 .eq('id', activeAccount.id);
 
-            if (error) throw error;
+            if (accError) throw accError;
+
+            // Update Business Profile Table
+            const { error: bizError } = await supabase
+                .from('business_profile')
+                .upsert({
+                    account_id: activeAccount.id,
+                    business_name: formData.business_name || formData.name,
+                    tax_id: formData.tax_id,
+                    registration_number: formData.registration_number,
+                    billing_address: formData.billing_address
+                });
+
+            if (bizError) throw bizError;
+
             showToast('Settings saved successfully.', 'success');
+            if (refreshAccounts) await refreshAccounts();
         } catch (error: any) {
             showToast(error.message || 'Failed to save settings', 'error');
         } finally {
@@ -66,91 +160,132 @@ export default function AdsSettingsPage() {
         }
     };
 
+
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Ads Settings</h1>
-                    <p className={styles.subtitle}>Manage your advertising account preferences and business information.</p>
-                </div>
-                <button
-                    className={styles.saveBtn}
-                    onClick={handleSave}
-                    disabled={isSaving}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-            </header>
+        <div className={adminStyles.container}>
+            <PageHeader
+                title="Ads Settings"
+                subtitle="Manage your advertising account preferences and business information."
+                actionLabel={isSaving ? "Saving..." : "Save Changes"}
+                onActionClick={handleSave}
+                actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>}
+            />
 
-            <div className={styles.grid}>
-                {/* Account Settings */}
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Account Information</h2>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Account Name</label>
-                        <input
-                            type="text"
-                            className={styles.input}
-                            value={formData.name}
-                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        />
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Contact Email</label>
-                        <input
-                            type="email"
-                            className={styles.input}
-                            value={formData.support_email}
-                            onChange={e => setFormData({ ...formData, support_email: e.target.value })}
-                        />
-                    </div>
-                </section>
-
-                {/* Business Details */}
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Business Details</h2>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Legal Business Name</label>
-                        <input
-                            type="text"
-                            className={styles.input}
-                            value={formData.business_name}
-                            onChange={e => setFormData({ ...formData, business_name: e.target.value })}
-                        />
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Tax ID / PIN</label>
-                        <input
-                            type="text"
-                            className={styles.input}
-                            value={formData.tax_id}
-                            onChange={e => setFormData({ ...formData, tax_id: e.target.value })}
-                        />
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Business Address</label>
-                        <textarea
-                            className={styles.textarea}
-                            value={formData.address}
-                            onChange={e => setFormData({ ...formData, address: e.target.value })}
-                        />
-                    </div>
-                </section>
-
-                {/* Danger Zone */}
-                <section className={`${styles.section} ${styles.dangerZone}`}>
-                    <h2 className={styles.sectionTitle}>Danger Zone</h2>
-                    <p className={styles.dangerText}>Once you deactivate your ads account, all active campaigns will be paused indefinitely. This action cannot be undone from the dashboard.</p>
-                    <button className={styles.dangerBtn} onClick={() => showToast('Deactivation requires support contact.', 'error')}>
-                        Deactivate Ads Account
-                    </button>
-                </section>
+            <div style={{ marginBottom: '24px' }}>
+                <Tabs
+                    options={[
+                        { id: 'account', label: 'Account' },
+                        { id: 'team', label: 'Team Members' },
+                        { id: 'billing', label: 'Billing' },
+                        { id: 'danger-zone', label: 'Danger Zone' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                />
             </div>
+
+            <div className={adminStyles.container}>
+                {activeTab === 'account' && (
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Account Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="name" className={adminStyles.input} value={formData.name} onChange={handleInputChange} />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="email" name="support_email" className={adminStyles.input} value={formData.support_email} onChange={handleInputChange} />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Support Phone</label>
+                                <input type="text" name="phone_number" className={adminStyles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Website URL</label>
+                                <input type="text" name="website" className={adminStyles.input} value={formData.website} onChange={handleInputChange} placeholder="https://..." />
+                            </div>
+
+                            <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
+                                <label className={adminStyles.label}>Description / Bio</label>
+                                <textarea name="description" className={adminStyles.textarea} value={formData.description} onChange={handleInputChange} rows={2} />
+                            </div>
+
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Legal Name (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="business_name" className={adminStyles.input} value={formData.business_name} onChange={handleInputChange} />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Tax ID / PIN (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="tax_id" className={adminStyles.input} value={formData.tax_id} onChange={handleInputChange} />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Registration Number (if business)</label>
+                                <input type="text" name="registration_number" className={adminStyles.input} value={formData.registration_number} onChange={handleInputChange} />
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Legal Billing Address <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="billing_address" className={adminStyles.input} value={formData.billing_address} onChange={handleInputChange} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'team' && (
+                    <div className={adminStyles.pageCard}>
+                        <MemberTable />
+                    </div>
+                )}
+
+                {activeTab === 'billing' && (
+                    <div className={adminStyles.pageCard}>
+                        {activeAccount ? (
+                            <PaymentMethodsManager accountId={activeAccount.id} />
+                        ) : (
+                            <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'danger-zone' && (
+                    <>
+
+                        <div className={adminStyles.pageCard}>
+                            <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>
+                            <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
+                                Deactivating your ads account pauses all active campaigns indefinitely. This action cannot be undone from the dashboard.
+                            </p>
+                            <button
+                                type="button"
+                                className={adminStyles.btnDanger}
+                                onClick={() => showToast('Deactivation requires support contact.', 'error')}
+                            >
+                                Deactivate Ads Account
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            <ConfirmationModal
+                isOpen={!!pendingTab}
+                onClose={() => setPendingTab(null)}
+                onConfirm={() => {
+                    if (pendingTab) confirmTabChange(pendingTab);
+                }}
+                title="Unsaved Changes"
+                message="You have unsaved changes. Are you sure you want to leave this tab and lose your progress?"
+                confirmLabel="Leave Tab"
+                variant="danger"
+            />
         </div>
+    );
+}
+
+export default function AdsSettingsPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading Settings...</div>}>
+            <AdsSettingsContent />
+        </Suspense>
     );
 }

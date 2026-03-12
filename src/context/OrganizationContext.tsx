@@ -9,6 +9,7 @@ export interface Account {
     name: string;
     thumbnailUrl?: string;
     role: 'owner' | 'admin' | 'finance_manager' | 'viewer'; // From account_role enum
+    type: 'attendee' | 'organizer' | 'advertiser' | 'hybrid' | 'platform';
     website?: string;
     description?: string;
     support_email?: string;
@@ -51,13 +52,14 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                     role,
                     accounts:account_id (
                         id,
-                        name,
-                        thumbnail_url,
+                        display_name,
+                        avatar_url,
                         website,
                         description,
-                        support_email,
+                        contact_email,
                         phone_number,
                         default_currency,
+                        type,
                         account_wallets(currency, balance)
                     )
                 `)
@@ -77,12 +79,13 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
                     return {
                         id: member.accounts.id,
-                        name: member.accounts.name,
-                        thumbnailUrl: member.accounts.thumbnail_url,
+                        name: member.accounts.display_name,
+                        thumbnailUrl: member.accounts.avatar_url,
                         role: member.role,
+                        type: member.accounts.type,
                         website: member.accounts.website,
                         description: member.accounts.description,
-                        support_email: member.accounts.support_email,
+                        support_email: member.accounts.contact_email,
                         phone_number: member.accounts.phone_number,
                         default_currency: defaultCurrency,
                         wallet_balance: walletBalance,

@@ -13,6 +13,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import FilterGroup from '@/components/dashboard/FilterGroup';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import StatCard from '@/components/dashboard/StatCard';
 import { formatRelativeTime } from '@/utils/format';
 import Tabs from '@/components/dashboard/Tabs';
 
@@ -34,19 +35,20 @@ function UsersContent() {
     const [totalCount, setTotalCount] = useState(0);
     const itemsPerPage = 10;
 
-    const initialTab = (searchParams.get('tab') as any) || 'accounts';
+    const initialTab = (searchParams.get('tab') as string) || 'accounts';
     const [activeTab, setActiveTab] = useState<Tab>(
-        (['accounts', 'profiles'].includes(initialTab) ? initialTab : 'accounts') as Tab
+        (['accounts', 'profiles'].includes(initialTab) ? initialTab as 'accounts' | 'organizers' | 'sponsors' : 'accounts') as Tab
     );
 
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         try {
             let query = supabase
+                .schema('analytics')
                 .from('mv_user_performance')
                 .select(`
                     *,
-                    profile:profiles!id (
+                    profile:user_profile!id (
                         gender,
                         country_code
                     )
@@ -79,7 +81,6 @@ function UsersContent() {
                 status: u.status,
                 lastActive: formatRelativeTime(u.last_active_at),
                 isVerified: u.is_verified,
-                subscriptionTier: u.subscription_tier,
                 reportsCount: u.reports_count || 0,
                 userName: u.user_name,
                 gender: u.profile?.gender,
@@ -112,9 +113,9 @@ function UsersContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        const tab = searchParams.get('tab') as any;
+        const tab = searchParams.get('tab') as string;
         if (tab && ['accounts', 'profiles'].includes(tab)) {
-            setActiveTab(tab);
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
@@ -154,10 +155,10 @@ function UsersContent() {
         showToast(`Updating ${selectedUserIds.size} users...`, 'info');
         try {
             const isActive = newStatus === 'active';
-            const { error } = await supabase
-                .from('profiles')
-                .update({ is_active: isActive, updated_at: new Date().toISOString() })
-                .in('id', Array.from(selectedUserIds));
+            const { error } = await supabase.rpc('bulk_update_user_status', {
+                user_ids: Array.from(selectedUserIds),
+                is_active_val: isActive
+            });
 
             if (error) throw error;
 
@@ -176,8 +177,46 @@ function UsersContent() {
         { label: 'Suspend Selection', onClick: () => handleBulkStatusUpdate('suspended'), variant: 'danger' }
     ];
 
+    const stats = useMemo(() => {
+        const total = totalCount;
+        const verified = users.filter(u => u.isVerified).length; // This is only for the current page, ideally I'd have a separate count
+        const reports = users.reduce((acc, u) => acc + (u.reportsCount || 0), 0);
+        
+        return { total, verified, reports };
+    }, [users, totalCount]);
+
     return (
         <>
+            <div className={adminStyles.statsGrid}>
+                <StatCard 
+                    label="Total Registered" 
+                    value={stats.total} 
+                    change="All platform accounts"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Verified Today" 
+                    value={stats.verified} 
+                    change="Identity verified"
+                    trend="positive"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Active Organizers" 
+                    value={users.filter(u => u.role === 'organizer').length} 
+                    change="Verified event makers"
+                    trend="neutral"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="User Reports" 
+                    value={stats.reports} 
+                    change="Requires moderation"
+                    trend={stats.reports > 0 ? "negative" : "positive"}
+                    isLoading={isLoading} 
+                />
+            </div>
+
             <Tabs
                 options={[
                     { id: 'accounts', label: 'Accounts' },

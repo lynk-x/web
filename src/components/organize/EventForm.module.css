@@ -44,8 +44,6 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-lg) 0px;
-    border-bottom: 1px solid var(--color-interface-outline);
-    margin-bottom: var(--spacing-lg);
     position: sticky;
     top: 0;
     background-color: var(--color-background-dark);
@@ -109,6 +107,15 @@
     margin-top: 4px;
 }
 
+.requiredIndicator {
+    color: #ff4d4d;
+    font-size: 10px;
+    margin-left: 6px;
+    position: relative;
+    top: -4px;
+    font-weight: 600;
+}
+
 .actions {
     display: flex;
     gap: var(--spacing-md);
@@ -136,19 +143,28 @@
 }
 
 .section {
-    background-color: var(--color-interface-surface);
+    background: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-xl);
     padding: 40px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .sectionTitle {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
     color: var(--color-utility-primaryText);
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--color-interface-outline);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+}
+
+.sectionTitle::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--color-interface-outline), transparent);
+    margin-left: 16px;
 }
 
 .formGrid {
@@ -176,14 +192,14 @@
 .input,
 .textarea,
 .select {
-    background-color: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-md);
-    padding: 14px 20px;
+    padding: 12px 16px;
     color: var(--color-utility-primaryText);
-    font-size: 16px;
+    font-size: 15px;
     outline: none;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input:focus,

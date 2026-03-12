@@ -8,6 +8,8 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 
+
+
 export default function AdminAuditLogsPage() {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
@@ -28,7 +30,7 @@ export default function AdminAuditLogsPage() {
             // to avoid loading thousands of rows into the browser at once.
             let query = supabase
                 .from('audit_logs')
-                .select('*, actor:profiles!actor_id(full_name, user_name, email)', { count: 'exact' })
+                .select('*, actor:user_profile!user_id(full_name, user_name, email)', { count: 'exact' })
                 .order('created_at', { ascending: false });
 
             // Apply server-side filter by action type when one is selected
@@ -94,13 +96,15 @@ export default function AdminAuditLogsPage() {
 
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
+        <div className={adminStyles.container}>
+            <header className={adminStyles.header}>
                 <div>
                     <h1 className={adminStyles.title}>Audit Logs</h1>
                     <p className={adminStyles.subtitle}>Track detailed system events and user actions platform-wide.</p>
                 </div>
             </header>
+
+
 
             <TableToolbar
                 searchPlaceholder="Search by action, actor, or target..."

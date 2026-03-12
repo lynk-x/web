@@ -40,6 +40,12 @@ export default function MappingTab({ forceView }: MappingTabProps) {
     const [isLoading, setIsLoading] = useState(true);
     const activeSubTab = forceView || 'category';
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeSubTab]);
 
     const fetchMappings = useCallback(async () => {
         setIsLoading(true);
@@ -50,7 +56,7 @@ export default function MappingTab({ forceView }: MappingTabProps) {
                     .select(`
                         category_id,
                         tag_id,
-                        event_categories(name),
+                        event_categories(display_name),
                         tags(name)
                     `);
 
@@ -60,7 +66,7 @@ export default function MappingTab({ forceView }: MappingTabProps) {
                     id: `${m.category_id}-${m.tag_id}`,
                     category_id: m.category_id,
                     tag_id: m.tag_id,
-                    category_name: m.event_categories?.name || m.category_id,
+                    category_name: m.event_categories?.display_name || m.category_id,
                     tag_name: m.tags?.name || 'Unknown Tag'
                 }));
                 setCategoryMappings(mapped);
@@ -97,6 +103,26 @@ export default function MappingTab({ forceView }: MappingTabProps) {
         fetchMappings();
     }, [fetchMappings]);
 
+    const filteredCategory = categoryMappings.filter(m => 
+        m.category_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.tag_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const paginatedCategory = filteredCategory.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalCatPages = Math.ceil(filteredCategory.length / itemsPerPage);
+
+    const filteredEvent = eventMappings.filter(m => 
+        m.event_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.tag_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const paginatedEvent = filteredEvent.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalEventPages = Math.ceil(filteredEvent.length / itemsPerPage);
+
     const catColumns: Column<CategoryMapping>[] = [
         {
             header: 'Category',
@@ -130,14 +156,14 @@ export default function MappingTab({ forceView }: MappingTabProps) {
     const getActions = (item: any): ActionItem[] => [
         {
             label: 'Remove Mapping',
-            variant: 'danger',
+            variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
             onClick: () => showToast('Removal coming soon', 'info'),
         }
     ];
 
     return (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             <TableToolbar
                 searchPlaceholder={`Search ${activeSubTab === 'category' ? 'categories' : 'events'}...`}
                 searchValue={searchTerm}
@@ -150,18 +176,24 @@ export default function MappingTab({ forceView }: MappingTabProps) {
 
             {activeSubTab === 'category' ? (
                 <DataTable<any>
-                    data={categoryMappings}
+                    data={paginatedCategory}
                     columns={catColumns}
                     getActions={getActions}
                     isLoading={isLoading}
+                    currentPage={currentPage}
+                    totalPages={totalCatPages}
+                    onPageChange={setCurrentPage}
                     emptyMessage="No category mappings found."
                 />
             ) : (
                 <DataTable<any>
-                    data={eventMappings}
+                    data={paginatedEvent}
                     columns={eventColumns}
                     getActions={getActions}
                     isLoading={isLoading}
+                    currentPage={currentPage}
+                    totalPages={totalEventPages}
+                    onPageChange={setCurrentPage}
                     emptyMessage="No event mappings found."
                 />
             )}

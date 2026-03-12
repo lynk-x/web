@@ -1,14 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+/**
+ * EventForm — multi-tab event creation / editing form.
+ *
+ * This file is intentionally thin: all state & business logic lives in the
+ * `useEventForm` hook, and the ticket tier section is handled by
+ * `TicketTierManager`. Each tab section is a simple JSX block.
+ */
+
+import React from 'react';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import styles from './EventForm.module.css';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import BackButton from '@/components/shared/BackButton';
-import type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticket } from '@/types/organize';
+import TicketTierManager from './TicketTierManager';
+import { useEventForm, type EventFormTab } from '@/hooks/useEventForm';
+import type { OrganizerEventFormData as EventData } from '@/types/organize';
 
-// ─── Public Types ────────────────────────────────────────────────────────────
+// ─── Public Types ─────────────────────────────────────────────────────────────
 
 export type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticket } from '@/types/organize';
 
@@ -20,330 +28,32 @@ interface EventFormProps {
     isEditMode?: boolean;
 }
 
-type Tab = 'cover' | 'basics' | 'time' | 'place' | 'tickets' | 'settings';
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function EventForm({ initialData, pageTitle, submitBtnText, onSubmit, isEditMode = false }: EventFormProps) {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<Tab>('cover');
-    const [tagInput, setTagInput] = useState('');
-    const [suggestions, setSuggestions] = useState<{ id: string, name: string }[]>([]);
-    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [isDraftLoaded, setIsDraftLoaded] = useState(false);
-    const [isDirty, setIsDirty] = useState(false);
-    const [isPaidTicketingEnabled, setIsPaidTicketingEnabled] = useState(true);
+    const {
+        formData, errors, loading, activeTab, setActiveTab,
+        isDraftLoaded, isDirty,
+        thumbnailPreview,
+        tagInput, setTagInput, filteredSuggestions, showSuggestions, setShowSuggestions,
+        categories, isPaidTicketingEnabled,
+        handleInputChange, handleToggle,
+        handleImageSelect, handleRemoveImage,
+        handleAddTag, handleRemoveTag, handleTagKeyDown,
+        handleTicketChange, addTicket, removeTicket,
+        handleSubmit, discardDraft,
+        setFormData,
+    } = useEventForm({ initialData, isEditMode, onSubmit });
 
-    // Image State
-    const [thumbnailUrlFile, setThumbnailUrlFile] = useState<File | null>(null);
-    const [thumbnailUrlPreview, setThumbnailUrlPreview] = useState<string | null>(initialData?.thumbnailUrl || null);
-
-    // Form State
-    const [formData, setFormData] = useState<EventData>({
-        title: '',
-        description: '',
-        category: 'arts-entertainment', // Default to first valid category
-        tags: [],
-        thumbnailUrl: '',
-        isOnline: false,
-        location: '',
-        startDate: '',
-        startTime: '',
-        endDate: '',
-        endTime: '',
-        isPrivate: false,
-        isPaid: false,
-        limit: '',
-        tickets: []
-    });
-
-    // Local Storage for Drafts
-    const [draft, setDraft] = useLocalStorage<EventData | null>('event_draft', null);
-
-    // Load Initial Data or Draft
-    useEffect(() => {
-        if (initialData) {
-            setFormData(prev => ({ ...prev, ...initialData }));
-            if (initialData.thumbnailUrl) setThumbnailUrlPreview(initialData.thumbnailUrl);
-        } else if (!isEditMode && draft) {
-            setFormData(prev => ({ ...prev, ...draft }));
-            setIsDraftLoaded(true);
-        }
-    }, [initialData, isEditMode]); // Run once on mount or when initialData changes
-
-    // Fetch Data for Selects (Tags & Categories)
-    useEffect(() => {
-        const fetchData = async () => {
-            const { createClient } = await import('@/utils/supabase/client');
-            const supabase = createClient();
-
-            // Parallel fetch tags and categories
-            const [tagsRes, catsRes] = await Promise.all([
-                supabase.from('tags').select('id, name').eq('is_active', true),
-                supabase.from('event_categories').select('id, name').eq('is_active', true).order('name')
-            ]);
-
-            if (tagsRes.data) setSuggestions(tagsRes.data);
-            if (catsRes.data) setCategories(catsRes.data);
-
-            // Fetch Paid Ticketing Flag
-            const { data: flagData } = await supabase
-                .from('feature_flags')
-                .select('is_enabled')
-                .eq('key', 'paid_ticketing')
-                .single();
-
-            if (flagData) {
-                setIsPaidTicketingEnabled(flagData.is_enabled);
-            }
-        };
-        fetchData();
-    }, []);
-
-    // Auto-Save Draft & Dirty Check
-    useEffect(() => {
-        // Simple dirty check
-        const hasInitialData = !!initialData && Object.keys(initialData).length > 0;
-        const baseData = hasInitialData ? initialData : {
-            title: '',
-            description: '',
-            category: 'arts-entertainment',
-            tags: [],
-            thumbnailUrl: '',
-            isOnline: false,
-            location: '',
-            startDate: '',
-            startTime: '',
-            endDate: '',
-            endTime: '',
-            isPrivate: false,
-            isPaid: false,
-            limit: '',
-            tickets: []
-        };
-
-        const currentDataString = JSON.stringify(formData);
-        const baseDataString = JSON.stringify({ ...baseData, ...initialData }); // Approximation
-
-        // More robust dirty check for this complex form
-        const checkIfDirty = () => {
-            if (formData.title !== (baseData.title || '')) return true;
-            if (formData.description !== (baseData.description || '')) return true;
-            if (formData.location !== (baseData.location || '')) return true;
-            if (formData.tickets.length !== (baseData.tickets?.length || 0)) return true;
-            return false;
-        };
-
-        const dirty = checkIfDirty();
-        setIsDirty(dirty);
-
-        if (dirty) {
-            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-                e.preventDefault();
-                e.returnValue = '';
-            };
-            window.addEventListener('beforeunload', handleBeforeUnload);
-            return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-        }
-
-        if (!isEditMode && formData.title) {
-            const timeoutId = setTimeout(() => {
-                setDraft(formData);
-            }, 1000); // Debounce 1s
-            return () => clearTimeout(timeoutId);
-        }
-    }, [formData, isEditMode, setDraft, initialData]);
-
-    const [errors, setErrors] = useState<Record<string, string>>({});
-
-    const validateForm = () => {
-        const newErrors: Record<string, string> = {};
-
-        // Basics
-        if (!formData.title.trim()) newErrors.title = 'Event title is required';
-        if (!formData.description.trim()) newErrors.description = 'Description is required';
-
-        // Time
-        if (!formData.startDate) newErrors.startDate = 'Start date is required';
-        if (!formData.startTime) newErrors.startTime = 'Start time is required';
-        if (!formData.endDate) newErrors.endDate = 'End date is required';
-        if (!formData.endTime) newErrors.endTime = 'End time is required';
-
-        if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
-            const start = new Date(`${formData.startDate}T${formData.startTime}`);
-            const end = new Date(`${formData.endDate}T${formData.endTime}`);
-            if (end < start) {
-                newErrors.endDate = 'End date/time cannot be before start date/time';
-            }
-        }
-
-        // Place
-        if (!formData.isOnline && !formData.location.trim()) {
-            newErrors.location = 'Location is required for in-person events';
-        }
-
-        // Tickets
-        if (formData.isPaid) {
-            formData.tickets.forEach((ticket, index) => {
-                if (!ticket.name.trim()) newErrors[`tickets.${index}.name`] = 'Ticket name is required';
-                if (!ticket.price || parseFloat(ticket.price) < 0) newErrors[`tickets.${index}.price`] = 'Price must be a positive number';
-                if (!ticket.quantity || parseInt(ticket.quantity) <= 0) newErrors[`tickets.${index}.quantity`] = 'Quantity must be a positive integer';
-
-                // Advanced Validation
-                if (ticket.saleStart && ticket.saleEnd) {
-                    const start = new Date(ticket.saleStart);
-                    const end = new Date(ticket.saleEnd);
-                    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end <= start) {
-                        newErrors[`tickets.${index}.saleEnd`] = 'Sale end must be after sale start';
-                    }
-                }
-
-                if (ticket.maxPerOrder) {
-                    const max = parseInt(ticket.maxPerOrder);
-                    if (max <= 0) {
-                        newErrors[`tickets.${index}.maxPerOrder`] = 'Max per order must be positive';
-                    }
-                    if (ticket.quantity && max > parseInt(ticket.quantity)) {
-                        newErrors[`tickets.${index}.maxPerOrder`] = 'Cannot exceed total quantity';
-                    }
-                }
-            });
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        // Clear error when user types
-        if (errors[name]) {
-            setErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[name];
-                return newErrors;
-            });
-        }
-    };
-
-    const handleToggle = (field: keyof EventData) => {
-        setFormData(prev => ({ ...prev, [field]: !prev[field] }));
-    };
-
-    // Image Logic
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setThumbnailUrlFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setThumbnailUrlPreview(reader.result as string);
-                setFormData(prev => ({ ...prev, thumbnailUrl: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRemoveImage = () => {
-        setThumbnailUrlFile(null);
-        setThumbnailUrlPreview(null);
-        setFormData(prev => ({ ...prev, thumbnailUrl: '' }));
-    };
-
-    // Tag Logic
-    const handleAddTag = (tagName?: string) => {
-        const tagToAdd = (tagName || tagInput).trim();
-        if (tagToAdd && !formData.tags.includes(tagToAdd)) {
-            setFormData(prev => ({ ...prev, tags: [...prev.tags, tagToAdd] }));
-            setTagInput('');
-            setShowSuggestions(false);
-        }
-    };
-
-    const handleRemoveTag = (tagToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            tags: prev.tags.filter(tag => tag !== tagToRemove)
-        }));
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAddTag();
-        } else if (e.key === 'Escape') {
-            setShowSuggestions(false);
-        }
-    };
-
-    const filteredSuggestions = suggestions.filter(tag =>
-        tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
-        !formData.tags.includes(tag.name)
-    ).slice(0, 5); // Limit to top 5 for UI density
-
-    // Ticket Logic
-    const handleTicketChange = (index: number, field: keyof Ticket, value: string) => {
-        const newTickets = [...formData.tickets];
-        newTickets[index] = { ...newTickets[index], [field]: value };
-        setFormData(prev => ({ ...prev, tickets: newTickets }));
-
-        // Clear specific ticket errors
-        const errorKey = `tickets.${index}.${field}`;
-        if (errors[errorKey]) {
-            setErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[errorKey];
-                return newErrors;
-            });
-        }
-    };
-
-    const addTicket = () => {
-        setFormData(prev => ({
-            ...prev,
-            tickets: [...prev.tickets, { name: '', price: '', quantity: '' }]
-        }));
-    };
-
-    const removeTicket = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            tickets: prev.tickets.filter((_, i) => i !== index)
-        }));
-    };
-
-    const handleDiscardDraft = () => {
-        if (confirm('Are you sure you want to discard your draft? This cannot be undone.')) {
-            setDraft(null);
-            window.location.reload();
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (!validateForm()) {
-            // Find first tab with error and switch to it
-            if (errors.title || errors.description) setActiveTab('basics');
-            else if (errors.startDate || errors.endDate || errors.startTime || errors.endTime) setActiveTab('time');
-            else if (errors.location) setActiveTab('place');
-            else if (Object.keys(errors).some(k => k.startsWith('tickets'))) setActiveTab('tickets');
-            return;
-        }
-
-        setLoading(true);
-        await onSubmit(formData, thumbnailUrlFile);
-        setLoading(false);
-    };
-
-    const renderTab = (id: Tab, label: string) => {
+    // ── Tab Helper ────────────────────────────────────────────────────────────
+    const renderTab = (id: EventFormTab, label: string) => {
         const hasError = (
+            (id === 'cover' && errors.thumbnailUrl) ||
             (id === 'basics' && (errors.title || errors.description)) ||
+            (id === 'category' && errors.category) ||
             (id === 'time' && (errors.startDate || errors.endDate || errors.startTime || errors.endTime)) ||
-            (id === 'place' && (errors.location)) ||
-            (id === 'tickets' && Object.keys(errors).some(k => k.startsWith('tickets')))
+            (id === 'place' && errors.location) ||
+            (id === 'tickets' && Object.keys(errors).some((k) => k.startsWith('tickets')))
         );
 
         return (
@@ -357,9 +67,9 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         );
     };
 
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className={styles.container}>
-            {/* ... (existing header) ... */}
             <header className={styles.header}>
                 <div>
                     <BackButton label="Back to Events" isDirty={isDirty} />
@@ -369,7 +79,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                             {isDraftLoaded && !isEditMode && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ fontSize: '10px', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--color-brand-primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Draft Restored</span>
-                                    <button onClick={handleDiscardDraft} style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>Discard</button>
+                                    <button onClick={discardDraft} style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>Discard</button>
                                 </div>
                             )}
                         </div>
@@ -379,17 +89,17 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </div>
                 </div>
                 <div className={styles.actions}>
-                    {/* <Link href="/dashboard/events" className={styles.cancelBtn}>Cancel</Link> */} {/* Replaced by back arrow */}
                     <button className={styles.saveBtn} onClick={handleSubmit} disabled={loading}>
                         {loading ? 'Saving...' : submitBtnText}
                     </button>
                 </div>
             </header>
 
-            {/* Tabs */}
+            {/* Tab Navigation */}
             <div className={styles.tabs}>
                 {renderTab('cover', 'Cover Image')}
                 {renderTab('basics', 'Basics')}
+                {renderTab('category', 'Category')}
                 {renderTab('time', 'Time')}
                 {renderTab('place', 'Place')}
                 {renderTab('tickets', 'Tickets')}
@@ -398,55 +108,40 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
 
             <div className={styles.formColumn}>
 
-                {/* 1. Cover Image (Was Media) */}
+                {/* ── 1. Cover Image ── */}
                 {activeTab === 'cover' && (
                     <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Cover Image</h2>
-                        {thumbnailUrlPreview ? (
+                        <h2 className={styles.sectionTitle}>Cover Image <span className={styles.requiredIndicator}>*Required</span></h2>
+                        {thumbnailPreview ? (
                             <div className={styles.imagePreviewContainer} style={{ position: 'relative', width: '100%', height: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <img src={thumbnailUrlPreview} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={thumbnailPreview} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '8px' }}>
-                                    <label htmlFor="cover-upload-change" className={styles.secondaryBtn} style={{ cursor: 'pointer', background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}>
-                                        Change
-                                    </label>
-                                    <button type="button" onClick={handleRemoveImage} className={styles.secondaryBtn} style={{ background: 'rgba(0,0,0,0.6)', color: '#ff4d4d', backdropFilter: 'blur(4px)', borderColor: '#ff4d4d' }}>
-                                        Remove
-                                    </button>
+                                    <label htmlFor="cover-upload-change" className={styles.secondaryBtn} style={{ cursor: 'pointer', background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}>Change</label>
+                                    <button type="button" onClick={handleRemoveImage} className={styles.secondaryBtn} style={{ background: 'rgba(0,0,0,0.6)', color: '#ff4d4d', backdropFilter: 'blur(4px)', borderColor: '#ff4d4d' }}>Remove</button>
                                 </div>
-                                <input
-                                    id="cover-upload-change"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageSelect}
-                                    style={{ display: 'none' }}
-                                />
+                                <input id="cover-upload-change" type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
                             </div>
                         ) : (
                             <div className={styles.uploadArea}>
                                 <label htmlFor="cover-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '100%', height: '100%' }}>
                                     <svg className={styles.uploadIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                    <span className={styles.uploadText}>Drag & drop cover image or click to browse</span>
+                                    <span className={styles.uploadText}>Drag &amp; drop cover image or click to browse</span>
                                     <span style={{ fontSize: '12px', opacity: 0.5, marginTop: '8px' }}>Recommended: 1920x1080px (16:9)</span>
                                 </label>
-                                <input
-                                    id="cover-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageSelect}
-                                    style={{ display: 'none' }}
-                                />
+                                <input id="cover-upload" type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
                             </div>
                         )}
+                        {errors.thumbnailUrl && <p className={styles.errorMessage} style={{ textAlign: 'center', marginTop: '12px' }}>{errors.thumbnailUrl}</p>}
                     </section>
                 )}
 
-                {/* 2. Basics */}
+                {/* ── 2. Basics ── */}
                 {activeTab === 'basics' && (
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Event Basics</h2>
                         <div className={styles.formGrid}>
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Event Title</label>
+                                <label className={styles.label}>Event Title <span className={styles.requiredIndicator}>*Required</span></label>
                                 <input
                                     type="text"
                                     name="title"
@@ -462,32 +157,39 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 ) : null}
                             </div>
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Description</label>
+                                <label className={styles.label}>Description <span className={styles.requiredIndicator}>*Required</span></label>
                                 <RichTextEditor
                                     value={formData.description}
-                                    onChange={(content) => setFormData(prev => ({ ...prev, description: content }))}
+                                    onChange={(content) => setFormData((prev) => ({ ...prev, description: content }))}
                                     placeholder="Tell people what your event is about..."
                                     error={!!errors.description}
                                 />
                                 <p className={styles.errorMessage}>{errors.description}</p>
                             </div>
+                        </div>
+                    </section>
+                )}
 
+                {/* ── 3. Category & Tags ── */}
+                {activeTab === 'category' && (
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Category &amp; Tags</h2>
+                        <div className={styles.formGrid}>
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Category</label>
+                                <label className={styles.label}>Category <span className={styles.requiredIndicator}>*Required</span></label>
                                 <select
                                     name="category"
-                                    className={styles.selectInput}
+                                    className={`${styles.selectInput} ${errors.category ? styles.inputError : ''}`}
                                     value={formData.category}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
                                 >
-                                    {categories.length > 0 ? (
-                                        categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                        ))
-                                    ) : (
-                                        <option value="">Loading categories...</option>
-                                    )}
+                                    <option value="">Select a category</option>
+                                    {categories.length > 0
+                                        ? categories.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)
+                                        : <option value="">Loading categories...</option>
+                                    }
                                 </select>
+                                <p className={styles.errorMessage}>{errors.category}</p>
                             </div>
 
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
@@ -500,23 +202,16 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 className={styles.input}
                                                 placeholder="Type to search tags..."
                                                 value={tagInput}
-                                                onChange={(e) => {
-                                                    setTagInput(e.target.value);
-                                                    setShowSuggestions(true);
-                                                }}
+                                                onChange={(e) => { setTagInput(e.target.value); setShowSuggestions(true); }}
                                                 onFocus={() => setShowSuggestions(true)}
                                                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                                onKeyDown={handleKeyDown}
+                                                onKeyDown={handleTagKeyDown}
                                                 style={{ width: '100%' }}
                                             />
                                             {showSuggestions && tagInput && filteredSuggestions.length > 0 && (
                                                 <div className={styles.suggestionsDropdown}>
-                                                    {filteredSuggestions.map(tag => (
-                                                        <div
-                                                            key={tag.id}
-                                                            className={styles.suggestionItem}
-                                                            onClick={() => handleAddTag(tag.name)}
-                                                        >
+                                                    {filteredSuggestions.map((tag) => (
+                                                        <div key={tag.id} className={styles.suggestionItem} onClick={() => handleAddTag(tag.name)}>
                                                             {tag.name}
                                                         </div>
                                                     ))}
@@ -528,10 +223,9 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                             Add
                                         </button>
                                     </div>
-
                                     {formData.tags.length > 0 && (
                                         <div className={styles.tagList}>
-                                            {formData.tags.map(tag => (
+                                            {formData.tags.map((tag) => (
                                                 <span key={tag} className={styles.tagPill}>
                                                     {tag}
                                                     <button type="button" className={styles.removeTagBtn} onClick={() => handleRemoveTag(tag)}>×</button>
@@ -545,63 +239,32 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </section>
                 )}
 
-                {/* 3. Time */}
+                {/* ── 4. Time ── */}
                 {activeTab === 'time' && (
                     <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Date & Time</h2>
+                        <h2 className={styles.sectionTitle}>Date &amp; Time</h2>
                         <div className={styles.formGrid}>
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Start Date</label>
-                                <input
-                                    type="date"
-                                    name="startDate"
-                                    className={`${styles.input} ${errors.startDate ? styles.inputError : ''}`}
-                                    value={formData.startDate}
-                                    onChange={handleInputChange}
-                                />
-                                <p className={styles.errorMessage}>{errors.startDate}</p>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Start Time</label>
-                                <input
-                                    type="time"
-                                    name="startTime"
-                                    className={`${styles.input} ${errors.startTime ? styles.inputError : ''}`}
-                                    value={formData.startTime}
-                                    onChange={handleInputChange}
-                                />
-                                <p className={styles.errorMessage}>{errors.startTime}</p>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>End Date</label>
-                                <input
-                                    type="date"
-                                    name="endDate"
-                                    className={`${styles.input} ${errors.endDate ? styles.inputError : ''}`}
-                                    value={formData.endDate}
-                                    onChange={handleInputChange}
-                                />
-                                <p className={styles.errorMessage}>{errors.endDate}</p>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>End Time</label>
-                                <input
-                                    type="time"
-                                    name="endTime"
-                                    className={`${styles.input} ${errors.endTime ? styles.inputError : ''}`}
-                                    value={formData.endTime}
-                                    onChange={handleInputChange}
-                                />
-                                <p className={styles.errorMessage}>{errors.endTime}</p>
-                            </div>
+                            {(['startDate', 'startTime', 'endDate', 'endTime'] as const).map((field) => (
+                                <div key={field} className={styles.inputGroup}>
+                                    <label className={styles.label}>
+                                        {field === 'startDate' ? 'Start Date' : field === 'startTime' ? 'Start Time' : field === 'endDate' ? 'End Date' : 'End Time'}
+                                        {' '}<span className={styles.requiredIndicator}>*Required</span>
+                                    </label>
+                                    <input
+                                        type={field.includes('Date') ? 'date' : 'time'}
+                                        name={field}
+                                        className={`${styles.input} ${errors[field] ? styles.inputError : ''}`}
+                                        value={formData[field]}
+                                        onChange={handleInputChange}
+                                    />
+                                    <p className={styles.errorMessage}>{errors[field]}</p>
+                                </div>
+                            ))}
                         </div>
                     </section>
                 )}
 
-                {/* 4. Place */}
+                {/* ── 5. Place ── */}
                 {activeTab === 'place' && (
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Location</h2>
@@ -610,19 +273,18 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 <label className={styles.label}>Is this an Online Event?</label>
                                 <div className={styles.toggleRow}>
                                     <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            className={styles.checkbox}
-                                            checked={formData.isOnline}
-                                            onChange={() => handleToggle('isOnline')}
-                                        />
-                                        Yes, it's an online event
+                                        <input type="checkbox" className={styles.checkbox} checked={formData.isOnline} onChange={() => handleToggle('isOnline')} />
+                                        Yes, it&#39;s an online event
                                     </label>
                                 </div>
                             </div>
-
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>{formData.isOnline ? 'Meeting Link' : 'Venue Location'}</label>
+                                <label className={styles.label}>
+                                    {formData.isOnline
+                                        ? <span>Meeting Link <span className={styles.requiredIndicator}>*Required</span></span>
+                                        : <span>Venue Location <span className={styles.requiredIndicator}>*Required</span></span>
+                                    }
+                                </label>
                                 <input
                                     type="text"
                                     name="location"
@@ -637,150 +299,23 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </section>
                 )}
 
-                {/* 5. Tickets (Separate) */}
+                {/* ── 6. Tickets — delegated to TicketTierManager ── */}
                 {activeTab === 'tickets' && (
-                    <section className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Tickets</h2>
-                        <div className={styles.formGrid}>
-                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Total Capacity</label>
-                                <input
-                                    type="number"
-                                    name="limit"
-                                    className={styles.input}
-                                    placeholder="Unlimited"
-                                    value={formData.limit}
-                                    onChange={handleInputChange}
-                                />
-                                <p style={{ fontSize: '13px', opacity: 0.6, marginTop: '8px' }}>
-                                    Maximum number of attendees allowed. Leave blank for unlimited.
-                                </p>
-                            </div>
-
-                            {isPaidTicketingEnabled ? (
-                                <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                    <div className={styles.toggleRow}>
-                                        <label className={styles.checkboxLabel}>
-                                            <input
-                                                type="checkbox"
-                                                className={styles.checkbox}
-                                                checked={formData.isPaid}
-                                                onChange={() => handleToggle('isPaid')}
-                                            />
-                                            <strong>Paid Event</strong> (Requires tickets)
-                                        </label>
-                                    </div>
-                                    <p style={{ fontSize: '13px', opacity: 0.6, marginTop: '8px', marginLeft: '32px' }}>
-                                        If unchecked, the event will be free for all attendees.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className={`${styles.inputGroup} ${styles.fullWidth}`} style={{ opacity: 0.5 }}>
-                                    <p style={{ fontSize: '13px', color: 'var(--color-brand-primary)', fontWeight: 600 }}>
-                                        Paid ticketing is currently disabled by administrator.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        {formData.isPaid && (
-                            <div style={{ marginTop: '24px' }}>
-                                <div className={styles.ticketList}>
-                                    {formData.tickets.map((ticket, index) => (
-                                        <div key={index} className={styles.ticketItem}>
-                                            <div className={styles.ticketRow}>
-                                                <div className={styles.inputGroup} style={{ flex: 2 }}>
-                                                    <label className={styles.label}>Ticket Name</label>
-                                                    <input
-                                                        type="text"
-                                                        className={`${styles.input} ${errors[`tickets.${index}.name`] ? styles.inputError : ''}`}
-                                                        placeholder="e.g. VIP Admission"
-                                                        value={ticket.name}
-                                                        onChange={(e) => handleTicketChange(index, 'name', e.target.value)}
-                                                    />
-                                                    <p className={styles.errorMessage}>{errors[`tickets.${index}.name`]}</p>
-                                                </div>
-                                                <div className={styles.inputGroup} style={{ flex: 1 }}>
-                                                    <label className={styles.label}>Price</label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        className={`${styles.input} ${errors[`tickets.${index}.price`] ? styles.inputError : ''}`}
-                                                        placeholder="0.00"
-                                                        value={ticket.price}
-                                                        onChange={(e) => handleTicketChange(index, 'price', e.target.value)}
-                                                    />
-                                                    <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>
-                                                </div>
-                                                <div className={styles.inputGroup} style={{ flex: 1 }}>
-                                                    <label className={styles.label}>Quantity</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        className={`${styles.input} ${errors[`tickets.${index}.quantity`] ? styles.inputError : ''}`}
-                                                        placeholder="100"
-                                                        value={ticket.quantity}
-                                                        onChange={(e) => handleTicketChange(index, 'quantity', e.target.value)}
-                                                    />
-                                                    <p className={styles.errorMessage}>{errors[`tickets.${index}.quantity`]}</p>
-                                                </div>
-                                                <button className={styles.removeBtn} onClick={() => removeTicket(index)} title="Remove Ticket">
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                </button>
-                                            </div>
-
-                                            <div className={styles.ticketAdvanced}>
-                                                <div className={`${styles.inputGroup} ${styles.ticketDescription}`}>
-                                                    <label className={styles.label}>Description (Optional)</label>
-                                                    <input
-                                                        type="text"
-                                                        className={styles.input}
-                                                        placeholder="What's included in this ticket?"
-                                                        value={ticket.description || ''}
-                                                        onChange={(e) => handleTicketChange(index, 'description', e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label}>Sale Start</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        className={styles.input}
-                                                        value={ticket.saleStart || ''}
-                                                        onChange={(e) => handleTicketChange(index, 'saleStart', e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label}>Sale End</label>
-                                                    <input
-                                                        type="datetime-local"
-                                                        className={`${styles.input} ${errors[`tickets.${index}.saleEnd`] ? styles.inputError : ''}`}
-                                                        value={ticket.saleEnd || ''}
-                                                        onChange={(e) => handleTicketChange(index, 'saleEnd', e.target.value)}
-                                                    />
-                                                    <p className={styles.errorMessage}>{errors[`tickets.${index}.saleEnd`]}</p>
-                                                </div>
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label}>Max Per Order</label>
-                                                    <input
-                                                        type="number"
-                                                        className={`${styles.input} ${errors[`tickets.${index}.maxPerOrder`] ? styles.inputError : ''}`}
-                                                        placeholder="10"
-                                                        value={ticket.maxPerOrder || ''}
-                                                        onChange={(e) => handleTicketChange(index, 'maxPerOrder', e.target.value)}
-                                                    />
-                                                    <p className={styles.errorMessage}>{errors[`tickets.${index}.maxPerOrder`]}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button className={styles.addTicketBtn} onClick={addTicket}>+ Add Ticket Type</button>
-                                </div>
-                            </div>
-                        )}
-                    </section>
+                    <TicketTierManager
+                        tickets={formData.tickets}
+                        errors={errors}
+                        isPaidTicketingEnabled={isPaidTicketingEnabled}
+                        isPaid={formData.isPaid}
+                        onTogglePaid={() => handleToggle('isPaid')}
+                        onAdd={addTicket}
+                        onRemove={removeTicket}
+                        onChange={handleTicketChange}
+                        limit={formData.limit}
+                        onLimitChange={(v) => setFormData((prev) => ({ ...prev, limit: v }))}
+                    />
                 )}
 
-                {/* 5. Settings (Separate) */}
+                {/* ── 7. Settings ── */}
                 {activeTab === 'settings' && (
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Event Settings</h2>
@@ -788,12 +323,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                                 <div className={styles.toggleRow} style={{ marginBottom: '16px' }}>
                                     <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            className={styles.checkbox}
-                                            checked={formData.isPrivate}
-                                            onChange={() => handleToggle('isPrivate')}
-                                        />
+                                        <input type="checkbox" className={styles.checkbox} checked={formData.isPrivate} onChange={() => handleToggle('isPrivate')} />
                                         <strong>Private Event</strong> (Invite only)
                                     </label>
                                 </div>

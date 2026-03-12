@@ -11,8 +11,9 @@ import { useToast } from '@/components/ui/Toast';
 import Tabs from '@/components/dashboard/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
 
-type Tab = 'platform' | 'demographics' | 'advertising' | 'search';
+type Tab = 'search' | 'demographics' | 'advertising' | 'platform';
 
 
 /**
@@ -87,7 +88,6 @@ interface TagRow {
 function PlatformTab() {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
-    const [overview, setOverview] = useState<PlatformOverview | null>(null);
     const [ledger, setLedger] = useState<LedgerDay[]>([]);
     const [tags, setTags] = useState<TagRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -95,15 +95,12 @@ function PlatformTab() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [ovRes, ledgerRes, tagsRes] = await Promise.all([
-                supabase.from('mv_platform_overview').select('*').single(),
-                supabase.from('mv_platform_financial_ledger').select('*').order('id', { ascending: false }).limit(30),
-                supabase.from('mv_tag_leaderboard').select('*').order('use_count', { ascending: false }).limit(15),
+            const [ledgerRes, tagsRes] = await Promise.all([
+                supabase.schema('analytics').from('mv_platform_financial_ledger').select('*').order('id', { ascending: false }).limit(30),
+                supabase.schema('analytics').from('mv_tag_leaderboard').select('*').order('use_count', { ascending: false }).limit(15),
             ]);
-            if (ovRes.error) throw ovRes.error;
             if (ledgerRes.error) throw ledgerRes.error;
             if (tagsRes.error) throw tagsRes.error;
-            setOverview(ovRes.data);
             setLedger((ledgerRes.data || []).map((r: any) => ({
                 id: r.id,
                 total_volume: parseFloat(r.total_volume || '0'),
@@ -135,38 +132,7 @@ function PlatformTab() {
     // if (isLoading) return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading platform data…</div>;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-            {/* ── KPI snapshot ── */}
-            <div className={sharedStyles.statsGrid}>
-                <StatCard label="Total Users" value={overview ? overview.total_users.toLocaleString() : null} isLoading={isLoading} />
-                <StatCard
-                    label="Live Events"
-                    value={overview ? overview.live_events.toLocaleString() : null}
-                    change={overview ? `${overview.upcoming_events.toLocaleString()} upcoming` : '...'}
-                    trend="neutral"
-                    isLoading={isLoading}
-                />
-                <StatCard label="Tickets Sold" value={overview ? overview.total_tickets_sold.toLocaleString() : null} isLoading={isLoading} />
-                <StatCard
-                    label="Platform Revenue"
-                    value={overview ? `$${Number(overview.total_platform_revenue_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null}
-                    change="All-time (USD)"
-                    trend="neutral"
-                    isLoading={isLoading}
-                />
-                <StatCard
-                    label="Open Reports"
-                    value={overview ? overview.open_reports.toLocaleString() : null}
-                    change="Needs attention"
-                    trend="negative"
-                    isLoading={isLoading}
-                />
-                <StatCard label="Active Campaigns" value={overview ? overview.active_campaigns.toLocaleString() : null} isLoading={isLoading} />
-            </div>
-            {overview && (
-                <p className={styles.refreshNote}>mv_platform_overview refreshed at {new Date(overview.computed_at).toLocaleTimeString()}</p>
-            )}
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             {/* ── Revenue ledger (last 30 days) + trending tags ── */}
             <div className={styles.splitRow}>
                 <div className={styles.card}>
@@ -214,6 +180,7 @@ function DemographicsTab() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
+                .schema('analytics')
                 .from('mv_platform_demographics')
                 .select('*')
                 .order('user_count', { ascending: false });
@@ -257,7 +224,7 @@ function DemographicsTab() {
     if (isLoading) return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading demographics…</div>;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <div className={styles.sectionTitle}>Age Distribution</div>
@@ -294,6 +261,7 @@ function AdvertisingTab() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
+                .schema('analytics')
                 .from('mv_ad_campaign_performance')
                 .select('*')
                 .order('total_spend', { ascending: false })
@@ -316,10 +284,6 @@ function AdvertisingTab() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const totalImpressions = campaigns.reduce((a, c) => a + c.total_impressions, 0);
-    const totalClicks = campaigns.reduce((a, c) => a + c.total_clicks, 0);
-    const totalSpend = campaigns.reduce((a, c) => a + c.total_spend, 0);
-    const avgCtr = campaigns.length ? campaigns.reduce((a, c) => a + c.ctr, 0) / campaigns.length : 0;
 
     const columns: Column<CampaignPerf>[] = [
         { header: 'Campaign', render: (c) => <div style={{ fontWeight: 600, fontSize: '13px' }}>{c.campaign_title}</div> },
@@ -337,13 +301,7 @@ function AdvertisingTab() {
     ];
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div className={sharedStyles.statsGrid}>
-                <StatCard label="Total Impressions" value={totalImpressions.toLocaleString()} isLoading={isLoading} />
-                <StatCard label="Total Clicks" value={totalClicks.toLocaleString()} isLoading={isLoading} />
-                <StatCard label="Avg CTR" value={`${avgCtr.toFixed(2)}%`} change="Across all campaigns" trend="neutral" isLoading={isLoading} />
-                <StatCard label="Total Ad Spend" value={`$${totalSpend.toFixed(2)}`} change="USD billed" trend="neutral" isLoading={isLoading} />
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <DataTable<CampaignPerf>
                 data={campaigns}
                 columns={columns}
@@ -419,7 +377,7 @@ function SearchTab() {
     ];
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div className={sharedStyles.statsGrid}>
                 <StatCard label="Total Searches (sample)" value={queries.length.toLocaleString()} change="Last 500 events" trend="neutral" isLoading={isLoading} />
                 <StatCard label="Avg Results" value={avgResults.toFixed(1)} change="Per search" trend="neutral" isLoading={isLoading} />
@@ -470,15 +428,15 @@ function AnalyticsContent() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const initialTab = (searchParams.get('tab') as any) || 'platform';
+    const initialTab = (searchParams.get('tab') as string) || 'search';
     const [activeTab, setActiveTab] = useState<Tab>(
-        (['platform', 'demographics', 'advertising', 'search'].includes(initialTab) ? initialTab : 'platform') as Tab
+        (['search', 'demographics', 'advertising', 'platform'].includes(initialTab) ? initialTab as Tab : 'search')
     );
 
     useEffect(() => {
         const tab = searchParams.get('tab') as Tab;
-        if (tab && ['platform', 'demographics', 'advertising', 'search'].includes(tab)) {
-            setActiveTab(tab);
+        if (tab && ['search', 'demographics', 'advertising', 'platform'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
@@ -490,25 +448,23 @@ function AnalyticsContent() {
     };
 
     return (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <Tabs
                 options={[
-                    { id: 'platform', label: 'Platform' },
+                    { id: 'search', label: 'Search' },
                     { id: 'demographics', label: 'Demographics' },
                     { id: 'advertising', label: 'Advertising' },
-                    { id: 'search', label: 'Search' }
+                    { id: 'platform', label: 'Platform' }
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
             />
 
-            <main className={styles.content}>
-                {activeTab === 'platform' && <PlatformTab />}
-                {activeTab === 'demographics' && <DemographicsTab />}
-                {activeTab === 'advertising' && <AdvertisingTab />}
-                {activeTab === 'search' && <SearchTab />}
-            </main>
-        </>
+            {activeTab === 'search' && <SearchTab />}
+            {activeTab === 'demographics' && <DemographicsTab />}
+            {activeTab === 'advertising' && <AdvertisingTab />}
+            {activeTab === 'platform' && <PlatformTab />}
+        </div>
     );
 }
 
@@ -523,10 +479,10 @@ function AnalyticsContent() {
 export default function AdminAnalyticsPage() {
     return (
         <div className={styles.container}>
-            <header>
-                <h1 className={adminStyles.title}>Analytics</h1>
-                <p className={adminStyles.subtitle}>Platform-wide metrics powered by materialized views — refreshed automatically.</p>
-            </header>
+            <PageHeader 
+                title="Analytics" 
+                subtitle="Platform-wide metrics powered by materialized views — refreshed automatically." 
+            />
 
             <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading Analytics...</div>}>
                 <AnalyticsContent />

@@ -7,12 +7,14 @@ import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
 import AdAssetsTab from '@/components/admin/campaigns/AdAssetsTab';
 import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
+import AdPricingTab from '@/components/admin/campaigns/AdPricingTab';
 import Link from 'next/link';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import StatCard from '@/components/dashboard/StatCard';
 
 import Tabs from '@/components/dashboard/Tabs';
 
@@ -23,9 +25,9 @@ function CampaignsContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const initialTab = (searchParams.get('tab') as any) || 'campaigns';
-    const [activeTab, setActiveTab] = useState<'campaigns' | 'assets' | 'analytics'>(
-        ['campaigns', 'assets', 'analytics'].includes(initialTab) ? initialTab : 'campaigns'
+    const initialTab = (searchParams.get('tab') as string) || 'campaigns';
+    const [activeTab, setActiveTab] = useState<'campaigns' | 'assets' | 'analytics' | 'pricing'>(
+        ['campaigns', 'assets', 'analytics', 'pricing'].includes(initialTab) ? initialTab as 'campaigns' | 'assets' | 'analytics' | 'pricing' : 'campaigns'
     );
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -37,13 +39,13 @@ function CampaignsContent() {
     const itemsPerPage = 8;
 
     useEffect(() => {
-        const tab = searchParams.get('tab') as any;
-        if (tab && ['campaigns', 'assets', 'analytics'].includes(tab)) {
-            setActiveTab(tab);
+        const tab = searchParams.get('tab') as string;
+        if (tab && ['campaigns', 'assets', 'analytics', 'pricing'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
-    const handleTabChange = (newTab: 'campaigns' | 'assets' | 'analytics') => {
+    const handleTabChange = (newTab: 'campaigns' | 'assets' | 'analytics' | 'pricing') => {
         setActiveTab(newTab);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
@@ -59,32 +61,23 @@ function CampaignsContent() {
                     .from('ad_campaigns')
                     .select(`
                         *,
-                        accounts!account_id(name),
-                        performance:mv_ad_campaign_performance(
-                            total_impressions,
-                            total_clicks,
-                            total_spend
-                        )
+                        accounts!account_id(display_name)
                     `)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
 
                 const mappedCampaigns: Campaign[] = (data || []).map((c: any) => {
-                    // Extract performance metrics from the view relation
-                    const perf = c.performance?.[0] || { total_impressions: 0, total_clicks: 0, total_spend: 0 };
-
                     return {
                         id: c.id,
-                        // ad_campaigns has no `reference` column — derive a short code from the UUID
-                        campaignRef: `CAM-${c.id.slice(0, 8).toUpperCase()}`,
+                        campaignRef: c.reference || `CAM-${c.id.slice(0, 8).toUpperCase()}`,
                         name: c.title,
-                        client: c.accounts?.name || 'Unknown Client',
+                        client: c.accounts?.display_name || 'Unknown Client',
                         adType: c.type,
                         budget: parseFloat(c.total_budget),
-                        spend: parseFloat(c.spent_amount) || parseFloat(perf.total_spend) || 0,
-                        impressions: parseInt(perf.total_impressions) || 0,
-                        clicks: parseInt(perf.total_clicks) || 0,
+                        spend: parseFloat(c.spent_amount) || 0,
+                        impressions: parseInt(c.total_impressions) || 0,
+                        clicks: parseInt(c.total_clicks) || 0,
                         status: c.status,
                         startDate: new Date(c.start_at).toLocaleDateString(),
                         endDate: new Date(c.end_at).toLocaleDateString(),
@@ -150,10 +143,10 @@ function CampaignsContent() {
         showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
 
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .in('id', Array.from(selectedCampaignIds));
+            const { error } = await supabase.rpc('bulk_update_campaign_status', {
+                campaign_ids: Array.from(selectedCampaignIds),
+                new_status: newStatus
+            });
 
             if (error) throw error;
 
@@ -161,7 +154,7 @@ function CampaignsContent() {
 
             // Refresh local state
             setCampaigns(prev => prev.map(c =>
-                selectedCampaignIds.has(c.id) ? { ...c, status: newStatus as any } : c
+                selectedCampaignIds.has(c.id) ? { ...c, status: newStatus as 'draft' | 'pending_approval' | 'active' | 'completed' | 'paused' | 'rejected' } : c
             ));
             setSelectedCampaignIds(new Set());
         } catch (err) {
@@ -196,6 +189,17 @@ function CampaignsContent() {
         { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
+    const stats = useMemo(() => {
+        const total = campaigns.length;
+        const active = campaigns.filter(c => c.status === 'active').length;
+        const pending = campaigns.filter(c => c.status === 'pending_approval').length;
+        const avgCTR = campaigns.length > 0 
+            ? (campaigns.reduce((acc, c) => acc + (c.clicks / (c.impressions || 1)), 0) / campaigns.length) * 100 
+            : 0;
+
+        return { total, active, pending, avgCTR };
+    }, [campaigns]);
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -208,15 +212,46 @@ function CampaignsContent() {
                 </Link>
             </header>
 
+            <div className={adminStyles.statsGrid}>
+                <StatCard
+                    label="Total Campaigns"
+                    value={stats.total}
+                    change="Platform history"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Active Campaigns"
+                    value={stats.active}
+                    change="Live impressions"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Pending Approval"
+                    value={stats.pending}
+                    change="Awaiting review"
+                    trend={stats.pending > 0 ? "neutral" : "positive"}
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Avg. Campaign CTR"
+                    value={`${stats.avgCTR.toFixed(2)}%`}
+                    change="Engagement benchmark"
+                    trend={stats.avgCTR > 1 ? "positive" : "neutral"}
+                    isLoading={isLoading}
+                />
+            </div>
+
             {/* ── Tab switcher ── */}
             <Tabs
                 options={[
                     { id: 'campaigns', label: 'Campaigns' },
                     { id: 'assets', label: 'Ad Assets' },
-                    { id: 'analytics', label: 'Analytics' }
+                    { id: 'analytics', label: 'Analytics' },
+                    { id: 'pricing', label: 'Pricing Model' }
                 ]}
                 activeTab={activeTab}
-                onTabChange={handleTabChange as any}
+                onTabChange={(id) => handleTabChange(id as Extract<typeof activeTab, string>)}
             />
 
             {/* ── Campaigns tab (existing content) ── */}
@@ -232,7 +267,7 @@ function CampaignsContent() {
                             className={adminStyles.select}
                             value={adTypeFilter}
                             onChange={(e) => setAdTypeFilter(e.target.value)}
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.8)', color: 'white' }}
+                            style={{ width: 'auto', minWidth: '180px', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.8)', color: 'white' }}
                         >
                             <option value="all">All Ad Types</option>
                             <option value="banner">Banner</option>
@@ -246,6 +281,7 @@ function CampaignsContent() {
                             {[
                                 { value: 'all', label: 'All Statuses' },
                                 { value: 'active', label: 'Active' },
+                                { value: 'pending_approval', label: 'Awaiting Approval' },
                                 { value: 'draft', label: 'Draft' },
                                 { value: 'paused', label: 'Paused' },
                                 { value: 'rejected', label: 'Rejected' },
@@ -285,18 +321,16 @@ function CampaignsContent() {
                 </>
             )}
 
-            {/* ── Ad Assets tab (new) ── */}
             {activeTab === 'assets' && (
-                <div style={{ marginTop: '16px' }}>
-                    <AdAssetsTab />
-                </div>
+                <AdAssetsTab />
             )}
 
-            {/* ── Ad Analytics tab (new) ── */}
             {activeTab === 'analytics' && (
-                <div style={{ marginTop: '16px' }}>
-                    <AdAnalyticsTab />
-                </div>
+                <AdAnalyticsTab />
+            )}
+
+            {activeTab === 'pricing' && (
+                <AdPricingTab />
             )}
         </div>
     );

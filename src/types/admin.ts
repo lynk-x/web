@@ -33,7 +33,7 @@ export interface Campaign {
     impressions: number;
     clicks: number;
     /** Aligned to `campaign_status` enum: draft replaces the old 'pending' */
-    status: 'active' | 'draft' | 'paused' | 'rejected' | 'completed';
+    status: 'active' | 'draft' | 'pending_approval' | 'paused' | 'rejected' | 'completed';
     /** Aligned to `ad_type` enum: banner | interstitial | feed_card | map_pin */
     adType?: 'banner' | 'interstitial' | 'feed_card' | 'map_pin';
     targetEventId?: string;
@@ -90,6 +90,23 @@ export interface ForumThread {
     lastActivity: string;
 }
 
+/** A media item uploaded to a forum. */
+export interface ForumMedia {
+    id: string;
+    forum_id: string;
+    /** Event title from forum → event join */
+    event_title?: string;
+    uploader_name?: string;
+    media_type: 'image' | 'video' | 'audio' | 'document';
+    url: string;
+    thumbnail_url?: string;
+    caption?: string;
+    mime_type: string;
+    file_size: number;
+    is_approved: boolean;
+    created_at: string;
+}
+
 /**
  * Mirrors the `reports` DB table.
  *
@@ -141,21 +158,6 @@ export interface EnvVar {
     value: string;
 }
 
-/** A support ticket — mirrors the `support_tickets` DB table. */
-export interface Ticket {
-    id: string;
-    reference?: string;
-    subject: string;
-    requester: string;
-    body?: string;
-    admin_notes?: string;
-    /** Aligned to CHECK constraint in `support_tickets.priority` — includes critical */
-    priority: 'critical' | 'high' | 'medium' | 'low';
-    /** Aligned to CHECK constraint in `support_tickets.status` */
-    status: 'open' | 'in_progress' | 'resolved' | 'closed';
-    assignedTo?: string;
-    lastUpdated: string;
-}
 
 /** A platform user managed by admin. */
 export interface User {
@@ -169,8 +171,6 @@ export interface User {
     status: 'active' | 'suspended' | 'partially_active';
     lastActive: string;
     isVerified?: boolean;
-    /** From `profiles.subscription_tier` enum: free | pro */
-    subscriptionTier?: 'free' | 'pro';
     reportsCount?: number;
     userName?: string;
     gender?: string;
@@ -223,6 +223,21 @@ export interface SystemBanner {
     ends_at?: string;
     action_url?: string;
     created_at?: string;
+}
+
+/** A hero spotlight carousel item. Mirrors `spotlights` table. */
+export interface Spotlight {
+    id: string;
+    title: string;
+    subtitle?: string;
+    target: 'all' | 'organize_dashboard' | 'ads_dashboard' | 'discovery_page';
+    display_order: number;
+    cta_text?: string;
+    redirect_to?: string;
+    background_url?: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
 }
 
 /** Global platform payment provider configuration */

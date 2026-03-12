@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useOrganization } from "@/context/OrganizationContext";
 import { useToast } from "@/components/ui/Toast";
-import styles from "./page.module.css";
-import PageHeader from "@/components/dashboard/PageHeader";
+import adminStyles from "@/components/dashboard/DashboardShared.module.css";
+import SubPageHeader from "@/components/shared/SubPageHeader";
 
-// Simplified type for fetching available forums via events
 interface EventForum {
-    id: string; // Event ID
+    id: string;
     title: string;
-    forum_id: string; // The associated Forum ID needed for the Questionnaire
+    forum_id: string;
 }
 
 interface QuestionInput {
@@ -27,11 +26,9 @@ export default function CreateQuizPage() {
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = createClient();
 
-    // Reference Data State
     const [forums, setForums] = useState<EventForum[]>([]);
     const [loadingForums, setLoadingForums] = useState(true);
 
-    // Form State
     const [forumId, setForumId] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -41,44 +38,26 @@ export default function CreateQuizPage() {
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Load active events for this organizer
     const fetchForums = useCallback(async () => {
         if (!activeAccount) return;
         try {
-            // Query events owned by the active account, joined with their forums
             const { data, error } = await supabase
                 .from("events")
-                .select(`
-          id,
-          title,
-          forums ( id )
-        `)
+                .select(`id, title, forums ( id )`)
                 .eq("account_id", activeAccount.id);
 
             if (error) throw error;
 
-            // Extract only events that have a valid forum
             const validForums: EventForum[] = [];
             data?.forEach((evt: any) => {
-                if (evt.forums && evt.forums.id) {
-                    validForums.push({
-                        id: evt.id,
-                        title: evt.title,
-                        forum_id: evt.forums.id, // Using standard relational lookup if it's 1-to-1
-                    });
-                } else if (Array.isArray(evt.forums) && evt.forums.length > 0) {
-                    validForums.push({
-                        id: evt.id,
-                        title: evt.title,
-                        forum_id: evt.forums[0].id,
-                    });
+                const fId = Array.isArray(evt.forums) ? evt.forums[0]?.id : evt.forums?.id;
+                if (fId) {
+                    validForums.push({ id: evt.id, title: evt.title, forum_id: fId });
                 }
             });
 
             setForums(validForums);
-            if (validForums.length > 0) {
-                setForumId(validForums[0].forum_id);
-            }
+            if (validForums.length > 0) setForumId(validForums[0].forum_id);
         } catch (err: any) {
             showToast(err.message || "Failed to load events.", "error");
         } finally {
@@ -87,15 +66,17 @@ export default function CreateQuizPage() {
     }, [activeAccount, supabase, showToast]);
 
     useEffect(() => {
-        if (!isOrgLoading) fetchForums();
-    }, [isOrgLoading, fetchForums]);
+        if (!isOrgLoading) {
+            if (activeAccount) {
+                fetchForums();
+            } else {
+                setLoadingForums(false);
+            }
+        }
+    }, [isOrgLoading, activeAccount, fetchForums]);
 
-    // Question array manipulation
     const handleAddQuestion = () => {
-        setQuestions([
-            ...questions,
-            { text: "", options: ["", "", "", ""], correctIndex: 0 },
-        ]);
+        setQuestions([...questions, { text: "", options: ["", "", "", ""], correctIndex: 0 }]);
     };
 
     const handleRemoveQuestion = (index: number) => {
@@ -103,11 +84,7 @@ export default function CreateQuizPage() {
         setQuestions(questions.filter((_, i) => i !== index));
     };
 
-    const handleQuestionChange = (
-        index: number,
-        field: "text" | "correctIndex",
-        value: any
-    ) => {
+    const handleQuestionChange = (index: number, field: "text" | "correctIndex", value: any) => {
         const newQ = [...questions];
         newQ[index][field] = value as never;
         setQuestions(newQ);
@@ -126,59 +103,37 @@ export default function CreateQuizPage() {
             return;
         }
 
-        // Validation
-        for (let i = 0; i < questions.length; i++) {
-            const q = questions[i];
-            if (!q.text.trim()) {
-                showToast(`Question ${i + 1} is missing text.`, "error");
-                return;
-            }
-            if (q.options.some(o => !o.trim())) {
-                showToast(`Question ${i + 1} is missing some options.`, "error");
-                return;
-            }
-        }
-
         setIsSubmitting(true);
         try {
-            // Generate a random 6-digit Game PIN
             const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-            // 1. Insert Questionnaire
             const { data: qData, error: qError } = await supabase
                 .from("questionnaires")
                 .insert({
                     forum_id: forumId,
                     title,
                     description,
-                    type: "quiz", // Hardcode enum
+                    type: "quiz",
                     status: "published",
                     time_limit_seconds: timeLimit,
                     room_code: roomCode,
                 })
-                .select()
-                .single();
+                .select().single();
 
             if (qError) throw qError;
 
-            // 2. Insert Questions
             const questionsToInsert = questions.map((q, idx) => ({
                 questionnaire_id: qData.id,
                 question_text: q.text,
-                options: q.options, // Stored as JSONB Array
+                options: q.options,
                 correct_option_index: q.correctIndex,
                 points: 1000,
                 order_index: idx,
             }));
 
-            const { error: qsError } = await supabase
-                .from("questions")
-                .insert(questionsToInsert);
-
+            const { error: qsError } = await supabase.from("questions").insert(questionsToInsert);
             if (qsError) throw qsError;
 
             showToast("Quiz created successfully!", "success");
-            // Redirect to the playable quiz page so they can test/show it
             router.push(`/quiz/${qData.id}`);
         } catch (err: any) {
             showToast(err.message || "Failed to create quiz.", "error");
@@ -188,149 +143,76 @@ export default function CreateQuizPage() {
     };
 
     if (isOrgLoading || loadingForums) {
-        return <div style={{ padding: "40px" }}>Loading App Context...</div>;
+        return <div style={{ padding: "40px", textAlign: 'center', opacity: 0.5 }}>Loading Quiz Builder...</div>;
     }
 
     return (
-        <div className={styles.container}>
-            <PageHeader
-                title="Create Live Interactive Quiz"
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Create Live Quiz"
                 subtitle="Build an interactive quiz for your event attendees."
+                backLabel="Back to Quizzes"
             />
 
-            <form onSubmit={handleSubmit}>
-                <div className={styles.panel}>
-                    <div className={styles.header}>Basic Settings</div>
-
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Link to Event / Forum</label>
-                        <select
-                            className={styles.input}
-                            value={forumId}
-                            onChange={(e) => setForumId(e.target.value)}
-                            required
-                        >
-                            <option value="" disabled>Select an Event</option>
-                            {forums.map((f) => (
-                                <option key={f.id} value={f.forum_id}>
-                                    {f.title}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Quiz Title</label>
-                        <input
-                            className={styles.input}
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g. Ultimate Tech Trivia!"
-                            required
-                        />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Description (Optional)</label>
-                        <textarea
-                            className={styles.textarea}
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="A short intro for the waiting lobby..."
-                        />
-                    </div>
-
-                    <div className={styles.formGroup} style={{ maxWidth: "200px" }}>
-                        <label className={styles.label}>Time Limit (Seconds)</label>
-                        <input
-                            className={styles.input}
-                            type="number"
-                            min="5"
-                            max="120"
-                            value={timeLimit}
-                            onChange={(e) => setTimeLimit(Number(e.target.value))}
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div className={styles.panel}>
-                    <div className={styles.header}>Questions</div>
-
-                    {questions.map((q, qIndex) => (
-                        <div key={qIndex} className={styles.questionCard}>
-                            <div className={styles.questionHeader}>
-                                <span className={styles.questionTitle}>Question {qIndex + 1}</span>
-                                {questions.length > 1 && (
-                                    <button
-                                        type="button"
-                                        className={styles.deleteButton}
-                                        onClick={() => handleRemoveQuestion(qIndex)}
-                                    >
-                                        Remove Question
-                                    </button>
-                                )}
-                            </div>
-
-                            <input
-                                className={styles.input}
-                                type="text"
-                                placeholder="Type your question here..."
-                                value={q.text}
-                                onChange={(e) => handleQuestionChange(qIndex, "text", e.target.value)}
-                                style={{ marginBottom: "12px", fontSize: "1.2rem", fontWeight: "bold" }}
-                                required
-                            />
-
-                            <div className={styles.optionsGrid}>
-                                {q.options.map((opt, oIndex) => (
-                                    <div key={oIndex} className={styles.optionWrapper}>
-                                        <input
-                                            type="radio"
-                                            className={styles.optionRadio}
-                                            name={`correct-${qIndex}`}
-                                            checked={q.correctIndex === oIndex}
-                                            onChange={() => handleQuestionChange(qIndex, "correctIndex", oIndex)}
-                                            title="Mark as correct answer"
-                                        />
-                                        <input
-                                            type="text"
-                                            className={styles.optionInput}
-                                            placeholder={`Option ${oIndex + 1}`}
-                                            value={opt}
-                                            onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+            <form onSubmit={handleSubmit} className={adminStyles.formGrid} style={{ marginTop: '24px' }}>
+                <div className={adminStyles.pageCard}>
+                    <h2 className={adminStyles.sectionTitle}>Basic Settings</h2>
+                    <div className={adminStyles.formGrid}>
+                        <div className={adminStyles.formGroup}>
+                            <label className={adminStyles.label}>Link to Event / Forum <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                            <select className={adminStyles.select} value={forumId} onChange={(e) => setForumId(e.target.value)} required>
+                                <option value="" disabled>Select an Event</option>
+                                {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
+                            </select>
                         </div>
-                    ))}
-
-                    <button
-                        type="button"
-                        className={styles.addQuestionBtn}
-                        onClick={handleAddQuestion}
-                    >
-                        + Add Another Question
-                    </button>
+                        <div className={adminStyles.formGroup}>
+                            <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                            <input className={adminStyles.input} type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ultimate Tech Trivia!" required />
+                        </div>
+                        <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                            <label className={adminStyles.label}>Description</label>
+                            <textarea className={adminStyles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short intro for the waiting lobby..." rows={3} />
+                        </div>
+                        <div className={adminStyles.formGroup} style={{ maxWidth: '120px' }}>
+                            <label className={adminStyles.label}>Time (Sec) <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                            <input className={adminStyles.input} type="number" min="5" max="120" value={timeLimit} onChange={(e) => setTimeLimit(Number(e.target.value))} required />
+                        </div>
+                    </div>
                 </div>
 
-                <div className={styles.footer}>
-                    <button
-                        type="button"
-                        className={`${styles.btn} ${styles.btnSecondary}`}
-                        onClick={() => router.back()}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className={`${styles.btn} ${styles.btnPrimary}`}
-                        disabled={isSubmitting || forums.length === 0}
-                    >
-                        {isSubmitting ? "Saving..." : "Create & Launch Quiz"}
+                <div className={adminStyles.pageCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Questions</h2>
+                        <button type="button" className={adminStyles.btnSecondary} onClick={handleAddQuestion} style={{ fontSize: '12px' }}>+ Add Question</button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {questions.map((q, qIndex) => (
+                            <div key={qIndex} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--color-interface-outline)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-brand-primary)' }}>Q{qIndex + 1}</span>
+                                    {questions.length > 1 && (
+                                        <button type="button" onClick={() => handleRemoveQuestion(qIndex)} style={{ border: 'none', background: 'transparent', color: 'var(--color-interface-error)', fontSize: '12px', cursor: 'pointer' }}>Remove</button>
+                                    )}
+                                </div>
+                                <input className={adminStyles.input} type="text" placeholder="Type your question..." value={q.text} onChange={(e) => handleQuestionChange(qIndex, "text", e.target.value)} style={{ fontWeight: 600, marginBottom: '12px' }} required />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    {q.options.map((opt, oIndex) => (
+                                        <div key={oIndex} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px', border: q.correctIndex === oIndex ? '1px solid var(--color-brand-primary)' : '1px solid transparent' }}>
+                                            <input type="radio" name={`correct-${qIndex}`} checked={q.correctIndex === oIndex} onChange={() => handleQuestionChange(qIndex, "correctIndex", oIndex)} style={{ cursor: 'pointer', accentColor: 'var(--color-brand-primary)' }} />
+                                            <input className={adminStyles.input} type="text" placeholder={`Opt ${oIndex + 1}`} value={opt} onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)} style={{ background: 'transparent', border: 'none', padding: 0 }} required />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                    <button type="button" className={adminStyles.btnGhost} onClick={() => router.back()}>Cancel</button>
+                    <button type="submit" className={adminStyles.btnPrimary} disabled={isSubmitting || forums.length === 0}>
+                        {isSubmitting ? "Launching..." : "Create & Launch Quiz"}
                     </button>
                 </div>
             </form>

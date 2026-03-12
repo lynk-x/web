@@ -33,6 +33,7 @@ interface CampaignTableProps {
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'active': return 'success';
+        case 'pending_approval': return 'primary';
         case 'draft': return 'warning';
         case 'paused': return 'info';
         case 'rejected': return 'error';
@@ -137,11 +138,12 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
         ];
 
         // Draft campaigns can be approved (set to active) by admin
-        if (campaign.status === 'draft') {
+        // Campaigns awaiting review
+        if (campaign.status === 'pending_approval' || campaign.status === 'draft') {
             actions.push(
                 {
                     label: 'Approve',
-                    variant: 'success',
+                    variant: 'success' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                     onClick: () => {
                         showToast('Approving campaign...', 'info');
@@ -150,7 +152,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
                 },
                 {
                     label: 'Reject',
-                    variant: 'danger',
+                    variant: 'danger' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
                     onClick: () => {
                         showToast('Rejecting campaign...', 'info');
@@ -174,7 +176,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
         if (campaign.status === 'paused') {
             actions.push({
                 label: 'Resume',
-                variant: 'success',
+                variant: 'success' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
                 onClick: () => {
                     showToast('Resuming campaign...', 'info');
@@ -185,7 +187,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
 
         actions.push({
             label: 'Delete',
-            variant: 'danger',
+            variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
             onClick: () => {
                 showToast(`Deleting campaign ${campaign.name}...`, 'info');

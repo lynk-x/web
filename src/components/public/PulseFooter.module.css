@@ -14,84 +14,14 @@
     max-width: 1200px;
     margin: 0 auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: center;
     gap: var(--spacing-lg);
     position: relative;
     z-index: 1;
 }
 
-.statsRow {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--spacing-xl);
-    width: 100%;
-}
 
-.statItem {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.03);
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--radius-full);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(8px);
-    transition: transform 0.3s ease;
-}
-
-.statItem:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.liveDot {
-    width: 8px;
-    height: 8px;
-    background-color: var(--color-brand-primary);
-    border-radius: 50%;
-    position: relative;
-}
-
-.liveDot::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    background-color: inherit;
-    border-radius: 50%;
-    opacity: 0.5;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 0.8;
-    }
-
-    100% {
-        transform: translate(-50%, -50%) scale(3);
-        opacity: 0;
-    }
-}
-
-.statValue {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 18px;
-    color: var(--color-utility-primaryText);
-}
-
-.statLabel {
-    font-size: 14px;
-    color: var(--color-utility-primaryText);
-    opacity: 0.7;
-}
 
 .ctaSection {
     text-align: center;
@@ -140,9 +70,7 @@
         justify-content: space-between;
     }
 
-    .statsRow {
-        width: auto;
-    }
+
 
     .ctaSection {
         margin-top: 0;
@@ -156,7 +84,6 @@
     flex-direction: column-reverse;
     align-items: center;
     gap: var(--spacing-md);
-    width: 100%;
 }
 
 .legalLinks {
@@ -184,6 +111,7 @@
 @media (min-width: 768px) {
     .legalRow {
         flex-direction: row;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: var(--spacing-xl);
     }
 }

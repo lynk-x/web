@@ -143,7 +143,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
         if (tx.status === 'pending' && tx.type === 'payout_withdrawal') {
             actions.push({
                 label: 'Process Payout',
-                variant: 'success',
+                variant: 'success' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                 onClick: () => {
                     showToast('Processing payout...', 'info');
@@ -155,7 +155,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
         if (tx.type === 'ticket_sale' && tx.status === 'completed') {
             actions.push({
                 label: 'Issue Refund',
-                variant: 'danger',
+                variant: 'danger' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>,
                 onClick: () => {
                     showToast('Initiating refund...', 'info');

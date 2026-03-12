@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import styles from '../../page.module.css';
 import Link from 'next/link';
 import AdsInvoiceTable, { Invoice } from '@/components/ads/billing/AdsInvoiceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -9,6 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 export default function AdsBillingPage() {
     const { showToast } = useToast();
@@ -20,7 +21,6 @@ export default function AdsBillingPage() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [walletBalance, setWalletBalance] = useState(0);
     const [rawTotalSpend, setRawTotalSpend] = useState(0);
-    const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const itemsPerPage = 10;
 
@@ -28,48 +28,28 @@ export default function AdsBillingPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            // Scope ad-spend transactions via this account's campaign IDs.
-            // transactions has no account_id column — must be scoped indirectly.
-            const { data: campaigns } = await supabase
-                .from('ad_campaigns')
-                .select('id')
-                .eq('account_id', activeAccount.id);
-
-            const campaignIds = (campaigns || []).map((c: any) => c.id);
-
-            const [transRes, walletRes, methodsRes] = await Promise.all([
-                campaignIds.length > 0
-                    ? supabase
-                        .from('transactions')
-                        .select('id, amount, status, created_at, currency, reason')
-                        .in('campaign_id', campaignIds)
-                        .eq('reason', 'ad_campaign_payment')
-                        .order('created_at', { ascending: false })
-                    // If no campaigns yet, return an empty result
-                    : Promise.resolve({ data: [], error: null }),
-
-                // Wallet balance for the account's default currency
+            const [topupsRes, walletRes, campaignsRes] = await Promise.all([
+                supabase
+                    .from('wallet_top_ups')
+                    .select('id, amount, status, created_at, currency')
+                    .eq('account_id', activeAccount.id)
+                    .order('created_at', { ascending: false }),
                 supabase
                     .from('account_wallets')
                     .select('balance')
                     .eq('account_id', activeAccount.id)
                     .eq('currency', activeAccount.default_currency || 'KES')
                     .maybeSingle(),
-
-                // Saved payment methods
                 supabase
-                    .from('account_payment_methods')
-                    .select('*')
+                    .from('ad_campaigns')
+                    .select('spent_amount')
                     .eq('account_id', activeAccount.id)
             ]);
 
             const currency = activeAccount.default_currency || 'KES';
+            let totalSpend = (campaignsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
 
-            // Map transactions to the Invoice display type;
-            // also accumulate raw spend so we can display the total accurately.
-            let spend = 0;
-            const mapped: Invoice[] = (transRes.data || []).map((tx: any) => {
-                spend += Number(tx.amount || 0);
+            const mapped: Invoice[] = (topupsRes.data || []).map((tx: any) => {
                 return {
                     id: tx.id,
                     date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -79,9 +59,8 @@ export default function AdsBillingPage() {
             });
 
             setInvoices(mapped);
-            setRawTotalSpend(spend);
+            setRawTotalSpend(totalSpend);
             setWalletBalance(Number(walletRes.data?.balance ?? 0));
-            setPaymentMethods(methodsRes.data || []);
         } catch (err: any) {
             showToast(err.message || 'Failed to load billing data.', 'error');
         } finally {
@@ -91,9 +70,13 @@ export default function AdsBillingPage() {
 
     useEffect(() => {
         if (!isOrgLoading) {
-            fetchBillingData();
+            if (activeAccount) {
+                fetchBillingData();
+            } else {
+                setIsLoading(false);
+            }
         }
-    }, [isOrgLoading, fetchBillingData]);
+    }, [isOrgLoading, activeAccount, fetchBillingData]);
 
     const filteredInvoices = invoices.filter(inv =>
         inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,95 +93,64 @@ export default function AdsBillingPage() {
     const currency = activeAccount?.default_currency || 'KES';
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Billing &amp; Payments</h1>
-                    <p className={styles.subtitle}>Manage your payment methods and view ad spend invoices.</p>
-                </div>
-            </header>
+        <div className={adminStyles.container}>
+            <PageHeader
+                title="Finance & Ad Spend"
+                subtitle="Track your ad spend, manage your wallet balance, and view transaction history."
+            />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-                {/* Payment Methods */}
-                <section className={styles.section} style={{ padding: '24px', backgroundColor: 'var(--color-interface-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-interface-outline)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Payment Methods</h2>
-                        <Link href="/dashboard/ads/billing/payment-methods" className={styles.createBtn} style={{ fontSize: '12px', padding: '6px 12px', textDecoration: 'none' }}>+ Add Method</Link>
-                    </div>
-
-                    {isLoading ? (
-                        <div style={{ padding: '24px', textAlign: 'center', opacity: 0.5, fontSize: '14px' }}>Loading...</div>
-                    ) : paymentMethods.length > 0 ? (
-                        paymentMethods.map((method: any) => (
-                            <div key={method.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '1px solid var(--color-interface-outline)', borderRadius: '8px', marginBottom: '8px' }}>
-                                <div style={{ width: '40px', height: '25px', backgroundColor: '#e0e0e0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#666', fontWeight: 'bold' }}>
-                                    {method.type?.toUpperCase() || 'CARD'}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 500 }}>{method.label || 'Payment Method'}</div>
-                                    <div style={{ fontSize: '12px', opacity: 0.6 }}>{method.is_default ? 'Default' : ''}</div>
-                                </div>
-                                <Link
-                                    href="/dashboard/ads/billing/payment-methods"
-                                    style={{ background: 'transparent', border: 'none', color: 'var(--color-utility-primaryText)', opacity: 0.5, cursor: 'pointer', fontSize: '14px', textDecoration: 'none' }}
-                                >
-                                    Edit
-                                </Link>
-                            </div>
-                        ))
-                    ) : (
-                        <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed var(--color-interface-outline)', borderRadius: '8px', opacity: 0.6 }}>
-                            <p style={{ fontSize: '14px', margin: 0 }}>No payment methods added.</p>
-                        </div>
-                    )}
-                </section>
-
-                {/* Wallet Balance */}
-                <section className={styles.section} style={{ padding: '24px', backgroundColor: 'var(--color-interface-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-interface-outline)' }}>
+            <div className={adminStyles.subPageGrid} style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+                <div className={adminStyles.pageCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                            <h2 style={{ fontSize: '14px', fontWeight: 500, margin: '0 0 8px 0', opacity: 0.7 }}>Available Balance</h2>
-                            <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>
+                            <h2 className={adminStyles.sectionTitle} style={{ fontSize: '14px', marginBottom: '8px' }}>Available Balance</h2>
+                            <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--color-brand-primary)' }}>
                                 {isLoading ? '...' : formatCurrency(walletBalance, currency)}
                             </div>
-                            <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
-                                Available funds for advertising.
-                            </p>
+                            <p style={{ fontSize: '12px', opacity: 0.5, marginTop: '8px' }}>Funds available for active campaigns</p>
                         </div>
+                        <Link href="/dashboard/ads/settings?tab=billing" className={adminStyles.btnPrimary} style={{ fontSize: '12px', padding: '8px 16px' }}>
+                            Top Up Wallet
+                        </Link>
+                    </div>
+                </div>
+
+                <div className={adminStyles.pageCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                            <h3 style={{ fontSize: '14px', fontWeight: 500, margin: '0 0 8px 0', opacity: 0.7 }}>Total Ad Spend</h3>
-                            <div style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>
+                            <h2 className={adminStyles.sectionTitle} style={{ fontSize: '14px', marginBottom: '8px' }}>Total Spend</h2>
+                            <div style={{ fontSize: '32px', fontWeight: 700 }}>
                                 {isLoading ? '...' : formatCurrency(rawTotalSpend, currency)}
                             </div>
-                            <div style={{ fontSize: '12px', opacity: 0.6 }}>
-                                {invoices.length} transaction{invoices.length !== 1 ? 's' : ''} total
+                            <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: '6px', background: 'rgba(32, 249, 40, 0.05)', border: '1px solid rgba(32, 249, 40, 0.1)', display: 'inline-block' }}>
+                                <p style={{ fontSize: '11px', margin: 0, opacity: 0.8 }}>
+                                    Estimated impressions: <strong>{isLoading ? '...' : (rawTotalSpend * 10).toLocaleString()}</strong>
+                                </p>
                             </div>
                         </div>
+                        <Link href="/dashboard/ads/settings?tab=billing" className={adminStyles.btnSecondary} style={{ fontSize: '12px', padding: '8px 16px', opacity: 0.8 }}>
+                            Manage Methods
+                        </Link>
                     </div>
-                </section>
+                </div>
             </div>
 
-            {/* Invoice History */}
-            <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Ad Spend History</h2>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                    <TableToolbar
-                        onSearchChange={setSearchQuery}
-                        searchValue={searchQuery}
-                        searchPlaceholder="Search by status, date..."
+            <div style={{ marginTop: '32px' }}>
+                <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '16px' }}>Ad Spend History</h2>
+                <TableToolbar
+                    onSearchChange={setSearchQuery}
+                    searchValue={searchQuery}
+                    searchPlaceholder="Search by status, date..."
+                />
+                <div style={{ marginTop: '16px' }}>
+                    <AdsInvoiceTable
+                        invoices={paginatedInvoices}
+                        currentPage={currentPage}
+                        totalPages={totalPages || 1}
+                        onPageChange={setCurrentPage}
                     />
                 </div>
-
-                <AdsInvoiceTable
-                    invoices={paginatedInvoices}
-                    currentPage={currentPage}
-                    totalPages={totalPages || 1}
-                    onPageChange={setCurrentPage}
-                />
-            </section>
+            </div>
         </div>
     );
 }

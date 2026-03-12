@@ -21,20 +21,20 @@ function RevenueContent() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const initialTab = (searchParams.get('tab') as any) || 'wallets';
+    const initialTab = (searchParams.get('tab') as string) || 'wallets';
     const [activeTab, setActiveTab] = useState<'payouts' | 'wallets'>(
-        ['payouts', 'wallets'].includes(initialTab) ? initialTab : 'wallets'
+        (['payouts', 'wallets'] as string[]).includes(initialTab) ? initialTab as 'payouts' | 'wallets' : 'wallets'
     );
 
     useEffect(() => {
-        const tab = searchParams.get('tab') as any;
+        const tab = searchParams.get('tab') as string;
         if (tab && ['payouts', 'wallets'].includes(tab)) {
-            setActiveTab(tab);
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
     const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as any);
+        setActiveTab(newTab as Extract<typeof activeTab, string>);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -121,12 +121,7 @@ function RevenueContent() {
             .reduce((acc, p) => acc + Number(p.amount || 0), 0);
     }, [payouts, isLoading]);
 
-    const totalProcessedPayouts = useMemo(() => {
-        if (isLoading && payouts.length === 0) return null;
-        return payouts
-            .filter(p => p.status === 'completed')
-            .reduce((acc, p) => acc + Number(p.amount || 0), 0);
-    }, [payouts, isLoading]);
+
 
     const currency = activeAccount?.default_currency || 'KES';
 
@@ -256,13 +251,7 @@ function RevenueContent() {
                     trend="negative"
                     isLoading={isLoading}
                 />
-                <StatCard
-                    label="Total Payouts"
-                    value={totalProcessedPayouts !== null ? formatCurrency(totalProcessedPayouts, currency) : null}
-                    change="Total processed"
-                    trend="positive"
-                    isLoading={isLoading}
-                />
+
             </div>
 
             {/* Tabs */}

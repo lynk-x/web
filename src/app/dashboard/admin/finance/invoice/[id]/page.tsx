@@ -58,7 +58,7 @@ export default function AdminInvoicePage() {
                     return;
                 }
 
-                const d = data as any;
+                const d = data as any; // Using any for joined Supabase data to avoid verbose interface duplication
                 setTx({
                     id: d.id,
                     date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),

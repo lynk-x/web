@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import styles from './page.module.css';
-import Link from 'next/link';
-import DataTable, { Column } from '@/components/shared/DataTable';
-import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { exportToCSV } from '@/utils/export';
+import DataTable, { Column } from '@/components/shared/DataTable';
+import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import StatCard from '@/components/dashboard/StatCard';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 
 interface CheckInLog {
@@ -23,9 +23,8 @@ interface CheckInLog {
 }
 
 export default function CheckInLogsPage() {
-    const { id: eventId } = useParams();
+    const { id: eventId } = useParams() as { id: string };
     const { showToast } = useToast();
-    // Memoize so the client reference is stable across re-renders
     const supabase = useMemo(() => createClient(), []);
 
     const [logs, setLogs] = useState<CheckInLog[]>([]);
@@ -36,20 +35,13 @@ export default function CheckInLogsPage() {
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
         try {
-            /**
-             * Query tickets directly with joins:
-             *  - ticket_tiers for tier name
-             *  - profiles!buyer_id for attendee name/email
-             *  - profiles!redeemed_by for the scanner name
-             * This replaces the vw_attendees_list view which doesn't expose redeemed_by.
-             */
             const { data, error } = await supabase
                 .from('tickets')
                 .select(`
-                    id, code, status, redeemed_at,
-                    tier:ticket_tiers!tier_id(name),
-                    buyer:profiles!buyer_id(full_name, user_name),
-                    scanner:profiles!redeemed_by(full_name, user_name)
+                    id, ticket_code, status, redeemed_at,
+                    tier:ticket_tiers!ticket_tier_id(display_name),
+                    buyer:user_profile!user_id(full_name, user_name),
+                    scanner:user_profile!redeemed_by_id(full_name, user_name)
                 `)
                 .eq('event_id', eventId)
                 .order('redeemed_at', { ascending: false, nullsFirst: false });
@@ -60,9 +52,8 @@ export default function CheckInLogsPage() {
                 id: row.id,
                 attendeeName: row.buyer?.full_name || row.buyer?.user_name || 'Anonymous',
                 attendeeAvatar: null,
-                ticketTier: row.tier?.name || 'Unknown Tier',
+                ticketTier: row.tier?.display_name || 'Unknown Tier',
                 status: row.status,
-                // Real scanner name from the redeemed_by FK join
                 scannedBy: row.scanner?.full_name || row.scanner?.user_name || 'System',
                 timestamp: row.redeemed_at
                     ? new Date(row.redeemed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -89,7 +80,6 @@ export default function CheckInLogsPage() {
     useEffect(() => {
         fetchLogs();
 
-        // Real-time subscription
         const channel = supabase
             .channel(`event-scans-${eventId}`)
             .on('postgres_changes', {
@@ -119,7 +109,7 @@ export default function CheckInLogsPage() {
 
             if (error) throw error;
 
-            const result = data[0]; // Function returns a table row
+            const result = data[0];
             if (result.status === 'success') {
                 showToast(`Verified! Welcome ${result.attendee_name}`, "success");
                 fetchLogs();
@@ -173,84 +163,59 @@ export default function CheckInLogsPage() {
     ];
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div style={{ flex: '1 1 auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <Link href="/dashboard/organize/events" className={styles.backLink}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                            Back to Events
-                        </Link>
-                        <Badge label="Live Feed" variant="success" showDot />
-                    </div>
-                    <h1 className={styles.title}>Check-in Logs</h1>
-                    <p className={styles.subtitle}>Real-time scanner feed and manual entry logs for this event.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button
-                        className={styles.btnSecondary}
-                        onClick={() => {
-                            if (logs.length === 0) { showToast('No logs to export.', 'warning'); return; }
-                            exportToCSV(
-                                logs.map(l => ({
-                                    attendee: l.attendeeName,
-                                    tier: l.ticketTier,
-                                    status: l.status,
-                                    scanned_by: l.scannedBy,
-                                    time: l.timestamp
-                                })),
-                                `checkins_export_${eventId}`
-                            );
-                            showToast('Export complete.', 'success');
-                        }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export CSV
-                    </button>
-                    <button className={styles.btnPrimary} onClick={handleManualCheckIn}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        Manual Check-in
-                    </button>
-                </div>
-            </header>
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Check-in Logs"
+                subtitle="Real-time scanner feed and manual entry logs for this event."
+                backLabel="Back to Event"
+                badge={{ label: 'Live Feed', variant: 'success' }}
+                primaryAction={{
+                    label: 'Manual Check-in',
+                    onClick: handleManualCheckIn,
+                    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                }}
+                secondaryAction={{
+                    label: 'Export CSV',
+                    onClick: () => {
+                        if (logs.length === 0) { showToast('No logs to export.', 'warning'); return; }
+                        exportToCSV(logs.map(l => ({
+                            attendee: l.attendeeName,
+                            tier: l.ticketTier,
+                            status: l.status,
+                            scanned_by: l.scannedBy,
+                            time: l.timestamp
+                        })), `checkins_export_${eventId}`);
+                        showToast('Export complete.', 'success');
+                    },
+                    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                }}
+            />
 
-            <div className={styles.statsGrid}>
-                <StatCard
-                    label="Total Scanned"
-                    value={stats.scanned}
-                    color="var(--color-interface-success)"
-                    isLoading={isLoading}
-                />
-                <StatCard
-                    label="Remaining"
-                    value={stats.remaining}
-                    isLoading={isLoading}
-                />
-                <StatCard
-                    label="Rejected Scans"
-                    value={stats.rejected}
-                    color="var(--color-interface-error)"
-                    isLoading={isLoading}
-                />
+            <div className={adminStyles.statsGrid}>
+                <StatCard label="Total Scanned" value={stats.scanned} color="var(--color-interface-success)" isLoading={isLoading} />
+                <StatCard label="Remaining" value={stats.remaining} isLoading={isLoading} />
+                <StatCard label="Rejected Scans" value={stats.rejected} color="var(--color-interface-error)" isLoading={isLoading} />
             </div>
 
-            <DataTable<CheckInLog>
-                data={logs}
-                columns={columns}
-                getActions={getActions}
-                selectedIds={selectedIds}
-                onSelect={(id) => {
-                    const next = new Set(selectedIds);
-                    next.has(id) ? next.delete(id) : next.add(id);
-                    setSelectedIds(next);
-                }}
-                onSelectAll={() => {
-                    if (selectedIds.size === logs.length) setSelectedIds(new Set());
-                    else setSelectedIds(new Set(logs.map(l => l.id)));
-                }}
-                isLoading={isLoading}
-                emptyMessage="No attendees found for this event."
-            />
+            <div style={{ marginTop: '24px' }}>
+                <DataTable<CheckInLog>
+                    data={logs}
+                    columns={columns}
+                    getActions={getActions}
+                    selectedIds={selectedIds}
+                    onSelect={(id) => {
+                        const next = new Set(selectedIds);
+                        next.has(id) ? next.delete(id) : next.add(id);
+                        setSelectedIds(next);
+                    }}
+                    onSelectAll={() => {
+                        if (selectedIds.size === logs.length) setSelectedIds(new Set());
+                        else setSelectedIds(new Set(logs.map(l => l.id)));
+                    }}
+                    isLoading={isLoading}
+                    emptyMessage="No attendees found for this event."
+                />
+            </div>
         </div>
     );
 }

@@ -51,6 +51,7 @@ function AnalyticsContent() {
                     // Use formatCurrency so the symbol matches the account's currency
                     cpc: formatCurrency(0)
                 });
+                setIsLoading(false);
                 return;
             }
 
@@ -114,9 +115,13 @@ function AnalyticsContent() {
 
     useEffect(() => {
         if (!isOrgLoading) {
-            fetchAnalytics();
+            if (activeAccount) {
+                fetchAnalytics();
+            } else {
+                setIsLoading(false);
+            }
         }
-    }, [isOrgLoading, fetchAnalytics]);
+    }, [isOrgLoading, activeAccount, fetchAnalytics]);
 
     useEffect(() => {
         const range = searchParams.get('range');

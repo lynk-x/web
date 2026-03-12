@@ -145,7 +145,7 @@ export default function FeatureFlagTab() {
     ];
 
     return (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <TableToolbar
                 searchPlaceholder="Search feature flags..."
                 searchValue={searchTerm}

@@ -58,7 +58,7 @@ export default function AdminCampaignDetailPage() {
                     id: data.id,
                     campaignRef: data.reference,
                     name: data.title,
-                    client: (data.accounts as any)?.name || 'Unknown Client',
+                    client: (data.accounts as { name?: string })?.name || 'Unknown Client',
                     adType: data.type,
                     budget: parseFloat(data.total_budget),
                     spend: parseFloat(data.spent_amount) || parseFloat(perf.total_spend) || 0,
@@ -90,7 +90,7 @@ export default function AdminCampaignDetailPage() {
             if (error) throw error;
 
             showToast(`Campaign status updated to ${newStatus}`, 'success');
-            setCampaign(prev => prev ? { ...prev, status: newStatus as any } : null);
+            setCampaign(prev => prev ? { ...prev, status: newStatus as 'draft' | 'active' | 'completed' | 'paused' | 'rejected' } : null);
         } catch (err) {
             showToast('Failed to update status.', 'error');
         }

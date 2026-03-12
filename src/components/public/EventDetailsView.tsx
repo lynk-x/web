@@ -61,7 +61,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers 
                 id: `${event.id}-ticket-${selectedTier.id}`,
                 eventId: event.id,
                 eventTitle: event.title,
-                ticketType: selectedTier.name,
+                ticketType: selectedTier.display_name || selectedTier.name,
                 price: selectedTier.price,
                 quantity: 1, // Defaulting to 1 for simplicity here, they can modify in future cart or checkout if allowed
                 currency: event.currency || 'KES',
@@ -200,7 +200,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers 
                                         )}
                                     </div>
                                     <div className={styles.ticketDetails}>
-                                        <div className={styles.ticketNamePrice}>{tier.name} : {event.currency || 'KES'} {tier.price}</div>
+                                        <div className={styles.ticketNamePrice}>{tier.display_name || tier.name} : {event.currency || 'KES'} {tier.price}</div>
                                         <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
                                     </div>
                                 </div>

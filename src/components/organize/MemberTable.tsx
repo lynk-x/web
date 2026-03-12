@@ -100,8 +100,12 @@ export default function MemberTable() {
     }, [activeAccount, supabase, showToast]);
 
     useEffect(() => {
-        fetchMembers();
-    }, [fetchMembers]);
+        if (activeAccount) {
+            fetchMembers();
+        } else {
+            setIsLoading(false);
+        }
+    }, [activeAccount, fetchMembers]);
 
     // Handle Checkboxes
     const handleSelect = (id: string) => {
@@ -217,7 +221,7 @@ export default function MemberTable() {
         if (member.isPending) {
             actions.push({
                 label: 'Revoke Invite',
-                variant: 'danger',
+                variant: 'danger' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
                 onClick: () => handleRevokeInvite(member.id)
             });
@@ -229,7 +233,7 @@ export default function MemberTable() {
             });
             actions.push({
                 label: 'Remove Member',
-                variant: 'danger',
+                variant: 'danger' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
                 onClick: () => handleRemoveMember(member.userId!)
             });
@@ -294,7 +298,9 @@ export default function MemberTable() {
 
                         <form onSubmit={handleInviteSubmit}>
                             <div style={{ marginBottom: '16px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>Email Address</label>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
+                                    Email Address <span style={{ color: '#ff4d4d', fontSize: '10px', marginLeft: '6px', position: 'relative', top: '-4px', fontWeight: 600 }}>*Required</span>
+                                </label>
                                 <input
                                     type="email"
                                     required
@@ -309,7 +315,9 @@ export default function MemberTable() {
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>Access Level</label>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
+                                    Access Level <span style={{ color: '#ff4d4d', fontSize: '10px', marginLeft: '6px', position: 'relative', top: '-4px', fontWeight: 600 }}>*Required</span>
+                                </label>
                                 <select
                                     value={inviteRole}
                                     onChange={e => setInviteRole(e.target.value)}

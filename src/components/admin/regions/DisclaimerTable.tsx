@@ -30,6 +30,12 @@ export default function DisclaimerTable() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     const fetchDisclaimers = useCallback(async () => {
         setIsLoading(true);
@@ -45,7 +51,7 @@ export default function DisclaimerTable() {
             if (error) throw error;
             setDisclaimers(data || []);
         } catch (error: any) {
-            showToast(error.message || "Failed to load compliance rules. Please check your connection.", 'error');
+            showToast(error.message || "Failed to load disclaimers. Please check your connection.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -64,9 +70,9 @@ export default function DisclaimerTable() {
 
             if (error) throw error;
             setDisclaimers(prev => prev.map(d => d.id === id ? { ...d, is_active: !currentValue } : d));
-            showToast(`Rule updated successfully.`, 'success');
+            showToast(`Disclaimer updated successfully.`, 'success');
         } catch (error: any) {
-            showToast(error.message || `Failed to update rule status.`, 'error');
+            showToast(error.message || `Failed to update disclaimer.`, 'error');
         }
     };
 
@@ -129,41 +135,48 @@ export default function DisclaimerTable() {
         },
         {
             label: 'Delete',
-            variant: 'danger',
+            variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
             onClick: () => showToast('Delete coming soon', 'info')
         }
     ];
 
     const bulkActions: BulkAction[] = [
-        { label: 'Activate Selected', onClick: () => { showToast('Activated', 'success'); setSelectedIds(new Set()); }, variant: 'success' },
-        { label: 'Deactivate Selected', onClick: () => { showToast('Deactivated', 'warning'); setSelectedIds(new Set()); }, variant: 'danger' }
+        { label: 'Activate Selected', onClick: () => { showToast('Activated', 'success'); setSelectedIds(new Set()); }, variant: 'success' as const },
+        { label: 'Deactivate Selected', onClick: () => { showToast('Deactivated', 'warning'); setSelectedIds(new Set()); }, variant: 'danger' as const }
     ];
 
+    const paginated = filtered.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <TableToolbar searchPlaceholder="Search rules..." searchValue={searchTerm} onSearchChange={setSearchTerm} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+            <TableToolbar searchPlaceholder="Search disclaimers..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
                 <button
                     className={adminStyles.btnPrimary}
-                    style={{ padding: '8px 16px', fontSize: '13px' }}
                     onClick={() => router.push('/dashboard/admin/registry/disclaimers/create')}
                 >
-                    + New Rule
+                    + New Disclaimer
                 </button>
-            </div>
+            </TableToolbar>
 
-            <BulkActionsBar selectedCount={selectedIds.size} actions={bulkActions} onCancel={() => setSelectedIds(new Set())} itemTypeLabel="rules" />
+            <BulkActionsBar selectedCount={selectedIds.size} actions={bulkActions} onCancel={() => setSelectedIds(new Set())} itemTypeLabel="disclaimers" />
 
             <DataTable<Disclaimer>
-                data={filtered}
+                data={paginated}
                 columns={columns}
                 getActions={getActions}
                 selectedIds={selectedIds}
                 onSelect={handleSelect}
                 onSelectAll={handleSelectAll}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
                 isLoading={isLoading}
-                emptyMessage="No compliance rules found."
+                emptyMessage="No disclaimers found."
             />
         </div>
     );

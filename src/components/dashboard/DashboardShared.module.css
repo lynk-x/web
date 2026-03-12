@@ -115,6 +115,27 @@
     opacity: 0.9;
 }
 
+.btnDanger {
+    background-color: var(--color-interface-error);
+    color: #ffffff;
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btnDanger:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
 /* Filter Chips */
 .filterGroup {
     display: flex;
@@ -160,7 +181,7 @@
     align-items: center;
     gap: var(--spacing-md);
     border-bottom: 1px solid var(--color-interface-outline);
-    
+    margin-bottom: var(--spacing-lg);
 }
 
 .tab {
@@ -196,12 +217,33 @@
     background-color: var(--color-brand-primary);
 }
 
-/* Section Title */
 .sectionTitle {
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     color: var(--color-utility-primaryText);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.requiredIndicator {
+    color: #ff4d4d;
+    font-size: 10px;
+    margin-left: 6px;
+    vertical-align: baseline;
+    position: relative;
+    top: -4px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.sectionTitle::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--color-interface-outline), transparent);
+    margin-left: 8px;
 }
 
 @keyframes spin {
@@ -216,4 +258,113 @@
 
 .spinner {
     animation: spin 0.8s linear infinite;
+}
+
+/* --- Standardized Premium UI Classes --- */
+
+.pageCard {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input:focus {
+    border-color: var(--color-brand-primary);
+    background-color: transparent;
+}
+
+.label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-utility-primaryText);
+    opacity: 0.7;
+}
+
+.select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.subPageGrid,
+.subPageGridBalanced {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+}
+
+@media (min-width: 1024px) {
+
+    .subPageGrid,
+    .subPageGridBalanced {
+        display: grid;
+        grid-template-columns: 7fr 3fr;
+        gap: 32px;
+    }
+
+    /* Balanced split for grids that don't need a dominant sidebar (e.g. two charts) */
+    .subPageGridBalanced {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* If only one child exists, make it full-width */
+    .subPageGrid>*:only-child,
+    .subPageGridBalanced>*:only-child {
+        grid-column: 1 / -1;
+    }
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }

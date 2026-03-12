@@ -212,7 +212,7 @@ export default function LiveQuizClient({
                     )}
                     {!isCorrect && (
                         <div style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>
-                            The correct answer was: {(currentQuestion.options as any)[currentQuestion.correct_option_index || 0]}
+                            The correct answer was: {(currentQuestion.options as string[])[currentQuestion.correct_option_index || 0]}
                         </div>
                     )}
                 </motion.div>

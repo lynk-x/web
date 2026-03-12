@@ -238,7 +238,7 @@ export default function ConfigTab() {
     ];
 
     return (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <TableToolbar
                 searchPlaceholder="Search configs..."
                 searchValue={searchTerm}
@@ -325,7 +325,7 @@ export default function ConfigTab() {
                         <select
                             className={adminStyles.input}
                             value={formValues.data_type}
-                            onChange={e => setFormValues({ ...formValues, data_type: e.target.value as any })}
+                            onChange={e => setFormValues({ ...formValues, data_type: e.target.value as 'string' | 'number' | 'boolean' | 'json' })}
                             disabled={isSaving}
                         >
                             <option value="string">String</option>

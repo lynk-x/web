@@ -39,7 +39,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             // actually, just let them accept it straight via RPC or we can get basic info if we join
             const { data, error: fetchErr } = await supabase
                 .from("account_invitations")
-                .select("id, email, role, accepted_at, expires_at, accounts:account_id(name), inviter:invited_by(full_name, user_name)")
+                .select("id, email, role, accepted_at, expires_at, accounts:account_id(display_name), inviter:invited_by(full_name, user_name)")
                 .eq("token", token)
                 .single();
 
@@ -129,7 +129,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
                 ) : inviteDetails ? (
                     <>
                         <p className={styles.description}>
-                            <strong>{inviteDetails.inviter?.full_name || inviteDetails.inviter?.user_name || 'A team member'}</strong> has invited you to join the organization <strong>{inviteDetails.accounts?.name || 'Unknown'}</strong> as a <strong>{inviteDetails.role.replace('_', ' ')}</strong>.
+                            <strong>{inviteDetails.inviter?.full_name || inviteDetails.inviter?.user_name || 'A team member'}</strong> has invited you to join the organization <strong>{inviteDetails.accounts?.display_name || 'Unknown'}</strong> as a <strong>{inviteDetails.role.replace('_', ' ')}</strong>.
                         </p>
 
                         <button

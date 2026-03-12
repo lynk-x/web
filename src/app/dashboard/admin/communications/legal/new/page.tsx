@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './NewLegalVersion.module.css';
-import adminStyles from '../../../page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import SubPageHeader from '@/components/shared/SubPageHeader';
@@ -88,13 +88,12 @@ export default function NewLegalVersionPage() {
             <div className={styles.pageLayout}>
                 <div className={styles.editorSection}>
                     <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '24px' }}>Document Content</h2>
+                        <h2 className={adminStyles.sectionTitle}>Document Content</h2>
                         <form className={adminStyles.form} onSubmit={handleCreateVersion}>
-                            <div>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Document Type</label>
                                 <select
                                     className={adminStyles.select}
-                                    style={{ width: '100%' }}
                                     value={type}
                                     onChange={(e) => handleChange(setType, e.target.value)}
                                 >
@@ -106,7 +105,7 @@ export default function NewLegalVersionPage() {
                                 </select>
                             </div>
 
-                            <div>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Title</label>
                                 <input
                                     type="text"
@@ -118,7 +117,7 @@ export default function NewLegalVersionPage() {
                                 />
                             </div>
 
-                            <div>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Rich Text Editor</label>
                                 <RichTextEditor
                                     value={content}
@@ -130,10 +129,10 @@ export default function NewLegalVersionPage() {
                     </div>
 
                     <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '24px' }}>Version Strategy</h2>
+                        <h2 className={adminStyles.sectionTitle}>Version Strategy</h2>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                            <div>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Version Identifier</label>
                                 <input
                                     type="text"
@@ -145,7 +144,7 @@ export default function NewLegalVersionPage() {
                                 />
                             </div>
 
-                            <div>
+                            <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Effective Date</label>
                                 <input
                                     type="date"

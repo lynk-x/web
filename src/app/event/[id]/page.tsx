@@ -1,22 +1,36 @@
 import { createClient } from '@/utils/supabase/server';
 import EventDetailsView from '@/components/public/EventDetailsView';
 import { notFound } from 'next/navigation';
+import { Event } from '@/types';
 
 export default async function EventPage({ params }: { params: { id: string } }) {
     const supabase = await createClient();
     const { id } = await params;
 
-    const { data: event, error } = await supabase
-        .from('public_events_view')
-        .select('*')
+    const { data: rawEvent, error } = await supabase
+        .from('events')
+        .select(`
+            *,
+            organizer:accounts!account_id(display_name),
+            category:event_categories(display_name)
+        `)
         .eq('id', id)
         .single();
 
     const { data: ticketTiers } = await supabase
         .from('ticket_tiers')
-        .select('*')
+        .select('*, name:display_name')
         .eq('event_id', id)
         .order('price', { ascending: true });
+
+    const event = rawEvent ? {
+        ...rawEvent,
+        start_datetime: rawEvent.starts_at,
+        end_datetime: rawEvent.ends_at,
+        thumbnail_url: rawEvent.thumbnail_url,
+        organizer_name: rawEvent.organizer?.display_name,
+        category: rawEvent.category?.display_name
+    } as Event : null;
 
     if (error || !event) {
         // Fallback for demo/development if ID matches our static featured one

@@ -8,6 +8,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+
 export interface CampaignData {
     id?: string;
     title: string;
@@ -182,7 +184,7 @@ export default function CreateCampaignForm({
                     .update({
                         call_to_action: formData.adHeadline,
                         url: formData.adImageUrl,
-                        type: formData.type,
+                        media_type: 'image',
                         updated_at: new Date().toISOString()
                     })
                     .eq('campaign_id', formData.id)
@@ -206,7 +208,7 @@ export default function CreateCampaignForm({
                         target_url: formData.target_url,
                         target_event_id: formData.target_event_id || null,
                         target_country_code: formData.target_country_code,
-                        status: 'draft'
+                        status: 'pending_approval'
                     })
                     .select()
                     .single();
@@ -218,7 +220,7 @@ export default function CreateCampaignForm({
                         .from('ad_assets')
                         .insert({
                             campaign_id: campaign.id,
-                            type: formData.type,
+                            media_type: 'image',
                             call_to_action: formData.adHeadline,
                             url: formData.adImageUrl,
                             is_primary: true
@@ -226,7 +228,7 @@ export default function CreateCampaignForm({
 
                     if (assetError) console.error('Asset creation error:', assetError);
                 }
-                showToast('Campaign launched as draft!', 'success');
+                showToast('Campaign submitted for approval!', 'success');
             }
 
             onDirtyChange?.(false);
@@ -263,11 +265,11 @@ export default function CreateCampaignForm({
     };
 
     return (
-        <div className={styles.layout}>
-            <div className={styles.formColumn}>
-                <div className={styles.container}>
+        <div className={adminStyles.subPageGrid}>
+            <div className={adminStyles.formColumn}>
+                <div className={adminStyles.pageCard} style={{ padding: '0' }}>
                     {/* Tabs */}
-                    <div className={styles.tabs}>
+                    <div className={styles.tabs} style={{ padding: '0 24px' }}>
                         <div
                             className={`${styles.tabItem} ${activeTab === 'details' ? styles.activeTab : ''}`}
                             onClick={() => setActiveTab('details')}
@@ -288,12 +290,12 @@ export default function CreateCampaignForm({
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
                         {/* Tab: Campaign Details */}
                         {activeTab === 'details' && (
                             <div className={styles.formSection}>
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="title">Campaign Title</label>
+                                    <label className={styles.label} htmlFor="title">Campaign Title <span className={styles.requiredIndicator}>*Required</span></label>
                                     <input
                                         type="text"
                                         id="title"
@@ -308,7 +310,7 @@ export default function CreateCampaignForm({
                                 </div>
 
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="description">Campaign Description</label>
+                                    <label className={styles.label} htmlFor="description">Campaign Description <span className={styles.requiredIndicator}>*Required</span></label>
                                     <textarea
                                         id="description"
                                         name="description"
@@ -322,7 +324,7 @@ export default function CreateCampaignForm({
 
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="type">Ad Type</label>
+                                        <label className={styles.label} htmlFor="type">Ad Type <span className={styles.requiredIndicator}>*Required</span></label>
                                         <select
                                             id="type"
                                             name="type"
@@ -356,7 +358,7 @@ export default function CreateCampaignForm({
 
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="total_budget">Total Budget ($)</label>
+                                        <label className={styles.label} htmlFor="total_budget">Total Budget ($) <span className={styles.requiredIndicator}>*Required</span></label>
                                         <input
                                             type="number"
                                             id="total_budget"
@@ -384,7 +386,7 @@ export default function CreateCampaignForm({
 
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="start_at">Start Date</label>
+                                        <label className={styles.label} htmlFor="start_at">Start Date <span className={styles.requiredIndicator}>*Required</span></label>
                                         <input
                                             type="date"
                                             id="start_at"
@@ -396,7 +398,7 @@ export default function CreateCampaignForm({
                                         />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="end_at">End Date</label>
+                                        <label className={styles.label} htmlFor="end_at">End Date <span className={styles.requiredIndicator}>*Required</span></label>
                                         <input
                                             type="date"
                                             id="end_at"
@@ -415,7 +417,7 @@ export default function CreateCampaignForm({
                         {activeTab === 'creative' && (
                             <div className={styles.formSection}>
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="adHeadline">Ad Headline / Call to Action</label>
+                                    <label className={styles.label} htmlFor="adHeadline">Ad Headline / Call to Action <span className={styles.requiredIndicator}>*Required</span></label>
                                     <input
                                         type="text"
                                         id="adHeadline"
@@ -429,7 +431,7 @@ export default function CreateCampaignForm({
                                 </div>
 
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="target_url">Destination URL</label>
+                                    <label className={styles.label} htmlFor="target_url">Destination URL <span className={styles.requiredIndicator}>*Required</span></label>
                                     <input
                                         type="url"
                                         id="target_url"
@@ -529,91 +531,95 @@ export default function CreateCampaignForm({
                 </div>
             </div>
 
-            <div className={styles.previewColumn}>
-                <h2 className={styles.previewTitle}>Live Preview</h2>
-                <div className={styles.mockDevice}>
-                    <div className={styles.deviceContent}>
-                        <div className={styles.adPreviewWrapper}>
-                            {formData.type === 'interstitial' ? (
-                                <div className={styles.mockAdInterstitial}>
-                                    <div className={styles.mockAdHeader}>
-                                        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>AD</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Download in progress</div>
-                                        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
-                                    </div>
-                                    <div className={styles.mockAdMedia}>
-                                        {formData.adImageUrl ? (
-                                            <img src={formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                                <polyline points="21 15 16 10 5 21" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <div className={styles.mockAdInfo}>
-                                        <span className={styles.mockAdBadge}>Ad • INTERSTITIAL</span>
-                                        <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{formData.adHeadline || 'Your Catchy Headline'}</div>
-                                        <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
-                                        <button style={{
-                                            marginTop: '16px', width: '100%', padding: '10px', background: 'var(--color-brand-primary)', border: 'none', borderRadius: '6px', color: '#000', fontWeight: 600, fontSize: '13px'
-                                        }}>
-                                            Learn More
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    {formData.type === 'banner' && (
-                                        <div className={styles.mockAdBanner}>
-                                            <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>AD</div>
-                                            <div className={styles.mockAdCTA}>Learn More</div>
+            <div className={adminStyles.formSection} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                    <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
+                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                        <div className={styles.mockDevice}>
+                            <div className={styles.deviceContent}>
+                                <div className={styles.adPreviewWrapper}>
+                                    {formData.type === 'interstitial' ? (
+                                        <div className={styles.mockAdInterstitial}>
+                                            <div className={styles.mockAdHeader}>
+                                                <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>AD</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Download in progress</div>
+                                                <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
+                                            </div>
+                                            <div className={styles.mockAdMedia}>
+                                                {formData.adImageUrl ? (
+                                                    <img src={formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                                        <polyline points="21 15 16 10 5 21" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <div className={styles.mockAdInfo}>
+                                                <span className={styles.mockAdBadge}>Ad • INTERSTITIAL</span>
+                                                <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{formData.adHeadline || 'Your Catchy Headline'}</div>
+                                                <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
+                                                <button style={{
+                                                    marginTop: '16px', width: '100%', padding: '10px', background: 'var(--color-brand-primary)', border: 'none', borderRadius: '6px', color: '#000', fontWeight: 600, fontSize: '13px'
+                                                }}>
+                                                    Learn More
+                                                </button>
+                                            </div>
                                         </div>
+                                    ) : (
+                                        <>
+                                            {formData.type === 'banner' && (
+                                                <div className={styles.mockAdBanner}>
+                                                    <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>AD</div>
+                                                    <div className={styles.mockAdCTA}>Learn More</div>
+                                                </div>
+                                            )}
+
+                                            <div className={styles.mockAppContent}>
+                                                <div className={styles.mockAppLine} style={{ width: '40%' }}></div>
+                                                <div className={styles.mockAppLine} style={{ width: '80%' }}></div>
+
+                                                {formData.type === 'feed_card' && (
+                                                    <div className={styles.mockAd}>
+                                                        <div className={styles.mockAdMedia}>
+                                                            {formData.adImageUrl ? (
+                                                                <img src={formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            ) : (
+                                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5">
+                                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                                                    <polyline points="21 15 16 10 5 21" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <div className={styles.mockAdInfo}>
+                                                            <div className={styles.mockAdTitle}>{formData.adHeadline || 'Ad Headline'}</div>
+                                                            <div className={styles.mockAdDesc}>{formData.title || 'Campaign Title'}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {formData.type === 'map_pin' && (
+                                                    <div className={styles.mockMapPreview}>
+                                                        <div className={styles.mapPin}>
+                                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
+                                                        </div>
+                                                        <div className={styles.mapPopup}>
+                                                            <div className={styles.mockAdTitle} style={{ fontSize: '10px' }}>{formData.adHeadline || 'Location Ad'}</div>
+                                                            <div className={styles.mockAdDesc} style={{ fontSize: '8px' }}>Tap to view details</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className={styles.mockAppLine} style={{ width: '90%', marginTop: 'auto' }}></div>
+                                                <div className={styles.mockAppLine} style={{ width: '100%' }}></div>
+                                                <div className={styles.mockAppLine} style={{ width: '70%' }}></div>
+                                            </div>
+                                        </>
                                     )}
-
-                                    <div className={styles.mockAppContent}>
-                                        <div className={styles.mockAppLine} style={{ width: '40%' }}></div>
-                                        <div className={styles.mockAppLine} style={{ width: '80%' }}></div>
-
-                                        {formData.type === 'feed_card' && (
-                                            <div className={styles.mockAd}>
-                                                <div className={styles.mockAdMedia}>
-                                                    {formData.adImageUrl ? (
-                                                        <img src={formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    ) : (
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5">
-                                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                                            <polyline points="21 15 16 10 5 21" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <div className={styles.mockAdInfo}>
-                                                    <div className={styles.mockAdTitle}>{formData.adHeadline || 'Ad Headline'}</div>
-                                                    <div className={styles.mockAdDesc}>{formData.title || 'Campaign Title'}</div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {formData.type === 'map_pin' && (
-                                            <div className={styles.mockMapPreview}>
-                                                <div className={styles.mapPin}>
-                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
-                                                </div>
-                                                <div className={styles.mapPopup}>
-                                                    <div className={styles.mockAdTitle} style={{ fontSize: '10px' }}>{formData.adHeadline || 'Location Ad'}</div>
-                                                    <div className={styles.mockAdDesc} style={{ fontSize: '8px' }}>Tap to view details</div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className={styles.mockAppLine} style={{ width: '90%', marginTop: 'auto' }}></div>
-                                        <div className={styles.mockAppLine} style={{ width: '100%' }}></div>
-                                        <div className={styles.mockAppLine} style={{ width: '70%' }}></div>
-                                    </div>
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

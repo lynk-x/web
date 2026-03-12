@@ -29,8 +29,8 @@ export default function EditEventPage() {
             isPaid: true,
             limit: '1000',
             tickets: [
-                { name: 'Regular', price: '1500', quantity: '500' },
-                { name: 'VIP', price: '5000', quantity: '50' }
+                { display_name: 'Regular', price: '1500', capacity: '500' },
+                { display_name: 'VIP', price: '5000', capacity: '50' }
             ]
         });
     }, []);

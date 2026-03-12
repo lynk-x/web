@@ -108,8 +108,8 @@ export default function TagTable() {
     ];
 
     const bulkActions: BulkAction[] = [
-        { label: 'Activate Selected', onClick: () => { showToast('Activated', 'success'); setSelectedIds(new Set()); }, variant: 'success' },
-        { label: 'Deactivate Selected', onClick: () => { showToast('Deactivated', 'warning'); setSelectedIds(new Set()); }, variant: 'danger' }
+        { label: 'Activate Selected', onClick: () => { showToast('Activated', 'success'); setSelectedIds(new Set()); }, variant: 'success' as const },
+        { label: 'Deactivate Selected', onClick: () => { showToast('Deactivated', 'warning'); setSelectedIds(new Set()); }, variant: 'danger' as const }
     ];
 
     return (

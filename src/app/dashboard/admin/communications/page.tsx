@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import styles from './page.module.css';
-import adminStyles from '../page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import ContentTable, { ContentItem } from '@/components/admin/content/ContentTable';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { LegalDocument, SystemBanner, BroadcastLog } from '@/types/admin';
+import { LegalDocument, SystemBanner, BroadcastLog, Spotlight } from '@/types/admin';
 import Tabs from '@/components/dashboard/Tabs';
+import StatCard from '@/components/dashboard/StatCard';
 
 // ...
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -25,20 +25,20 @@ function CommunicationsContent() {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = (searchParams.get('tab') as any) || 'broadcast';
-    const [activeTab, setActiveTab] = useState<'content' | 'broadcast' | 'legal' | 'banners'>(
-        ['content', 'broadcast', 'legal', 'banners'].includes(initialTab) ? initialTab : 'broadcast'
+    const initialTab = (searchParams.get('tab') as string) || 'spotlights';
+    const [activeTab, setActiveTab] = useState<'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights'>(
+        ['content', 'broadcast', 'legal', 'banners', 'spotlights'].includes(initialTab) ? initialTab as 'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights' : 'spotlights'
     );
 
     useEffect(() => {
-        const tab = searchParams.get('tab') as any;
-        if (tab && ['content', 'broadcast', 'legal', 'banners'].includes(tab)) {
-            setActiveTab(tab);
+        const tab = searchParams.get('tab') as string;
+        if (tab && ['content', 'broadcast', 'legal', 'banners', 'spotlights'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
     const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as any);
+        setActiveTab(newTab as Extract<typeof activeTab, string>);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -48,16 +48,18 @@ function CommunicationsContent() {
     const [legalDocs, setLegalDocs] = useState<LegalDocument[]>([]);
     const [broadcastLogs, setBroadcastLogs] = useState<BroadcastLog[]>([]);
     const [banners, setBanners] = useState<SystemBanner[]>([]);
+    const [spotlights, setSpotlights] = useState<Spotlight[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [cmsRes, legalRes, broadcastRes, bannerRes] = await Promise.all([
+            const [cmsRes, legalRes, broadcastRes, bannerRes, spotlightRes] = await Promise.all([
                 supabase.from('cms_pages').select('*').order('updated_at', { ascending: false }),
                 supabase.from('legal_documents').select('*').order('effective_date', { ascending: false }),
                 supabase.from('notification_broadcast_logs').select('*').order('created_at', { ascending: false }),
-                supabase.from('system_banners').select('*').order('starts_at', { ascending: false })
+                supabase.from('system_banners').select('*').order('starts_at', { ascending: false }),
+                supabase.from('spotlights').select('*').order('target', { ascending: true }).order('display_order', { ascending: true })
             ]);
 
             if (cmsRes.data) {
@@ -75,6 +77,7 @@ function CommunicationsContent() {
             if (legalRes.data) setLegalDocs(legalRes.data);
             if (broadcastRes.data) setBroadcastLogs(broadcastRes.data);
             if (bannerRes.data) setBanners(bannerRes.data);
+            if (spotlightRes.data) setSpotlights(spotlightRes.data);
         } catch (error) {
             console.error('Error fetching communications data:', error);
             showToast('Failed to load some data', 'error');
@@ -93,7 +96,7 @@ function CommunicationsContent() {
         publishedPages: contents.filter(c => c.status === 'published').length,
         activePolicies: legalDocs.filter(l => l.is_active).length,
         totalNotifications: broadcastLogs.reduce((acc, log) => acc + (log.fcm_tokens_count || 0), 0),
-        activeBanners: banners.filter(b => b.is_active).length
+        activeSpotlights: spotlights.filter(s => s.is_active).length
     };
 
     // ─── Legal Documents State & Pagination ──────────────────────────────
@@ -186,7 +189,10 @@ function CommunicationsContent() {
                 const res = await supabase.from('cms_pages').delete().in('id', ids);
                 error = res.error;
             } else {
-                const res = await supabase.from('cms_pages').update({ status: action === 'publish' ? 'published' : 'archived' }).in('id', ids);
+                const res = await supabase.rpc('bulk_update_cms_status', {
+                    page_ids: ids,
+                    new_status: action === 'publish' ? 'published' : 'archived'
+                });
                 error = res.error;
             }
 
@@ -271,60 +277,98 @@ function CommunicationsContent() {
         }
     };
 
+    // ─── Spotlight Logic ───
+    const handleToggleSpotlight = async (spotlight: Spotlight) => {
+        try {
+            const { error } = await supabase
+                .from('spotlights')
+                .update({ is_active: !spotlight.is_active })
+                .eq('id', spotlight.id);
+            if (error) throw error;
+            showToast(`Spotlight ${!spotlight.is_active ? 'activated' : 'deactivated'}`, 'success');
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
+    const handleDeleteSpotlight = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this spotlight?')) return;
+        try {
+            const { error } = await supabase.from('spotlights').delete().eq('id', id);
+            if (error) throw error;
+            showToast('Spotlight deleted', 'success');
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
     return (
-        <div className={styles.container} style={{ gap: '16px' }}>
+        <div className={adminStyles.container}>
             <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 className={adminStyles.title}>Communications</h1>
-                    <p className={adminStyles.subtitle}>Manage platform content, system notifications, and emails.</p>
+                    <p className={adminStyles.subtitle}>Manage platform content, spotlights, and notifications.</p>
                 </div>
-                {(activeTab === 'content' || activeTab === 'legal' || activeTab === 'banners' || activeTab === 'broadcast') && (
-                    <button
-                        className={adminStyles.btnPrimary}
-                        onClick={() => {
-                            if (activeTab === 'content') router.push('/dashboard/admin/communications/create');
-                            else if (activeTab === 'legal') router.push('/dashboard/admin/communications/legal/new');
-                            else if (activeTab === 'broadcast') router.push('/dashboard/admin/communications/broadcast/create');
-                            else router.push('/dashboard/admin/communications/banners/create');
-                        }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        {activeTab === 'content' ? 'New Content' : activeTab === 'legal' ? 'New Version' : activeTab === 'broadcast' ? 'New Broadcast' : 'Create Banner'}
-                    </button>
-                )}
+                <button
+                    className={adminStyles.btnPrimary}
+                    onClick={() => {
+                        if (activeTab === 'spotlights') router.push('/dashboard/admin/communications/spotlights/create');
+                        else if (activeTab === 'content') router.push('/dashboard/admin/communications/create');
+                        else if (activeTab === 'legal') router.push('/dashboard/admin/communications/legal/new');
+                        else if (activeTab === 'broadcast') router.push('/dashboard/admin/communications/broadcast/create');
+                        else router.push('/dashboard/admin/communications/banners/create');
+                    }}
+                >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    {activeTab === 'spotlights' ? 'New Spotlight' :
+                        activeTab === 'content' ? 'New Content' :
+                            activeTab === 'legal' ? 'New Version' :
+                                activeTab === 'broadcast' ? 'New Broadcast' : 'Create Banner'}
+                </button>
             </header>
 
             <div className={adminStyles.statsGrid}>
-                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
-                    <span className={adminStyles.statLabel}>Published Pages</span>
-                    <span className={adminStyles.statValue}>{stats.publishedPages}</span>
-                    <span className={`${adminStyles.statChange} ${adminStyles.positive}`}>Live Assets</span>
-                </div>
-                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
-                    <span className={adminStyles.statLabel}>Active Policies</span>
-                    <span className={adminStyles.statValue}>{stats.activePolicies}</span>
-                    <span className={`${adminStyles.statChange} ${adminStyles.positive}`}>Legally Compliant</span>
-                </div>
-                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
-                    <span className={adminStyles.statLabel}>Notifications Sent</span>
-                    <span className={adminStyles.statValue}>{stats.totalNotifications >= 1000 ? (stats.totalNotifications / 1000).toFixed(1) + 'k' : stats.totalNotifications}</span>
-                    <span className={adminStyles.statLabel}>Historical Total</span>
-                </div>
-                <div className={adminStyles.statCard} style={{ cursor: 'default' }}>
-                    <span className={adminStyles.statLabel}>Active Banners</span>
-                    <span className={adminStyles.statValue}>{stats.activeBanners}</span>
-                    <span className={`${adminStyles.statChange} ${stats.activeBanners > 0 ? adminStyles.positive : ''}`}>System Alerts</span>
-                </div>
+                <StatCard 
+                    label="Hero Spotlights" 
+                    value={stats.activeSpotlights} 
+                    change="Active showcases"
+                    trend="positive"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Published Pages" 
+                    value={stats.publishedPages} 
+                    change="Information assets"
+                    trend="neutral"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Active Policies" 
+                    value={stats.activePolicies} 
+                    change="Platform compliance"
+                    trend="positive"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Total Reach" 
+                    value={stats.totalNotifications >= 1000 ? (stats.totalNotifications / 1000).toFixed(1) + 'k' : stats.totalNotifications} 
+                    change="Broadcast impact"
+                    trend="neutral"
+                    isLoading={isLoading} 
+                />
             </div>
 
             {/* Sub-Navigation Tabs */}
             <Tabs
                 options={[
-                    { id: 'broadcast', label: 'Broadcast Notifications' },
-                    { id: 'banners', label: 'System Banners' },
+                    { id: 'spotlights', label: 'Hero Spotlights' },
+                    { id: 'broadcast', label: 'Broadcasts' },
+                    { id: 'banners', label: 'Alert Banners' },
                     { id: 'content', label: 'Info Pages' },
                     { id: 'legal', label: 'Legals' }
                 ]}
@@ -332,9 +376,61 @@ function CommunicationsContent() {
                 onTabChange={handleTabChange}
             />
 
+            {/* ─── TAB: SPOTLIGHTS ─── */}
+            {activeTab === 'spotlights' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Hero Spotlights</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {spotlights.map(s => (
+                                <div key={s.id} className={adminStyles.statCard} style={{
+                                    cursor: 'default',
+                                    display: 'grid',
+                                    gridTemplateColumns: 'minmax(200px, 1fr) auto auto',
+                                    alignItems: 'center',
+                                    gap: '20px',
+                                    padding: '16px 24px',
+                                    background: 'var(--color-interface-surface)',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                        {s.background_url && (
+                                            <div style={{ width: '60px', height: '40px', borderRadius: '4px', background: `url(${s.background_url}) no-repeat center`, backgroundSize: 'cover' }} />
+                                        )}
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: '15px' }}>{s.title}</div>
+                                            <div style={{ fontSize: '12px', opacity: 0.6, textTransform: 'uppercase' }}>{s.target.replace('_', ' ')} • Order: {s.display_order}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <Badge
+                                            label={s.is_active ? 'Visible' : 'Hidden'}
+                                            variant={s.is_active ? 'success' : 'neutral'}
+                                            showDot={s.is_active}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/spotlights/edit/${s.id}`)}>Edit</button>
+                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: s.is_active ? 'var(--color-interface-error)' : 'var(--color-interface-success)' }} onClick={() => handleToggleSpotlight(s)}>
+                                            {s.is_active ? 'Hide' : 'Show'}
+                                        </button>
+                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteSpotlight(s.id)}>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {spotlights.length === 0 && !isLoading && (
+                                <div style={{ textAlign: 'center', padding: '16px 0', opacity: 0.5 }}>No spotlights configured yet.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ─── TAB: BROADCAST ─── */}
             {activeTab === 'broadcast' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
                     <TableToolbar searchPlaceholder="Search history..." searchValue={broadcastSearch} onSearchChange={setBroadcastSearch} />
                     <DataTable<BroadcastLog> data={filteredBroadcasts} columns={broadcastColumns} emptyMessage="No broadcast history found." isLoading={isLoading} />
                 </div>
@@ -342,7 +438,7 @@ function CommunicationsContent() {
 
             {/* ─── TAB: SYSTEM BANNERS ─── */}
             {activeTab === 'banners' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Active & Scheduled Banners</h2>
 
@@ -382,7 +478,7 @@ function CommunicationsContent() {
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '12px' }}>
-                                        <Badge label={banner.type.toUpperCase()} variant={banner.type as any} />
+                                        <Badge label={banner.type.toUpperCase()} variant={banner.type as 'info' | 'warning' | 'success' | 'error'} />
                                         <Badge
                                             label={banner.is_active ? 'Live' : 'Inactive'}
                                             variant={banner.is_active ? 'success' : 'neutral'}
@@ -395,7 +491,7 @@ function CommunicationsContent() {
                                             {banner.is_active ? 'Deactivate' : 'Activate'}
                                         </button>
                                         <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteBanner(banner.id)}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                            Delete
                                         </button>
                                     </div>
                                 </div>

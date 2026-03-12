@@ -33,6 +33,7 @@ function FinanceContent() {
     const [activeTab, setActiveTab] = useState(initialTab);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isStatsLoading, setIsStatsLoading] = useState(true);
 
     // Date range state
     const [startDate, setStartDate] = useState('');
@@ -65,17 +66,16 @@ function FinanceContent() {
     // Global Stats state
     const [globalStats, setGlobalStats] = useState<any>({
         grossVolume: null,
-        adRevenue: null,
-        subscriptionRevenue: null,
         pendingPayouts: null,
-        activeSubscriptions: null,
+        ticketRevenue: null,
+        adRevenue: null,
         payoutRequestCount: null
     });
 
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab) {
-            setActiveTab(tab);
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
@@ -86,23 +86,47 @@ function FinanceContent() {
         router.replace(`${pathname}?${params.toString()}`);
     };
 
+    const fetchGlobalStats = useCallback(async () => {
+        setIsStatsLoading(true);
+        try {
+            const [grossRes, payoutRes, ticketRes, adRes] = await Promise.all([
+                supabase.from('transactions').select('amount').eq('status', 'completed'),
+                supabase.from('payouts').select('amount').eq('status', 'requested'),
+                supabase.from('transactions').select('amount').eq('reason', 'ticket_payment').eq('status', 'completed'),
+                supabase.from('transactions').select('amount').eq('reason', 'ad_campaign_payment').eq('status', 'completed')
+            ]);
+    
+            setGlobalStats({
+                grossVolume: (grossRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                pendingPayouts: (payoutRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                ticketRevenue: (ticketRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                adRevenue: (adRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
+                payoutRequestCount: (payoutRes.data || []).length
+            });
+        } catch (error: any) {
+            console.error('Error fetching global stats:', error);
+        } finally {
+            setIsStatsLoading(false);
+        }
+    }, [supabase]);
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            if (['transactions', 'refunds', 'ad_revenue', 'subscriptions', 'escrow'].includes(activeTab)) {
+            if (['transactions', 'refunds', 'ad_revenue', 'premium', 'escrow'].includes(activeTab)) {
                 let query = supabase.from('transactions').select(`
                     *,
                     event:events(title),
-                    sender:profiles!sender_id(full_name, user_name),
-                    recipient:profiles!recipient_id(full_name, user_name)
+                    sender:user_profile!sender_id(full_name, user_name),
+                    recipient:user_profile!recipient_id(full_name, user_name)
                 `);
 
                 if (activeTab === 'refunds') {
-                    query = query.in('reason', ['ticket_refund', 'ad_refund', 'subscription_refund']);
+                    query = query.in('reason', ['ticket_refund', 'ad_refund', 'ticket_refund']);
                 } else if (activeTab === 'ad_revenue') {
                     query = query.eq('reason', 'ad_campaign_payment');
-                } else if (activeTab === 'subscriptions') {
-                    query = query.eq('reason', 'subscription');
+                } else if (activeTab === 'premium') {
+                    query = query.eq('reason', 'premium_upsell');
                 } else if (activeTab === 'escrow') {
                     query = query.eq('category', 'escrow');
                 }
@@ -111,7 +135,6 @@ function FinanceContent() {
                     query = query.gte('created_at', new Date(startDate).toISOString());
                 }
                 if (endDate) {
-                    // Set end date to the end of the day
                     const d = new Date(endDate);
                     d.setHours(23, 59, 59, 999);
                     query = query.lte('created_at', d.toISOString());
@@ -135,7 +158,8 @@ function FinanceContent() {
             } else if (activeTab === 'payouts') {
                 let query = supabase.from('payouts').select(`
                     *,
-                    account:accounts(name, kyc_status, is_verified)
+                    account:accounts(display_name, is_verified),
+                    business:business_profile!account_id(kyc_status)
                 `);
 
                 if (startDate) {
@@ -152,47 +176,30 @@ function FinanceContent() {
                 if (error) throw error;
                 setPayouts((data || []).map(p => ({
                     id: p.id,
-                    recipient: p.account?.name || 'Unknown Account',
+                    recipient: p.account?.display_name || 'Unknown Account',
                     amount: p.amount,
                     status: p.status,
                     requestedAt: p.created_at || p.processed_at || new Date().toISOString(),
                     reference: p.reference,
                     notes: p.admin_notes,
-                    kyc_status: p.account?.kyc_status,
+                    kyc_status: (p.business as any)?.kyc_status as Payout['kyc_status'],
                     is_verified: p.account?.is_verified
                 })));
-            } else if (activeTab === 'tax-rules') {
+            } else if (activeTab === 'tax-rates') {
                 const { data, error } = await supabase.from('tax_rates').select(`
                     *,
-                    country:countries(name)
+                    country:countries(display_name)
                 `).order('name');
                 if (error) throw error;
                 setTaxRates((data || []).map(t => ({
                     ...t,
-                    country_name: t.country?.name || t.country_code
+                    country_name: t.country?.display_name || t.country_code
                 })));
             } else if (activeTab === 'fx-rates') {
                 const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
                 if (error) throw error;
                 setFxRates(data || []);
             }
-
-            // Global Metrics (Separate from tab filtering)
-            const [grossRes, adRes, subRes, payoutRes] = await Promise.all([
-                supabase.from('transactions').select('amount').eq('status', 'completed'),
-                supabase.from('transactions').select('amount').eq('reason', 'ad_campaign_payment').eq('status', 'completed'),
-                supabase.from('transactions').select('amount').eq('reason', 'subscription').eq('status', 'completed'),
-                supabase.from('payouts').select('amount').eq('status', 'requested')
-            ]);
-
-            setGlobalStats({
-                grossVolume: (grossRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
-                adRevenue: (adRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
-                subscriptionRevenue: (subRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
-                pendingPayouts: (payoutRes.data || []).reduce((acc, t) => acc + Number(t.amount), 0),
-                activeSubscriptions: (subRes.data || []).length, // approximate
-                payoutRequestCount: (payoutRes.data || []).length
-            });
         } catch (error: any) {
             showToast(error.message, 'error');
         } finally {
@@ -201,14 +208,18 @@ function FinanceContent() {
     }, [activeTab, supabase, showToast, startDate, endDate]);
 
     useEffect(() => {
+        fetchGlobalStats();
+    }, [fetchGlobalStats]);
+
+    useEffect(() => {
         fetchData();
         setSelectedTxIds(new Set());
         setSelectedPayoutIds(new Set());
 
         // Fetch countries for the dropdown
         const fetchCountries = async () => {
-            const { data } = await supabase.from('countries').select('code, name').order('name');
-            if (data) setCountries(data);
+            const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
+            if (data) setCountries(data.map((c: any) => ({ code: c.code, name: c.display_name })));
         };
         fetchCountries();
     }, [fetchData, supabase]);
@@ -326,7 +337,7 @@ function FinanceContent() {
             );
         }
 
-        if (activeTab === 'tax-rules') {
+        if (activeTab === 'tax-rates') {
             return (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
@@ -409,33 +420,33 @@ function FinanceContent() {
             />
 
             <div className={sharedStyles.statsGrid}>
-                <StatCard
-                    label="Gross Volume"
-                    value={globalStats.grossVolume !== null ? `$${globalStats.grossVolume.toLocaleString()}` : null}
+                <StatCard 
+                    label="Gross Volume" 
+                    value={globalStats.grossVolume !== null ? `KES ${globalStats.grossVolume.toLocaleString()}` : null} 
                     change="All completed transactions"
                     trend="positive"
-                    isLoading={isLoading}
+                    isLoading={isStatsLoading} 
                 />
-                <StatCard
-                    label="Ad Revenue"
-                    value={globalStats.adRevenue !== null ? `$${globalStats.adRevenue.toLocaleString()}` : null}
-                    change="Live platform ads"
-                    trend="neutral"
-                    isLoading={isLoading}
-                />
-                <StatCard
-                    label="Subscriptions"
-                    value={globalStats.subscriptionRevenue !== null ? `$${globalStats.subscriptionRevenue.toLocaleString()}` : null}
-                    change={globalStats.activeSubscriptions !== null ? `${globalStats.activeSubscriptions} active entries` : '...'}
-                    trend="positive"
-                    isLoading={isLoading}
-                />
-                <StatCard
-                    label="Pending Payouts"
-                    value={globalStats.pendingPayouts !== null ? `$${globalStats.pendingPayouts.toLocaleString()}` : null}
+                <StatCard 
+                    label="Pending Payouts" 
+                    value={globalStats.pendingPayouts !== null ? `KES ${globalStats.pendingPayouts.toLocaleString()}` : null} 
                     change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
                     trend="neutral"
-                    isLoading={isLoading}
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Ticket Revenue" 
+                    value={globalStats.ticketRevenue !== null ? `KES ${globalStats.ticketRevenue.toLocaleString()}` : null} 
+                    change="Gross ticket sales"
+                    trend="positive"
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Ad Revenue" 
+                    value={globalStats.adRevenue !== null ? `KES ${globalStats.adRevenue.toLocaleString()}` : null} 
+                    change="Platform advertising"
+                    trend="neutral"
+                    isLoading={isStatsLoading} 
                 />
             </div>
 
@@ -451,10 +462,10 @@ function FinanceContent() {
                         { id: 'transactions', label: 'All Transactions' },
                         { id: 'refunds', label: 'Refunds' },
                         { id: 'ad_revenue', label: 'Ad Revenue' },
-                        { id: 'subscriptions', label: 'Subscriptions' },
+                        { id: 'premium', label: 'Premium Upsells' },
                         { id: 'escrow', label: 'Escrow' },
                         { id: 'payouts', label: 'Payout Requests' },
-                        { id: 'tax-rules', label: 'Tax Rules' },
+                        { id: 'tax-rates', label: 'Tax Rates' },
                         { id: 'fx-rates', label: 'FX Rates' }
                     ]}
                     activeTab={activeTab}
@@ -463,7 +474,7 @@ function FinanceContent() {
                 />
             </TableToolbar>
 
-            {['transactions', 'ad_revenue', 'subscriptions', 'refunds', 'payouts'].includes(activeTab) && (
+            {['transactions', 'ad_revenue', 'premium', 'refunds', 'payouts'].includes(activeTab) && (
                 <DateRangeRow
                     startDate={startDate}
                     endDate={endDate}

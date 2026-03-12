@@ -6,8 +6,10 @@ import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
 import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
+import ForumMediaTab from '@/components/admin/forums/ForumMediaTab';
 import Link from 'next/link';
 import Tabs from '@/components/dashboard/Tabs';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 /**
  * Mock forums — aligned to `forum_status` schema enum.
@@ -20,6 +22,7 @@ import { useToast } from '@/components/ui/Toast';
 import { exportToCSV } from '@/utils/export';
 import { createClient } from '@/utils/supabase/client';
 import { formatRelativeTime } from '@/utils/format';
+import StatCard from '@/components/dashboard/StatCard';
 
 function ForumsContent() {
     const supabase = useMemo(() => createClient(), []);
@@ -28,20 +31,20 @@ function ForumsContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const initialTab = (searchParams.get('tab') as any) || 'forums';
-    const [activeTab, setActiveTab] = useState<'forums' | 'messages'>(
-        ['forums', 'messages'].includes(initialTab) ? initialTab : 'forums'
+    const initialTab = (searchParams.get('tab') as string) || 'forums';
+    const [activeTab, setActiveTab] = useState<'forums' | 'messages' | 'media'>(
+        ['forums', 'messages', 'media'].includes(initialTab) ? initialTab as 'forums' | 'messages' | 'media' : 'forums'
     );
 
     useEffect(() => {
-        const tab = searchParams.get('tab') as any;
-        if (tab && ['forums', 'messages'].includes(tab)) {
-            setActiveTab(tab);
+        const tab = searchParams.get('tab') as string;
+        if (tab && ['forums', 'messages', 'media'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
     const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as any);
+        setActiveTab(newTab as Extract<typeof activeTab, string>);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -60,6 +63,7 @@ function ForumsContent() {
             try {
                 // Fetch from our new public materialized view
                 const { data, error } = await supabase
+                    .schema('analytics')
                     .from('mv_forum_performance')
                     .select('*')
                     .order('last_activity_at', { ascending: false });
@@ -141,10 +145,10 @@ function ForumsContent() {
         showToast(`Updating ${count} forums to ${newStatus}...`, 'info');
 
         try {
-            const { error } = await supabase
-                .from('forums')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .in('id', Array.from(selectedThreadIds));
+            const { error } = await supabase.rpc('bulk_update_forum_status', {
+                forum_ids: Array.from(selectedThreadIds),
+                new_status: newStatus
+            });
 
             if (error) throw error;
 
@@ -152,7 +156,7 @@ function ForumsContent() {
 
             // Refresh local state to avoid full re-fetch
             setThreads(prev => prev.map(t =>
-                selectedThreadIds.has(t.id) ? { ...t, status: newStatus as any } : t
+                selectedThreadIds.has(t.id) ? { ...t, status: newStatus as ForumThread['status'] } : t
             ));
             setSelectedThreadIds(new Set());
         } catch (err) {
@@ -195,7 +199,7 @@ function ForumsContent() {
             if (error) throw error;
 
             showToast('Forum status updated.', 'success');
-            setThreads(prev => prev.map(t => t.id === id ? { ...t, status: newStatus as any } : t));
+            setThreads(prev => prev.map(t => t.id === id ? { ...t, status: newStatus as ForumThread['status'] } : t));
         } catch (err) {
             showToast('Failed to update status.', 'error');
         }
@@ -207,20 +211,58 @@ function ForumsContent() {
         { label: 'Delete Selection', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
+    const stats = useMemo(() => {
+        const total = threads.length;
+        const open = threads.filter(t => t.status === 'Open').length;
+        const readOnly = threads.filter(t => t.status === 'Read_only').length;
+        const escalations = threads.reduce((acc, t) => acc + (t.escalatedCount || 0), 0);
+
+        return { total, open, readOnly, escalations };
+    }, [threads]);
+
     return (
-        <div className={styles.container}>
-            <header className={adminStyles.header}>
-                <div>
-                    <h1 className={adminStyles.title}>Forum Management</h1>
-                    <p className={adminStyles.subtitle}>Monitor and moderate event forums and messages.</p>
-                </div>
-            </header>
+        <div className={adminStyles.container}>
+            <PageHeader 
+                title="Forum Management" 
+                subtitle="Monitor and moderate event forums and messages." 
+            />
+
+            <div className={adminStyles.statsGrid}>
+                <StatCard 
+                    label="Total Forums" 
+                    value={stats.total} 
+                    change="Platform history"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Open Forums" 
+                    value={stats.open} 
+                    change="Real-time interaction"
+                    trend="positive"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Read-only Forums" 
+                    value={stats.readOnly} 
+                    change="Moderated state"
+                    trend="neutral"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Pending Escalations" 
+                    value={stats.escalations} 
+                    change="High priority"
+                    trend={stats.escalations > 0 ? "negative" : "positive"}
+                    isLoading={isLoading} 
+                />
+            </div>
 
             {/* ── Tab switcher ── */}
             <Tabs
                 options={[
                     { id: 'forums', label: 'Forums' },
-                    { id: 'messages', label: 'Messages' }
+                    { id: 'messages', label: 'Messages' },
+                    { id: 'media', label: 'Media' }
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -228,7 +270,7 @@ function ForumsContent() {
 
             {/* ── Forum list tab (existing content) ── */}
             {activeTab === 'forums' && (
-                <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                     <TableToolbar
                         searchPlaceholder="Search forum name or event..."
                         searchValue={searchTerm}
@@ -274,14 +316,17 @@ function ForumsContent() {
                             onStatusChange={handleSingleStatusUpdate}
                         />
                     )}
-                </>
+                </div>
             )}
 
-            {/* ── Messages tab (new) ── */}
+            {/* ── Messages tab ── */}
             {activeTab === 'messages' && (
-                <div style={{ marginTop: '16px' }}>
-                    <ForumMessagesTab />
-                </div>
+                <ForumMessagesTab />
+            )}
+
+            {/* ── Media tab ── */}
+            {activeTab === 'media' && (
+                <ForumMediaTab />
             )}
         </div>
     );

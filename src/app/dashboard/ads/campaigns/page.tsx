@@ -33,8 +33,8 @@ export default function CampaignsPage() {
             const { data, error } = await supabase
                 .from('ad_campaigns')
                 .select(`
-                    *,
-                    ad_analytics (interaction_type, cost_charged, created_at)
+                    id, title, type, start_at, end_at, status, total_budget, spent_amount, target_url, 
+                    total_impressions, total_clicks
                 `)
                 .eq('account_id', activeAccount.id)
                 .order('created_at', { ascending: false });
@@ -42,8 +42,8 @@ export default function CampaignsPage() {
             if (error) throw error;
 
             const formatted: AdsCampaign[] = (data || []).map(c => {
-                const impressions = (c.ad_analytics || []).filter((a: any) => a.interaction_type === 'impression').length;
-                const clicks = (c.ad_analytics || []).filter((a: any) => a.interaction_type === 'click').length;
+                const impressions = Number(c.total_impressions || 0);
+                const clicks = Number(c.total_clicks || 0);
 
                 return {
                     id: c.id,
@@ -55,6 +55,8 @@ export default function CampaignsPage() {
                     total_budget: Number(c.total_budget),
                     spent_amount: Number(c.spent_amount),
                     target_url: c.target_url || '',
+                    total_impressions: impressions,
+                    total_clicks: clicks,
                     metrics: {
                         impressions,
                         clicks,
@@ -72,9 +74,13 @@ export default function CampaignsPage() {
 
     useEffect(() => {
         if (!isOrgLoading) {
-            fetchCampaigns();
+            if (activeAccount) {
+                fetchCampaigns();
+            } else {
+                setIsLoading(false);
+            }
         }
-    }, [isOrgLoading, fetchCampaigns]);
+    }, [isOrgLoading, activeAccount, fetchCampaigns]);
 
     // Filter Logic
     const filteredCampaigns = campaigns.filter(c => {
@@ -209,6 +215,7 @@ export default function CampaignsPage() {
                     options={[
                         { value: 'all', label: 'All' },
                         { value: 'active', label: 'Active' },
+                        { value: 'pending_approval', label: 'Pending' },
                         { value: 'paused', label: 'Paused' },
                         { value: 'draft', label: 'Draft' },
                     ]}

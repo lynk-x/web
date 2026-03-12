@@ -23,7 +23,11 @@ export default function EditEventPage() {
 
     useEffect(() => {
         const fetchEvent = async () => {
-            if (!activeAccount || !eventId) return;
+            if (!eventId) return;
+            if (!activeAccount) {
+                setIsLoading(false);
+                return;
+            }
 
             try {
                 // Fetch event and ticket tiers
@@ -33,7 +37,7 @@ export default function EditEventPage() {
                         id, title, description, category_id, is_online, is_private, 
                         location_name, starts_at, ends_at, thumbnail_url,
                         ticket_tiers (
-                            id, name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
+                            id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
                         ),
                         event_tags (
                             tags (id, name)
@@ -56,9 +60,9 @@ export default function EditEventPage() {
 
                 const mappedTickets: OrganizerEventTicket[] = (event.ticket_tiers || []).map((t: any) => ({
                     id: t.id,
-                    name: t.name,
+                    display_name: t.display_name,
                     price: t.price.toString(),
-                    quantity: t.capacity.toString(),
+                    capacity: t.capacity.toString(),
                     description: t.description || '',
                     saleStart: t.sales_start_at ? formatDate(new Date(t.sales_start_at)) : '',
                     saleEnd: t.sales_end_at ? formatDate(new Date(t.sales_end_at)) : '',
@@ -95,7 +99,7 @@ export default function EditEventPage() {
         };
 
         fetchEvent();
-    }, [activeAccount, eventId, router, showToast]);
+    }, [activeAccount, eventId, router, showToast, supabase]);
 
     const handleEdit = async (data: OrganizerEventFormData, file?: File | null) => {
         if (!activeAccount) {
@@ -113,13 +117,13 @@ export default function EditEventPage() {
                 const filePath = `${activeAccount.id}/${fileName}`;
 
                 const { error: uploadError } = await supabase.storage
-                    .from('event_media')
+                    .from('event_banners')
                     .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('event_media')
+                    .from('event_banners')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -176,11 +180,10 @@ export default function EditEventPage() {
                 const ticketsToUpsert = data.tickets.map((t) => ({
                     ...(t.id ? { id: t.id } : {}), // only spread ID if it exists
                     event_id: eventId,
-                    name: t.name,
+                    display_name: t.display_name,
                     price: parseFloat(t.price),
-                    capacity: parseInt(t.quantity),
+                    capacity: parseInt(t.capacity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    currency: 'KES',
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
                     description: t.description || null
@@ -201,8 +204,7 @@ export default function EditEventPage() {
                 const tagsToUpsert = data.tags.map(tag => ({
                     name: tag,
                     slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-                    is_official: false,
-                    is_active: true
+                    is_official: false
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase

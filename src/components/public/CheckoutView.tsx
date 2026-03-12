@@ -106,14 +106,21 @@ const CheckoutView: React.FC = () => {
         setIsSubmitting(true);
 
         try {
+            // Ensure user is logged in
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push(`/login?message=Please log in to complete your purchase&next=/checkout`);
+                return;
+            }
+
             // Process each cart item (different tiers/events)
             for (const item of items) {
-                // Assuming item.id holds the ticket_tier_id from when it was added to cart.
-                // In production, we'd ensure proper mapping or send an array to a bulk RPC.
-                // For now, we'll iterate and call the updated `purchase_tickets` RPC.
+                // The item.id is structured as `${event.id}-ticket-${selectedTier.id}` in EventDetailsView.tsx
+                const tierId = item.id.includes('-ticket-') ? item.id.split('-ticket-')[1] : item.id;
+
                 const { error } = await supabase.rpc('purchase_tickets', {
                     p_event_id: item.eventId,
-                    p_tier_id: item.id.split('-ticket-')[0] || item.id, // basic fallback, assumes pure ID or prefixed ID
+                    p_tier_id: tierId,
                     p_quantity: item.quantity,
                     p_provider: 'Mpesa',
                     p_provider_ref: 'MPESA-' + Math.floor(100000 + Math.random() * 900000)

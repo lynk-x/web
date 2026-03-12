@@ -21,9 +21,9 @@ import ReportTable from '@/components/admin/moderation/ReportTable';
 import AppFeedbackTab from '@/components/admin/support/AppFeedbackTab';
 import UserBlocksTab from '@/components/admin/support/UserBlocksTab';
 import ReportReasonsTab from '@/components/admin/support/ReportReasonsTab';
-import type { Report, Ticket } from '@/types/admin';
+import type { Report } from '@/types/admin';
 
-type SupportTab = 'tickets' | 'moderation' | 'app-feedback' | 'blocks' | 'report-reasons';
+type SupportTab = 'moderation' | 'app-feedback' | 'blocks' | 'report-reasons';
 
 function SupportContent() {
     const { showToast } = useToast();
@@ -34,14 +34,13 @@ function SupportContent() {
 
     const initialTab = searchParams.get('tab') as SupportTab;
     const [activeTab, setActiveTab] = useState<SupportTab>(
-        (initialTab && ['tickets', 'moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(initialTab))
+        (initialTab && ['moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(initialTab))
             ? initialTab
             : 'moderation'
     );
     const [isLoading, setIsLoading] = useState(true);
 
     // ── Data State ────────────────────────────────────────────────────
-    const [tickets, setTickets] = useState<Ticket[]>([]);
     const [reports, setReports] = useState<Report[]>([]);
 
     // ── Filtering State ───────────────────────────────────────────────
@@ -50,7 +49,6 @@ function SupportContent() {
 
     // Tab-specific filters
     const [moderationFilter, setModerationFilter] = useState('all');
-    const [ticketFilter, setTicketFilter] = useState('all');
 
     // App Feedback specific filters
     const [feedbackStatusFilter, setFeedbackStatusFilter] = useState('all');
@@ -59,8 +57,8 @@ function SupportContent() {
 
     useEffect(() => {
         const tab = searchParams.get('tab') as SupportTab;
-        if (tab && ['tickets', 'moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(tab)) {
-            setActiveTab(tab);
+        if (tab && ['moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(tab)) {
+            setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
 
@@ -75,38 +73,19 @@ function SupportContent() {
         setIsLoading(true);
         try {
             // Fetch everything in parallel to populate stat cards
-            const [ticketsRes, reportsRes, feedbackRes] = await Promise.all([
-                supabase
-                    .from('support_tickets')
-                    .select('*, requester:profiles!user_id(full_name, user_name, email)')
-                    .order('created_at', { ascending: false }),
+            const [reportsRes, feedbackRes] = await Promise.all([
                 supabase
                     .from('reports')
-                    .select('*, reporter:profiles!reporter_id(user_name)')
+                    .select('*, reporter:user_profile!reporter_id(user_name)')
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('app_feedback')
-                    .select('*, user:profiles(full_name)')
+                    .select('*, user:user_profile(full_name)')
                     .order('created_at', { ascending: false })
             ]);
 
-            if (ticketsRes.error) throw ticketsRes.error;
             if (reportsRes.error) throw reportsRes.error;
             if (feedbackRes.error) throw feedbackRes.error;
-
-            setTickets(ticketsRes.data.map(t => ({
-                id: t.id,
-                reference: t.reference,
-                subject: t.subject,
-                // Resolve requester name from the joined profiles row
-                requester: (t as any).requester?.full_name ||
-                    (t as any).requester?.user_name ||
-                    (t as any).requester?.email ||
-                    'Anonymous',
-                priority: t.priority,
-                status: t.status,
-                lastUpdated: new Date(t.updated_at).toLocaleDateString()
-            })));
 
             setReports(reportsRes.data.map(r => ({
                 id: r.id,
@@ -138,32 +117,6 @@ function SupportContent() {
     }, [activeTab, fetchData]);
 
     // ── Ticket Actions ────────────────────────────────────────────────
-    const getTicketActions = (ticket: Ticket): ActionItem[] => [
-        {
-            label: 'View',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-            onClick: () => router.push(`/dashboard/admin/support/view/${ticket.id}`),
-        },
-        {
-            label: 'Edit',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-            onClick: () => router.push(`/dashboard/admin/support/edit/${ticket.id}`),
-        },
-        {
-            label: 'Resolve',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-            onClick: async () => {
-                showToast(`Resolving ticket...`, 'info');
-                const { error } = await supabase.from('support_tickets').update({ status: 'resolved', updated_at: new Date().toISOString() }).eq('id', ticket.id);
-                if (error) showToast(error.message, 'error');
-                else {
-                    showToast(`Ticket resolved`, 'success');
-                    fetchData();
-                }
-            },
-            variant: 'success'
-        }
-    ];
 
     const getModerationActions = (report: Report): ActionItem[] => {
         const actions: ActionItem[] = [
@@ -202,39 +155,12 @@ function SupportContent() {
         return actions;
     };
 
-    const ticketColumns: Column<Ticket>[] = [
-        {
-            header: 'Subject',
-            render: t => (
-                <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 600 }}>{t.subject}</span>
-                        <span style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', opacity: 0.6 }}>
-                            {t.reference}
-                        </span>
-                    </div>
-                    <div style={{ fontSize: 12, opacity: 0.6 }}>{t.requester}</div>
-                </div>
-            )
-        },
-        { header: 'Priority', render: t => <Badge label={t.priority.toUpperCase()} variant={t.priority === 'critical' ? 'error' : t.priority === 'high' ? 'warning' : 'info'} /> },
-        { header: 'Status', render: t => <Badge label={t.status.toUpperCase()} variant={t.status === 'open' ? 'error' : 'success'} showDot /> },
-        { header: 'Updated', render: t => t.lastUpdated }
-    ];
 
     return (
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Support & Safety"
                 subtitle="Platform-wide moderation and user assistance."
-                actionLabel="Create Ticket"
-                onActionClick={() => router.push('/dashboard/admin/support/create')}
-                actionIcon={
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                }
             />
 
             <div className={sharedStyles.statsGrid}>
@@ -246,9 +172,9 @@ function SupportContent() {
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Open Tickets"
-                    value={tickets.filter(t => t.status === 'open').length}
-                    change="Help Desk"
+                    label="Feedback Reviewed"
+                    value="None"
+                    change="User Insights"
                     trend="neutral"
                     isLoading={isLoading}
                 />
@@ -260,10 +186,10 @@ function SupportContent() {
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Escalations"
-                    value={tickets.filter(t => t.priority === 'critical' || t.priority === 'high').length}
-                    change="Urgent Priority"
-                    trend="negative"
+                    label="Security Blocks"
+                    value="Active"
+                    change="Firewall Status"
+                    trend="positive"
                     isLoading={isLoading}
                 />
             </div>
@@ -271,13 +197,12 @@ function SupportContent() {
             <Tabs
                 options={[
                     { id: 'moderation', label: 'Moderation' },
-                    { id: 'tickets', label: 'Tickets' },
                     { id: 'app-feedback', label: 'App Feedback' },
                     { id: 'blocks', label: 'User Blocks' },
                     { id: 'report-reasons', label: 'Report Reasons' }
                 ]}
                 activeTab={activeTab}
-                onTabChange={(id) => handleTabChange(id as any)}
+                onTabChange={(id) => handleTabChange(id as SupportTab)}
                 className={styles.tabsReset}
             />
 
@@ -287,13 +212,6 @@ function SupportContent() {
                         options={['all', 'pending', 'investigating', 'resolved', 'dismissed'].map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))}
                         currentValue={moderationFilter}
                         onChange={setModerationFilter}
-                    />
-                )}
-                {activeTab === 'tickets' && (
-                    <FilterGroup
-                        options={['all', 'open', 'pending', 'resolved', 'closed'].map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))}
-                        currentValue={ticketFilter}
-                        onChange={setTicketFilter}
                     />
                 )}
                 {activeTab === 'app-feedback' && (
@@ -329,17 +247,6 @@ function SupportContent() {
                 />
             )}
 
-            {activeTab === 'tickets' && (
-                <DataTable<Ticket>
-                    data={tickets.filter(t =>
-                        (ticketFilter === 'all' || t.status === ticketFilter) &&
-                        (t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || t.requester.toLowerCase().includes(searchTerm.toLowerCase()))
-                    )}
-                    columns={ticketColumns}
-                    getActions={getTicketActions}
-                    isLoading={isLoading}
-                />
-            )}
 
             {activeTab === 'app-feedback' && (
                 <AppFeedbackTab

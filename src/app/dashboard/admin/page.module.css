@@ -88,8 +88,19 @@
 .sectionTitle {
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     color: var(--color-utility-primaryText);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sectionTitle::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--color-interface-outline), transparent);
+    margin-left: 8px;
 }
 
 /* --- Shared Standardized UI Classes --- */
@@ -178,6 +189,7 @@
     color: var(--color-utility-secondaryText);
     opacity: 1;
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(32, 249, 40, 0.2);
 }
 
 .chipActive:hover {
@@ -186,10 +198,7 @@
     opacity: 0.9;
 }
 
-.select:focus {
-    border-color: var(--color-brand-primary);
-}
-
+/* Form Elements */
 .input {
     width: 100%;
     padding: 12px 14px;
@@ -207,14 +216,6 @@
     background-color: transparent;
 }
 
-.input:-webkit-autofill,
-.input:-webkit-autofill:hover,
-.input:-webkit-autofill:focus,
-.input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px var(--color-interface-surface) inset !important;
-    -webkit-text-fill-color: var(--color-utility-primaryText) !important;
-}
-
 .label {
     display: block;
     margin-bottom: 8px;
@@ -225,6 +226,7 @@
 }
 
 .select {
+    width: 100%;
     padding: 10px 12px;
     border-radius: var(--radius-md);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -242,6 +244,67 @@
 
 .select:focus {
     border-color: var(--color-brand-primary);
+}
+
+.textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    min-height: 100px;
+    resize: vertical;
+}
+
+.textarea:focus {
+    border-color: var(--color-brand-primary);
+}
+
+/* Form Layouts */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 640px) {
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.formSection {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.subPageGrid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 32px;
+}
+
+@media (max-width: 1024px) {
+    .subPageGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .filterGroup {

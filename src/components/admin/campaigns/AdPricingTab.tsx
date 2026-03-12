@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
+import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/app/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
@@ -157,13 +158,13 @@ export default function AdPricingTab() {
     ];
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            <TableToolbar>
                 <div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>Ad Pricing Config</div>
                     <div style={{ fontSize: '13px', opacity: 0.6 }}>USD base rates per ad format and interaction. A 1.2× peak multiplier applies between 18:00–22:00.</div>
                 </div>
-            </div>
+            </TableToolbar>
             <DataTable<PricingRow>
                 data={rows}
                 columns={columns}

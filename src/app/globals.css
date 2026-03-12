@@ -69,18 +69,15 @@ input[type="time"] {
   accent-color: var(--color-brand-primary) !important;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(0.9) opacity(0.7);
-  cursor: pointer;
-  transition: opacity 0.2s;
+::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1) !important;
+  cursor: pointer !important;
+  background-size: 14px !important;
+  opacity: 1 !important;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
-input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) invert(1) drop-shadow(0 0 2px var(--color-brand-primary)) !important;
 }
 
 .validation-hint {

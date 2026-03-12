@@ -60,7 +60,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     return;
                 }
 
-                const profile = (data as any).profiles;
+                const profile = (data as { profiles: any }).profiles;
                 const amount = Number(data.amount);
                 const currency = data.currency || activeAccount?.default_currency || 'KES';
                 const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency });

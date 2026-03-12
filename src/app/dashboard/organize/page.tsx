@@ -11,6 +11,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { useToast } from '@/components/ui/Toast';
+import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 
 export default function DashboardOverview() {
     const { showToast } = useToast();
@@ -19,11 +20,12 @@ export default function DashboardOverview() {
     const router = useRouter();
 
     const [stats, setStats] = useState<any>({
-        revenue: null,
-        sellThroughRate: null,
-        checkInRate: null,
+        totalEvents: null,
+        upcomingEvents: null,
+        activeEvents: null,
         teamSize: null,
     });
+    const [spotlights, setSpotlights] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -32,60 +34,63 @@ export default function DashboardOverview() {
             setIsLoading(true);
 
             try {
-                // Fetch events, tickets, and team info
-                const [eventsRes, teamRes] = await Promise.all([
+                // Fetch events, team, and spotlights
+                const [eventsRes, teamRes, spotlightsRes] = await Promise.all([
                     supabase
                         .from('events')
                         .select(`
                             id,
                             status,
-                            attendee_count,
-                            ticket_tiers(
-                                price,
-                                capacity,
-                                tickets_sold
-                            )
+                            starts_at
                         `)
                         .eq('account_id', activeAccount.id),
                     supabase
                         .from('account_members')
                         .select('id', { count: 'exact' })
-                        .eq('account_id', activeAccount.id)
+                        .eq('account_id', activeAccount.id),
+                    supabase
+                        .from('spotlights')
+                        .select('*')
+                        .in('target', ['all', 'organize_dashboard'])
+                        .eq('is_active', true)
+                        .order('display_order', { ascending: true })
                 ]);
 
                 if (eventsRes.error) throw eventsRes.error;
 
-                let revenue = 0;
-                let totalCapacity = 0;
-                let ticketsSold = 0;
-                let totalCheckedIn = 0;
+                const allEvents = eventsRes.data || [];
+                const totalEvents = allEvents.length;
+                const activeEvents = allEvents.filter((ev: any) => ev.status === 'published' || ev.status === 'active').length;
+                
+                const now = new Date();
+                const upcomingEvents = allEvents.filter((ev: any) => {
+                    const startsAt = new Date(ev.starts_at);
+                    return startsAt > now && (ev.status === 'published' || ev.status === 'active');
+                }).length;
 
-                eventsRes.data?.forEach((ev: any) => {
-                    // Total Checked in comes directly from event stats
-                    totalCheckedIn += ev.attendee_count || 0;
-
-                    if (ev.ticket_tiers) {
-                        ev.ticket_tiers.forEach((tier: any) => {
-                            ticketsSold += tier.tickets_sold || 0;  // schema column
-                            totalCapacity += tier.capacity || 0;    // schema column
-                            revenue += (tier.tickets_sold || 0) * (tier.price || 0);
-                        });
-                    }
-                });
-
-                const sellThroughRate = totalCapacity > 0 ? (ticketsSold / totalCapacity) * 100 : 0;
-                const checkInRate = ticketsSold > 0 ? (totalCheckedIn / ticketsSold) * 100 : 0;
-                const teamSize = teamRes.count || 1; // Fallback to 1 for the owner
+                const teamSize = teamRes.count || 0;
 
                 setStats({
-                    revenue,
-                    sellThroughRate,
-                    checkInRate,
+                    totalEvents,
+                    upcomingEvents,
+                    activeEvents,
                     teamSize
                 });
 
+                // Set Spotlights
+                if (spotlightsRes.data) {
+                    setSpotlights(spotlightsRes.data.map(s => ({
+                        id: s.id,
+                        title: s.title,
+                        subtitle: s.subtitle,
+                        backgroundImage: s.background_url,
+                        ctaLabel: s.cta_text,
+                        ctaHref: s.redirect_to
+                    })));
+                }
+
             } catch (error: any) {
-                showToast(error.message || "Failed to load dashboard overview data.", "error");
+                showToast(error.message || "Failed to load dashboard data.", "error");
             } finally {
                 setIsLoading(false);
             }
@@ -94,12 +99,14 @@ export default function DashboardOverview() {
         if (!isOrgLoading) {
             if (activeAccount) {
                 fetchDashboardData();
-            } else if (accounts.length === 0) {
-                // Definitely no accounts, show zero state
-                setStats({ revenue: 0, sellThroughRate: 0, checkInRate: 0, teamSize: 0 });
+            } else {
+                // If accounts.length === 0 or activeAccount is missing, we stop loading
                 setIsLoading(false);
+                setIsLoading(false);
+                if (accounts.length === 0) {
+                    setStats({ totalEvents: 0, upcomingEvents: 0, activeEvents: 0, teamSize: 0 });
+                }
             }
-            // If accounts.length > 0 but activeAccount is missing, we wait (likely context sync)
         }
     }, [isOrgLoading, activeAccount, accounts, supabase]);
     return (
@@ -111,22 +118,23 @@ export default function DashboardOverview() {
 
             <div className={sharedStyles.statsGrid}>
                 <StatCard
-                    label="Total Revenue"
-                    value={stats.revenue !== null ? formatCurrency(stats.revenue, activeAccount?.default_currency || 'KES') : null}
+                    label="Total Events"
+                    value={stats.totalEvents !== null ? stats.totalEvents : null}
+                    change="All time history"
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Sell-Through Rate"
-                    value={stats.sellThroughRate !== null ? `${stats.sellThroughRate.toFixed(1)}%` : null}
-                    change="Tickets sold / Capacity"
-                    trend="neutral"
+                    label="Upcoming Events"
+                    value={stats.upcomingEvents !== null ? stats.upcomingEvents : null}
+                    change="Next 30 days"
+                    trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Check-In Rate"
-                    value={stats.checkInRate !== null ? `${stats.checkInRate.toFixed(1)}%` : null}
-                    change="Attendees / Tickets Sold"
-                    trend="neutral"
+                    label="Active Events"
+                    value={stats.activeEvents !== null ? stats.activeEvents : null}
+                    change="Publicly visible"
+                    trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
@@ -157,6 +165,13 @@ export default function DashboardOverview() {
                     </button>
                 </div>
             </section>
+
+            {/* Hero Spotlights */}
+            {spotlights.length > 0 && (
+                <section style={{ marginTop: '16px', marginBottom: '40px' }}>
+                    <SystemBannerSpotlight slides={spotlights} />
+                </section>
+            )}
 
 
         </div>

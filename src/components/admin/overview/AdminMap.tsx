@@ -74,6 +74,7 @@ export default function AdminMap() {
 
         async function fetchLocations() {
             const { data } = await supabase
+                .schema('analytics')
                 .from('mv_event_performance')
                 .select('id, event_title, coordinates, revenue, reports_count')
                 .eq('status', 'published');
@@ -109,7 +110,7 @@ export default function AdminMap() {
         <div style={{ height: '100%', width: '100%', overflow: 'hidden' }}>
             <MapContainer
                 center={[-1.2921, 36.8219]}
-                zoom={6}
+                zoom={5}
                 minZoom={3}
                 maxBounds={[[-90, -180], [90, 180]]}
                 maxBoundsViscosity={1.0}

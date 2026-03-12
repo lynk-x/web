@@ -24,6 +24,15 @@
     color: var(--color-utility-primaryText);
 }
 
+.requiredIndicator {
+    color: #ff4d4d;
+    font-size: 10px;
+    margin-left: 6px;
+    position: relative;
+    top: -4px;
+    font-weight: 600;
+}
+
 .input,
 .select,
 .textarea {

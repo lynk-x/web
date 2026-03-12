@@ -33,7 +33,6 @@
 
 .inputWrapper input.dateInput {
     width: 150px;
-    padding-left: 36px;
 }
 
 .relative {
@@ -42,37 +41,10 @@
     align-items: center;
 }
 
-.calendarIcon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.4;
-    color: var(--color-utility-primaryText);
-    pointer-events: none;
-    transition: opacity 0.2s;
-}
 
-.relative:focus-within .calendarIcon {
-    opacity: 0.9;
-    color: var(--color-brand-primary);
-}
 
 .dateInput::-webkit-calendar-picker-indicator {
-    background: transparent;
-    bottom: 0;
-    color: transparent;
     cursor: pointer;
-    height: auto;
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: auto;
-    filter: none;
-    /* Reset the global filter if any */
-    opacity: 0;
-    /* Hide it but keep it clickable over the whole input */
 }
 
 .label {

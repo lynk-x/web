@@ -103,7 +103,7 @@ export default function AudienceForm({ initialData, isEditing = false, onDirtyCh
             <form onSubmit={handleSubmit}>
                 <div className={styles.formSection}>
                     <div className={styles.inputGroup}>
-                        <label className={styles.label} htmlFor="name">Audience Name</label>
+                        <label className={styles.label} htmlFor="name">Audience Name <span className={styles.requiredIndicator}>*Required</span></label>
                         <input
                             type="text"
                             id="name"
@@ -119,7 +119,7 @@ export default function AudienceForm({ initialData, isEditing = false, onDirtyCh
 
                     <div className={styles.row}>
                         <div className={styles.inputGroup}>
-                            <label className={styles.label} htmlFor="category">Category</label>
+                            <label className={styles.label} htmlFor="category">Category <span className={styles.requiredIndicator}>*Required</span></label>
                             <select
                                 id="category"
                                 name="category"
@@ -153,7 +153,7 @@ export default function AudienceForm({ initialData, isEditing = false, onDirtyCh
                     </div>
 
                     <div className={styles.locationSection}>
-                        <label className={styles.label}>Location Targeting</label>
+                        <label className={styles.label}>Location Targeting <span className={styles.requiredIndicator}>*Required</span></label>
                         <div className={styles.locationGrid}>
                             <div className={styles.inputGroup}>
                                 <input
@@ -194,7 +194,7 @@ export default function AudienceForm({ initialData, isEditing = false, onDirtyCh
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label} htmlFor="details">Audience Details</label>
+                        <label className={styles.label} htmlFor="details">Audience Details <span className={styles.requiredIndicator}>*Required</span></label>
                         <textarea
                             id="details"
                             name="details"

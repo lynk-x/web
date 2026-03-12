@@ -6,6 +6,9 @@ import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
+
 import type { OrganizerEventFormData } from '@/types/organize';
 
 export default function AdminCreateEventPage() {
@@ -30,13 +33,13 @@ export default function AdminCreateEventPage() {
                 const filePath = `${activeAccount.id}/${fileName}`; // Organize by account in bucket
 
                 const { error: uploadError } = await supabase.storage
-                    .from('event_media')
+                    .from('event_banners')
                     .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('event_media')
+                    .from('event_banners')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -71,11 +74,10 @@ export default function AdminCreateEventPage() {
             if (data.isPaid && data.tickets.length > 0 && newEvent) {
                 const ticketsToInsert = data.tickets.map((t) => ({
                     event_id: newEvent.id,
-                    name: t.name,
+                    display_name: t.display_name,
                     price: parseFloat(t.price),
-                    quantity_total: parseInt(t.quantity),
+                    capacity: parseInt(t.capacity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    currency: 'KES',
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
                 }));
@@ -85,6 +87,35 @@ export default function AdminCreateEventPage() {
                     .insert(ticketsToInsert);
 
                 if (ticketError) throw ticketError;
+            }
+
+            // 5. Link Tags
+            if (data.tags.length > 0 && newEvent) {
+                const tagsToUpsert = data.tags.map(tag => ({
+                    name: tag,
+                    slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                    is_official: false
+                }));
+
+                const { data: resolvedTags, error: tagUpsertError } = await supabase
+                    .from('tags')
+                    .upsert(tagsToUpsert, { onConflict: 'slug' })
+                    .select('id');
+
+                if (tagUpsertError) throw tagUpsertError;
+
+                if (resolvedTags) {
+                    const eventTagsToInsert = resolvedTags.map(tag => ({
+                        event_id: newEvent.id,
+                        tag_id: tag.id
+                    }));
+
+                    const { error: eventTagError } = await supabase
+                        .from('event_tags')
+                        .insert(eventTagsToInsert);
+
+                    if (eventTagError) console.error("Warning: Tag linking failed", eventTagError);
+                }
             }
 
             // Success Cleanup
@@ -99,10 +130,19 @@ export default function AdminCreateEventPage() {
     };
 
     return (
-        <EventForm
-            pageTitle="Admin: Create New Event"
-            submitBtnText="Publish Event"
-            onSubmit={handleCreate}
-        />
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Admin: Create New Event"
+                subtitle="Add a platform-level event or override existing listings."
+                backLabel="Back to Events"
+            />
+            <div className={adminStyles.pageCard}>
+                <EventForm
+                    pageTitle="Event Details"
+                    submitBtnText="Publish Event"
+                    onSubmit={handleCreate}
+                />
+            </div>
+        </div>
     );
 }

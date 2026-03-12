@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import EventTable, { Event } from '@/components/organize/EventTable';
 import TableToolbar from '@/components/shared/TableToolbar';
-import BulkActionsBar from '@/components/shared/BulkActionsBar';
+import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -14,6 +14,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import FilterGroup from '@/components/dashboard/FilterGroup';
 import { createClient } from '@/utils/supabase/client';
 import type { OrganizerEvent } from '@/types/organize';
+import { exportToCSV } from '@/utils/export';
 
 // Main Component
 export default function OrganizerEventsPage() {
@@ -46,8 +47,8 @@ export default function OrganizerEventsPage() {
             const { data, error } = await supabase
                 .from('events')
                 .select(`
-                    id, title, status, starts_at, location_name, attendee_count,
-                    thumbnail_url,
+                    id, title, status, starts_at, location_name,
+                    thumbnail_url, reference, is_private,
                     ticket_tiers(tickets_sold, capacity)
                 `)
                 .eq('account_id', activeAccount.id)
@@ -71,8 +72,10 @@ export default function OrganizerEventsPage() {
                     date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
                     location: e.location_name || 'TBD',
                     status: uiStatus,
-                    attendees: e.attendee_count || ticketsSold,
-                    thumbnailUrl: e.thumbnail_url
+                    attendees: ticketsSold,
+                    thumbnailUrl: e.thumbnail_url,
+                    eventReference: e.reference,
+                    isPrivate: e.is_private
                 };
             });
 
@@ -141,8 +144,68 @@ export default function OrganizerEventsPage() {
     const handleBulkAction = (action: string) => {
         if (action === 'delete') {
             setIsDeleteModalOpen(true);
+        } else if (action === 'publish' || action === 'draft') {
+            handleBulkStatusUpdate(action === 'publish' ? 'published' : 'draft');
+        } else if (action === 'export') {
+            handleBulkExport();
         }
-        // Note: duplicate is not yet implemented
+    };
+
+    const handleBulkStatusUpdate = async (newStatus: string) => {
+        showToast(`Updating ${selectedIds.size} events...`, 'info');
+        try {
+            const { error } = await supabase.rpc('bulk_update_event_status', {
+                event_ids: Array.from(selectedIds),
+                new_status: newStatus
+            });
+            if (error) throw error;
+            showToast(`Successfully updated ${selectedIds.size} events to ${newStatus}.`, 'success');
+            setSelectedIds(new Set());
+            fetchEvents();
+        } catch (err: any) {
+            showToast(err.message || 'Failed to update events.', 'error');
+        }
+    };
+
+    const handleBulkExport = async () => {
+        showToast('Preparing attendee list...', 'info');
+        try {
+            // Fetch tickets for selected events with user profiles
+            const { data, error } = await supabase
+                .from('tickets')
+                .select(`
+                    id,
+                    ticket_code,
+                    status,
+                    created_at,
+                    event:events(title),
+                    tier:ticket_tiers(display_name),
+                    user:user_profile(full_name, email, user_name)
+                `)
+                .in('event_id', Array.from(selectedIds));
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showToast('No attendees found for selected events.', 'warning');
+                return;
+            }
+
+            const exportData = (data || []).map((t: any) => ({
+                'Event': t.event?.title,
+                'Attendee Name': t.user?.full_name || t.user?.user_name || 'Anonymous',
+                'Email': t.user?.email,
+                'Ticket Code': t.ticket_code,
+                'Tier': t.tier?.display_name,
+                'Status': t.status,
+                'Purchased At': new Date(t.created_at).toLocaleString()
+            }));
+
+            exportToCSV(exportData, `attendee_list_${new Date().toISOString().split('T')[0]}`);
+            showToast('Attendee list exported successfully.', 'success');
+        } catch (err: any) {
+            showToast(err.message || 'Failed to export attendee list.', 'error');
+        }
     };
 
     const confirmDelete = async () => {
@@ -228,7 +291,9 @@ export default function OrganizerEventsPage() {
                 selectedCount={selectedIds.size}
                 onCancel={() => setSelectedIds(new Set())}
                 actions={[
-                    { label: 'Attendee List', onClick: () => showToast('Attendee list export coming soon.', 'info'), variant: 'default' },
+                    { label: 'Export Attendees', onClick: () => handleBulkAction('export'), variant: 'default' },
+                    { label: 'Mark Published', onClick: () => handleBulkAction('publish'), variant: 'default' },
+                    { label: 'Return to Draft', onClick: () => handleBulkAction('draft'), variant: 'default' },
                     { label: 'Delete', onClick: () => handleBulkAction('delete'), variant: 'danger' }
                 ]}
             />
@@ -245,7 +310,7 @@ export default function OrganizerEventsPage() {
                     onPageChange={setCurrentPage}
                     onEdit={handleEdit}
                     onDelete={handleDeleteSingle}
-                    onStatusChange={handleStatusChange as any}
+                    onStatusChange={handleStatusChange}
                     isLoading={isLoadingEvents}
                 />
             </div>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 import type { OrganizerEventFormData } from '@/types/organize';
 
@@ -30,13 +31,13 @@ export default function CreateEventPage() {
                 const filePath = `${activeAccount.id}/${fileName}`; // Organize by account in bucket
 
                 const { error: uploadError } = await supabase.storage
-                    .from('event_media')
+                    .from('event_banners')
                     .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('event_media')
+                    .from('event_banners')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -71,11 +72,10 @@ export default function CreateEventPage() {
             if (data.isPaid && data.tickets.length > 0 && newEvent) {
                 const ticketsToInsert = data.tickets.map((t) => ({
                     event_id: newEvent.id,
-                    name: t.name,
+                    display_name: t.display_name,
                     price: parseFloat(t.price),
-                    capacity: parseInt(t.quantity),
+                    capacity: parseInt(t.capacity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    currency: 'KES', // Defaulting for MVP
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
                 }));
@@ -93,8 +93,7 @@ export default function CreateEventPage() {
                 const tagsToUpsert = data.tags.map(tag => ({
                     name: tag,
                     slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-                    is_official: false,
-                    is_active: true
+                    is_official: false
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase

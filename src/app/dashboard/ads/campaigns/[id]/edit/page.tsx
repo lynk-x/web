@@ -40,7 +40,8 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
             }
 
             // Find the primary asset for headline / image URL
-            const primaryAsset = (data.ad_assets as any[])?.find(a => a.is_primary) ?? (data.ad_assets as any[])?.[0];
+            const assets = (data.ad_assets as { is_primary: boolean; url: string; call_to_action?: string }[]) || [];
+            const primaryAsset = assets.find(a => a.is_primary) ?? assets[0];
 
             setCampaign({
                 id: data.id,

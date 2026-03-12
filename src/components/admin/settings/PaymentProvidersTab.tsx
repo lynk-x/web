@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DataTable from '@/components/shared/DataTable';
+import TableToolbar from '@/components/shared/TableToolbar';
 import Badge from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -29,10 +30,17 @@ export default function PaymentProvidersTab() {
         try {
             const { data: res, error } = await supabase
                 .from('platform_payment_providers')
-                .select('*')
+                .select('*, currencies:platform_payment_provider_currencies(currency)')
                 .order('provider_name');
             if (error) throw error;
-            setData(res || []);
+
+            // Map the joined data to match PlatformPaymentProvider interface
+            const mappedData = (res || []).map(p => ({
+                ...p,
+                supported_currencies: p.currencies?.map((c: { currency: string }) => c.currency) || []
+            }));
+
+            setData(mappedData);
         } catch (error: any) {
             showToast(error.message || 'Failed to load payment providers', 'error');
         } finally {
@@ -112,7 +120,7 @@ export default function PaymentProvidersTab() {
             header: 'Currencies',
             render: (provider: PlatformPaymentProvider) => (
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                    {provider.supported_currencies.map(c => (
+                    {provider.supported_currencies?.map(c => (
                         <span key={c} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>
                             {c}
                         </span>
@@ -150,35 +158,24 @@ export default function PaymentProvidersTab() {
         },
         {
             label: provider.is_active ? 'Deactivate' : 'Activate',
-            variant: provider.is_active ? 'danger' : 'success',
+            variant: (provider.is_active ? 'danger' : 'success') as 'danger' | 'success',
             onClick: () => toggleActiveStatus(provider)
         }
     ];
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                    <div style={{ fontSize: '15px', fontWeight: 600 }}>Payment Providers</div>
-                    <div style={{ fontSize: '13px', opacity: 0.6 }}>Global configuration for available checkout gateways.</div>
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input
-                    type="text"
-                    placeholder="Search providers..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    style={{ flex: '1 1 220px', padding: '9px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '14px' }}
-                />
-            </div>
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            <TableToolbar
+                searchPlaceholder="Search providers..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            />
+            
             <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                 <DataTable
                     data={filteredData}
                     columns={columns}
-                    getActions={getActions as any}
+                    getActions={getActions}
                     isLoading={isLoading}
                     emptyMessage="No payment providers configured."
                 />

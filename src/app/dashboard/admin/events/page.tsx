@@ -12,6 +12,8 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCSV } from '@/utils/export';
 import { createClient } from '@/utils/supabase/client';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
 
 export default function AdminEventsPage() {
     const supabase = useMemo(() => createClient(), []);
@@ -23,18 +25,22 @@ export default function AdminEventsPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
+    const [counts, setCounts] = useState({ organizers: 0 });
     const itemsPerPage = 8;
 
     useEffect(() => {
         const fetchEvents = async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase
-                    .from('mv_event_performance')
-                    .select('*')
-                    .order('starts_at', { ascending: false });
+                const [perfRes, organizersRes] = await Promise.all([
+                    supabase.schema('analytics').from('mv_event_performance').select('*').order('starts_at', { ascending: false }),
+                    supabase.from('accounts').select('*', { count: 'exact', head: true })
+                ]);
 
-                if (error) throw error;
+                if (perfRes.error) throw perfRes.error;
+
+                const data = perfRes.data;
+                setCounts({ organizers: organizersRes.count || 0 });
 
                 const mappedEvents: Event[] = (data || []).map((e: any) => ({
                     id: e.id,
@@ -118,7 +124,7 @@ export default function AdminEventsPage() {
 
             showToast(`Successfully moved ${selectedEventIds.size} events to ${newStatus}.`, 'success');
             setEvents(prev => prev.map(e =>
-                selectedEventIds.has(e.id) ? { ...e, status: newStatus as any } : e
+                selectedEventIds.has(e.id) ? { ...e, status: newStatus as 'draft' | 'published' | 'completed' } : e
             ));
             setSelectedEventIds(new Set());
         } catch (err) {
@@ -161,6 +167,14 @@ export default function AdminEventsPage() {
         { label: 'Export Selection', onClick: handleExportEventData }
     ];
 
+    const stats = useMemo(() => {
+        const total = events.length;
+        const attendees = events.reduce((acc, e) => acc + (e.attendees || 0), 0);
+        const reported = events.reduce((acc, e) => acc + (e.reportsCount || 0), 0);
+
+        return { total, attendees, reported, organizers: counts.organizers };
+    }, [events, counts.organizers]);
+
     const handleSingleStatusUpdate = async (event: Event, newStatus: string) => {
         showToast(`Moving ${event.title} to ${newStatus}...`, 'info');
         try {
@@ -172,7 +186,7 @@ export default function AdminEventsPage() {
             if (error) throw error;
 
             showToast(`${event.title} status updated.`, 'success');
-            setEvents(prev => prev.map(e => e.id === event.id ? { ...e, status: newStatus as any } : e));
+            setEvents(prev => prev.map(e => e.id === event.id ? { ...e, status: newStatus as 'draft' | 'published' | 'completed' } : e));
         } catch (err) {
             showToast('Failed to update event status.', 'error');
         }
@@ -198,20 +212,47 @@ export default function AdminEventsPage() {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={adminStyles.title}>Event Management</h1>
-                    <p className={adminStyles.subtitle}>Review, approve, and moderate events across the platform.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <Link href="/dashboard/admin/events/create" className={adminStyles.btnPrimary}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Create Event
-                    </Link>
-                </div>
-            </header>
+            <PageHeader 
+                title="Event Management" 
+                subtitle="Review, approve, and moderate events across the platform."
+                actionLabel="Create Event"
+                actionHref="/dashboard/admin/events/create"
+                actionIcon={(
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                )}
+            />
+            
+            <div className={adminStyles.statsGrid}>
+                <StatCard 
+                    label="Total Events" 
+                    value={stats.total} 
+                    change="Platform wide"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Flagged Reports" 
+                    value={stats.reported} 
+                    change="Requires attention"
+                    trend={stats.reported > 0 ? "negative" : "positive"}
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Total Organizers" 
+                    value={stats.organizers} 
+                    change="Verified partners"
+                    trend="positive"
+                    isLoading={isLoading} 
+                />
+                <StatCard 
+                    label="Total Attendees" 
+                    value={stats.attendees} 
+                    change="Confirmed entries"
+                    trend="neutral"
+                    isLoading={isLoading} 
+                />
+            </div>
 
             <TableToolbar
                 searchPlaceholder="Search events or organizers..."
