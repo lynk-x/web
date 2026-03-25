@@ -7,6 +7,7 @@ import EventTable, { Event } from '@/components/organize/EventTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import EventCancellationModal from '@/components/organize/EventCancellationModal';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -15,6 +16,8 @@ import FilterGroup from '@/components/dashboard/FilterGroup';
 import { createClient } from '@/utils/supabase/client';
 import type { OrganizerEvent } from '@/types/organize';
 import { exportToCSV } from '@/utils/export';
+import { formatDate, formatDateTime, formatTime } from '@/utils/format';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 // Main Component
 export default function OrganizerEventsPage() {
@@ -29,6 +32,8 @@ export default function OrganizerEventsPage() {
 
     // Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    // Cancellation modal: stores the event to cancel + how many tickets were sold
+    const [cancelTarget, setCancelTarget] = useState<{ event: OrganizerEvent; ticketsSold: number } | null>(null);
 
     // Filter States
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'past'>('all');
@@ -69,7 +74,8 @@ export default function OrganizerEventsPage() {
                     id: e.id,
                     title: e.title,
                     organizer: activeAccount.name,
-                    date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                    date: formatDate(e.starts_at),
+                    time: formatTime(e.starts_at),
                     location: e.location_name || 'TBD',
                     status: uiStatus,
                     attendees: ticketsSold,
@@ -198,7 +204,7 @@ export default function OrganizerEventsPage() {
                 'Ticket Code': t.ticket_code,
                 'Tier': t.tier?.display_name,
                 'Status': t.status,
-                'Purchased At': new Date(t.created_at).toLocaleString()
+                'Purchased At': formatDateTime(t.created_at)
             }));
 
             exportToCSV(exportData, `attendee_list_${new Date().toISOString().split('T')[0]}`);
@@ -229,12 +235,37 @@ export default function OrganizerEventsPage() {
         }
     };
 
-    // --- Row Actions ---
+    // ── Cancellation ───────────────────────────────────────────────────────────
+    const handleCancelEvent = async (reason: string) => {
+        if (!cancelTarget) return;
+
+        const { error } = await supabase
+            .from('events')
+            .update({
+                status: 'cancelled',
+                // cancellation_reason column added to events table to store this for attendee notifications
+                cancellation_reason: reason,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', cancelTarget.event.id);
+
+        if (error) throw new Error(error.message);
+
+        showToast(`"${cancelTarget.event.title}" has been cancelled.`, 'success');
+        setCancelTarget(null);
+        fetchEvents();
+    };
+
     const handleEdit = (event: OrganizerEvent) => {
         router.push(`/dashboard/organize/events/edit/${event.id}`);
     };
 
     const handleStatusChange = async (event: OrganizerEvent, newStatus: string) => {
+        // Route cancellations through the modal so a reason is always captured
+        if (newStatus === 'cancelled') {
+            setCancelTarget({ event, ticketsSold: event.attendees || 0 });
+            return;
+        }
         try {
             const { error } = await supabase
                 .from('events')
@@ -269,8 +300,9 @@ export default function OrganizerEventsPage() {
             />
 
             {/* Toolbar */}
-            <TableToolbar
-                searchValue={searchTerm}
+            <div className="tour-events-filter">
+                <TableToolbar
+                    searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
                 searchPlaceholder="Search events..."
             >
@@ -284,7 +316,8 @@ export default function OrganizerEventsPage() {
                     currentValue={statusFilter}
                     onChange={(val) => { setStatusFilter(val as any); setCurrentPage(1); }}
                 />
-            </TableToolbar>
+                </TableToolbar>
+            </div>
 
             {/* Bulk Actions */}
             <BulkActionsBar
@@ -299,7 +332,7 @@ export default function OrganizerEventsPage() {
             />
 
             {/* Table */}
-            <div className={styles.tableWrapper}>
+            <div className={`${styles.tableWrapper} tour-events-table`}>
                 <EventTable
                     events={paginatedEvents}
                     selectedIds={selectedIds}
@@ -324,6 +357,39 @@ export default function OrganizerEventsPage() {
                 message={`Are you sure you want to delete ${selectedIds.size} selected event(s)? This action cannot be undone.`}
                 confirmLabel="Delete"
                 variant="danger"
+            />
+            {/* Cancellation modal */}
+            {cancelTarget && (
+                <EventCancellationModal
+                    eventTitle={cancelTarget.event.title}
+                    eventId={cancelTarget.event.id}
+                    ticketsSold={cancelTarget.ticketsSold}
+                    onClose={() => setCancelTarget(null)}
+                    onConfirm={handleCancelEvent}
+                />
+            )}
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenOrgEventsJoyride_${activeAccount.id}` : 'hasSeenOrgEventsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Manage Your Events',
+                        content: 'This is where you can view, edit, and manage all your Lynk-X events.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-events-filter',
+                        title: 'Filter & Search',
+                        content: 'Quickly find specific events by status or name.',
+                    },
+                    {
+                        target: '.tour-events-table',
+                        title: 'Event List',
+                        content: 'Select events to perform bulk actions like publishing, exporting attendees, or deleting.',
+                    }
+                ]}
             />
         </div>
     );

@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import styles from './Sidebar.module.css';
 import { navGroups } from './sidebarNav';
 import type { DashboardMode } from '@/types/shared';
-import ModeSwitcher from './ModeSwitcher';
-import SidebarUserProfile from './SidebarUserProfile';
 import OrganizationSwitcher from './OrganizationSwitcher';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -18,7 +17,7 @@ import OrganizationSwitcher from './OrganizationSwitcher';
  *
  * Acts as an orchestrator that composes:
  * - Logo link
- * - `ModeSwitcher` — three-button pill for events / ads / admin
+ * - Organization Switcher
  * - Nav links driven by `navGroups` from `sidebarNav.tsx`
  * - `SidebarUserProfile` — footer user card
  *
@@ -26,10 +25,11 @@ import OrganizationSwitcher from './OrganizationSwitcher';
  */
 const Sidebar = () => {
     const pathname = usePathname();
-    const router = useRouter();
+    const { user } = useAuth();
     const [mode, setMode] = useState<DashboardMode>('events');
 
-    // Derive mode from URL on mount and path change
+    const isUnverified = user && !user.email_confirmed_at;
+
     useEffect(() => {
         if (pathname.startsWith('/dashboard/admin')) {
             setMode('admin');
@@ -40,19 +40,22 @@ const Sidebar = () => {
         }
     }, [pathname]);
 
-    /** Navigate to the root page of the selected mode. */
-    const handleModeChange = (newMode: DashboardMode) => {
-        setMode(newMode);
-        const roots: Record<DashboardMode, string> = {
-            events: '/dashboard/organize',
-            ads: '/dashboard/ads',
-            admin: '/dashboard/admin',
-        };
-        router.push(roots[newMode]);
-    };
+    // Hide the sidebar on pages that don't belong inside a workspace:
+    // - /dashboard         (workspace picker / account selector)
+    // - /dashboard/setup-profile (profile setup, no account context yet)
+    const SIDEBAR_HIDDEN_PATHS = ['/dashboard', '/dashboard/setup-profile'];
+    if (SIDEBAR_HIDDEN_PATHS.includes(pathname)) return null;
 
     return (
         <aside className={styles.sidebar}>
+            {isUnverified && (
+                <div className={styles.verificationBanner}>
+                    <div className={styles.bannerContent}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>Verify your email</span>
+                    </div>
+                </div>
+            )}
             {/* Logo */}
             <Link href="/" className={styles.logoContainer}>
                 <Image
@@ -64,15 +67,20 @@ const Sidebar = () => {
                 />
             </Link>
 
-            {/* Organization Switcher */}
-            <OrganizationSwitcher />
 
-            {/* Mode Switcher */}
-            <ModeSwitcher mode={mode} onModeChange={handleModeChange} />
+            {/* Dashboard Mode Label */}
+            <div className={styles.modeContextSection}>
+                <span className={styles.modeContextLabel}>
+                    {mode === 'admin' ? 'Admin Dashboard' : 
+                     mode === 'ads' ? 'Ads Dashboard' : 
+                     'Events Dashboard'}
+                </span>
+                <div className={styles.modeContextDivider} />
+            </div>
 
             {/* Navigation Links */}
             <nav className={styles.nav}>
-                {navGroups[mode].map((group, gIdx) => (
+                {navGroups[mode]?.map((group, gIdx) => (
                     <div key={gIdx} className={styles.navGroup}>
                         {group.title && <div className={styles.groupTitle}>{group.title}</div>}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
@@ -96,8 +104,11 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            {/* User Footer */}
-            <SidebarUserProfile />
+            {/* Organization Switcher */}
+            <div style={{ marginTop: 'auto' }}>
+                <OrganizationSwitcher pos="bottom" />
+            </div>
+
         </aside>
     );
 };

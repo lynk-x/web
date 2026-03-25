@@ -10,6 +10,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 export default function AdsDashboard() {
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
@@ -17,10 +18,10 @@ export default function AdsDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [spotlights, setSpotlights] = useState<any[]>([]);
     const [stats, setStats] = useState<any[]>([
-        { label: 'Total Campaigns', value: null, isPositive: true },
-        { label: 'Active Campaigns', value: null, isPositive: true },
-        { label: 'Pending Approval', value: null, isPositive: true },
-        { label: 'Remaining Budget', value: null, isPositive: true },
+        { label: 'Total Campaigns', value: null, change: 'Lifetime count' },
+        { label: 'Active Campaigns', value: null, change: 'Running now' },
+        { label: 'Pending Approval', value: null, change: 'Under review' },
+        { label: 'Remaining Budget', value: null, change: 'Available funds' },
     ]);
 
     useEffect(() => {
@@ -50,13 +51,13 @@ export default function AdsDashboard() {
                 const pendingApproval = allAds.filter((c: any) => c.status === 'pending_approval').length;
                 const remainingBudget = allAds.reduce((acc: number, c: any) => acc + (Number(c.total_budget || 0) - Number(c.spent_amount || 0)), 0);
 
-                const currency = activeAccount?.default_currency || 'KES';
+                const currency = 'USD';
 
                 setStats([
-                    { label: 'Total Campaigns', value: totalCampaigns.toLocaleString(), isPositive: true },
-                    { label: 'Active Campaigns', value: activeCampaigns.toLocaleString(), isPositive: true },
-                    { label: 'Pending Approval', value: pendingApproval.toLocaleString(), isPositive: true },
-                    { label: 'Remaining Budget', value: formatCurrency(remainingBudget, currency), isPositive: true },
+                    { label: 'Total Campaigns', value: totalCampaigns.toLocaleString(), change: 'Lifetime count' },
+                    { label: 'Active Campaigns', value: activeCampaigns.toLocaleString(), change: 'Running now' },
+                    { label: 'Pending Approval', value: pendingApproval.toLocaleString(), change: 'Under review' },
+                    { label: 'Remaining Budget', value: formatCurrency(remainingBudget, currency), change: 'Available funds' },
                 ]);
 
                 if (spotlightsRes.data) {
@@ -81,10 +82,10 @@ export default function AdsDashboard() {
                 fetchStats();
             } else {
                 setStats([
-                    { label: 'Total Campaigns', value: '0', isPositive: true },
-                    { label: 'Active Campaigns', value: '0', isPositive: true },
-                    { label: 'Pending Approval', value: '0', isPositive: true },
-                    { label: 'Remaining Budget', value: formatCurrency(0), isPositive: true },
+                    { label: 'Total Campaigns', value: '0', change: 'Lifetime count' },
+                    { label: 'Active Campaigns', value: '0', change: 'Running now' },
+                    { label: 'Pending Approval', value: '0', change: 'Under review' },
+                    { label: 'Remaining Budget', value: formatCurrency(0), change: 'Available funds' },
                 ]);
                 setIsLoading(false);
             }
@@ -98,13 +99,13 @@ export default function AdsDashboard() {
             />
 
             {/* Key Metrics */}
-            <div className={sharedStyles.statsGrid}>
+            <div className={`${sharedStyles.statsGrid} tour-ads-stats`}>
                 {stats.map((stat, index) => (
                     <StatCard
                         key={index}
                         label={stat.label}
                         value={stat.value}
-                        change="Real-time data"
+                        change={stat.change}
                         trend="neutral"
                         isLoading={isLoading}
                     />
@@ -115,13 +116,13 @@ export default function AdsDashboard() {
             <section className={styles.quickActions}>
                 <h2 className={sharedStyles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
-                    <Link href="/dashboard/ads/campaigns/create" className={styles.actionCard}>
+                    <Link href="/dashboard/ads/campaigns/create" className={`${styles.actionCard} tour-create-campaign`}>
                         <span className={styles.actionLabel}>Create Campaign</span>
                     </Link>
                     <Link href="/dashboard/ads/campaigns" className={styles.actionCard}>
                         <span className={styles.actionLabel}>Manage Campaigns</span>
                     </Link>
-                    <Link href="/dashboard/ads/analytics" className={styles.actionCard}>
+                    <Link href="/dashboard/ads/analytics" className={`${styles.actionCard} tour-ads-analytics`}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </Link>
                     <Link href="/dashboard/ads/assets" className={styles.actionCard}>
@@ -139,6 +140,34 @@ export default function AdsDashboard() {
                     <SystemBannerSpotlight slides={spotlights} />
                 </section>
             )}
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsJoyride_${activeAccount.id}` : 'hasSeenAdsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Welcome to Ads Manager!',
+                        content: 'Promote your business and reach a wider audience across Lynk-X.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-ads-stats',
+                        title: 'Campaign Performance',
+                        content: 'Monitor your active campaigns and track your remaining budget at a glance.',
+                    },
+                    {
+                        target: '.tour-create-campaign',
+                        title: 'Launch a campaign',
+                        content: 'Select your target audience, set your budget, and go live with a new ad.',
+                    },
+                    {
+                        target: '.tour-ads-analytics',
+                        title: 'Deep dive into data',
+                        content: 'See exactly how your ads are performing with detailed analytics.',
+                    }
+                ]}
+            />
 
         </div>
     );

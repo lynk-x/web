@@ -16,12 +16,13 @@ export interface OrganizerEvent {
     title: string;
     organizer: string;
     date: string;
+    time: string;
     location: string;
     /**
-     * Aligned to `event_status` schema enum.
-     * draft → published → active → completed/cancelled/archived
+     * Exhaustive alignment with `event_status` schema enum.
+     * draft → published → active → completed/cancelled/archived/postponed/suspended
      */
-    status: 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'cancelled';
+    status: 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'cancelled' | 'postponed' | 'suspended';
     attendees: number;
     /** Unique share/lookup code — from `events.reference` column */
     eventReference?: string;
@@ -43,14 +44,18 @@ export interface EventRow {
     /** Revenue calculated from `ticket_tiers.price` * `quantity_sold` */
     revenue: number;
     date: string;
+    time: string;
 }
 
 /** A financial transaction — aligned to the `transactions` DB table.
  *
  * `type` maps to the `transaction_reason` enum:
- * ticket_sale | subscription | ad_campaign_payment | organizer_payment
- * ad_refund | ticket_refund | subscription_refund | dispute_settlement
+ * ticket_sale | ad_campaign_payment | organizer_payment
+ * ad_refund | ticket_refund | dispute_settlement
  * escrow_release | payout_withdrawal
+ *
+ * Note: 'subscription' / 'subscription_refund' are NOT DB enum values.
+ * Subscription payments are recorded in the `subscriptions` table, not `transactions`.
  *
  * `status` maps to the `payment_status` enum:
  * pending | completed | failed | cancelled | refunded
@@ -62,10 +67,10 @@ export interface FinanceTransaction {
     date: string;
     /** Aligned to `payment_status` enum — always lowercase */
     status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
-    /** Aligned to `transaction_reason` enum */
-    type: 'ticket_sale' | 'subscription' | 'ad_campaign_payment' | 'organizer_payment'
-    | 'ad_refund' | 'ticket_refund' | 'subscription_refund' | 'dispute_settlement'
-    | 'escrow_release' | 'payout_withdrawal';
+    /** Aligned to `transaction_reason` enum (exhaustive) */
+    type: 'ticket_sale' | 'ad_campaign_payment' | 'organizer_payment'
+        | 'ad_refund' | 'ticket_refund' | 'dispute_settlement'
+        | 'escrow_release' | 'payout_withdrawal';
     /** `transaction_category` enum: incoming | outgoing | internal | hold */
     category?: 'incoming' | 'outgoing' | 'internal' | 'hold';
     reference?: string;
@@ -73,6 +78,12 @@ export interface FinanceTransaction {
     referenceId?: string;
     /** Used in organizer context to group transactions by event. */
     event?: string;
+    /**
+     * The authenticated user who initiated this transaction.
+     * Maps to `transactions.initiated_by` (new audit column).
+     * Distinct from sender_id/recipient_id which are legacy financial direction markers.
+     */
+    initiatedBy?: string;
 }
 
 /** A payout request — aligned to the `payouts` DB table.
@@ -90,12 +101,14 @@ export interface Payout {
     status: 'requested' | 'processing' | 'completed' | 'failed' | 'rejected';
     /** ISO date string of the payout request */
     requestedAt: string;
+    /** Set when status transitions to 'completed' or 'failed'. From `payouts.processed_at`. */
+    processedAt?: string;
     /** From accounts.kyc_status - pending | submitted | approved | rejected | suspended */
     kyc_status?: 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended';
     /** Aligned to kyc_status logic: approved accounts are verified */
     is_verified?: boolean;
     /** JSON metadata for provider or audit details */
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     /** Reference code (from payout_ref_seq e.g. PO-1001) */
     reference?: string;
     /** Internal admin notes */
@@ -138,10 +151,17 @@ export interface OrganizerEventFormData {
     startTime: string;
     endDate: string;
     endTime: string;
+    /**
+     * IANA display timezone for the event (e.g. 'Africa/Nairobi').
+     * Optional: if omitted, resolves from the organiser's country.
+     * Maps to `events.timezone` column added in schema review.
+     */
+    timezone?: string;
     isPrivate: boolean;
-    isPaid: boolean;
-    limit: string;
     tickets: OrganizerEventTicket[];
+    status?: 'draft' | 'published';
+    isPaid?: boolean;
+    currency: string;
 }
 
 /** A ticket tier within the event form. */
@@ -154,6 +174,7 @@ export interface OrganizerEventTicket {
     saleStart?: string;
     saleEnd?: string;
     maxPerOrder?: string;
+    has_premium_upsell?: boolean;
 }
 
 /** An attendee in the event's attendee list. */
@@ -184,9 +205,10 @@ export interface AccountPaymentMethod {
 
 /** Account Wallet for multi-currency balances */
 export interface AccountWallet {
-    id: string;
+    id: string; // usually used as the currency/key in some UI contexts
     account_id: string;
     currency: string;
     balance: number;
+    escrow_balance: number;
     updated_at: string;
 }

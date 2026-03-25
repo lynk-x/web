@@ -2,6 +2,7 @@
 
 import React from 'react';
 import styles from './TableToolbar.module.css';
+import { sanitizeInput } from '@/utils/sanitization';
 
 interface TableToolbarProps {
     searchPlaceholder?: string;
@@ -34,7 +35,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
                         placeholder={searchPlaceholder}
                         className={styles.searchInput}
                         value={searchValue}
-                        onChange={(e) => onSearchChange(e.target.value)}
+                        onChange={(e) => onSearchChange(sanitizeInput(e.target.value))}
                     />
                 </div>
             )}

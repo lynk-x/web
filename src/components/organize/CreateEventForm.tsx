@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styles from './CreateEventForm.module.css';
+import { createClient } from '@/utils/supabase/client';
 
 interface TicketType {
     name: string;
@@ -19,6 +20,24 @@ const CreateEventForm = () => {
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
     const [coverUrl,] = useState<string | null>(null);
+    const supabase = useMemo(() => createClient(), []);
+
+    // Tag Suggestions State
+    const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+
+    // Fetch Tag Suggestions
+    useEffect(() => {
+        const fetchTags = async () => {
+            const { data } = await supabase
+                .from('tags')
+                .select('name')
+                .eq('is_active', true)
+                .order('use_count', { ascending: false })
+                .limit(12);
+            if (data) setTagSuggestions(data.map(t => t.name));
+        };
+        fetchTags();
+    }, [supabase]);
 
     // Step 2: Logistics
     const [isOnline, setIsOnline] = useState(false);
@@ -38,9 +57,10 @@ const CreateEventForm = () => {
 
     const categories = ['General', 'Tech', 'Social', 'Art', 'Music', 'Fitness'];
 
-    const handleAddTag = () => {
-        if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-            setTags([...tags, tagInput.trim()]);
+    const handleAddTag = (tag?: string) => {
+        const value = (tag || tagInput).trim();
+        if (value && !tags.includes(value)) {
+            setTags([...tags, value]);
             setTagInput('');
         }
     };
@@ -132,7 +152,7 @@ const CreateEventForm = () => {
                                     onChange={(e) => setTagInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
                                 />
-                                <button type="button" className={styles.addBtn} onClick={handleAddTag}>Add</button>
+                                <button type="button" className={styles.addBtn} onClick={() => handleAddTag()}>Add</button>
                             </div>
                             <div className={styles.tagList}>
                                 {tags.map(tag => (
@@ -140,6 +160,18 @@ const CreateEventForm = () => {
                                         {tag}
                                         <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>×</button>
                                     </span>
+                                ))}
+                            </div>
+                            <div className={styles.tagSuggestions}>
+                                {tagSuggestions.filter(t => !tags.includes(t)).map(t => (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        className={styles.tagSuggestion}
+                                        onClick={() => handleAddTag(t)}
+                                    >
+                                        + {t}
+                                    </button>
                                 ))}
                             </div>
                         </div>

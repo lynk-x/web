@@ -25,7 +25,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 .from('ad_campaigns')
                 .select(`
                     id, title, description, type,
-                    total_budget, daily_limit,
+                    total_budget, daily_limit, max_bid_amount,
                     start_at, end_at,
                     target_url, target_event_id, target_country_code,
                     ad_assets (call_to_action, url, is_primary)
@@ -50,12 +50,19 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 type: data.type,
                 total_budget: String(data.total_budget),
                 daily_limit: data.daily_limit != null ? String(data.daily_limit) : '',
+                max_bid_amount: data.max_bid_amount != null ? String(data.max_bid_amount) : '0.01',
                 // Slice to YYYY-MM-DD for the date input
                 start_at: data.start_at ? data.start_at.slice(0, 10) : '',
                 end_at: data.end_at ? data.end_at.slice(0, 10) : '',
                 target_url: data.target_url || '',
                 target_event_id: data.target_event_id || '',
                 target_country_code: data.target_country_code || 'KE',
+                target_tags: [], // Tags aren't fetched here yet
+                creatives: assets.map(a => ({
+                    headline: a.call_to_action || '',
+                    imageUrl: a.url || '',
+                    preview: a.url || ''
+                })),
                 adHeadline: primaryAsset?.call_to_action || '',
                 adImageUrl: primaryAsset?.url || ''
             });

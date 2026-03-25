@@ -54,7 +54,6 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         id,
                         display_name,
                         avatar_url,
-                        website,
                         description,
                         contact_email,
                         phone_number,
@@ -83,7 +82,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         thumbnailUrl: member.accounts.avatar_url,
                         role: member.role,
                         type: member.accounts.type,
-                        website: member.accounts.website,
+                        website: undefined, // removed from DB schema
                         description: member.accounts.description,
                         support_email: member.accounts.contact_email,
                         phone_number: member.accounts.phone_number,

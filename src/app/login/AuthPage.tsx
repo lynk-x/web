@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import styles from './page.module.css';
 import { login, signup } from './actions';
 
@@ -11,6 +12,8 @@ export default function AuthPage() {
     const searchParams = useSearchParams();
     const serverError = searchParams.get('error');
     const serverMessage = searchParams.get('message');
+    // Preserve ?next= so the server action can redirect the user back after login.
+    const next = searchParams.get('next') || '';
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -142,8 +145,10 @@ export default function AuthPage() {
                     </div>
                 )}
 
+                {/* Hidden field so the server action knows where to redirect after login */}
                 <div style={{ display: 'none' }}>
                     <input name="isSignup" value={!isLoginDetail ? 'true' : 'false'} readOnly />
+                    {next && <input name="next" value={next} readOnly />}
                 </div>
 
                 <button type="submit" className={styles.signInBtn}>
@@ -153,7 +158,19 @@ export default function AuthPage() {
 
             <div className={styles.divider}>Or sign in with</div>
 
-            <button className={styles.socialBtn}>
+            <button
+                type="button"
+                className={styles.socialBtn}
+                onClick={async () => {
+                    const supabase = createClient();
+                    await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+                        },
+                    });
+                }}
+            >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22.56 12.25C22.56 11.47 22.49 10.72 22.35 10H12V14.26H17.92C17.66 15.63 16.88 16.79 15.71 17.57V20.32H19.26C21.34 18.4 22.56 15.6 22.56 12.25Z" fill="#4285F4" />
                     <path d="M12 23C14.97 23 17.46 22.014 19.26 20.35L15.71 17.6C14.73 18.26 13.48 18.66 12 18.66C9.13 18.66 6.71 16.72 5.84 14.11H2.18V16.95C3.98 20.53 7.7 23 12 23Z" fill="#34A853" />
@@ -163,7 +180,19 @@ export default function AuthPage() {
                 Continue with Google
             </button>
 
-            <button className={styles.socialBtn}>
+            <button
+                type="button"
+                className={styles.socialBtn}
+                onClick={async () => {
+                    const supabase = createClient();
+                    await supabase.auth.signInWithOAuth({
+                        provider: 'apple',
+                        options: {
+                            redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+                        },
+                    });
+                }}
+            >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.127 3.675-.552 9.12 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.99 3.96-.99 1.832 0 2.383.99 3.96.96 1.637-.033 2.626-1.423 3.622-2.879 1.139-1.636 1.606-3.22 1.619-3.32-.035-.013-3.13-1.203-3.163-4.757-.034-2.95 2.418-4.359 2.522-4.453-.137-.367-1.125-3.83-4.225-3.868-1.748.06-2.583 1.04-3.24 1.04-.64 0-1.228-1.04-2.45-1.04zM16.14 3.755c.806-1.002 1.34-2.396 1.196-3.793-1.157.062-2.553.805-3.376 1.77-.732.846-1.372 2.215-1.201 3.528 1.286.099 2.602-.65 3.38-1.505z" fill="white" />
                 </svg>

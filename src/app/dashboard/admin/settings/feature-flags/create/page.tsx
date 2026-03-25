@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/app/dashboard/admin/page.module.css';
 import { useToast } from '@/components/ui/Toast';
+import { sanitizeInput } from '@/utils/sanitization';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import { createClient } from '@/utils/supabase/client';
 
@@ -82,7 +83,7 @@ export default function CreateFeatureFlagPage() {
                         className={styles.input}
                         placeholder="e.g. enable_new_checkout_flow"
                         value={formData.key}
-                        onChange={e => setFormData({ ...formData, key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                        onChange={e => setFormData({ ...formData, key: sanitizeInput(e.target.value).toLowerCase().replace(/\s+/g, '_') })}
                         required
                     />
                 </div>
@@ -93,7 +94,7 @@ export default function CreateFeatureFlagPage() {
                         className={styles.textarea}
                         placeholder="What does this feature toggle?"
                         value={formData.description}
-                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        onChange={e => setFormData({ ...formData, description: sanitizeInput(e.target.value) })}
                         rows={4}
                     />
                 </div>

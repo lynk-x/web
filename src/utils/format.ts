@@ -55,6 +55,52 @@ export function getInitials(name: string): string {
         .slice(0, 2);
 }
 /**
+ * Formats a date to dd/mm/yyyy (International Standard).
+ *
+ * @example formatDate("2024-12-31") // "31/12/2024"
+ */
+export function formatDate(date: string | Date | number): string {
+    if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    
+    return d.toLocaleDateString('en-GB'); // en-GB uses dd/mm/yyyy
+}
+
+/**
+ * Formats a date and time to dd/mm/yyyy, HH:mm.
+ */
+export function formatDateTime(date: string | Date | number): string {
+    if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    
+    return d.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    }).replace(',', '');
+}
+
+/**
+ * Formats a date to HH:mm (24-hour).
+ */
+export function formatTime(date: string | Date | number): string {
+    if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    
+    return d.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+}
+
+/**
  * Formats a date string or timestamp into a relative "time ago" string.
  *
  * @example formatRelativeTime("2024-06-01T12:00:00Z") // "2 hours ago"
@@ -70,7 +116,7 @@ export function formatRelativeTime(date: string | Date): string {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (days > 7) return d.toLocaleDateString();
+    if (days > 7) return formatDate(d);
     if (days > 0) return `${days}d ago`;
     if (hours > 0) return `${hours}h ago`;
     if (minutes > 0) return `${minutes}m ago`;
@@ -86,4 +132,90 @@ export function formatFileSize(bytes: number): string {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Formats a UTC date string in the event's canonical local timezone.
+ *
+ * Use this for displaying event start/end times — NOT `formatDateTime`.
+ * `formatDateTime` uses the VIEWER's browser timezone; this function uses the
+ * EVENT's timezone so all attendees see the same canonical local time.
+ *
+ * Falls back to `formatDateTime` if the timezone is missing or unrecognised.
+ *
+ * @param date    UTC timestamp (ISO string or Date)
+ * @param tz      IANA timezone string, e.g. 'Africa/Nairobi'. From `events.timezone`
+ *                or `vw_user_tickets.display_timezone`.
+ *
+ * @example
+ * formatDateInTimezone('2026-08-15T17:00:00Z', 'Africa/Nairobi')
+ * // → '15/08/2026'
+ */
+export function formatDateInTimezone(date: string | Date | number, tz?: string | null): string {
+    if (!date) return '-';
+    const d = new Date(
+        typeof date === 'number' ? date : typeof date === 'string' ? date : date.getTime()
+    );
+    if (isNaN(d.getTime())) return '-';
+
+    if (!tz) return formatDate(d);
+
+    try {
+        return new Intl.DateTimeFormat('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: tz,
+        }).format(d);
+    } catch {
+        // Invalid timezone string — fall back to viewer locale
+        return formatDate(d);
+    }
+}
+
+/**
+ * Formats a UTC date string as `dd/mm/yyyy HH:mm` in the event's canonical local timezone.
+ *
+ * Use this for displaying event start/end times in ticketing, attendance,
+ * and event detail views. Do NOT use `formatDateTime` for event times.
+ *
+ * @param date    UTC timestamp (ISO string or Date)
+ * @param tz      IANA timezone string, e.g. 'Africa/Nairobi'. From `events.timezone`
+ *                or `vw_user_tickets.display_timezone`.
+ * @param showTz  If true, appends the short timezone abbreviation (e.g. 'EAT').
+ *
+ * @example
+ * formatDateTimeInTimezone('2026-08-15T17:00:00Z', 'Africa/Nairobi')
+ * // → '15/08/2026 20:00'
+ * formatDateTimeInTimezone('2026-08-15T17:00:00Z', 'Africa/Nairobi', true)
+ * // → '15/08/2026 20:00 EAT'
+ */
+export function formatDateTimeInTimezone(
+    date: string | Date | number,
+    tz?: string | null,
+    showTz = false,
+): string {
+    if (!date) return '-';
+    const d = new Date(
+        typeof date === 'number' ? date : typeof date === 'string' ? date : date.getTime()
+    );
+    if (isNaN(d.getTime())) return '-';
+
+    if (!tz) return formatDateTime(d);
+
+    try {
+        const opts: Intl.DateTimeFormatOptions = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: tz,
+            ...(showTz ? { timeZoneName: 'short' } : {}),
+        };
+        return new Intl.DateTimeFormat('en-GB', opts).format(d).replace(',', '');
+    } catch {
+        return formatDateTime(d);
+    }
 }

@@ -26,9 +26,6 @@ const HomeLayout: React.FC<HomeLayoutProps> = ({ children, categories, tags, cat
                 <AppDrawer
                     isOpen={isDrawerOpen}
                     onClose={() => setIsDrawerOpen(false)}
-                    categoriesData={categories}
-                    tagsData={tags}
-                    categoryTagsMap={categoryTags}
                 />
                 <main className={styles.main}>
                     <PullToRefresh>

@@ -1,98 +1,181 @@
 .container {
     min-height: 100vh;
-    background-color: var(--color-utility-primaryBackground);
-    color: var(--color-utility-primaryText);
+    background-color: #000;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    color: white;
+    font-family: var(--font-primary, 'Outfit', sans-serif);
+    padding: 0 24px 80px;
+    background: radial-gradient(circle at 50% 100%, rgba(32, 249, 40, 0.04) 0%, transparent 60%);
 }
 
 .header {
+    padding: 32px 0;
+    width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: var(--spacing-md);
-    height: 64px;
-    background-color: var(--color-utility-primaryBackground);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-@media (min-width: 768px) {
-    .header {
-        height: 80px;
-    }
 }
 
 .logo {
+    opacity: 0.8;
     object-fit: cover;
 }
 
 .content {
-    flex: 1;
+    max-width: 580px;
+    width: 100%;
+    text-align: center;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    padding: var(--spacing-xl);
-    text-align: center;
-    max-width: 600px;
-    margin: 0 auto;
-    width: 100%;
+}
+
+.successHeader {
+    margin-bottom: 12px;
+    animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .successIcon {
-    margin-bottom: var(--spacing-lg);
+    margin: 36px auto 24px;
+    width: 80px;
+    height: 80px;
+    background: rgba(32, 249, 40, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(32, 249, 40, 0.2);
 }
 
 .title {
-    font-size: 28px;
-    color: var(--color-brand-secondary);
-    margin-bottom: var(--spacing-md);
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.04em;
 }
 
 .message {
+    color: rgba(255, 255, 255, 0.5);
     font-size: 16px;
-    color: var(--color-utility-primaryText);
-    opacity: 0.8;
-    margin-bottom: var(--spacing-xl);
-    line-height: 1.5;
+    margin: 0;
 }
 
-.orderRef {
-    background-color: var(--color-interface-surface);
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-xl);
+/* 📱 Bridge Card */
+.bridgeCard {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 32px;
+    padding: 48px;
+    margin-bottom: 32px;
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    backdrop-filter: blur(20px);
+}
+
+.appPromo {
+    margin-bottom: 40px;
+}
+
+.appLogoContainer {
+    margin-bottom: 24px;
+    opacity: 0.8;
+}
+
+.appPromo h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: white;
+}
+
+.appPromo p {
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.actionGroup {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: 24px;
+    align-items: center;
 }
 
-.label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    opacity: 0.6;
-}
-
-.value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--color-utility-primaryText);
-    letter-spacing: 0.05em;
-}
-
-.homeBtn {
-    background-color: transparent;
-    border: 1px solid var(--color-brand-primary);
-    color: var(--color-brand-primary);
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-size: 16px;
-    font-weight: 700;
+.primaryBtn {
+    background-color: var(--color-brand-primary, #20f928);
+    color: #000;
+    padding: 20px 40px;
+    border-radius: 100px;
     text-decoration: none;
-    transition: all 0.2s;
+    font-weight: 700;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 30px rgba(32, 249, 40, 0.2);
 }
 
-.homeBtn:hover {
-    background-color: rgba(var(--color-brand-primary-rgb), 0.1);
+.primaryBtn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(32, 249, 40, 0.4);
+    filter: brightness(1.1);
+}
+
+.installNudge {
+    max-width: 280px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 24px;
+}
+
+.installNudge p {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
+}
+
+.installNudge p strong {
+    color: white;
+    font-weight: 600;
+}
+
+.footerLink {
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+.footerLink a {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.footerLink a:hover {
+    color: white;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+    .bridgeCard {
+        padding: 32px 24px;
+    }
+    
+    .title {
+        font-size: 36px;
+    }
+    
+    .primaryBtn {
+        width: 100%;
+        justify-content: center;
+    }
 }

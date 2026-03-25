@@ -11,78 +11,74 @@
 import React from 'react';
 import styles from './EventForm.module.css';
 import type { OrganizerEventTicket as Ticket } from '@/types/organize';
+import { useToast } from '@/components/ui/Toast';
 
 interface TicketTierManagerProps {
     tickets: Ticket[];
+    currency: string;
+    onCurrencyChange: (currency: string) => void;
     errors: Record<string, string>;
-    isPaidTicketingEnabled: boolean;
-    isPaid: boolean;
-    onTogglePaid: () => void;
     onAdd: () => void;
     onRemove: (index: number) => void;
-    onChange: (index: number, field: keyof Ticket, value: string) => void;
-    /** Total capacity field value */
-    limit: string;
-    onLimitChange: (value: string) => void;
+    onChange: (index: number, field: keyof Ticket, value: string | boolean) => void;
 }
 
+const HelpTooltip: React.FC<{ text: string }> = ({ text }) => {
+    const [isVisible, setIsVisible] = React.useState(false);
+
+    return (
+        <div className={styles.tooltipWrapper}>
+            <div 
+                className={styles.helpIcon} 
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsVisible(!isVisible);
+                }}
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <div className={`${styles.tooltip} ${isVisible ? styles.tooltipVisible : ''}`}>
+                {text}
+            </div>
+        </div>
+    );
+};
+
 const TicketTierManager: React.FC<TicketTierManagerProps> = ({
-    tickets, errors, isPaidTicketingEnabled, isPaid,
-    onTogglePaid, onAdd, onRemove, onChange, limit, onLimitChange,
+    tickets, currency, onCurrencyChange, errors, onAdd, onRemove, onChange,
 }) => {
+    const { showToast } = useToast();
+
     return (
         <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Tickets</h2>
-            <div className={styles.formGrid}>
-                {/* Total capacity */}
-                <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                    <label className={styles.label}>Total Capacity</label>
-                    <input
-                        type="number"
-                        name="limit"
-                        className={styles.input}
-                        placeholder="Unlimited"
-                        value={limit}
-                        onChange={(e) => onLimitChange(e.target.value)}
-                    />
-                    <p style={{ fontSize: '13px', opacity: 0.6, marginTop: '8px' }}>
-                        Maximum number of attendees allowed. Leave blank for unlimited.
-                    </p>
+
+            <div style={{ marginBottom: '32px', display: 'flex', gap: '24px' }}>
+                <div className={styles.inputGroup} style={{ width: '200px' }}>
+                    <label className={styles.label}>Event Currency</label>
+                    <select
+                        className={styles.selectInput}
+                        value={currency}
+                        onChange={(e) => onCurrencyChange(e.target.value)}
+                    >
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="KES">KES - Kenyan Shilling</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="UGX">UGX - Uganda Shilling</option>
+                        <option value="TZS">TZS - Tanzania Shilling</option>
+                    </select>
                 </div>
-
-                {/* Paid ticketing toggle */}
-                {isPaidTicketingEnabled ? (
-                    <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                        <div className={styles.toggleRow}>
-                            <label className={styles.checkboxLabel}>
-                                <input
-                                    type="checkbox"
-                                    className={styles.checkbox}
-                                    checked={isPaid}
-                                    onChange={onTogglePaid}
-                                />
-                                <strong>Paid Event</strong> (Requires tickets)
-                            </label>
-                        </div>
-                        <p style={{ fontSize: '13px', opacity: 0.6, marginTop: '8px', marginLeft: '32px' }}>
-                            If unchecked, the event will be free for all attendees.
-                        </p>
-                    </div>
-                ) : (
-                    <div className={`${styles.inputGroup} ${styles.fullWidth}`} style={{ opacity: 0.5 }}>
-                        <p style={{ fontSize: '13px', color: 'var(--color-brand-primary)', fontWeight: 600 }}>
-                            Paid ticketing is currently disabled by administrator.
-                        </p>
-                    </div>
-                )}
             </div>
-
-            {/* Ticket tier list — only when isPaid */}
-            {isPaid && (
-                <div style={{ marginTop: '24px' }}>
-                    <div className={styles.ticketList}>
+            
+            <div className={styles.ticketList}>
                         {tickets.map((ticket, index) => (
-                            <div key={index} className={styles.ticketItem}>
+                            <div key={index} className={styles.ticketItem} style={ticket.has_premium_upsell ? { borderLeft: '4px solid var(--color-brand-secondary)' } : {}}>
                                 <div className={styles.ticketRow}>
                                     {/* Ticket Name */}
                                     <div className={styles.inputGroup} style={{ flex: 2 }}>
@@ -102,16 +98,34 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                     {/* Price */}
                                     <div className={styles.inputGroup} style={{ flex: 1 }}>
                                         <label className={styles.label}>
-                                            Price <span className={styles.requiredIndicator}>*Required</span>
+                                            Price ({currency}) <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className={`${styles.input} ${errors[`tickets.${index}.price`] ? styles.inputError : ''}`}
-                                            placeholder="0.00"
-                                            value={ticket.price}
-                                            onChange={(e) => onChange(index, 'price', e.target.value)}
-                                        />
+                                        {(() => {
+                                            const standardPrices = tickets
+                                                .filter((t, i) => i !== index && !t.has_premium_upsell)
+                                                .map(t => parseFloat(t.price) || 0);
+                                            const maxStandard = standardPrices.length > 0 ? Math.max(...standardPrices) : 0;
+                                            const isPriceTooLow = ticket.has_premium_upsell && (parseFloat(ticket.price) || 0) <= maxStandard;
+
+                                            return (
+                                                <>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        className={`${styles.input} ${errors[`tickets.${index}.price`] || isPriceTooLow ? styles.inputError : ''}`}
+                                                        placeholder="0.00"
+                                                        value={ticket.price}
+                                                        onChange={(e) => onChange(index, 'price', e.target.value)}
+                                                    />
+                                                    {isPriceTooLow && (
+                                                        <p className={styles.errorMessage} style={{ fontSize: '10px' }}>
+                                                            Premium tiers must be priced above standard tickets
+                                                        </p>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                         <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>
                                     </div>
 
@@ -131,18 +145,20 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                         <p className={styles.errorMessage}>{errors[`tickets.${index}.capacity`]}</p>
                                     </div>
 
-                                    {/* Remove */}
-                                    <button className={styles.removeBtn} onClick={() => onRemove(index)} title="Remove Ticket">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
                                 </div>
 
+                                {/* Remove Button (Top Right) */}
+                                <button className={styles.removeBtn} onClick={() => onRemove(index)} title="Remove Ticket">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M3 6h18"></path>
+                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+
                                 {/* Advanced optional fields */}
-                                <div className={styles.ticketAdvanced}>
-                                    <div className={`${styles.inputGroup} ${styles.ticketDescription}`}>
+                                <div className={styles.ticketAdvanced} style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                    <div className={`${styles.inputGroup}`} style={{ flex: 1 }}>
                                         <label className={styles.label}>Description (Optional)</label>
                                         <input
                                             type="text"
@@ -152,43 +168,51 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                             onChange={(e) => onChange(index, 'description', e.target.value)}
                                         />
                                     </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Sale Start</label>
-                                        <input
-                                            type="datetime-local"
-                                            className={styles.input}
-                                            value={ticket.saleStart || ''}
-                                            onChange={(e) => onChange(index, 'saleStart', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Sale End</label>
-                                        <input
-                                            type="datetime-local"
-                                            className={`${styles.input} ${errors[`tickets.${index}.saleEnd`] ? styles.inputError : ''}`}
-                                            value={ticket.saleEnd || ''}
-                                            onChange={(e) => onChange(index, 'saleEnd', e.target.value)}
-                                        />
-                                        <p className={styles.errorMessage}>{errors[`tickets.${index}.saleEnd`]}</p>
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Max Per Order</label>
-                                        <input
-                                            type="number"
-                                            className={`${styles.input} ${errors[`tickets.${index}.maxPerOrder`] ? styles.inputError : ''}`}
-                                            placeholder="10"
-                                            value={ticket.maxPerOrder || ''}
-                                            onChange={(e) => onChange(index, 'maxPerOrder', e.target.value)}
-                                        />
-                                        <p className={styles.errorMessage}>{errors[`tickets.${index}.maxPerOrder`]}</p>
-                                    </div>
+
+                                    {/* Premium Upsell Toggle */}
+                                    {tickets.length > 1 && (
+                                        <div className={styles.toggleRow} style={{ marginTop: '20px' }}>
+                                            <label className={styles.checkboxLabel} style={{ fontWeight: 600 }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className={styles.checkbox}
+                                                    checked={ticket.has_premium_upsell || false}
+                                                    onChange={(e) => {
+                                                        const isChecked = e.target.checked;
+                                                        
+                                                        // Enforce Scarcity: At least one ticket must remain standard
+                                                        if (isChecked) {
+                                                            const standardTiers = tickets.filter(t => !t.has_premium_upsell);
+                                                            if (standardTiers.length <= 1) {
+                                                                showToast("Scarcity Enforcement: At least one ticket tier must remain standard.", "warning");
+                                                                return;
+                                                            }
+
+                                                            const standardPrices = standardTiers
+                                                                .filter((_, i) => i !== index)
+                                                                .map(t => parseFloat(t.price) || 0);
+                                                            const maxStandard = standardPrices.length > 0 ? Math.max(...standardPrices) : 0;
+                                                            const currentPrice = parseFloat(ticket.price) || 0;
+                                                            
+                                                            if (currentPrice <= maxStandard) {
+                                                                const suggestedPrice = (maxStandard + 10).toString();
+                                                                onChange(index, 'price', suggestedPrice);
+                                                                showToast("Premium tiers must be priced above standard tickets. Price adjusted.", "info");
+                                                            }
+                                                        }
+                                                        onChange(index, 'has_premium_upsell', isChecked);
+                                                    }}
+                                                />
+                                                <span style={{ color: 'var(--color-brand-primaryText)' }}>Premium Ad-Free Experience</span>
+                                                <HelpTooltip text="If selected, this ticket tier grants attendees an exclusive, ad-free experience within the event's community forums. We recommend offering this for your high-value tiers to provide a superior, distraction-free experience at a premium price point." />
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
                         <button className={styles.addTicketBtn} onClick={onAdd}>+ Add Ticket Type</button>
                     </div>
-                </div>
-            )}
         </section>
     );
 };

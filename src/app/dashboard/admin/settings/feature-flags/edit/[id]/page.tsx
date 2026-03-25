@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import styles from '@/app/dashboard/admin/page.module.css';
 import { useToast } from '@/components/ui/Toast';
+import { sanitizeInput } from '@/utils/sanitization';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import { createClient } from '@/utils/supabase/client';
 
@@ -126,7 +127,7 @@ export default function EditFeatureFlagPage() {
                     <textarea
                         className={styles.textarea}
                         value={formData.description}
-                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        onChange={e => setFormData({ ...formData, description: sanitizeInput(e.target.value) })}
                         rows={4}
                     />
                 </div>

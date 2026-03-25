@@ -64,7 +64,7 @@ export default function AdminInvoicePage() {
                     date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
                     description: d.description || d.reason?.replace(/_/g, ' ') || 'Platform Transaction',
                     amount: Number(d.amount),
-                    currency: d.currency || 'KES',
+                    currency: d.currency || 'USD',
                     type: d.reason || 'transaction',
                     status: d.status,
                     referenceId: d.reference || `TXN-${d.id.slice(0, 8).toUpperCase()}`,

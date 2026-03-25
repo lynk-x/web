@@ -12,9 +12,12 @@ import { useFilters } from '@/context/FilterContext';
 interface HomeClientProps {
     carouselEvents: Event[];
     allEvents: Event[];
+    categories?: any[];
+    tags?: any[];
+    categoryTags?: any[];
 }
 
-const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents }) => {
+const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, categories, tags, categoryTags }) => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const { searchTerm, selectedCategories, selectedDates, selectedTags } = useFilters();
     const hasActiveFilters = searchTerm !== "" || selectedCategories.length > 0 || selectedDates.length > 0 || selectedTags.length > 0;
@@ -67,6 +70,9 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents }) =>
                 <SearchBar
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
+                    categories={categories}
+                    tags={tags}
+                    categoryTags={categoryTags}
                 />
             </div>
 

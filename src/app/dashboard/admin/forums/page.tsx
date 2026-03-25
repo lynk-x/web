@@ -206,15 +206,17 @@ function ForumsContent() {
     };
 
     const bulkActions: BulkAction[] = [
-        { label: 'Set Read Only', onClick: () => handleUpdateStatus('Read_only'), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> },
-        { label: 'Archive Selection', onClick: () => handleUpdateStatus('Archived') },
+        // Status values match the forum_status DB enum (lowercase snake_case)
+        { label: 'Set Read Only', onClick: () => handleUpdateStatus('read_only'), icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> },
+        { label: 'Archive Selection', onClick: () => handleUpdateStatus('archived') },
         { label: 'Delete Selection', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
     const stats = useMemo(() => {
         const total = threads.length;
-        const open = threads.filter(t => t.status === 'Open').length;
-        const readOnly = threads.filter(t => t.status === 'Read_only').length;
+        // Status values match the forum_status DB enum (lowercase)
+        const open = threads.filter(t => t.status === 'open').length;
+        const readOnly = threads.filter(t => t.status === 'read_only').length;
         const escalations = threads.reduce((acc, t) => acc + (t.escalatedCount || 0), 0);
 
         return { total, open, readOnly, escalations };
@@ -280,9 +282,9 @@ function ForumsContent() {
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             {[
                                 { value: 'all', label: 'All' },
-                                { value: 'Open', label: 'Open' },
-                                { value: 'Read_only', label: 'Read Only' },
-                                { value: 'Archived', label: 'Archived' },
+                                { value: 'open', label: 'Open' },
+                                { value: 'read_only', label: 'Read Only' },
+                                { value: 'archived', label: 'Archived' },
                             ].map(({ value, label }) => (
                                 <button
                                     key={value}

@@ -27,10 +27,14 @@ const DateRangeRow: React.FC<DateRangeRowProps> = ({
                     <div className={styles.relative}>
 
                         <input
-                            type="date"
+                            type={startDate ? "date" : "text"}
+                            lang="en-GB"
                             className={`${adminStyles.input} ${styles.dateInput}`}
                             value={startDate}
                             onChange={(e) => onStartDateChange(e.target.value)}
+                            placeholder="dd/mm/yyyy"
+                            onFocus={(e) => (e.target.type = "date")}
+                            onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                         />
                     </div>
                 </div>
@@ -39,10 +43,14 @@ const DateRangeRow: React.FC<DateRangeRowProps> = ({
                     <div className={styles.relative}>
 
                         <input
-                            type="date"
+                            type={endDate ? "date" : "text"}
+                            lang="en-GB"
                             className={`${adminStyles.input} ${styles.dateInput}`}
                             value={endDate}
                             onChange={(e) => onEndDateChange(e.target.value)}
+                            placeholder="dd/mm/yyyy"
+                            onFocus={(e) => (e.target.type = "date")}
+                            onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                         />
                     </div>
                 </div>

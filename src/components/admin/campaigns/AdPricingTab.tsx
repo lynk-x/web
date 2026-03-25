@@ -93,8 +93,6 @@ export default function AdPricingTab() {
 
     const adTypeLabel: Record<string, string> = {
         banner: 'Banner',
-        feed_card: 'Feed Card',
-        map_pin: 'Map Pin',
         interstitial: 'Interstitial',
     };
 

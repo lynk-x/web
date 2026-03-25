@@ -129,10 +129,10 @@ function AdsSettingsContent() {
                 .from('accounts')
                 .update({
                     display_name: formData.name,
-                    website: formData.website,
                     description: formData.description,
                     contact_email: formData.support_email,
                     phone_number: formData.phone_number
+                    // website was removed from DB schema
                 })
                 .eq('id', activeAccount.id);
 
@@ -191,11 +191,11 @@ function AdsSettingsContent() {
                         <div className={adminStyles.formGrid}>
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Account Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="name" className={adminStyles.input} value={formData.name} onChange={handleInputChange} />
+                                <input type="text" name="name" className={adminStyles.input} value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Ads" />
                             </div>
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="email" name="support_email" className={adminStyles.input} value={formData.support_email} onChange={handleInputChange} />
+                                <input type="email" name="support_email" className={adminStyles.input} value={formData.support_email} onChange={handleInputChange} placeholder="ads-support@organization.com" />
                             </div>
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Support Phone</label>
@@ -205,27 +205,23 @@ function AdsSettingsContent() {
                                 <label className={adminStyles.label}>Website URL</label>
                                 <input type="text" name="website" className={adminStyles.input} value={formData.website} onChange={handleInputChange} placeholder="https://..." />
                             </div>
-
-                            <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
-                                <label className={adminStyles.label}>Description / Bio</label>
-                                <textarea name="description" className={adminStyles.textarea} value={formData.description} onChange={handleInputChange} rows={2} />
-                            </div>
+                            <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Legal Name (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="business_name" className={adminStyles.input} value={formData.business_name} onChange={handleInputChange} />
+                                <label className={adminStyles.label}>Legal Name <span className={adminStyles.labelHint}>(Individual or Company)</span> <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="business_name" className={adminStyles.input} value={formData.business_name} onChange={handleInputChange} placeholder="As registered with authorities" />
                             </div>
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Tax ID / PIN (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="tax_id" className={adminStyles.input} value={formData.tax_id} onChange={handleInputChange} />
+                                <label className={adminStyles.label}>Tax ID / PIN <span className={adminStyles.labelHint}>(Individual or Company)</span> <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="tax_id" className={adminStyles.input} value={formData.tax_id} onChange={handleInputChange} placeholder="VAT / EIN / KRA PIN" />
                             </div>
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Registration Number (if business)</label>
-                                <input type="text" name="registration_number" className={adminStyles.input} value={formData.registration_number} onChange={handleInputChange} />
+                                <label className={adminStyles.label}>Registration Number <span className={adminStyles.labelHint}>(if business)</span></label>
+                                <input type="text" name="registration_number" className={adminStyles.input} value={formData.registration_number} onChange={handleInputChange} placeholder="Business License #" />
                             </div>
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Legal Billing Address <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="billing_address" className={adminStyles.input} value={formData.billing_address} onChange={handleInputChange} />
+                                <input type="text" name="billing_address" className={adminStyles.input} value={formData.billing_address} onChange={handleInputChange} placeholder="City, State, Country..." />
                             </div>
                         </div>
                     </div>

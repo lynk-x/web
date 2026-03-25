@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 const SIZES = ['All', '320x480', '468x60'];
 
@@ -222,7 +223,7 @@ export default function AdsAssetsPage() {
                     <p className={styles.subtitle}>Upload and manage your ad creatives and media assets.</p>
                 </div>
                 <button
-                    className={styles.btnPrimary}
+                    className={`${styles.btnPrimary} tour-assets-upload`}
                     onClick={triggerUpload}
                     disabled={isUploading}
                 >
@@ -240,7 +241,7 @@ export default function AdsAssetsPage() {
             />
 
             {/* Filter Bar */}
-            <div className={localStyles.filterBar}>
+            <div className={`${localStyles.filterBar} tour-assets-filter`}>
                 <div className={localStyles.filterGroup}>
                     <span className={localStyles.filterLabel}>Size:</span>
                     {SIZES.map(size => (
@@ -342,6 +343,29 @@ export default function AdsAssetsPage() {
                 message="Are you sure you want to delete this creative? Any campaigns using this asset will be affected."
                 confirmLabel="Delete Asset"
                 variant="danger"
+            />
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsAssetsJoyride_${activeAccount.id}` : 'hasSeenAdsAssetsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Creative Library',
+                        content: 'Store and manage all your banners and videos for your ad campaigns.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-assets-upload',
+                        title: 'Upload Assets',
+                        content: 'Click here to upload new creatives. Remember they must match expected dimensions exactly.',
+                    },
+                    {
+                        target: '.tour-assets-filter',
+                        title: 'Filter by Size',
+                        content: 'Quickly find assets that match specific ad placement sizes.',
+                    }
+                ]}
             />
         </div>
     );

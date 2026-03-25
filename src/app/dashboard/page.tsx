@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -16,24 +16,14 @@ import Link from 'next/link';
 export default function DashboardRootPage() {
     const router = useRouter();
     const { user, profile, isLoading: isLoadingAuth } = useAuth();
-    const { accounts, activeAccount, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
+    const { accounts: allAccounts, activeAccount, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
-    useEffect(() => {
-        if (isLoadingAuth || isLoadingOrg) return;
+    // Attendee accounts are consumer-facing and have no dashboard workspace.
+    // Only organizer / advertiser / hybrid / platform accounts are shown here.
+    const accounts = allAccounts.filter(a => a.type !== 'attendee');
 
-        if (!user) {
-            router.replace('/login');
-            return;
-        }
-
-        if (accounts.length === 0) {
-            router.replace('/onboarding');
-            return;
-        }
-    }, [accounts, isLoadingAuth, isLoadingOrg, user, router]);
-
-    const handleSelectWorkspace = (account: any) => {
+    const handleSelectWorkspace = useCallback((account: any) => {
         setIsRedirecting(true);
         setActiveAccountId(account.id);
 
@@ -44,7 +34,40 @@ export default function DashboardRootPage() {
                 : '/dashboard/organize';
 
         router.push(path);
-    };
+    }, [router, setActiveAccountId]);
+
+    useEffect(() => {
+        if (isLoadingAuth || isLoadingOrg) return;
+
+        if (!user) {
+            router.replace('/login');
+            return;
+        }
+
+        if (user && profile && (!profile.full_name || profile.full_name.trim() === '')) {
+            router.replace('/dashboard/setup-profile');
+            return;
+        }
+
+        // Only redirect to onboarding if we're sure the context has settled:
+        // allAccounts is loaded and there are truly no non-attendee workspaces.
+        // Checking allAccounts (not filtered accounts) ensures we don't fire prematurely
+        // while the context is still fetching.
+        if (allAccounts.length === 0) {
+            router.replace('/onboarding');
+            return;
+        }
+
+        // If the user only has attendee accounts (no organizer/advertiser), go to onboarding.
+        if (accounts.length === 0 && allAccounts.length > 0) {
+            router.replace('/onboarding');
+            return;
+        }
+
+        // Single-account auto-redirect is intentionally removed:
+        // Even with one workspace, the picker must remain accessible so the user can
+        // create a second account of a different type (e.g. add an ads workspace).
+    }, [allAccounts, accounts, isLoadingAuth, isLoadingOrg, user, profile, router]);
 
     if (isLoadingAuth || isLoadingOrg || isRedirecting) {
         return (

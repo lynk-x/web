@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import { sanitizeInput } from '@/utils/sanitization';
 import MemberTable from '@/components/organize/MemberTable';
 import PaymentMethodsManager from '@/components/organize/PaymentMethodsManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -128,7 +129,8 @@ function SettingsContent() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const sanitizedValue = (name !== 'is_active') ? sanitizeInput(value) : value;
+        setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     };
 
     const handleSave = async () => {
@@ -141,9 +143,9 @@ function SettingsContent() {
                 .update({
                     display_name: formData.name,
                     contact_email: formData.support_email,
-                    website: formData.website,
                     description: formData.description,
                     phone_number: formData.phone_number
+                    // website was removed from DB schema
                 })
                 .eq('id', activeAccount.id);
 
@@ -188,6 +190,31 @@ function SettingsContent() {
         }
     };
 
+    const settingsContainerRef = useRef<HTMLDivElement>(null);
+
+    // ── Autofocus Logic ───────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!settingsContainerRef.current) return;
+
+        const timer = setTimeout(() => {
+            if (!settingsContainerRef.current) return;
+            const firstFocusable = settingsContainerRef.current.querySelector(
+                'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), select, textarea'
+            ) as HTMLElement | null;
+
+            if (firstFocusable) {
+                firstFocusable.focus();
+                if (firstFocusable instanceof HTMLInputElement && (firstFocusable.type === 'text' || firstFocusable.type === 'search')) {
+                    const val = firstFocusable.value;
+                    firstFocusable.value = '';
+                    firstFocusable.value = val;
+                }
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [activeTab]);
+
     return (
         <div className={adminStyles.container}>
             <PageHeader
@@ -211,7 +238,7 @@ function SettingsContent() {
                 />
             </div>
 
-            <div className={adminStyles.container}>
+            <div className={adminStyles.container} ref={settingsContainerRef}>
                 {activeTab === 'account' && (
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
@@ -232,11 +259,7 @@ function SettingsContent() {
                                 <label className={adminStyles.label}>Website URL</label>
                                 <input type="text" name="website" className={adminStyles.input} value={formData.website} onChange={handleInputChange} placeholder="https://organization.com" />
                             </div>
-
-                            <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
-                                <label className={adminStyles.label}>Description / Bio</label>
-                                <textarea name="description" className={adminStyles.textarea} value={formData.description} onChange={handleInputChange} placeholder="Tell attendees about your organization..." rows={2} />
-                            </div>
+                            <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Legal Name (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>

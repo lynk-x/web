@@ -272,8 +272,6 @@ function CampaignsContent() {
                             <option value="all">All Ad Types</option>
                             <option value="banner">Banner</option>
                             <option value="interstitial">Interstitial</option>
-                            <option value="feed_card">Feed Card</option>
-                            <option value="map_pin">Map Pin</option>
                         </select>
 
                         {/* Status filter — aligned to campaign_status enum */}

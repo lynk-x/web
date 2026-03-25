@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatCurrency } from '@/utils/format';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -141,7 +142,7 @@ function AnalyticsContent() {
             <header className={styles.header}>
                 <h1 className={styles.title}>Analytics</h1>
                 <select
-                    className={styles.dateRangeBtn}
+                    className={`${styles.dateRangeBtn} tour-ads-analytics-range`}
                     value={timeRange}
                     onChange={(e) => handleRangeChange(Number(e.target.value))}
                 >
@@ -152,32 +153,32 @@ function AnalyticsContent() {
             </header>
 
             {/* Overview Cards */}
-            <div className={sharedStyles.statsGrid}>
+            <div className={`${sharedStyles.statsGrid} tour-ads-analytics-stats`}>
                 <StatCard
                     label="Total Impressions"
                     value={kpis.impressions}
-                    change="Real-time"
+                    change="Ad visibility"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Total Clicks"
                     value={kpis.clicks}
-                    change="Real-time"
+                    change="User interactions"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Click-Through Rate"
                     value={kpis.ctr}
-                    change="Real-time"
+                    change="Performance (%)"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Cost Per Click"
                     value={kpis.cpc}
-                    change="Real-time"
+                    change="Avg. efficiency"
                     trend="positive"
                     isLoading={isLoading}
                 />
@@ -213,6 +214,29 @@ function AnalyticsContent() {
                     </ResponsiveContainer>
                 </div>
             </div>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsAnalyticsJoyride_${activeAccount.id}` : 'hasSeenAdsAnalyticsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Ads Analytics',
+                        content: 'See exactly how your ads are performing across Lynk-X.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-ads-analytics-range',
+                        title: 'Select Timeframe',
+                        content: 'Choose between 7, 30, or 90 day intervals to view your historical trends.',
+                    },
+                    {
+                        target: '.tour-ads-analytics-stats',
+                        title: 'Key Metrics',
+                        content: 'Track vital numbers at a glance, like your Click-Through Rate and average Cost Per Click.',
+                    }
+                ]}
+            />
         </div>
     );
 }

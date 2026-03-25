@@ -31,8 +31,18 @@ export default function WalletsTable({ data, isLoading }: WalletsTableProps) {
             header: 'Available Balance',
             render: (wallet: AccountWallet) => {
                 return (
-                    <div style={{ fontWeight: 600, fontSize: '15px' }}>
+                    <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--color-text-primary)' }}>
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: wallet.currency }).format(wallet.balance)}
+                    </div>
+                );
+            }
+        },
+        {
+            header: 'Reserved (Escrow)',
+            render: (wallet: AccountWallet) => {
+                return (
+                    <div style={{ opacity: 0.8, fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: wallet.currency }).format(wallet.escrow_balance || 0)}
                     </div>
                 );
             }

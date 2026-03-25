@@ -135,8 +135,12 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                 ),
             },
             {
-                header: 'Date & Time',
+                header: 'Date',
                 render: (event) => <div style={{ fontSize: '13px' }}>{event.date}</div>,
+            },
+            {
+                header: 'Time',
+                render: (event) => <div style={{ fontSize: '13px' }}>{event.time}</div>,
             },
             {
                 header: 'Details',
@@ -146,18 +150,6 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                         <div style={{ fontSize: '11px', opacity: 0.6 }}>{event.attendees} attendees</div>
                         {event.eventReference && (
                             <div style={{ fontSize: '11px', opacity: 0.5, fontFamily: 'monospace' }}>#{event.eventReference}</div>
-                        )}
-                    </div>
-                ),
-            },
-            {
-                header: 'Reports',
-                render: (event) => (
-                    <div style={{ fontSize: '13px' }}>
-                        {(event.reportsCount || 0) > 0 ? (
-                            <Badge label={`${event.reportsCount} Pending`} variant="error" showDot />
-                        ) : (
-                            <span style={{ opacity: 0.4 }}>0</span>
                         )}
                     </div>
                 ),
@@ -295,7 +287,11 @@ const EventTable: React.FC<EventTableProps> = (props) => {
         },
         {
             header: 'Date',
-            render: (event) => <div>{event.date}</div>,
+            render: (event) => <div style={{ fontSize: '13px' }}>{event.date}</div>,
+        },
+        {
+            header: 'Time',
+            render: (event) => <div style={{ fontSize: '13px' }}>{event.time}</div>,
         },
     ];
 
@@ -304,11 +300,6 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             label: 'Edit Event',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
             onClick: () => showToast(`Editing event: ${event.name}...`, 'info'),
-        },
-        {
-            label: 'View Analytics',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
-            onClick: () => showToast(`Loading analytics for ${event.name}...`, 'info'),
         },
         {
             label: 'Attendee List',

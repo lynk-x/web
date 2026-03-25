@@ -5,65 +5,72 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
+import { formatDateTimeInTimezone } from '@/utils/format';
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 
 interface EventDetailsViewProps {
     event: Event;
     ticketTiers?: any[];
+    /** Active disclaimers loaded from the DB via event_tags → tags → disclaimers */
+    disclaimers?: Disclaimer[];
+    /** True when every ticket tier has reached its capacity */
+    isSoldOut?: boolean;
 }
 
-const mockDisclaimers: Disclaimer[] = [
-    {
-        id: 'd1',
-        title: 'Safety Waiver',
-        content: 'By attending this event, you acknowledge the inherent risks involved in large public gatherings. You agree to follow all safety protocols outlined by the organizers and local authorities.'
-    },
-    {
-        id: 'd2',
-        title: 'No Refund Policy',
-        content: 'All ticket sales are final. Refunds will only be issued if the event is officially cancelled by the organizer. In the event of rescheduling, tickets will remain valid for the new date.'
-    }
-];
-
-const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers = [] }) => {
+const EventDetailsView: React.FC<EventDetailsViewProps> = ({
+    event,
+    ticketTiers = [],
+    disclaimers = [],
+    isSoldOut = false,
+}) => {
     const router = useRouter();
     const { addToCart } = useCart();
+    const supabase = createClient();
 
     const [isAboutExpanded, setIsAboutExpanded] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+    const [quantity, setQuantity] = useState(1);
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
+    // Waitlist state
+    const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle');
+    const [waitlistError, setWaitlistError] = useState('');
+
     const toggleTicket = (id: string) => {
-        if (selectedTicket === id) {
-            setSelectedTicket(null);
-        } else {
-            setSelectedTicket(id);
-        }
+        setSelectedTicket(prev => (prev === id ? null : id));
+        setQuantity(1);
     };
 
     const handleGetTicketClick = (e: React.MouseEvent) => {
         e.preventDefault();
         if (selectedTicket !== null) {
-            setIsDisclaimerOpen(true);
+            // If there are real disclaimers from the DB, show the modal.
+            // If none are configured, go straight to cart.
+            if (disclaimers.length > 0) {
+                setIsDisclaimerOpen(true);
+            } else {
+                handleAcceptDisclaimer();
+            }
         }
     };
 
     const handleAcceptDisclaimer = () => {
         setIsDisclaimerOpen(false);
 
-        // Find selected tier details
         const selectedTier = ticketTiers.find(t => t.id === selectedTicket);
         if (selectedTier) {
             addToCart({
                 id: `${event.id}-ticket-${selectedTier.id}`,
                 eventId: event.id,
+                tierId: selectedTier.id,
                 eventTitle: event.title,
                 ticketType: selectedTier.display_name || selectedTier.name,
                 price: selectedTier.price,
-                quantity: 1, // Defaulting to 1 for simplicity here, they can modify in future cart or checkout if allowed
+                quantity,
                 currency: event.currency || 'KES',
                 image: event.thumbnail_url
             });
@@ -71,14 +78,48 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers 
         }
     };
 
-    // Format Date Range
-    const startDate = new Date(event.start_datetime);
-    const dateString = startDate.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    // ── Waitlist join ──────────────────────────────────────────────────────────
+    const handleJoinWaitlist = async () => {
+        setWaitlistStatus('joining');
+        setWaitlistError('');
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                // Redirect to login with return path
+                router.push(`/login?next=/event/${event.id}`);
+                return;
+            }
+
+            // Insert into event_waitlists.
+            // position is auto-derived from existing count + 1 on the DB side via trigger.
+            const { error } = await supabase.from('event_waitlists').insert({
+                event_id: event.id,
+                account_id: (event as any).account_id,
+                user_id: user.id,
+                // ticket_tier_id: null — joins the general waitlist, not tier-specific
+            });
+
+            if (error) {
+                if (error.code === '23505') {
+                    // Unique constraint: user already on the waitlist
+                    setWaitlistStatus('joined');
+                    return;
+                }
+                throw error;
+            }
+
+            setWaitlistStatus('joined');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Could not join waitlist. Please try again.';
+            setWaitlistError(msg);
+            setWaitlistStatus('error');
+        }
+    };
+
+    // Format the event date/time in the event's canonical timezone
+    const dateString = formatDateTimeInTimezone(event.start_datetime, event.timezone, true);
 
     const handleShare = async () => {
         if (typeof navigator !== 'undefined') {
@@ -157,11 +198,10 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers 
                     <div className={styles.detailsContent}>
                         <h1 className={styles.title}>{event.title}</h1>
                         <p className={styles.location}>Location: {event.location_name || 'TBD'}</p>
-                        <p className={styles.date}>Date : {dateString}</p>
+                        <p className={styles.date}>Date: {dateString}</p>
 
                         <div className={styles.tagGrid}>
                             <span className={styles.tag}>{event.category || 'Event'}</span>
-                            {/* <span className={styles.tag}>Innovation</span> */}
                         </div>
 
                         <div className={styles.sectionHeader} onClick={() => setIsAboutExpanded(!isAboutExpanded)}>
@@ -183,11 +223,49 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers 
                                 {event.description || 'No description available for this event.'}
                             </p>
                         )}
-                        {!isAboutExpanded && <p className={styles.readMore}>{event.description?.slice(0, 100)}... Read more</p>}
+                        {!isAboutExpanded && (
+                            <p className={styles.readMore}>{event.description?.slice(0, 100)}... Read more</p>
+                        )}
 
                         <h2 className={styles.ticketSectionTitle}>Tickets</h2>
 
-                        {ticketTiers.length === 0 ? (
+                        {/* ── Sold-out state: show waitlist CTA ── */}
+                        {isSoldOut ? (
+                            <div style={{ padding: '20px 0' }}>
+                                <p style={{ opacity: 0.7, marginBottom: '12px', fontSize: '14px' }}>
+                                    All tickets for this event are sold out.
+                                </p>
+                                {waitlistStatus === 'joined' ? (
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        padding: '12px 16px', borderRadius: '10px',
+                                        background: 'rgba(34,197,94,0.12)', color: 'var(--color-interface-success)',
+                                        fontSize: '14px'
+                                    }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                        {"You're on the waitlist! We'll notify you if a spot opens."}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={handleJoinWaitlist}
+                                            disabled={waitlistStatus === 'joining'}
+                                            className={styles.getTicketBtn}
+                                            style={{ opacity: waitlistStatus === 'joining' ? 0.6 : 1 }}
+                                        >
+                                            {waitlistStatus === 'joining' ? 'Joining…' : 'Join Waitlist'}
+                                        </button>
+                                        {waitlistStatus === 'error' && (
+                                            <p style={{ color: 'var(--color-interface-error)', fontSize: '13px', marginTop: '8px' }}>
+                                                {waitlistError}
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        ) : ticketTiers.length === 0 ? (
                             <p>No tickets currently available for this event.</p>
                         ) : (
                             ticketTiers.map(tier => (
@@ -200,31 +278,59 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({ event, ticketTiers 
                                         )}
                                     </div>
                                     <div className={styles.ticketDetails}>
-                                        <div className={styles.ticketNamePrice}>{tier.display_name || tier.name} : {event.currency || 'KES'} {tier.price}</div>
+                                        <div className={styles.ticketNamePrice}>
+                                            {tier.display_name || tier.name} : {event.currency || 'KES'} {tier.price}
+                                        </div>
                                         <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
+                                        {tier.capacity !== null && (
+                                            <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>
+                                                {Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))} remaining
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))
                         )}
                     </div>
 
-                    <div className={styles.footerActions}>
-                        <button
-                            onClick={handleGetTicketClick}
-                            className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
-                        >
-                            Get ticket {selectedTicket !== null && `(KES ${ticketTiers.find(t => t.id === selectedTicket)?.price || 0})`}
-                        </button>
-                    </div>
+                    {/* ── Ticket action footer (hidden when sold out) ── */}
+                    {!isSoldOut && (
+                        <div className={styles.footerActions}>
+                            {selectedTicket !== null && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '14px', opacity: 0.7 }}>Qty</span>
+                                    <button
+                                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                        style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '18px' }}
+                                    >&minus;</button>
+                                    <span style={{ minWidth: '24px', textAlign: 'center' }}>{quantity}</span>
+                                    <button
+                                        onClick={() => setQuantity(q => q + 1)}
+                                        style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '18px' }}>+</button>
+                                </div>
+                            )}
+                            <button
+                                onClick={handleGetTicketClick}
+                                className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
+                            >
+                                {selectedTicket !== null
+                                    ? `Get ${quantity} ticket${quantity > 1 ? 's' : ''} \u2014 ${event.currency || 'KES'} ${((ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity).toLocaleString()}`
+                                    : 'Select a ticket'}
+                            </button>
+                        </div>
+                    )}
                 </motion.div>
             </div>
 
-            <DisclaimerModal
-                isOpen={isDisclaimerOpen}
-                disclaimers={mockDisclaimers}
-                onAccept={handleAcceptDisclaimer}
-                onClose={() => setIsDisclaimerOpen(false)}
-            />
+            {/* Disclaimer modal — uses real DB data, shown only if disclaimers exist */}
+            {disclaimers.length > 0 && (
+                <DisclaimerModal
+                    isOpen={isDisclaimerOpen}
+                    disclaimers={disclaimers}
+                    onAccept={handleAcceptDisclaimer}
+                    onClose={() => setIsDisclaimerOpen(false)}
+                />
+            )}
         </motion.div>
     );
 };

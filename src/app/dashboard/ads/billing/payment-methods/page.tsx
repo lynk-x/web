@@ -13,7 +13,7 @@ export default function AddPaymentMethodPage() {
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
 
-    if (isLoading) {
+    if (isLoading && !activeAccount) {
         return (
             <div className={adminStyles.container}>
                 <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>

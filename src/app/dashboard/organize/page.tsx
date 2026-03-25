@@ -12,6 +12,7 @@ import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { useToast } from '@/components/ui/Toast';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 export default function DashboardOverview() {
     const { showToast } = useToast();
@@ -100,8 +101,7 @@ export default function DashboardOverview() {
             if (activeAccount) {
                 fetchDashboardData();
             } else {
-                // If accounts.length === 0 or activeAccount is missing, we stop loading
-                setIsLoading(false);
+                // If accounts.length === 0 or activeAccount is missing, stop loading
                 setIsLoading(false);
                 if (accounts.length === 0) {
                     setStats({ totalEvents: 0, upcomingEvents: 0, activeEvents: 0, teamSize: 0 });
@@ -116,7 +116,7 @@ export default function DashboardOverview() {
                 subtitle="Here is what is happening with your events today."
             />
 
-            <div className={sharedStyles.statsGrid}>
+            <div className={`${sharedStyles.statsGrid} tour-stats`}>
                 <StatCard
                     label="Total Events"
                     value={stats.totalEvents !== null ? stats.totalEvents : null}
@@ -151,10 +151,10 @@ export default function DashboardOverview() {
             <section className={styles.quickActions}>
                 <h2 className={sharedStyles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
-                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/events/create')}>
+                    <button className={`${styles.actionCard} tour-create-event`} onClick={() => router.push('/dashboard/organize/events/create')}>
                         <span className={styles.actionLabel}>Create Event</span>
                     </button>
-                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/analytics')}>
+                    <button className={`${styles.actionCard} tour-view-analytics`} onClick={() => router.push('/dashboard/organize/analytics')}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </button>
                     <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/revenue')}>
@@ -173,7 +173,33 @@ export default function DashboardOverview() {
                 </section>
             )}
 
-
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenOrganizeJoyride_${activeAccount.id}` : 'hasSeenOrganizeJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Welcome to your Organize Dashboard!',
+                        content: 'Let\'s get you set up to host unforgettable events. Follow this quick tour to learn the ropes.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-stats',
+                        title: 'Performance Overview',
+                        content: 'Here you can track your total events, active events, and team size at a glance.',
+                    },
+                    {
+                        target: '.tour-create-event',
+                        title: 'Launch a new event',
+                        content: 'Ready to start? Click here to create your next event, set up ticket tiers, and add your graphics.',
+                    },
+                    {
+                        target: '.tour-view-analytics',
+                        title: 'Understand your audience',
+                        content: 'Dive deep into your event analytics and ticket sales data here.',
+                    }
+                ]}
+            />
         </div>
     );
 }

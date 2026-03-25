@@ -10,6 +10,7 @@ import SubPageHeader from '@/components/shared/SubPageHeader';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Badge from '@/components/shared/Badge';
 import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import { formatDate } from '@/utils/format';
 
 export default function NewLegalVersionPage() {
     const router = useRouter();
@@ -147,10 +148,13 @@ export default function NewLegalVersionPage() {
                             <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Effective Date</label>
                                 <input
-                                    type="date"
+                                    type={effective_date ? "date" : "text"}
                                     className={adminStyles.input}
                                     value={effective_date}
                                     onChange={(e) => handleChange(setEffectiveDate, e.target.value)}
+                                    placeholder="dd/mm/yyyy"
+                                    onFocus={(e) => (e.target.type = "date")}
+                                    onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                     required
                                 />
                             </div>
@@ -183,7 +187,7 @@ export default function NewLegalVersionPage() {
                                     <h1 className={styles.previewTitle}>{title || 'Untitled Document'}</h1>
                                     <div className={styles.previewMeta}>
                                         {type.replace('_', ' ')} • {version || 'Draft'}
-                                        {effective_date && <div style={{ marginTop: '4px' }}>Effective: {new Date(effective_date).toLocaleDateString()}</div>}
+                                        {effective_date && <div style={{ marginTop: '4px' }}>Effective: {formatDate(effective_date)}</div>}
                                     </div>
                                     <CmsRenderer content={content} />
                                 </div>

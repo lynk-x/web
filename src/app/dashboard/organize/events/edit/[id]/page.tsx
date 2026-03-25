@@ -85,7 +85,7 @@ export default function EditEventPage() {
                     endTime: formatTime(endDt),
                     isPrivate: event.is_private,
                     isPaid,
-                    limit: '', // Used for free events, potentially fetch from attendee_count cap if implemented
+                    currency: 'KES',
                     tickets: mappedTickets
                 });
 
@@ -146,6 +146,7 @@ export default function EditEventPage() {
                     starts_at: startDateTime,
                     ends_at: endDateTime,
                     thumbnail_url: uploadedThumbnailUrl,
+                    ...(data.status ? { status: data.status } : {}),
                 })
                 .eq('id', eventId)
                 .eq('account_id', activeAccount.id);
@@ -238,7 +239,7 @@ export default function EditEventPage() {
         }
     };
 
-    if (isLoading) {
+    if (isLoading && !activeAccount) {
         return (
             <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
                 <p>Loading event data...</p>

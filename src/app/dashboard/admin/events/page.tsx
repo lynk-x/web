@@ -12,6 +12,7 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCSV } from '@/utils/export';
 import { createClient } from '@/utils/supabase/client';
+import { formatDate, formatTime } from '@/utils/format';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 
@@ -46,7 +47,8 @@ export default function AdminEventsPage() {
                     id: e.id,
                     title: e.event_title,
                     organizer: e.account_name || 'Unknown',
-                    date: new Date(e.starts_at).toLocaleDateString() + ' · ' + new Date(e.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    date: formatDate(e.starts_at),
+                    time: formatTime(e.starts_at),
                     location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
                     status: e.status,
                     attendees: e.attendee_count || 0,

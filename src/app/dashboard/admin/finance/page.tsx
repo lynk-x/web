@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
+import Link from 'next/link';
 import adminStyles from '../page.module.css';
 import FinanceTable from '@/components/organize/FinanceTable';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import FXRateTable from '@/components/admin/finance/FXRateTable';
+import PromoCodeTable from '@/components/admin/finance/PromoCodeTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
@@ -19,8 +21,9 @@ import Tabs from '@/components/dashboard/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import type { FinanceTransaction } from '@/types/organize';
-import type { TaxRate, FXRate } from '@/types/admin';
+import type { TaxRate, FXRate, PromoCode } from '@/types/admin';
 import { exportToCSV } from '@/utils/export';
+import { formatDate, formatCurrency } from '@/utils/format';
 
 function FinanceContent() {
     const { showToast } = useToast();
@@ -44,6 +47,7 @@ function FinanceContent() {
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
     const [fxRates, setFxRates] = useState<FXRate[]>([]);
+    const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
 
     // Selection state
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
@@ -113,7 +117,7 @@ function FinanceContent() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            if (['transactions', 'refunds', 'ad_revenue', 'premium', 'escrow'].includes(activeTab)) {
+            if (['transactions', 'refunds', 'revenue', 'escrow'].includes(activeTab)) {
                 let query = supabase.from('transactions').select(`
                     *,
                     event:events(title),
@@ -123,12 +127,10 @@ function FinanceContent() {
 
                 if (activeTab === 'refunds') {
                     query = query.in('reason', ['ticket_refund', 'ad_refund', 'ticket_refund']);
-                } else if (activeTab === 'ad_revenue') {
-                    query = query.eq('reason', 'ad_campaign_payment');
-                } else if (activeTab === 'premium') {
-                    query = query.eq('reason', 'premium_upsell');
+                } else if (activeTab === 'revenue') {
+                    query = query.in('reason', ['ticket_sale', 'ad_campaign_payment', 'ticket_payment']);
                 } else if (activeTab === 'escrow') {
-                    query = query.eq('category', 'escrow');
+                    query = query.eq('category', 'hold');
                 }
 
                 if (startDate) {
@@ -199,6 +201,39 @@ function FinanceContent() {
                 const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
                 if (error) throw error;
                 setFxRates(data || []);
+            } else if (activeTab === 'promo-codes') {
+                const { data, error } = await supabase
+                    .from('promo_codes')
+                    .select(`
+                        *,
+                        event_promos(
+                            event:events(title)
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setPromoCodes((data || []).map((p: any) => {
+                    // Extract event titles from the junction join
+                    const eventTitles = (p.event_promos || [])
+                        .map((ep: any) => ep.event?.title)
+                        .filter(Boolean);
+                    
+                    return {
+                        id: p.id,
+                        code: p.code,
+                        type: p.type,
+                        value: p.value,
+                        uses_count: p.uses_count,
+                        max_uses: p.max_uses,
+                        is_active: p.is_active,
+                        // Show "Multiple" if more than one event, or the single title
+                        event_title: eventTitles.length > 1 
+                            ? `${eventTitles[0]} (+${eventTitles.length - 1})`
+                            : eventTitles[0] || 'Global',
+                        created_at: p.created_at
+                    };
+                }));
             }
         } catch (error: any) {
             showToast(error.message, 'error');
@@ -237,7 +272,7 @@ function FinanceContent() {
         const rows = transactions.map(tx => ({
             id: tx.id,
             reference: tx.reference || '',
-            date: new Date(tx.date).toLocaleDateString(),
+            date: formatDate(tx.date),
             description: tx.description,
             type: tx.type,
             category: tx.category || '',
@@ -389,6 +424,21 @@ function FinanceContent() {
             );
         }
 
+        if (activeTab === 'promo-codes') {
+            return (
+                <>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                        <Link href="/dashboard/admin/finance/promo-codes/create">
+                            <button className={adminStyles.btnPrimary}>
+                                + Create Promo Code
+                            </button>
+                        </Link>
+                    </div>
+                    <PromoCodeTable data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} />
+                </>
+            );
+        }
+
         return (
             <FinanceTable
                 transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
@@ -422,28 +472,28 @@ function FinanceContent() {
             <div className={sharedStyles.statsGrid}>
                 <StatCard 
                     label="Gross Volume" 
-                    value={globalStats.grossVolume !== null ? `KES ${globalStats.grossVolume.toLocaleString()}` : null} 
+                    value={globalStats.grossVolume !== null ? formatCurrency(globalStats.grossVolume) : null} 
                     change="All completed transactions"
                     trend="positive"
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 
                     label="Pending Payouts" 
-                    value={globalStats.pendingPayouts !== null ? `KES ${globalStats.pendingPayouts.toLocaleString()}` : null} 
+                    value={globalStats.pendingPayouts !== null ? formatCurrency(globalStats.pendingPayouts) : null} 
                     change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
                     trend="neutral"
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 
                     label="Ticket Revenue" 
-                    value={globalStats.ticketRevenue !== null ? `KES ${globalStats.ticketRevenue.toLocaleString()}` : null} 
+                    value={globalStats.ticketRevenue !== null ? formatCurrency(globalStats.ticketRevenue) : null} 
                     change="Gross ticket sales"
                     trend="positive"
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 
                     label="Ad Revenue" 
-                    value={globalStats.adRevenue !== null ? `KES ${globalStats.adRevenue.toLocaleString()}` : null} 
+                    value={globalStats.adRevenue !== null ? formatCurrency(globalStats.adRevenue) : null} 
                     change="Platform advertising"
                     trend="neutral"
                     isLoading={isStatsLoading} 
@@ -460,11 +510,11 @@ function FinanceContent() {
                 <Tabs
                     options={[
                         { id: 'transactions', label: 'All Transactions' },
+                        { id: 'revenue', label: 'Revenue' },
                         { id: 'refunds', label: 'Refunds' },
-                        { id: 'ad_revenue', label: 'Ad Revenue' },
-                        { id: 'premium', label: 'Premium Upsells' },
                         { id: 'escrow', label: 'Escrow' },
                         { id: 'payouts', label: 'Payout Requests' },
+                        { id: 'promo-codes', label: 'Promo Codes' },
                         { id: 'tax-rates', label: 'Tax Rates' },
                         { id: 'fx-rates', label: 'FX Rates' }
                     ]}
@@ -474,7 +524,7 @@ function FinanceContent() {
                 />
             </TableToolbar>
 
-            {['transactions', 'ad_revenue', 'premium', 'refunds', 'payouts'].includes(activeTab) && (
+            {['transactions', 'revenue', 'refunds', 'payouts', 'escrow'].includes(activeTab) && (
                 <DateRangeRow
                     startDate={startDate}
                     endDate={endDate}

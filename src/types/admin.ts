@@ -34,8 +34,8 @@ export interface Campaign {
     clicks: number;
     /** Aligned to `campaign_status` enum: draft replaces the old 'pending' */
     status: 'active' | 'draft' | 'pending_approval' | 'paused' | 'rejected' | 'completed';
-    /** Aligned to `ad_type` enum: banner | interstitial | feed_card | map_pin */
-    adType?: 'banner' | 'interstitial' | 'feed_card' | 'map_pin';
+    /** Aligned to `ad_type` enum: banner | interstitial */
+    adType?: 'banner' | 'interstitial';
     targetEventId?: string;
     startDate: string;
     endDate: string;
@@ -74,10 +74,10 @@ export interface ForumThread {
     /** Optional FK to `events.id` for deep-linking */
     eventId?: string;
     /**
-     * Aligned to `forum_status` schema enum.
-     * Note: exact casing preserved from DB enum definition.
+     * Aligned to `forum_status` schema enum — all lowercase.
+     * Previous code used 'Open'/'Read_only'/'Archived' (wrong casing vs DB enum).
      */
-    status: 'Open' | 'Read_only' | 'Archived';
+    status: 'open' | 'read_only' | 'archived';
     /** Count of `forum_messages` where `category = 'announcement'` */
     announcementsCount: number;
     /** Count of `forum_messages` where `category = 'chat'` */
@@ -167,9 +167,16 @@ export interface User {
     email: string;
     /** Aligned to `user_type` enum: attendee | organizer | advertiser | platform | admin */
     role: 'admin' | 'organizer' | 'advertiser' | 'attendee' | 'platform';
-    /** No dedicated status column in schema yet — pending decision on suspension mechanism */
+    /** Matches `user_status` enum: active | suspended | partially_active */
     status: 'active' | 'suspended' | 'partially_active';
+    /**
+     * Last time this user was seen active in the app.
+     * Maps to `user_profile.last_seen_at` (new column added in schema review).
+     * Falls back to `updated_at` for users that predate this column.
+     */
     lastActive: string;
+    /** Set when last_seen_at is populated (more accurate than updated_at-based derivation). */
+    lastSeenAt?: string;
     isVerified?: boolean;
     reportsCount?: number;
     userName?: string;
@@ -251,4 +258,17 @@ export interface PlatformPaymentProvider {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+}
+
+/** A promotional discount code. */
+export interface PromoCode {
+    id: string;
+    code: string;
+    type: 'percent' | 'fixed' | 'free_entry';
+    value: number;
+    uses_count: number;
+    max_uses: number | null;
+    is_active: boolean;
+    event_title?: string;
+    created_at: string;
 }

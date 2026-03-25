@@ -97,7 +97,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
     const handlePrint = () => window.print();
 
-    if (isLoading) {
+    if (isLoading && !activeAccount) {
         return (
             <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading invoice...</div>
         );

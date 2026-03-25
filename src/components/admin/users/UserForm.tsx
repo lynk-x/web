@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './UserForm.module.css';
 import { useRouter } from 'next/navigation';
+import { sanitizeInput } from '@/utils/sanitization';
 
 export interface UserFormData {
     id?: string;
@@ -57,7 +58,10 @@ export default function UserForm({
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const sanitizedValue = (name === 'name' || name === 'bio' || name === 'email') 
+            ? sanitizeInput(value) 
+            : value;
+        setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
         if (!touched[name]) {
             setTouched(prev => ({ ...prev, [name]: true }));
         }

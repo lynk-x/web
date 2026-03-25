@@ -1,175 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import styles from './AppDrawer.module.css';
-import { useFilters } from '@/context/FilterContext';
 
 interface AppDrawerProps {
-    /** Whether the drawer is currently open. */
     isOpen: boolean;
-    /** Callback function to close the drawer. */
     onClose: () => void;
-    /** Dynamic categories from the database */
-    categoriesData?: any[];
-    /** Dynamic tags from the database */
-    tagsData?: any[];
-    /** Category to Tags mapping from the database */
-    categoryTagsMap?: any[];
 }
 
-/**
- * AppDrawer component that slides in from the left side of the screen.
- * It contains filters for events (Calendar, Categories, Tags) and footer links.
- *
- * @param {AppDrawerProps} props - Component properties.
- */
 const AppDrawer: React.FC<AppDrawerProps> = ({
     isOpen,
-    onClose,
-    categoriesData = [],
-    tagsData = [],
-    categoryTagsMap = []
+    onClose
 }) => {
-    const {
-        selectedCategories, setSelectedCategories,
-        selectedTags, setSelectedTags,
-        selectedDates, setSelectedDates
-    } = useFilters();
-
-    const [viewStartDate, setViewStartDate] = useState<Date>(new Date());
-    const [calendarDays, setCalendarDays] = useState<Date[]>([]);
-
-    useEffect(() => {
-        // Initialize viewStartDate to the most recent Sunday
-        const today = new Date();
-        const sunday = new Date(today);
-        const day = today.getDay(); // Sunday is 0
-        sunday.setDate(today.getDate() - day);
-        setViewStartDate(sunday);
-    }, []);
-
-    useEffect(() => {
-        // Generate 14 days based on viewStartDate
-        const days = [];
-        for (let i = 0; i < 14; i++) {
-            const date = new Date(viewStartDate);
-            date.setDate(viewStartDate.getDate() + i);
-            days.push(date);
-        }
-        setCalendarDays(days);
-    }, [viewStartDate]);
-
-    const nextWeek = () => {
-        const newStart = new Date(viewStartDate);
-        newStart.setDate(viewStartDate.getDate() + 7);
-        setViewStartDate(newStart);
-    };
-
-    const prevWeek = () => {
-        const newStart = new Date(viewStartDate);
-        newStart.setDate(viewStartDate.getDate() - 7);
-        setViewStartDate(newStart);
-    };
-
-    const toggleCategory = (category: string) => {
-        if (selectedCategories.includes(category)) {
-            setSelectedCategories(selectedCategories.filter(c => c !== category));
-        } else {
-            setSelectedCategories([...selectedCategories, category]);
-        }
-    };
-
-    const toggleTag = (tag: string) => {
-        if (selectedTags.includes(tag)) {
-            setSelectedTags(selectedTags.filter(t => t !== tag));
-        } else {
-            setSelectedTags([...selectedTags, tag]);
-        }
-    };
-
-    const isSameDay = (d1: Date, d2: Date) => {
-        return d1.getDate() === d2.getDate() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getFullYear() === d2.getFullYear();
-    };
-
-    const toggleDate = (date: Date) => {
-        const isSelected = selectedDates.some(d => isSameDay(d, date));
-        if (isSelected) {
-            setSelectedDates(selectedDates.filter(d => !isSameDay(d, date)));
-        } else {
-            setSelectedDates([...selectedDates, date]);
-        }
-    };
-
-    // Extract categories list
-    const categoriesList = useMemo(() => {
-        if (!categoriesData || categoriesData.length === 0) return [];
-        return Array.from(new Set(
-            categoriesData
-                .map(c => typeof c === 'string' ? c : (c.display_name || c.name || c.id || c.text))
-                .filter(Boolean)
-        )) as string[];
-    }, [categoriesData]);
-
-    // Ensure we ALWAYS have categories to display
-    const fallbackCategories = [
-        'Arts & Entertainment', 'Music & Nightlife', 'Business & Professional',
-        'Tech & Innovation', 'Sports & Games', 'Food & Drinks',
-        'Education & Training', 'Health & Wellness', 'Community & Social'
-    ];
-
-    const displayCategories = (categoriesList && categoriesList.length > 0) ? categoriesList : fallbackCategories;
-
-    const allTagsNames = Array.from(new Set(
-        (tagsData || []).map(t => typeof t === 'string' ? t : t.name).filter(Boolean)
-    )) as string[];
-
-    // Map the relationships
-    const _categoryTagMap: Record<string, string[]> = {};
-
-    // Fallback logic removed as requested
-
-
-    // Build map from category_tags junction and corresponding names (Handling both name and display_name)
-    categoryTagsMap.forEach(ct => {
-        const cat = categoriesData.find(c => c.id === ct.category_id);
-        const tag = tagsData.find(t => t.id === ct.tag_id);
-        if (cat && tag) {
-            const catName = cat.display_name || cat.name;
-            const tagName = tag.name;
-            if (catName && tagName) {
-                if (!_categoryTagMap[catName]) {
-                    _categoryTagMap[catName] = [];
-                }
-                _categoryTagMap[catName].push(tagName);
-            }
-        }
-    });
-
-    // Define Utility tags vs Normal tags
-    const utilityTagsNames = tagsData.filter(t => t.type_id === 'utility').map(t => t.name);
-    const globalTagsNames = tagsData.filter(t => t.is_official && t.type_id !== 'utility').map(t => t.name);
-
-    // Determine which tags to display
-    let primaryTags: string[] = [];
-    const utilityTagsDisplay: string[] = utilityTagsNames;
-
-    if (selectedCategories.length > 0) {
-        const recommendedTags = new Set<string>();
-        selectedCategories.forEach(cat => {
-            _categoryTagMap[cat]?.forEach(tag => recommendedTags.add(tag));
-        });
-        // Show recommended tags plus other official (non-utility) tags
-        primaryTags = allTagsNames.filter(tag =>
-            (recommendedTags.has(tag) || globalTagsNames.includes(tag)) &&
-            !utilityTagsNames.includes(tag)
-        );
-    } else {
-        // Show all non-utility tags
-        primaryTags = allTagsNames.filter(tag => !utilityTagsNames.includes(tag));
-    }
+    const [language, setLanguage] = useState('English');
+    const [region, setRegion] = useState('Global');
 
     return (
         <>
@@ -178,116 +23,143 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                 onClick={onClose}
             />
             <div className={`${styles.drawer} ${isOpen ? styles.drawerOpen : ''}`}>
+                <div className={styles.drawerHeader}>
+                    <button className={styles.closeBtn} onClick={onClose}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <span className={styles.headerTitle}>Menu</span>
+                </div>
+
                 <div className={styles.drawerContent}>
-                    {/* Calendar Section (Custom 2-Week View) */}
-                    <div className={styles.section}>
-                        <div className={styles.calendarHeader}>
-                            <div className={styles.arrow} onClick={prevWeek}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                            <span className={styles.monthYear}>
-                                {viewStartDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                            </span>
-                            <div className={styles.arrow} onClick={nextWeek}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                        </div>
+                    {/* Dashboard Portals Section */}
+                    <div className={styles.menuSection}>
+                        <h3 className={styles.menuSectionTitle}>Dashboards</h3>
+                        <div className={styles.portalGrid}>
+                            <Link href="/dashboard/organize" className={styles.portalItem} onClick={onClose}>
+                                <div className={`${styles.portalIcon} ${styles.organizerIcon}`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                        <circle cx="9" cy="7" r="4" />
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                    </svg>
+                                </div>
+                                <div className={styles.portalText}>
+                                    <span className={styles.portalTitle}>Organizers</span>
+                                    <span className={styles.portalDesc}>Manage your events</span>
+                                </div>
+                            </Link>
 
-                        <div className={styles.calendarGrid}>
-                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
-                                <span key={dayName} className={styles.dayName}>{dayName}</span>
-                            ))}
-
-                            {calendarDays.map((date, index) => {
-                                const isToday = isSameDay(date, new Date());
-                                const isSelected = selectedDates.some(d => isSameDay(d, date));
-
-                                return (
-                                    <div
-                                        key={index}
-                                        className={`${styles.dayCell} ${isSelected ? styles.daySelected : ''} ${isToday && !isSelected ? styles.dayToday : ''}`}
-                                        onClick={() => toggleDate(date)}
-                                    >
-                                        <span className={styles.dayNum}>{date.getDate()}</span>
-                                    </div>
-                                );
-                            })}
+                            <Link href="/dashboard/ads" className={styles.portalItem} onClick={onClose}>
+                                <div className={`${styles.portalIcon} ${styles.adsIcon}`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                                        <line x1="8" y1="21" x2="16" y2="21" />
+                                        <line x1="12" y1="17" x2="12" y2="21" />
+                                    </svg>
+                                </div>
+                                <div className={styles.portalText}>
+                                    <span className={styles.portalTitle}>Ad Center</span>
+                                    <span className={styles.portalDesc}>Manage your ads</span>
+                                </div>
+                            </Link>
                         </div>
                     </div>
 
-                    {/* Categories Section */}
-                    <div className={styles.section}>
-                        <h3 className={styles.sectionTitle}>Categories:</h3>
-                        <div className={styles.filterList}>
-                            {displayCategories.map((cat: string) => (
-                                <div
-                                    key={`cat-${cat}`}
-                                    className={styles.filterItem}
-                                    onClick={() => toggleCategory(cat)}
-                                >
-                                    <div className={`${styles.checkbox} ${selectedCategories.includes(cat) ? styles.checkboxChecked : ''}`}>
-                                        {selectedCategories.includes(cat) && (
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <span style={{ color: 'var(--color-utility-primaryText)' }}>{cat}</span>
-                                </div>
-                            ))}
-                        </div>
+                    <div className={styles.menuDivider} />
+
+                    {/* Resources Section */}
+                    <div className={styles.menuSection}>
+                        <h3 className={styles.menuSectionTitle}>Organizer Resources</h3>
+                        <ul className={styles.resourceList}>
+                            <li className={styles.resourceItem}>
+                                <Link href="/resources/guide" onClick={onClose}>
+                                    Hosting Guide
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                            <li className={styles.resourceItem}>
+                                <Link href="/resources/pricing" onClick={onClose}>
+                                    Pricing & Fees
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                            <li className={styles.resourceItem}>
+                                <Link href="/resources/safety" onClick={onClose}>
+                                    Safety & Security
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                            <li className={styles.resourceItem}>
+                                <Link href="/help" onClick={onClose}>
+                                    Help Center
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                        </ul>
                     </div>
 
-                    {/* Tags Section */}
-                    <div className={styles.section} style={{ marginBottom: 0 }}>
-                        <h3 className={styles.sectionTitle}>Tags:</h3>
+                    <div className={styles.spacer} />
 
-                        {/* Normal / Recommended Tags */}
-                        <div className={styles.tagGrid}>
-                            {primaryTags.map((tag: string) => (
-                                <div
-                                    key={tag}
-                                    className={`${styles.tagPill} ${selectedTags.includes(tag) ? styles.tagPillSelected : ''}`}
-                                    onClick={() => toggleTag(tag)}
-                                >
-                                    {tag}
-                                </div>
-                            ))}
+                    <div className={styles.menuDivider} />
+
+                    {/* Preferences Section */}
+                    <div className={styles.menuSection}>
+                        <h3 className={styles.menuSectionTitle}>Preferences</h3>
+                        <div className={styles.preferenceItem}>
+                            <div className={styles.preferenceInfo}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10" />
+                                </svg>
+                                <span>Language</span>
+                            </div>
+                            <select 
+                                className={styles.preferenceSelect}
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value)}
+                            >
+                                <option>English</option>
+                                <option>Spanish</option>
+                                <option>French</option>
+                                <option>German</option>
+                            </select>
                         </div>
 
-                        {/* Divider between categorized and utility tags */}
-                        {primaryTags.length > 0 && utilityTagsDisplay.length > 0 && (
-                            <div className={styles.tagDivider} />
-                        )}
-
-                        {/* Utility / Amenity Tags at the bottom */}
-                        <div className={styles.tagGrid}>
-                            {utilityTagsDisplay.map((tag: string) => (
-                                <div
-                                    key={tag}
-                                    className={`${styles.tagPill} ${selectedTags.includes(tag) ? styles.tagPillSelected : ''}`}
-                                    onClick={() => toggleTag(tag)}
-                                >
-                                    {tag}
-                                </div>
-                            ))}
+                        <div className={styles.preferenceItem}>
+                            <div className={styles.preferenceInfo}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                                <span>Region</span>
+                            </div>
+                            <select 
+                                className={styles.preferenceSelect}
+                                value={region}
+                                onChange={(e) => setRegion(e.target.value)}
+                            >
+                                <option>Global</option>
+                                <option>North America</option>
+                                <option>Europe</option>
+                                <option>Africa</option>
+                                <option>Asia</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                {/* Fixed Footer for Dashboard Button */}
-                <footer className={styles.drawerFooter}>
-                    <Link href="/dashboard/organize" className={styles.refreshBtn}>
-                        <span>Dashboard</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </Link>
-                </footer>
             </div>
         </>
     );

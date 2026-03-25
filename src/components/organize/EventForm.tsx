@@ -8,8 +8,9 @@
  * `TicketTierManager`. Each tab section is a simple JSX block.
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import { sanitizeRichText } from '@/utils/sanitization';
 import styles from './EventForm.module.css';
 import BackButton from '@/components/shared/BackButton';
 import TicketTierManager from './TicketTierManager';
@@ -35,8 +36,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         formData, errors, loading, activeTab, setActiveTab,
         isDraftLoaded, isDirty,
         thumbnailPreview,
-        tagInput, setTagInput, filteredSuggestions, showSuggestions, setShowSuggestions,
-        categories, isPaidTicketingEnabled,
+        tagInput, setTagInput,
+        categories, popularTags, hasCategorySpecificTags,
         handleInputChange, handleToggle,
         handleImageSelect, handleRemoveImage,
         handleAddTag, handleRemoveTag, handleTagKeyDown,
@@ -44,6 +45,41 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         handleSubmit, discardDraft,
         setFormData,
     } = useEventForm({ initialData, isEditMode, onSubmit });
+
+    const formRef = useRef<HTMLDivElement>(null);
+
+    // ── Autofocus Logic ───────────────────────────────────────────────────────
+    /**
+     * When the user switches tabs, automatically focus the first available
+     * text field, select, or textarea to improve data entry speed.
+     */
+    useEffect(() => {
+        if (!formRef.current) return;
+
+        // Small delay to ensure the tab content is fully rendered by React
+        const timer = setTimeout(() => {
+            if (!formRef.current) return;
+
+            // Find the first relevant input element
+            // We ignore file inputs as they don't benefit from autofocus as much as text fields
+            const firstFocusable = formRef.current.querySelector(
+                'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), select, textarea'
+            ) as HTMLElement | null;
+
+            if (firstFocusable) {
+                firstFocusable.focus();
+                
+                // If it's a text input, place cursor at the end
+                if (firstFocusable instanceof HTMLInputElement && (firstFocusable.type === 'text' || firstFocusable.type === 'search')) {
+                    const val = firstFocusable.value;
+                    firstFocusable.value = '';
+                    firstFocusable.value = val;
+                }
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [activeTab]);
 
     // ── Tab Helper ────────────────────────────────────────────────────────────
     const renderTab = (id: EventFormTab, label: string) => {
@@ -89,7 +125,16 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </div>
                 </div>
                 <div className={styles.actions}>
-                    <button className={styles.saveBtn} onClick={handleSubmit} disabled={loading}>
+                    {!isEditMode && (
+                        <button 
+                            className={styles.secondaryBtn} 
+                            onClick={() => handleSubmit('draft')} 
+                            disabled={loading}
+                        >
+                            Save as Draft
+                        </button>
+                    )}
+                    <button className={styles.saveBtn} onClick={() => handleSubmit('published')} disabled={loading}>
                         {loading ? 'Saving...' : submitBtnText}
                     </button>
                 </div>
@@ -106,7 +151,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                 {renderTab('settings', 'Settings')}
             </div>
 
-            <div className={styles.formColumn}>
+            <div className={styles.formColumn} ref={formRef}>
 
                 {/* ── 1. Cover Image ── */}
                 {activeTab === 'cover' && (
@@ -160,7 +205,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 <label className={styles.label}>Description <span className={styles.requiredIndicator}>*Required</span></label>
                                 <RichTextEditor
                                     value={formData.description}
-                                    onChange={(content) => setFormData((prev) => ({ ...prev, description: content }))}
+                                    onChange={(content) => setFormData((prev) => ({ ...prev, description: sanitizeRichText(content) }))}
                                     placeholder="Tell people what your event is about..."
                                     error={!!errors.description}
                                 />
@@ -193,7 +238,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                             </div>
 
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Tags</label>
+                                <label className={styles.label}>Tags <span className={styles.requiredIndicator}>*Required (minimum of 1)</span></label>
                                 <div className={styles.tagContainer}>
                                     <div className={styles.tagInputWrapper}>
                                         <div style={{ flex: 1, position: 'relative' }}>
@@ -202,30 +247,17 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 className={styles.input}
                                                 placeholder="Type to search tags..."
                                                 value={tagInput}
-                                                onChange={(e) => { setTagInput(e.target.value); setShowSuggestions(true); }}
-                                                onFocus={() => setShowSuggestions(true)}
-                                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                                onChange={(e) => setTagInput(e.target.value)}
                                                 onKeyDown={handleTagKeyDown}
                                                 style={{ width: '100%' }}
                                             />
-                                            {showSuggestions && tagInput && filteredSuggestions.length > 0 && (
-                                                <div className={styles.suggestionsDropdown}>
-                                                    {filteredSuggestions.map((tag) => (
-                                                        <div key={tag.id} className={styles.suggestionItem} onClick={() => handleAddTag(tag.name)}>
-                                                            {tag.name}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
                                         </div>
-                                        <button type="button" className={styles.generateBtn} onClick={() => handleAddTag()}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path><line x1="16" y1="5" x2="22" y2="5"></line><line x1="19" y1="2" x2="19" y2="8"></line></svg>
-                                            Add
-                                        </button>
                                     </div>
+
+                                    {/* Selected Tags */}
                                     {formData.tags.length > 0 && (
-                                        <div className={styles.tagList}>
-                                            {formData.tags.map((tag) => (
+                                        <div className={styles.tagList} style={{ marginBottom: '20px' }}>
+                                            {formData.tags.map((tag: string) => (
                                                 <span key={tag} className={styles.tagPill}>
                                                     {tag}
                                                     <button type="button" className={styles.removeTagBtn} onClick={() => handleRemoveTag(tag)}>×</button>
@@ -233,7 +265,33 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                             ))}
                                         </div>
                                     )}
+
+                                    {/* Suggested Tags (Choice Chips) */}
+                                    {popularTags.length > 0 && (
+                                        <>
+                                            {(tagInput || hasCategorySpecificTags) && (
+                                                <p style={{ fontSize: '12px', opacity: 0.6, marginBottom: '8px', color: 'var(--color-utility-primaryText)' }}>
+                                                    {tagInput ? 'Suggested matches:' : 'Recommended for your category:'}
+                                                </p>
+                                            )}
+                                            <div className={styles.choiceGrid}>
+                                                {popularTags.map((tag: string) => {
+                                                    const isSelected = formData.tags.includes(tag);
+                                                    return (
+                                                        <div 
+                                                            key={tag} 
+                                                            className={`${styles.choiceChip} ${isSelected ? styles.choiceChipSelected : ''}`}
+                                                            onClick={() => isSelected ? handleRemoveTag(tag) : handleAddTag(tag)}
+                                                        >
+                                                            {tag}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
+                                <p className={styles.errorMessage}>{errors.tags}</p>
                             </div>
                         </div>
                     </section>
@@ -251,15 +309,49 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                         {' '}<span className={styles.requiredIndicator}>*Required</span>
                                     </label>
                                     <input
-                                        type={field.includes('Date') ? 'date' : 'time'}
+                                        type={field.includes('Date') ? (formData[field] ? 'date' : 'text') : 'time'}
                                         name={field}
+                                        lang={field.includes('Date') ? "en-GB" : undefined}
                                         className={`${styles.input} ${errors[field] ? styles.inputError : ''}`}
                                         value={formData[field]}
                                         onChange={handleInputChange}
+                                        placeholder={field.includes('Date') ? 'dd/mm/yyyy' : undefined}
+                                        onFocus={field.includes('Date') ? (e) => (e.target.type = 'date') : undefined}
+                                        onBlur={field.includes('Date') ? (e) => { if (!e.target.value) e.target.type = 'text'; } : undefined}
                                     />
                                     <p className={styles.errorMessage}>{errors[field]}</p>
                                 </div>
                             ))}
+                        </div>
+
+                        {/* Timezone Selection */}
+                        <div className={styles.formGrid} style={{ marginTop: '24px' }}>
+                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                                <label className={styles.label}>
+                                    Event Timezone <span className={styles.requiredIndicator}>*Required</span>
+                                </label>
+                                <select 
+                                    name="timezone"
+                                    className={styles.selectInput}
+                                    value={formData.timezone}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+                                >
+                                    <option value="UTC">UTC (Universal Coordinated Time)</option>
+                                    <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
+                                    <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+                                    <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
+                                    <option value="Europe/London">Europe/London (GMT/BST)</option>
+                                    <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                                    <option value="America/New_York">America/New_York (EST/EDT)</option>
+                                    <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                                    <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                                    <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                                    <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                                </select>
+                                <p style={{ fontSize: '11px', opacity: 0.5, marginTop: '8px' }}>
+                                    All attendees will see times relative to this timezone.
+                                </p>
+                            </div>
                         </div>
                     </section>
                 )}
@@ -303,15 +395,12 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                 {activeTab === 'tickets' && (
                     <TicketTierManager
                         tickets={formData.tickets}
+                        currency={formData.currency}
+                        onCurrencyChange={(val) => setFormData((prev) => ({ ...prev, currency: val }))}
                         errors={errors}
-                        isPaidTicketingEnabled={isPaidTicketingEnabled}
-                        isPaid={formData.isPaid}
-                        onTogglePaid={() => handleToggle('isPaid')}
                         onAdd={addTicket}
                         onRemove={removeTicket}
                         onChange={handleTicketChange}
-                        limit={formData.limit}
-                        onLimitChange={(v) => setFormData((prev) => ({ ...prev, limit: v }))}
                     />
                 )}
 

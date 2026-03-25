@@ -6,60 +6,50 @@ import HomeClient from "@/components/public/HomeClient";
 export default async function Home() {
   const supabase = await createClient();
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
-    console.error('Supabase configuration missing!', {
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'PRESENT' : 'MISSING',
-      key: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ? 'PRESENT' : 'MISSING'
-    });
-  }
   const [
     { data: rawEvents, error: eventsError },
     { data: categories, error: categoriesError },
     { data: tags, error: tagsError },
     { data: categoryTags, error: categoryTagsError }
   ] = await Promise.all([
+    // Use vw_public_events instead of the raw `events` table:
+    //  - already filters deleted_at IS NULL, status='published', is_private=false
+    //  - already excludes events older than 1 day (ends_at >= now() - 1 day)
+    //  - aggregates low_price in SQL (no N+1 ticket_tiers sub-query on the client)
+    //  - includes timezone for correct client-side display
+    //  - is correctly indexed via idx_events_status_active
     supabase
-      .from('events')
-      .select(`
-        *,
-        organizer:accounts(display_name),
-        category:event_categories(display_name),
-        ticket_tiers(price)
-      `)
+      .from('vw_public_events')
+      .select('id, title, description, starts_at, ends_at, timezone, location_name, thumbnail_url, category, organizer_name, account_id, low_price, currency')
+      .order('is_featured', { ascending: false }) // featured events first
       .order('starts_at', { ascending: true })
       .limit(50),
     supabase.from('event_categories').select('id, display_name').order('display_name'),
-    supabase.from('tags').select('*').order('name'),
+    supabase.from('tags').select('id, name, type_id').order('name'),
     supabase.from('category_tags').select('*')
   ]);
 
   if (eventsError || categoriesError || tagsError || categoryTagsError) {
-    console.error('Fetch errors detected:', {
-      events: eventsError,
-      categories: categoriesError,
-      tags: tagsError,
-      categoryTags: categoryTagsError
+    console.error('Home page fetch errors:', {
+      events: eventsError?.message,
+      categories: categoriesError?.message,
+      tags: tagsError?.message,
+      categoryTags: categoryTagsError?.message,
     });
   }
 
-  // Fallback Mock Data logic removed
-  const allEvents = (rawEvents || []).map(event => {
-    const prices = event.ticket_tiers?.map((t: { price: number }) => t.price) || [];
-    const lowPrice = prices.length > 0 ? Math.min(...prices) : undefined;
+  // vw_public_events already computes low_price — just remap column names to the Event type.
+  const allEvents = (rawEvents || []).map(event => ({
+    ...event,
+    start_datetime: event.starts_at,
+    end_datetime: event.ends_at,
+  })) as Event[];
 
-    return {
-      ...event,
-      start_datetime: event.starts_at,
-      end_datetime: event.ends_at,
-      thumbnail_url: event.thumbnail_url,
-      organizer_name: event.organizer?.display_name,
-      category: event.category?.display_name,
-      low_price: lowPrice
-    };
-  }) as Event[];
-
-  // Split Logic: First 5 for Carousel
-  const carouselEvents = allEvents.slice(0, 5);
+  // Carousel: prefer admin-curated featured events; fill remaining slots from upcoming.
+  const featuredEvents = allEvents.filter(e => e.is_featured);
+  const carouselEvents = featuredEvents.length > 0
+    ? featuredEvents.slice(0, 5)
+    : allEvents.slice(0, 5);
 
   return (
     <HomeLayout
@@ -70,6 +60,9 @@ export default async function Home() {
       <HomeClient
         carouselEvents={carouselEvents}
         allEvents={allEvents}
+        categories={categories || []}
+        tags={tags || []}
+        categoryTags={categoryTags || []}
       />
     </HomeLayout>
   );

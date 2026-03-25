@@ -216,6 +216,12 @@
     background-color: transparent;
 }
 
+.input::placeholder,
+.textarea::placeholder {
+    color: var(--color-utility-primaryText);
+    opacity: 0.35;
+}
+
 .label {
     display: block;
     margin-bottom: 8px;
@@ -381,7 +387,7 @@
     transition: all 0.2s;
 }
 
-.paginationPage:hover {
+.paginationPage:hover:not(.activePage) {
     background-color: rgba(255, 255, 255, 0.05);
 }
 

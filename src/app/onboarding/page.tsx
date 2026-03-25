@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
+import { sanitizeInput } from '@/utils/sanitization';
 import styles from './onboarding.module.css';
 
 type OnboardingStep = 'ROLE_SELECTION' | 'DETAILS';
@@ -20,8 +21,11 @@ export default function OnboardingPage() {
 
     // Form State
     const [orgName, setOrgName] = useState('');
+    const [orgDesc, setOrgDesc] = useState('');
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleNext = () => {
         setStep('DETAILS');
@@ -33,10 +37,41 @@ export default function OnboardingPage() {
         setError(null);
     };
 
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setLoading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `org-${crypto.randomUUID()}.${fileExt}`;
+            const filePath = `org-logos/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('profiles') // Assuming shared bucket
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('profiles')
+                .getPublicUrl(filePath);
+
+            setLogoUrl(publicUrl);
+        } catch (err: any) {
+            setError('Failed to upload logo.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleCreateOrganization = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!orgName.trim()) {
+        const cleanName = sanitizeInput(orgName.trim());
+        const cleanDesc = sanitizeInput(orgDesc.trim());
+
+        if (!cleanName) {
             setError('Organization name is required.');
             return;
         }
@@ -45,15 +80,29 @@ export default function OnboardingPage() {
         setError(null);
 
         try {
-            // Updated to match the new p_ prefix and account_type support
-            const { data, error: rpcError } = await supabase.rpc('create_organization_account', {
-                p_org_name: orgName.trim(),
+            // 1. Create the account via RPC (handles account + default wallet + member row)
+            const { data: accountId, error: rpcError } = await supabase.rpc('create_organization_account', {
+                p_org_name: cleanName,
                 p_account_type: accountType
             });
 
             if (rpcError) throw rpcError;
 
-            // Successfully created. Refresh the global context.
+            // 2. Update additional branding (logo URL + description).
+            // FIX: table name was 'account' (wrong) — correct plural is 'accounts'.
+            if (logoUrl || cleanDesc) {
+                const { error: updateError } = await supabase
+                    .from('accounts')
+                    .update({
+                        ...(logoUrl ? { avatar_url: logoUrl } : {}),
+                        ...(cleanDesc ? { description: cleanDesc } : {}),
+                    })
+                    .eq('id', accountId);
+
+                if (updateError) console.error('Branding update failed (non-fatal):', updateError);
+            }
+
+            // 3. Refresh the global OrganizationContext so the new account appears in the switcher.
             await refreshAccounts();
 
             if (accountType === 'advertiser') {
@@ -75,12 +124,12 @@ export default function OnboardingPage() {
             <div className={styles.onboardingWrapper}>
                 <div className={styles.header}>
                     <h1 className={styles.title}>
-                        {step === 'ROLE_SELECTION' ? 'Choose Your Path' : 'The Finishing Touches'}
+                        {step === 'ROLE_SELECTION' ? 'Choose Your Path' : 'Branding & Identity'}
                     </h1>
                     <p className={styles.subtitle}>
                         {step === 'ROLE_SELECTION'
-                            ? 'Select the primary goal for your new workspace. You can always change this or add more workspaces later.'
-                            : `Let's name your ${accountType === 'organizer' ? 'Organising' : 'Advertising'} department. This is how you'll appear to the public.`}
+                            ? 'Select the primary goal for your new workspace.'
+                            : `Let's make your ${accountType === 'organizer' ? 'Organising' : 'Advertising'} brand stand out.`}
                     </p>
                 </div>
 
@@ -105,22 +154,7 @@ export default function OnboardingPage() {
                                 </svg>
                             </div>
                             <h2 className={styles.roleName}>Event Organizer</h2>
-                            <p className={styles.roleDesc}>Create, manage, and sell tickets for your live events. Access powerful analytics and team management.</p>
-
-                            <div className={styles.features}>
-                                <div className={styles.feature}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    <span>Ticket Tier Management</span>
-                                </div>
-                                <div className={styles.feature}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    <span>Real-time Ticket Scanning</span>
-                                </div>
-                                <div className={styles.feature}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    <span>Revenue Dashboard</span>
-                                </div>
-                            </div>
+                            <p className={styles.roleDesc}>Create, manage, and sell tickets. Access powerful analytics and team management.</p>
 
                             {accountType === 'organizer' && (
                                 <button className={styles.submitBtn} onClick={handleNext} style={{ marginTop: '32px' }}>
@@ -142,22 +176,7 @@ export default function OnboardingPage() {
                                 </svg>
                             </div>
                             <h2 className={styles.roleName}>Advertiser</h2>
-                            <p className={styles.roleDesc}>Promote your brand or events with high-impact ads across the Lynk-X discover feed and community forums.</p>
-
-                            <div className={styles.features}>
-                                <div className={styles.feature}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    <span>Campaign Builder</span>
-                                </div>
-                                <div className={styles.feature}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    <span>CTR & Impression tracking</span>
-                                </div>
-                                <div className={styles.feature}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    <span>Advanced Audience Targeting</span>
-                                </div>
-                            </div>
+                            <p className={styles.roleDesc}>Promote your brand with high-impact ads across the discovery feed.</p>
 
                             {accountType === 'advertiser' && (
                                 <button className={styles.submitBtn} onClick={handleNext} style={{ marginTop: '32px', background: 'var(--color-brand-secondary)' }}>
@@ -170,28 +189,39 @@ export default function OnboardingPage() {
 
                 {step === 'DETAILS' && (
                     <div className={styles.formCard}>
-                        {error && (
-                            <div className={styles.errorBox}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                {error}
-                            </div>
-                        )}
+                        {error && <div className={styles.errorBox}>{error}</div>}
 
                         <form onSubmit={handleCreateOrganization} className={styles.form}>
+                            {/* Logo Upload */}
+                            <div className={styles.logoSection}>
+                                <div className={styles.logoPreview} onClick={() => fileInputRef.current?.click()}>
+                                    {logoUrl ? <img src={logoUrl} alt="Logo" /> : <div className={styles.plusIcon}>+</div>}
+                                    <div className={styles.logoOverlay}>Upload Branding</div>
+                                </div>
+                                <input type="file" ref={fileInputRef} onChange={handleLogoUpload} style={{ display: 'none' }} accept="image/*" />
+                                <span className={styles.label}>Organization Logo</span>
+                            </div>
+
                             <div className={styles.inputGroup}>
-                                <label htmlFor="orgName" className={styles.label}>
-                                    What's your identity?
-                                    <span className={styles.charCount}>{orgName.length}/40</span>
-                                </label>
+                                <label className={styles.label}>Organization Name</label>
                                 <input
-                                    id="orgName"
                                     type="text"
                                     value={orgName}
-                                    onChange={(e) => setOrgName(e.target.value.slice(0, 40))}
-                                    placeholder={accountType === 'organizer' ? "e.g. Electric Vibes Events" : "e.g. Acme Marketing Agency"}
+                                    onChange={(e) => setOrgName(e.target.value)}
+                                    placeholder="e.g. Electric Vibes Events"
                                     className={styles.input}
-                                    autoFocus
                                     required
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Description (Optional)</label>
+                                <textarea
+                                    value={orgDesc}
+                                    onChange={(e) => setOrgDesc(e.target.value)}
+                                    placeholder="Briefly describe your organization..."
+                                    className={styles.textarea}
+                                    rows={3}
                                 />
                             </div>
 
@@ -202,29 +232,18 @@ export default function OnboardingPage() {
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
-                                    disabled={loading || !orgName.trim() || orgName.length < 3}
+                                    disabled={loading || !orgName.trim()}
                                     style={accountType === 'advertiser' ? { background: 'var(--color-brand-secondary)' } : {}}
                                 >
-                                    {loading ? (
-                                        <>
-                                            <svg className={styles.spinner} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
-                                            Initializing...
-                                        </>
-                                    ) : (
-                                        'Launch Workspace'
-                                    )}
+                                    {loading ? 'Launching...' : 'Launch Workspace'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 )}
             </div>
-
             <style jsx>{`
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             `}</style>
         </div>
     );

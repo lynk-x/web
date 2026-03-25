@@ -12,6 +12,7 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import FilterGroup from '@/components/dashboard/FilterGroup';
 import { createClient } from '@/utils/supabase/client';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 export default function CampaignsPage() {
     const { showToast } = useToast();
@@ -206,8 +207,9 @@ export default function CampaignsPage() {
                 }
             />
 
-            <TableToolbar
-                searchPlaceholder="Search campaigns..."
+            <div className="tour-campaigns-filter">
+                <TableToolbar
+                    searchPlaceholder="Search campaigns..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
@@ -222,9 +224,10 @@ export default function CampaignsPage() {
                     currentValue={statusFilter}
                     onChange={setStatusFilter}
                 />
-            </TableToolbar>
+                </TableToolbar>
+            </div>
 
-            <div style={{ marginTop: '20px' }}>
+            <div style={{ marginTop: '20px' }} className="tour-campaigns-table">
                 <BulkActionsBar
                     selectedCount={selectedIds.size}
                     actions={bulkActions}
@@ -244,6 +247,29 @@ export default function CampaignsPage() {
                     onDelete={handleSingleDelete}
                 />
             </div>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsCampaignsJoyride_${activeAccount.id}` : 'hasSeenAdsCampaignsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Manage Ad Campaigns',
+                        content: 'Track, optimize, and edit all your active or paused campaigns.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-campaigns-filter',
+                        title: 'Filter Campaigns',
+                        content: 'Easily find campaigns by status like Pending, Active, or Draft.',
+                    },
+                    {
+                        target: '.tour-campaigns-table',
+                        title: 'Campaign Data',
+                        content: 'Select multiple campaigns to pause or delete them at once.',
+                    }
+                ]}
+            />
         </div>
     );
 }

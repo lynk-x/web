@@ -3,13 +3,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useAuth } from '@/context/AuthContext';
 import styles from './OrganizationSwitcher.module.css';
 
-const OrganizationSwitcher = () => {
+const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
     const { accounts, activeAccount, setActiveAccountId, isLoading } = useOrganization();
+    const { user, profile, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const displayEmail = profile?.email || user?.email || '';
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -57,7 +60,10 @@ const OrganizationSwitcher = () => {
             </button>
 
             {isOpen && (
-                <div className={styles.dropdown}>
+                <div 
+                    className={styles.dropdown} 
+                    style={pos === 'bottom' ? { bottom: 'calc(100% + 8px)', top: 'auto' } : {}}
+                >
                     <div className={styles.dropdownHeader}>Switch Organization</div>
                     <div className={styles.accountList}>
                         {accounts.map((account) => (
@@ -99,6 +105,23 @@ const OrganizationSwitcher = () => {
                             Create New Organization
                         </button>
                     </div>
+                    {displayEmail && (
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '4px', paddingTop: '4px' }}>
+                            <div style={{ padding: '8px 12px', fontSize: '11px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                Logged in as: {displayEmail}
+                            </div>
+                            <div className={styles.dropdownFooter} style={{ borderTop: 'none', marginTop: 0 }}>
+                                <button
+                                    className={styles.createBtn}
+                                    style={{ color: '#ff4d4d' }}
+                                    onClick={logout}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

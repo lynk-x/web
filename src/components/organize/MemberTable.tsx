@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import { formatDate } from '@/utils/format';
+import { sanitizeInput } from '@/utils/sanitization';
 
 
 export interface AccountMember {
@@ -77,7 +79,7 @@ export default function MemberTable() {
                 name: m.full_name || m.user_name || 'Unknown User',
                 email: m.email || '',
                 role: m.role,
-                joinedAt: new Date(m.joined_at).toLocaleDateString(),
+                joinedAt: formatDate(m.joined_at),
                 isPending: false
             }));
 
@@ -87,7 +89,7 @@ export default function MemberTable() {
                 name: 'Pending Invite',
                 email: i.email,
                 role: i.role,
-                joinedAt: new Date(i.created_at).toLocaleDateString(),
+                joinedAt: formatDate(i.created_at),
                 isPending: true
             }));
 
@@ -305,7 +307,7 @@ export default function MemberTable() {
                                     type="email"
                                     required
                                     value={inviteEmail}
-                                    onChange={e => setInviteEmail(e.target.value)}
+                                    onChange={e => setInviteEmail(sanitizeInput(e.target.value.toLowerCase()))}
                                     placeholder="colleague@example.com"
                                     style={{
                                         width: '100%', padding: '10px', borderRadius: '6px',

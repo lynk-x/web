@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DataTable, { Column } from '../../shared/DataTable';
 import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import type { ActionItem } from '../../shared/TableRowActions';
 import type { Payout } from '@/types/organize';
 
@@ -107,7 +107,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
         {
             header: 'Requested',
             render: (payout) => (
-                <span style={{ fontSize: '13px', opacity: 0.8 }}>{new Date(payout.requestedAt).toLocaleDateString()}</span>
+                <span style={{ fontSize: '13px', opacity: 0.8 }}>{formatDate(payout.requestedAt)}</span>
             ),
         },
         {

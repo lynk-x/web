@@ -27,7 +27,7 @@ export default function EditEventPage() {
             endTime: '17:00',
             isPrivate: false,
             isPaid: true,
-            limit: '1000',
+            currency: 'KES',
             tickets: [
                 { display_name: 'Regular', price: '1500', capacity: '500' },
                 { display_name: 'VIP', price: '5000', capacity: '50' }

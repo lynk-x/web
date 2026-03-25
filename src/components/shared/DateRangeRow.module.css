@@ -3,7 +3,6 @@
     justify-content: flex-end;
     align-items: center;
     gap: var(--spacing-sm);
-    margin-top: calc(var(--spacing-md) * -2);
     animation: slideIn 0.3s ease-out;
 }
 
@@ -28,7 +27,7 @@
 .inputWrapper {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .inputWrapper input.dateInput {

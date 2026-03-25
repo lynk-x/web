@@ -1,0 +1,69 @@
+.tooltipContainer {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tooltipBubble {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background-color: var(--color-brand-tertiary);
+    color: var(--color-utility-primaryText);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: normal;
+    min-width: 200px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 50;
+    
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+/* Caret/Arrow */
+.tooltipBubble::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--color-brand-tertiary) transparent transparent transparent;
+}
+
+.tooltipContainer:hover .tooltipBubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Explain Icon specific styles */
+.explainIcon {
+    color: var(--color-utility-primaryText);
+    opacity: 0.5;
+    cursor: help;
+    transition: opacity 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    display: inline-flex;
+    vertical-align: middle;
+}
+
+.explainIcon:hover {
+    opacity: 0.9;
+    color: var(--color-brand-primary);
+}

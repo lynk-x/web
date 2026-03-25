@@ -108,10 +108,13 @@ export default function CreateDisclaimerPage() {
                     <div className={adminStyles.formGroup} style={{ gridColumn: '1 / span 1' }}>
                         <label className={adminStyles.label}>Effective Date</label>
                         <input
-                            type="date"
+                            type={formData.effective_date ? "date" : "text"}
                             className={adminStyles.input}
                             value={formData.effective_date}
                             onChange={(e) => updateField('effective_date', e.target.value)}
+                            placeholder="dd/mm/yyyy"
+                            onFocus={(e) => (e.target.type = "date")}
+                            onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                         />
                     </div>
 

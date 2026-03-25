@@ -159,34 +159,6 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                             <div className={styles.mockAppLine} style={{ width: '40%' }}></div>
                                             <div className={styles.mockAppLine} style={{ width: '80%' }}></div>
 
-                                            {campaign.adType === 'feed_card' && (
-                                                <div className={styles.mockAd}>
-                                                    <div className={styles.mockAdMedia}>
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5">
-                                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                                            <polyline points="21 15 16 10 5 21" />
-                                                        </svg>
-                                                    </div>
-                                                    <div className={styles.mockAdInfo}>
-                                                        <div className={styles.mockAdTitle}>{campaign.name}</div>
-                                                        <div className={styles.mockAdDesc}>{campaign.client}</div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {campaign.adType === 'map_pin' && (
-                                                <div className={styles.mockMapPreview}>
-                                                    <div className={styles.mapPin}>
-                                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
-                                                    </div>
-                                                    <div className={styles.mapPopup}>
-                                                        <div className={styles.mockAdTitle} style={{ fontSize: '11px' }}>{campaign.name}</div>
-                                                        <div className={styles.mockAdDesc} style={{ fontSize: '9px' }}>Tap to view details</div>
-                                                    </div>
-                                                </div>
-                                            )}
-
                                             <div className={styles.mockAppLine} style={{ width: '90%', marginTop: 'auto' }}></div>
                                             <div className={styles.mockAppLine} style={{ width: '100%' }}></div>
                                             <div className={styles.mockAppLine} style={{ width: '70%' }}></div>

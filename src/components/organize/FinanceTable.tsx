@@ -40,17 +40,15 @@ const getStatusVariant = (status: string): BadgeVariant => {
 
 /**
  * Maps `transaction_reason` enum to badge colour variants.
- * All 10 schema values are handled explicitly.
+ * All valid schema values are handled explicitly.
  */
 const getTypeVariant = (type: string): BadgeVariant => {
     switch (type) {
         case 'ticket_sale': return 'success';
-        case 'subscription': return 'info';
         case 'ad_campaign_payment': return 'primary';
         case 'organizer_payment': return 'success';
         case 'ad_refund': return 'warning';
         case 'ticket_refund': return 'warning';
-        case 'subscription_refund': return 'warning';
         case 'dispute_settlement': return 'error';
         case 'escrow_release': return 'neutral';
         case 'payout_withdrawal': return 'info';
@@ -102,11 +100,10 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
                 const displayAmount = typeof tx.amount === 'string'
                     ? tx.amount
                     : formatCurrency(tx.amount);
-                // Outgoing reasons are shown as negative amounts
+                // Outgoing reasons displayed as negative amounts (matches transaction_reason enum)
                 const isNegative = (
                     tx.type === 'ticket_refund' ||
                     tx.type === 'ad_refund' ||
-                    tx.type === 'subscription_refund' ||
                     tx.type === 'dispute_settlement' ||
                     tx.type === 'payout_withdrawal'
                 );

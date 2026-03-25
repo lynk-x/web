@@ -1,0 +1,123 @@
+.sidebar {
+    width: 280px;
+    background-color: #000;
+    border-right: 1px solid rgba(255, 255, 255, 0.15); /* More visible divider */
+    height: calc(100vh - 80px); /* Height minus Navbar */
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 80px; /* Below Navbar */
+}
+
+.sidebarHeader {
+    padding: 16px 24px;
+}
+
+.nav {
+    flex: 1;
+    padding: 0 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar for sidebar nav */
+.nav::-webkit-scrollbar { width: 3px; }
+.nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+
+.navGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.groupTitle {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.4);
+    padding-left: 12px;
+}
+
+.groupItems {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.navItem:hover:not(.navItemActive) {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.navItemActive {
+    background-color: var(--color-brand-primary, #20f928);
+    color: #000;
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
+
+.navItemActive .icon {
+    filter: brightness(0); /* Make icons black on green background */
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        top: 0;
+    }
+
+    .sidebarHeader {
+        display: none;
+    }
+
+    .nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 16px;
+        gap: 24px;
+    }
+
+    .navGroup {
+        gap: 8px;
+    }
+
+    .groupTitle {
+        display: none;
+    }
+
+    .groupItems {
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .navItem {
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+}

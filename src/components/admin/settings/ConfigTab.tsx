@@ -11,6 +11,7 @@ import type { ActionItem } from '@/types/shared';
 import { useRouter } from 'next/navigation';
 import adminStyles from '@/app/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
+import { sanitizeInput } from '@/utils/sanitization';
 import Modal from '@/components/shared/Modal';
 
 export interface SystemConfig {
@@ -300,7 +301,7 @@ export default function ConfigTab() {
                             className={adminStyles.input}
                             placeholder="e.g. ad_frequency_cap"
                             value={formValues.key}
-                            onChange={e => setFormValues({ ...formValues, key: e.target.value })}
+                            onChange={e => setFormValues({ ...formValues, key: sanitizeInput(e.target.value) })}
                             disabled={!!editingConfig || isSaving}
                         />
                         <p style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
@@ -315,7 +316,7 @@ export default function ConfigTab() {
                             className={adminStyles.input}
                             placeholder="Enter value..."
                             value={formValues.value}
-                            onChange={e => setFormValues({ ...formValues, value: e.target.value })}
+                            onChange={e => setFormValues({ ...formValues, value: sanitizeInput(e.target.value) })}
                             disabled={isSaving}
                         />
                     </div>
@@ -342,7 +343,7 @@ export default function ConfigTab() {
                             style={{ height: '80px', paddingTop: '8px' }}
                             placeholder="What does this configuration control?"
                             value={formValues.description}
-                            onChange={e => setFormValues({ ...formValues, description: e.target.value })}
+                            onChange={e => setFormValues({ ...formValues, description: sanitizeInput(e.target.value) })}
                             disabled={isSaving}
                         />
                     </div>

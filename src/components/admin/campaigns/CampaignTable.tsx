@@ -77,16 +77,13 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
         },
         {
             header: 'Ad Type',
-            // From `ad_type` enum: banner | interstitial | feed_card | map_pin
+            // From `ad_type` enum: banner | interstitial
             render: (campaign) => (
                 campaign.adType
                     ? <Badge
                         label={campaign.adType.replace('_', ' ').toUpperCase()}
                         variant={
-                            campaign.adType === 'banner' ? 'neutral' :
-                                campaign.adType === 'interstitial' ? 'info' :
-                                    campaign.adType === 'feed_card' ? 'warning' :
-                            /* map_pin */                        'success'
+                            campaign.adType === 'banner' ? 'neutral' : 'info'
                         }
                     />
                     : <span style={{ opacity: 0.3, fontSize: '12px' }}>—</span>

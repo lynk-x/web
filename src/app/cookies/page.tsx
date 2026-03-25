@@ -9,7 +9,7 @@ export default async function CookiePolicyPage() {
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'privacy_policy') // Fallback to privacy_policy as cookie_policy enum is missing
+        .eq('type', 'cookie_policy')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)

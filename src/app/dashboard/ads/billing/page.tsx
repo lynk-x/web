@@ -10,6 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 export default function AdsBillingPage() {
     const { showToast } = useToast();
@@ -38,7 +39,7 @@ export default function AdsBillingPage() {
                     .from('account_wallets')
                     .select('balance')
                     .eq('account_id', activeAccount.id)
-                    .eq('currency', activeAccount.default_currency || 'KES')
+                    .eq('currency', 'USD')
                     .maybeSingle(),
                 supabase
                     .from('ad_campaigns')
@@ -46,7 +47,7 @@ export default function AdsBillingPage() {
                     .eq('account_id', activeAccount.id)
             ]);
 
-            const currency = activeAccount.default_currency || 'KES';
+            const currency = 'USD';
             let totalSpend = (campaignsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
 
             const mapped: Invoice[] = (topupsRes.data || []).map((tx: any) => {
@@ -90,7 +91,7 @@ export default function AdsBillingPage() {
         currentPage * itemsPerPage
     );
 
-    const currency = activeAccount?.default_currency || 'KES';
+    const currency = 'USD';
 
     return (
         <div className={adminStyles.container}>
@@ -99,8 +100,8 @@ export default function AdsBillingPage() {
                 subtitle="Track your ad spend, manage your wallet balance, and view transaction history."
             />
 
-            <div className={adminStyles.subPageGrid} style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-                <div className={adminStyles.pageCard}>
+            <div className={adminStyles.subPageGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+                <div className={`${adminStyles.pageCard} tour-billing-balance`}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                             <h2 className={adminStyles.sectionTitle} style={{ fontSize: '14px', marginBottom: '8px' }}>Available Balance</h2>
@@ -135,7 +136,7 @@ export default function AdsBillingPage() {
                 </div>
             </div>
 
-            <div style={{ marginTop: '32px' }}>
+            <div style={{ marginTop: '32px' }} className="tour-billing-history">
                 <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '16px' }}>Ad Spend History</h2>
                 <TableToolbar
                     onSearchChange={setSearchQuery}
@@ -151,6 +152,29 @@ export default function AdsBillingPage() {
                     />
                 </div>
             </div>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsBillingJoyride_${activeAccount.id}` : 'hasSeenAdsBillingJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Finance & Ad Spend',
+                        content: 'Manage your campaign budgets, top up your wallet, and track your ad expenses.',
+                        disableBeacon: true,
+                    },
+                    {
+                        target: '.tour-billing-balance',
+                        title: 'Available Balance',
+                        content: 'Add funds here to ensure your ad campaigns continue running smoothly without interruptions.',
+                    },
+                    {
+                        target: '.tour-billing-history',
+                        title: 'Transaction History',
+                        content: 'Review all past wallet top-ups and their current status right here.',
+                    }
+                ]}
+            />
         </div>
     );
 }

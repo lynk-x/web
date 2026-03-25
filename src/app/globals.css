@@ -35,6 +35,7 @@ ul {
   list-style: none;
 }
 
+/* Global interactive elements (keep it minimal) */
 button {
   background: none;
   border: none;
@@ -42,6 +43,14 @@ button {
   font-family: inherit;
   color: inherit;
 }
+
+/* Standard placeholder styling */
+::placeholder {
+  color: var(--color-utility-primaryText);
+  opacity: 0.4;
+}
+
+
 
 input,
 textarea,

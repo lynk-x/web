@@ -2,34 +2,36 @@
     width: 100%;
 }
 
-/* Tabs */
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+
 .tabs {
     display: flex;
-    gap: 32px;
+    gap: 24px;
     border-bottom: 1px solid var(--color-interface-outline);
     margin-bottom: var(--spacing-xl);
 }
 
 .tabItem {
     padding: 12px 4px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
-.tabItem:hover {
-    opacity: 1;
-}
+.tabItem:hover { opacity: 1; }
 
 .activeTab {
     opacity: 1;
     color: var(--color-brand-primary);
     border-bottom-color: var(--color-brand-primary);
 }
+
+/* ── Core Form Layout ─────────────────────────────────────────────────────── */
 
 .formSection {
     display: flex;
@@ -59,8 +61,7 @@
 }
 
 .input,
-.textarea,
-.select {
+.textarea {
     padding: 12px 14px;
     border-radius: var(--radius-md);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -69,13 +70,13 @@
     font-size: 14px;
     outline: none;
     transition: all 0.2s;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .input:focus,
-.textarea:focus,
-.select:focus {
+.textarea:focus {
     border-color: var(--color-brand-primary);
-    outline: none;
 }
 
 .textarea {
@@ -91,17 +92,19 @@
 
 .actions {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     margin-top: var(--spacing-xl);
     padding-top: var(--spacing-lg);
     border-top: 1px solid var(--color-interface-outline);
 }
 
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
 .btn {
-    padding: 14px 32px;
+    padding: 12px 28px;
     border-radius: var(--radius-full);
     font-weight: 600;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     border: none;
     transition: all 0.2s;
@@ -109,85 +112,395 @@
 
 .btnPrimary {
     background-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
+    color: #000;
 }
 
-.btnPrimary:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
+.btnPrimary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .btnSecondary {
     background-color: transparent;
     border: 1px solid var(--color-interface-outline);
     color: var(--color-utility-primaryText);
+    padding: 10px 20px;
 }
 
-.btnSecondary:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
+.btnSecondary:hover { background-color: rgba(255, 255, 255, 0.05); }
+
+/* ── Review Tab ───────────────────────────────────────────────────────────── */
 
 .previewCard {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.04);
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
-    margin-top: var(--spacing-md);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .reviewItem {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     padding: var(--spacing-sm) 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 16px;
 }
 
-.reviewLabel {
-    opacity: 0.6;
-    font-size: 14px;
+.reviewItem:last-child { border-bottom: none; }
+.reviewLabel { opacity: 0.6; font-size: 13px; flex-shrink: 0; }
+.reviewValue { font-weight: 600; font-size: 13px; text-align: right; word-break: break-all; }
+
+.launchNote {
+    font-size: 12px;
+    opacity: 0.5;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    text-align: center;
+    margin-top: 8px;
 }
 
-.reviewValue {
-    font-weight: 600;
-    font-size: 14px;
-}
+/* ── #3 Pricing Hint ──────────────────────────────────────────────────────── */
 
-.layout {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 32px;
-    align-items: flex-start;
-    margin-top: 24px;
-}
-
-.formColumn {
-    min-width: 0;
+.pricingHint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
     display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-.previewColumn {
-    width: 100%;
-    position: sticky;
-    top: 24px;
-    display: flex;
-    flex-direction: column;
     align-items: center;
+    gap: 4px;
 }
 
-.previewTitle {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 20px;
+.pricingHint strong {
+    color: var(--color-brand-primary);
+    font-weight: 700;
+}
+
+/* ── #5 Performance Forecast ──────────────────────────────────────────────── */
+
+.forecastCard {
+    background: linear-gradient(135deg, rgba(32, 249, 40, 0.06) 0%, rgba(32, 249, 40, 0.02) 100%);
+    border: 1px solid rgba(32, 249, 40, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+}
+
+.forecastTitle {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--color-brand-primary);
+}
+
+.forecastGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.forecastItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.forecastLabel { font-size: 11px; opacity: 0.5; }
+
+.forecastValue {
+    font-size: 18px;
+    font-weight: 700;
     color: var(--color-utility-primaryText);
 }
 
+.forecastNote {
+    font-size: 11px;
+    opacity: 0.4;
+    margin-top: 10px;
+    line-height: 1.4;
+}
+
+/* ── #6 Schedule Timeline ─────────────────────────────────────────────────── */
+
+.timeline {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.timelineWeek {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.2s;
+}
+
+.timelineWeekActive {
+    background: rgba(32, 249, 40, 0.15);
+    border-color: rgba(32, 249, 40, 0.4);
+}
+
+.timelineLabel { font-size: 10px; color: rgba(255, 255, 255, 0.7); }
+
+.timelineWeekActive .timelineLabel { color: var(--color-brand-primary); font-weight: 600; }
+
+/* ── #1 Tag Input ─────────────────────────────────────────────────────────── */
+
+.tagInput {
+    min-height: 46px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-interface-surface);
+    cursor: text;
+    transition: border-color 0.2s;
+}
+
+.tagInput:focus-within { border-color: var(--color-brand-primary); }
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(32, 249, 40, 0.15);
+    border: 1px solid rgba(32, 249, 40, 0.3);
+    color: var(--color-brand-primary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tagRemove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+}
+
+.tagRemove:hover { opacity: 1; }
+
+.tagInputField {
+    flex: 1;
+    min-width: 80px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+}
+
+.tagSuggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.tagSuggestion {
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.tagSuggestion:hover {
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+    background: rgba(32, 249, 40, 0.06);
+}
+
+/* ── #2 Event Search ──────────────────────────────────────────────────────── */
+
+.eventSearchWrapper {
+    position: relative;
+}
+
+.eventDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--color-interface-surface);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    overflow: hidden;
+}
+
+.eventDropdownItem {
+    padding: 12px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+}
+
+.eventDropdownItem:hover { background: rgba(255, 255, 255, 0.05); }
+.eventDropdownItem:last-child { border-bottom: none; }
+
+.selectedEvent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(32, 249, 40, 0.08);
+    border: 1px solid rgba(32, 249, 40, 0.25);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.clearEvent {
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.clearEvent:hover { opacity: 1; }
+
+/* ── #4 Multi-Creative A/B ────────────────────────────────────────────────── */
+
+.creativeTabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.creativeTab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.creativeTab span:first-child { cursor: pointer; }
+
+.creativeTabActive {
+    background: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: #000;
+}
+
+.removeCreativeBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: inherit;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+}
+
+.removeCreativeBtn:hover { opacity: 1; }
+
+.addCreativeBtn {
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-brand-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.addCreativeBtn:hover { background: rgba(32, 249, 40, 0.06); border-color: var(--color-brand-primary); }
+
+.creativeEditor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+}
+
+/* ── Asset Upload ─────────────────────────────────────────────────────────── */
+
+.uploadArea {
+    border: 2px dashed rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-lg);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: rgba(255, 255, 255, 0.02);
+    text-align: center;
+}
+
+.uploadArea:hover {
+    border-color: var(--color-brand-primary);
+    background-color: rgba(32, 249, 40, 0.04);
+}
+
+.uploadIcon {
+    opacity: 0.35;
+    color: var(--color-utility-primaryText);
+}
+
+.assetPreviewBox {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.assetPreviewActions {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+}
+
+/* ── Mock Device & Preview ───────────────────────────────────────────────── */
+
 .mockDevice {
-    width: 280px;
-    height: 560px;
+    width: 260px;
+    height: 520px;
     background: #111;
-    border: 12px solid #222;
-    border-radius: 40px;
+    border: 10px solid #1e1e1e;
+    border-radius: 38px;
     position: relative;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 2px rgba(255, 255, 255, 0.1);
     overflow: hidden;
@@ -199,11 +512,11 @@
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px;
-    height: 18px;
-    background: #222;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
+    width: 70px;
+    height: 16px;
+    background: #1e1e1e;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
     z-index: 10;
 }
 
@@ -216,67 +529,62 @@
 .adPreviewWrapper {
     width: 100%;
     height: 100%;
-    padding: 12px;
-    padding-top: 32px;
+    padding: 10px;
+    padding-top: 30px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .mockAppContent {
     flex: 1;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .mockAppLine {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 3px;
 }
 
-.mockAd {
-    background: var(--color-brand-primary);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    width: 100%;
+/* Banner mock */
+.mockAdBanner {
+    background: #1a1a1a;
     display: flex;
     flex-direction: row;
+    height: 40px;
     align-items: center;
-    padding: 4px;
-    margin-bottom: 8px;
+    padding: 0 10px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
 }
 
-.mockAd .mockAdMedia {
-    width: 50px;
-    height: 50px;
-    border-radius: 6px;
-    flex-shrink: 0;
-}
-
-.mockAd .mockAdInfo {
-    padding: 0 12px;
+.mockAdBanner .mockAdTitle {
     flex: 1;
-    min-width: 0;
-}
-
-.mockAd .mockAdTitle {
-    color: #000;
+    font-size: 10px;
     margin-bottom: 0;
+    color: #fff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.mockAd .mockAdDesc {
-    color: rgba(0, 0, 0, 0.6);
+.mockAdBanner .mockAdCTA {
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    transition: color 0.2s;
 }
 
+/* Interstitial mock */
 .mockAdInterstitial {
     position: absolute;
     inset: 0;
@@ -287,7 +595,7 @@
 }
 
 .mockAdInterstitial .mockAdHeader {
-    padding: 12px 16px;
+    padding: 10px 14px;
     background: #000;
     display: flex;
     justify-content: space-between;
@@ -297,11 +605,15 @@
 
 .mockAdInterstitial .mockAdMedia {
     flex: 1;
-    aspect-ratio: auto;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111;
 }
 
 .mockAdInterstitial .mockAdInfo {
-    padding: 24px;
+    padding: 20px;
     background: linear-gradient(0deg, #000 0%, transparent 100%);
     position: absolute;
     bottom: 0;
@@ -309,42 +621,16 @@
     right: 0;
 }
 
-.mockAdBanner {
-    background: #1e1e1e;
-    display: flex;
-    flex-direction: row;
-    height: 44px;
-    align-items: center;
-    padding: 0 12px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-}
-
-.mockAdBanner .mockAdTitle {
-    flex: 1;
-    font-size: 11px;
-    margin-bottom: 0;
-}
-
-.mockAdBanner .mockAdCTA {
-    font-size: 11px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-}
-
 .mockAdMedia {
     width: 100%;
     aspect-ratio: 16/9;
-    background: linear-gradient(45deg, #222, #333);
+    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.mockAdInfo {
-    padding: 10px;
-}
+.mockAdInfo { padding: 10px; }
 
 .mockAdTitle {
     font-size: 13px;
@@ -371,32 +657,33 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
-.mockMapPreview {
-    flex: 1;
-    background: #1a1a1a;
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
+/* ── Misc ──────────────────────────────────────────────────────────────────── */
+
+.errorMessage {
+    color: #ff4d4d;
+    font-size: 13px;
+    margin-top: 8px;
 }
 
-.mapPin {
-    position: absolute;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: var(--color-brand-primary);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+.layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 32px;
+    align-items: flex-start;
 }
 
-.mapPopup {
-    position: absolute;
-    top: 55%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #222;
-    padding: 8px;
-    border-radius: 8px;
-    width: 140px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+.formColumn {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.previewColumn {
+    width: 100%;
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }

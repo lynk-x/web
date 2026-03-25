@@ -1,31 +1,49 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styles from './CreateCampaignForm.module.css';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
-
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/** A single ad creative (headline + image). Supports up to 3 per campaign for A/B rotation. */
+export interface Creative {
+    headline: string;
+    imageUrl?: string;
+    file?: File;
+    preview?: string;
+}
 
 export interface CampaignData {
     id?: string;
     title: string;
     description: string;
-    type: 'banner' | 'interstitial' | 'feed_card' | 'map_pin';
+    type: 'banner' | 'interstitial';
     total_budget: string;
     daily_limit: string;
     start_at: string;
     end_at: string;
     target_url: string;
     target_event_id?: string;
+    max_bid_amount: string;
     target_country_code?: string;
-    // Creative Asset info (maps to ad_assets table)
+    target_tags: string[]; // maps to target_tags text[] in ad_campaigns
+    creatives: Creative[];
+    // Legacy single-asset compat (kept for the edit flow)
     adHeadline: string;
     adImageUrl?: string;
 }
+
+interface PricingConfig {
+    impression: number;
+    click: number;
+}
+
+
 
 interface CreateCampaignFormProps {
     initialData?: CampaignData;
@@ -34,20 +52,50 @@ interface CreateCampaignFormProps {
     onDirtyChange?: (isDirty: boolean) => void;
 }
 
+interface CountryOption {
+    code: string;
+    display_name: string;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function CreateCampaignForm({
     initialData,
     isEditing = false,
     redirectPath = '/dashboard/ads/campaigns',
-    onDirtyChange
+    onDirtyChange,
 }: CreateCampaignFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
+    // ── UI State ──────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState('details');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const defaultData = initialData || {
+    const [formError, setFormError] = useState('');
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+    const [previewClicked, setPreviewClicked] = useState(false); // #7 interactive preview
+
+    // ── Pricing Config (fetched from ad_pricing_config) ───────────────────────
+    const [pricing, setPricing] = useState<PricingConfig>({ impression: 0, click: 0 });
+
+
+
+    // ── Reference Data State (fetched from DB) ────────────────────────────────
+    const [countries, setCountries] = useState<CountryOption[]>([]);
+    const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+
+    // ── Tag Input State ───────────────────────────────────────────────────────
+    const [tagInput, setTagInput] = useState('');
+
+    // ── Active Creative Index (for A/B multi-creative picker) ─────────────────
+    const [activeCreativeIdx, setActiveCreativeIdx] = useState(0);
+    /** Holds the three file-input elements for the A/B creative slots. */
+    const fileInputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null]);
+
+    // ── Form Data ─────────────────────────────────────────────────────────────
+    const defaultData: CampaignData = initialData || {
         title: '',
         description: '',
         type: 'banner',
@@ -56,58 +104,184 @@ export default function CreateCampaignForm({
         start_at: '',
         end_at: '',
         target_url: '',
-        target_event_id: '',
-        target_country_code: 'KE',
+
+        target_country_code: '',
+        target_tags: [],
+        creatives: [{ headline: '', imageUrl: '', preview: '', file: undefined }],
+        max_bid_amount: '0.01',
         adHeadline: '',
-        adImageUrl: ''
+        adImageUrl: '',
     };
     const [formData, setFormData] = useState<CampaignData>(defaultData);
-    const [touched, setTouched] = useState<Record<string, boolean>>({});
-    const [formError, setFormError] = useState('');
 
-    // Dirty Check
+    // ── Fetch Reference Data (Countries & Tags) ─────────────────────────────
+    useEffect(() => {
+        const fetchData = async () => {
+            // Fetch active countries
+            const { data: cData } = await supabase
+                .from('countries')
+                .select('code, display_name')
+                .eq('is_active', true)
+                .order('display_name');
+            if (cData) setCountries(cData);
+
+            // Fetch official/popular tags for suggestions
+            const { data: tData } = await supabase
+                .from('tags')
+                .select('name')
+                .eq('is_active', true)
+                .order('use_count', { ascending: false })
+                .limit(12);
+            if (tData) setTagSuggestions(tData.map(t => t.name));
+        };
+        fetchData();
+    }, [supabase]);
+
+    // ── Fetch Pricing on Ad Type Change ──────────────────────────────────────
+    useEffect(() => {
+        const fetchPricing = async () => {
+            const { data } = await supabase
+                .from('ad_pricing_config')
+                .select('interaction_type, base_price')
+                .eq('ad_type', formData.type);
+
+            if (data) {
+                const imp = data.find((r: any) => r.interaction_type === 'impression')?.base_price ?? 0;
+                const clk = data.find((r: any) => r.interaction_type === 'click')?.base_price ?? 0;
+                setPricing({ impression: imp, click: clk });
+            }
+        };
+        fetchPricing();
+    }, [formData.type, supabase]);
+
+
+
+
+
+    // ── Dirty Check ───────────────────────────────────────────────────────────
     useEffect(() => {
         const isDirty = JSON.stringify(formData) !== JSON.stringify(defaultData);
         onDirtyChange?.(isDirty);
-
         if (isDirty) {
-            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-                e.preventDefault();
-                e.returnValue = '';
-            };
+            const handleBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
             window.addEventListener('beforeunload', handleBeforeUnload);
             return () => window.removeEventListener('beforeunload', handleBeforeUnload);
         }
     }, [formData, onDirtyChange]);
 
+    // ── Handlers ──────────────────────────────────────────────────────────────
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        if (!touched[name]) {
-            setTouched(prev => ({ ...prev, [name]: true }));
-        }
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (!touched[name]) setTouched(prev => ({ ...prev, [name]: true }));
     };
 
-    const nextTab = (tab: string) => setActiveTab(tab);
+    /** Add a tag from input or suggestion chips. */
+    const addTag = (tag: string) => {
+        const normalized = tag.toLowerCase().trim().replace(/\s+/g, '_');
+        if (!normalized || formData.target_tags.includes(normalized) || formData.target_tags.length >= 10) return;
+        setFormData(prev => ({ ...prev, target_tags: [...prev.target_tags, normalized] }));
+        setTagInput('');
+    };
+
+    const removeTag = (tag: string) => {
+        setFormData(prev => ({ ...prev, target_tags: prev.target_tags.filter(t => t !== tag) }));
+    };
+
+    /** Update a single creative field by index. */
+    const updateCreative = (idx: number, patch: Partial<Creative>) => {
+        setFormData(prev => {
+            const creatives = [...prev.creatives];
+            creatives[idx] = { ...creatives[idx], ...patch };
+            return { ...prev, creatives };
+        });
+    };
+
+    const addCreative = () => {
+        if (formData.creatives.length >= 3) return;
+        setFormData(prev => ({
+            ...prev,
+            creatives: [...prev.creatives, { headline: '', imageUrl: '', preview: '', file: undefined }],
+        }));
+        setActiveCreativeIdx(formData.creatives.length);
+    };
+
+    const removeCreative = (idx: number) => {
+        if (formData.creatives.length <= 1) return;
+        setFormData(prev => {
+            const creatives = prev.creatives.filter((_, i) => i !== idx);
+            return { ...prev, creatives };
+        });
+        setActiveCreativeIdx(Math.max(0, idx - 1));
+    };
+
+    const handleAssetChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => updateCreative(idx, { file, preview: reader.result as string });
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveAsset = (idx: number) => {
+        updateCreative(idx, { file: undefined, preview: '', imageUrl: '' });
+        if (fileInputRefs.current[idx]) fileInputRefs.current[idx]!.value = '';
+    };
+
+    // ── Performance Forecast ──────────────────────────────────────────────────
+
+    const forecast = useMemo(() => {
+        const budget = parseFloat(formData.total_budget);
+        const start = formData.start_at ? new Date(formData.start_at) : null;
+        const end = formData.end_at ? new Date(formData.end_at) : null;
+        if (!budget || !start || !end || pricing.impression <= 0) return null;
+
+        const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+        // Lower bound estimate: 80% of budget spent on impressions
+        const impBudget = budget * 0.8;
+        const minImpressions = Math.round(impBudget / (pricing.impression * 1.5));  // conservative (pays some premium)
+        const maxImpressions = Math.round(impBudget / pricing.impression);           // optimistic (floor price)
+        // Typical CTR for in-app ads: ~0.5% – 1.5%
+        const minClicks = Math.round(minImpressions * 0.005);
+        const maxClicks = Math.round(maxImpressions * 0.015);
+
+        return { days, minImpressions, maxImpressions, minClicks, maxClicks };
+    }, [formData.total_budget, formData.start_at, formData.end_at, pricing]);
+
+    // ── Schedule Timeline ─────────────────────────────────────────────────────
+
+    const scheduleWeeks = useMemo(() => {
+        const start = formData.start_at ? new Date(formData.start_at) : null;
+        const end = formData.end_at ? new Date(formData.end_at) : null;
+        if (!start || !end || end <= start) return [];
+
+        const weeks: { label: string; active: boolean }[] = [];
+        const cursor = new Date(start);
+        
+        while (cursor <= end) {
+            const weekStart = new Date(cursor);
+            const weekEnd = new Date(cursor);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            // For the timeline visualization, we show 'blocks' starting from the first day
+            weeks.push({
+                label: weekStart.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+                active: true,
+            });
+            cursor.setDate(cursor.getDate() + 7);
+            if (weeks.length > 20) break; // Safety cap
+        }
+        return weeks;
+    }, [formData.start_at, formData.end_at]);
+
+    // ── Validation ────────────────────────────────────────────────────────────
 
     const validateForm = (): boolean => {
-        if (!formData.title.trim()) {
-            setFormError('Campaign title is required.');
-            return false;
-        }
-        if (!formData.description.trim()) {
-            setFormError('Campaign description is required.');
-            return false;
-        }
+        if (!formData.title.trim()) { setFormError('Campaign title is required.'); return false; }
 
         const budget = parseFloat(formData.total_budget);
-        if (isNaN(budget) || budget <= 0) {
-            setFormError('Valid positive total budget is required.');
-            return false;
-        }
+        if (isNaN(budget) || budget <= 0) { setFormError('Valid positive total budget is required.'); return false; }
 
         const limit = parseFloat(formData.daily_limit);
         if (formData.daily_limit && (isNaN(limit) || limit <= 0 || limit > budget)) {
@@ -115,25 +289,23 @@ export default function CreateCampaignForm({
             return false;
         }
 
-        if (!formData.start_at || !formData.end_at) {
-            setFormError('Both start date and end date are required.');
-            return false;
-        }
+        const bid = parseFloat(formData.max_bid_amount);
+        if (isNaN(bid) || bid <= 0) { setFormError('A valid positive max bid amount is required.'); return false; }
 
-        const start = new Date(formData.start_at);
-        const end = new Date(formData.end_at);
-        if (end <= start) {
+        if (!formData.start_at || !formData.end_at) { setFormError('Both start date and end date are required.'); return false; }
+        if (new Date(formData.end_at) <= new Date(formData.start_at)) {
             setFormError('End date must be after start date.');
             return false;
         }
 
-        if (!formData.adHeadline.trim()) {
-            setFormError('Ad headline is required.');
-            return false;
-        }
-
+        const primaryCreative = formData.creatives[0];
+        if (!primaryCreative.headline.trim()) { setFormError('Ad Headline is required for the primary creative.'); return false; }
         if (!formData.target_url.trim() || !formData.target_url.startsWith('https://')) {
             setFormError('A valid secure target URL (https://...) is required.');
+            return false;
+        }
+        if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
+            setFormError('An ad image asset is required for the primary creative.');
             return false;
         }
 
@@ -141,92 +313,109 @@ export default function CreateCampaignForm({
         return true;
     };
 
+    // ── Submit ────────────────────────────────────────────────────────────────
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
-
-        if (!activeAccount) {
-            showToast('Please select an active account/organization first.', 'error');
-            return;
-        }
-
-        if (!validateForm()) {
-            showToast('Please review the form for errors.', 'error');
-            return;
-        }
+        if (!activeAccount) { showToast('Please select an active account first.', 'error'); return; }
+        if (!validateForm()) { showToast('Please review the form for errors.', 'error'); return; }
 
         setIsSubmitting(true);
         try {
-            if (isEditing && formData.id) {
-                // Handle Update
-                const { error } = await supabase
-                    .from('ad_campaigns')
-                    .update({
-                        title: formData.title,
-                        description: formData.description,
-                        type: formData.type,
-                        total_budget: parseFloat(formData.total_budget),
-                        daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
-                        start_at: new Date(formData.start_at).toISOString(),
-                        end_at: new Date(formData.end_at).toISOString(),
-                        target_url: formData.target_url,
-                        target_event_id: formData.target_event_id || null,
-                        target_country_code: formData.target_country_code,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', formData.id);
+            // Upload all creative assets
+            const uploadedCreatives = await Promise.all(formData.creatives.map(async (c, idx) => {
+                if (!c.file) return c;
+                const ext = c.file.name.split('.').pop();
+                const path = `${activeAccount.id}/ads/${Date.now()}_creative_${idx}.${ext}`;
+                const { error } = await supabase.storage.from('ad_assets').upload(path, c.file);
+                if (error) throw error;
+                const { data } = supabase.storage.from('ad_assets').getPublicUrl(path);
+                return { ...c, imageUrl: data.publicUrl };
+            }));
 
+            const primaryCreative = uploadedCreatives[0];
+
+            // Resolve tag slugs → UUIDs from the tags table so we can insert into campaign_tags.
+            let resolvedTagIds: string[] = [];
+            if (formData.target_tags.length > 0) {
+                const { data: tagRows } = await supabase
+                    .from('tags')
+                    .select('id, name')
+                    .in('name', formData.target_tags);
+                resolvedTagIds = (tagRows || []).map(t => t.id);
+            }
+
+            if (isEditing && formData.id) {
+                const { error } = await supabase.from('ad_campaigns').update({
+                    title: formData.title,
+                    description: formData.description,
+                    type: formData.type,
+                    total_budget: parseFloat(formData.total_budget),
+                    daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
+                    max_bid_amount: parseFloat(formData.max_bid_amount),
+                    start_at: new Date(formData.start_at).toISOString(),
+                    end_at: new Date(formData.end_at).toISOString(),
+                    target_url: formData.target_url,
+                    target_country_code: formData.target_country_code || null,
+                    updated_at: new Date().toISOString(),
+                }).eq('id', formData.id);
                 if (error) throw error;
 
-                // Update primary asset
-                const { error: assetError } = await supabase
-                    .from('ad_assets')
-                    .update({
-                        call_to_action: formData.adHeadline,
-                        url: formData.adImageUrl,
-                        media_type: 'image',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('campaign_id', formData.id)
-                    .eq('is_primary', true);
+                // Re-sync campaign_tags: wipe then re-insert
+                await supabase.from('campaign_tags').delete().eq('campaign_id', formData.id);
+                if (resolvedTagIds.length > 0) {
+                    await supabase.from('campaign_tags').insert(
+                        resolvedTagIds.map(tag_id => ({ campaign_id: formData.id, tag_id }))
+                    );
+                }
 
-                if (assetError) console.error('Asset update error:', assetError);
+                // Re-insert all assets: delete old ones, re-insert all
+                await supabase.from('ad_assets').delete().eq('campaign_id', formData.id);
+                await supabase.from('ad_assets').insert(
+                    uploadedCreatives.map((c, idx) => ({
+                        campaign_id: formData.id,
+                        media_type: 'image',
+                        call_to_action: c.headline,
+                        url: c.imageUrl || formData.adImageUrl,
+                        is_primary: idx === 0,
+                    }))
+                );
                 showToast('Campaign updated successfully!', 'success');
             } else {
-                // Handle Create
-                const { data: campaign, error } = await supabase
-                    .from('ad_campaigns')
-                    .insert({
-                        account_id: activeAccount.id,
-                        title: formData.title,
-                        description: formData.description,
-                        type: formData.type,
-                        total_budget: parseFloat(formData.total_budget),
-                        daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
-                        start_at: new Date(formData.start_at).toISOString(),
-                        end_at: new Date(formData.end_at).toISOString(),
-                        target_url: formData.target_url,
-                        target_event_id: formData.target_event_id || null,
-                        target_country_code: formData.target_country_code,
-                        status: 'pending_approval'
-                    })
-                    .select()
-                    .single();
-
+                const { data: campaign, error } = await supabase.from('ad_campaigns').insert({
+                    account_id: activeAccount.id,
+                    title: formData.title,
+                    description: formData.description,
+                    type: formData.type,
+                    total_budget: parseFloat(formData.total_budget),
+                    daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
+                    max_bid_amount: parseFloat(formData.max_bid_amount),
+                    start_at: new Date(formData.start_at).toISOString(),
+                    end_at: new Date(formData.end_at).toISOString(),
+                    target_url: formData.target_url,
+                    target_country_code: formData.target_country_code || null,
+                    status: 'pending_approval',
+                }).select().single();
                 if (error) throw error;
 
                 if (campaign) {
-                    const { error: assetError } = await supabase
-                        .from('ad_assets')
-                        .insert({
+                    // Insert campaign_tags rows for each resolved tag UUID
+                    if (resolvedTagIds.length > 0) {
+                        await supabase.from('campaign_tags').insert(
+                            resolvedTagIds.map(tag_id => ({ campaign_id: campaign.id, tag_id }))
+                        );
+                    }
+
+                    await supabase.from('ad_assets').insert(
+                        uploadedCreatives.map((c, idx) => ({
                             campaign_id: campaign.id,
                             media_type: 'image',
-                            call_to_action: formData.adHeadline,
-                            url: formData.adImageUrl,
-                            is_primary: true
-                        });
-
-                    if (assetError) console.error('Asset creation error:', assetError);
+                            call_to_action: c.headline || formData.adHeadline,
+                            url: c.imageUrl || primaryCreative.imageUrl || formData.adImageUrl,
+                            is_primary: idx === 0,
+                        }))
+                    );
                 }
                 showToast('Campaign submitted for approval!', 'success');
             }
@@ -234,256 +423,373 @@ export default function CreateCampaignForm({
             onDirtyChange?.(false);
             router.push(redirectPath);
             router.refresh();
-        } catch (error: any) {
-            console.error('Submission error:', error);
-            showToast(error.message || 'Failed to save campaign.', 'error');
+        } catch (err: any) {
+            console.error('Submission error:', err);
+            showToast(err.message || 'Failed to save campaign.', 'error');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const getInputClass = (name: string, baseClass: string) => {
-        if (!touched[name]) return baseClass;
-        const isValid = !!formData[name as keyof typeof formData];
-        return `${baseClass} ${isValid ? 'input-success' : 'input-error'}`;
-    };
+    // ─── UI Helpers ───────────────────────────────────────────────────────────
 
-    const renderValidationHint = (name: string) => {
-        if (!touched[name]) return null;
-        const isValid = !!formData[name as keyof typeof formData];
-        return isValid ? (
-            <div className="validation-hint success">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                Valid
-            </div>
-        ) : (
-            <div className="validation-hint error">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                Required
-            </div>
-        );
-    };
+    const activeCreative = formData.creatives[activeCreativeIdx] || formData.creatives[0];
+
+    const fmtNum = (n: number) =>
+        n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : `${n}`;
+
+    // ─── JSX ──────────────────────────────────────────────────────────────────
 
     return (
         <div className={adminStyles.subPageGrid}>
+
+            {/* ── Left: Form ─────────────────────────────────────────── */}
             <div className={adminStyles.formColumn}>
                 <div className={adminStyles.pageCard} style={{ padding: '0' }}>
-                    {/* Tabs */}
+
+                    {/* Tab Nav */}
                     <div className={styles.tabs} style={{ padding: '0 24px' }}>
-                        <div
-                            className={`${styles.tabItem} ${activeTab === 'details' ? styles.activeTab : ''}`}
-                            onClick={() => setActiveTab('details')}
-                        >
-                            Campaign Details
-                        </div>
-                        <div
-                            className={`${styles.tabItem} ${activeTab === 'creative' ? styles.activeTab : ''}`}
-                            onClick={() => setActiveTab('creative')}
-                        >
-                            Ad Creative
-                        </div>
-                        <div
-                            className={`${styles.tabItem} ${activeTab === 'review' ? styles.activeTab : ''}`}
-                            onClick={() => setActiveTab('review')}
-                        >
-                            Review & Launch
-                        </div>
+                        {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
+                            <div
+                                key={tab}
+                                className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''}`}
+                                onClick={() => setActiveTab(tab)}
+                            >
+                                {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
+                            </div>
+                        ))}
                     </div>
 
                     <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
-                        {/* Tab: Campaign Details */}
+
+                        {/* ── Tab: Campaign Details ── */}
                         {activeTab === 'details' && (
                             <div className={styles.formSection}>
+
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="title">Campaign Title <span className={styles.requiredIndicator}>*Required</span></label>
-                                    <input
-                                        type="text"
-                                        id="title"
-                                        name="title"
-                                        className={getInputClass('title', styles.input)}
-                                        placeholder="e.g. Summer Festival Promo"
-                                        value={formData.title}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                    {renderValidationHint('title')}
+                                    <label className={styles.label} htmlFor="title">
+                                        Title <span className={styles.requiredIndicator}>*Required</span>
+                                    </label>
+                                    <input id="title" name="title" type="text" className={styles.input}
+                                        placeholder="e.g. Festival Promo" value={formData.title}
+                                        onChange={handleInputChange} required />
                                 </div>
 
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="description">Campaign Description <span className={styles.requiredIndicator}>*Required</span></label>
-                                    <textarea
-                                        id="description"
-                                        name="description"
-                                        className={styles.textarea}
-                                        placeholder="Internal description or overview..."
-                                        value={formData.description}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
+                                    <label className={styles.label} htmlFor="description">
+                                        Description
+                                    </label>
+                                    <textarea id="description" name="description" className={styles.textarea}
+                                        placeholder="Internal description or overview..." value={formData.description}
+                                        onChange={handleInputChange} />
                                 </div>
 
+                                {/* Ad Type + Region */}
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="type">Ad Type <span className={styles.requiredIndicator}>*Required</span></label>
-                                        <select
-                                            id="type"
-                                            name="type"
-                                            className={styles.input}
-                                            value={formData.type}
-                                            onChange={handleInputChange}
-                                            required
-                                        >
-                                            <option value="banner">Banner Ad</option>
-                                            <option value="interstitial">Interstitial</option>
-                                            <option value="feed_card">Feed Card</option>
-                                            <option value="map_pin">Map Pin</option>
+                                        <label className={styles.label} htmlFor="type">
+                                            Ad Type <span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <select id="type" name="type" className={styles.input}
+                                            value={formData.type} onChange={handleInputChange} required>
+                                            <option value="banner">Banner Ad (16:9)</option>
+                                            <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
                                         </select>
+                                        {/* #3 CPM/CPC Estimator */}
+                                        {pricing.impression > 0 && (
+                                            <div className={styles.pricingHint}>
+                                                <span>Starting at</span>
+                                                <strong>${pricing.impression.toFixed(3)}</strong> / impression
+                                                &nbsp;·&nbsp;
+                                                <strong>${pricing.click.toFixed(2)}</strong> / click
+                                            </div>
+                                        )}
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="target_country_code">Target Region</label>
-                                        <select
-                                            id="target_country_code"
-                                            name="target_country_code"
-                                            className={styles.input}
-                                            value={formData.target_country_code}
-                                            onChange={handleInputChange}
-                                        >
-                                            <option value="KE">Kenya</option>
-                                            <option value="UG">Uganda</option>
-                                            <option value="TZ">Tanzania</option>
-                                            <option value="RW">Rwanda</option>
+                                        <select id="target_country_code" name="target_country_code" className={styles.input}
+                                            value={formData.target_country_code} onChange={handleInputChange}>
+                                            <option value="">Select Region...</option>
+                                            {countries.map(c => (
+                                                <option key={c.code} value={c.code}>{c.display_name}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
 
+                                {/* Budget */}
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="total_budget">Total Budget ($) <span className={styles.requiredIndicator}>*Required</span></label>
-                                        <input
-                                            type="number"
-                                            id="total_budget"
-                                            name="total_budget"
-                                            className={styles.input}
-                                            placeholder="1000"
-                                            value={formData.total_budget}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
+                                        <label className={styles.label} htmlFor="total_budget">
+                                            Total Budget ($) <span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <input id="total_budget" name="total_budget" type="number" className={styles.input}
+                                            placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="daily_limit">Daily Limit ($)</label>
-                                        <input
-                                            type="number"
-                                            id="daily_limit"
-                                            name="daily_limit"
-                                            className={styles.input}
-                                            placeholder="50"
-                                            value={formData.daily_limit}
-                                            onChange={handleInputChange}
-                                        />
+                                        <input id="daily_limit" name="daily_limit" type="number" className={styles.input}
+                                            placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
+                                    </div>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label} htmlFor="max_bid_amount">Max Bid ($) <span className={styles.requiredIndicator}>*Required</span></label>
+                                        <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={styles.input}
+                                            placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
                                     </div>
                                 </div>
 
+                                {/* Dates */}
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="start_at">Start Date <span className={styles.requiredIndicator}>*Required</span></label>
-                                        <input
-                                            type="date"
-                                            id="start_at"
-                                            name="start_at"
-                                            className={styles.input}
-                                            value={formData.start_at}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
+                                        <label className={styles.label} htmlFor="start_at">
+                                            Start Date <span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <input id="start_at" name="start_at" type="date" className={styles.input}
+                                            value={formData.start_at} onChange={handleInputChange} required />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="end_at">End Date <span className={styles.requiredIndicator}>*Required</span></label>
+                                        <label className={styles.label} htmlFor="end_at">
+                                            End Date <span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <input id="end_at" name="end_at" type="date" className={styles.input}
+                                            value={formData.end_at} onChange={handleInputChange} required />
+                                    </div>
+                                </div>
+
+                                {/* #5 Performance Forecast */}
+                                {forecast && (
+                                    <div className={styles.forecastCard}>
+                                        <div className={styles.forecastTitle}>📈 Estimated Reach ({forecast.days} days)</div>
+                                        <div className={styles.forecastGrid}>
+                                            <div className={styles.forecastItem}>
+                                                <span className={styles.forecastLabel}>Impressions</span>
+                                                <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
+                                            </div>
+                                            <div className={styles.forecastItem}>
+                                                <span className={styles.forecastLabel}>Clicks (est. 0.5–1.5% CTR)</span>
+                                                <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
+                                            </div>
+                                        </div>
+                                        <p className={styles.forecastNote}>Estimates are based on base floor pricing. Actual costs are determined by GSP auction.</p>
+                                    </div>
+                                )}
+
+                                {/* #6 Schedule Timeline */}
+                                {scheduleWeeks.length > 0 && (
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label}>Campaign Timeline</label>
+                                        <div className={styles.timeline}>
+                                            {scheduleWeeks.map((w, i) => (
+                                                <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
+                                                    <span className={styles.timelineLabel}>{w.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className={styles.forecastNote} style={{ marginTop: '6px' }}>
+                                            Highlighted weeks are within your campaign window.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Tab: Targeting ── */}
+                        {activeTab === 'targeting' && (
+                            <div className={styles.formSection}>
+
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label} htmlFor="target_url">
+                                        Destination URL <span className={styles.requiredIndicator}>*Required</span>
+                                    </label>
+                                    <input id="target_url" name="target_url" type="url" className={styles.input}
+                                        placeholder="https://lynk-x.com/event/..." value={formData.target_url}
+                                        onChange={handleInputChange} required />
+                                </div>
+
+                                {/* FIXME: Geo-Fencing / Radius Targeting 
+                                    The DB supports target_coordinate (geography) and target_radius_km.
+                                    Integrate a Map Picker or radius slider here to enable local-only ads.
+                                */}
+                                {/* #1 Interest Tag Targeting */}
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label}>Interest Tags <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(max 10 — used for audience matching)</span></label>
+                                    <div className={styles.tagInput}>
+                                        {formData.target_tags.map(tag => (
+                                            <span key={tag} className={styles.tag}>
+                                                {tag}
+                                                <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
+                                            </span>
+                                        ))}
                                         <input
-                                            type="date"
-                                            id="end_at"
-                                            name="end_at"
-                                            className={styles.input}
-                                            value={formData.end_at}
-                                            onChange={handleInputChange}
-                                            required
+                                            className={styles.tagInputField}
+                                            placeholder={formData.target_tags.length < 10 ? 'Add a tag...' : 'Max 10 tags'}
+                                            value={tagInput}
+                                            onChange={e => setTagInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
+                                                if (e.key === 'Backspace' && !tagInput && formData.target_tags.length > 0) {
+                                                    removeTag(formData.target_tags[formData.target_tags.length - 1]);
+                                                }
+                                            }}
+                                            disabled={formData.target_tags.length >= 10}
                                         />
                                     </div>
+                                    <div className={styles.tagSuggestions}>
+                                        {tagSuggestions.filter(t => !formData.target_tags.includes(t)).map(t => (
+                                            <button key={t} type="button" className={styles.tagSuggestion} onClick={() => addTag(t)}>
+                                                + {t}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Tab: Ad Creative */}
+                        {/* ── Tab: Creatives (A/B) ── */}
                         {activeTab === 'creative' && (
                             <div className={styles.formSection}>
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="adHeadline">Ad Headline / Call to Action <span className={styles.requiredIndicator}>*Required</span></label>
-                                    <input
-                                        type="text"
-                                        id="adHeadline"
-                                        name="adHeadline"
-                                        className={styles.input}
-                                        placeholder="e.g. Get 20% Off Tickets Today!"
-                                        value={formData.adHeadline}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label className={styles.label}>Ad Creatives <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(up to 3 for A/B rotation)</span></label>
+                                    {formData.creatives.length < 3 && (
+                                        <button type="button" className={styles.addCreativeBtn} onClick={addCreative}>
+                                            + Add Variant
+                                        </button>
+                                    )}
                                 </div>
 
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="target_url">Destination URL <span className={styles.requiredIndicator}>*Required</span></label>
-                                    <input
-                                        type="url"
-                                        id="target_url"
-                                        name="target_url"
-                                        className={styles.input}
-                                        placeholder="https://lynk-x.com/event/..."
-                                        value={formData.target_url}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
+                                {/* Creative Tabs */}
+                                <div className={styles.creativeTabs}>
+                                    {formData.creatives.map((c, i) => (
+                                        <div key={i} className={`${styles.creativeTab} ${activeCreativeIdx === i ? styles.creativeTabActive : ''}`}>
+                                            <span onClick={() => setActiveCreativeIdx(i)}>
+                                                {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + i)}`}
+                                                {c.preview ? ' ✓' : ''}
+                                            </span>
+                                            {i > 0 && (
+                                                <button type="button" className={styles.removeCreativeBtn} onClick={() => removeCreative(i)}>×</button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
 
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="adImageUrl">Image URL (Optional)</label>
-                                    <input
-                                        type="url"
-                                        id="adImageUrl"
-                                        name="adImageUrl"
-                                        className={styles.input}
-                                        placeholder="https://..."
-                                        value={formData.adImageUrl}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
+                                {/* Active Creative Editor */}
+                                {formData.creatives.map((c, i) => i !== activeCreativeIdx ? null : (
+                                    <div key={i} className={styles.creativeEditor}>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label}>
+                                                Headline / Call to Action
+                                                {i === 0 && <span className={styles.requiredIndicator}>*Required</span>}
+                                            </label>
+                                            <input type="text" className={styles.input}
+                                                placeholder="e.g. Get 20% Off Tickets Today!"
+                                                value={c.headline}
+                                                onChange={e => updateCreative(i, { headline: e.target.value })} />
+                                        </div>
+
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label}>
+                                                Creative Image
+                                                <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px', marginLeft: '6px' }}>
+                                                    ({formData.type === 'banner' ? '16:9 recommended' : '9:16 recommended'})
+                                                </span>
+                                                {i === 0 && <span className={styles.requiredIndicator}>*Required</span>}
+                                            </label>
+
+                                            {c.preview || c.imageUrl ? (
+                                                <div className={styles.assetPreviewBox}>
+                                                    <img
+                                                        src={c.preview || c.imageUrl}
+                                                        alt="Creative preview"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                                                    />
+                                                    <div className={styles.assetPreviewActions}>
+                                                        <button type="button" className={styles.btnSecondary}
+                                                            style={{ fontSize: '12px', padding: '6px 12px' }}
+                                                            onClick={() => fileInputRefs.current[i]?.click()}>
+                                                            Change
+                                                        </button>
+                                                        <button type="button" className={styles.btnSecondary}
+                                                            style={{ fontSize: '12px', padding: '6px 12px', color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.3)' }}
+                                                            onClick={() => handleRemoveAsset(i)}>
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className={styles.uploadArea} onClick={() => fileInputRefs.current[i]?.click()}>
+                                                    <svg className={styles.uploadIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                                        <polyline points="21 15 16 10 5 21" />
+                                                    </svg>
+                                                    <p style={{ marginTop: '12px', fontSize: '14px', opacity: 0.7 }}>Click to upload an image</p>
+                                                    <p style={{ fontSize: '12px', opacity: 0.4 }}>{formData.type === 'banner' ? '16:9' : '9:16'} · PNG, JPG, WEBP</p>
+                                                </div>
+                                            )}
+                                            <input type="file" ref={el => { fileInputRefs.current[i] = el; }} style={{ display: 'none' }}
+                                                accept="image/*" onChange={e => handleAssetChange(e, i)} />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
-                        {/* Tab: Review */}
+                        {/* ── Tab: Review ── */}
                         {activeTab === 'review' && (
                             <div className={styles.formSection}>
-                                <h3>Review Campaign</h3>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Review & Launch</h3>
                                 <div className={styles.previewCard}>
-                                    <div className={styles.reviewItem}>
-                                        <span className={styles.reviewLabel}>Campaign Title</span>
-                                        <span className={styles.reviewValue}>{formData.title}</span>
+                                    {[
+                                        ['Campaign Title', formData.title],
+                                        ['Ad Type', formData.type === 'banner' ? 'Banner (16:9)' : 'Interstitial (Full Screen)'],
+                                        ['Budget', `$${formData.total_budget}${formData.daily_limit ? ` (Daily cap: $${formData.daily_limit})` : ''} · Max Bid: $${formData.max_bid_amount}`],
+                                        ['Duration', formData.start_at && formData.end_at ? `${formData.start_at} → ${formData.end_at}` : '—'],
+                                        ['Region', formData.target_country_code || '—'],
+                                        ['Interest Tags', formData.target_tags.length > 0 ? formData.target_tags.map(t => t).join(', ') : 'None'],
+
+                                        ['Destination URL', formData.target_url],
+                                        ['Ad Creatives', `${formData.creatives.filter(c => c.headline || c.preview).length} ${formData.creatives.length > 1 ? `variant${formData.creatives.length > 1 ? 's' : ''} (A/B)` : 'creative'}`],
+                                    ].map(([label, value]) => (
+                                        <div key={label} className={styles.reviewItem}>
+                                            <span className={styles.reviewLabel}>{label}</span>
+                                            <span className={styles.reviewValue}>{value || '—'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Schedule repeat in review */}
+                                {scheduleWeeks.length > 0 && (
+                                    <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
+                                        <label className={styles.label}>Campaign Window</label>
+                                        <div className={styles.timeline}>
+                                            {scheduleWeeks.map((w, i) => (
+                                                <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
+                                                    <span className={styles.timelineLabel}>{w.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className={styles.reviewItem}>
-                                        <span className={styles.reviewLabel}>Budget</span>
-                                        <span className={styles.reviewValue}>${formData.total_budget} (Limit: ${formData.daily_limit}/day)</span>
+                                )}
+
+                                {/* Forecast in review */}
+                                {forecast && (
+                                    <div className={styles.forecastCard} style={{ marginTop: '12px' }}>
+                                        <div className={styles.forecastTitle}>📈 Estimated Reach</div>
+                                        <div className={styles.forecastGrid}>
+                                            <div className={styles.forecastItem}>
+                                                <span className={styles.forecastLabel}>Impressions</span>
+                                                <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
+                                            </div>
+                                            <div className={styles.forecastItem}>
+                                                <span className={styles.forecastLabel}>Clicks Est.</span>
+                                                <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className={styles.reviewItem}>
-                                        <span className={styles.reviewLabel}>Duration</span>
-                                        <span className={styles.reviewValue}>{formData.start_at} to {formData.end_at}</span>
-                                    </div>
-                                    <div className={styles.reviewItem}>
-                                        <span className={styles.reviewLabel}>Headline</span>
-                                        <span className={styles.reviewValue}>{formData.adHeadline}</span>
-                                    </div>
-                                    <div className={styles.reviewItem}>
-                                        <span className={styles.reviewLabel}>Target URL</span>
-                                        <span className={styles.reviewValue}>{formData.target_url}</span>
-                                    </div>
+                                )}
+
+                                <div className={styles.launchNote}>
+                                    By launching, your campaign will be submitted for admin approval before going live.
                                 </div>
                             </div>
                         )}
@@ -496,30 +802,25 @@ export default function CreateCampaignForm({
                                 </div>
                             )}
                             <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', gap: '12px' }}>
-                                    {(activeTab === 'creative' || activeTab === 'review') && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab(activeTab === 'creative' ? 'details' : 'creative')}
-                                            className={`${styles.btn} ${styles.btnSecondary}`}
-                                        >
-                                            Back
-                                        </button>
+                                <div>
+                                    {activeTab !== 'details' && (
+                                        <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => {
+                                            const flow = ['details', 'targeting', 'creative', 'review'];
+                                            const idx = flow.indexOf(activeTab);
+                                            if (idx > 0) setActiveTab(flow[idx - 1]);
+                                        }}>Back</button>
                                     )}
                                 </div>
-
-                                <div style={{ display: 'flex', gap: '12px' }}>
-                                    {activeTab === 'details' && (
-                                        <button type="button" onClick={() => nextTab('creative')} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                            Next: Ad Creative
+                                <div>
+                                    {activeTab !== 'review' ? (
+                                        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
+                                            const flow = ['details', 'targeting', 'creative', 'review'];
+                                            const idx = flow.indexOf(activeTab);
+                                            if (idx < flow.length - 1) setActiveTab(flow[idx + 1]);
+                                        }}>
+                                            Next →
                                         </button>
-                                    )}
-                                    {activeTab === 'creative' && (
-                                        <button type="button" onClick={() => nextTab('review')} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                            Next: Review
-                                        </button>
-                                    )}
-                                    {activeTab === 'review' && (
+                                    ) : (
                                         <button type="submit" disabled={isSubmitting} className={`${styles.btn} ${styles.btnPrimary}`}>
                                             {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Launch Campaign')}
                                         </button>
@@ -531,6 +832,7 @@ export default function CreateCampaignForm({
                 </div>
             </div>
 
+            {/* ── Right: Live Preview ─────────────────────────────────── */}
             <div className={adminStyles.formSection} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div>
                     <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
@@ -546,24 +848,28 @@ export default function CreateCampaignForm({
                                                 <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
                                             </div>
                                             <div className={styles.mockAdMedia}>
-                                                {formData.adImageUrl ? (
-                                                    <img src={formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                {(activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl) ? (
+                                                    <img src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 ) : (
                                                     <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
-                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                        <circle cx="8.5" cy="8.5" r="1.5" />
-                                                        <polyline points="21 15 16 10 5 21" />
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
                                                     </svg>
                                                 )}
                                             </div>
                                             <div className={styles.mockAdInfo}>
                                                 <span className={styles.mockAdBadge}>Ad • INTERSTITIAL</span>
-                                                <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{formData.adHeadline || 'Your Catchy Headline'}</div>
+                                                <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{activeCreative.headline || formData.adHeadline || 'Your Catchy Headline'}</div>
                                                 <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
-                                                <button style={{
-                                                    marginTop: '16px', width: '100%', padding: '10px', background: 'var(--color-brand-primary)', border: 'none', borderRadius: '6px', color: '#000', fontWeight: 600, fontSize: '13px'
-                                                }}>
-                                                    Learn More
+                                                {/* #7 Interactive Preview Button */}
+                                                <button
+                                                    onClick={() => { setPreviewClicked(true); setTimeout(() => setPreviewClicked(false), 2000); }}
+                                                    style={{
+                                                        marginTop: '16px', width: '100%', padding: '10px',
+                                                        background: previewClicked ? '#fff' : 'var(--color-brand-primary)',
+                                                        border: 'none', borderRadius: '6px', color: '#000', fontWeight: 600, fontSize: '13px',
+                                                        cursor: 'pointer', transition: 'background 0.3s',
+                                                    }}>
+                                                    {previewClicked ? '✓ Would redirect to your URL' : 'Learn More'}
                                                 </button>
                                             </div>
                                         </div>
@@ -571,47 +877,25 @@ export default function CreateCampaignForm({
                                         <>
                                             {formData.type === 'banner' && (
                                                 <div className={styles.mockAdBanner}>
-                                                    <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>AD</div>
-                                                    <div className={styles.mockAdCTA}>Learn More</div>
+                                                    {(activeCreative.preview || activeCreative.imageUrl) ? (
+                                                        <img src={activeCreative.preview || activeCreative.imageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
+                                                    ) : null}
+                                                    <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
+                                                        {activeCreative.headline || formData.adHeadline || 'AD'}
+                                                    </div>
+                                                    {/* #7 Interactive CTA */}
+                                                    <div
+                                                        className={styles.mockAdCTA}
+                                                        onClick={() => { setPreviewClicked(true); setTimeout(() => setPreviewClicked(false), 2000); }}
+                                                        style={{ cursor: 'pointer', zIndex: 1, position: 'relative', color: previewClicked ? 'var(--color-brand-primary)' : '#fff' }}
+                                                    >
+                                                        {previewClicked ? '✓ Redirected!' : 'Learn More'}
+                                                    </div>
                                                 </div>
                                             )}
-
                                             <div className={styles.mockAppContent}>
                                                 <div className={styles.mockAppLine} style={{ width: '40%' }}></div>
                                                 <div className={styles.mockAppLine} style={{ width: '80%' }}></div>
-
-                                                {formData.type === 'feed_card' && (
-                                                    <div className={styles.mockAd}>
-                                                        <div className={styles.mockAdMedia}>
-                                                            {formData.adImageUrl ? (
-                                                                <img src={formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                            ) : (
-                                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5">
-                                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                                    <circle cx="8.5" cy="8.5" r="1.5" />
-                                                                    <polyline points="21 15 16 10 5 21" />
-                                                                </svg>
-                                                            )}
-                                                        </div>
-                                                        <div className={styles.mockAdInfo}>
-                                                            <div className={styles.mockAdTitle}>{formData.adHeadline || 'Ad Headline'}</div>
-                                                            <div className={styles.mockAdDesc}>{formData.title || 'Campaign Title'}</div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {formData.type === 'map_pin' && (
-                                                    <div className={styles.mockMapPreview}>
-                                                        <div className={styles.mapPin}>
-                                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
-                                                        </div>
-                                                        <div className={styles.mapPopup}>
-                                                            <div className={styles.mockAdTitle} style={{ fontSize: '10px' }}>{formData.adHeadline || 'Location Ad'}</div>
-                                                            <div className={styles.mockAdDesc} style={{ fontSize: '8px' }}>Tap to view details</div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
                                                 <div className={styles.mockAppLine} style={{ width: '90%', marginTop: 'auto' }}></div>
                                                 <div className={styles.mockAppLine} style={{ width: '100%' }}></div>
                                                 <div className={styles.mockAppLine} style={{ width: '70%' }}></div>
@@ -622,6 +906,24 @@ export default function CreateCampaignForm({
                             </div>
                         </div>
                     </div>
+
+                    {/* A/B Variant selector in preview panel */}
+                    {formData.creatives.length > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
+                            {formData.creatives.map((_, i) => (
+                                <button key={i} type="button"
+                                    style={{
+                                        padding: '4px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', cursor: 'pointer', border: '1px solid',
+                                        background: activeCreativeIdx === i ? 'var(--color-brand-primary)' : 'transparent',
+                                        color: activeCreativeIdx === i ? '#000' : 'var(--color-utility-primaryText)',
+                                        borderColor: activeCreativeIdx === i ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.2)',
+                                    }}
+                                    onClick={() => setActiveCreativeIdx(i)}>
+                                    {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + i)}`}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

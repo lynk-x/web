@@ -43,9 +43,32 @@ export default function CreateEventPage() {
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
             }
 
-            // 2. Parse DateTimes
-            const startDateTime = new Date(`${data.startDate}T${data.startTime}`).toISOString();
-            const endDateTime = new Date(`${data.endDate}T${data.endTime}`).toISOString();
+            // 2. Parse DateTimes — convert to UTC relative to the event's selected timezone.
+            // Bug 25 fix: previously used new Date(`${date}T${time}`) which interpreted the
+            // string in the BROWSER's ambient timezone, wrong if the event is in a different zone.
+            const toUtcIso = (date: string, time: string, tz?: string): string => {
+                if (tz) {
+                    try {
+                        // Build a formatter that tells us the UTC offset for this zone at this moment
+                        const dtStr = `${date}T${time}:00`;
+                        // Parse as a local datetime in the target timezone via a trick:
+                        // format the desired datetime string as if it were in the target tz
+                        const zonedDate = new Date(
+                            new Date(dtStr).toLocaleString('en-US', { timeZone: tz })
+                        );
+                        const localDate = new Date(dtStr);
+                        const offset = localDate.getTime() - zonedDate.getTime();
+                        return new Date(localDate.getTime() + offset).toISOString();
+                    } catch {
+                        // Fall through to naive parse if timezone string is invalid
+                    }
+                }
+                // No timezone specified: interpret as the browser's local time (original behaviour)
+                return new Date(`${date}T${time}`).toISOString();
+            };
+
+            const startDateTime = toUtcIso(data.startDate, data.startTime, data.timezone);
+            const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 
             // 3. Insert Event Record
             const { data: newEvent, error: eventError } = await supabase
@@ -61,7 +84,10 @@ export default function CreateEventPage() {
                     starts_at: startDateTime,
                     ends_at: endDateTime,
                     thumbnail_url: uploadedThumbnailUrl,
-                    status: 'published' // Default to published for MVP, usually 'draft' first
+                    // Bug 24 fix: write the IANA timezone display hint so tickets show
+                    // correct local times regardless of where attendees view from.
+                    timezone: data.timezone || null,
+                    status: data.status || 'published'
                 })
                 .select('id')
                 .single();

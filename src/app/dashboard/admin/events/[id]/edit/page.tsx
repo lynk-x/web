@@ -30,7 +30,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     .select(`
                         id, title, description, category_id, is_online, is_private, 
                         location_name, starts_at, ends_at, thumbnail_url,
-                        account_id,
+                        account_id, currency,
                         ticket_tiers (
                             id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
                         )
@@ -76,8 +76,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     endTime: formatTime(endDt),
                     isPrivate: event.is_private,
                     isPaid,
-                    limit: '',
-                    tickets: mappedTickets
+                    tickets: mappedTickets,
+                    currency: event.currency || 'USD'
                 });
 
             } catch (error: any) {
@@ -169,7 +169,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     price: parseFloat(t.price),
                     capacity: parseInt(t.capacity),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    currency: 'KES',
+                    currency: 'USD',
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
                     description: t.description || null
