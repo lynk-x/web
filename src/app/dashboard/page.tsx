@@ -39,27 +39,38 @@ export default function DashboardRootPage() {
     useEffect(() => {
         if (isLoadingAuth || isLoadingOrg) return;
 
+        // Debugging for production workspace resolution issues
+        console.log('[DashboardRootPage] Auth state:', { user: user?.id, profile: profile?.user_name });
+        console.log('[DashboardRootPage] Org state:', { 
+            allAccountsCount: allAccounts.length, 
+            businessAccountsCount: accounts.length,
+            isLoading: isLoadingOrg 
+        });
+
         if (!user) {
             router.replace('/login');
             return;
         }
 
         if (user && profile && (!profile.full_name || profile.full_name.trim() === '')) {
+            console.log('[DashboardRootPage] Missing profile name, directing to setup-profile');
             router.replace('/dashboard/setup-profile');
             return;
         }
 
+        // 2. Identify and route to the correct dashboard workspace.
+        
         // Only redirect to onboarding if we're sure the context has settled:
         // allAccounts is loaded and there are truly no non-attendee workspaces.
-        // Checking allAccounts (not filtered accounts) ensures we don't fire prematurely
-        // while the context is still fetching.
         if (allAccounts.length === 0) {
+            console.log('[DashboardRootPage] No accounts found at all. Directing to onboarding.');
             router.replace('/onboarding');
             return;
         }
 
         // If the user only has attendee accounts (no organizer/advertiser), go to onboarding.
         if (accounts.length === 0 && allAccounts.length > 0) {
+            console.log('[DashboardRootPage] No business accounts found (only attendee). Directing to onboarding.');
             router.replace('/onboarding');
             return;
         }

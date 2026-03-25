@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -13,7 +13,15 @@ type AccountType = 'organizer' | 'advertiser';
 export default function OnboardingPage() {
     const router = useRouter();
     const supabase = createClient();
-    const { refreshAccounts } = useOrganization();
+    const { refreshAccounts, accounts: allAccounts, isLoading: isLoadingOrg } = useOrganization();
+    
+    // Auto-redirect if they already have an account (prevents returning users session issues)
+    useEffect(() => {
+        if (!isLoadingOrg && allAccounts.some(a => a.type !== 'attendee')) {
+            console.log('[Onboarding] Business accounts found, redirecting to dashboard');
+            router.replace('/dashboard/organize');
+        }
+    }, [allAccounts, isLoadingOrg, router]);
 
     // Flow State
     const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');

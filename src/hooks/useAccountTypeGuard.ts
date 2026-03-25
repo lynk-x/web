@@ -48,8 +48,17 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         // Wait for the organization context to finish loading.
         if (isLoading) return;
 
+        // Debugging for production guard issues
+        console.log('[AccountTypeGuard] Checking access:', {
+            activeAccount: activeAccount?.id,
+            activeType: activeAccount?.type,
+            allowedTypes,
+            totalAccounts: accounts.length
+        });
+
         // ── Case: active account is the correct type ───────────────────────
-        if (activeAccount && allowedTypes.includes(activeAccount.type)) {
+        if (activeAccount && allowedTypes.includes(activeAccount.type as AccountType)) {
+            console.log('[AccountTypeGuard] Authorized');
             setIsAuthorized(true);
             setIsChecking(false);
             return;
@@ -57,15 +66,16 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
 
         // ── Case: wrong account type ───────────────────────────────────────
         // Check whether the user owns any account of the required type at all.
-        const hasMatchingAccount = accounts.some(a => allowedTypes.includes(a.type));
+        const matchingAccounts = accounts.filter(a => allowedTypes.includes(a.type as AccountType));
+        const hasMatchingAccount = matchingAccounts.length > 0;
 
         if (hasMatchingAccount) {
-            // User has an account of the right type but a different one is active.
-            // Go to the workspace picker so they can switch.
+            // User has an account of the right type but a different one is active (or none is active).
+            console.log('[AccountTypeGuard] Wrong active account, but matching accounts exist. Redirecting to picker.');
             router.replace('/dashboard');
         } else {
             // User has NO account of this type — send to onboarding to create one.
-            // e.g. an organizer clicking "Ads Dashboard" from the homepage drawer.
+            console.log('[AccountTypeGuard] No matching accounts found. Redirecting to onboarding.');
             router.replace('/onboarding');
         }
 
