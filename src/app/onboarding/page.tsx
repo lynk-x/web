@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { sanitizeInput } from '@/utils/sanitization';
@@ -10,18 +10,23 @@ import styles from './onboarding.module.css';
 type OnboardingStep = 'ROLE_SELECTION' | 'DETAILS';
 type AccountType = 'organizer' | 'advertiser';
 
-export default function OnboardingPage() {
+function OnboardingFlow() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = createClient();
     const { refreshAccounts, accounts: allAccounts, isLoading: isLoadingOrg } = useOrganization();
     
+    // Check if we are explicitly here to create a new workspace
+    const isCreatingNew = searchParams.get('create') === 'true';
+
     // Auto-redirect if they already have an account (prevents returning users session issues)
+    // ONLY redirect if they aren't explicitly trying to create a new one.
     useEffect(() => {
-        if (!isLoadingOrg && allAccounts.some(a => a.type !== 'attendee')) {
+        if (!isLoadingOrg && !isCreatingNew && allAccounts.some(a => a.type !== 'attendee')) {
             console.log('[Onboarding] Business accounts found, redirecting to dashboard');
             router.replace('/dashboard');
         }
-    }, [allAccounts, isLoadingOrg, router]);
+    }, [allAccounts, isLoadingOrg, isCreatingNew, router]);
 
     // Flow State
     const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
@@ -97,7 +102,6 @@ export default function OnboardingPage() {
             if (rpcError) throw rpcError;
 
             // 2. Update additional branding (logo URL + description).
-            // FIX: table name was 'account' (wrong) — correct plural is 'accounts'.
             if (logoUrl || cleanDesc) {
                 const { error: updateError } = await supabase
                     .from('accounts')
@@ -254,5 +258,26 @@ export default function OnboardingPage() {
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             `}</style>
         </div>
+    );
+}
+
+export default function OnboardingPage() {
+    return (
+        <Suspense fallback={
+            <div className={styles.container}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    <div className={styles.spinner} style={{
+                        width: '32px',
+                        height: '32px',
+                        border: '2px solid rgba(255, 255, 255, 0.1)',
+                        borderTopColor: 'var(--color-brand-primary)',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }} />
+                </div>
+            </div>
+        }>
+            <OnboardingFlow />
+        </Suspense>
     );
 }

@@ -15,7 +15,7 @@ import Link from 'next/link';
  */
 export default function DashboardRootPage() {
     const router = useRouter();
-    const { user, profile, isLoading: isLoadingAuth } = useAuth();
+    const { user, profile, isLoading: isLoadingAuth, logout } = useAuth();
     const { accounts: allAccounts, activeAccount, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -152,12 +152,26 @@ export default function DashboardRootPage() {
                             </div>
                         ))}
 
-                        <Link href="/onboarding" className={`${styles.workspaceCard} ${styles.addNewCard}`}>
+                        <Link href="/onboarding?create=true" className={`${styles.workspaceCard} ${styles.addNewCard}`}>
                             <div className={styles.plusIcon}>+</div>
                             <span>Create New Workspace</span>
                         </Link>
                     </div>
                 </div>
+
+                {/* Floating Logout Button */}
+                <button 
+                    className={styles.logoutBtn} 
+                    onClick={logout}
+                    title="Sign Out"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Logout</span>
+                </button>
             </div>
         );
     }

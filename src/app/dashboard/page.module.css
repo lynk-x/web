@@ -212,6 +212,34 @@
     }
 }
 
+.logoutBtn {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+}
+
+.logoutBtn:hover {
+    background: rgba(255, 68, 68, 0.1);
+    border-color: rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
 @media (max-width: 640px) {
     .workspaceGrid {
         grid-template-columns: 1fr;
@@ -219,5 +247,12 @@
 
     .title {
         font-size: 32px;
+    }
+
+    .logoutBtn {
+        bottom: 24px;
+        right: 24px;
+        padding: 10px 16px;
+        font-size: 13px;
     }
 }
