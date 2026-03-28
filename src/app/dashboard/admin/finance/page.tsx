@@ -114,36 +114,6 @@ function FinanceContent() {
         }
     }, [supabase]);
 
-    // ── Realtime Listener for Financial Updates ──────────────────────────────
-    useEffect(() => {
-        console.log('[Finance] Subscribing to realtime transactions...');
-        const channel = supabase
-            .channel('admin_finance_updates')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'transactions' },
-                () => {
-                    fetchGlobalStats();
-                    if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTab)) {
-                        fetchData();
-                    }
-                }
-            )
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'payouts' },
-                () => {
-                    if (activeTab === 'payouts') fetchData();
-                    fetchGlobalStats();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [supabase, activeTab, fetchGlobalStats, fetchData]);
-
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -158,7 +128,7 @@ function FinanceContent() {
                 if (activeTab === 'refunds') {
                     query = query.in('reason', ['ticket_refund', 'ad_refund', 'ticket_refund']);
                 } else if (activeTab === 'revenue') {
-                    query = query.in('reason', ['ticket_sale', 'ad_campaign_payment', 'ticket_payment']);
+                    query = query.in('reason', ['ticket_purchase', 'ad_placement', 'premium_subscription', 'ticket_sale', 'ad_campaign_payment', 'ticket_payment']);
                 } else if (activeTab === 'escrow') {
                     query = query.eq('category', 'hold');
                 }
@@ -178,7 +148,7 @@ function FinanceContent() {
                     id: tx.id,
                     description: `${tx.reason.replace(/_/g, ' ')} for ${tx.event?.title || 'System'}`,
                     amount: tx.amount,
-                    date: tx.created_at,
+                    date: tx.created_at || new Date().toISOString(),
                     status: tx.status,
                     type: tx.reason,
                     category: tx.category,
@@ -213,8 +183,10 @@ function FinanceContent() {
                     status: p.status,
                     requestedAt: p.created_at || p.processed_at || new Date().toISOString(),
                     reference: p.reference,
-                    notes: p.admin_notes,
-                    kyc_status: (p.business as any)?.kyc_status as Payout['kyc_status'],
+                    bankName: p.channel_metadata?.target?.bank_name || 'M-Pesa',
+                    type: p.method,
+                    notes: (p as any).admin_notes,
+                    kyc_status: (p.business as any)?.kyc_status,
                     is_verified: p.account?.is_verified
                 })));
             } else if (activeTab === 'tax-rates') {
@@ -244,7 +216,6 @@ function FinanceContent() {
 
                 if (error) throw error;
                 setPromoCodes((data || []).map((p: any) => {
-                    // Extract event titles from the junction join
                     const eventTitles = (p.event_promos || [])
                         .map((ep: any) => ep.event?.title)
                         .filter(Boolean);
@@ -257,7 +228,6 @@ function FinanceContent() {
                         uses_count: p.uses_count,
                         max_uses: p.max_uses,
                         is_active: p.is_active,
-                        // Show "Multiple" if more than one event, or the single title
                         event_title: eventTitles.length > 1 
                             ? `${eventTitles[0]} (+${eventTitles.length - 1})`
                             : eventTitles[0] || 'Global',
@@ -272,6 +242,36 @@ function FinanceContent() {
         }
     }, [activeTab, supabase, showToast, startDate, endDate]);
 
+    // ── Realtime Listener for Financial Updates ──────────────────────────────
+    useEffect(() => {
+        console.log('[Finance] Subscribing to realtime transactions...');
+        const channel = supabase
+            .channel('admin_finance_updates')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'transactions' },
+                () => {
+                    fetchGlobalStats();
+                    if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTab)) {
+                        fetchData();
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'payouts' },
+                () => {
+                    if (activeTab === 'payouts') fetchData();
+                    fetchGlobalStats();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase, activeTab, fetchGlobalStats, fetchData]);
+
     useEffect(() => {
         fetchGlobalStats();
     }, [fetchGlobalStats]);
@@ -281,7 +281,6 @@ function FinanceContent() {
         setSelectedTxIds(new Set());
         setSelectedPayoutIds(new Set());
 
-        // Fetch countries for the dropdown
         const fetchCountries = async () => {
             const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
             if (data) setCountries(data.map((c: any) => ({ code: c.code, name: c.display_name })));
@@ -290,8 +289,7 @@ function FinanceContent() {
     }, [fetchData, supabase]);
 
     /**
-     * Exports the currently-loaded transactions to CSV.
-     * Uses the shared exportToCSV utility for consistency with other dashboard exports.
+     * Exports current dataset to CSV
      */
     const handleBulkExport = () => {
         if (transactions.length === 0) {

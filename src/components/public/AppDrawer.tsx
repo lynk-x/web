@@ -137,7 +137,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                         <div className={styles.pwaCard}>
                             <div className={styles.pwaQrBox}>
                                 <img 
-                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://lynk-x.app" 
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://app.lynk-x.app" 
                                     alt="QR Code" 
                                     className={styles.pwaQrImage}
                                 />
@@ -148,12 +148,18 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                     Install to get instant updates and participate in live chat forums
                                 </p>
                             </div>
-                            <Link href="/download" className={styles.pwaAction} onClick={onClose}>
+                            <a 
+                                href="https://app.lynk-x.app" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={styles.pwaAction} 
+                                onClick={onClose}
+                            >
                                 <span>Go to the App</span>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M7 17l10-10M7 7h10v10"></path>
                                 </svg>
-                            </Link>
+                            </a>
                         </div>
                     </div>
 
