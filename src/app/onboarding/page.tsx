@@ -19,7 +19,7 @@ export default function OnboardingPage() {
     useEffect(() => {
         if (!isLoadingOrg && allAccounts.some(a => a.type !== 'attendee')) {
             console.log('[Onboarding] Business accounts found, redirecting to dashboard');
-            router.replace('/dashboard/organize');
+            router.replace('/dashboard');
         }
     }, [allAccounts, isLoadingOrg, router]);
 
