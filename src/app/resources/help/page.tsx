@@ -26,7 +26,7 @@ export default function HelpCenterPage() {
 
     useEffect(() => {
         if (user && user.email) {
-            setFormData(prev => ({ ...prev, email: user.email }));
+            setFormData(prev => ({ ...prev, email: user.email || '' }));
         }
     }, [user]);
 
