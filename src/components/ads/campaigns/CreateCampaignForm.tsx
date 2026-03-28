@@ -16,13 +16,14 @@ export interface Creative {
     imageUrl?: string;
     file?: File;
     preview?: string;
+    mediaType?: 'image' | 'video'; // Added to support video assets
 }
 
 export interface CampaignData {
     id?: string;
     title: string;
     description: string;
-    type: 'banner' | 'interstitial';
+    type: 'banner' | 'interstitial' | 'interstitial_video';
     total_budget: string;
     daily_limit: string;
     start_at: string;
@@ -219,9 +220,17 @@ export default function CreateCampaignForm({
     const handleAssetChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onloadend = () => updateCreative(idx, { file, preview: reader.result as string });
-        reader.readAsDataURL(file);
+        const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+        
+        // For previews, we still use FileReader for images, but for video we use a blob URL
+        if (mediaType === 'video') {
+            const videoUrl = URL.createObjectURL(file);
+            updateCreative(idx, { file, preview: videoUrl, mediaType });
+        } else {
+            const reader = new FileReader();
+            reader.onloadend = () => updateCreative(idx, { file, preview: reader.result as string, mediaType });
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleRemoveAsset = (idx: number) => {
@@ -375,7 +384,7 @@ export default function CreateCampaignForm({
                 await supabase.from('ad_assets').insert(
                     uploadedCreatives.map((c, idx) => ({
                         campaign_id: formData.id,
-                        media_type: 'image',
+                        media_type: c.mediaType || 'image',
                         call_to_action: c.headline,
                         url: c.imageUrl || formData.adImageUrl,
                         is_primary: idx === 0,
@@ -410,7 +419,7 @@ export default function CreateCampaignForm({
                     await supabase.from('ad_assets').insert(
                         uploadedCreatives.map((c, idx) => ({
                             campaign_id: campaign.id,
-                            media_type: 'image',
+                            media_type: c.mediaType || 'image',
                             call_to_action: c.headline || formData.adHeadline,
                             url: c.imageUrl || primaryCreative.imageUrl || formData.adImageUrl,
                             is_primary: idx === 0,
@@ -494,6 +503,7 @@ export default function CreateCampaignForm({
                                             value={formData.type} onChange={handleInputChange} required>
                                             <option value="banner">Banner Ad (16:9)</option>
                                             <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
+                                            <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
                                         </select>
                                         {/* #3 CPM/CPC Estimator */}
                                         {pricing.impression > 0 && (
@@ -697,11 +707,19 @@ export default function CreateCampaignForm({
 
                                             {c.preview || c.imageUrl ? (
                                                 <div className={styles.assetPreviewBox}>
-                                                    <img
-                                                        src={c.preview || c.imageUrl}
-                                                        alt="Creative preview"
-                                                        style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
-                                                    />
+                                                    {c.mediaType === 'video' ? (
+                                                        <video
+                                                            src={c.preview || c.imageUrl}
+                                                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                                                            controls
+                                                        />
+                                                    ) : (
+                                                        <img
+                                                            src={c.preview || c.imageUrl}
+                                                            alt="Creative preview"
+                                                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                                                        />
+                                                    )}
                                                     <div className={styles.assetPreviewActions}>
                                                         <button type="button" className={styles.btnSecondary}
                                                             style={{ fontSize: '12px', padding: '6px 12px' }}
@@ -722,12 +740,16 @@ export default function CreateCampaignForm({
                                                         <circle cx="8.5" cy="8.5" r="1.5" />
                                                         <polyline points="21 15 16 10 5 21" />
                                                     </svg>
-                                                    <p style={{ marginTop: '12px', fontSize: '14px', opacity: 0.7 }}>Click to upload an image</p>
-                                                    <p style={{ fontSize: '12px', opacity: 0.4 }}>{formData.type === 'banner' ? '16:9' : '9:16'} · PNG, JPG, WEBP</p>
+                                                     <p style={{ marginTop: '12px', fontSize: '14px', opacity: 0.7 }}>
+                                                         Click to upload {formData.type === 'interstitial_video' ? 'a video' : 'an image'}
+                                                     </p>
+                                                     <p style={{ fontSize: '12px', opacity: 0.4 }}>
+                                                         {formData.type === 'banner' ? '16:9' : '9:16'} · {formData.type === 'interstitial_video' ? 'MP4, MOV' : 'PNG, JPG, WEBP'}
+                                                     </p>
                                                 </div>
                                             )}
                                             <input type="file" ref={el => { fileInputRefs.current[i] = el; }} style={{ display: 'none' }}
-                                                accept="image/*" onChange={e => handleAssetChange(e, i)} />
+                                                accept={formData.type === 'interstitial_video' ? 'video/*' : 'image/*'} onChange={e => handleAssetChange(e, i)} />
                                         </div>
                                     </div>
                                 ))}
@@ -741,7 +763,7 @@ export default function CreateCampaignForm({
                                 <div className={styles.previewCard}>
                                     {[
                                         ['Campaign Title', formData.title],
-                                        ['Ad Type', formData.type === 'banner' ? 'Banner (16:9)' : 'Interstitial (Full Screen)'],
+                                        ['Ad Type', formData.type === 'banner' ? 'Banner (16:9)' : formData.type === 'interstitial' ? 'Interstitial (Full Screen)' : 'Interstitial Video'],
                                         ['Budget', `$${formData.total_budget}${formData.daily_limit ? ` (Daily cap: $${formData.daily_limit})` : ''} · Max Bid: $${formData.max_bid_amount}`],
                                         ['Duration', formData.start_at && formData.end_at ? `${formData.start_at} → ${formData.end_at}` : '—'],
                                         ['Region', formData.target_country_code || '—'],

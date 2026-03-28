@@ -340,3 +340,70 @@
 .removePromoBtn:hover {
     opacity: 0.8;
 }
+
+/* Payment Processing Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background-color: var(--color-interface-surface);
+    padding: var(--spacing-xxl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-brand-primary);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(32, 249, 40, 0.1);
+    border-top: 3px solid var(--color-brand-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.waitingTitle {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+}
+
+.waitingText {
+    font-size: 16px;
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+.cancelBtn {
+    margin-top: var(--spacing-md);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 14px;
+}

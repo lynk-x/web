@@ -114,6 +114,36 @@ function FinanceContent() {
         }
     }, [supabase]);
 
+    // ── Realtime Listener for Financial Updates ──────────────────────────────
+    useEffect(() => {
+        console.log('[Finance] Subscribing to realtime transactions...');
+        const channel = supabase
+            .channel('admin_finance_updates')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'transactions' },
+                () => {
+                    fetchGlobalStats();
+                    if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTab)) {
+                        fetchData();
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'payouts' },
+                () => {
+                    if (activeTab === 'payouts') fetchData();
+                    fetchGlobalStats();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase, activeTab, fetchGlobalStats, fetchData]);
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -308,6 +338,49 @@ function FinanceContent() {
         }
     };
 
+    // ── Payout Lifecycle Handlers ───────────────────────────────────────────
+    const handleApprovePayout = async (payout: Payout) => {
+        showToast(`Triggering disbursement for ${payout.reference}...`, 'info');
+        try {
+            const { data, error } = await supabase.functions.invoke('payout-gateway-v1', {
+                body: { payout_id: payout.id }
+            });
+            
+            if (error || !data?.success) {
+                throw new Error(error?.message || data?.error || 'Failed to initiate payout');
+            }
+            
+            showToast('Payout successfully initiated.', 'success');
+            fetchData();
+        } catch (err: any) {
+            console.error('Payout failed:', err);
+            showToast(err.message, 'error');
+        }
+    };
+
+    const handleRejectPayout = async (payout: Payout) => {
+        const reason = window.prompt('Reason for rejection:', 'Does not meet requirements');
+        if (reason === null) return;
+        
+        showToast('Rejecting payout...', 'info');
+        try {
+            const { error } = await supabase.rpc('reject_payout', {
+                p_payout_id: payout.id,
+                p_reason: reason
+            });
+            if (error) throw error;
+            showToast('Payout rejected and funds returned to escrow.', 'success');
+            fetchData();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
+    const handleRetryPayout = async (payout: Payout) => {
+        // Retrying is the same as re-attempting approval via the gateway
+        handleApprovePayout(payout);
+    };
+
     /**
      * Syncs FX rates by calling the `sync_fx_rates` Supabase RPC.
      * Falls back gracefully with a toast if the function is not yet deployed.
@@ -368,6 +441,9 @@ function FinanceContent() {
                         setSelectedPayoutIds(next);
                     }}
                     onSelectAll={() => setSelectedPayoutIds(selectedPayoutIds.size === payouts.length ? new Set() : new Set(payouts.map(p => p.id)))}
+                    onApprove={handleApprovePayout}
+                    onReject={handleRejectPayout}
+                    onRetry={handleRetryPayout}
                 />
             );
         }

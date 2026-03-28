@@ -3,6 +3,7 @@
     background-color: #000;
     display: flex;
     flex-direction: column;
+    padding-top: 80px; /* Space for fixed Navbar */
 }
 
 .layoutWrapper {
@@ -24,6 +25,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+    margin-left: 280px; /* Width of ResourceSidebar */
 }
 
 .contentInner {
@@ -44,6 +46,7 @@
 
     .mainContent {
         padding: 0;
+        margin-left: 0;
     }
 
     .contentInner {

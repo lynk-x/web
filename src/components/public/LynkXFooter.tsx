@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import styles from './PulseFooter.module.css';
+import styles from './LynkXFooter.module.css';
 
-const PulseFooter: React.FC = () => {
+const LynkXFooter: React.FC = () => {
 
     return (
         <footer className={styles.footer}>
@@ -34,4 +34,4 @@ const PulseFooter: React.FC = () => {
     );
 };
 
-export default PulseFooter;
+export default LynkXFooter;

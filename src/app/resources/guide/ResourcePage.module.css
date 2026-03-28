@@ -1,0 +1,171 @@
+.page {
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    margin-bottom: 48px;
+}
+
+.title {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: #fff;
+    margin-bottom: 16px;
+}
+
+.subtitle {
+    font-size: 18px;
+    opacity: 0.5;
+    line-height: 1.6;
+    max-width: 700px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 80px;
+}
+
+.categorySection {
+    display: flex;
+    flex-direction: column;
+}
+
+.sectionHeader {
+    margin-bottom: 32px;
+}
+
+.categoryTitle {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.categoryDesc {
+    font-size: 14px;
+    opacity: 0.4;
+}
+
+.itemGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 32px;
+}
+
+.safetyCard {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-border-subtle);
+    padding: 32px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.cardHeader {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.cardIcon {
+    font-size: 24px;
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    background-color: var(--color-interface-border-subtle);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cardText {
+    flex: 1;
+}
+
+.cardTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.cardContent {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
+}
+
+.cardDetails {
+    opacity: 1;
+}
+
+.detailsDivider {
+    height: 1px;
+    background: var(--color-interface-border-subtle);
+    margin: 24px 0;
+}
+
+.detailsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.detailItem {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+}
+
+.detailDot {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    background-color: var(--color-brand-primary);
+    border-radius: 50%;
+    margin-top: 6px;
+    box-shadow: 0 0 10px var(--color-brand-primary);
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 32px;
+    }
+
+    .itemGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .safetyCard {
+        padding: 24px;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .cardIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+}

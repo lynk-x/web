@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import styles from './SafetyPage.module.css';
+import styles from './ResourcePage.module.css';
 
 const SafetySection: React.FC<{
     title: string;
@@ -32,7 +32,7 @@ export default function SafetySecurityPage() {
         {
             icon: '🛡️',
             title: 'Verified Identity',
-            content: 'How to complete your identity verification to earn the "Pulse Verified" badge and build trust.'
+            content: 'How to complete your identity verification to earn the "Lynk-X Verified" badge and build trust.'
         },
         {
             icon: '👮',
@@ -55,12 +55,12 @@ export default function SafetySecurityPage() {
         {
             icon: '🔒',
             title: 'Safe Ticketing',
-            content: 'Why you should never buy Pulse tickets outside of our official platform to avoid scammers.'
+            content: 'Why you should never buy Lynk-X tickets outside of our official platform to avoid scammers.'
         },
         {
             icon: '🗺️',
             title: 'Venue Familiarity',
-            content: 'Accessing real-time venue maps with marked emergency exits and first-aid stations via the Pulse app.'
+            content: 'Accessing real-time venue maps with marked emergency exits and first-aid stations via the Lynk-X app.'
         },
         {
             icon: '🚨',
@@ -78,23 +78,27 @@ export default function SafetySecurityPage() {
         <div className={styles.page}>
             <header className={styles.header}>
                 <h1 className={styles.title}>Safety & Security</h1>
-                <p className={styles.subtitle}>Our mission is to ensure every Pulse event is a safe, inclusive, and transparent experience for everyone involved.</p>
+                <p className={styles.subtitle}>Our mission is to ensure every Lynk-X event is a safe, inclusive, and transparent experience for everyone involved.</p>
             </header>
 
             <div className={styles.content}>
-                <SafetySection 
-                    title="For Organizers"
-                    description="Protocols and tools to help you host secure events."
-                    items={organizerItems}
-                />
+                <div id="organizer">
+                    <SafetySection 
+                        title="For Organizers"
+                        description="Protocols and tools to help you host secure events."
+                        items={organizerItems}
+                    />
+                </div>
                 
                 <div className={styles.divider} />
 
-                <SafetySection 
-                    title="For Attendees"
-                    description="Your safety is our priority. Here is how we protect your experience."
-                    items={attendeeItems}
-                />
+                <div id="attendee">
+                    <SafetySection 
+                        title="For Attendees"
+                        description="Your safety is our priority. Here is how we protect your experience."
+                        items={attendeeItems}
+                    />
+                </div>
             </div>
         </div>
     );

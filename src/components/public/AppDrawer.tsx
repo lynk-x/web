@@ -13,8 +13,31 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
     isOpen,
     onClose
 }) => {
-    const [language, setLanguage] = useState('English');
+    const [currency, setCurrency] = useState('all');
     const [region, setRegion] = useState('Global');
+
+    // Auto-detect currency from cookie (set by Edge middleware)
+    React.useEffect(() => {
+        if (typeof document !== 'undefined') {
+            const countryCode = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('x-vercel-ip-country='))
+                ?.split('=')[1];
+
+            if (countryCode) {
+                const currencyMap: Record<string, string> = {
+                    'KE': 'KES',
+                    'NG': 'NGN',
+                    'US': 'USD',
+                    'GB': 'GBP',
+                    'DE': 'EUR'
+                };
+                if (currencyMap[countryCode]) {
+                    setCurrency(currencyMap[countryCode]);
+                }
+            }
+        }
+    }, []);
 
     return (
         <>
@@ -72,7 +95,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
 
                     {/* Resources Section */}
                     <div className={styles.menuSection}>
-                        <h3 className={styles.menuSectionTitle}>Organizer Resources</h3>
+                        <h3 className={styles.menuSectionTitle}>Information Resources</h3>
                         <ul className={styles.resourceList}>
                             <li className={styles.resourceItem}>
                                 <Link href="/resources/guide" onClick={onClose}>
@@ -99,7 +122,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                 </Link>
                             </li>
                             <li className={styles.resourceItem}>
-                                <Link href="/help" onClick={onClose}>
+                                <Link href="/resources/help" onClick={onClose}>
                                     Help Center
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M5 12h14M12 5l7 7-7 7" />
@@ -109,31 +132,53 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                         </ul>
                     </div>
 
-                    <div className={styles.spacer} />
-
-                    <div className={styles.menuDivider} />
+                    {/* PWA Promo Card */}
+                    <div className={styles.menuSection} style={{ padding: '0 8px' }}>
+                        <div className={styles.pwaCard}>
+                            <div className={styles.pwaQrBox}>
+                                <img 
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://lynk-x.app" 
+                                    alt="QR Code" 
+                                    className={styles.pwaQrImage}
+                                />
+                            </div>
+                            <div className={styles.pwaContent}>
+                                <h4 className={styles.pwaTitle}>Access the Forum App</h4>
+                                <p className={styles.pwaDescription}>
+                                    Install to get instant updates and participate in live chat forums
+                                </p>
+                            </div>
+                            <Link href="/download" className={styles.pwaAction} onClick={onClose}>
+                                <span>Go to the App</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M7 17l10-10M7 7h10v10"></path>
+                                </svg>
+                            </Link>
+                        </div>
+                    </div>
 
                     {/* Preferences Section */}
                     <div className={styles.menuSection}>
                         <h3 className={styles.menuSectionTitle}>Preferences</h3>
                         <div className={styles.preferenceItem}>
                             <div className={styles.preferenceInfo}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="2" y1="12" x2="22" y2="12" />
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10" />
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                                 </svg>
-                                <span>Language</span>
+                                <span>Currency</span>
                             </div>
                             <select 
                                 className={styles.preferenceSelect}
-                                value={language}
-                                onChange={(e) => setLanguage(e.target.value)}
+                                value={currency}
+                                onChange={(e) => setCurrency(e.target.value)}
                             >
-                                <option>English</option>
-                                <option>Spanish</option>
-                                <option>French</option>
-                                <option>German</option>
+                                <option value="all">All Currencies</option>
+                                <option value="USD">USD - Dollar</option>
+                                <option value="KES">KES - Shilling</option>
+                                <option value="NGN">NGN - Naira</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - Pound</option>
                             </select>
                         </div>
 

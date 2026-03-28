@@ -3,6 +3,7 @@
     background-color: var(--color-utility-primaryBackground);
     display: flex;
     flex-direction: column;
+    padding-top: 80px; /* Account for fixed Navbar height */
 }
 
 .main {

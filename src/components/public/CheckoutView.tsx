@@ -11,20 +11,6 @@ import { useCart } from '@/context/CartContext';
 
 /**
  * CheckoutView — Guest-first ticket purchase flow.
- *
- * Auth policy:
- *  - Authenticated users: session used directly; contact form pre-fills from their profile.
- *  - Guest users: collect email + phone, look for an existing user_profile by email.
- *    If none found, sign in anonymously (Supabase anon auth) so auth.uid() is available
- *    for the purchase_tickets() RPC. The guest profile is stored and can be linked
- *    later when the user creates a full account.
- *
- * Fixes applied:
- *  - Bug 16: promo codes look up the real `promo_codes` DB table (was hardcoded 'LYNKX20')
- *  - Bug 17: service fee read from `system_config.platform_base_fee_usd` (was hardcoded KES 200)
- *  - Bug 18: tierId read from dedicated `item.tierId` field (was fragile string split)
- *  - Bug 19: contact info collected and written to user profile
- *  - Bug 20: auth is no longer required at checkout entry; guest checkout supported
  */
 const CheckoutView: React.FC = () => {
     const { items, getCartTotal, itemCount, removeFromCart, clearCart } = useCart();
@@ -33,7 +19,9 @@ const CheckoutView: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'waiting' | 'completed' | 'failed'>('idle');
     const [paymentError, setPaymentError] = useState('');
+    const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
 
     // Contact form state
     const [formData, setFormData] = useState({
@@ -65,7 +53,7 @@ const CheckoutView: React.FC = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                // Read platform base fee from system_config
+                // 1. Read platform base fee from system_config
                 const { data: feeConfig } = await supabase
                     .from('system_config')
                     .select('value')
@@ -76,7 +64,7 @@ const CheckoutView: React.FC = () => {
                     setBaseFeePerTicket(parseFloat(String(feeConfig.value)));
                 }
 
-                // Pre-fill contact form if user is already signed in
+                // 2. Pre-fill contact form if user is already signed in
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user && !user.is_anonymous) {
                     const { data: profile } = await supabase
@@ -101,8 +89,46 @@ const CheckoutView: React.FC = () => {
             }
         };
         init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [supabase]);
+
+    // ── Realtime Listener for M-Pesa Completion ──────────────────────────────
+    useEffect(() => {
+        if (!currentCheckoutId || paymentStatus !== 'waiting') return;
+
+        console.log('[Checkout] Listening for payment completion:', currentCheckoutId);
+        
+        const channel = supabase
+            .channel(`payment_check_${currentCheckoutId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'transactions',
+                    filter: `provider_ref=eq.${currentCheckoutId}`
+                },
+                (payload) => {
+                    const newStatus = payload.new.status;
+                    console.log('[Checkout] Transaction status updated:', newStatus);
+                    
+                    if (newStatus === 'completed') {
+                        setPaymentStatus('completed');
+                        clearCart();
+                        const orderRef = 'LX-' + Date.now().toString(36).toUpperCase();
+                        router.push(`/checkout/confirmation?order_ref=${orderRef}&items=${items.length}`);
+                    } else if (newStatus === 'failed' || newStatus === 'cancelled') {
+                        setPaymentStatus('failed');
+                        setPaymentError('Payment was not completed. Please try again or use a different number.');
+                        setIsSubmitting(false);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [currentCheckoutId, paymentStatus, supabase, router, items.length, clearCart]);
 
     // ── Real promo code lookup ────────────────────────────────────────────────
     const handleApplyPromo = useCallback(async () => {
@@ -193,25 +219,11 @@ const CheckoutView: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // Step 1: resolve or create a user session
+            // Step 1: Resolve user session
             let { data: { user } } = await supabase.auth.getUser();
-
             if (!user || user.is_anonymous) {
-                // Check if a profile exists for this email
-                const { data: existingProfile } = await supabase
-                    .from('user_profile')
-                    .select('id')
-                    .eq('email', formData.email.toLowerCase().trim())
-                    .maybeSingle();
-
-                if (!existingProfile) {
-                    // Create anonymous session so bulk_purchase_tickets() has an auth.uid()
-                    const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-                    if (anonError) throw new Error('Could not start guest session: ' + anonError.message);
-                    user = anonData.user;
-                }
-
-                // Store contact info so the ghost profile can be claimed later
+                const { data: anonData } = await supabase.auth.signInAnonymously();
+                user = anonData.user;
                 if (user) {
                     await supabase.from('user_profile').upsert({
                         id: user.id,
@@ -221,37 +233,38 @@ const CheckoutView: React.FC = () => {
                     }, { onConflict: 'id' });
                 }
             }
+            if (!user) throw new Error('Could not establish session');
 
-            if (!user) throw new Error('Unable to establish a session. Please try again.');
-
-            // Step 2: Atomic bulk purchase of all cart items
-            const { error: purchaseError } = await supabase.rpc('bulk_purchase_tickets', {
-                p_items: items.map(item => ({
-                    event_id: item.eventId,
-                    tier_id: item.tierId,
-                    quantity: item.quantity,
-                    // reservation_id: item.reservationId, // if implementing reservations
-                })),
-                p_provider: 'Mpesa',
-                // TODO: Replace with real STK push transaction ID from M-Pesa callback webhook
-                p_provider_ref: `MPESA-PENDING-${Date.now()}`,
-                p_promo_code: appliedPromo?.code || null,
+            // Step 2: Initiate real STK Push via Edge Function
+            const { data, error: funcError } = await supabase.functions.invoke('mpesa-stk-push', {
+                body: {
+                    phone: formData.mpesaNumber,
+                    amount: total,
+                    currency: currency,
+                    metadata: {
+                        user_id: user.id,
+                        email: formData.email,
+                        items: items.map(i => ({ event_id: i.eventId, tier_id: i.tierId, quantity: i.quantity, promo_code: appliedPromo?.code || null })),
+                        // Webhook fulfillment hints
+                        event_id: items[0].eventId,
+                        tier_id: items[0].tierId,
+                        quantity: items[0].quantity,
+                        promo_code: appliedPromo?.code || null
+                    }
+                }
             });
 
-            if (purchaseError) {
-                throw new Error(`Checkout failed: ${purchaseError.message}`);
+            if (funcError || !data?.success) {
+                throw new Error(funcError?.message || data?.error || 'Failed to initiate STK push');
             }
 
-            // Step 3: Success — clear cart and redirect
-            const orderRef = 'LX-' + Date.now().toString(36).toUpperCase();
-            clearCart();
-            router.push(`/checkout/confirmation?order_ref=${orderRef}&items=${items.length}`);
+            // Step 3: Enter waiting state
+            setCurrentCheckoutId(data.checkoutRequestId);
+            setPaymentStatus('waiting');
 
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Payment failed. Please try again.';
+        } catch (err: any) {
             console.error('Payment error:', err);
-            setPaymentError(msg);
-        } finally {
+            setPaymentError(err.message || 'Payment failed to initiate.');
             setIsSubmitting(false);
         }
     };
@@ -433,6 +446,30 @@ const CheckoutView: React.FC = () => {
                     </div>
                 </div>
             </main>
+
+            {/* ── Waiting for Payment Overlay ─────────────────────────── */}
+            {paymentStatus === 'waiting' && (
+                <div className={styles.overlay}>
+                    <div className={styles.modal}>
+                        <div className={styles.spinner}></div>
+                        <h2 className={styles.waitingTitle}>Check your phone</h2>
+                        <p className={styles.waitingText}>
+                            A prompt has been sent to <strong>{formData.mpesaNumber}</strong>.<br />
+                            Please enter your M-Pesa PIN to complete the purchase.
+                        </p>
+                        <p className={styles.helperText}>Waiting for confirmation...</p>
+                        <button 
+                            className={styles.cancelBtn} 
+                            onClick={() => {
+                                setPaymentStatus('idle');
+                                setIsSubmitting(false);
+                            }}
+                        >
+                            Cancel Payment
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

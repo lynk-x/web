@@ -6,7 +6,7 @@ import HeroSection from "./HeroSection";
 import EventGrid from "./EventGrid";
 import styles from '@/app/page.module.css';
 import { Event } from '@/types';
-import PulseFooter from "./PulseFooter";
+import LynkXFooter from "./LynkXFooter";
 import { useFilters } from '@/context/FilterContext';
 
 interface HomeClientProps {
@@ -99,7 +99,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                     </div>
                 )}
             </div>
-            <PulseFooter />
+            <LynkXFooter />
         </>
     );
 };

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './CreateEventForm.module.css';
 import { createClient } from '@/utils/supabase/client';
+import { useOrganization } from '@/context/OrganizationContext';
+import { useRouter } from 'next/navigation';
 
 interface TicketType {
     name: string;
@@ -21,22 +23,38 @@ const CreateEventForm = () => {
     const [tagInput, setTagInput] = useState('');
     const [coverUrl,] = useState<string | null>(null);
     const supabase = useMemo(() => createClient(), []);
+    const { activeAccount } = useOrganization();
+    const router = useRouter();
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [realCategories, setRealCategories] = useState<{id: string, display_name: string}[]>([]);
 
     // Tag Suggestions State
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
 
-    // Fetch Tag Suggestions
+    // Fetch Tag Suggestions & Categories
     useEffect(() => {
-        const fetchTags = async () => {
-            const { data } = await supabase
+        const fetchData = async () => {
+            // Fetch tags
+            const { data: tagData } = await supabase
                 .from('tags')
-                .select('name')
+                .select('id, name')
                 .eq('is_active', true)
                 .order('use_count', { ascending: false })
                 .limit(12);
-            if (data) setTagSuggestions(data.map(t => t.name));
+            if (tagData) setTagSuggestions(tagData.map(t => t.name));
+
+            // Fetch categories
+            const { data: catData } = await supabase
+                .from('event_categories')
+                .select('id, display_name')
+                .eq('is_active', true);
+            if (catData) {
+                setRealCategories(catData);
+                if (catData.length > 0) setCategory(catData[0].id);
+            }
         };
-        fetchTags();
+        fetchData();
     }, [supabase]);
 
     // Step 2: Logistics
@@ -55,7 +73,7 @@ const CreateEventForm = () => {
     const [showTicketModal, setShowTicketModal] = useState(false);
     const [newTicket, setNewTicket] = useState<TicketType>({ name: '', price: 0 });
 
-    const categories = ['General', 'Tech', 'Social', 'Art', 'Music', 'Fitness'];
+    // const categories = ['General', 'Tech', 'Social', 'Art', 'Music', 'Fitness'];
 
     const handleAddTag = (tag?: string) => {
         const value = (tag || tagInput).trim();
@@ -75,14 +93,76 @@ const CreateEventForm = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Integrate Supabase DB Insert
-        console.log('Submitting Event:', {
-            title, description, category, tags, coverUrl,
-            isOnline, location, startDate, endDate,
-            isPrivate, isPaid, limit, ticketTypes
-        });
-        alert('Event Created! (Mock)');
-        // router.push('/dashboard/events');
+        if (!activeAccount) {
+            alert('Please select an active organization first.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            // 1. Insert Event
+            const { data: event, error: eventError } = await supabase
+                .from('events')
+                .insert({
+                    account_id: activeAccount.id,
+                    category_id: category,
+                    title,
+                    description,
+                    starts_at: startDate,
+                    ends_at: endDate,
+                    is_online: isOnline,
+                    virtual_link: isOnline ? location : null,
+                    location: !isOnline ? { name: location } : null,
+                    is_private: isPrivate,
+                    currency: activeAccount.default_currency || 'KES',
+                    status: 'published' // Default to published for now
+                })
+                .select()
+                .single();
+
+            if (eventError) throw eventError;
+
+            // 2. Handle Tags (Upsert approach)
+            if (tags.length > 0) {
+                // First, ensure all tags exist in the tags table (or get their IDs)
+                for (const tagName of tags) {
+                    const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+                    // We try to insert unique tags, on conflict we do nothing but we need the ID
+                    const { data: tagObj } = await supabase
+                        .from('tags')
+                        .upsert({ name: tagName, slug: slug }, { onConflict: 'slug' })
+                        .select('id')
+                        .single();
+                    
+                    if (tagObj) {
+                        await supabase.from('event_tags').insert({
+                            event_id: event.id,
+                            tag_id: tagObj.id
+                        });
+                    }
+                }
+            }
+
+            // 3. Insert Ticket Tiers
+            if (ticketTypes.length > 0) {
+                const tiers = ticketTypes.map(t => ({
+                    event_id: event.id,
+                    display_name: t.name,
+                    price: t.price,
+                    capacity: t.capacity || 100 // Default capacity if not set
+                }));
+                const { error: tierError } = await supabase.from('ticket_tiers').insert(tiers);
+                if (tierError) throw tierError;
+            }
+
+            alert('Event Created Successfully!');
+            router.push('/dashboard/organize');
+        } catch (error: any) {
+            console.error('Error creating event:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -128,14 +208,14 @@ const CreateEventForm = () => {
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Category</label>
                             <div className={styles.chipGrid}>
-                                {categories.map(cat => (
+                                {realCategories.map(cat => (
                                     <button
-                                        key={cat}
+                                        key={cat.id}
                                         type="button"
-                                        className={`${styles.chip} ${category === cat ? styles.chipSelected : ''}`}
-                                        onClick={() => setCategory(cat)}
+                                        className={`${styles.chip} ${category === cat.id ? styles.chipSelected : ''}`}
+                                        onClick={() => setCategory(cat.id)}
                                     >
-                                        {cat}
+                                        {cat.display_name}
                                     </button>
                                 ))}
                             </div>
@@ -300,7 +380,9 @@ const CreateEventForm = () => {
 
                         <div className={styles.btnRow}>
                             <button type="button" className={styles.secondaryBtn} onClick={() => setStep(2)}>Back</button>
-                            <button type="submit" className={styles.submitBtn}>Create Event</button>
+                            <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                                {isSubmitting ? 'Creating...' : 'Create Event'}
+                            </button>
                         </div>
                     </div>
                 )}

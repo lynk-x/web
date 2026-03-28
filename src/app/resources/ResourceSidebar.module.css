@@ -1,12 +1,15 @@
 .sidebar {
     width: 280px;
+    height: calc(100vh - 80px); /* Fill space below navbar */
     background-color: #000;
-    border-right: 1px solid rgba(255, 255, 255, 0.15); /* More visible divider */
-    height: calc(100vh - 80px); /* Height minus Navbar */
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
     flex-direction: column;
-    position: sticky;
-    top: 80px; /* Below Navbar */
+    position: fixed;
+    top: 80px; /* Below navbar */
+    left: 0;
+    z-index: 100;
+    overflow-y: auto;
 }
 
 .sidebarHeader {
@@ -80,6 +83,22 @@
 
 .navItemActive .icon {
     filter: brightness(0); /* Make icons black on green background */
+}
+
+.navDivider {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.05);
+    margin: 8px 12px;
+}
+
+.sectionNavItem {
+    opacity: 0.6;
+    font-size: 13px;
+    padding: 8px 16px;
+}
+
+.sectionNavItem:hover {
+    opacity: 1;
 }
 
 @media (max-width: 1024px) {

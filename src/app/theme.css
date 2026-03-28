@@ -17,9 +17,14 @@
   --color-utility-secondaryText: #000000;
   --color-utility-primaryBackground: #000000;
   --color-utility-secondaryBackground: #ffffff;
+  --color-interface-background: #0a0a0a;
+  --color-interface-surface: #1E1E1E;
+  --color-interface-surface-hover: #1a1a1a;
+  --color-interface-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-interface-info: #2196f3;
+  --color-interface-warning: #ff9800;
   --color-interface-success: #0F8C16;
   --color-interface-error: #d32f2f;
-  --color-interface-surface: #1E1E1E;
   --color-interface-outline: #E0E0E0;
 
   --spacing-xs: 4px;

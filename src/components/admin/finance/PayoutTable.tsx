@@ -18,6 +18,9 @@ interface PayoutTableProps {
     selectedIds?: Set<string>;
     onSelect?: (id: string) => void;
     onSelectAll?: () => void;
+    onApprove?: (payout: Payout) => void;
+    onReject?: (payout: Payout) => void;
+    onRetry?: (payout: Payout) => void;
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
@@ -57,6 +60,9 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
     selectedIds,
     onSelect,
     onSelectAll,
+    onApprove,
+    onReject,
+    onRetry,
     currentPage = 1,
     totalPages = 1,
     onPageChange,
@@ -135,19 +141,13 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
                     label: 'Approve',
                     variant: 'success' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                    onClick: () => {
-                        showToast(`Processing payout ${payout.reference}...`, 'info');
-                        setTimeout(() => showToast('Payout approved and set to processing.', 'success'), 1200);
-                    },
+                    onClick: () => onApprove?.(payout),
                 },
                 {
                     label: 'Reject',
                     variant: 'danger' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                    onClick: () => {
-                        showToast(`Rejecting ${payout.reference}...`, 'info');
-                        setTimeout(() => showToast('Payout rejected.', 'error'), 1000);
-                    },
+                    onClick: () => onReject?.(payout),
                 }
             );
         }
@@ -158,10 +158,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
                 label: 'Retry',
                 variant: 'default',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>,
-                onClick: () => {
-                    showToast(`Retrying payout ${payout.reference}...`, 'info');
-                    setTimeout(() => showToast('Retry queued.', 'success'), 1000);
-                },
+                onClick: () => onRetry?.(payout),
             });
         }
 
