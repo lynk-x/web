@@ -31,10 +31,9 @@ export interface CampaignData {
     target_url: string;
     target_event_id?: string;
     max_bid_amount: string;
-    target_country_code?: string;
-    target_tags: string[]; // maps to target_tags text[] in ad_campaigns
+    target_countries: string[];
+    target_tags: string[];
     creatives: Creative[];
-    // Legacy single-asset compat (kept for the edit flow)
     adHeadline: string;
     adImageUrl?: string;
 }
@@ -56,6 +55,12 @@ interface CreateCampaignFormProps {
 interface CountryOption {
     code: string;
     display_name: string;
+}
+
+interface MarketSuggestion {
+    country_code: string;
+    suggested_modifier: number;
+    competition_level: 'low' | 'normal' | 'medium' | 'high';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -87,8 +92,13 @@ export default function CreateCampaignForm({
     const [countries, setCountries] = useState<CountryOption[]>([]);
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
 
-    // ── Tag Input State ───────────────────────────────────────────────────────
+    // ── Country/Tag Input State ───────────────────────────────────────────────────────
     const [tagInput, setTagInput] = useState('');
+    const [countryInput, setCountryInput] = useState('');
+    const [countrySuggestions, setCountrySuggestions] = useState<CountryOption[]>([]);
+    const [marketSuggestions, setMarketSuggestions] = useState<MarketSuggestion[]>([]);
+    
+
 
     // ── Active Creative Index (for A/B multi-creative picker) ─────────────────
     const [activeCreativeIdx, setActiveCreativeIdx] = useState(0);
@@ -106,7 +116,7 @@ export default function CreateCampaignForm({
         end_at: '',
         target_url: '',
 
-        target_country_code: '',
+        target_countries: [],
         target_tags: [],
         creatives: [{ headline: '', imageUrl: '', preview: '', file: undefined }],
         max_bid_amount: '0.01',
@@ -124,7 +134,11 @@ export default function CreateCampaignForm({
                 .select('code, display_name')
                 .eq('is_active', true)
                 .order('display_name');
-            if (cData) setCountries(cData);
+            if (cData) {
+                setCountries(cData);
+                // Simple suggestion: Top 4 (e.g. common ones)
+                setCountrySuggestions(cData.slice(0, 4));
+            }
 
             // Fetch official/popular tags for suggestions
             const { data: tData } = await supabase
@@ -137,6 +151,25 @@ export default function CreateCampaignForm({
         };
         fetchData();
     }, [supabase]);
+
+    // ── Fetch Market Competition Suggestions ───────────────────────────
+    useEffect(() => {
+        if (!formData.target_countries?.length) {
+            setMarketSuggestions([]);
+            return;
+        }
+
+        const fetchMarketData = async () => {
+            const { data, error } = await supabase.rpc('get_market_bid_suggestion', {
+                p_country_codes: formData.target_countries
+            });
+            if (!error && data) {
+                setMarketSuggestions(data as MarketSuggestion[]);
+            }
+        };
+
+        fetchMarketData();
+    }, [supabase, formData.target_countries]);
 
     // ── Fetch Pricing on Ad Type Change ──────────────────────────────────────
     useEffect(() => {
@@ -188,6 +221,23 @@ export default function CreateCampaignForm({
 
     const removeTag = (tag: string) => {
         setFormData(prev => ({ ...prev, target_tags: prev.target_tags.filter(t => t !== tag) }));
+    };
+
+    /** Add a country to targeting. */
+    const addCountry = (code: string) => {
+        if (!code || formData.target_countries.includes(code) || formData.target_countries.length >= 5) return;
+        setFormData(prev => ({ 
+            ...prev, 
+            target_countries: [...prev.target_countries, code]
+        }));
+        setCountryInput('');
+    };
+
+    const removeCountry = (code: string) => {
+        setFormData(prev => ({
+            ...prev,
+            target_countries: prev.target_countries.filter(c => c !== code)
+        }));
     };
 
     /** Update a single creative field by index. */
@@ -299,7 +349,22 @@ export default function CreateCampaignForm({
         }
 
         const bid = parseFloat(formData.max_bid_amount);
-        if (isNaN(bid) || bid <= 0) { setFormError('A valid positive max bid amount is required.'); return false; }
+        if (isNaN(bid) || bid <= 0) {
+            setFormError('A valid positive max bid amount is required.');
+            return false;
+        }
+
+        // Logic sync: Max bid cannot exceed the daily spending limit (if specified)
+        if (formData.daily_limit && (bid > limit)) {
+            setFormError(`Max bid ($${bid}) cannot be higher than the daily limit ($${limit}).`);
+            return false;
+        }
+
+        // Logic sync: Max bid cannot exceed total budget
+        if (bid > budget) {
+            setFormError(`Max bid ($${bid}) cannot exceed the total campaign budget ($${budget}).`);
+            return false;
+        }
 
         if (!formData.start_at || !formData.end_at) { setFormError('Both start date and end date are required.'); return false; }
         if (new Date(formData.end_at) <= new Date(formData.start_at)) {
@@ -366,10 +431,17 @@ export default function CreateCampaignForm({
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
                     target_url: formData.target_url,
-                    target_country_code: formData.target_country_code || null,
                     updated_at: new Date().toISOString(),
                 }).eq('id', formData.id);
                 if (error) throw error;
+
+                // Re-sync regions
+                await supabase.from('ad_campaign_regions').delete().eq('campaign_id', formData.id);
+                if (formData.target_countries.length > 0) {
+                    await supabase.from('ad_campaign_regions').insert(
+                        formData.target_countries.map(code => ({ campaign_id: formData.id, country_code: code }))
+                    );
+                }
 
                 // Re-sync campaign_tags: wipe then re-insert
                 await supabase.from('campaign_tags').delete().eq('campaign_id', formData.id);
@@ -403,12 +475,17 @@ export default function CreateCampaignForm({
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
                     target_url: formData.target_url,
-                    target_country_code: formData.target_country_code || null,
                     status: 'pending_approval',
                 }).select().single();
                 if (error) throw error;
 
                 if (campaign) {
+                    // Regions
+                    if (formData.target_countries.length > 0) {
+                        await supabase.from('ad_campaign_regions').insert(
+                            formData.target_countries.map(code => ({ campaign_id: campaign.id, country_code: code }))
+                        );
+                    }
                     // Insert campaign_tags rows for each resolved tag UUID
                     if (resolvedTagIds.length > 0) {
                         await supabase.from('campaign_tags').insert(
@@ -493,7 +570,24 @@ export default function CreateCampaignForm({
                                         onChange={handleInputChange} />
                                 </div>
 
-                                {/* Ad Type + Region */}
+                                {/* Dates - Moved up below Description */}
+                                <div className={styles.row}>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label} htmlFor="start_at">
+                                            Start Date <span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <input id="start_at" name="start_at" type="date" className={styles.input}
+                                            value={formData.start_at} onChange={handleInputChange} required />
+                                    </div>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label} htmlFor="end_at">
+                                            End Date <span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <input id="end_at" name="end_at" type="date" className={styles.input}
+                                            value={formData.end_at} onChange={handleInputChange} required />
+                                    </div>
+                                </div>
+
                                 <div className={styles.row}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="type">
@@ -515,16 +609,6 @@ export default function CreateCampaignForm({
                                             </div>
                                         )}
                                     </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="target_country_code">Target Region</label>
-                                        <select id="target_country_code" name="target_country_code" className={styles.input}
-                                            value={formData.target_country_code} onChange={handleInputChange}>
-                                            <option value="">Select Region...</option>
-                                            {countries.map(c => (
-                                                <option key={c.code} value={c.code}>{c.display_name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
                                 </div>
 
                                 {/* Budget */}
@@ -532,37 +616,26 @@ export default function CreateCampaignForm({
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="total_budget">
                                             Total Budget ($) <span className={styles.requiredIndicator}>*Required</span>
+                                            <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire advertising campaign over its lifetime">ⓘ</span>
                                         </label>
                                         <input id="total_budget" name="total_budget" type="number" className={styles.input}
                                             placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="daily_limit">Daily Limit ($)</label>
+                                        <label className={styles.label} htmlFor="daily_limit">
+                                            Daily Limit ($)
+                                            <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
+                                        </label>
                                         <input id="daily_limit" name="daily_limit" type="number" className={styles.input}
                                             placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="max_bid_amount">Max Bid ($) <span className={styles.requiredIndicator}>*Required</span></label>
+                                        <label className={styles.label} htmlFor="max_bid_amount">
+                                            Max Bid ($) <span className={styles.requiredIndicator}>*Required</span>
+                                            <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
+                                        </label>
                                         <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={styles.input}
                                             placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
-                                    </div>
-                                </div>
-
-                                {/* Dates */}
-                                <div className={styles.row}>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="start_at">
-                                            Start Date <span className={styles.requiredIndicator}>*Required</span>
-                                        </label>
-                                        <input id="start_at" name="start_at" type="date" className={styles.input}
-                                            value={formData.start_at} onChange={handleInputChange} required />
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="end_at">
-                                            End Date <span className={styles.requiredIndicator}>*Required</span>
-                                        </label>
-                                        <input id="end_at" name="end_at" type="date" className={styles.input}
-                                            value={formData.end_at} onChange={handleInputChange} required />
                                     </div>
                                 </div>
 
@@ -576,15 +649,13 @@ export default function CreateCampaignForm({
                                                 <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
                                             </div>
                                             <div className={styles.forecastItem}>
-                                                <span className={styles.forecastLabel}>Clicks (est. 0.5–1.5% CTR)</span>
+                                                <span className={styles.forecastLabel}>Clicks Est.</span>
                                                 <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
                                             </div>
                                         </div>
-                                        <p className={styles.forecastNote}>Estimates are based on base floor pricing. Actual costs are determined by GSP auction.</p>
                                     </div>
                                 )}
 
-                                {/* #6 Schedule Timeline */}
                                 {scheduleWeeks.length > 0 && (
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label}>Campaign Timeline</label>
@@ -595,9 +666,6 @@ export default function CreateCampaignForm({
                                                 </div>
                                             ))}
                                         </div>
-                                        <p className={styles.forecastNote} style={{ marginTop: '6px' }}>
-                                            Highlighted weeks are within your campaign window.
-                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -616,43 +684,118 @@ export default function CreateCampaignForm({
                                         onChange={handleInputChange} required />
                                 </div>
 
-                                {/* FIXME: Geo-Fencing / Radius Targeting 
-                                    The DB supports target_coordinate (geography) and target_radius_km.
-                                    Integrate a Map Picker or radius slider here to enable local-only ads.
-                                */}
-                                {/* #1 Interest Tag Targeting */}
+                                {/* Multi-Country Targeting */}
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label}>Interest Tags <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(max 10 — used for audience matching)</span></label>
+                                    <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Up to 5 countries)</span></label>
                                     <div className={styles.tagInput}>
-                                        {formData.target_tags.map(tag => (
-                                            <span key={tag} className={styles.tag}>
-                                                {tag}
-                                                <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
-                                            </span>
-                                        ))}
+                                        {formData.target_countries?.map(code => {
+                                            const country = countries.find(c => c.code === code);
+                                            return (
+                                                <span key={code} className={styles.tag}>
+                                                    {country?.display_name || code}
+                                                    <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
+                                                </span>
+                                            );
+                                        })}
                                         <input
                                             className={styles.tagInputField}
-                                            placeholder={formData.target_tags.length < 10 ? 'Add a tag...' : 'Max 10 tags'}
-                                            value={tagInput}
-                                            onChange={e => setTagInput(e.target.value)}
+                                            placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Max 5 regions'}
+                                            value={countryInput}
+                                            onChange={e => setCountryInput(e.target.value)}
                                             onKeyDown={e => {
-                                                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
-                                                if (e.key === 'Backspace' && !tagInput && formData.target_tags.length > 0) {
-                                                    removeTag(formData.target_tags[formData.target_tags.length - 1]);
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    // Add the first matching country if any
+                                                    const match = countries.find(c => 
+                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) && 
+                                                        !formData.target_countries?.includes(c.code)
+                                                    );
+                                                    if (match) addCountry(match.code);
                                                 }
                                             }}
-                                            disabled={formData.target_tags.length >= 10}
+                                            disabled={(formData.target_countries?.length || 0) >= 5}
                                         />
+                                        {/* Dropdown for search results */}
+                                        {countryInput && (
+                                            <div className={styles.countryDropdown}>
+                                                {countries
+                                                    .filter(c => 
+                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) && 
+                                                        !formData.target_countries?.includes(c.code)
+                                                    )
+                                                    .slice(0, 5)
+                                                    .map(c => (
+                                                        <div key={c.code} className={styles.countryDropdownItem} onClick={() => addCountry(c.code)}>
+                                                            {c.display_name}
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className={styles.tagSuggestions}>
-                                        {tagSuggestions.filter(t => !formData.target_tags.includes(t)).map(t => (
-                                            <button key={t} type="button" className={styles.tagSuggestion} onClick={() => addTag(t)}>
-                                                + {t}
-                                            </button>
-                                        ))}
+                                    </div>
+                                    
+                                    {/* Market Competition Insights */}
+                                    {marketSuggestions.length > 0 && (
+                                        <div className={styles.marketInsights}>
+                                            <div className={styles.marketInsightsTitle}>📊 Regional Market Density</div>
+                                            <div className={styles.marketGrid}>
+                                                {marketSuggestions.map(s => {
+                                                    const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
+                                                    return (
+                                                        <div key={s.country_code} className={styles.marketItem}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span className={styles.marketCountry}>{name}</span>
+                                                                <span className={`${styles.badge} ${styles['badge' + s.competition_level.charAt(0).toUpperCase() + s.competition_level.slice(1)]}`}>
+                                                                    {s.competition_level.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div className={styles.marketNote}>
+                                                                {s.suggested_modifier > 1.0 
+                                                                    ? `High volume. Recommend ${s.suggested_modifier}x bid modifier.`
+                                                                    : 'Healthy inventory. Base bids are sufficient.'
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Interest Tag Targeting */}
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label}>Interest Tags <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(max 10 — used for audience matching)</span></label>
+                                        <div className={styles.tagInput}>
+                                            {formData.target_tags.map(tag => (
+                                                <span key={tag} className={styles.tag}>
+                                                    {tag}
+                                                    <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
+                                                </span>
+                                            ))}
+                                            <input
+                                                className={styles.tagInputField}
+                                                placeholder={formData.target_tags.length < 10 ? 'Add a tag...' : 'Max 10 tags'}
+                                                value={tagInput}
+                                                onChange={e => setTagInput(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
+                                                    if (e.key === 'Backspace' && !tagInput && formData.target_tags.length > 0) {
+                                                        removeTag(formData.target_tags[formData.target_tags.length - 1]);
+                                                    }
+                                                }}
+                                                disabled={formData.target_tags.length >= 10}
+                                            />
+                                        </div>
+                                        <div className={styles.tagSuggestions}>
+                                            {tagSuggestions.filter(t => !formData.target_tags.includes(t)).map(t => (
+                                                <button key={t} type="button" className={styles.tagSuggestion} onClick={() => addTag(t)}>
+                                                    + {t}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         )}
 
                         {/* ── Tab: Creatives (A/B) ── */}
@@ -766,7 +909,7 @@ export default function CreateCampaignForm({
                                         ['Ad Type', formData.type === 'banner' ? 'Banner (16:9)' : formData.type === 'interstitial' ? 'Interstitial (Full Screen)' : 'Interstitial Video'],
                                         ['Budget', `$${formData.total_budget}${formData.daily_limit ? ` (Daily cap: $${formData.daily_limit})` : ''} · Max Bid: $${formData.max_bid_amount}`],
                                         ['Duration', formData.start_at && formData.end_at ? `${formData.start_at} → ${formData.end_at}` : '—'],
-                                        ['Region', formData.target_country_code || '—'],
+                                        ['Region', formData.target_countries?.length ? formData.target_countries.map(code => countries.find(c => c.code === code)?.display_name || code).join(', ') : 'Global'],
                                         ['Interest Tags', formData.target_tags.length > 0 ? formData.target_tags.map(t => t).join(', ') : 'None'],
 
                                         ['Destination URL', formData.target_url],

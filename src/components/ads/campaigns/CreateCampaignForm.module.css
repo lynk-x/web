@@ -60,6 +60,22 @@
     font-weight: 600;
 }
 
+.infoIcon {
+    margin-left: 6px;
+    opacity: 0.4;
+    cursor: help;
+    font-size: 13px;
+    color: var(--color-utility-primaryText);
+    transition: all 0.2s;
+    display: inline-flex;
+    vertical-align: middle;
+}
+
+.infoIcon:hover {
+    opacity: 1;
+    color: var(--color-brand-primary);
+}
+
 .input,
 .textarea {
     padding: 12px 14px;
@@ -268,14 +284,14 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    background: rgba(32, 249, 40, 0.15);
-    border: 1px solid rgba(32, 249, 40, 0.3);
-    color: var(--color-brand-primary);
-    font-size: 12px;
-    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-primary);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
     white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .tagRemove {
@@ -325,6 +341,41 @@
     border-color: var(--color-brand-primary);
     color: var(--color-brand-primary);
     background: rgba(32, 249, 40, 0.06);
+}
+
+/* ── Country Dropdown ────────────────────────────────────────────────── */
+
+.countryDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--color-interface-surface);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    overflow: hidden;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.countryDropdownItem {
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+    color: var(--color-utility-primaryText);
+}
+
+.countryDropdownItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-brand-primary);
+}
+
+.countryDropdownItem:last-child {
+    border-bottom: none;
 }
 
 /* ── #2 Event Search ──────────────────────────────────────────────────────── */
@@ -664,6 +715,62 @@
     font-size: 13px;
     margin-top: 8px;
 }
+
+.marketInsights {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+}
+
+.marketInsightsTitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-brand-primary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.marketGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.marketItem {
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.marketItem:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.marketCountry {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.marketNote {
+    font-size: 11px;
+    opacity: 0.5;
+    margin-top: 4px;
+}
+
+.badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.badgeLow { background: rgba(32, 249, 40, 0.1); color: var(--color-brand-primary); }
+.badgeNormal { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.badgeMedium { background: rgba(255, 165, 0, 0.1); color: #ffa500; }
+.badgeHigh { background: rgba(255, 77, 77, 0.1); color: #ff4d4d; }
 
 .layout {
     display: grid;

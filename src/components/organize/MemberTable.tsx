@@ -16,7 +16,7 @@ export interface AccountMember {
     userId?: string;
     name: string;
     email: string;
-    role: 'owner' | 'admin' | 'finance_manager' | 'viewer' | string;
+    role: 'owner' | 'admin' | 'accountant' | 'viewer' | string;
     joinedAt: string;
     isPending?: boolean;
 }
@@ -25,7 +25,7 @@ const getRoleVariant = (role: string): BadgeVariant => {
     switch (role) {
         case 'owner': return 'primary';
         case 'admin': return 'success';
-        case 'finance_manager': return 'warning';
+        case 'accountant': return 'warning';
         case 'viewer': return 'subtle';
         default: return 'neutral';
     }
@@ -66,7 +66,7 @@ export default function MemberTable() {
             // Fetch Pending Invitations
             const { data: inviteData, error: inviteError } = await supabase
                 .from('account_invitations')
-                .select('id, email, role, created_at')
+                .select('id, email, role_slug, created_at')
                 .eq('account_id', activeAccount.id)
                 .is('accepted_at', null);
 
@@ -78,7 +78,7 @@ export default function MemberTable() {
                 userId: m.user_id,
                 name: m.full_name || m.user_name || 'Unknown User',
                 email: m.email || '',
-                role: m.role,
+                role: m.role_slug,
                 joinedAt: formatDate(m.joined_at),
                 isPending: false
             }));
@@ -88,7 +88,7 @@ export default function MemberTable() {
                 id: i.id, // For pending, ID is the invitation ID
                 name: 'Pending Invite',
                 email: i.email,
-                role: i.role,
+                role: i.role_slug,
                 joinedAt: formatDate(i.created_at),
                 isPending: true
             }));
@@ -135,7 +135,7 @@ export default function MemberTable() {
             const { error } = await supabase.rpc('create_account_invitation', {
                 p_account_id: activeAccount.id,
                 p_email: inviteEmail.toLowerCase(),
-                p_role: inviteRole
+                p_role_slug: inviteRole
             });
 
             if (error) throw error;
@@ -329,7 +329,7 @@ export default function MemberTable() {
                                     }}
                                 >
                                     <option value="admin">Administrator (Full Access)</option>
-                                    <option value="finance_manager">Finance Manager (Revenues & Payouts)</option>
+                                    <option value="accountant">Accountant (Revenues & Payouts)</option>
                                     <option value="viewer">Viewer (Read-only)</option>
                                     {/* Exclude 'owner', only system/owner transfers should grant 'owner' */}
                                 </select>

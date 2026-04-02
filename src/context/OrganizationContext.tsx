@@ -8,7 +8,7 @@ export interface Account {
     id: string;
     name: string;
     thumbnailUrl?: string;
-    role: 'owner' | 'admin' | 'finance_manager' | 'viewer'; // From account_role enum
+    role: 'owner' | 'admin' | 'accountant' | 'viewer' | string; // From account_role text value
     type: 'attendee' | 'organizer' | 'advertiser' | 'hybrid' | 'platform';
     website?: string;
     description?: string;
@@ -49,7 +49,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             const { data, error } = await supabase
                 .from('account_members')
                 .select(`
-                    role,
+                    role_slug,
                     accounts:account_id (
                         id,
                         display_name,
@@ -82,7 +82,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         id: member.accounts.id,
                         name: member.accounts.display_name,
                         thumbnailUrl: member.accounts.avatar_url,
-                        role: member.role,
+                        role: member.role_slug,
                         type: member.accounts.type,
                         website: undefined, // removed from DB schema
                         description: member.accounts.description,

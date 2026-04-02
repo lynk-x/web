@@ -22,26 +22,70 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
         const fetchCampaign = async () => {
             setIsLoading(true);
             const { data, error } = await supabase
-                .from('ad_campaigns')
+                .from('ad_campaign_campaigns_with_assets') // or just ad_campaigns
                 .select(`
-                    id, title, description, type,
-                    total_budget, daily_limit, max_bid_amount,
-                    start_at, end_at,
-                    target_url, target_event_id, target_country_code,
-                    ad_assets (call_to_action, url, is_primary)
+                    *,
+                    ad_assets (call_to_action, url, is_primary, media_type),
+                    ad_campaign_regions (country_code),
+                    campaign_tags (tags (name))
                 `)
                 .eq('id', id)
                 .single();
 
             if (error || !data) {
-                setNotFound(true);
+                // Try fallback if view doesn't exist yet, but using raw ad_campaigns for now
+                const { data: rawData, error: rawError } = await supabase
+                    .from('ad_campaigns')
+                    .select(`
+                        *,
+                        ad_assets (call_to_action, url, is_primary, media_type),
+                        ad_campaign_regions (country_code),
+                        campaign_tags (tags (name))
+                    `)
+                    .eq('id', id)
+                    .single();
+
+                if (rawError || !rawData) {
+                    setNotFound(true);
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Process rawData
+                const assets = (rawData.ad_assets as any[]) || [];
+                const regions = (rawData.ad_campaign_regions as any[]) || [];
+                const tags = (rawData.campaign_tags as any[]) || [];
+
+                setCampaign({
+                    id: rawData.id,
+                    title: rawData.title,
+                    description: rawData.description || '',
+                    type: rawData.type,
+                    total_budget: String(rawData.total_budget),
+                    daily_limit: rawData.daily_limit != null ? String(rawData.daily_limit) : '',
+                    max_bid_amount: rawData.max_bid_amount != null ? String(rawData.max_bid_amount) : '0.01',
+                    start_at: rawData.start_at ? rawData.start_at.slice(0, 10) : '',
+                    end_at: rawData.end_at ? rawData.end_at.slice(0, 10) : '',
+                    target_url: rawData.target_url || '',
+                    target_event_id: rawData.target_event_id || '',
+                    target_countries: regions.map(r => r.country_code),
+                    target_tags: tags.map(t => t.tags?.name).filter(Boolean),
+                    creatives: assets.map(a => ({
+                        headline: a.call_to_action || '',
+                        imageUrl: a.url || '',
+                        preview: a.url || '',
+                        mediaType: a.media_type
+                    })),
+                    adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
+                    adImageUrl: assets.find(a => a.is_primary)?.url || ''
+                });
                 setIsLoading(false);
                 return;
             }
 
-            // Find the primary asset for headline / image URL
-            const assets = (data.ad_assets as { is_primary: boolean; url: string; call_to_action?: string }[]) || [];
-            const primaryAsset = assets.find(a => a.is_primary) ?? assets[0];
+            const assets = (data.ad_assets as any[]) || [];
+            const regions = (data.ad_campaign_regions as any[]) || [];
+            const tags = (data.campaign_tags as any[]) || [];
 
             setCampaign({
                 id: data.id,
@@ -51,20 +95,20 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 total_budget: String(data.total_budget),
                 daily_limit: data.daily_limit != null ? String(data.daily_limit) : '',
                 max_bid_amount: data.max_bid_amount != null ? String(data.max_bid_amount) : '0.01',
-                // Slice to YYYY-MM-DD for the date input
                 start_at: data.start_at ? data.start_at.slice(0, 10) : '',
                 end_at: data.end_at ? data.end_at.slice(0, 10) : '',
                 target_url: data.target_url || '',
                 target_event_id: data.target_event_id || '',
-                target_country_code: data.target_country_code || 'KE',
-                target_tags: [], // Tags aren't fetched here yet
+                target_countries: regions.map(r => r.country_code),
+                target_tags: tags.map(t => t.tags?.name).filter(Boolean),
                 creatives: assets.map(a => ({
                     headline: a.call_to_action || '',
                     imageUrl: a.url || '',
-                    preview: a.url || ''
+                    preview: a.url || '',
+                    mediaType: a.media_type
                 })),
-                adHeadline: primaryAsset?.call_to_action || '',
-                adImageUrl: primaryAsset?.url || ''
+                adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
+                adImageUrl: assets.find(a => a.is_primary)?.url || ''
             });
             setIsLoading(false);
         };
