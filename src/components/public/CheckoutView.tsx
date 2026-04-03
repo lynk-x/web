@@ -484,7 +484,7 @@ function CheckoutHeader() {
                 </svg>
             </Link>
             <div className={styles.logoContainer}>
-                <Image src="/lynk-x_text.svg" alt="Lynk-X" width={200} height={60} className={styles.logo} priority />
+                <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={200} height={60} className={styles.logo} priority />
             </div>
             <div className={styles.securityIcon}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">

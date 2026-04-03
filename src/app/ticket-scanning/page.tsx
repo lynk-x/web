@@ -363,7 +363,7 @@ export default function TicketScanningPage() {
                 </button>
                 
                 <Image 
-                    src="/lynk-x_text.svg" 
+                    src="/lynk-x_combined_logo.svg" 
                     alt="Lynk-X" 
                     width={200} 
                     height={60} 

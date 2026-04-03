@@ -112,7 +112,7 @@ export default function LiveQuizClient({
                     className={styles.introScreen}
                 >
                     <div className={styles.logoImgWrapper}>
-                        <Image src="/lynk-x_text.svg" alt="Lynk-X" width={180} height={50} priority />
+                        <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={180} height={50} priority />
                     </div>
                     <div className={styles.logo}>Lynk-X <span>Live!</span></div>
                     <h1 className={styles.title}>{questionnaire.title}</h1>

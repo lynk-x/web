@@ -115,7 +115,7 @@ export default function AdminInvoicePage() {
                 <header className={styles.header}>
                     <div className={styles.logoArea}>
                         <Image
-                            src="/lynk-x_text.svg"
+                            src="/lynk-x_combined_logo.svg"
                             alt="Lynk-X"
                             width={280}
                             height={60}

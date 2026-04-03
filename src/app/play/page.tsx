@@ -75,7 +75,7 @@ export default function PlayPage() {
     return (
         <div className={styles.container}>
             <div className={styles.logoImgWrapper}>
-                <Image src="/lynk-x_text.svg" alt="Lynk-X" width={220} height={100} priority />
+                <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={220} height={100} priority />
             </div>
             <div className={styles.logo}>Quiz<span>Live!</span></div>
             <div className={styles.card}>
