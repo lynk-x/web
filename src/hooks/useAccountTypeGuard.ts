@@ -10,10 +10,9 @@
  *  B) User has an account of the required type, but a different one is currently active
  *     → redirect to /dashboard so they can switch to the right workspace.
  *
- * A 'hybrid' account is allowed through any section.
- *
+
  * Usage:
- *   const { isAuthorized, isChecking } = useAccountTypeGuard(['organizer', 'hybrid'])
+ *   const { isAuthorized, isChecking } = useAccountTypeGuard(['organizer'])
  *
  * Render nothing while isChecking is true to avoid flash-of-content.
  */
@@ -36,7 +35,7 @@ interface GuardResult {
 
 /**
  * @param allowedTypes  Account types permitted to view this section.
- *                      e.g. ['organizer', 'hybrid'] or ['advertiser', 'hybrid']
+ *                      e.g. ['organizer'] or ['advertiser']
  */
 export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
     const router = useRouter();

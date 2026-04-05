@@ -9,7 +9,7 @@ export interface Account {
     name: string;
     thumbnailUrl?: string;
     role: 'owner' | 'admin' | 'accountant' | 'viewer' | string; // From account_role text value
-    type: 'attendee' | 'organizer' | 'advertiser' | 'hybrid' | 'platform';
+    type: 'attendee' | 'organizer' | 'advertiser' | 'platform';
     website?: string;
     description?: string;
     support_email?: string;

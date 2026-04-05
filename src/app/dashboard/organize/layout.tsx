@@ -4,11 +4,8 @@
  * Organizer section layout guard.
  *
  * Protects ALL pages under /dashboard/organize/* by checking that the active
- * account has type 'organizer' or 'hybrid'. If not, redirects to /dashboard
+ * account has type 'organizer'. If not, redirects to /dashboard
  * so the user can switch to an appropriate account.
- *
- * 'hybrid' accounts are permitted because they carry both organizer and
- * advertiser capabilities.
  */
 
 import React, { useMemo } from 'react';
@@ -20,7 +17,7 @@ type AccountType = Account['type'];
 export default function OrganizeLayout({ children }: { children: React.ReactNode }) {
     // Memoized so the array reference is stable across renders and doesn't
     // retrigger the guard's useEffect on every render.
-    const allowedTypes = useMemo<AccountType[]>(() => ['organizer', 'hybrid'], []);
+    const allowedTypes = useMemo<AccountType[]>(() => ['organizer'], []);
     const { isChecking, isAuthorized } = useAccountTypeGuard(allowedTypes);
 
     // Render nothing while the account type is being verified to avoid

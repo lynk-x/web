@@ -20,7 +20,7 @@ export default function DashboardRootPage() {
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     // Attendee accounts are consumer-facing and have no dashboard workspace.
-    // Only organizer / advertiser / hybrid / platform accounts are shown here.
+    // Only organizer / advertiser / platform accounts are shown here.
     const accounts = allAccounts.filter(a => a.type !== 'attendee');
 
     const handleSelectWorkspace = useCallback((account: any) => {
