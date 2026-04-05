@@ -7,15 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 export interface Account {
     id: string;
     name: string;
-    thumbnailUrl?: string;
-    role: 'owner' | 'admin' | 'accountant' | 'viewer' | string; // From account_role text value
+    /** Extracted from accounts.media->>'logo' */
+    logoUrl?: string;
+    role: 'owner' | 'admin' | 'accountant' | 'editor' | 'staff' | 'reviewer' | 'moderator' | 'support_agent' | string;
     type: 'attendee' | 'organizer' | 'advertiser' | 'platform';
-    website?: string;
-    description?: string;
-    support_email?: string;
-    phone_number?: string;
     wallet_balance?: number;
-    default_currency?: string;
+    wallet_currency?: string;
 }
 
 interface OrganizationContextType {
@@ -53,12 +50,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                     accounts:account_id (
                         id,
                         display_name,
-                        avatar_url,
-                        description,
-                        contact_email,
-                        phone_number,
-                        default_currency,
                         type,
+                        media,
                         account_wallets(currency, balance)
                     )
                 `)
@@ -73,23 +66,19 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
             if (data && data.length > 0) {
                 const mappedAccounts: Account[] = data.map((member: any) => {
-                    const defaultCurrency = member.accounts.default_currency || 'KES';
-                    const wallets = member.accounts.account_wallets || [];
-                    const primaryWallet = wallets.find((w: any) => w.currency === defaultCurrency) || wallets[0];
-                    const walletBalance = primaryWallet ? Number(primaryWallet.balance) : 0;
+                    const wallets: { currency: string; balance: number }[] = member.accounts.account_wallets || [];
+                    // Pick the KES wallet first (primary market), fall back to first available
+                    const primaryWallet = wallets.find((w) => w.currency === 'KES') || wallets[0];
 
                     return {
                         id: member.accounts.id,
                         name: member.accounts.display_name,
-                        thumbnailUrl: member.accounts.avatar_url,
+                        // Extract logo from the JSONB media column set during onboarding
+                        logoUrl: (member.accounts.media as any)?.logo ?? undefined,
                         role: member.role_slug,
                         type: member.accounts.type,
-                        website: undefined, // removed from DB schema
-                        description: member.accounts.description,
-                        support_email: member.accounts.contact_email,
-                        phone_number: member.accounts.phone_number,
-                        default_currency: defaultCurrency,
-                        wallet_balance: walletBalance,
+                        wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
+                        wallet_currency: primaryWallet?.currency ?? 'KES',
                     };
                 });
 

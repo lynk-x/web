@@ -43,8 +43,8 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
             >
                 <div className={styles.activeAccountInfo}>
                     <div className={styles.avatar}>
-                        {activeAccount.thumbnailUrl ? (
-                            <img src={activeAccount.thumbnailUrl} alt={activeAccount.name} />
+                        {activeAccount.logoUrl ? (
+                            <img src={activeAccount.logoUrl} alt={activeAccount.name} />
                         ) : (
                             <div className={styles.avatarFallback}>{activeAccount.name.charAt(0)}</div>
                         )}
@@ -78,8 +78,8 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                 }}
                             >
                                 <div className={styles.avatarSmall}>
-                                    {account.thumbnailUrl ? (
-                                        <img src={account.thumbnailUrl} alt={account.name} />
+                                    {account.logoUrl ? (
+                                        <img src={account.logoUrl} alt={account.name} />
                                     ) : (
                                         <div className={styles.avatarFallback}>{account.name.charAt(0)}</div>
                                     )}

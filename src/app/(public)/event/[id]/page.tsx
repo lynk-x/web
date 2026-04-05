@@ -13,8 +13,8 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     const { data: rawEvent, error } = await supabase
         .from('events')
         .select(`
-            id, title, description, thumbnail_url, timezone, account_id,
-            starts_at, ends_at, location_name, is_private, currency,
+            id, title, description, media, location, timezone, account_id,
+            starts_at, ends_at, is_private, currency,
             organizer:accounts!account_id(display_name),
             category:event_categories(display_name)
         `)
@@ -65,6 +65,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
     const event: Event = {
         ...rawEvent,
+        // Map UTC timestamps to the aliased names expected by the Event type
         start_datetime: rawEvent.starts_at,
         end_datetime: rawEvent.ends_at,
         timezone: rawEvent.timezone ?? undefined,

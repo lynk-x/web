@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import PerformanceTable, { type PerformanceEvent } from '@/components/organize/PerformanceTable';
+import PerformanceTable, { type PerformanceEvent } from '@/components/features/analytics/PerformanceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';

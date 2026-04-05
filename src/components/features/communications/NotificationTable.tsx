@@ -2,7 +2,7 @@
 
 import React from 'react';
 import styles from './NotificationTable.module.css';
-import DataTable, { Column } from '../shared/DataTable';
+import DataTable, { Column } from '@/components/shared/DataTable';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

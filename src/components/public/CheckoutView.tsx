@@ -69,14 +69,14 @@ const CheckoutView: React.FC = () => {
                 if (user && !user.is_anonymous) {
                     const { data: profile } = await supabase
                         .from('user_profile')
-                        .select('display_name, email, phone_number')
+                        .select('full_name, email, phone_number')
                         .eq('id', user.id)
                         .maybeSingle();
 
                     if (profile) {
                         setFormData(prev => ({
                             ...prev,
-                            fullName: profile.display_name || '',
+                            fullName: profile.full_name || '',
                             email: profile.email || user.email || '',
                             phone: profile.phone_number || '',
                         }));

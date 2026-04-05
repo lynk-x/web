@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { exportToCSV } from '@/utils/export';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
-import AttendeeTable from '@/components/organize/attendees/AttendeeTable';
+import AttendeeTable from '@/components/features/events/attendees/AttendeeTable';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import type { Attendee } from '@/types/organize';

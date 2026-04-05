@@ -12,7 +12,7 @@ export async function login(formData: FormData) {
     const email = sanitizeInput(formData.get('email') as string)
     const password = formData.get('password') as string
     // Honour the ?next= param so checkout and other gates land the user where they wanted.
-    const next = sanitizeInput((formData.get('next') as string) || '/dashboard/organize')
+    const next = sanitizeInput((formData.get('next') as string) || '/dashboard')
 
     const { error } = await supabase.auth.signInWithPassword({
         email,

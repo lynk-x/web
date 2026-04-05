@@ -167,8 +167,8 @@ export interface User {
     email: string;
     /** Aligned to `user_type` enum: attendee | organizer | advertiser | platform | admin */
     role: 'admin' | 'organizer' | 'advertiser' | 'attendee' | 'platform';
-    /** Matches `user_status` enum: active | suspended | partially_active */
-    status: 'active' | 'suspended' | 'partially_active';
+    /** Matches `account_status` enum: active | temporarily_suspended | permanently_suspended */
+    status: 'active' | 'temporarily_suspended' | 'permanently_suspended';
     /**
      * Last time this user was seen active in the app.
      * Maps to `user_profile.last_seen_at` (new column added in schema review).

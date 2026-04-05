@@ -41,7 +41,7 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
                         category={event.category || 'General'}
                         isActive={false}
                         price={(event.low_price && event.currency) ? `${event.currency} ${event.low_price}` : 'Free'}
-                        image={event.thumbnail_url}
+                        image={(event.media as any)?.cover_image_url}
                     />
                 ))}
             </div>

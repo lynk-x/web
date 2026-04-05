@@ -7,7 +7,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { sanitizeInput } from '@/utils/sanitization';
 import styles from './onboarding.module.css';
 
-type OnboardingStep = 'ROLE_SELECTION' | 'DETAILS';
+type OnboardingStep = 'ROLE_SELECTION' | 'DETAILS' | 'VERIFICATION';
 type AccountType = 'organizer' | 'advertiser';
 
 function OnboardingFlow() {
@@ -39,14 +39,21 @@ function OnboardingFlow() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    // KYC State
+    const [kycDocumentType, setKycDocumentType] = useState<string>('national_id');
+    const [kycFiles, setKycFiles] = useState<{file: File, preview: string}[]>([]);
+    const kycFileInputRef = useRef<HTMLInputElement>(null);
 
     const handleNext = () => {
-        setStep('DETAILS');
+        if (step === 'ROLE_SELECTION') setStep('DETAILS');
+        else if (step === 'DETAILS') setStep('VERIFICATION');
         setError(null);
     };
 
     const handleBack = () => {
-        setStep('ROLE_SELECTION');
+        if (step === 'VERIFICATION') setStep('DETAILS');
+        else if (step === 'DETAILS') setStep('ROLE_SELECTION');
         setError(null);
     };
 
@@ -57,17 +64,22 @@ function OnboardingFlow() {
         setLoading(true);
         try {
             const fileExt = file.name.split('.').pop();
-            const fileName = `org-${crypto.randomUUID()}.${fileExt}`;
-            const filePath = `org-logos/${fileName}`;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            // Upload to avatars bucket under the user's ID as a temp org logo.
+            // Once the account is created, the logo URL is written into accounts.media.
+            // Path: /{user_id}/org-logo.{ext} — complies with avatars RLS policy.
+            const filePath = `${user.id}/org-logo.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('profiles') // Assuming shared bucket
-                .upload(filePath, file);
+                .from('avatars')
+                .upload(filePath, file, { upsert: true });
 
             if (uploadError) throw uploadError;
 
             const { data: { publicUrl } } = supabase.storage
-                .from('profiles')
+                .from('avatars')
                 .getPublicUrl(filePath);
 
             setLogoUrl(publicUrl);
@@ -106,15 +118,46 @@ function OnboardingFlow() {
                 const { error: updateError } = await supabase
                     .from('accounts')
                     .update({
-                        ...(logoUrl ? { avatar_url: logoUrl } : {}),
-                        ...(cleanDesc ? { description: cleanDesc } : {}),
+                        // Merge into the JSONB info and media columns
+                        ...(logoUrl ? { media: { logo: logoUrl } } : {}),
+                        ...(cleanDesc ? { info: { description: cleanDesc } } : {}),
                     })
                     .eq('id', accountId);
 
                 if (updateError) console.error('Branding update failed (non-fatal):', updateError);
             }
 
-            // 3. Refresh the global OrganizationContext so the new account appears in the switcher.
+            // 3. Handle KYC Documents Upload
+            if (kycFiles.length > 0) {
+                const uploadedPaths: string[] = [];
+                for (const item of kycFiles) {
+                    const fileExt = item.file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    const filePath = `${accountId}/${fileName}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from('accounts')
+                        .upload(filePath, item.file);
+
+                    if (!uploadError) {
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('accounts')
+                            .getPublicUrl(filePath);
+                        uploadedPaths.push(publicUrl);
+                    }
+                }
+
+                if (uploadedPaths.length > 0) {
+                    await supabase.from('identity_verifications').insert({
+                        account_id: accountId,
+                        document_type: kycDocumentType,
+                        uploaded_documents: uploadedPaths,
+                        status: 'submitted'
+                    });
+                }
+            }
+
+            // 4. Refresh Context & Redirect
             await refreshAccounts();
 
             if (accountType === 'advertiser') {
@@ -131,23 +174,47 @@ function OnboardingFlow() {
         }
     };
 
+    const handleKycFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        const newFiles = Array.from(files).map(file => ({
+            file,
+            preview: URL.createObjectURL(file)
+        }));
+        setKycFiles(prev => [...prev, ...newFiles]);
+    };
+
+    const removeKycFile = (index: number) => {
+        setKycFiles(prev => {
+            const next = [...prev];
+            URL.revokeObjectURL(next[index].preview);
+            next.splice(index, 1);
+            return next;
+        });
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.onboardingWrapper}>
                 <div className={styles.header}>
                     <h1 className={styles.title}>
-                        {step === 'ROLE_SELECTION' ? 'Choose Your Path' : 'Branding & Identity'}
+                        {step === 'ROLE_SELECTION' ? 'Choose Your Path' : 
+                         step === 'DETAILS' ? 'Branding & Identity' : 'Identity Verification'}
                     </h1>
                     <p className={styles.subtitle}>
                         {step === 'ROLE_SELECTION'
                             ? 'Select the primary goal for your new workspace.'
-                            : `Let's make your ${accountType === 'organizer' ? 'Organising' : 'Advertising'} brand stand out.`}
+                            : step === 'DETAILS' 
+                            ? `Let's make your ${accountType === 'organizer' ? 'Organising' : 'Advertising'} brand stand out.`
+                            : 'Upload your identification documents to verify your account and start operating.'}
                     </p>
                 </div>
 
                 <div className={styles.stepIndicator}>
                     <div className={`${styles.stepDot} ${step === 'ROLE_SELECTION' ? styles.stepDotActive : ''}`} />
                     <div className={`${styles.stepDot} ${step === 'DETAILS' ? styles.stepDotActive : ''}`} />
+                    <div className={`${styles.stepDot} ${step === 'VERIFICATION' ? styles.stepDotActive : ''}`} />
                 </div>
 
                 {step === 'ROLE_SELECTION' && (
@@ -201,9 +268,7 @@ function OnboardingFlow() {
 
                 {step === 'DETAILS' && (
                     <div className={styles.formCard}>
-                        {error && <div className={styles.errorBox}>{error}</div>}
-
-                        <form onSubmit={handleCreateOrganization} className={styles.form}>
+                        <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className={styles.form}>
                             {/* Logo Upload */}
                             <div className={styles.logoSection}>
                                 <div className={styles.logoPreview} onClick={() => fileInputRef.current?.click()}>
@@ -247,9 +312,100 @@ function OnboardingFlow() {
                                     disabled={loading || !orgName.trim()}
                                     style={accountType === 'advertiser' ? { background: 'var(--color-brand-secondary)' } : {}}
                                 >
-                                    {loading ? 'Launching...' : 'Launch Workspace'}
+                                    Continue to Verification
                                 </button>
                             </div>
+                        </form>
+                    </div>
+                )}
+
+                {step === 'VERIFICATION' && (
+                    <div className={styles.formCard}>
+                        {error && <div className={styles.errorBox}>{error}</div>}
+
+                        <form onSubmit={handleCreateOrganization} className={styles.form}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Document Type</label>
+                                <select 
+                                    className={styles.input} 
+                                    value={kycDocumentType} 
+                                    onChange={(e) => setKycDocumentType(e.target.value)}
+                                    style={{ background: 'rgba(0, 0, 0, 0.4)' }}
+                                >
+                                    <option value="national_id">National ID Card</option>
+                                    <option value="passport">Intl. Passport</option>
+                                    <option value="alien_card">Alien / Residence Card</option>
+                                    <option value="incorporation_cert">Certificate of Incorporation</option>
+                                </select>
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>
+                                    Upload Documents 
+                                    <span style={{ fontSize: '12px', opacity: 0.5 }}>Front & Back if applicable</span>
+                                </label>
+                                <div 
+                                    className={styles.kycUploadArea} 
+                                    onClick={() => kycFileInputRef.current?.click()}
+                                >
+                                    <div style={{ textAlign: 'center' }}>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '8px', opacity: 0.5 }}>
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                        </svg>
+                                        <p style={{ fontSize: '14px', opacity: 0.8 }}>Click to upload files</p>
+                                        <p style={{ fontSize: '11px', opacity: 0.4, marginTop: '4px' }}>PNG, JPG or PDF up to 10MB</p>
+                                    </div>
+                                </div>
+                                <input 
+                                    type="file" 
+                                    multiple 
+                                    ref={kycFileInputRef} 
+                                    onChange={handleKycFileChange} 
+                                    style={{ display: 'none' }} 
+                                    accept="image/*,application/pdf"
+                                />
+
+                                {kycFiles.length > 0 && (
+                                    <div className={styles.fileList}>
+                                        {kycFiles.map((item, idx) => (
+                                            <div key={idx} className={styles.fileItem}>
+                                                <div className={styles.filePreview}>
+                                                    {item.file.type.startsWith('image/') ? (
+                                                        <img src={item.preview} alt="preview" />
+                                                    ) : (
+                                                        <div className={styles.pdfIcon}>PDF</div>
+                                                    )}
+                                                </div>
+                                                <span className={styles.fileName}>{item.file.name}</span>
+                                                <button type="button" className={styles.removeFile} onClick={() => removeKycFile(idx)}>×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={styles.actions}>
+                                <button type="button" className={styles.backBtn} onClick={handleBack} disabled={loading}>
+                                    Go Back
+                                </button>
+                                <button
+                                    type="submit"
+                                    className={styles.submitBtn}
+                                    disabled={loading || kycFiles.length === 0}
+                                    style={accountType === 'advertiser' ? { background: 'var(--color-brand-secondary)' } : {}}
+                                >
+                                    {loading ? 'Processing...' : 'Complete & Launch'}
+                                </button>
+                            </div>
+                            
+                            <button 
+                                type="button" 
+                                className={styles.skipBtn}
+                                onClick={handleCreateOrganization}
+                                disabled={loading}
+                            >
+                                Skip for now (Limited access)
+                            </button>
                         </form>
                     </div>
                 )}

@@ -1,6 +1,6 @@
 "use client";
 
-import EventForm from '@/components/organize/EventForm';
+import EventForm from '@/components/features/events/EventForm';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -33,13 +33,13 @@ export default function AdminCreateEventPage() {
                 const filePath = `${activeAccount.id}/${fileName}`; // Organize by account in bucket
 
                 const { error: uploadError } = await supabase.storage
-                    .from('event_banners')
-                    .upload(filePath, file, { cacheControl: '3600', upsert: false });
+                    .from('events')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('event_banners')
+                    .from('events')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -59,11 +59,11 @@ export default function AdminCreateEventPage() {
                     category_id: data.category,
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
-                    location_name: data.location || null,
+                    location: data.location ? { name: data.location } : null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    thumbnail_url: uploadedThumbnailUrl,
-                    status: 'published' // Default to published for MVP
+                    ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
+                    status: 'published'
                 })
                 .select('id')
                 .single();

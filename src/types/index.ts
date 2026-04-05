@@ -11,8 +11,16 @@ export interface Event {
      * Exposed by vw_public_events and vw_user_tickets as `display_timezone`.
      */
     timezone?: string;
-    location_name: string;
-    thumbnail_url?: string;
+    /** 
+     * Event Location information. 
+     * JSONB format: { name: string, address: string, link: string (online), is_online: boolean }
+     */
+    location: any;
+    /** 
+     * Event Media assets. 
+     * JSONB format: { cover_image_url: string, thumbnail_url: string, gallery: string[] }
+     */
+    media: any;
     category?: string;
     account_id?: string;
     organizer_name?: string;

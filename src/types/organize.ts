@@ -49,13 +49,11 @@ export interface EventRow {
 
 /** A financial transaction — aligned to the `transactions` DB table.
  *
- * `type` maps to the `transaction_reason` enum:
  * ticket_sale | ad_campaign_payment | organizer_payment
  * ad_refund | ticket_refund | dispute_settlement
- * escrow_release | payout_withdrawal
+ * escrow_release | payout_withdrawal | subscription_payment
  *
- * Note: 'subscription' / 'subscription_refund' are NOT DB enum values.
- * Subscription payments are recorded in the `subscriptions` table, not `transactions`.
+ * NOTE: Aligned with the transaction_reason enum in public schema.
  *
  * `status` maps to the `payment_status` enum:
  * pending | completed | failed | cancelled | refunded
@@ -70,7 +68,7 @@ export interface FinanceTransaction {
     /** Aligned to `transaction_reason` enum (exhaustive) */
     type: 'ticket_sale' | 'ad_campaign_payment' | 'organizer_payment'
         | 'ad_refund' | 'ticket_refund' | 'dispute_settlement'
-        | 'escrow_release' | 'payout_withdrawal';
+        | 'escrow_release' | 'payout_withdrawal' | 'subscription_payment';
     /** `transaction_category` enum: incoming | outgoing | internal | hold */
     category?: 'incoming' | 'outgoing' | 'internal' | 'hold';
     reference?: string;

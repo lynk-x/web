@@ -157,7 +157,7 @@ function UsersContent() {
             const isActive = newStatus === 'active';
             const { error } = await supabase.rpc('bulk_update_user_status', {
                 user_ids: Array.from(selectedUserIds),
-                is_active_val: isActive
+                new_status: newStatus === 'active' ? 'active' : 'temporarily_suspended'
             });
 
             if (error) throw error;
@@ -174,7 +174,7 @@ function UsersContent() {
 
     const bulkActions: BulkAction[] = [
         { label: 'Activate Selection', onClick: () => handleBulkStatusUpdate('active'), variant: 'success' },
-        { label: 'Suspend Selection', onClick: () => handleBulkStatusUpdate('suspended'), variant: 'danger' }
+        { label: 'Suspend Selection', onClick: () => handleBulkStatusUpdate('temporarily_suspended'), variant: 'danger' }
     ];
 
     const stats = useMemo(() => {

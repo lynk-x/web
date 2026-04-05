@@ -6,12 +6,13 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { sanitizeInput } from '@/utils/sanitization';
-import MemberTable from '@/components/organize/MemberTable';
-import PaymentMethodsManager from '@/components/organize/PaymentMethodsManager';
+import MemberTable from '@/components/features/members/MemberTable';
+import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Tabs from '@/components/dashboard/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
+import KycStatusCard from '@/components/dashboard/KycStatusCard';
 
 function SettingsContent() {
     const { showToast } = useToast();
@@ -68,17 +69,15 @@ function SettingsContent() {
 
     const isDirty = useMemo(() => {
         if (!activeAccount) return false;
-        const aa = activeAccount as any;
         return (
-            formData.name !== (aa.name || '') ||
-            formData.website !== (aa.website || '') ||
-            formData.description !== (aa.description || '') ||
-            formData.support_email !== (aa.support_email || '') ||
-            formData.phone_number !== (aa.phone_number || '') ||
-            formData.business_name !== (aa.business_name || '') ||
-            formData.tax_id !== (aa.tax_id || '') ||
-            formData.registration_number !== (aa.registration_number || '') ||
-            formData.billing_address !== (aa.billing_address || '')
+            formData.name !== (activeAccount.name || '') ||
+            formData.support_email !== '' ||
+            formData.description !== '' ||
+            formData.phone_number !== '' ||
+            formData.business_name !== '' ||
+            formData.tax_id !== '' ||
+            formData.registration_number !== '' ||
+            formData.billing_address !== ''
         );
     }, [formData, activeAccount]);
 
@@ -94,28 +93,22 @@ function SettingsContent() {
                 if (!error && data) {
                     setFormData({
                         name: activeAccount.name || '',
-                        website: activeAccount.website || '',
-                        description: activeAccount.description || '',
-                        support_email: activeAccount.support_email || '',
-                        phone_number: activeAccount.phone_number || '',
-                        business_name: data.business_name || '',
+                        website: (data.info as any)?.website || '',
+                        description: (data.info as any)?.description || '',
+                        support_email: (data.info as any)?.contact_email || '',
+                        phone_number: (data.info as any)?.phone_number || '',
+                        business_name: (data.info as any)?.legal_name || '',
                         tax_id: data.tax_id || '',
                         registration_number: data.registration_number || '',
                         billing_address: typeof data.billing_address === 'string' ? data.billing_address : JSON.stringify(data.billing_address || '')
                     });
-                    // Patch activeAccount in memory for dirty check (cast to any)
-                    const aa = activeAccount as any;
-                    aa.business_name = data.business_name || '';
-                    aa.tax_id = data.tax_id || '';
-                    aa.registration_number = data.registration_number || '';
-                    aa.billing_address = typeof data.billing_address === 'string' ? data.billing_address : JSON.stringify(data.billing_address || '');
                 } else {
                     setFormData({
                         name: activeAccount.name || '',
-                        website: activeAccount.website || '',
-                        description: activeAccount.description || '',
-                        support_email: activeAccount.support_email || '',
-                        phone_number: activeAccount.phone_number || '',
+                        website: '',
+                        description: '',
+                        support_email: '',
+                        phone_number: '',
                         business_name: '',
                         tax_id: '',
                         registration_number: '',
@@ -137,30 +130,30 @@ function SettingsContent() {
         if (!activeAccount) return;
         setIsSaving(true);
         try {
-            // Update Accounts table
+            // accounts only holds display_name — contact/profile data lives in business_profile.info
             const { error: accError } = await supabase
                 .from('accounts')
-                .update({
-                    display_name: formData.name,
-                    contact_email: formData.support_email,
-                    description: formData.description,
-                    phone_number: formData.phone_number
-                    // website was removed from DB schema
-                })
+                .update({ display_name: formData.name })
                 .eq('id', activeAccount.id);
 
             if (accError) throw accError;
 
-            // Update Business Profile table
+            // Update Business Profile: merge contact/description into the info JSONB
             const { error: bizError } = await supabase
                 .from('business_profile')
                 .upsert({
                     account_id: activeAccount.id,
-                    business_name: formData.business_name || formData.name, // Fallback to display name
+                    info: {
+                        legal_name: formData.business_name || formData.name,
+                        contact_email: formData.support_email,
+                        phone_number: formData.phone_number,
+                        description: formData.description,
+                        website: formData.website,
+                    },
                     tax_id: formData.tax_id,
                     registration_number: formData.registration_number,
                     billing_address: formData.billing_address
-                });
+                }, { onConflict: 'account_id' });
 
             if (bizError) throw bizError;
 
@@ -241,6 +234,7 @@ function SettingsContent() {
             <div className={adminStyles.container} ref={settingsContainerRef}>
                 {activeTab === 'account' && (
                     <div className={adminStyles.pageCard}>
+                        {activeAccount && <KycStatusCard accountId={activeAccount.id} />}
                         <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
                         <div className={adminStyles.formGrid}>
                             <div className={adminStyles.formGroup}>

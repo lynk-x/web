@@ -45,8 +45,8 @@ const getRoleVariant = (role: string): BadgeVariant => {
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'active': return 'success';
-        case 'suspended': return 'error';
-        case 'partially_active': return 'warning';
+        case 'temporarily_suspended': return 'warning';
+        case 'permanently_suspended': return 'error';
         default: return 'neutral';
     }
 };
@@ -206,7 +206,10 @@ const UserTable: React.FC<UserTableProps> = ({
                     const supabase = createClient();
                     const { error: updateError } = await supabase
                         .from('user_profile')
-                        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+                        .update({ 
+                            status: isActive ? 'active' : 'temporarily_suspended', 
+                            updated_at: new Date().toISOString() 
+                        })
                         .eq('id', user.id);
 
                     if (updateError) throw updateError;

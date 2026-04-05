@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import PayoutTable from '@/components/organize/PayoutTable';
-import WalletsTable from '@/components/organize/WalletsTable';
+import PayoutTable from '@/components/features/finance/PayoutTable';
+import WalletsTable from '@/components/features/finance/WalletsTable';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -51,10 +51,10 @@ function RevenueContent() {
     const [payoutCurrency, setPayoutCurrency] = useState('KES');
 
     useEffect(() => {
-        if (activeAccount?.default_currency) {
-            setPayoutCurrency(activeAccount.default_currency);
+        if (activeAccount?.wallet_currency) {
+            setPayoutCurrency(activeAccount.wallet_currency);
         }
-    }, [activeAccount?.default_currency]);
+    }, [activeAccount?.wallet_currency]);
 
     // ── fetchFinancialData ────────────────────────────────────────────────
     const fetchFinancialData = useCallback(async () => {
@@ -204,8 +204,8 @@ function RevenueContent() {
                                 <option key={w.currency} value={w.currency}>{w.currency}</option>
                             ))
                         ) : (
-                            <option value={activeAccount?.default_currency || 'KES'}>
-                                {activeAccount?.default_currency || 'KES'}
+                            <option value={activeAccount?.wallet_currency || 'KES'}>
+                                {activeAccount?.wallet_currency || 'KES'}
                             </option>
                         )}
                     </select>

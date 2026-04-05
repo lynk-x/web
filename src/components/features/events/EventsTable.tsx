@@ -4,7 +4,7 @@
  * This component has been merged into EventTable under `mode="organizer"`.
  * Existing imports continue to work; new code should prefer:
  *
- *   import EventTable from '@/components/organize/EventTable';
+ *   import EventTable from '@/components/features/events/EventTable';
  *   <EventTable mode="organizer" events={rows} />
  */
 "use client";

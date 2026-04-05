@@ -2,12 +2,12 @@
 
 import React from 'react';
 import styles from './EventTable.module.css';
-import DataTable, { Column } from '../shared/DataTable';
+import DataTable, { Column } from '@/components/shared/DataTable';
 import { useRouter } from 'next/navigation';
-import Badge, { BadgeVariant } from '../shared/Badge';
-import { useToast } from '../ui/Toast';
+import Badge, { BadgeVariant } from '@/components/shared/Badge';
+import { useToast } from '@/components/ui/Toast';
 import { formatString, formatCurrency } from '@/utils/format';
-import type { ActionItem } from '../shared/TableRowActions';
+import type { ActionItem } from '@/components/shared/TableRowActions';
 import { exportToCSV } from '@/utils/export';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

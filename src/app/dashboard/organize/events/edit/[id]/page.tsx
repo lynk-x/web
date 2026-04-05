@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import EventForm from '@/components/organize/EventForm';
+import EventForm from '@/components/features/events/EventForm';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -35,7 +35,7 @@ export default function EditEventPage() {
                     .from('events')
                     .select(`
                         id, title, description, category_id, is_online, is_private, 
-                        location_name, starts_at, ends_at, thumbnail_url,
+                        location, starts_at, ends_at, media,
                         ticket_tiers (
                             id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
                         ),
@@ -76,9 +76,9 @@ export default function EditEventPage() {
                     description: event.description,
                     category: event.category_id || '',
                     tags: mappedTags,
-                    thumbnailUrl: event.thumbnail_url || '',
+                    thumbnailUrl: (event.media as any)?.thumbnail || '',
                     isOnline: event.is_online,
-                    location: event.location_name || '',
+                    location: (event.location as any)?.name || '',
                     startDate: formatDate(startDt),
                     startTime: formatTime(startDt),
                     endDate: formatDate(endDt),
@@ -117,13 +117,13 @@ export default function EditEventPage() {
                 const filePath = `${activeAccount.id}/${fileName}`;
 
                 const { error: uploadError } = await supabase.storage
-                    .from('event_banners')
-                    .upload(filePath, file, { cacheControl: '3600', upsert: false });
+                    .from('events')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('event_banners')
+                    .from('events')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -142,10 +142,12 @@ export default function EditEventPage() {
                     category_id: data.category,
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
-                    location_name: data.location || null,
+                    // Write location into the JSONB location column
+                    location: data.location ? { name: data.location } : null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    thumbnail_url: uploadedThumbnailUrl,
+                    // Write thumbnail into the JSONB media column
+                    ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
                     ...(data.status ? { status: data.status } : {}),
                 })
                 .eq('id', eventId)

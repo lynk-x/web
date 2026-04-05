@@ -100,7 +100,7 @@ export default function TicketScanningPage() {
                     .from('account_members')
                     .select('account_id')
                     .eq('user_id', session.user.id)
-                    .in('role_slug', ['owner', 'admin', 'scanner']);
+                    .in('role_slug', ['owner', 'admin', 'staff']);
                 
                 if (!memberships || memberships.length === 0) {
                     setIsLoading(false);

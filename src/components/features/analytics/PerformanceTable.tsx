@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import styles from './PerformanceTable.module.css';
-import DataTable, { Column } from '../shared/DataTable';
-import Badge, { BadgeVariant } from '../shared/Badge';
+import DataTable, { Column } from '@/components/shared/DataTable';
+import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { formatCurrency } from '@/utils/format';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

@@ -57,17 +57,18 @@ export default function ProfileSetupPage() {
 
         try {
             const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-            const filePath = `avatars/${fileName}`;
+            const fileName = `avatar.${fileExt}`;
+            // Path: /{user_id}/{filename} — required by the avatars bucket RLS policy
+            const filePath = `${user.id}/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('profiles')
-                .upload(filePath, file);
+                .from('avatars')
+                .upload(filePath, file, { upsert: true });
 
             if (uploadError) throw uploadError;
 
             const { data: { publicUrl } } = supabase.storage
-                .from('profiles')
+                .from('avatars')
                 .getPublicUrl(filePath);
 
             setAvatarUrl(publicUrl);

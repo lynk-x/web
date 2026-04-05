@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
 import adminStyles from '../page.module.css';
-import FinanceTable from '@/components/organize/FinanceTable';
+import FinanceTable from '@/components/features/finance/FinanceTable';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import FXRateTable from '@/components/admin/finance/FXRateTable';
@@ -96,7 +96,7 @@ function FinanceContent() {
             const [grossRes, payoutRes, ticketRes, adRes] = await Promise.all([
                 supabase.from('transactions').select('amount').eq('status', 'completed'),
                 supabase.from('payouts').select('amount').eq('status', 'requested'),
-                supabase.from('transactions').select('amount').eq('reason', 'ticket_payment').eq('status', 'completed'),
+                supabase.from('transactions').select('amount').eq('reason', 'ticket_sale').eq('status', 'completed'),
                 supabase.from('transactions').select('amount').eq('reason', 'ad_campaign_payment').eq('status', 'completed')
             ]);
     
@@ -126,9 +126,9 @@ function FinanceContent() {
                 `);
 
                 if (activeTab === 'refunds') {
-                    query = query.in('reason', ['ticket_refund', 'ad_refund', 'ticket_refund']);
+                    query = query.in('reason', ['ticket_refund', 'ad_refund']);
                 } else if (activeTab === 'revenue') {
-                    query = query.in('reason', ['ticket_purchase', 'ad_placement', 'premium_subscription', 'ticket_sale', 'ad_campaign_payment', 'ticket_payment']);
+                    query = query.in('reason', ['ticket_sale', 'ad_campaign_payment', 'subscription_payment']);
                 } else if (activeTab === 'escrow') {
                     query = query.eq('category', 'hold');
                 }
@@ -160,8 +160,8 @@ function FinanceContent() {
             } else if (activeTab === 'payouts') {
                 let query = supabase.from('payouts').select(`
                     *,
-                    account:accounts(display_name, is_verified),
-                    business:business_profile!account_id(kyc_status)
+                    account:accounts(display_name),
+                    verifications:identity_verifications!account_id(status)
                 `);
 
                 if (startDate) {
@@ -186,8 +186,8 @@ function FinanceContent() {
                     bankName: p.channel_metadata?.target?.bank_name || 'M-Pesa',
                     type: p.method,
                     notes: (p as any).admin_notes,
-                    kyc_status: (p.business as any)?.kyc_status,
-                    is_verified: p.account?.is_verified
+                    kyc_status: (p.verifications as any)?.[0]?.status || 'pending',
+                    is_verified: (p.verifications as any)?.[0]?.status === 'approved'
                 })));
             } else if (activeTab === 'tax-rates') {
                 const { data, error } = await supabase.from('tax_rates').select(`

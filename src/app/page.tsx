@@ -20,8 +20,7 @@ export default async function Home() {
     //  - is correctly indexed via idx_events_status_active
     supabase
       .from('vw_public_events')
-      .select('id, title, description, starts_at, ends_at, timezone, location_name, thumbnail_url, category, organizer_name, account_id, low_price, currency')
-      .order('is_featured', { ascending: false }) // featured events first
+      .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, low_price, currency')
       .order('starts_at', { ascending: true })
       .limit(50),
     supabase.from('event_categories').select('id, display_name').order('display_name'),
@@ -38,18 +37,15 @@ export default async function Home() {
     });
   }
 
-  // vw_public_events already computes low_price — just remap column names to the Event type.
+  // vw_public_events already computes low_price.
   const allEvents = (rawEvents || []).map(event => ({
     ...event,
     start_datetime: event.starts_at,
     end_datetime: event.ends_at,
   })) as Event[];
 
-  // Carousel: prefer admin-curated featured events; fill remaining slots from upcoming.
-  const featuredEvents = allEvents.filter(e => e.is_featured);
-  const carouselEvents = featuredEvents.length > 0
-    ? featuredEvents.slice(0, 5)
-    : allEvents.slice(0, 5);
+  // Carousel: take first 5 upcoming events (view is already sorted by starts_at)
+  const carouselEvents = allEvents.slice(0, 5);
 
   return (
     <HomeLayout

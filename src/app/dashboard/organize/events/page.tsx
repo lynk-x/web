@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-import EventTable, { Event } from '@/components/organize/EventTable';
+import EventTable, { Event } from '@/components/features/events/EventTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import EventCancellationModal from '@/components/organize/EventCancellationModal';
+import EventCancellationModal from '@/components/features/events/EventCancellationModal';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -52,8 +52,8 @@ export default function OrganizerEventsPage() {
             const { data, error } = await supabase
                 .from('events')
                 .select(`
-                    id, title, status, starts_at, location_name,
-                    thumbnail_url, reference, is_private,
+                    id, title, status, starts_at, media, location,
+                    reference, is_private,
                     ticket_tiers(tickets_sold, capacity)
                 `)
                 .eq('account_id', activeAccount.id)
@@ -76,10 +76,10 @@ export default function OrganizerEventsPage() {
                     organizer: activeAccount.name,
                     date: formatDate(e.starts_at),
                     time: formatTime(e.starts_at),
-                    location: e.location_name || 'TBD',
+                    location: (e.location as any)?.name || 'TBD',
                     status: uiStatus,
                     attendees: ticketsSold,
-                    thumbnailUrl: e.thumbnail_url,
+                    thumbnailUrl: (e.media as any)?.thumbnail,
                     eventReference: e.reference,
                     isPrivate: e.is_private
                 };

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
 import adminStyles from '../page.module.css';
-import EventTable, { Event } from '@/components/organize/EventTable';
+import EventTable, { Event } from '@/components/features/events/EventTable';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
@@ -54,7 +54,8 @@ export default function AdminEventsPage() {
                     attendees: e.attendee_count || 0,
                     eventCode: e.reference,
                     isPrivate: e.is_private,
-                    thumbnailUrl: e.thumbnail_url,
+                    // mv_event_performance aliases this column as 'thumbnail'
+                    thumbnailUrl: e.thumbnail,
                     reportsCount: e.reports_count || 0
                 }));
 

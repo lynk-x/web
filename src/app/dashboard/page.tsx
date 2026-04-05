@@ -124,8 +124,8 @@ export default function DashboardRootPage() {
                             >
                                 <div className={styles.cardHeader}>
                                     <div className={styles.avatar}>
-                                        {acc.thumbnailUrl ? (
-                                            <img src={acc.thumbnailUrl} alt={acc.name} />
+                                        {acc.logoUrl ? (
+                                            <img src={acc.logoUrl} alt={acc.name} />
                                         ) : (
                                             acc.name.charAt(0)
                                         )}

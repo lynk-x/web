@@ -3,11 +3,11 @@
 import React from 'react';
 import styles from './FinanceTable.module.css';
 import { useRouter } from 'next/navigation';
-import DataTable, { Column } from '../shared/DataTable';
-import Badge, { BadgeVariant } from '../shared/Badge';
+import DataTable, { Column } from '@/components/shared/DataTable';
+import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { formatString, formatCurrency } from '@/utils/format';
-import type { ActionItem } from '../shared/TableRowActions';
+import type { ActionItem } from '@/components/shared/TableRowActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

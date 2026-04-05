@@ -9,8 +9,9 @@ import Tabs from '@/components/dashboard/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import MemberTable from '@/components/organize/MemberTable';
-import PaymentMethodsManager from '@/components/organize/PaymentMethodsManager';
+import MemberTable from '@/components/features/members/MemberTable';
+import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
+import KycStatusCard from '@/components/dashboard/KycStatusCard';
 
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
@@ -54,30 +55,24 @@ function AdsSettingsContent() {
         if (isOrgLoading || !activeAccount) return;
 
         const fetchAllData = async () => {
-            const { data: bizData, error: bizError } = await supabase
+            const { data: bizData } = await supabase
                 .from('business_profile')
-                .select('*')
+                .select('info, tax_id, registration_number, billing_address')
                 .eq('account_id', activeAccount.id)
                 .maybeSingle();
 
+            // Contact/profile data is in business_profile.info JSONB
             setFormData({
                 name: activeAccount.name || '',
-                website: activeAccount.website || '',
-                description: activeAccount.description || '',
-                support_email: activeAccount.support_email || '',
-                phone_number: activeAccount.phone_number || '',
-                business_name: bizData?.business_name || '',
+                website: (bizData?.info as any)?.website || '',
+                description: (bizData?.info as any)?.description || '',
+                support_email: (bizData?.info as any)?.contact_email || '',
+                phone_number: (bizData?.info as any)?.phone_number || '',
+                business_name: (bizData?.info as any)?.legal_name || '',
                 tax_id: bizData?.tax_id || '',
                 registration_number: bizData?.registration_number || '',
                 billing_address: typeof bizData?.billing_address === 'string' ? bizData.billing_address : JSON.stringify(bizData?.billing_address || '')
             });
-
-            // Patch activeAccount in memory for dirty check (cast to any for compiler)
-            const patchedAccount = activeAccount as any;
-            patchedAccount.business_name = bizData?.business_name || '';
-            patchedAccount.tax_id = bizData?.tax_id || '';
-            patchedAccount.registration_number = bizData?.registration_number || '';
-            patchedAccount.billing_address = typeof bizData?.billing_address === 'string' ? bizData.billing_address : JSON.stringify(bizData?.billing_address || '');
         };
 
         fetchAllData();
@@ -85,17 +80,15 @@ function AdsSettingsContent() {
 
     const isDirty = useMemo(() => {
         if (!activeAccount) return false;
-        const aa = activeAccount as any;
         return (
-            formData.name !== (aa.name || '') ||
-            formData.website !== (aa.website || '') ||
-            formData.description !== (aa.description || '') ||
-            formData.support_email !== (aa.support_email || '') ||
-            formData.phone_number !== (aa.phone_number || '') ||
-            formData.business_name !== (aa.business_name || '') ||
-            formData.tax_id !== (aa.tax_id || '') ||
-            formData.registration_number !== (aa.registration_number || '') ||
-            formData.billing_address !== (aa.billing_address || '')
+            formData.name !== (activeAccount.name || '') ||
+            formData.support_email !== '' ||
+            formData.description !== '' ||
+            formData.phone_number !== '' ||
+            formData.business_name !== '' ||
+            formData.tax_id !== '' ||
+            formData.registration_number !== '' ||
+            formData.billing_address !== ''
         );
     }, [formData, activeAccount]);
 
@@ -124,30 +117,30 @@ function AdsSettingsContent() {
         if (!activeAccount) return;
         setIsSaving(true);
         try {
-            // Update Accounts Table
+            // accounts only holds display_name — all contact/profile data lives in business_profile.info
             const { error: accError } = await supabase
                 .from('accounts')
-                .update({
-                    display_name: formData.name,
-                    description: formData.description,
-                    contact_email: formData.support_email,
-                    phone_number: formData.phone_number
-                    // website was removed from DB schema
-                })
+                .update({ display_name: formData.name })
                 .eq('id', activeAccount.id);
 
             if (accError) throw accError;
 
-            // Update Business Profile Table
+            // Upsert contacts and legal info into business_profile.info JSONB
             const { error: bizError } = await supabase
                 .from('business_profile')
                 .upsert({
                     account_id: activeAccount.id,
-                    business_name: formData.business_name || formData.name,
+                    info: {
+                        legal_name: formData.business_name || formData.name,
+                        contact_email: formData.support_email,
+                        phone_number: formData.phone_number,
+                        description: formData.description,
+                        website: formData.website,
+                    },
                     tax_id: formData.tax_id,
                     registration_number: formData.registration_number,
                     billing_address: formData.billing_address
-                });
+                }, { onConflict: 'account_id' });
 
             if (bizError) throw bizError;
 
@@ -187,6 +180,7 @@ function AdsSettingsContent() {
             <div className={adminStyles.container}>
                 {activeTab === 'account' && (
                     <div className={adminStyles.pageCard}>
+                        {activeAccount && <KycStatusCard accountId={activeAccount.id} />}
                         <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
                         <div className={adminStyles.formGrid}>
                             <div className={adminStyles.formGroup}>
