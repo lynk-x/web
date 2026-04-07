@@ -22,6 +22,8 @@ interface CampaignTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    onStatusChange?: (campaign: Campaign, newStatus: string) => void;
+    onDelete?: (campaign: Campaign) => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -56,6 +58,8 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    onStatusChange,
+    onDelete,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -142,19 +146,13 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
                     label: 'Approve',
                     variant: 'success' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                    onClick: () => {
-                        showToast('Approving campaign...', 'info');
-                        setTimeout(() => showToast('Campaign approved and set to active.', 'success'), 1000);
-                    },
+                    onClick: () => onStatusChange?.(campaign, 'active'),
                 },
                 {
                     label: 'Reject',
                     variant: 'danger' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                    onClick: () => {
-                        showToast('Rejecting campaign...', 'info');
-                        setTimeout(() => showToast('Campaign rejected.', 'error'), 1000);
-                    },
+                    onClick: () => onStatusChange?.(campaign, 'rejected'),
                 },
             );
         }
@@ -163,10 +161,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
             actions.push({
                 label: 'Pause',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>,
-                onClick: () => {
-                    showToast('Pausing campaign...', 'info');
-                    setTimeout(() => showToast('Campaign paused.', 'warning'), 1000);
-                },
+                onClick: () => onStatusChange?.(campaign, 'paused'),
             });
         }
 
@@ -175,10 +170,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
                 label: 'Resume',
                 variant: 'success' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
-                onClick: () => {
-                    showToast('Resuming campaign...', 'info');
-                    setTimeout(() => showToast('Campaign resumed.', 'success'), 1000);
-                },
+                onClick: () => onStatusChange?.(campaign, 'active'),
             });
         }
 
@@ -186,10 +178,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
             label: 'Delete',
             variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            onClick: () => {
-                showToast(`Deleting campaign ${campaign.name}...`, 'info');
-                setTimeout(() => showToast('Campaign deleted.', 'success'), 1500);
-            },
+            onClick: () => onDelete?.(campaign),
         });
 
         return actions;

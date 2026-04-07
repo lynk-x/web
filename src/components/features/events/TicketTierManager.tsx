@@ -23,32 +23,6 @@ interface TicketTierManagerProps {
     onChange: (index: number, field: keyof Ticket, value: string | boolean) => void;
 }
 
-const HelpTooltip: React.FC<{ text: string }> = ({ text }) => {
-    const [isVisible, setIsVisible] = React.useState(false);
-
-    return (
-        <div className={styles.tooltipWrapper}>
-            <div 
-                className={styles.helpIcon} 
-                onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsVisible(!isVisible);
-                }}
-            >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-            </div>
-            <div className={`${styles.tooltip} ${isVisible ? styles.tooltipVisible : ''}`}>
-                {text}
-            </div>
-        </div>
-    );
-};
-
 const TicketTierManager: React.FC<TicketTierManagerProps> = ({
     tickets, currency, onCurrencyChange, errors, onAdd, onRemove, onChange,
 }) => {
@@ -78,7 +52,7 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
             
             <div className={styles.ticketList}>
                         {tickets.map((ticket, index) => (
-                            <div key={index} className={styles.ticketItem} style={ticket.has_premium_upsell ? { borderLeft: '4px solid var(--color-brand-secondary)' } : {}}>
+                            <div key={index} className={styles.ticketItem}>
                                 <div className={styles.ticketRow}>
                                     {/* Ticket Name */}
                                     <div className={styles.inputGroup} style={{ flex: 2 }}>
@@ -100,32 +74,15 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                         <label className={styles.label}>
                                             Price ({currency}) <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        {(() => {
-                                            const standardPrices = tickets
-                                                .filter((t, i) => i !== index && !t.has_premium_upsell)
-                                                .map(t => parseFloat(t.price) || 0);
-                                            const maxStandard = standardPrices.length > 0 ? Math.max(...standardPrices) : 0;
-                                            const isPriceTooLow = ticket.has_premium_upsell && (parseFloat(ticket.price) || 0) <= maxStandard;
-
-                                            return (
-                                                <>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        className={`${styles.input} ${errors[`tickets.${index}.price`] || isPriceTooLow ? styles.inputError : ''}`}
-                                                        placeholder="0.00"
-                                                        value={ticket.price}
-                                                        onChange={(e) => onChange(index, 'price', e.target.value)}
-                                                    />
-                                                    {isPriceTooLow && (
-                                                        <p className={styles.errorMessage} style={{ fontSize: '10px' }}>
-                                                            Premium tiers must be priced above standard tickets
-                                                        </p>
-                                                    )}
-                                                </>
-                                            );
-                                        })()}
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className={`${styles.input} ${errors[`tickets.${index}.price`] ? styles.inputError : ''}`}
+                                            placeholder="0.00"
+                                            value={ticket.price}
+                                            onChange={(e) => onChange(index, 'price', e.target.value)}
+                                        />
                                         <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>
                                     </div>
 
@@ -156,8 +113,7 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                     </svg>
                                 </button>
 
-                                {/* Advanced optional fields */}
-                                <div className={styles.ticketAdvanced} style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                <div className={styles.ticketAdvanced}>
                                     <div className={`${styles.inputGroup}`} style={{ flex: 1 }}>
                                         <label className={styles.label}>Description (Optional)</label>
                                         <input
@@ -168,46 +124,6 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                             onChange={(e) => onChange(index, 'description', e.target.value)}
                                         />
                                     </div>
-
-                                    {/* Premium Upsell Toggle */}
-                                    {tickets.length > 1 && (
-                                        <div className={styles.toggleRow} style={{ marginTop: '20px' }}>
-                                            <label className={styles.checkboxLabel} style={{ fontWeight: 600 }}>
-                                                <input 
-                                                    type="checkbox" 
-                                                    className={styles.checkbox}
-                                                    checked={ticket.has_premium_upsell || false}
-                                                    onChange={(e) => {
-                                                        const isChecked = e.target.checked;
-                                                        
-                                                        // Enforce Scarcity: At least one ticket must remain standard
-                                                        if (isChecked) {
-                                                            const standardTiers = tickets.filter(t => !t.has_premium_upsell);
-                                                            if (standardTiers.length <= 1) {
-                                                                showToast("Scarcity Enforcement: At least one ticket tier must remain standard.", "warning");
-                                                                return;
-                                                            }
-
-                                                            const standardPrices = standardTiers
-                                                                .filter((_, i) => i !== index)
-                                                                .map(t => parseFloat(t.price) || 0);
-                                                            const maxStandard = standardPrices.length > 0 ? Math.max(...standardPrices) : 0;
-                                                            const currentPrice = parseFloat(ticket.price) || 0;
-                                                            
-                                                            if (currentPrice <= maxStandard) {
-                                                                const suggestedPrice = (maxStandard + 10).toString();
-                                                                onChange(index, 'price', suggestedPrice);
-                                                                showToast("Premium tiers must be priced above standard tickets. Price adjusted.", "info");
-                                                            }
-                                                        }
-                                                        onChange(index, 'has_premium_upsell', isChecked);
-                                                    }}
-                                                />
-                                                <span style={{ color: 'var(--color-brand-primaryText)' }}>Premium Ad-Free Experience</span>
-                                                <HelpTooltip text="If selected, this ticket tier grants attendees an exclusive, ad-free experience within the event's community forums. We recommend offering this for your high-value tiers to provide a superior, distraction-free experience at a premium price point." />
-                                            </label>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         ))}

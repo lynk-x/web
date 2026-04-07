@@ -52,6 +52,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         display_name,
                         type,
                         media,
+                        payout_routing,
                         account_wallets(currency, balance)
                     )
                 `)
@@ -79,6 +80,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                         type: member.accounts.type,
                         wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
                         wallet_currency: primaryWallet?.currency ?? 'KES',
+                        payout_routing: member.accounts.payout_routing ?? {},
                     };
                 });
 

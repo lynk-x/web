@@ -35,6 +35,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const {
         formData, errors, loading, activeTab, setActiveTab,
         isDraftLoaded, isDirty,
+        hasDraft, applyDraft,
         thumbnailPreview,
         tagInput, setTagInput,
         categories, popularTags, hasCategorySpecificTags,
@@ -43,6 +44,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         handleAddTag, handleRemoveTag, handleTagKeyDown,
         handleTicketChange, addTicket, removeTicket,
         handleSubmit, discardDraft,
+        validateTab,
         setFormData,
     } = useEventForm({ initialData, isEditMode, onSubmit });
 
@@ -82,11 +84,29 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     }, [activeTab]);
 
     // ── Tab Helper ────────────────────────────────────────────────────────────
+    const TABS: EventFormTab[] = ['cover', 'basics', 'category', 'time', 'place', 'tickets', 'settings'];
+
+    const handleTabSwitch = (target: EventFormTab) => {
+        const currentIndex = TABS.indexOf(activeTab);
+        const targetIndex = TABS.indexOf(target);
+
+        // Allow moving backward freely
+        if (targetIndex <= currentIndex) {
+            setActiveTab(target);
+            return;
+        }
+
+        // Validate current tab before moving forward
+        if (validateTab(activeTab)) {
+            setActiveTab(target);
+        }
+    };
+
     const renderTab = (id: EventFormTab, label: string) => {
         const hasError = (
             (id === 'cover' && errors.thumbnailUrl) ||
             (id === 'basics' && (errors.title || errors.description)) ||
-            (id === 'category' && errors.category) ||
+            (id === 'category' && (errors.category || errors.tags)) ||
             (id === 'time' && (errors.startDate || errors.endDate || errors.startTime || errors.endTime)) ||
             (id === 'place' && errors.location) ||
             (id === 'tickets' && Object.keys(errors).some((k) => k.startsWith('tickets')))
@@ -94,8 +114,9 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
 
         return (
             <div
+                key={id}
                 className={`${styles.tabItem} ${activeTab === id ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab(id)}
+                onClick={() => handleTabSwitch(id)}
                 style={hasError ? { color: 'var(--color-interface-error)', borderColor: 'var(--color-interface-error)' } : {}}
             >
                 {label}
@@ -124,6 +145,21 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                         </p>
                     </div>
                 </div>
+
+                {/* Draft Restoration Banner */}
+                {hasDraft && !isDraftLoaded && (
+                    <div className={styles.draftBanner}>
+                        <div className={styles.draftInfo}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <span>You have an unsaved draft. Would you like to restore it?</span>
+                        </div>
+                        <div className={styles.draftActions}>
+                            <button onClick={applyDraft} className={styles.restoreBtn}>Restore Previous Work</button>
+                            <button onClick={discardDraft} className={styles.discardBtn}>Ignore</button>
+                        </div>
+                    </div>
+                )}
+
                 <div className={styles.actions}>
                     {!isEditMode && (
                         <button 

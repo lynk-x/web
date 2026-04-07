@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 export default function CreateUserPage() {
     const [isDirty, setIsDirty] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     return (
         <div className={adminStyles.container}>
@@ -18,11 +19,17 @@ export default function CreateUserPage() {
                 primaryAction={{
                     label: 'Create User',
                     formId: 'user-form',
-                    type: 'submit'
+                    type: 'submit',
+                    isLoading: isSubmitting
                 }}
             />
             <div className={adminStyles.pageCard}>
-                <UserForm formId="user-form" hideActions={true} onDirtyChange={setIsDirty} />
+                <UserForm 
+                    formId="user-form" 
+                    hideActions={true} 
+                    onDirtyChange={setIsDirty}
+                    onSubmittingChange={setIsSubmitting}
+                />
             </div>
         </div>
     );

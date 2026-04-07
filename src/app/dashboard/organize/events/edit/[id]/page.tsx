@@ -35,7 +35,7 @@ export default function EditEventPage() {
                     .from('events')
                     .select(`
                         id, title, description, category_id, is_online, is_private, 
-                        location, starts_at, ends_at, media,
+                        location, starts_at, ends_at, media, timezone,
                         ticket_tiers (
                             id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
                         ),
@@ -86,7 +86,8 @@ export default function EditEventPage() {
                     isPrivate: event.is_private,
                     isPaid,
                     currency: 'KES',
-                    tickets: mappedTickets
+                    tickets: mappedTickets,
+                    timezone: event.timezone || 'UTC'
                 });
 
             } catch (error: any) {
@@ -129,9 +130,26 @@ export default function EditEventPage() {
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
             }
 
-            // 2. Parse DateTimes
-            const startDateTime = new Date(`${data.startDate}T${data.startTime}`).toISOString();
-            const endDateTime = new Date(`${data.endDate}T${data.endTime}`).toISOString();
+            // 2. Parse DateTimes — convert to UTC relative to the event's selected timezone.
+            const toUtcIso = (date: string, time: string, tz?: string): string => {
+                if (tz) {
+                    try {
+                        const dtStr = `${date}T${time}:00`;
+                        const zonedDate = new Date(
+                            new Date(dtStr).toLocaleString('en-US', { timeZone: tz })
+                        );
+                        const localDate = new Date(dtStr);
+                        const offset = localDate.getTime() - zonedDate.getTime();
+                        return new Date(localDate.getTime() + offset).toISOString();
+                    } catch {
+                        // Fall through
+                    }
+                }
+                return new Date(`${date}T${time}`).toISOString();
+            };
+
+            const startDateTime = toUtcIso(data.startDate, data.startTime, data.timezone);
+            const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 
             // 3. Update Event Record
             const { error: eventError } = await supabase
@@ -149,6 +167,7 @@ export default function EditEventPage() {
                     // Write thumbnail into the JSONB media column
                     ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
                     ...(data.status ? { status: data.status } : {}),
+                    timezone: data.timezone || 'UTC'
                 })
                 .eq('id', eventId)
                 .eq('account_id', activeAccount.id);

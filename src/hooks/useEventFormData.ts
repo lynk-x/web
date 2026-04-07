@@ -44,7 +44,10 @@ interface UseEventFormDataOptions {
 }
 
 export function useEventFormData({ initialData, isEditMode = false }: UseEventFormDataOptions) {
-    const [formData, setFormData] = useState<EventData>({ ...DEFAULT_FORM_DATA });
+    const [formData, setFormData] = useState<EventData>(() => ({
+        ...DEFAULT_FORM_DATA,
+        timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC'
+    }));
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<EventFormTab>('cover');
@@ -52,17 +55,28 @@ export function useEventFormData({ initialData, isEditMode = false }: UseEventFo
     const [isDirty, setIsDirty] = useState(false);
 
     const [draft, setDraft] = useLocalStorage<EventData | null>('event_draft', null);
+    const hasDraft = !isEditMode && !!draft;
 
-    // Load initial data or saved draft on first mount
+    // Load initial data on mount (but NOT the draft)
     useEffect(() => {
         if (initialData) {
             setFormData((prev) => ({ ...prev, ...initialData }));
-        } else if (!isEditMode && draft) {
-            setFormData((prev) => ({ ...prev, ...draft }));
-            setIsDraftLoaded(true);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialData, isEditMode]);
+
+    /** Manually apply the saved draft to the form. */
+    const applyDraft = () => {
+        if (draft) {
+            // Sanitize draft: remove deprecated fields from tickets
+            const sanitizedTickets = (draft.tickets || []).map((t: any) => {
+                const { has_premium_upsell, ...rest } = t;
+                return rest;
+            });
+            setFormData((prev) => ({ ...prev, ...draft, tickets: sanitizedTickets }));
+            setIsDraftLoaded(true);
+        }
+    };
 
     // Dirty check, beforeunload guard, and auto-save draft
     useEffect(() => {
@@ -89,7 +103,7 @@ export function useEventFormData({ initialData, isEditMode = false }: UseEventFo
     const discardDraft = () => {
         if (confirm('Discard draft? This cannot be undone.')) {
             setDraft(null);
-            window.location.reload();
+            if (isDraftLoaded) window.location.reload();
         }
     };
 
@@ -99,6 +113,7 @@ export function useEventFormData({ initialData, isEditMode = false }: UseEventFo
         loading, setLoading,
         activeTab, setActiveTab,
         isDraftLoaded, isDirty,
+        hasDraft, applyDraft,
         discardDraft,
     };
 }

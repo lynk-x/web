@@ -566,3 +566,72 @@
     border-style: solid;
     border-color: #1A1A1A transparent transparent transparent;
 }
+
+/* Draft Restoration Banner */
+.draftBanner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(32, 249, 40, 0.05);
+    border: 1px solid rgba(32, 249, 40, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 16px 24px;
+    margin-top: 16px;
+    width: 100%;
+    animation: slideDown 0.3s ease-out;
+}
+
+.draftInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+}
+
+.draftInfo svg {
+    color: var(--color-brand-primary);
+}
+
+.draftActions {
+    display: flex;
+    gap: 12px;
+}
+
+.restoreBtn {
+    background: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.restoreBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(32, 249, 40, 0.2);
+}
+
+.discardBtn {
+    background: transparent;
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.discardBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -25,6 +25,8 @@ import type { Report } from '@/types/admin';
 
 type SupportTab = 'moderation' | 'app-feedback' | 'blocks' | 'report-reasons';
 
+import { useDebounce } from '@/hooks/useDebounce';
+
 function SupportContent() {
     const { showToast } = useToast();
     const router = useRouter();
@@ -32,13 +34,14 @@ function SupportContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = searchParams.get('tab') as SupportTab;
+    const initialTab = (searchParams.get('tab') as SupportTab) || 'moderation';
     const [activeTab, setActiveTab] = useState<SupportTab>(
         (initialTab && ['moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(initialTab))
             ? initialTab
             : 'moderation'
     );
     const [isLoading, setIsLoading] = useState(true);
+    const [summary, setSummary] = useState<any>(null);
 
     // ── Data State ────────────────────────────────────────────────────
     const [reports, setReports] = useState<Report[]>([]);
@@ -46,6 +49,11 @@ function SupportContent() {
     // ── Filtering State ───────────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    const itemsPerPage = 20;
 
     // Tab-specific filters
     const [moderationFilter, setModerationFilter] = useState('all');
@@ -55,66 +63,69 @@ function SupportContent() {
     const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState('all');
     const [feedbackCategories, setFeedbackCategories] = useState<string[]>([]);
 
-    useEffect(() => {
-        const tab = searchParams.get('tab') as SupportTab;
-        if (tab && ['moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: SupportTab) => {
-        setActiveTab(newTab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
+    const fetchSummary = useCallback(async () => {
+        const { data, error } = await supabase.rpc('admin_stat_summary');
+        if (!error && data) setSummary(data);
+    }, [supabase]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch everything in parallel to populate stat cards
-            const [reportsRes, feedbackRes] = await Promise.all([
-                supabase
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            if (activeTab === 'moderation') {
+                let query = supabase
                     .from('reports')
-                    .select('*, reporter:user_profile!reporter_id(user_name)')
-                    .order('created_at', { ascending: false }),
-                supabase
-                    .from('app_feedback')
-                    .select('*, user:user_profile(full_name)')
+                    .select('*, reporter:user_profile!reporter_id(user_name)', { count: 'exact' });
+
+                if (moderationFilter !== 'all') {
+                    query = query.eq('status', moderationFilter);
+                }
+
+                if (debouncedSearch) {
+                    query = query.or(`description.ilike.%${debouncedSearch}%,id.ilike.%${debouncedSearch}%`);
+                }
+
+                const { data, error, count } = await query
                     .order('created_at', { ascending: false })
-            ]);
+                    .range(from, to);
 
-            if (reportsRes.error) throw reportsRes.error;
-            if (feedbackRes.error) throw feedbackRes.error;
+                if (error) throw error;
+                setTotalCount(count || 0);
 
-            setReports(reportsRes.data.map(r => ({
-                id: r.id,
-                targetType: r.target_user_id ? 'user' : r.target_event_id ? 'event' : 'message',
-                targetId: r.target_user_id || r.target_event_id || r.target_message_id,
-                title: `Report #${r.id.slice(0, 8)}`,
-                description: r.description,
-                date: new Date(r.created_at).toLocaleDateString(),
-                reporter: r.reporter?.user_name || 'Anonymous',
-                status: r.status,
-                reasonId: r.reason_id
-            })));
-
-            if (feedbackRes.data) {
-                const uniqueCats = Array.from(new Set(feedbackRes.data.map((f: any) => f.category))).sort();
-                setFeedbackCategories(uniqueCats as string[]);
+                setReports((data || []).map(r => ({
+                    id: r.id,
+                    targetType: r.target_user_id ? 'user' : r.target_event_id ? 'event' : 'message',
+                    targetId: r.target_user_id || r.target_event_id || r.target_message_id,
+                    title: `Report #${r.id.slice(0, 8)}`,
+                    description: r.description,
+                    date: new Date(r.created_at).toLocaleDateString(),
+                    reporter: r.reporter?.user_name || 'Anonymous',
+                    status: r.status,
+                    reasonId: r.reason_id
+                })));
             }
 
-
         } catch (err: any) {
-            showToast(err.message || "Failed to load data", "error");
+            showToast(err.message || "Failed to load reports", "error");
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, activeTab, currentPage, moderationFilter, debouncedSearch]);
 
     useEffect(() => {
         fetchData();
-    }, [activeTab, fetchData]);
+    }, [fetchData]);
+
+    useEffect(() => {
+        fetchSummary();
+    }, [fetchSummary]);
+
+    // Reset pagination on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, moderationFilter, debouncedSearch]);
 
     // ── Ticket Actions ────────────────────────────────────────────────
 
@@ -165,31 +176,31 @@ function SupportContent() {
 
             <div className={sharedStyles.statsGrid}>
                 <StatCard
-                    label="Active Reports"
-                    value={reports.filter(r => r.status === 'pending' || r.status === 'investigating').length}
+                    label="Pending Reports"
+                    value={summary?.total_reports_count || 0}
                     change="Requires Attention"
                     trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Feedback Reviewed"
-                    value="None"
-                    change="User Insights"
-                    trend="neutral"
+                    label="Unresolved Moderation"
+                    value={summary?.pending_moderation || 0}
+                    change="Content flagged"
+                    trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="App Health"
                     value="Stable"
-                    change="Platform Verified"
+                    change="99.9% Uptime"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Security Blocks"
-                    value="Active"
-                    change="Firewall Status"
-                    trend="positive"
+                    label="Registry Items"
+                    value={summary?.total_events || 0}
+                    change="Active platform assets"
+                    trend="neutral"
                     isLoading={isLoading}
                 />
             </div>

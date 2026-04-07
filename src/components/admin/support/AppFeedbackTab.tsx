@@ -63,16 +63,38 @@ export default function AppFeedbackTab({
     const [items, setItems] = useState<AppFeedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [totalCount, setTotalCount] = useState(0);
+    const itemsPerPage = 15;
 
     const fetchFeedback = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            let query = supabase
                 .from('app_feedback')
-                .select('*, submitter:user_profile!user_id(full_name, user_name)')
-                .order('created_at', { ascending: false });
+                .select('*, submitter:user_profile!user_id(full_name, user_name)', { count: 'exact' });
+
+            if (statusFilter !== 'all') {
+                query = query.eq('status', statusFilter);
+            }
+
+            if (categoryFilter !== 'all') {
+                query = query.eq('category', categoryFilter);
+            }
+
+            if (searchQuery) {
+                query = query.ilike('content', `%${searchQuery}%`);
+            }
+
+            const { data, error, count } = await query
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
             if (error) throw error;
+
+            setTotalCount(count || 0);
             setItems((data || []).map((f: any) => ({
                 id: f.id,
                 submitter: f.submitter?.full_name || f.submitter?.user_name || null,
@@ -89,9 +111,11 @@ export default function AppFeedbackTab({
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, currentPage, statusFilter, categoryFilter, searchQuery]);
 
     useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
+
+    useEffect(() => { setCurrentPage(1); }, [statusFilter, categoryFilter, searchQuery]);
 
     /** Update feedback status (e.g. mark as reviewed, resolve, dismiss). */
     const handleStatusChange = async (id: string, newStatus: string) => {
@@ -105,17 +129,7 @@ export default function AppFeedbackTab({
         }
     };
 
-    const filtered = items.filter(f => {
-        const matchSearch = f.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (f.submitter ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            f.category.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchStatus = statusFilter === 'all' || f.status === statusFilter;
-        const matchCategory = categoryFilter === 'all' || f.category === categoryFilter;
-        return matchSearch && matchStatus && matchCategory;
-    });
-
-    const totalPages = Math.ceil(filtered.length / itemsPerPage);
-    const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const columns: Column<AppFeedback>[] = [
         {
@@ -157,7 +171,7 @@ export default function AppFeedbackTab({
 
     return (
         <DataTable<AppFeedback>
-            data={paginated}
+            data={items}
             columns={columns}
             getActions={getActions}
             isLoading={isLoading}

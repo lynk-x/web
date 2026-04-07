@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-import Link from 'next/link';
 import adminStyles from '../page.module.css';
 import EventTable, { Event } from '@/components/features/events/EventTable';
 
@@ -15,82 +14,97 @@ import { createClient } from '@/utils/supabase/client';
 import { formatDate, formatTime } from '@/utils/format';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
+import RejectionModal from '@/components/shared/RejectionModal';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function AdminEventsPage() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const router = useRouter();
+
     const [events, setEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const [counts, setCounts] = useState({ organizers: 0 });
-    const itemsPerPage = 8;
+    const [totalCount, setTotalCount] = useState(0);
+    const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
+    const [summary, setSummary] = useState<any>(null);
+
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    const itemsPerPage = 10;
+
+    const fetchDashboardSummary = useCallback(async () => {
+        const { data, error } = await supabase.rpc('admin_stat_summary');
+        if (!error && data) {
+            setSummary(data);
+        }
+    }, [supabase]);
+
+    const fetchEvents = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            let query = supabase.schema('analytics')
+                .from('mv_event_performance')
+                .select('*', { count: 'exact' });
+
+            // Server-Side Filtering
+            if (debouncedSearch) {
+                query = query.ilike('event_title', `%${debouncedSearch}%`);
+            }
+            if (statusFilter !== 'all') {
+                query = query.eq('status', statusFilter);
+            }
+
+            // Server-Side Pagination
+            const { data, error, count } = await query
+                .order('starts_at', { ascending: false })
+                .range(from, to);
+
+            if (error) throw error;
+
+            setTotalCount(count || 0);
+            setEvents((data || []).map((e: any) => ({
+                id: e.id,
+                title: e.event_title,
+                organizer: e.account_name || 'Unknown',
+                date: formatDate(e.starts_at),
+                time: formatTime(e.starts_at),
+                location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
+                status: e.status,
+                attendees: e.attendee_count || 0,
+                eventCode: e.reference,
+                isPrivate: e.is_private,
+                thumbnailUrl: e.thumbnail,
+                reportsCount: e.reports_count || 0
+            })));
+        } catch (err: any) {
+            showToast(err.message || 'Failed to load events.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, debouncedSearch, statusFilter, currentPage, showToast]);
 
     useEffect(() => {
-        const fetchEvents = async () => {
-            setIsLoading(true);
-            try {
-                const [perfRes, organizersRes] = await Promise.all([
-                    supabase.schema('analytics').from('mv_event_performance').select('*').order('starts_at', { ascending: false }),
-                    supabase.from('accounts').select('*', { count: 'exact', head: true })
-                ]);
-
-                if (perfRes.error) throw perfRes.error;
-
-                const data = perfRes.data;
-                setCounts({ organizers: organizersRes.count || 0 });
-
-                const mappedEvents: Event[] = (data || []).map((e: any) => ({
-                    id: e.id,
-                    title: e.event_title,
-                    organizer: e.account_name || 'Unknown',
-                    date: formatDate(e.starts_at),
-                    time: formatTime(e.starts_at),
-                    location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
-                    status: e.status,
-                    attendees: e.attendee_count || 0,
-                    eventCode: e.reference,
-                    isPrivate: e.is_private,
-                    // mv_event_performance aliases this column as 'thumbnail'
-                    thumbnailUrl: e.thumbnail,
-                    reportsCount: e.reports_count || 0
-                }));
-
-                setEvents(mappedEvents);
-            } catch (err) {
-                console.error('Error fetching events:', err);
-                showToast('Failed to load events.', 'error');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchEvents();
-    }, [supabase, showToast]);
+    }, [fetchEvents]);
 
-    // Filter Logic
-    const filteredEvents = events.filter(event => {
-        const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    useEffect(() => {
+        fetchDashboardSummary();
+    }, [fetchDashboardSummary]);
 
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-    const paginatedEvents = filteredEvents.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset pagination when filter changes
+    // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-        setSelectedEventIds(new Set()); // Clear selection on filter change
-    }, [searchTerm, statusFilter]);
+    }, [debouncedSearch, statusFilter]);
+
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+    const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
+    const [pendingModerationItem, setPendingModerationItem] = useState<{ id: string, title: string, status: string } | null>(null);
 
     // Selection Logic
     const handleSelectEvent = (id: string) => {
@@ -104,11 +118,11 @@ export default function AdminEventsPage() {
     };
 
     const handleSelectAll = () => {
-        if (selectedEventIds.size === paginatedEvents.length) {
+        if (selectedEventIds.size === events.length) {
             setSelectedEventIds(new Set());
         } else {
             const newSelected = new Set(selectedEventIds);
-            paginatedEvents.forEach(event => newSelected.add(event.id));
+            events.forEach(event => newSelected.add(event.id));
             setSelectedEventIds(newSelected);
         }
     };
@@ -126,9 +140,8 @@ export default function AdminEventsPage() {
             if (error) throw error;
 
             showToast(`Successfully moved ${selectedEventIds.size} events to ${newStatus}.`, 'success');
-            setEvents(prev => prev.map(e =>
-                selectedEventIds.has(e.id) ? { ...e, status: newStatus as 'draft' | 'published' | 'completed' } : e
-            ));
+            fetchEvents();
+            fetchDashboardSummary();
             setSelectedEventIds(new Set());
         } catch (err) {
             showToast('Failed to update events.', 'error');
@@ -147,7 +160,8 @@ export default function AdminEventsPage() {
             if (error) throw error;
 
             showToast(`Deleted ${selectedEventIds.size} events.`, 'success');
-            setEvents(prev => prev.filter(e => !selectedEventIds.has(e.id)));
+            fetchEvents();
+            fetchDashboardSummary();
             setSelectedEventIds(new Set());
         } catch (err) {
             showToast('Failed to delete events.', 'error');
@@ -162,36 +176,55 @@ export default function AdminEventsPage() {
         setSelectedEventIds(new Set());
     };
 
-    const bulkActions: BulkAction[] = [
-        { label: 'Publish All', onClick: () => handleBulkStatusUpdate('published'), variant: 'success' },
-        { label: 'Mark Active', onClick: () => handleBulkStatusUpdate('active') },
-        { label: 'Archive Selection', onClick: () => handleBulkStatusUpdate('archived') },
-        { label: 'Delete Selection', onClick: handleBulkDelete, variant: 'danger' },
-        { label: 'Export Selection', onClick: handleExportEventData }
-    ];
+    const handleSingleStatusUpdate = async (event: Event, newStatus: string, reason?: string) => {
+        // If it's a rejection, we need the modal first.
+        if (newStatus === 'rejected' && !reason) {
+            setPendingModerationItem({ id: event.id, title: event.title, status: newStatus });
+            setIsRejectionModalOpen(true);
+            return;
+        }
 
-    const stats = useMemo(() => {
-        const total = events.length;
-        const attendees = events.reduce((acc, e) => acc + (e.attendees || 0), 0);
-        const reported = events.reduce((acc, e) => acc + (e.reportsCount || 0), 0);
-
-        return { total, attendees, reported, organizers: counts.organizers };
-    }, [events, counts.organizers]);
-
-    const handleSingleStatusUpdate = async (event: Event, newStatus: string) => {
-        showToast(`Moving ${event.title} to ${newStatus}...`, 'info');
+        showToast(`Updating ${event.title} to ${newStatus}...`, 'info');
         try {
-            const { error } = await supabase
+            const updatedAt = new Date().toISOString();
+            
+            // 1. Update the event table status
+            const { error: eventError } = await supabase
                 .from('events')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .update({ status: newStatus as any, updated_at: updatedAt })
                 .eq('id', event.id);
 
-            if (error) throw error;
+            if (eventError) throw eventError;
+
+            // 2. Synchronise with moderation_reviews
+            if (newStatus === 'rejected' || newStatus === 'active') {
+                const snapshot = {
+                    title: event.title,
+                    organizer: event.organizer,
+                    location: event.location,
+                    thumbnail: event.thumbnailUrl
+                };
+
+                const { error: modError } = await supabase
+                    .from('moderation_reviews')
+                    .upsert({
+                        item_id: event.id,
+                        item_type: 'event',
+                        status: newStatus === 'active' ? 'approved' : 'rejected',
+                        reason: reason || 'Status updated via Admin Events dashboard.',
+                        metadata: snapshot,
+                        updated_at: updatedAt
+                    }, { onConflict: 'item_id, item_type' });
+
+                if (modError) throw modError;
+            }
 
             showToast(`${event.title} status updated.`, 'success');
-            setEvents(prev => prev.map(e => e.id === event.id ? { ...e, status: newStatus as 'draft' | 'published' | 'completed' } : e));
-        } catch (err) {
-            showToast('Failed to update event status.', 'error');
+            fetchEvents();
+            fetchDashboardSummary();
+            setIsRejectionModalOpen(false);
+        } catch (err: any) {
+            showToast(err.message || 'Failed to update event status.', 'error');
         }
     };
 
@@ -207,53 +240,55 @@ export default function AdminEventsPage() {
             if (error) throw error;
 
             showToast(`${event.title} deleted.`, 'success');
-            setEvents(prev => prev.filter(e => e.id !== event.id));
+            fetchEvents();
+            fetchDashboardSummary();
         } catch (err) {
             showToast('Failed to delete event.', 'error');
         }
     };
+
+    const bulkActions: BulkAction[] = [
+        { label: 'Publish All', onClick: () => handleBulkStatusUpdate('published'), variant: 'success' },
+        { label: 'Archive Selection', onClick: () => handleBulkStatusUpdate('archived') },
+        { label: 'Reject Selection', onClick: () => handleBulkStatusUpdate('rejected'), variant: 'danger' },
+        { label: 'Delete Selection', onClick: handleBulkDelete, variant: 'danger' },
+        { label: 'Export Selection', onClick: handleExportEventData }
+    ];
 
     return (
         <div className={styles.container}>
             <PageHeader 
                 title="Event Management" 
                 subtitle="Review, approve, and moderate events across the platform."
-                actionLabel="Create Event"
-                actionHref="/dashboard/admin/events/create"
-                actionIcon={(
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                )}
             />
             
             <div className={adminStyles.statsGrid}>
                 <StatCard 
                     label="Total Events" 
-                    value={stats.total} 
+                    value={summary?.total_events || 0} 
                     change="Platform wide"
-                    isLoading={isLoading} 
+                    isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Flagged Reports" 
-                    value={stats.reported} 
+                    label="Active Events" 
+                    value={summary?.active_events || 0} 
+                    change="Live now"
+                    trend="positive"
+                    isLoading={!summary} 
+                />
+                <StatCard 
+                    label="Pending Review" 
+                    value={summary?.pending_moderation || 0} 
                     change="Requires attention"
-                    trend={stats.reported > 0 ? "negative" : "positive"}
-                    isLoading={isLoading} 
+                    trend={summary?.pending_moderation > 0 ? "negative" : "positive"}
+                    isLoading={!summary} 
                 />
                 <StatCard 
                     label="Total Organizers" 
-                    value={stats.organizers} 
+                    value={summary?.total_organizers || 0} 
                     change="Verified partners"
-                    trend="positive"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Total Attendees" 
-                    value={stats.attendees} 
-                    change="Confirmed entries"
                     trend="neutral"
-                    isLoading={isLoading} 
+                    isLoading={!summary} 
                 />
             </div>
 
@@ -262,16 +297,17 @@ export default function AdminEventsPage() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                {/* Filter chips aligned to event_status enum values */}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {[
                         { value: 'all', label: 'All' },
                         { value: 'draft', label: 'Draft' },
                         { value: 'published', label: 'Published' },
                         { value: 'active', label: 'Active' },
+                        { value: 'rejected', label: 'Rejected' },
                         { value: 'completed', label: 'Completed' },
                         { value: 'archived', label: 'Archived' },
                         { value: 'cancelled', label: 'Cancelled' },
+                        { value: 'suspended', label: 'Suspended' },
                     ].map(({ value, label }) => (
                         <button
                             key={value}
@@ -295,7 +331,7 @@ export default function AdminEventsPage() {
                 <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading events...</div>
             ) : (
                 <EventTable
-                    events={paginatedEvents}
+                    events={events}
                     selectedIds={selectedEventIds}
                     onSelect={handleSelectEvent}
                     onSelectAll={handleSelectAll}
@@ -307,6 +343,18 @@ export default function AdminEventsPage() {
                     onDelete={handleSingleDelete}
                 />
             )}
+
+            <RejectionModal
+                isOpen={isRejectionModalOpen}
+                onClose={() => setIsRejectionModalOpen(false)}
+                onConfirm={(reason) => {
+                    const event = events.find(e => e.id === pendingModerationItem?.id);
+                    if (event) {
+                        handleSingleStatusUpdate(event, pendingModerationItem?.status || 'rejected', reason);
+                    }
+                }}
+                title={`Reject Event: ${pendingModerationItem?.title}`}
+            />
         </div>
     );
 }

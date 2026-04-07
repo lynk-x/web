@@ -172,7 +172,6 @@ export interface OrganizerEventTicket {
     saleStart?: string;
     saleEnd?: string;
     maxPerOrder?: string;
-    has_premium_upsell?: boolean;
 }
 
 /** An attendee in the event's attendee list. */

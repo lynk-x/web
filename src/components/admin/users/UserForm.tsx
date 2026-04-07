@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styles from './UserForm.module.css';
 import { useRouter } from 'next/navigation';
 import { sanitizeInput } from '@/utils/sanitization';
+import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 export interface UserFormData {
     id?: string;
     name: string;
+    userName: string;
     email: string;
     role: 'admin' | 'organizer' | 'advertiser' | 'user';
     status: 'active' | 'suspended' | 'partially_active';
@@ -18,6 +22,7 @@ interface UserFormProps {
     initialData?: UserFormData;
     isEditing?: boolean;
     onDirtyChange?: (isDirty: boolean) => void;
+    onSubmittingChange?: (isSubmitting: boolean) => void;
     formId?: string;
     hideActions?: boolean;
 }
@@ -26,12 +31,17 @@ export default function UserForm({
     initialData,
     isEditing = false,
     onDirtyChange,
+    onSubmittingChange,
     formId,
     hideActions = false
 }: UserFormProps) {
     const router = useRouter();
+    const { showToast } = useToast();
+    const supabase = useMemo(() => createClient(), []);
+
     const defaultData: UserFormData = {
         name: '',
+        userName: '',
         email: '',
         role: 'user',
         status: 'active',
@@ -40,28 +50,19 @@ export default function UserForm({
 
     const [formData, setFormData] = useState<UserFormData>(initialData || defaultData);
     const [touched, setTouched] = useState<Record<string, boolean>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Dirty Check
     useEffect(() => {
         const isDirty = JSON.stringify(formData) !== JSON.stringify(initialData || defaultData);
         onDirtyChange?.(isDirty);
-
-        if (isDirty) {
-            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-                e.preventDefault();
-                e.returnValue = '';
-            };
-            window.addEventListener('beforeunload', handleBeforeUnload);
-            return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-        }
     }, [formData, initialData, onDirtyChange]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        const sanitizedValue = (name === 'name' || name === 'bio' || name === 'email') 
-            ? sanitizeInput(value) 
-            : value;
-        setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
+        // Optimization: Don't sanitize on every keystroke if it causes jumpy UI
+        setFormData(prev => ({ ...prev, [name]: value }));
+        
         if (!touched[name]) {
             setTouched(prev => ({ ...prev, [name]: true }));
         }
@@ -70,20 +71,20 @@ export default function UserForm({
     const getInputClass = (name: keyof UserFormData, baseClass: string) => {
         if (!touched[name as string]) return baseClass;
         const value = formData[name];
-        const isValid = name === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || '') : !!value;
+        const isValid = name === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string || '') : !!value;
         return `${baseClass} ${isValid ? 'input-success' : 'input-error'}`;
     };
 
     const renderValidationHint = (name: keyof UserFormData) => {
         if (!touched[name as string]) return null;
         const value = formData[name];
-        const isValid = name === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || '') : !!value;
+        const isValid = name === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string || '') : !!value;
         const label = name === 'email' && value && !isValid ? 'Invalid Email' : 'Required';
 
         return isValid ? (
             <div className="validation-hint success">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                Valid
+                Ready
             </div>
         ) : (
             <div className="validation-hint error">
@@ -93,12 +94,46 @@ export default function UserForm({
         );
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(isEditing ? 'Updating user:' : 'Creating user:', formData);
-        onDirtyChange?.(false);
-        // Simulate success
-        router.push('/dashboard/admin/users');
+        setIsSubmitting(true);
+        onSubmittingChange?.(true);
+
+        try {
+            const sanitizedName = sanitizeInput(formData.name);
+            const sanitizedEmail = sanitizeInput(formData.email);
+            
+            if (isEditing) {
+                const { error } = await supabase
+                    .from('user_profile')
+                    .update({
+                        full_name: sanitizedName,
+                        email: sanitizedEmail,
+                        role: formData.role,
+                        status: formData.status === 'suspended' ? 'permanently_suspended' : (formData.status as any)
+                    })
+                    .eq('id', formData.id);
+                if (error) throw error;
+                showToast('Account updated successfully!', 'success');
+            } else {
+                const { data, error } = await supabase.rpc('admin_create_user', {
+                    p_email: sanitizedEmail,
+                    p_full_name: sanitizedName,
+                    p_user_name: formData.userName || sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),
+                    p_role: formData.role
+                });
+                if (error) throw error;
+                showToast('User account created!', 'success');
+            }
+            
+            onDirtyChange?.(false);
+            router.push('/dashboard/admin/users');
+        } catch (err: any) {
+            showToast(err.message || 'Action failed', 'error');
+        } finally {
+            setIsSubmitting(false);
+            onSubmittingChange?.(false);
+        }
     };
 
     return (
@@ -120,6 +155,18 @@ export default function UserForm({
                     </div>
 
                     <div className={styles.inputGroup}>
+                        <label className={styles.label}>Username (Optional)</label>
+                        <input
+                            type="text"
+                            name="userName"
+                            className={styles.input}
+                            placeholder="jdoe24"
+                            value={formData.userName}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div className={styles.inputGroup}>
                         <label className={styles.label}>Email Address</label>
                         <input
                             type="email"
@@ -134,7 +181,7 @@ export default function UserForm({
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Role</label>
+                        <label className={styles.label}>Admin: Assigned Role</label>
                         <select
                             name="role"
                             className={styles.select}
@@ -142,44 +189,30 @@ export default function UserForm({
                             onChange={handleInputChange}
                             required
                         >
-                            <option value="user">User</option>
-                            <option value="organizer">Organizer</option>
-                            <option value="advertiser">Advertiser</option>
-                            <option value="admin">Admin</option>
+                            <option value="user">Platform Attendee</option>
+                            <option value="organizer">Verified Organizer</option>
+                            <option value="advertiser">Ad Partner</option>
+                            <option value="admin">Platform Admin</option>
                         </select>
                     </div>
 
-                    <div className={styles.inputGroup}>
-                        <label className={styles.label}>Account Status</label>
-                        <select
-                            name="status"
-                            className={styles.select}
-                            value={formData.status}
-                            onChange={handleInputChange}
-                            required
-                        >
-                            <option value="active">Active</option>
-                            <option value="partially_active">Partially Active</option>
-                            <option value="suspended">Suspended</option>
-                        </select>
-                    </div>
-
-                    <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                        <label className={styles.label}>Bio / Internal Notes</label>
-                        <textarea
-                            name="bio"
-                            className={styles.textarea}
-                            placeholder="Tell us a bit about this user or add internal notes..."
-                            value={formData.bio}
-                            onChange={handleInputChange}
-                        />
-                    </div>
+                    {!isEditing && (
+                        <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                            <div className="validation-hint info" style={{ padding: '8px', border: '1px solid currentColor', borderRadius: '8px', opacity: 0.8 }}>
+                                Note: This user will be invited to set their password via the platform's authentication gateway.
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {!hideActions && (
                     <div className={styles.actions}>
-                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
-                            {isEditing ? 'Save Changes' : 'Create User'}
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting}
+                            className={adminStyles.btnPrimary}
+                        >
+                            {isSubmitting ? 'Processing...' : (isEditing ? 'Save Changes' : 'Create User')}
                         </button>
                     </div>
                 )}

@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import { formatRelativeTime } from '@/utils/format';
+import { useDebounce } from '@/hooks/useDebounce';
 import Tabs from '@/components/dashboard/Tabs';
 
 type Tab = 'accounts' | 'profiles';
@@ -33,12 +34,20 @@ function UsersContent() {
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const itemsPerPage = 10;
+    const [summary, setSummary] = useState<any>(null);
+
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    const itemsPerPage = 20;
 
     const initialTab = (searchParams.get('tab') as string) || 'accounts';
     const [activeTab, setActiveTab] = useState<Tab>(
         (['accounts', 'profiles'].includes(initialTab) ? initialTab as 'accounts' | 'organizers' | 'sponsors' : 'accounts') as Tab
     );
+
+    const fetchSummary = useCallback(async () => {
+        const { data, error } = await supabase.rpc('admin_stat_summary');
+        if (!error && data) setSummary(data);
+    }, [supabase]);
 
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
@@ -47,16 +56,20 @@ function UsersContent() {
                 .schema('analytics')
                 .from('mv_user_performance')
                 .select(`
-                    *,
-                    profile:user_profile!id (
-                        gender,
-                        country_code
-                    )
+                    id, 
+                    full_name, 
+                    user_name, 
+                    email, 
+                    role, 
+                    status, 
+                    last_active_at, 
+                    is_verified, 
+                    reports_count
                 `, { count: 'exact' });
 
             // Server-side Filtering
-            if (searchTerm.trim()) {
-                query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,user_name.ilike.%${searchTerm}%`);
+            if (debouncedSearch.trim()) {
+                query = query.or(`full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%,user_name.ilike.%${debouncedSearch}%`);
             }
 
             if (roleFilter !== 'all') {
@@ -83,8 +96,6 @@ function UsersContent() {
                 isVerified: u.is_verified,
                 reportsCount: u.reports_count || 0,
                 userName: u.user_name,
-                gender: u.profile?.gender,
-                countryCode: u.profile?.country_code,
                 // business_email, tax_id, registration_number do not exist on the accounts table
                 businessEmail: undefined,
                 taxId: undefined,
@@ -98,11 +109,15 @@ function UsersContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, searchTerm, roleFilter, currentPage]);
+    }, [supabase, showToast, debouncedSearch, roleFilter, currentPage]);
 
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
+
+    useEffect(() => {
+        fetchSummary();
+    }, [fetchSummary]);
 
     // Update searchTerm if URL changes
     useEffect(() => {
@@ -149,7 +164,7 @@ function UsersContent() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedUserIds(new Set());
-    }, [searchTerm, roleFilter]);
+    }, [debouncedSearch, roleFilter]);
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
         showToast(`Updating ${selectedUserIds.size} users...`, 'info');
@@ -177,42 +192,34 @@ function UsersContent() {
         { label: 'Suspend Selection', onClick: () => handleBulkStatusUpdate('temporarily_suspended'), variant: 'danger' }
     ];
 
-    const stats = useMemo(() => {
-        const total = totalCount;
-        const verified = users.filter(u => u.isVerified).length; // This is only for the current page, ideally I'd have a separate count
-        const reports = users.reduce((acc, u) => acc + (u.reportsCount || 0), 0);
-        
-        return { total, verified, reports };
-    }, [users, totalCount]);
-
     return (
         <>
             <div className={adminStyles.statsGrid}>
                 <StatCard 
                     label="Total Registered" 
-                    value={stats.total} 
+                    value={summary?.total_users || 0} 
                     change="All platform accounts"
                     isLoading={isLoading} 
                 />
                 <StatCard 
-                    label="Verified Today" 
-                    value={stats.verified} 
+                    label="Verified Users" 
+                    value={summary?.total_verified_users || 0} 
                     change="Identity verified"
                     trend="positive"
                     isLoading={isLoading} 
                 />
                 <StatCard 
                     label="Active Organizers" 
-                    value={users.filter(u => u.role === 'organizer').length} 
+                    value={summary?.total_organizers || 0} 
                     change="Verified event makers"
                     trend="neutral"
                     isLoading={isLoading} 
                 />
                 <StatCard 
-                    label="User Reports" 
-                    value={stats.reports} 
+                    label="Pending Reports" 
+                    value={summary?.total_reports_count || 0} 
                     change="Requires moderation"
-                    trend={stats.reports > 0 ? "negative" : "positive"}
+                    trend={(summary?.total_reports_count || 0) > 0 ? "negative" : "positive"}
                     isLoading={isLoading} 
                 />
             </div>

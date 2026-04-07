@@ -53,7 +53,7 @@ interface AdminModeProps extends SharedProps {
     events: OrganizerEvent[];
     onEdit?: (event: OrganizerEvent) => void;
     onDelete?: (event: OrganizerEvent) => void;
-    onStatusChange?: (event: OrganizerEvent, newStatus: 'draft' | 'published' | 'cancelled') => void;
+    onStatusChange?: (event: OrganizerEvent, newStatus: 'draft' | 'published' | 'active' | 'suspended' | 'rejected' | 'cancelled') => void;
 }
 
 interface OrganizerModeProps extends SharedProps {
@@ -185,20 +185,26 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             }
 
             if (adminProps.onStatusChange) {
-                if (event.status === 'draft') {
+                if (event.status === 'draft' || event.status === 'published' || (event as any).status === 'pending_approval') {
                     actions.push({
-                        label: 'Publish',
+                        label: 'Publish / Approve',
                         variant: 'success' as const,
                         icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                        onClick: () => adminProps.onStatusChange!(event, 'published')
+                        onClick: () => adminProps.onStatusChange!(event, 'active')
+                    });
+                    actions.push({
+                        label: 'Reject',
+                        variant: 'danger' as const,
+                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                        onClick: () => adminProps.onStatusChange!(event, 'rejected')
                     });
                 }
                 if (event.status === 'active') {
                     actions.push({
-                        label: 'Suspend',
+                        label: 'Suspend Event',
                         variant: 'default',
                         icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
-                        onClick: () => adminProps.onStatusChange!(event, 'draft')
+                        onClick: () => adminProps.onStatusChange!(event, 'suspended')
                     });
                     actions.push({
                         label: 'Cancel Event',

@@ -41,6 +41,7 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         loading, setLoading,
         activeTab, setActiveTab,
         isDraftLoaded, isDirty,
+        hasDraft, applyDraft,
         discardDraft,
     } = useEventFormData({ initialData, isEditMode });
 
@@ -101,6 +102,69 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
 
         setErrors(next);
         return Object.keys(next).length === 0;
+    };
+
+    /**
+     * validateTab — validates only the fields on the current tab.
+     * Used to prevent "forward" navigation if the current section is incomplete.
+     */
+    const validateTab = (tab: EventFormTab): boolean => {
+        const next: Record<string, string> = { ...errors };
+        let hasError = false;
+
+        const clearError = (field: string) => delete next[field];
+        const setError = (field: string, msg: string) => { next[field] = msg; hasError = true; };
+
+        if (tab === 'cover') {
+            if (!formData.thumbnailUrl && !thumbnailPreview) setError('thumbnailUrl', 'Cover image is required');
+            else clearError('thumbnailUrl');
+        }
+
+        if (tab === 'basics') {
+            if (!formData.title.trim()) setError('title', 'Event title is required');
+            else clearError('title');
+            if (!formData.description.trim()) setError('description', 'Description is required');
+            else clearError('description');
+        }
+
+        if (tab === 'category') {
+            if (!formData.category) setError('category', 'Category is required');
+            else clearError('category');
+            if (formData.tags.length === 0) setError('tags', 'At least one tag is required');
+            else clearError('tags');
+        }
+
+        if (tab === 'time') {
+            if (!formData.startDate) setError('startDate', 'Start date is required'); else clearError('startDate');
+            if (!formData.startTime) setError('startTime', 'Start time is required'); else clearError('startTime');
+            if (!formData.endDate) setError('endDate', 'End date is required'); else clearError('endDate');
+            if (!formData.endTime) setError('endTime', 'End time is required'); else clearError('endTime');
+
+            if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
+                const start = new Date(`${formData.startDate}T${formData.startTime}`);
+                const end = new Date(`${formData.endDate}T${formData.endTime}`);
+                if (end < start) setError('endDate', 'End date/time cannot be before start date/time');
+            }
+        }
+
+        if (tab === 'place') {
+            if (!formData.isOnline && !formData.location.trim()) setError('location', 'Location is required for in-person events');
+            else clearError('location');
+        }
+
+        if (tab === 'tickets') {
+            formData.tickets.forEach((ticket, i) => {
+                const dn = `tickets.${i}.display_name`;
+                const pr = `tickets.${i}.price`;
+                const cp = `tickets.${i}.capacity`;
+                if (!ticket.display_name.trim()) setError(dn, 'Ticket name is required'); else clearError(dn);
+                if (!ticket.price || parseFloat(ticket.price) < 0) setError(pr, 'Price must be 0 or more'); else clearError(pr);
+                if (!ticket.capacity || parseInt(ticket.capacity) <= 0) setError(cp, 'Quantity must be a positive integer'); else clearError(cp);
+            });
+        }
+
+        setErrors(next);
+        return !hasError;
     };
 
     // ── Submit ────────────────────────────────────────────────────────────────
@@ -184,6 +248,8 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         handleAddTag, handleRemoveTag, handleTagKeyDown,
         handleTicketChange, addTicket, removeTicket,
         handleSubmit, discardDraft,
+        validateTab,
+        hasDraft, applyDraft,
         setFormData,
     };
 }

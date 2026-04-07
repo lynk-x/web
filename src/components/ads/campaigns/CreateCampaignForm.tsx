@@ -77,11 +77,16 @@ export default function CreateCampaignForm({
     const supabase = useMemo(() => createClient(), []);
 
     // ── UI State ──────────────────────────────────────────────────────────────
-    const [activeTab, setActiveTab] = useState('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'review'>('details');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [previewClicked, setPreviewClicked] = useState(false); // #7 interactive preview
+
+    // ── Draft Restoration State ─────────────────────────────────────────────
+    const [hasDraft, setHasDraft] = useState(false);
+    const [draftData, setDraftData] = useState<CampaignData | null>(null);
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
     // ── Pricing Config (fetched from ad_pricing_config) ───────────────────────
     const [pricing, setPricing] = useState<PricingConfig>({ impression: 0, click: 0 });
@@ -192,16 +197,63 @@ export default function CreateCampaignForm({
 
 
 
+    // ── Persistent Draft Check ───────────────────────────────────────────────
+    useEffect(() => {
+        if (isEditing) return;
+        const saved = localStorage.getItem('campaign_draft');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.title || parsed.total_budget) {
+                    setDraftData(parsed);
+                    setHasDraft(true);
+                }
+            } catch (e) { console.error('Draft parse error', e); }
+        }
+    }, [isEditing]);
+
+    const applyDraft = () => {
+        if (draftData) {
+            setFormData(draftData);
+            setIsDraftLoaded(true);
+            setHasDraft(false);
+            showToast('Draft restored successfully.', 'success');
+        }
+    };
+
+    const discardDraft = () => {
+        localStorage.removeItem('campaign_draft');
+        setHasDraft(false);
+        setDraftData(null);
+        if (isDraftLoaded) {
+            setFormData(defaultData);
+            setIsDraftLoaded(false);
+        }
+    };
+
     // ── Dirty Check ───────────────────────────────────────────────────────────
     useEffect(() => {
         const isDirty = JSON.stringify(formData) !== JSON.stringify(defaultData);
         onDirtyChange?.(isDirty);
+        
         if (isDirty) {
             const handleBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
             window.addEventListener('beforeunload', handleBeforeUnload);
+
+            // Auto-save draft
+            if (!isEditing && formData.title) {
+                const timer = setTimeout(() => {
+                    localStorage.setItem('campaign_draft', JSON.stringify(formData));
+                }, 1000);
+                return () => {
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+                    clearTimeout(timer);
+                };
+            }
+
             return () => window.removeEventListener('beforeunload', handleBeforeUnload);
         }
-    }, [formData, onDirtyChange]);
+    }, [formData, onDirtyChange, isEditing, defaultData]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -335,6 +387,60 @@ export default function CreateCampaignForm({
     }, [formData.start_at, formData.end_at]);
 
     // ── Validation ────────────────────────────────────────────────────────────
+
+    const validateTab = (tab: string): boolean => {
+        setFormError('');
+        
+        if (tab === 'details') {
+            if (!formData.title.trim()) { setFormError('Campaign title is required.'); return false; }
+            const budget = parseFloat(formData.total_budget);
+            if (isNaN(budget) || budget <= 0) { setFormError('Valid positive total budget is required.'); return false; }
+            
+            const bid = parseFloat(formData.max_bid_amount);
+            if (isNaN(bid) || bid <= 0) { setFormError('A valid positive max bid is required.'); return false; }
+            if (bid > budget) { setFormError(`Max bid ($${bid}) cannot exceed total budget ($${budget}).`); return false; }
+            
+            if (!formData.start_at || !formData.end_at) { setFormError('Both start date and end date are required.'); return false; }
+            if (new Date(formData.end_at) <= new Date(formData.start_at)) { setFormError('End date must be after start date.'); return false; }
+        }
+
+        if (tab === 'targeting') {
+            if (!formData.target_url.trim() || !formData.target_url.startsWith('https://')) {
+                setFormError('A valid secure target URL (https://...) is required.');
+                return false;
+            }
+        }
+
+        if (tab === 'creative') {
+            const primaryCreative = formData.creatives[0];
+            if (!primaryCreative.headline.trim()) { setFormError('Ad Headline is required for the primary creative.'); return false; }
+            if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
+                setFormError('An ad image asset is required for the primary creative.');
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    const handleTabSwitch = (target: 'details' | 'targeting' | 'creative' | 'review') => {
+        const order = ['details', 'targeting', 'creative', 'review'];
+        const currentIndex = order.indexOf(activeTab);
+        const targetIndex = order.indexOf(target);
+
+        // Always allow backward navigation
+        if (targetIndex <= currentIndex) {
+            setActiveTab(target);
+            return;
+        }
+
+        // Validate current tab before moving forward
+        if (validateTab(activeTab)) {
+            setActiveTab(target);
+        } else {
+            showToast(formError || 'Please complete the current section first.', 'warning');
+        }
+    };
 
     const validateForm = (): boolean => {
         if (!formData.title.trim()) { setFormError('Campaign title is required.'); return false; }

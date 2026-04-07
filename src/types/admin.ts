@@ -39,6 +39,7 @@ export interface Campaign {
     targetEventId?: string;
     startDate: string;
     endDate: string;
+    isFlagged?: boolean;
 }
 
 /** A log entry for a sent broadcast notification. */
