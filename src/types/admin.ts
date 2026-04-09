@@ -273,3 +273,21 @@ export interface PromoCode {
     event_title?: string;
     created_at: string;
 }
+
+/** A record in the identity_verifications table. */
+export interface KycVerification {
+    id: string;
+    account_id: string;
+    account_name?: string; // Joined from accounts
+    provider_id?: string;
+    provider_name?: string; // Joined from providers
+    kyc_tier: 'tier_1_basic' | 'tier_2_silver' | 'tier_3_gold';
+    document_type: 'national_id' | 'passport' | 'drivers_license' | 'business_registration';
+    uploaded_documents: string[]; // URLs/Paths
+    pii_data: Record<string, any>;
+    status: 'pending' | 'approved' | 'rejected' | 'expired';
+    rejection_reason?: string;
+    verified_at?: string;
+    expires_at?: string;
+    created_at: string;
+}

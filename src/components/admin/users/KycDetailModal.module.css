@@ -1,0 +1,151 @@
+.content {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.section h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+}
+
+.badgeRow {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.timestamp {
+    font-size: 13px;
+    opacity: 0.5;
+}
+
+.imageGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    background: var(--color-background-secondary);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-primary);
+}
+
+.imageWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.imageWrapper img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-primary);
+}
+
+.imageLabel {
+    font-size: 12px;
+    text-align: center;
+    opacity: 0.5;
+}
+
+.piiGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
+    background: var(--color-background-secondary);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.piiItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.piiItem label {
+    font-size: 12px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    font-weight: 500;
+}
+
+.piiItem span {
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.rejectionBox {
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 24px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rejectionBox h3 {
+    color: var(--color-error);
+}
+
+.rejectionBox p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-primary);
+    background: var(--color-background-primary);
+    color: var(--color-foreground-primary);
+    font-size: 14px;
+    resize: vertical;
+}
+
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    background: var(--color-background-secondary);
+    border-top: 1px solid var(--color-border-primary);
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btnPrimary, .btnSecondary, .btnSuccess, .btnDanger, .btnDangerOutline {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    border: none;
+}
+
+.btnPrimary { background: var(--color-brand-primary); color: white; }
+.btnSecondary { background: var(--color-background-secondary); color: var(--color-foreground-primary); border: 1px solid var(--color-border-primary); }
+.btnSuccess { background: var(--color-success); color: white; }
+.btnDanger { background: var(--color-error); color: white; }
+.btnDangerOutline { background: transparent; color: var(--color-error); border: 1px solid var(--color-error); }

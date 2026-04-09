@@ -1,0 +1,31 @@
+.accountInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.accountName {
+    font-weight: 600;
+    color: var(--color-foreground-primary);
+}
+
+.accountId {
+    font-size: 11px;
+    font-family: monospace;
+    opacity: 0.5;
+}
+
+.docInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.docType {
+    font-weight: 500;
+}
+
+.docCount {
+    font-size: 11px;
+    opacity: 0.5;
+}
