@@ -464,6 +464,8 @@ function FinanceContent() {
         }
         return [];
     };
+    
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const renderActiveTab = () => {
         if (activeTab === 'payouts') {
