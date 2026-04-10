@@ -41,6 +41,13 @@ function SupportContent() {
             : 'moderation'
     );
     const [isLoading, setIsLoading] = useState(true);
+
+    const handleTabChange = (newTab: SupportTab) => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', newTab);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
     const [summary, setSummary] = useState<any>(null);
 
     // ── Data State ────────────────────────────────────────────────────
