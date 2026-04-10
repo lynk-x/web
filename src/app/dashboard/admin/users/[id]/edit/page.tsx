@@ -1,41 +1,85 @@
 "use client";
 
-import React, { use, useState } from 'react';
+import React, { use, useState, useEffect, useMemo } from 'react';
 import UserForm, { UserFormData } from '@/components/admin/users/UserForm';
-import BackButton from '@/components/shared/BackButton';
-import styles from '@/app/dashboard/admin/page.module.css';
-
-// Mock Data (In a real app, this would be fetched)
-const mockUsers: UserFormData[] = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'organizer', status: 'active', bio: 'Long-time event organizer.' },
-    { id: '2', name: 'Alice Smith', email: 'alice@business.com', role: 'advertiser', status: 'active', bio: 'Marketing specialist.' },
-    { id: '3', name: 'Robert Admin', email: 'admin@lynk-x.com', role: 'admin', status: 'active', bio: 'System administrator.' },
-];
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
+import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/components/ui/Toast';
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const { showToast } = useToast();
+    const supabase = useMemo(() => createClient(), []);
+    
+    const [user, setUser] = useState<UserFormData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [isDirty, setIsDirty] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Find user from mock data or provide a default for demo
-    const user = mockUsers.find(u => u.id === id) || {
-        id,
-        name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'user' as const,
-        status: 'active' as const,
-        bio: 'Placeholder for user data.'
-    };
+    useEffect(() => {
+        const fetchUser = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('user_profile')
+                    .select('id, full_name, user_name, email, role, status, bio')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+
+                setUser({
+                    id: data.id,
+                    name: data.full_name,
+                    userName: data.user_name,
+                    email: data.email,
+                    role: data.role as any,
+                    status: (data.status === 'permanently_suspended' || data.status === 'temporarily_suspended') ? 'suspended' : 'active',
+                    bio: data.bio
+                });
+            } catch (err: any) {
+                showToast('Failed to load user data.', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUser();
+    }, [id, supabase, showToast]);
+
+    if (isLoading) {
+        return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading User Data...</div>;
+    }
+
+    if (!user) {
+        return <div style={{ padding: '60px', textAlign: 'center' }}>User not found.</div>;
+    }
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <BackButton label="Back to Users" isDirty={isDirty} />
-                    <h1 className={styles.title}>Edit User</h1>
-                    <p className={styles.subtitle}>Updating information for {user.name}.</p>
-                </div>
-            </header>
-            <UserForm initialData={user as UserFormData} isEditing onDirtyChange={setIsDirty} />
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Edit User"
+                subtitle={`Updating account details for ${user.name}.`}
+                backLabel="Back to Users"
+                isDirty={isDirty}
+                primaryAction={{
+                    label: 'Save Changes',
+                    formId: 'user-form',
+                    type: 'submit',
+                    isLoading: isSubmitting
+                }}
+            />
+            <div className={adminStyles.pageCard}>
+                <UserForm 
+                    formId="user-form"
+                    initialData={user} 
+                    isEditing 
+                    hideActions={true}
+                    onDirtyChange={setIsDirty}
+                    onSubmittingChange={setIsSubmitting}
+                />
+            </div>
         </div>
     );
 }
