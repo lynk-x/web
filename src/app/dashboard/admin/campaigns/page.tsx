@@ -59,8 +59,9 @@ function CampaignsContent() {
         }
     }, [searchParams]);
 
-    const handleTabChange = (newTab: 'campaigns' | 'assets' | 'analytics' | 'pricing') => {
-        setActiveTab(newTab);
+    const handleTabChange = (newTab: string) => {
+        const tab = newTab as typeof activeTab;
+        setActiveTab(tab);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
