@@ -2,6 +2,17 @@ import Link from 'next/link';
 import HomeLayout from "@/components/public/HomeLayout";
 import { createClient } from '@/utils/supabase/server';
 import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Terms & Conditions | Lynk-X',
+    description: 'Read the terms and conditions governing use of the Lynk-X event ticketing platform, including organizer obligations and attendee rights.',
+    openGraph: {
+        title: 'Terms & Conditions | Lynk-X',
+        description: 'Terms and conditions for using the Lynk-X platform.',
+        type: 'website',
+    },
+};
 
 export default async function TermsPage() {
     const supabase = await createClient();

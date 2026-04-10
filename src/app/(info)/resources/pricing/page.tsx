@@ -71,6 +71,8 @@ export default function PricingFeesPage() {
 
     return (
         <div className={styles.page}>
+            <title>Pricing & Fees | Lynk-X</title>
+            <meta name="description" content="Transparent pricing for Lynk-X event ticketing — commissions, payment processing fees, and payout schedules." />
             <header className={styles.header}>
                 <h1 className={styles.title}>Pricing & Fees</h1>
                 <p className={styles.subtitle}>Transparent fees that grow with you. Our goal is to provide a world-class platform with clear financial visibility.</p>

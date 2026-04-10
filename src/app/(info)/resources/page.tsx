@@ -1,8 +1,17 @@
-"use client";
-
 import React from 'react';
 import styles from './ResourceIndex.module.css';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Resources | Lynk-X',
+    description: 'Guides, pricing, safety protocols, and support for event organizers and attendees on Lynk-X.',
+    openGraph: {
+        title: 'Resources | Lynk-X',
+        description: 'Everything you need to get started on Lynk-X.',
+        type: 'website',
+    },
+};
 
 export default function ResourceIndex() {
     return (

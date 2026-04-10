@@ -29,6 +29,9 @@ export default function AdminModerationPage() {
 
     const debouncedSearch = useDebounce(searchTerm, 500);
 
+    // Selection for bulk actions
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
     // Modals
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
@@ -36,9 +39,11 @@ export default function AdminModerationPage() {
 
     const fetchDashboardSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
-        if (!error && data) {
-            setSummary(data);
+        if (error) {
+            console.warn('Failed to load admin summary:', error.message);
+            return;
         }
+        if (data) setSummary(data);
     }, [supabase]);
 
     const fetchQueue = useCallback(async () => {
@@ -48,9 +53,9 @@ export default function AdminModerationPage() {
             const to = from + itemsPerPage - 1;
 
             let query = supabase
-                .from('moderation_reviews')
+                .from('moderation')
                 .select('*', { count: 'exact' })
-                .in('status', ['pending_review', 'flagged', 'appealed', 'rejected']);
+                .in('status', ['pending_review', 'flagged', 'appealed']);
 
             // Server-Side Filtering
             if (debouncedSearch) {
@@ -82,6 +87,19 @@ export default function AdminModerationPage() {
         fetchDashboardSummary();
     }, [fetchDashboardSummary]);
 
+    // Real-time subscription for new moderation entries
+    useEffect(() => {
+        const channel = supabase
+            .channel('moderation-queue')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'moderation' }, () => {
+                fetchQueue();
+                fetchDashboardSummary();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [supabase, fetchQueue, fetchDashboardSummary]);
+
     // Reset pagination on filter change
     useEffect(() => {
         setCurrentPage(1);
@@ -93,8 +111,8 @@ export default function AdminModerationPage() {
         showToast(`Approving ${entry.item_type}...`, 'info');
         try {
             const { error: modError } = await supabase
-                .from('moderation_reviews')
-                .update({ status: 'approved', resolved_at: new Date().toISOString() })
+                .from('moderation')
+                .update({ status: 'approved', updated_at: new Date().toISOString() })
                 .eq('id', entry.id);
 
             if (modError) throw modError;
@@ -126,11 +144,11 @@ export default function AdminModerationPage() {
         showToast(`Rejecting ${selectedEntry.item_type}...`, 'info');
         try {
             const { error: modError } = await supabase
-                .from('moderation_reviews')
-                .update({ 
-                    status: 'rejected', 
-                    reason,
-                    resolved_at: new Date().toISOString() 
+                .from('moderation')
+                .update({
+                    status: 'rejected',
+                    review: { reason },
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id', selectedEntry.id);
 
@@ -153,10 +171,99 @@ export default function AdminModerationPage() {
         }
     };
 
+    const handleSelectEntry = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.size === entries.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(entries.map(e => e.id)));
+        }
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedIds.size === 0) return;
+        showToast(`Approving ${selectedIds.size} items...`, 'info');
+        try {
+            const ids = Array.from(selectedIds);
+            const { error } = await supabase
+                .from('moderation')
+                .update({ status: 'approved', updated_at: new Date().toISOString() })
+                .in('id', ids);
+
+            if (error) throw error;
+
+            // Activate the underlying items
+            const selected = entries.filter(e => selectedIds.has(e.id));
+            const eventIds = selected.filter(e => e.item_type === 'event').map(e => e.item_id);
+            const campaignIds = selected.filter(e => e.item_type === 'campaign').map(e => e.item_id);
+
+            if (eventIds.length > 0) {
+                await supabase.from('events').update({ status: 'active', updated_at: new Date().toISOString() }).in('id', eventIds);
+            }
+            if (campaignIds.length > 0) {
+                await supabase.from('ad_campaigns').update({ status: 'active', updated_at: new Date().toISOString() }).in('id', campaignIds);
+            }
+
+            showToast(`${ids.length} items approved.`, 'success');
+            setSelectedIds(new Set());
+            fetchQueue();
+            fetchDashboardSummary();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
+    const handleBulkReject = () => {
+        if (selectedIds.size === 0) return;
+        // Use rejection modal for bulk — sets selectedEntry to null to indicate bulk mode
+        setSelectedEntry(null);
+        setIsRejectionModalOpen(true);
+    };
+
+    const performBulkRejection = async (reason: string) => {
+        const ids = Array.from(selectedIds);
+        showToast(`Rejecting ${ids.length} items...`, 'info');
+        try {
+            const { error } = await supabase
+                .from('moderation')
+                .update({ status: 'rejected', review: { reason }, updated_at: new Date().toISOString() })
+                .in('id', ids);
+
+            if (error) throw error;
+
+            const selected = entries.filter(e => selectedIds.has(e.id));
+            const eventIds = selected.filter(e => e.item_type === 'event').map(e => e.item_id);
+            const campaignIds = selected.filter(e => e.item_type === 'campaign').map(e => e.item_id);
+
+            if (eventIds.length > 0) {
+                await supabase.from('events').update({ status: 'rejected', updated_at: new Date().toISOString() }).in('id', eventIds);
+            }
+            if (campaignIds.length > 0) {
+                await supabase.from('ad_campaigns').update({ status: 'rejected', updated_at: new Date().toISOString() }).in('id', campaignIds);
+            }
+
+            showToast(`${ids.length} items rejected.`, 'success');
+            setSelectedIds(new Set());
+            setIsRejectionModalOpen(false);
+            fetchQueue();
+            fetchDashboardSummary();
+        } catch (err: any) {
+            showToast(err.message, 'error');
+        }
+    };
+
     return (
         <div className={sharedStyles.container}>
-            <PageHeader 
-                title="Moderation Queue" 
+            <PageHeader
+                title="Moderation Queue"
                 subtitle="Review pending content, flag violations, and handle user reports from a single cockpit."
             />
 
@@ -214,8 +321,25 @@ export default function AdminModerationPage() {
                 </div>
             </TableToolbar>
 
+            {selectedIds.size > 0 && (
+                <div className={adminStyles.bulkBar}>
+                    <span>{selectedIds.size} item{selectedIds.size > 1 ? 's' : ''} selected</span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className={adminStyles.bulkApprove} onClick={handleBulkApprove}>
+                            Approve All
+                        </button>
+                        <button className={adminStyles.bulkReject} onClick={handleBulkReject}>
+                            Reject All
+                        </button>
+                        <button className={adminStyles.bulkClear} onClick={() => setSelectedIds(new Set())}>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className={adminStyles.pageCard}>
-                <ModerationTable 
+                <ModerationTable
                     entries={entries}
                     isLoading={isLoading}
                     currentPage={currentPage}
@@ -227,6 +351,9 @@ export default function AdminModerationPage() {
                         setSelectedEntry(e);
                         setIsDetailModalOpen(true);
                     }}
+                    selectedIds={selectedIds}
+                    onSelect={handleSelectEntry}
+                    onSelectAll={handleSelectAll}
                 />
             </div>
 
@@ -236,11 +363,11 @@ export default function AdminModerationPage() {
                 entry={selectedEntry}
             />
 
-            <RejectionModal 
+            <RejectionModal
                 isOpen={isRejectionModalOpen}
                 onClose={() => setIsRejectionModalOpen(false)}
-                onConfirm={performRejection}
-                title={`Reject ${selectedEntry?.item_type.toUpperCase()}`}
+                onConfirm={selectedEntry ? performRejection : performBulkRejection}
+                title={selectedEntry ? `Reject ${selectedEntry.item_type.toUpperCase()}` : `Reject ${selectedIds.size} Items`}
             />
         </div>
     );

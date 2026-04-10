@@ -35,7 +35,7 @@ export interface Campaign {
     /** Aligned to `campaign_status` enum: draft replaces the old 'pending' */
     status: 'active' | 'draft' | 'pending_approval' | 'paused' | 'rejected' | 'completed';
     /** Aligned to `ad_type` enum: banner | interstitial */
-    adType?: 'banner' | 'interstitial';
+    adType?: 'banner' | 'interstitial' | 'interstitial_video';
     targetEventId?: string;
     startDate: string;
     endDate: string;
@@ -281,11 +281,11 @@ export interface KycVerification {
     account_name?: string; // Joined from accounts
     provider_id?: string;
     provider_name?: string; // Joined from providers
-    kyc_tier: 'tier_1_basic' | 'tier_2_silver' | 'tier_3_gold';
-    document_type: 'national_id' | 'passport' | 'drivers_license' | 'business_registration';
+    kyc_tier: 'tier_1_basic' | 'tier_2_verified' | 'tier_3_advanced';
+    document_type: 'national_id' | 'passport' | 'alien_card' | 'incorporation_cert' | 'utility_bill';
     uploaded_documents: string[]; // URLs/Paths
     pii_data: Record<string, any>;
-    status: 'pending' | 'approved' | 'rejected' | 'expired';
+    status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended' | 'expired';
     rejection_reason?: string;
     verified_at?: string;
     expires_at?: string;

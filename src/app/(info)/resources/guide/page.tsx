@@ -138,6 +138,8 @@ export default function HostingGuidePage() {
 
     return (
         <div className={styles.page}>
+            <title>Hosting Guide | Lynk-X</title>
+            <meta name="description" content="Step-by-step guide to hosting events and running ad campaigns on the Lynk-X platform." />
             <header className={styles.header}>
                 <h1 className={styles.title}>Hosting Guide</h1>
                 <p className={styles.subtitle}>Our platform allows you to scale your presence by either hosting immersive events or powerful ad campaigns.</p>

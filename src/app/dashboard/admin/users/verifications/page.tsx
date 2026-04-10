@@ -137,9 +137,11 @@ function KycVerificationsContent() {
             >
                 <FilterGroup
                     options={[
-                        { value: 'pending', label: 'Pending Review' },
+                        { value: 'pending', label: 'Pending' },
+                        { value: 'submitted', label: 'Submitted' },
                         { value: 'approved', label: 'Approved' },
                         { value: 'rejected', label: 'Rejected' },
+                        { value: 'suspended', label: 'Suspended' },
                         { value: 'expired', label: 'Expired' },
                         { value: 'all', label: 'All Requests' },
                     ]}

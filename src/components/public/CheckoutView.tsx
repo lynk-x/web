@@ -46,13 +46,25 @@ const CheckoutView: React.FC = () => {
     const subtotal = getCartTotal();
     const totalServiceFee = itemCount * baseFeePerTicket;
     const discountAmount = appliedPromo?.discount || 0;
-    const total = subtotal + totalServiceFee - discountAmount;
+    const total = Math.max(0, subtotal + totalServiceFee - discountAmount);
     const currency = items[0]?.currency || 'KES';
 
-    // ── Init: pre-fill from session + read service fee from DB ────────────────
+    // ── Init: restore payment state + pre-fill from session + read service fee ─
     useEffect(() => {
         const init = async () => {
             try {
+                // 0. Restore pending payment state from sessionStorage (survives refresh)
+                const saved = sessionStorage.getItem('lynk-x-payment');
+                if (saved) {
+                    const { checkoutId, phone } = JSON.parse(saved);
+                    if (checkoutId) {
+                        setCurrentCheckoutId(checkoutId);
+                        setPaymentStatus('waiting');
+                        setFormData(prev => ({ ...prev, mpesaNumber: phone || prev.mpesaNumber }));
+                        setIsSubmitting(true);
+                    }
+                }
+
                 // 1. Read platform base fee from system_config
                 const { data: feeConfig } = await supabase
                     .from('system_config')
@@ -112,11 +124,13 @@ const CheckoutView: React.FC = () => {
                     console.log('[Checkout] Transaction status updated:', newStatus);
                     
                     if (newStatus === 'completed') {
+                        sessionStorage.removeItem('lynk-x-payment');
                         setPaymentStatus('completed');
                         clearCart();
                         const orderRef = 'LX-' + Date.now().toString(36).toUpperCase();
                         router.push(`/checkout/confirmation?order_ref=${orderRef}&items=${items.length}`);
                     } else if (newStatus === 'failed' || newStatus === 'cancelled') {
+                        sessionStorage.removeItem('lynk-x-payment');
                         setPaymentStatus('failed');
                         setPaymentError('Payment was not completed. Please try again or use a different number.');
                         setIsSubmitting(false);
@@ -141,7 +155,7 @@ const CheckoutView: React.FC = () => {
         try {
             const { data: promo, error } = await supabase
                 .from('promo_codes')
-                .select('id, discount_type, discount_value, max_uses, uses_count, expires_at, is_active')
+                .select('id, type, value, max_uses, uses_count, valid_from, valid_until, is_active')
                 .eq('code', code)
                 .maybeSingle();
 
@@ -155,7 +169,13 @@ const CheckoutView: React.FC = () => {
                 setAppliedPromo(null);
                 return;
             }
-            if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+            const now = new Date();
+            if (promo.valid_from && new Date(promo.valid_from) > now) {
+                setPromoError('This promo code is not yet active.');
+                setAppliedPromo(null);
+                return;
+            }
+            if (promo.valid_until && new Date(promo.valid_until) < now) {
                 setPromoError('This promo code has expired.');
                 setAppliedPromo(null);
                 return;
@@ -166,9 +186,15 @@ const CheckoutView: React.FC = () => {
                 return;
             }
 
-            const discount = promo.discount_type === 'percentage'
-                ? (subtotal * promo.discount_value) / 100
-                : Math.min(promo.discount_value, subtotal);
+            let discount: number;
+            if (promo.type === 'free_entry') {
+                discount = subtotal + totalServiceFee;
+            } else if (promo.type === 'percent') {
+                discount = (subtotal * promo.value) / 100;
+            } else {
+                // 'fixed'
+                discount = Math.min(promo.value, subtotal);
+            }
 
             setAppliedPromo({ code, discount, promoId: promo.id });
             setPromoCode('');
@@ -258,9 +284,13 @@ const CheckoutView: React.FC = () => {
                 throw new Error(funcError?.message || data?.error || 'Failed to initiate STK push');
             }
 
-            // Step 3: Enter waiting state
+            // Step 3: Enter waiting state (persist so it survives page refresh)
             setCurrentCheckoutId(data.checkoutRequestId);
             setPaymentStatus('waiting');
+            sessionStorage.setItem('lynk-x-payment', JSON.stringify({
+                checkoutId: data.checkoutRequestId,
+                phone: formData.mpesaNumber,
+            }));
 
         } catch (err: any) {
             console.error('Payment error:', err);
@@ -461,6 +491,7 @@ const CheckoutView: React.FC = () => {
                         <button 
                             className={styles.cancelBtn} 
                             onClick={() => {
+                                sessionStorage.removeItem('lynk-x-payment');
                                 setPaymentStatus('idle');
                                 setIsSubmitting(false);
                             }}

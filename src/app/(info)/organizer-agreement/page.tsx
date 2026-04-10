@@ -1,33 +1,32 @@
-import Link from 'next/link';
 import HomeLayout from "@/components/public/HomeLayout";
 import { createClient } from '@/utils/supabase/server';
 import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Privacy Policy | Lynk-X',
-    description: 'Learn how Lynk-X collects, uses, and protects your personal information when you use our event ticketing and social platform.',
+    title: 'Organizer Agreement | Lynk-X',
+    description: 'Review the Lynk-X organizer agreement covering event hosting responsibilities, payment terms, and platform policies for event organizers.',
     openGraph: {
-        title: 'Privacy Policy | Lynk-X',
-        description: 'Learn how Lynk-X collects, uses, and protects your personal information.',
+        title: 'Organizer Agreement | Lynk-X',
+        description: 'Agreement for event organizers on the Lynk-X platform.',
         type: 'website',
     },
 };
 
-export default async function PrivacyPage() {
+export default async function OrganizerAgreementPage() {
     const supabase = await createClient();
 
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'privacy_policy')
+        .eq('type', 'organizer_agreement')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)
         .single();
 
-    const title = doc?.title || 'Privacy Policy';
-    const content = doc?.content || 'Privacy policy content is not available at this time.';
+    const title = doc?.title || 'Organizer Agreement';
+    const content = doc?.content || 'Organizer agreement content is not available at this time.';
     const lastUpdated = doc?.updated_at ? new Date(doc.updated_at).toLocaleDateString() : new Date().toLocaleDateString();
 
     return (

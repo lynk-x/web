@@ -75,6 +75,8 @@ export default function HelpCenterPage() {
 
     return (
         <div className={styles.page}>
+            <title>Help Center | Lynk-X</title>
+            <meta name="description" content="Get support, find answers to common questions, and contact the Lynk-X team." />
             <header className={styles.header}>
                 <h1 className={styles.title}>Help Center</h1>
                 <p className={styles.subtitle}>Welcome to the Lynk-X support hub. Whether you're an attendee looking for tickets or an organizer setting up a showcase, we've got you covered.</p>

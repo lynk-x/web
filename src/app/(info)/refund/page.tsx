@@ -1,33 +1,32 @@
-import Link from 'next/link';
 import HomeLayout from "@/components/public/HomeLayout";
 import { createClient } from '@/utils/supabase/server';
 import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Privacy Policy | Lynk-X',
-    description: 'Learn how Lynk-X collects, uses, and protects your personal information when you use our event ticketing and social platform.',
+    title: 'Refund Policy | Lynk-X',
+    description: 'Understand the Lynk-X refund policy for ticket purchases, including eligibility windows, cancellation rules, and how to request a refund.',
     openGraph: {
-        title: 'Privacy Policy | Lynk-X',
-        description: 'Learn how Lynk-X collects, uses, and protects your personal information.',
+        title: 'Refund Policy | Lynk-X',
+        description: 'Refund policy for ticket purchases on Lynk-X.',
         type: 'website',
     },
 };
 
-export default async function PrivacyPage() {
+export default async function RefundPolicyPage() {
     const supabase = await createClient();
 
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'privacy_policy')
+        .eq('type', 'refund_policy')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)
         .single();
 
-    const title = doc?.title || 'Privacy Policy';
-    const content = doc?.content || 'Privacy policy content is not available at this time.';
+    const title = doc?.title || 'Refund Policy';
+    const content = doc?.content || 'Refund policy content is not available at this time.';
     const lastUpdated = doc?.updated_at ? new Date(doc.updated_at).toLocaleDateString() : new Date().toLocaleDateString();
 
     return (

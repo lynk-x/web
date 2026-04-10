@@ -26,6 +26,9 @@ interface ModerationTableProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    selectedIds?: Set<string>;
+    onSelect?: (id: string) => void;
+    onSelectAll?: () => void;
 }
 
 const getStatusVariant = (status: string): BadgeVariant => {
@@ -48,7 +51,10 @@ const ModerationTable: React.FC<ModerationTableProps> = ({
     isLoading = false,
     currentPage,
     totalPages,
-    onPageChange
+    onPageChange,
+    selectedIds,
+    onSelect,
+    onSelectAll,
 }) => {
     const columns: Column<ModerationEntry>[] = [
         {
@@ -138,6 +144,9 @@ const ModerationTable: React.FC<ModerationTableProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
             emptyMessage="The moderation queue is clear. Great job!"
         />
     );

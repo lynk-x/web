@@ -49,9 +49,45 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         const fetchInvoice = async () => {
             setIsLoading(true);
             try {
+                // Try wallet_top_ups first (billing page lists these as invoices)
+                const { data: topUp } = await supabase
+                    .from('wallet_top_ups')
+                    .select('id, amount, status, created_at, currency, provider_ref, metadata')
+                    .eq('id', id)
+                    .maybeSingle();
+
+                if (topUp) {
+                    const amount = Number(topUp.amount);
+                    const currency = topUp.currency || activeAccount?.wallet_currency || 'USD';
+                    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency });
+
+                    setInvoice({
+                        id: topUp.id.slice(0, 8).toUpperCase(),
+                        date: new Date(topUp.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                        dueDate: new Date(topUp.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                        status: topUp.status === 'completed' ? 'paid' : topUp.status === 'pending' ? 'pending' : 'overdue',
+                        billedTo: {
+                            name: activeAccount?.name || 'Account Owner',
+                            email: ''
+                        },
+                        items: [{
+                            description: 'Wallet Top-Up',
+                            quantity: 1,
+                            rate: formatter.format(amount),
+                            amount: formatter.format(amount)
+                        }],
+                        subtotal: formatter.format(amount),
+                        tax: formatter.format(0),
+                        total: formatter.format(amount),
+                        currency
+                    });
+                    return;
+                }
+
+                // Fallback: try transactions table
                 const { data, error } = await supabase
                     .from('transactions')
-                    .select('id, amount, status, created_at, currency, description, reason, profiles(full_name, email)')
+                    .select('id, amount, status, created_at, currency, reason, metadata')
                     .eq('id', id)
                     .maybeSingle();
 
@@ -60,9 +96,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     return;
                 }
 
-                const profile = (data as { profiles: any }).profiles;
                 const amount = Number(data.amount);
-                const currency = data.currency || activeAccount?.wallet_currency || 'KES';
+                const currency = data.currency || activeAccount?.wallet_currency || 'USD';
                 const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency });
 
                 setInvoice({
@@ -71,17 +106,15 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     dueDate: new Date(data.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
                     status: data.status === 'completed' ? 'paid' : data.status === 'pending' ? 'pending' : 'overdue',
                     billedTo: {
-                        name: profile?.full_name || activeAccount?.name || 'Account Owner',
-                        email: profile?.email || ''
+                        name: activeAccount?.name || 'Account Owner',
+                        email: ''
                     },
-                    items: [
-                        {
-                            description: data.description || `Ad Campaign Payment (${data.reason || 'ad_campaign_payment'})`,
-                            quantity: 1,
-                            rate: formatter.format(amount),
-                            amount: formatter.format(amount)
-                        }
-                    ],
+                    items: [{
+                        description: `Ad Campaign Payment (${data.reason || 'ad_campaign_payment'})`,
+                        quantity: 1,
+                        rate: formatter.format(amount),
+                        amount: formatter.format(amount)
+                    }],
                     subtotal: formatter.format(amount),
                     tax: formatter.format(0),
                     total: formatter.format(amount),

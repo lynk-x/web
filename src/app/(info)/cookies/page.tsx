@@ -2,6 +2,17 @@ import { createClient } from '@/utils/supabase/server';
 import HomeLayout from "@/components/public/HomeLayout";
 import CookieConsentManager from "@/components/public/CookieConsentManager";
 import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Cookie Policy | Lynk-X',
+    description: 'Understand how Lynk-X uses cookies and manage your cookie preferences for analytics and personalisation.',
+    openGraph: {
+        title: 'Cookie Policy | Lynk-X',
+        description: 'Manage your cookie preferences on Lynk-X.',
+        type: 'website',
+    },
+};
 
 export default async function CookiePolicyPage() {
     const supabase = await createClient();

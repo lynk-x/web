@@ -25,8 +25,8 @@ interface KycVerificationTableProps {
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'approved': return 'success';
-        case 'pending': return 'warning';
-        case 'rejected': return 'error';
+        case 'pending': case 'submitted': return 'warning';
+        case 'rejected': case 'suspended': return 'error';
         case 'expired': return 'neutral';
         default: return 'neutral';
     }
@@ -34,8 +34,8 @@ const getStatusVariant = (status: string): BadgeVariant => {
 
 const getTierVariant = (tier: string): BadgeVariant => {
     switch (tier) {
-        case 'tier_3_gold': return 'warning';
-        case 'tier_2_silver': return 'neutral';
+        case 'tier_3_advanced': return 'warning';
+        case 'tier_2_verified': return 'neutral';
         default: return 'primary'; // tier_1_basic
     }
 };
@@ -95,7 +95,7 @@ const KycVerificationTable: React.FC<KycVerificationTableProps> = ({
             }
         ];
 
-        if (v.status === 'pending') {
+        if (v.status === 'pending' || v.status === 'submitted') {
             actions.push(
                 {
                     label: 'Approve',

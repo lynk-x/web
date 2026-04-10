@@ -11,7 +11,7 @@ export interface AdsCampaign {
     /** Internal DB field: title */
     title: string;
     /** From `ad_type` enum */
-    type: 'banner' | 'interstitial';
+    type: 'banner' | 'interstitial' | 'interstitial_video';
     /** From `campaign_status` enum */
     status: 'draft' | 'pending_approval' | 'active' | 'paused' | 'completed' | 'rejected';
     /** ISO dates from start_at and end_at */

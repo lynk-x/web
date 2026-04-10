@@ -179,16 +179,20 @@ export default function CreateCampaignForm({
     // ── Fetch Pricing on Ad Type Change ──────────────────────────────────────
     useEffect(() => {
         const fetchPricing = async () => {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('ad_pricing_config')
                 .select('interaction_type, base_price')
                 .eq('ad_type', formData.type);
 
-            if (data) {
-                const imp = data.find((r: any) => r.interaction_type === 'impression')?.base_price ?? 0;
-                const clk = data.find((r: any) => r.interaction_type === 'click')?.base_price ?? 0;
-                setPricing({ impression: imp, click: clk });
+            if (error || !data || data.length === 0) {
+                setPricing({ impression: 0, click: 0 });
+                if (error) console.warn('Failed to fetch ad pricing config:', error.message);
+                return;
             }
+
+            const imp = data.find((r: any) => r.interaction_type === 'impression')?.base_price ?? 0;
+            const clk = data.find((r: any) => r.interaction_type === 'click')?.base_price ?? 0;
+            setPricing({ impression: imp, click: clk });
         };
         fetchPricing();
     }, [formData.type, supabase]);
@@ -405,8 +409,15 @@ export default function CreateCampaignForm({
         }
 
         if (tab === 'targeting') {
-            if (!formData.target_url.trim() || !formData.target_url.startsWith('https://')) {
+            const url = formData.target_url.trim();
+            if (!url || !url.startsWith('https://')) {
                 setFormError('A valid secure target URL (https://...) is required.');
+                return false;
+            }
+            try {
+                new URL(url);
+            } catch {
+                setFormError('Target URL is not a valid URL format.');
                 return false;
             }
         }

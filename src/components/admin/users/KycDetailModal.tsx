@@ -72,7 +72,7 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                     ) : (
                         <>
                             <button className={styles.btnSecondary} onClick={onClose}>Close</button>
-                            {verification.status === 'pending' && (
+                            {(verification.status === 'pending' || verification.status === 'submitted') && (
                                 <div className={styles.actions}>
                                     <button className={styles.btnDangerOutline} onClick={() => setIsRejecting(true)}>Reject</button>
                                     <button className={styles.btnSuccess} onClick={() => onApprove(verification)}>Approve Verification</button>

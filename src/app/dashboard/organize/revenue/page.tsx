@@ -10,7 +10,9 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import Tabs from '@/components/dashboard/Tabs';
-import { formatDate } from '@/utils/format';
+import { formatDate, formatCurrency } from '@/utils/format';
+import Badge from '@/components/shared/Badge';
+import type { BadgeVariant } from '@/types/shared';
 import ProductTour from '@/components/dashboard/ProductTour';
 
 function RevenueContent() {
@@ -21,15 +23,17 @@ function RevenueContent() {
     const router = useRouter();
     const pathname = usePathname();
 
+    const VALID_TABS = ['wallets', 'payouts', 'refunds'] as const;
+    type TabId = typeof VALID_TABS[number];
     const initialTab = (searchParams.get('tab') as string) || 'wallets';
-    const [activeTab, setActiveTab] = useState<'payouts' | 'wallets'>(
-        (['payouts', 'wallets'] as string[]).includes(initialTab) ? initialTab as 'payouts' | 'wallets' : 'wallets'
+    const [activeTab, setActiveTab] = useState<TabId>(
+        (VALID_TABS as readonly string[]).includes(initialTab) ? initialTab as TabId : 'wallets'
     );
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
-        if (tab && ['payouts', 'wallets'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
+        if (tab && (VALID_TABS as readonly string[]).includes(tab)) {
+            setActiveTab(tab as TabId);
         }
     }, [searchParams]);
 
@@ -45,6 +49,9 @@ function RevenueContent() {
 
     const [payouts, setPayouts] = useState<any[]>([]);
     const [wallets, setWallets] = useState<any[]>([]);
+    const [refunds, setRefunds] = useState<any[]>([]);
+    const [refundCurrentPage, setRefundCurrentPage] = useState(1);
+    const refundItemsPerPage = 8;
     const [isLoading, setIsLoading] = useState(true);
 
     // Payout request modal state
@@ -93,6 +100,41 @@ function RevenueContent() {
             if (walletError) throw walletError;
             setWallets((walletData || []).map((w: any) => ({ ...w, id: w.currency })));
 
+            // Refund transactions for this account's events
+            const { data: refundData, error: refundError } = await supabase
+                .from('transactions')
+                .select('id, amount, currency, status, created_at, updated_at, event_id, ticket_id, metadata')
+                .eq('recipient_account_id', activeAccount.id)
+                .eq('reason', 'ticket_refund')
+                .eq('category', 'outgoing')
+                .order('created_at', { ascending: false });
+
+            if (refundError) throw refundError;
+
+            // Fetch event titles for display
+            const eventIds = [...new Set((refundData || []).map((r: any) => r.event_id).filter(Boolean))];
+            let eventMap: Record<string, string> = {};
+            if (eventIds.length > 0) {
+                const { data: eventData } = await supabase
+                    .from('events')
+                    .select('id, title')
+                    .in('id', eventIds);
+                eventMap = (eventData || []).reduce((m: Record<string, string>, e: any) => { m[e.id] = e.title; return m; }, {});
+            }
+
+            setRefunds((refundData || []).map((r: any) => ({
+                id: r.id,
+                amount: r.amount,
+                currency: r.currency,
+                status: r.status,
+                eventTitle: eventMap[r.event_id] || 'Unknown Event',
+                eventId: r.event_id,
+                ticketId: r.ticket_id,
+                refundPercent: r.metadata?.refund_percent,
+                reason: r.metadata?.msg || r.metadata?.cancel_reason || '-',
+                date: formatDate(r.created_at),
+            })));
+
         } catch (err: any) {
             showToast(err.message || 'Failed to sync your financial records. Please try again.', 'error');
         } finally {
@@ -118,6 +160,7 @@ function RevenueContent() {
             setIsLoading(false);
             setPayouts([]);
             setWallets([]);
+            setRefunds([]);
         }
     }, [isOrgLoading, activeAccount, fetchFinancialData]);
 
@@ -238,7 +281,8 @@ function RevenueContent() {
                 <Tabs
                     options={[
                     { id: 'wallets', label: 'Wallets' },
-                    { id: 'payouts', label: 'Payouts' }
+                    { id: 'payouts', label: 'Payouts' },
+                    { id: 'refunds', label: `Refunds${refunds.length > 0 ? ` (${refunds.length})` : ''}` }
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -255,6 +299,14 @@ function RevenueContent() {
                         currentPage={payoutCurrentPage}
                         totalPages={Math.ceil(payouts.length / payoutItemsPerPage)}
                         onPageChange={setPayoutCurrentPage}
+                        isLoading={isLoading}
+                    />
+                ) : activeTab === 'refunds' ? (
+                    <RefundsTable
+                        refunds={refunds}
+                        currentPage={refundCurrentPage}
+                        itemsPerPage={refundItemsPerPage}
+                        onPageChange={setRefundCurrentPage}
                         isLoading={isLoading}
                     />
                 ) : (
@@ -290,6 +342,139 @@ function RevenueContent() {
         </div>
     );
 }
+
+// ── Refunds Table ─────────────────────────────────────────────────────────
+const REFUND_STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
+    completed: { label: 'Refunded', variant: 'success' },
+    pending: { label: 'Pending', variant: 'warning' },
+    failed: { label: 'Failed', variant: 'error' },
+    cancelled: { label: 'Cancelled', variant: 'neutral' },
+};
+
+function RefundsTable({
+    refunds,
+    currentPage,
+    itemsPerPage,
+    onPageChange,
+    isLoading,
+}: {
+    refunds: any[];
+    currentPage: number;
+    itemsPerPage: number;
+    onPageChange: (page: number) => void;
+    isLoading: boolean;
+}) {
+    const totalPages = Math.ceil(refunds.length / itemsPerPage);
+    const paginated = refunds.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    if (isLoading) {
+        return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading refunds...</div>;
+    }
+
+    if (refunds.length === 0) {
+        return (
+            <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
+                <p style={{ fontSize: '15px', marginBottom: '4px' }}>No refunds yet</p>
+                <p style={{ fontSize: '13px' }}>Refund transactions will appear here when ticket holders cancel their tickets.</p>
+            </div>
+        );
+    }
+
+    const totalRefunded = refunds
+        .filter(r => r.status === 'completed')
+        .reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+
+    return (
+        <div>
+            {/* Summary */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-interface-outline)', display: 'flex', gap: '24px', fontSize: '13px' }}>
+                <span style={{ opacity: 0.6 }}>Total Refunded: <strong style={{ opacity: 1 }}>{formatCurrency(totalRefunded, refunds[0]?.currency || 'KES')}</strong></span>
+                <span style={{ opacity: 0.6 }}>Count: <strong style={{ opacity: 1 }}>{refunds.length}</strong></span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                <thead>
+                    <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
+                        <th style={refTh}>Event</th>
+                        <th style={refTh}>Amount</th>
+                        <th style={refTh}>Status</th>
+                        <th style={refTh}>Reason</th>
+                        <th style={refTh}>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {paginated.map((r: any) => {
+                        const badge = REFUND_STATUS_MAP[r.status] || { label: r.status, variant: 'neutral' as BadgeVariant };
+                        return (
+                            <tr key={r.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
+                                <td style={refTd}>
+                                    {r.eventId ? (
+                                        <Link
+                                            href={`/dashboard/organize/events/${r.eventId}`}
+                                            style={{ color: 'var(--color-brand-primary)', textDecoration: 'none', fontWeight: 500 }}
+                                        >
+                                            {r.eventTitle}
+                                        </Link>
+                                    ) : (
+                                        <span style={{ opacity: 0.5 }}>{r.eventTitle}</span>
+                                    )}
+                                </td>
+                                <td style={refTd}>{formatCurrency(r.amount, r.currency)}</td>
+                                <td style={refTd}><Badge label={badge.label} variant={badge.variant} /></td>
+                                <td style={{ ...refTd, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.7 }}>{r.reason}</td>
+                                <td style={{ ...refTd, opacity: 0.6 }}>{r.date}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px' }}>
+                    <button
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        style={paginationBtn}
+                    >
+                        Previous
+                    </button>
+                    <span style={{ fontSize: '13px', opacity: 0.6 }}>
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        style={paginationBtn}
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const refTh: React.CSSProperties = {
+    padding: '12px 16px',
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    opacity: 0.5,
+    fontWeight: 600,
+};
+
+const refTd: React.CSSProperties = {
+    padding: '14px 16px',
+};
+
+const paginationBtn: React.CSSProperties = {
+    padding: '6px 14px',
+    borderRadius: '6px',
+    border: '1px solid var(--color-interface-outline)',
+    background: 'transparent',
+    color: 'var(--color-utility-primaryText)',
+    fontSize: '13px',
+    cursor: 'pointer',
+};
 
 export default function OrganizerRevenuePage() {
     return (

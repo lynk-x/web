@@ -76,6 +76,8 @@ export default function SafetySecurityPage() {
 
     return (
         <div className={styles.page}>
+            <title>Safety & Security | Lynk-X</title>
+            <meta name="description" content="Learn about Lynk-X safety protocols for organizers and attendees, including venue security and incident reporting." />
             <header className={styles.header}>
                 <h1 className={styles.title}>Safety & Security</h1>
                 <p className={styles.subtitle}>Our mission is to ensure every Lynk-X event is a safe, inclusive, and transparent experience for everyone involved.</p>
