@@ -281,7 +281,7 @@ function CampaignsContent() {
             <Tabs
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
-                tabs={[
+                options={[
                     { id: 'campaigns', label: 'Campaign List' },
                     { id: 'analytics', label: 'Cross-Campaign Stats' },
                     { id: 'assets', label: 'Ad Asset Library' },
