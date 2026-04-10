@@ -24,6 +24,7 @@ interface PayoutTableProps {
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
+    isLoading?: boolean;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -66,6 +67,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
     currentPage = 1,
     totalPages = 1,
     onPageChange,
+    isLoading = false,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -176,6 +178,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            isLoading={isLoading}
             emptyMessage="No payout requests found matching criteria."
         />
     );
