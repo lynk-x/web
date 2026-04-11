@@ -11,12 +11,6 @@ const LynkXFooter: React.FC = () => {
 
             <div className={styles.content}>
                 <div className={styles.topRow}>
-                    <div className={styles.brandColumn}>
-                        <Link href="/" className={styles.columnTitle} style={{ color: '#fff', fontSize: '20px' }}>Lynk-X</Link>
-                        <p className={styles.brandDesc}>
-                            Empowering event lifecycle through cryptographic ticketing, direct engagement, and niche-targeted advertising.
-                        </p>
-                    </div>
 
                     <div className={styles.column}>
                         <h4 className={styles.columnTitle}>Product</h4>

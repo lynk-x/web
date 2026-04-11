@@ -5,6 +5,21 @@ import HomeLayout from '@/components/public/HomeLayout';
 import LynkXFooter from '@/components/public/LynkXFooter';
 import styles from '../for.module.css';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+
+const fadeInUp = {
+    initial: { opacity: 0, y: 30 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+};
+
+const staggerContainer = {
+    animate: {
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
 
 export default function OrganizersLandingPage() {
     return (
@@ -12,86 +27,134 @@ export default function OrganizersLandingPage() {
             <div className={styles.landingPage}>
                 <div className={styles.backgroundGlow} />
                 
-                <section className={styles.hero}>
-                    <div className={styles.badge}>For Organizers</div>
-                    <h1 className={styles.title}>Experience Total Event Ownership</h1>
-                    <p className={styles.subtitle}>
-                        Stop being a guest on your own ticketing platform. Lynk-X gives you 100% control over your data, your revenue, and your community.
-                    </p>
-                    <div className={styles.ctaBox}>
+                <motion.section 
+                    className={styles.hero}
+                    initial="initial"
+                    animate="animate"
+                    variants={staggerContainer}
+                >
+                    <motion.div className={styles.badge} variants={fadeInUp}>For Organizers</motion.div>
+                    <motion.h1 className={styles.title} variants={fadeInUp}>Dominate the Event Lifecycle</motion.h1>
+                    <motion.p className={styles.subtitle} variants={fadeInUp}>
+                        The all-in-one platform designed for organizers who care about meaningful engagement. Secure ticketing, verified payouts, and a thriving social ecosystem.
+                    </motion.p>
+                    <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Start Hosting Free</Link>
                         <Link href="#features" className={styles.btnSecondary}>Explore Features</Link>
-                    </div>
-                </section>
+                    </motion.div>
+                </motion.section>
 
                 <section id="features" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Built for Scale, Designed for Humans</h2>
-                    <div className={styles.grid}>
-                        <div className={styles.card}>
+                    <motion.h2 
+                        className={styles.sectionTitle}
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                    >
+                        Built for Scale, Designed for Humans
+                    </motion.h2>
+                    <motion.div 
+                        className={styles.grid}
+                        initial="initial"
+                        whileInView="animate"
+                        viewport={{ once: true, margin: "-100px" }}
+                        variants={staggerContainer}
+                    >
+                        <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                             </div>
                             <h3 className={styles.cardTitle}>Direct Settlement</h3>
                             <p className={styles.cardDesc}>Receive your funds directly via MPESA or Bank Transfer. No waiting weeks for your hard-earned revenue.</p>
-                        </div>
-                        <div className={styles.card}>
+                        </motion.div>
+                        
+                        <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Attendee Data</h3>
-                            <p className={styles.cardDesc}>You own the relationship. Access full attendee profiles, contact lists, and custom questionnaire data instantly.</p>
-                        </div>
-                        <div className={styles.card}>
+                            <h3 className={styles.cardTitle}>Private Event Forums</h3>
+                            <p className={styles.cardDesc}>Every event includes a dedicated forum. Build hype through networking and live discussions before the first ticket is scanned.</p>
+                        </motion.div>
+                        
+                        <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7" /><path d="M22 4L12 14.01" /><path d="M22 4l-5 5" /><path d="M17 4h5v5" /></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Thompson Sampling Ads</h3>
-                            <p className={styles.cardDesc}>Our Bayesian ad engine automatically finds the best performing creative for your event, maximizing your reach.</p>
-                        </div>
-                    </div>
+                            <h3 className={styles.cardTitle}>Automated Payouts</h3>
+                            <p className={styles.cardDesc}>Streamline your cash flow. Our automated settlement system ensures your event revenue is processed and ready when you need it.</p>
+                        </motion.div>
+                    </motion.div>
                 </section>
 
                 <section className={styles.section}>
-                    <div className={styles.split}>
+                    <motion.div 
+                        className={styles.split}
+                        initial={{ opacity: 0, x: -50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <div className={styles.splitContent}>
+                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Total Event Mastery</h2>
+                            <div className={styles.valueProp}>
+                                <h4 className={styles.valueTitle}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+                                    Network-Wide Indexing
+                                </h4>
+                                <p className={styles.cardDesc}>Leverage the Lynk-X ecosystem. Your events are automatically indexed and recommended to active attendees across our entire social network.</p>
+                            </div>
+                            <div className={styles.valueProp}>
+                                <h4 className={styles.valueTitle}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+                                    Direct Payout Routing
+                                </h4>
+                                <p className={styles.cardDesc}>Get paid instantly. Revenue is routed directly to your platform wallet, where you can withdraw to your local bank accounts or mobile money at any time.</p>
+                            </div>
+                        </div>
+                        <div className={styles.splitMedia} />
+                    </motion.div>
+
+                    <motion.div 
+                        className={styles.split + ' ' + styles.splitRev}
+                        initial={{ opacity: 0, x: 50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
                         <div className={styles.splitContent}>
                             <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Control the Conversation</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                                    Integrated Event Forums
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                                    Broadcast Notifications
                                 </h4>
-                                <p className={styles.cardDesc}>Every event gets a dedicated forum. Build hype before the show and keep the community alive long after the lights go down.</p>
+                                <p className={styles.cardDesc}>Pin important news to the top of your event forums. Our integrated alert system ensures that no critical update goes unseen.</p>
                             </div>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                                    Anti-Fraud Protection
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+                                    Live Interaction Feeds
                                 </h4>
-                                <p className={styles.cardDesc}>Our cryptographic ticketing system ensures that one ticket equals one person. Say goodbye to scalpers and fake entries.</p>
+                                <p className={styles.cardDesc}>From pre-event polls to mid-event reactions, our forums turn passive attendees into active ambassadors for your event’s energy.</p>
                             </div>
                         </div>
                         <div className={styles.splitMedia} />
-                    </div>
-
-                    <div className={styles.split + ' ' + styles.splitRev}>
-                        <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Sponsorship Subsidies</h2>
-                            <p className={styles.subtitle} style={{ marginLeft: 0 }}>
-                                Invite sponsors to your event and earn up to 80% of their ad spend. We handle the placement; you keep the revenue.
-                            </p>
-                            <Link href="/for/advertisers" className={styles.btnSecondary} style={{ fontSize: '14px' }}>Learn About Sponsorships</Link>
-                        </div>
-                        <div className={styles.splitMedia} />
-                    </div>
+                    </motion.div>
                 </section>
 
-                <section className={styles.hero} style={{ padding: '80px 24px' }}>
+                <motion.section 
+                    className={styles.hero} 
+                    style={{ padding: '80px 24px' }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                >
                     <h2 className={styles.title} style={{ fontSize: '32px' }}>Ready to Scale Your Influence?</h2>
                     <p className={styles.subtitle}>Join hundreds of organizers building the future of event interactions.</p>
                     <div className={styles.ctaBox}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Create Event Now</Link>
                     </div>
-                </section>
+                </motion.section>
 
                 <LynkXFooter />
             </div>

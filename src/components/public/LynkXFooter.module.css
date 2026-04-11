@@ -62,23 +62,6 @@
     padding-left: 4px;
 }
 
-.brandColumn {
-    grid-column: span 2;
-}
-
-@media (max-width: 768px) {
-    .brandColumn {
-        grid-column: span 1;
-    }
-}
-
-.brandDesc {
-    font-size: 15px;
-    line-height: 1.6;
-    opacity: 0.5;
-    max-width: 320px;
-}
-
 /* Bottom Row */
 .bottomRow {
     padding-top: 32px;
