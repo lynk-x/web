@@ -27,6 +27,25 @@
     cursor: pointer;
 }
 
+.backButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-utility-primaryText);
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.backButton:hover {
+    transform: translateX(-4px);
+}
+
+.backText {
+    font-size: 16px;
+    letter-spacing: 0.02em;
+}
+
 .logo {
     display: flex;
     justify-content: center;

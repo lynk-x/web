@@ -6,11 +6,17 @@ import styles from '@/app/dashboard/admin/page.module.css';
 
 interface BackButtonProps {
     label?: string;
+    href?: string;
     className?: string;
     isDirty?: boolean;
 }
 
-export default function BackButton({ label = 'Back to Overview', className = '', isDirty = false }: BackButtonProps) {
+export default function BackButton({ 
+    label = 'Back to Overview', 
+    href,
+    className = '', 
+    isDirty = false 
+}: BackButtonProps) {
     const router = useRouter();
 
     const handleBack = () => {
@@ -18,7 +24,12 @@ export default function BackButton({ label = 'Back to Overview', className = '',
             const confirmLeave = window.confirm("You have unsaved changes. Are you sure you want to leave?");
             if (!confirmLeave) return;
         }
-        router.back();
+        
+        if (href) {
+            router.push(href);
+        } else {
+            router.back();
+        }
     };
 
     return (

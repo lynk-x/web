@@ -18,6 +18,7 @@ interface SubPageHeaderProps extends React.PropsWithChildren<{
     title: string;
     subtitle?: string;
     onBack?: () => void; // Optional custom back logic
+    backHref?: string;   // Optional specific link to go back to
     backLabel?: string;  // Custom label for back button
     isDirty?: boolean;   // For the dirty check in BackButton
     primaryAction?: HeaderAction;
@@ -32,6 +33,7 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
     title,
     subtitle,
     onBack,
+    backHref,
     backLabel = "Back",
     isDirty = false,
     primaryAction,
@@ -42,7 +44,7 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
     return (
         <header className={styles.header} style={{ marginBottom: '32px', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <BackButton label={backLabel} isDirty={isDirty} />
+                <BackButton label={backLabel} isDirty={isDirty} href={backHref} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <h1 className={styles.title} style={{ margin: 0 }}>{title}</h1>
