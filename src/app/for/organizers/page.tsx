@@ -10,13 +10,13 @@ import { motion } from 'framer-motion';
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
 };
 
 const staggerContainer = {
     animate: {
         transition: {
-            staggerChildren: 0.1
+            staggerChildren: 0.15
         }
     }
 };
@@ -92,7 +92,7 @@ export default function OrganizersLandingPage() {
                         initial={{ opacity: 0, x: -50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
                             <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Total Event Mastery</h2>
@@ -119,7 +119,7 @@ export default function OrganizersLandingPage() {
                         initial={{ opacity: 0, x: 50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
                             <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Control the Conversation</h2>

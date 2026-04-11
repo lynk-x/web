@@ -18,7 +18,6 @@ const LynkXFooter: React.FC = () => {
                             <li><Link href="/for/organizers" className={styles.link}>For Organizers</Link></li>
                             <li><Link href="/for/advertisers" className={styles.link}>For Advertisers</Link></li>
                             <li><Link href="/for/attendees" className={styles.link}>For Attendees</Link></li>
-                            <li><Link href="/resources/pricing" className={styles.link}>Pricing & Fees</Link></li>
                         </ul>
                     </div>
 
