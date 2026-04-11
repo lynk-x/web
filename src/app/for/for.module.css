@@ -1,0 +1,219 @@
+.landingPage {
+    min-height: 100vh;
+    background: var(--color-utility-primaryBackground);
+    color: var(--color-utility-primaryText);
+    overflow-x: hidden;
+}
+
+/* Background Effects */
+.backgroundGlow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% -20%, rgba(32, 249, 40, 0.08), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero {
+    position: relative;
+    padding: 120px 24px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    z-index: 1;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(32, 249, 40, 0.1);
+    border: 1px solid rgba(32, 249, 40, 0.2);
+    border-radius: var(--radius-full);
+    color: var(--color-brand-primary);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.title {
+    font-size: clamp(40px, 8vw, 72px);
+    line-height: 1.1;
+    font-weight: 800;
+    margin-bottom: 24px;
+    background: linear-gradient(to bottom, #fff, rgba(255, 255, 255, 0.7));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: clamp(18px, 3vw, 22px);
+    opacity: 0.7;
+    max-width: 800px;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+}
+
+.ctaBox {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btnPrimary {
+    padding: 16px 32px;
+    background: var(--color-brand-primary);
+    color: #000;
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 18px;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 24px rgba(32, 249, 40, 0.2);
+}
+
+.btnPrimary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(32, 249, 40, 0.4);
+}
+
+.btnSecondary {
+    padding: 16px 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 18px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btnSecondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Features Grid */
+.section {
+    position: relative;
+    padding: 80px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    z-index: 1;
+}
+
+.sectionTitle {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 48px;
+    text-align: center;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    border-radius: var(--radius-xl);
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(32, 249, 40, 0.2);
+    transform: translateY(-4px);
+}
+
+.cardIcon {
+    width: 48px;
+    height: 48px;
+    background: rgba(32, 249, 40, 0.1);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-brand-primary);
+}
+
+.cardTitle {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.cardDesc {
+    font-size: 16px;
+    opacity: 0.6;
+    line-height: 1.6;
+}
+
+/* Content Split Sections */
+.split {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    margin-bottom: 120px;
+}
+
+.splitRev {
+    flex-direction: row-reverse;
+}
+
+.splitContent {
+    flex: 1;
+}
+
+.splitMedia {
+    flex: 1;
+    position: relative;
+    aspect-ratio: 16/10;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-2xl);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5);
+}
+
+.splitMedia::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(32, 249, 40, 0.1), transparent);
+}
+
+.valueProp {
+    margin-bottom: 24px;
+}
+
+.valueTitle {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.valueTitle svg {
+    color: var(--color-brand-primary);
+}
+
+@media (max-width: 900px) {
+    .split {
+        flex-direction: column;
+        gap: 40px;
+    }
+}

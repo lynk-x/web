@@ -1,6 +1,6 @@
 .footer {
     width: 100%;
-    padding: var(--spacing-xl) var(--spacing-md);
+    padding: 80px var(--spacing-md) 40px;
     background: linear-gradient(180deg,
             var(--color-utility-primaryBackground) 0%,
             var(--color-interface-surface) 100%);
@@ -13,43 +13,101 @@
 .content {
     max-width: 1200px;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: center;
-    gap: var(--spacing-lg);
     position: relative;
     z-index: 1;
 }
 
-
-
-.ctaSection {
-    text-align: center;
-    margin-top: var(--spacing-md);
+.topRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 48px;
+    margin-bottom: 64px;
 }
 
-.ctaTitle {
-    font-family: var(--font-heading);
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    background: linear-gradient(90deg, #fff, #aaa);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.ctaLink {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
+.columnTitle {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
     color: var(--color-brand-primary);
-    font-weight: 500;
-    transition: gap 0.2s ease;
+    margin-bottom: 8px;
 }
 
-.ctaLink:hover {
-    gap: var(--spacing-sm);
+.linkList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.link {
+    font-size: 15px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.link:hover {
+    opacity: 1;
+    color: var(--color-brand-primary);
+    padding-left: 4px;
+}
+
+.brandColumn {
+    grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+    .brandColumn {
+        grid-column: span 1;
+    }
+}
+
+.brandDesc {
+    font-size: 15px;
+    line-height: 1.6;
+    opacity: 0.5;
+    max-width: 320px;
+}
+
+/* Bottom Row */
+.bottomRow {
+    padding-top: 32px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.copyright {
+    font-size: 14px;
+    opacity: 0.4;
+}
+
+.socialLinks {
+    display: flex;
+    gap: 20px;
+}
+
+.socialLink {
+    color: var(--color-utility-primaryText);
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+
+.socialLink:hover {
+    opacity: 1;
 }
 
 .backgroundGlow {
@@ -57,61 +115,9 @@
     bottom: -50%;
     left: 50%;
     transform: translateX(-50%);
-    width: 600px;
-    height: 300px;
+    width: 800px;
+    height: 400px;
     background: radial-gradient(circle, rgba(32, 249, 40, 0.05) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
-}
-
-@media (min-width: 768px) {
-    .content {
-        flex-direction: row;
-        justify-content: space-between;
-    }
-
-
-
-    .ctaSection {
-        margin-top: 0;
-        text-align: right;
-    }
-}
-
-
-.legalRow {
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: center;
-    gap: var(--spacing-md);
-}
-
-.legalLinks {
-    display: flex;
-    gap: var(--spacing-xl);
-}
-
-.legalLink {
-    font-size: 14px;
-    color: var(--color-utility-primaryText);
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-}
-
-.legalLink:hover {
-    opacity: 1;
-}
-
-.copyright {
-    font-size: 14px;
-    color: var(--color-utility-primaryText);
-    opacity: 0.4;
-}
-
-@media (min-width: 768px) {
-    .legalRow {
-        flex-direction: row;
-        justify-content: flex-start;
-        gap: var(--spacing-xl);
-    }
 }

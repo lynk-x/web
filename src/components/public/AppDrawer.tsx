@@ -93,6 +93,39 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
 
                     <div className={styles.menuDivider} />
 
+                    {/* Personas Section */}
+                    <div className={styles.menuSection}>
+                        <h3 className={styles.menuSectionTitle}>Lynk-X Solutions</h3>
+                        <ul className={styles.resourceList}>
+                            <li className={styles.resourceItem}>
+                                <Link href="/for/organizers" onClick={onClose}>
+                                    For Organizers
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                            <li className={styles.resourceItem}>
+                                <Link href="/for/advertisers" onClick={onClose}>
+                                    For Advertisers
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                            <li className={styles.resourceItem}>
+                                <Link href="/for/attendees" onClick={onClose}>
+                                    For Attendees
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className={styles.menuDivider} />
+
                     {/* Resources Section */}
                     <div className={styles.menuSection}>
                         <h3 className={styles.menuSectionTitle}>Information Resources</h3>
