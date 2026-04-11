@@ -1089,7 +1089,7 @@ export default function CreateCampaignForm({
                                         <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => {
                                             const flow = ['details', 'targeting', 'creative', 'review'];
                                             const idx = flow.indexOf(activeTab);
-                                            if (idx > 0) setActiveTab(flow[idx - 1]);
+                                            if (idx > 0) setActiveTab(flow[idx - 1] as any);
                                         }}>Back</button>
                                     )}
                                 </div>
@@ -1098,7 +1098,7 @@ export default function CreateCampaignForm({
                                         <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
                                             const flow = ['details', 'targeting', 'creative', 'review'];
                                             const idx = flow.indexOf(activeTab);
-                                            if (idx < flow.length - 1) setActiveTab(flow[idx + 1]);
+                                            if (idx < flow.length - 1) setActiveTab(flow[idx + 1] as any);
                                         }}>
                                             Next →
                                         </button>
