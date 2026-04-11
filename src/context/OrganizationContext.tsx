@@ -13,6 +13,10 @@ export interface Account {
     type: 'attendee' | 'organizer' | 'advertiser' | 'platform';
     wallet_balance?: number;
     wallet_currency?: string;
+    payout_routing?: {
+        method?: string;
+        [key: string]: any;
+    };
 }
 
 interface OrganizationContextType {
