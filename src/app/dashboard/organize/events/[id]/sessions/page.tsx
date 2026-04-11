@@ -213,7 +213,7 @@ export default function EventSessionsPage() {
             )}
 
             {isModalOpen && (
-                <Modal onClose={() => setIsModalOpen(false)} title={editingSession ? 'Edit Session' : 'Add Session'}>
+                <Modal isOpen={true} onClose={() => setIsModalOpen(false)} title={editingSession ? 'Edit Session' : 'Add Session'}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <label className={adminStyles.fieldLabel}>
                             Title *

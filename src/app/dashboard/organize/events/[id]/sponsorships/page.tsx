@@ -69,7 +69,8 @@ export default function EventSponsorshipsPage() {
         if (!eventId || !activeAccount) return;
         setIsLoading(true);
         try {
-            const [eventRes, invitesRes, sponsRes] = await Promise.all([
+            // Fetch event + its forum, then invitations
+            const [eventRes, forumRes, invitesRes] = await Promise.all([
                 supabase
                     .from('events')
                     .select('title')
@@ -77,23 +78,33 @@ export default function EventSponsorshipsPage() {
                     .eq('account_id', activeAccount.id)
                     .single(),
                 supabase
+                    .from('forums')
+                    .select('id')
+                    .eq('event_id', eventId)
+                    .maybeSingle(),
+                supabase
                     .from('sponsorship_invitations')
                     .select('*')
                     .eq('event_id', eventId)
                     .eq('organizer_account_id', activeAccount.id)
                     .order('created_at', { ascending: false }),
-                supabase
-                    .from('sponsorships')
-                    .select('*')
-                    .eq('forum_id', eventId) // sponsorships link through forum
-                    .order('created_at', { ascending: false }),
             ]);
 
             if (eventRes.data) setEventTitle(eventRes.data.title);
             if (invitesRes.error) throw invitesRes.error;
-
             setInvitations(invitesRes.data || []);
-            setSponsorships(sponsRes.data || []);
+
+            // Sponsorships link through forum_id, not event_id
+            if (forumRes.data?.id) {
+                const { data: sponsData } = await supabase
+                    .from('sponsorships')
+                    .select('*')
+                    .eq('forum_id', forumRes.data.id)
+                    .order('created_at', { ascending: false });
+                setSponsorships(sponsData || []);
+            } else {
+                setSponsorships([]);
+            }
         } catch (e: any) {
             showToast('Failed to load sponsorship data', 'error');
         } finally {
@@ -199,7 +210,7 @@ export default function EventSponsorshipsPage() {
                                                     {' · '}{Math.round(s.share_of_voice * 100)}% SOV
                                                 </p>
                                             </div>
-                                            <Badge variant="success">Active</Badge>
+                                            <Badge variant="success" label="Active" />
                                         </div>
                                     </div>
                                 ))}
@@ -234,7 +245,7 @@ export default function EventSponsorshipsPage() {
                                             <td style={{ fontWeight: 600 }}>{formatCurrency(inv.proposed_fee, inv.currency)}</td>
                                             <td>{inv.platform_fee_percent}%</td>
                                             <td>{formatDate(inv.expires_at)}</td>
-                                            <td><Badge variant={badge.variant}>{badge.label}</Badge></td>
+                                            <td><Badge variant={badge.variant} label={badge.label} /></td>
                                             <td>
                                                 {inv.status === 'pending' && (
                                                     <button
@@ -256,7 +267,7 @@ export default function EventSponsorshipsPage() {
             )}
 
             {isModalOpen && (
-                <Modal onClose={() => setIsModalOpen(false)} title="Invite Sponsor">
+                <Modal isOpen={true} onClose={() => setIsModalOpen(false)} title="Invite Sponsor">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <label className={adminStyles.fieldLabel}>
                             Sponsor Email *

@@ -175,7 +175,7 @@ export default function EventRefundsPage() {
                                     <td style={{ fontWeight: 600 }}>
                                         {r.amount != null ? formatCurrency(r.amount, r.currency || eventCurrency) : '—'}
                                     </td>
-                                    <td><Badge variant={badge.variant}>{badge.label}</Badge></td>
+                                    <td><Badge variant={badge.variant} label={badge.label} /></td>
                                     <td>
                                         {r.status === 'pending' && (
                                             <button
@@ -195,7 +195,7 @@ export default function EventRefundsPage() {
             )}
 
             {selectedRefund && (
-                <Modal onClose={() => setSelectedRefund(null)} title="Review Refund Request">
+                <Modal isOpen={true} onClose={() => setSelectedRefund(null)} title="Review Refund Request">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div style={{ background: 'var(--color-bg-subtle)', padding: 16, borderRadius: 8, fontSize: 14 }}>
                             <p style={{ margin: '0 0 8px', fontWeight: 600 }}>

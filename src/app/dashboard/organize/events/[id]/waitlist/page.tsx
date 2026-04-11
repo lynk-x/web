@@ -213,7 +213,7 @@ export default function EventWaitlistPage() {
                                     </td>
                                     <td>{entry.ticket_tier?.name || 'General'}</td>
                                     <td>{formatDate(entry.created_at)}</td>
-                                    <td><Badge variant={badge.variant}>{badge.label}</Badge></td>
+                                    <td><Badge variant={badge.variant} label={badge.label} /></td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             {entry.status === 'pending' && (

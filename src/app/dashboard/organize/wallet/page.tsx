@@ -121,7 +121,8 @@ export default function WalletPage() {
             <PageHeader
                 title="Wallet"
                 subtitle="Manage your account balances and fund your wallet"
-                action={{ label: '+ Top Up', onClick: () => setIsModalOpen(true) }}
+                actionLabel="+ Top Up"
+                onActionClick={() => setIsModalOpen(true)}
             />
 
             {isLoading ? (
@@ -173,7 +174,7 @@ export default function WalletPage() {
                                             <td>{formatDate(t.created_at)}</td>
                                             <td style={{ fontWeight: 600 }}>{formatCurrency(t.amount, t.currency)}</td>
                                             <td>{t.provider || '—'}</td>
-                                            <td><Badge variant={badge.variant}>{badge.label}</Badge></td>
+                                            <td><Badge variant={badge.variant} label={badge.label} /></td>
                                         </tr>
                                     );
                                 })}
@@ -184,7 +185,7 @@ export default function WalletPage() {
             )}
 
             {isModalOpen && (
-                <Modal onClose={() => setIsModalOpen(false)} title="Top Up Wallet">
+                <Modal isOpen={true} onClose={() => setIsModalOpen(false)} title="Top Up Wallet">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <label className={adminStyles.fieldLabel}>
                             Amount
