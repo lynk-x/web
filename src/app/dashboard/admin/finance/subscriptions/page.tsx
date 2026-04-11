@@ -221,7 +221,8 @@ export default function SubscriptionPlansPage() {
             <PageHeader
                 title="Subscription Plans"
                 subtitle="Manage subscription plans and pricing tiers"
-                action={{ label: '+ Create Plan', onClick: openCreate }}
+                actionLabel="+ Create Plan"
+                onActionClick={openCreate}
             />
 
             {isLoading ? (
@@ -238,9 +239,7 @@ export default function SubscriptionPlansPage() {
                                 <div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                         <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>{plan.display_name}</h3>
-                                        <Badge variant={plan.is_active ? 'success' : 'neutral'}>
-                                            {plan.is_active ? 'Active' : 'Inactive'}
-                                        </Badge>
+                                        <Badge variant={plan.is_active ? 'success' : 'neutral'} label={plan.is_active ? 'Active' : 'Inactive'} />
                                     </div>
                                     <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-tertiary)' }}>
                                         ID: {plan.id} · {plan.product_type} · {plan.interval}
@@ -322,7 +321,7 @@ export default function SubscriptionPlansPage() {
 
             {/* Plan Modal */}
             {isModalOpen && (
-                <Modal onClose={() => setIsModalOpen(false)} title={editingPlan ? 'Edit Plan' : 'Create Plan'}>
+                <Modal isOpen={true} onClose={() => setIsModalOpen(false)} title={editingPlan ? 'Edit Plan' : 'Create Plan'}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <label className={adminStyles.fieldLabel}>
                             Plan ID *
@@ -397,7 +396,7 @@ export default function SubscriptionPlansPage() {
 
             {/* Price Modal */}
             {isPriceModalOpen && (
-                <Modal onClose={() => setIsPriceModalOpen(false)} title="Add Price Tier">
+                <Modal isOpen={true} onClose={() => setIsPriceModalOpen(false)} title="Add Price Tier">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                             <label className={adminStyles.fieldLabel}>
