@@ -93,44 +93,8 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
 
                     <div className={styles.menuDivider} />
 
-                    {/* Resources Section */}
-                    <div className={styles.menuSection}>
-                        <h3 className={styles.menuSectionTitle}>Information Resources</h3>
-                        <ul className={styles.resourceList}>
-                            <li className={styles.resourceItem}>
-                                <Link href="/resources/guide" onClick={onClose}>
-                                    Hosting Guide
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
-                            <li className={styles.resourceItem}>
-                                <Link href="/resources/pricing" onClick={onClose}>
-                                    Pricing & Fees
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
-                            <li className={styles.resourceItem}>
-                                <Link href="/resources/safety" onClick={onClose}>
-                                    Safety & Security
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
-                            <li className={styles.resourceItem}>
-                                <Link href="/resources/help" onClick={onClose}>
-                                    Help Center
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
+                    {/* Flexible Spacer */}
+                    <div className={styles.spacer} />
 
                     {/* PWA Promo Card */}
                     <div className={styles.menuSection} style={{ padding: '0 8px' }}>
