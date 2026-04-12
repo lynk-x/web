@@ -43,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, hideCart = false, showBack
                         </svg>
                     </div>
                 )}
-                <div className={styles.logo}>
+                <Link href="/" className={styles.logo}>
                     <Image
                         src="/lynk-x_combined_logo.svg"
                         alt="Lynk-X"
@@ -52,7 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, hideCart = false, showBack
                         className={styles.logoImage}
                         priority
                     />
-                </div>
+                </Link>
                 <div className={styles.profile}>
                     {!hideCart && (
                         <Link href="/checkout" className={styles.profileIcon} aria-label="Shopping Cart">

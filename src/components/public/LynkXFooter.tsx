@@ -24,10 +24,10 @@ const LynkXFooter: React.FC = () => {
                     <div className={styles.column}>
                         <h4 className={styles.columnTitle}>Resources</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="/resources/guide" className={styles.link}>Hosting Guide</Link></li>
                             <li><Link href="/resources/help" className={styles.link}>Help Center</Link></li>
+                            <li><Link href="/resources/guide" className={styles.link}>Hosting Guide</Link></li>
                             <li><Link href="/resources/safety" className={styles.link}>Safety & Security</Link></li>
-                            <li><Link href="/organizer-agreement" className={styles.link}>Organizer Pact</Link></li>
+                            <li><Link href="/organizer-agreement" className={styles.link}>Organizer Agreement</Link></li>
                         </ul>
                     </div>
 
@@ -45,13 +45,13 @@ const LynkXFooter: React.FC = () => {
                 <div className={styles.bottomRow}>
                     <span className={styles.copyright}>© {new Date().getFullYear()} Lynk-x.app — All rights reserved.</span>
                     <div className={styles.socialLinks}>
-                        <a href="https://x.com/lynkx_app" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="X (Twitter)">
+                        <a href="https://x.com/lynkxapp" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="X (Twitter)">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M4 4l11.733 16H20L8.267 4z" />
                                 <path d="M4 20l6.768-6.768m2.46-2.46L20 4" />
                             </svg>
                         </a>
-                        <a href="https://instagram.com/lynkx_app" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="Instagram">
+                        <a href="https://instagram.com/lynk_xapp" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="Instagram">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />

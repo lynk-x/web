@@ -95,7 +95,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                         flexGrow: 1
                     }}>
                         <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#fff" }}>No events found matching your filters.</h3>
-                        <p style={{ fontSize: "14px", marginTop: "12px", opacity: 0.7 }}>Try adjusting your categories, dates, or search term.</p>
+                        <p style={{ fontSize: "14px", marginTop: "12px", opacity: 0.7 }}>Try adjusting your dates, categories or search terms.</p>
                     </div>
                 )}
             </div>
