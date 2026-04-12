@@ -6,6 +6,7 @@ import LynkXFooter from '@/components/public/LynkXFooter';
 import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { SlotCounterText } from '@/components/shared/SlotCounterText';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -34,7 +35,9 @@ export default function AttendeesLandingPage() {
                     variants={staggerContainer}
                 >
                     <motion.div className={styles.badge} variants={fadeInUp}>For Attendees</motion.div>
-                    <motion.h1 className={styles.title} variants={fadeInUp}>Every Event. Every Connection.</motion.h1>
+                    <motion.h1 className={styles.title} variants={fadeInUp}>
+                        <SlotCounterText text="Every Event. Every Connection." delay={0.5} />
+                    </motion.h1>
                     <motion.p className={styles.subtitle} variants={fadeInUp}>
                         Discover the events you love and the communities that make them special. Security, discovery and community—all in one place.
                     </motion.p>
