@@ -17,6 +17,10 @@ interface NavbarProps {
      * Whether to show a back button instead of the menu icon.
      */
     showBack?: boolean;
+    /**
+     * Whether to hide the menu/hamburger icon.
+     */
+    hideMenu?: boolean;
 }
 
 /**
@@ -25,7 +29,7 @@ interface NavbarProps {
  *
  * @param {NavbarProps} props - Component properties.
  */
-const Navbar: React.FC<NavbarProps> = ({ onMenuClick, hideCart = false, showBack = false }) => {
+const Navbar: React.FC<NavbarProps> = ({ onMenuClick, hideCart = false, showBack = false, hideMenu = false }) => {
     useCart();
     return (
         <nav className={styles.navbar}>
@@ -36,13 +40,13 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, hideCart = false, showBack
                             <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </Link>
-                ) : (
+                ) : !hideMenu ? (
                     <div className={styles.menuIcon} onClick={onMenuClick}>
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                )}
+                ) : <div style={{ width: 32 }} />}
                 <Link href="/" className={styles.logo}>
                     <Image
                         src="/lynk-x_combined_logo.svg"

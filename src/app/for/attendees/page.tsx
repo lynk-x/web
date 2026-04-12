@@ -24,7 +24,7 @@ const staggerContainer = {
 
 export default function AttendeesLandingPage() {
     return (
-        <HomeLayout>
+        <HomeLayout hideCart={true} hideMenu={true}>
             <div className={styles.landingPage}>
                 <div className={styles.backgroundGlow} />
                 

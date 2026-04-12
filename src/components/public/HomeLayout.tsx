@@ -14,15 +14,16 @@ interface HomeLayoutProps {
     categoryTags?: any[];
     hideCart?: boolean;
     showBack?: boolean;
+    hideMenu?: boolean;
 }
 
-const HomeLayout: React.FC<HomeLayoutProps> = ({ children, categories, tags, categoryTags, hideCart = false, showBack = false }) => {
+const HomeLayout: React.FC<HomeLayoutProps> = ({ children, categories, tags, categoryTags, hideCart = false, showBack = false, hideMenu = false }) => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     return (
         <FilterProvider>
             <div className={styles.page}>
-                <Navbar onMenuClick={() => setIsDrawerOpen(true)} hideCart={hideCart} showBack={showBack} />
+                <Navbar onMenuClick={() => setIsDrawerOpen(true)} hideCart={hideCart} showBack={showBack} hideMenu={hideMenu} />
                 <AppDrawer
                     isOpen={isDrawerOpen}
                     onClose={() => setIsDrawerOpen(false)}
