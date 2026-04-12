@@ -19,7 +19,7 @@ const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$!#";
 
 export const SlotCounterText = ({ text, className, delay = 0 }: SlotCounterTextProps) => {
     return (
-        <span className={className} style={{ display: 'inline-flex', overflow: 'hidden', height: '1.2em', verticalAlign: 'bottom' }}>
+        <span className={className} style={{ display: 'inline-flex', overflow: 'hidden', height: '1.2em', verticalAlign: 'middle', whiteSpace: 'pre' }}>
             {text.split('').map((char, i) => {
                 // Preserve spaces
                 if (char === ' ') {
