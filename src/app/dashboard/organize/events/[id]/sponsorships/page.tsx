@@ -12,6 +12,16 @@ import Modal from '@/components/shared/Modal';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 
+interface SponsorshipInvitation {
+    id: string;
+    event_id: string;
+    tier_id: string;
+    invitee_email: string;
+    status: string;
+    expires_at: string;
+    created_at: string;
+}
+
 interface SponsorshipTier {
     id: string;
     event_id: string;
@@ -40,6 +50,8 @@ interface Sponsorship {
     // Joined data from performance view (optional)
     total_impressions?: number;
     total_clicks?: number;
+    campaign_name?: string;
+    tier_name?: string;
 }
 
 const INVITE_STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
@@ -255,7 +267,7 @@ export default function EventSponsorshipsPage() {
                                         </div>
                                         <div style={{ display: 'flex', gap: 4 }}>
                                             {tier.target_placements.map(p => (
-                                                <Badge key={p} variant="secondary" label={p} style={{ fontSize: 10 }} />
+                                                <Badge key={p} variant="subtle" label={p} />
                                             ))}
                                         </div>
                                     </div>
