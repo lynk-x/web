@@ -78,7 +78,11 @@ export const SlotCounterText = ({ text, className, delay = 0 }: SlotCounterTextP
                                                 height: '1.1em', 
                                                 display: 'flex', 
                                                 alignItems: 'center', 
-                                                justifyContent: 'center' 
+                                                justifyContent: 'center',
+                                                background: 'linear-gradient(to bottom, #ffffff 10%, rgba(255, 255, 255, 0.6) 100%)',
+                                                WebkitBackgroundClip: 'text',
+                                                backgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent'
                                             }}
                                         >
                                             {r}
