@@ -6,6 +6,7 @@ import LynkXFooter from '@/components/public/LynkXFooter';
 import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { SlotCounterText } from '@/components/shared/SlotCounterText';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -34,7 +35,9 @@ export default function AdvertisersLandingPage() {
                     variants={staggerContainer}
                 >
                     <motion.div className={styles.badge} variants={fadeInUp}>For Advertisers</motion.div>
-                    <motion.h1 className={styles.title} variants={fadeInUp}>Precision Ad Placement. Zero Waste.</motion.h1>
+                    <motion.h1 className={styles.title} variants={fadeInUp}>
+                        <SlotCounterText text="Precision Ad Placement" delay={0.5} />
+                    </motion.h1>
                     <motion.p className={styles.subtitle} variants={fadeInUp}>
                         Reach your niche in the moments that matter. Lynk-X places your brand inside the event forums where your audience is already engaged.
                     </motion.p>

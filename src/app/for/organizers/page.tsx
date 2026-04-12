@@ -6,6 +6,7 @@ import LynkXFooter from '@/components/public/LynkXFooter';
 import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { SlotCounterText } from '@/components/shared/SlotCounterText';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -34,7 +35,9 @@ export default function OrganizersLandingPage() {
                     variants={staggerContainer}
                 >
                     <motion.div className={styles.badge} variants={fadeInUp}>For Organizers</motion.div>
-                    <motion.h1 className={styles.title} variants={fadeInUp}>Dominate the Event Lifecycle</motion.h1>
+                    <motion.h1 className={styles.title} variants={fadeInUp}>
+                        <SlotCounterText text="Dominate the Event Lifecycle" delay={0.5} />
+                    </motion.h1>
                     <motion.p className={styles.subtitle} variants={fadeInUp}>
                         The all-in-one platform designed for organizers who care about meaningful engagement. Secure ticketing, verified payouts and a thriving social ecosystem.
                     </motion.p>
