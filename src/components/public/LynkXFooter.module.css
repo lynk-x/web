@@ -18,10 +18,20 @@
 }
 
 .topRow {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 48px;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 80px;
     margin-bottom: 64px;
+}
+
+@media (max-width: 900px) {
+    .topRow {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 48px;
+        justify-content: flex-start;
+    }
 }
 
 .column {

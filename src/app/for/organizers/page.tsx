@@ -36,7 +36,7 @@ export default function OrganizersLandingPage() {
                     <motion.div className={styles.badge} variants={fadeInUp}>For Organizers</motion.div>
                     <motion.h1 className={styles.title} variants={fadeInUp}>Dominate the Event Lifecycle</motion.h1>
                     <motion.p className={styles.subtitle} variants={fadeInUp}>
-                        The all-in-one platform designed for organizers who care about meaningful engagement. Secure ticketing, verified payouts, and a thriving social ecosystem.
+                        The all-in-one platform designed for organizers who care about meaningful engagement. Secure ticketing, verified payouts and a thriving social ecosystem.
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Start Hosting Free</Link>

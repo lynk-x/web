@@ -65,7 +65,7 @@ export default function AttendeesLandingPage() {
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                             </div>
                             <h3 className={styles.cardTitle}>Find Your Tribe</h3>
-                            <p className={styles.cardDesc}>Join dedicated forums for every event. Talk to organizers, meet other attendees, and share photos—before, during, and after the show.</p>
+                            <p className={styles.cardDesc}>Join dedicated forums for every event. Talk to organizers, meet other attendees and share photos—before, during and after the show.</p>
                         </motion.div>
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
@@ -79,7 +79,7 @@ export default function AttendeesLandingPage() {
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
                             </div>
                             <h3 className={styles.cardTitle}>No App Required</h3>
-                            <p className={styles.cardDesc}>Lynk-X works perfectly on any device without installing a bulky app. Fast, reliable, and always in your pocket.</p>
+                            <p className={styles.cardDesc}>Lynk-X works perfectly on any device without installing a bulky app. Fast, reliable and always in your pocket.</p>
                         </motion.div>
                     </motion.div>
                 </section>
