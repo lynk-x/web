@@ -64,11 +64,7 @@ export const SlotCounterText = ({ text, className, delay = 0 }: SlotCounterTextP
                                         flexDirection: 'column', 
                                         position: 'absolute',
                                         left: 0,
-                                        right: 0,
-                                        background: 'linear-gradient(to bottom, #fff 20%, rgba(255, 255, 255, 0.5) 100%)',
-                                        WebkitBackgroundClip: 'text',
-                                        backgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent'
+                                        right: 0
                                     }}
                                 >
                                     {reel.map((r, idx) => (
