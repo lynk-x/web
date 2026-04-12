@@ -19,11 +19,11 @@ const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$!#";
 
 export const SlotCounterText = ({ text, className, delay = 0 }: SlotCounterTextProps) => {
     return (
-        <span className={className} style={{ display: 'inline-flex', overflow: 'hidden', height: '1.2em', verticalAlign: 'middle', whiteSpace: 'pre' }}>
+        <span className={className} style={{ display: 'inline-flex', overflow: 'hidden', height: '1.1em', verticalAlign: 'bottom' }}>
             {text.split('').map((char, i) => {
                 // Preserve spaces
                 if (char === ' ') {
-                    return <span key={i} style={{ width: '0.25em' }}>&nbsp;</span>;
+                    return <span key={i} style={{ width: '0.3em' }}>&nbsp;</span>;
                 }
 
                 // Create a reel of random characters ending with the target character
@@ -40,15 +40,15 @@ export const SlotCounterText = ({ text, className, delay = 0 }: SlotCounterTextP
                         style={{ 
                             position: 'relative', 
                             display: 'inline-block', 
-                            height: '1.2em', 
+                            height: '1.1em', 
                             width: 'auto',
-                            minWidth: '0.5em',
+                            minWidth: '0.65em',
                             textAlign: 'center'
                         }}
                     >
                         <motion.span
                             initial={{ y: 0 }}
-                            animate={{ y: `-${(reel.length - 1) * 1.2}em` }}
+                            animate={{ y: `-${(reel.length - 1) * 1.1}em` }}
                             transition={{
                                 duration: 1.2 + (i * 0.05), // Staggered duration for a more organic feel
                                 delay: delay + (i * 0.02),
@@ -66,7 +66,7 @@ export const SlotCounterText = ({ text, className, delay = 0 }: SlotCounterTextP
                                 <span 
                                     key={idx} 
                                     style={{ 
-                                        height: '1.2em', 
+                                        height: '1.1em', 
                                         display: 'flex', 
                                         alignItems: 'center', 
                                         justifyContent: 'center' 
