@@ -13,10 +13,34 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      // Intelligent Redirection logic:
+      // 1. If 'next' is provided and explicitly different from default, honor it (invites, resets).
+      // 2. If no 'next' (default), check if user is a new user with only an 'attendee' account.
+      // 3. If new, send to onboarding. Else, send to dashboard.
+      let finalRedirect = next
+      
+      if (next === '/verify-success' && user) {
+        const { data: memberships } = await supabase
+          .from('account_members')
+          .select('accounts!inner(type)')
+          .eq('user_id', user.id)
+          .neq('accounts.type', 'attendee')
+          .limit(1)
+
+        if (!memberships || memberships.length === 0) {
+          finalRedirect = '/onboarding'
+        } else {
+          finalRedirect = '/dashboard'
+        }
+      }
+
+      return NextResponse.redirect(`${origin}${finalRedirect}`)
     } else {
       return NextResponse.redirect(`${origin}/verify-success?error=${encodeURIComponent(error.message)}`)
     }
+
   }
 
   // If no code is present in the URL, someone probably just dragged the link incorrectly, or it's a legacy hash

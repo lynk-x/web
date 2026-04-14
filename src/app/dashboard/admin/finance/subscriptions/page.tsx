@@ -15,11 +15,19 @@ interface SubscriptionPlan {
     display_name: string;
     description: string | null;
     product_type: string;
+    pulse_tier: string | null;
     interval: string;
     is_active: boolean;
     metadata: Record<string, any>;
     created_at: string;
     subscription_prices: SubscriptionPrice[];
+    plan_features?: { feature_id: string }[];
+}
+
+interface SubscriptionFeature {
+    id: string;
+    display_name: string;
+    category: string;
 }
 
 interface SubscriptionPrice {
@@ -37,6 +45,7 @@ export default function SubscriptionPlansPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+    const [allFeatures, setAllFeatures] = useState<SubscriptionFeature[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Plan modal
@@ -46,9 +55,10 @@ export default function SubscriptionPlansPage() {
     const [displayName, setDisplayName] = useState('');
     const [description, setDescription] = useState('');
     const [productType, setProductType] = useState('attendee_premium');
+    const [pulseTier, setPulseTier] = useState<string | null>(null);
     const [interval, setInterval] = useState('month');
     const [isActive, setIsActive] = useState(true);
-    const [features, setFeatures] = useState('');
+    const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     // Price modal
@@ -65,7 +75,7 @@ export default function SubscriptionPlansPage() {
         try {
             const { data, error } = await supabase
                 .from('subscription_plans')
-                .select('*, subscription_prices(*)')
+                .select('*, subscription_prices(*), plan_features(feature_id)')
                 .order('created_at');
 
             if (error) throw error;
@@ -77,7 +87,24 @@ export default function SubscriptionPlansPage() {
         }
     }, [supabase, showToast]);
 
-    useEffect(() => { fetchPlans(); }, [fetchPlans]);
+    const fetchFeatures = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('subscription_features')
+                .select('id, display_name, category')
+                .order('category', { ascending: true });
+
+            if (error) throw error;
+            setAllFeatures(data || []);
+        } catch (e: any) {
+            showToast('Failed to load features', 'error');
+        }
+    }, [supabase, showToast]);
+
+    useEffect(() => { 
+        fetchPlans(); 
+        fetchFeatures();
+    }, [fetchPlans, fetchFeatures]);
 
     const openCreate = () => {
         setEditingPlan(null);
@@ -85,9 +112,10 @@ export default function SubscriptionPlansPage() {
         setDisplayName('');
         setDescription('');
         setProductType('attendee_premium');
+        setPulseTier(null);
         setInterval('month');
         setIsActive(true);
-        setFeatures('');
+        setSelectedFeatureIds([]);
         setIsModalOpen(true);
     };
 
@@ -97,9 +125,10 @@ export default function SubscriptionPlansPage() {
         setDisplayName(plan.display_name);
         setDescription(plan.description || '');
         setProductType(plan.product_type);
+        setPulseTier(plan.pulse_tier);
         setInterval(plan.interval);
         setIsActive(plan.is_active);
-        setFeatures((plan.metadata?.features || []).join('\n'));
+        setSelectedFeatureIds(plan.plan_features?.map(pf => pf.feature_id) || []);
         setIsModalOpen(true);
     };
 
@@ -111,34 +140,51 @@ export default function SubscriptionPlansPage() {
 
         setIsSaving(true);
         try {
-            const payload = {
+            const planPayload = {
                 id: planId.trim(),
                 display_name: displayName.trim(),
                 description: description.trim() || null,
                 product_type: productType,
+                pulse_tier: productType === 'business_pulse' ? pulseTier : null,
                 interval,
                 is_active: isActive,
                 metadata: {
-                    features: features.split('\n').map(f => f.trim()).filter(Boolean),
+                    // Legacy support for older components
+                    features: allFeatures
+                        .filter(f => selectedFeatureIds.includes(f.id))
+                        .map(f => f.display_name),
                 },
             };
 
+            // 1. Save/Update Plan
             if (editingPlan) {
-                const { id: _, ...updatePayload } = payload;
+                const { id: _, ...updatePayload } = planPayload;
                 const { error } = await supabase
                     .from('subscription_plans')
                     .update(updatePayload)
                     .eq('id', editingPlan.id);
                 if (error) throw error;
-                showToast('Plan updated', 'success');
             } else {
                 const { error } = await supabase
                     .from('subscription_plans')
-                    .insert(payload);
+                    .insert(planPayload);
                 if (error) throw error;
-                showToast('Plan created', 'success');
             }
 
+            // 2. Sync Plan Features (Delete existing, insert new)
+            await supabase.from('plan_features').delete().eq('plan_id', planId);
+            
+            if (selectedFeatureIds.length > 0) {
+                const featureMappings = selectedFeatureIds.map(fid => ({
+                    plan_id: planId,
+                    feature_id: fid,
+                    feature_value: 'active'
+                }));
+                const { error: featErr } = await supabase.from('plan_features').insert(featureMappings);
+                if (featErr) throw featErr;
+            }
+
+            showToast(editingPlan ? 'Plan updated' : 'Plan created', 'success');
             setIsModalOpen(false);
             fetchPlans();
         } catch (e: any) {
@@ -264,14 +310,17 @@ export default function SubscriptionPlansPage() {
                                 </div>
                             </div>
 
-                            {/* Features */}
-                            {plan.metadata?.features?.length > 0 && (
+                            {/* Linked Features (New Normalized System) */}
+                            {plan.plan_features && plan.plan_features.length > 0 && (
                                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                    {plan.metadata.features.map((f: string, i: number) => (
-                                        <span key={i} style={{ fontSize: 12, padding: '2px 8px', background: 'var(--color-bg-subtle)', borderRadius: 4 }}>
-                                            {f}
-                                        </span>
-                                    ))}
+                                    {plan.plan_features.map((pf: any, i: number) => {
+                                        const feat = allFeatures.find(f => f.id === pf.feature_id);
+                                        return (
+                                            <span key={i} style={{ fontSize: 11, padding: '2px 8px', background: 'var(--color-brand-primary)', color: '#000', borderRadius: 12, fontWeight: 600 }}>
+                                                {feat?.display_name || pf.feature_id}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             )}
 
@@ -357,11 +406,21 @@ export default function SubscriptionPlansPage() {
                                 Product Type
                                 <select className={adminStyles.select} value={productType} onChange={e => setProductType(e.target.value)}>
                                     <option value="attendee_premium">Attendee Premium</option>
-                                    <option value="organizer_pro">Organizer Pro</option>
+                                    <option value="business_pulse">Business Pulse</option>
                                     <option value="advertiser_boost">Advertiser Boost</option>
-                                    <option value="pulse_music">Pulse Music</option>
                                 </select>
                             </label>
+                            {productType === 'business_pulse' && (
+                                <label className={adminStyles.fieldLabel}>
+                                    Pulse Tier
+                                    <select className={adminStyles.select} value={pulseTier || ''} onChange={e => setPulseTier(e.target.value || null)}>
+                                        <option value="">None</option>
+                                        <option value="free">Discovery (Free)</option>
+                                        <option value="industry">Industry</option>
+                                        <option value="global">Global</option>
+                                    </select>
+                                </label>
+                            )}
                             <label className={adminStyles.fieldLabel}>
                                 Billing Interval
                                 <select className={adminStyles.select} value={interval} onChange={e => setInterval(e.target.value)}>
@@ -371,14 +430,39 @@ export default function SubscriptionPlansPage() {
                             </label>
                         </div>
                         <label className={adminStyles.fieldLabel}>
-                            Features (one per line)
-                            <textarea
-                                className={adminStyles.textarea}
-                                value={features}
-                                onChange={e => setFeatures(e.target.value)}
-                                rows={4}
-                                placeholder={"Priority support\nExclusive content\nAd-free experience"}
-                            />
+                            Linked Features
+                            <div style={{ 
+                                border: '1px solid var(--color-interface-outline)', 
+                                borderRadius: '8px', 
+                                padding: '12px', 
+                                maxHeight: '200px', 
+                                overflowY: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px'
+                            }}>
+                                {allFeatures.map(feat => (
+                                    <label key={feat.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '13px', cursor: 'pointer' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={selectedFeatureIds.includes(feat.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedFeatureIds(prev => [...prev, feat.id]);
+                                                else setSelectedFeatureIds(prev => prev.filter(id => id !== feat.id));
+                                            }}
+                                        />
+                                        <div>
+                                            <div style={{ fontWeight: 600 }}>{feat.display_name}</div>
+                                            <div style={{ fontSize: '11px', opacity: 0.6 }}>{feat.category}</div>
+                                        </div>
+                                    </label>
+                                ))}
+                                {allFeatures.length === 0 && (
+                                    <div style={{ fontSize: '13px', opacity: 0.5, textAlign: 'center', padding: '12px' }}>
+                                        No features available in database.
+                                    </div>
+                                )}
+                            </div>
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
                             <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />

@@ -31,8 +31,9 @@ const CheckoutView: React.FC = () => {
         fullName: '', email: '', phone: '', mpesaNumber: ''
     });
 
-    // Service fee fetched from system_config (per ticket)
-    const [baseFeePerTicket, setBaseFeePerTicket] = useState<number>(0);
+    // Platform commission (5% of subtotal)
+    const commissionRate = 0.05;
+
 
     // Promo state
     const [promoCode, setPromoCode] = useState('');
@@ -44,9 +45,10 @@ const CheckoutView: React.FC = () => {
 
     // Derived totals
     const subtotal = getCartTotal();
-    const totalServiceFee = itemCount * baseFeePerTicket;
+    const commissionAmount = subtotal * commissionRate;
     const discountAmount = appliedPromo?.discount || 0;
-    const total = Math.max(0, subtotal + totalServiceFee - discountAmount);
+    const total = Math.max(0, subtotal - discountAmount);
+
     const currency = items[0]?.currency || 'KES';
 
     // ── Init: restore payment state + pre-fill from session + read service fee ─
@@ -65,16 +67,8 @@ const CheckoutView: React.FC = () => {
                     }
                 }
 
-                // 1. Read platform base fee from system_config
-                const { data: feeConfig } = await supabase
-                    .from('system_config')
-                    .select('value')
-                    .eq('key', 'platform_base_fee_usd')
-                    .maybeSingle();
+                // 1. Service fee fetch removed as we use a flat 5% commission included in the price
 
-                if (feeConfig?.value) {
-                    setBaseFeePerTicket(parseFloat(String(feeConfig.value)));
-                }
 
                 // 2. Pre-fill contact form if user is already signed in
                 const { data: { user } } = await supabase.auth.getUser();
@@ -188,7 +182,8 @@ const CheckoutView: React.FC = () => {
 
             let discount: number;
             if (promo.type === 'free_entry') {
-                discount = subtotal + totalServiceFee;
+                discount = subtotal;
+
             } else if (promo.type === 'percent') {
                 discount = (subtotal * promo.value) / 100;
             } else {
@@ -359,12 +354,11 @@ const CheckoutView: React.FC = () => {
                                         <span>Subtotal</span>
                                         <span>{currency} {subtotal.toLocaleString()}</span>
                                     </div>
-                                    {baseFeePerTicket > 0 && (
-                                        <div className={styles.summaryItem}>
-                                            <span>Service Fee ({itemCount} &times; {currency} {baseFeePerTicket.toLocaleString()})</span>
-                                            <span>{currency} {totalServiceFee.toLocaleString()}</span>
-                                        </div>
-                                    )}
+                                    <div className={styles.summaryItem}>
+                                        <span>Included Service Fee</span>
+                                        <span className={styles.feeAmount}>{currency} {commissionAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+
 
                                     {appliedPromo ? (
                                         <div className={`${styles.summaryItem} ${styles.discount}`}>

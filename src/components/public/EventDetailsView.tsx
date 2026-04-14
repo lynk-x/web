@@ -269,7 +269,13 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             <p>No tickets currently available for this event.</p>
                         ) : (
                             ticketTiers.map(tier => (
-                                <div key={tier.id} className={styles.ticketItem} onClick={() => toggleTicket(tier.id)}>
+                                <motion.div 
+                                    key={tier.id} 
+                                    className={`${styles.ticketItem} ${selectedTicket === tier.id ? styles.ticketItemActive : ''}`} 
+                                    onClick={() => toggleTicket(tier.id)}
+                                    whileHover={{ scale: 1.01, borderColor: 'var(--color-brand-primary)' }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
                                     <div className={`${styles.checkbox} ${selectedTicket === tier.id ? styles.checkboxChecked : ''}`}>
                                         {selectedTicket === tier.id && (
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -279,34 +285,43 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                     </div>
                                     <div className={styles.ticketDetails}>
                                         <div className={styles.ticketNamePrice}>
-                                            {tier.display_name || tier.name} : {event.currency || 'KES'} {tier.price}
+                                            <span className={styles.tierName}>{tier.display_name || tier.name}</span>
+                                            <span className={styles.tierPrice}>{event.currency || 'KES'} {tier.price.toLocaleString()}</span>
                                         </div>
                                         <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
                                         {tier.capacity !== null && (
-                                            <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>
+                                            <div className={styles.remainingBadge}>
                                                 {Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))} remaining
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </motion.div>
                             ))
+
                         )}
                     </div>
 
                     {/* ── Ticket action footer (hidden when sold out) ── */}
                     {!isSoldOut && (
-                        <div className={styles.footerActions}>
+                        <motion.div 
+                            className={styles.footerActions}
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                        >
                             {selectedTicket !== null && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                                    <span style={{ fontSize: '14px', opacity: 0.7 }}>Qty</span>
-                                    <button
-                                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                        style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '18px' }}
-                                    >&minus;</button>
-                                    <span style={{ minWidth: '24px', textAlign: 'center' }}>{quantity}</span>
-                                    <button
-                                        onClick={() => setQuantity(q => q + 1)}
-                                        style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '18px' }}>+</button>
+                                <div className={styles.qtySelector}>
+                                    <span className={styles.qtyLabel}>Quantity</span>
+                                    <div className={styles.qtyControls}>
+                                        <button
+                                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                            className={styles.qtyBtn}
+                                        >&minus;</button>
+                                        <span className={styles.qtyValue}>{quantity}</span>
+                                        <button
+                                            onClick={() => setQuantity(q => q + 1)}
+                                            className={styles.qtyBtn}>+</button>
+                                    </div>
                                 </div>
                             )}
                             <button
@@ -316,9 +331,11 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 {selectedTicket !== null
                                     ? `Get ${quantity} ticket${quantity > 1 ? 's' : ''} \u2014 ${event.currency || 'KES'} ${((ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity).toLocaleString()}`
                                     : 'Select a ticket'}
+                                {selectedTicket !== null && <span className={styles.btnSubtext}>Proceed to secure checkout</span>}
                             </button>
-                        </div>
+                        </motion.div>
                     )}
+
                 </motion.div>
             </div>
 

@@ -11,6 +11,7 @@ import { formatCurrency } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 
 export default function AnalyticsPage() {
@@ -56,11 +57,15 @@ export default function AnalyticsPage() {
                 totalAccTicketsSold += eventSold;
                 totalAccCapacity += eventTotalCapacity;
 
+                const eventRev = eventRevenue;
+                const netRev = eventRev * 0.95;
+
                 return {
                     id: eventData.id,
                     event: eventData.title,
                     ticketsSold: eventSold,
-                    totalRevenue: eventRevenue,
+                    totalRevenue: eventRev,
+                    netRevenue: netRev,
                     conversionRate: eventTotalCapacity > 0 ? ((eventSold / eventTotalCapacity) * 100).toFixed(1) + '%' : 'N/A',
                     status: eventData.status
                 };
@@ -153,6 +158,25 @@ export default function AnalyticsPage() {
                 onActionClick={handleExport}
                 actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>}
             />
+
+            <div className={adminStyles.statsGrid} style={{ marginBottom: '24px' }}>
+                <StatCard 
+                    label="Gross Revenue" 
+                    value={formatCurrency(detailedInsights.reduce((sum, e) => sum + e.totalRevenue, 0), activeAccount?.wallet_currency)} 
+                    isLoading={isLoading}
+                />
+                <StatCard 
+                    label="Estimated Net" 
+                    value={formatCurrency(detailedInsights.reduce((sum, e) => sum + e.netRevenue, 0), activeAccount?.wallet_currency)} 
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard 
+                    label="Tickets Sold" 
+                    value={detailedInsights.reduce((sum, e) => sum + e.ticketsSold, 0)} 
+                    isLoading={isLoading}
+                />
+            </div>
 
             <div className="tour-analytics-range">
                 <TableToolbar

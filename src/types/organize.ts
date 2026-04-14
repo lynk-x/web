@@ -131,6 +131,8 @@ export interface PerformanceEvent {
     ticketsSold: number;
     /** Total revenue (sum of `quantity_sold` * `price`) */
     totalRevenue: number;
+    /** Estimated revenue after platform commission (95% of totalRevenue) */
+    netRevenue: number;
     /** Conversion rate string e.g. "4.2%" */
     conversionRate: string;
     status: string;

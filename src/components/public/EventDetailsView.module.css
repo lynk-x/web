@@ -243,12 +243,14 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 2px solid var(--color-interface-outline);
+    border: 2px solid rgba(255, 255, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 2px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
 }
+
 
 .checkboxChecked {
     background-color: var(--color-brand-primary);
@@ -260,23 +262,116 @@
 }
 
 .ticketNamePrice {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.tierName {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-utility-primaryText);
+}
+
+.tierPrice {
     font-weight: 600;
     font-size: 15px;
-    margin-bottom: 4px;
-    color: var(--color-utility-primaryText);
+    color: var(--color-brand-primary);
 }
 
 .ticketDescription {
     font-size: 13px;
     opacity: 0.6;
+    line-height: 1.4;
 }
+
+.remainingBadge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-brand-primary);
+    background: rgba(32, 249, 40, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+.ticketItemActive {
+    background-color: rgba(32, 249, 40, 0.03);
+    border-color: var(--color-brand-primary) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
 
 .footerActions {
     margin-top: var(--spacing-xl);
-    padding-top: var(--spacing-lg);
-    border-top: 1px solid var(--color-interface-outline);
+    padding: var(--spacing-lg);
+    background: var(--color-interface-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-interface-outline);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
+.qtySelector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.qtyLabel {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.qtyControls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.qtyBtn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-utility-primaryText);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.qtyBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-brand-primary);
+}
+
+.qtyValue {
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+}
+
+.btnSubtext {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.7;
+    margin-top: 4px;
+}
 
 @media (max-width: 768px) {
     .layoutGrid {
@@ -287,10 +382,9 @@
 
     .hero {
         aspect-ratio: 16/9;
-        /* Keep aspect ratio or change to 1/1 if needed */
     }
 
     .title {
-        font-size: 24px;
+        font-size: 28px;
     }
 }

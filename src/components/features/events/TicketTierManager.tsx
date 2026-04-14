@@ -83,6 +83,11 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                             value={ticket.price}
                                             onChange={(e) => onChange(index, 'price', e.target.value)}
                                         />
+                                        {ticket.price && parseFloat(ticket.price) > 0 && (
+                                            <p style={{ fontSize: '11px', color: 'var(--color-brand-primary)', marginTop: '6px', fontWeight: 500 }}>
+                                                You receive {currency} {(parseFloat(ticket.price) * 0.95).toFixed(2)} net
+                                            </p>
+                                        )}
                                         <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>
                                     </div>
 

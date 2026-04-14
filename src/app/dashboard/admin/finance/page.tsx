@@ -76,9 +76,9 @@ function FinanceContent() {
 
     // Global Stats state
     const [globalStats, setGlobalStats] = useState<any>({
-        grossVolume: null,
+        platformRevenue: null,
         pendingPayouts: null,
-        ticketRevenue: null,
+        ticketCommission: null,
         adRevenue: null,
         payoutRequestCount: null
     });
@@ -100,17 +100,21 @@ function FinanceContent() {
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('admin_stat_summary');
-            if (error) throw error;
+            const [statsRes, adsRes] = await Promise.all([
+                supabase.rpc('admin_stat_summary'),
+                supabase.from('ad_campaigns').select('spent_amount').is('deleted_at', null)
+            ]);
+
+            if (statsRes.error) throw statsRes.error;
+            const data = statsRes.data;
+            const adSpend = (adsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
     
             setGlobalStats({
-                grossVolume: data.gross_volume,
+                platformRevenue: data.commission_volume + adSpend,
                 pendingPayouts: data.pending_payouts,
-                commissionVolume: data.commission_volume,
+                ticketCommission: data.commission_volume,
                 payoutRequestCount: data.payout_count,
-                // These might need specialized RPCs later, but for now we follow the pattern
-                ticketRevenue: data.commission_volume * 10, // Inverse of 10% for mock accuracy
-                adRevenue: 0 
+                adRevenue: adSpend
             });
         } catch (error: any) {
             console.error('Error fetching global stats:', error);
@@ -589,30 +593,30 @@ function FinanceContent() {
 
             <div className={sharedStyles.statsGrid}>
                 <StatCard 
-                    label="Gross Volume" 
-                    value={globalStats.grossVolume !== null ? formatCurrency(globalStats.grossVolume) : null} 
-                    change="All completed transactions"
+                    label="Platform Revenue" 
+                    value={globalStats.platformRevenue !== null ? formatCurrency(globalStats.platformRevenue) : null} 
+                    change="Combined platform income"
                     trend="positive"
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 
-                    label="Pending Payouts" 
-                    value={globalStats.pendingPayouts !== null ? formatCurrency(globalStats.pendingPayouts) : null} 
-                    change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
-                    trend="neutral"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Ticket Revenue" 
-                    value={globalStats.ticketRevenue !== null ? formatCurrency(globalStats.ticketRevenue) : null} 
-                    change="Gross ticket sales"
+                    label="Ticket Commission" 
+                    value={globalStats.ticketCommission !== null ? formatCurrency(globalStats.ticketCommission) : null} 
+                    change="5% of gross ticket sales"
                     trend="positive"
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 
                     label="Ad Revenue" 
                     value={globalStats.adRevenue !== null ? formatCurrency(globalStats.adRevenue) : null} 
-                    change="Platform advertising"
+                    change="Advertising spend"
+                    trend="neutral"
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Pending Payouts" 
+                    value={globalStats.pendingPayouts !== null ? formatCurrency(globalStats.pendingPayouts) : null} 
+                    change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
                     trend="neutral"
                     isLoading={isStatsLoading} 
                 />
