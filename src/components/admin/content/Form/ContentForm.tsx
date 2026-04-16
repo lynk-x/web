@@ -24,7 +24,8 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
         slug: initialData?.slug || '',
         type: initialData?.type || 'page',
         status: initialData?.status || 'draft',
-        content: initialData?.content || ''
+        content: initialData?.info?.description || '',
+        info: initialData?.info || {}
     };
 
     const [formData, setFormData] = useState(defaultData);
@@ -116,7 +117,10 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
                 slug: formData.slug,
                 type: formData.type,
                 status: formData.status,
-                content: formData.content,
+                info: {
+                    ...formData.info,
+                    description: formData.content
+                },
                 updated_at: new Date().toISOString(),
                 // author_id would go here if we had auth context
             };

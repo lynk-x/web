@@ -24,15 +24,16 @@ export default function AcceptInviteClient({ token }: { token: string }) {
     const checkSessionAndInvite = async () => {
         setIsLoading(true);
 
-        // Check Auth
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
+        // getUser() re-validates with the auth server so the email we compare against
+        // the invite's invitee_email comes from a trusted source, not a cached JWT.
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
             setError("unauthenticated");
             setIsLoading(false);
             return;
         }
 
-        setUserEmail(session.user.email || null);
+        setUserEmail(user.email || null);
 
         try {
             // Just check if the token exists to show who invited them. We do this securely by not exposing raw data.
@@ -57,8 +58,8 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             }
 
             // Check if emails match (optional security step, but good DX)
-            if (session.user.email?.toLowerCase() !== data.invitee_email?.toLowerCase()) {
-                throw new Error(`This invite was sent to ${data.invitee_email}, but you are logged in as ${session.user.email}.`);
+            if (user.email?.toLowerCase() !== data.invitee_email?.toLowerCase()) {
+                throw new Error(`This invite was sent to ${data.invitee_email}, but you are logged in as ${user.email}.`);
             }
 
             setInviteDetails(data);
@@ -107,7 +108,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
                     <p className={styles.description}>
                         You need to be logged into Lynk-X to accept an organization invite.
                     </p>
-                    <Link href={`/login?next=/invite/accept?token=${token}`} className={styles.acceptBtn} style={{ textDecoration: 'none' }}>
+                    <Link href={`/login?next=${encodeURIComponent(`/invite/accept?token=${token}`)}`} className={styles.acceptBtn} style={{ textDecoration: 'none' }}>
                         Go to Login
                     </Link>
                 </div>

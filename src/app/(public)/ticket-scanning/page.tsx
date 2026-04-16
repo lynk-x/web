@@ -86,20 +86,22 @@ export default function TicketScanningPage() {
     // 1. Auth & Fetch Events
     useEffect(() => {
         async function fetchAuthorizedEvents() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
+            // getUser() re-validates with the auth server — required for access control.
+            // getSession() only reads the cached JWT and must not be used for privilege checks.
+            const { data: { user: authedUser } } = await supabase.auth.getUser();
+            if (!authedUser) {
                 // Not logged in -> Show PIN login screen
                 setIsLoading(false);
                 return;
             }
-            setUser(session.user);
+            setUser(authedUser);
 
             try {
                 // Determine accounts where user is owner, admin, or scanner
                 const { data: memberships } = await supabase
                     .from('account_members')
                     .select('account_id')
-                    .eq('user_id', session.user.id)
+                    .eq('user_id', authedUser.id)
                     .in('role_slug', ['owner', 'admin', 'staff']);
                 
                 if (!memberships || memberships.length === 0) {

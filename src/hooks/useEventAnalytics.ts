@@ -24,6 +24,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { createEventsRepository } from '@/lib/repositories';
 
 export interface EventAnalytics {
     tickets_sold: number;
@@ -60,17 +61,16 @@ export function useEventAnalytics(eventId: string | null | undefined): UseEventA
         setError(null);
 
         (async () => {
-            const { data, error: rpcError } = await supabase.rpc('get_event_analytics', {
-                p_event_id: eventId,
-            });
+            const eventsRepo = createEventsRepository(supabase);
+            const { data, error: repoError } = await eventsRepo.getAnalytics(eventId);
 
             if (cancelled) return;
 
-            if (rpcError) {
-                setError(rpcError.message);
+            if (repoError) {
+                setError(repoError.message);
                 setAnalytics(null);
             } else {
-                setAnalytics(data as EventAnalytics);
+                setAnalytics(data);
             }
             setIsLoading(false);
         })();

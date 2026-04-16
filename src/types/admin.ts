@@ -63,7 +63,7 @@ export interface ContentItem {
     author: string;
     lastUpdated: string;
     status: 'published' | 'draft' | 'archived';
-    content?: string;
+    info?: Record<string, any>;
 }
 
 export interface ForumThread {

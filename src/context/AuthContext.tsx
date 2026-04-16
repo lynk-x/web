@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { createUsersRepository } from '@/lib/repositories';
 import type { User } from '@supabase/supabase-js';
 
 interface UserProfile {
@@ -30,12 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchProfile = async (userId: string) => {
-        const { data, error } = await supabase
-            .from('user_profile')
-            .select('id, email, user_name, full_name, avatar_url')
-            .eq('id', userId)
-            .single();
-
+        const usersRepo = createUsersRepository(supabase);
+        const { data, error } = await usersRepo.getProfile(userId);
         if (error) {
             console.error('Error fetching profile:', error);
             return null;

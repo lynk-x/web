@@ -102,7 +102,16 @@ const CheckoutView: React.FC = () => {
         if (!currentCheckoutId || paymentStatus !== 'waiting') return;
 
         console.log('[Checkout] Listening for payment completion:', currentCheckoutId);
-        
+
+        // Time-out after 10 minutes — if the Daraja webhook never fires the user
+        // would otherwise be stuck on the spinner indefinitely.
+        const timeoutId = setTimeout(() => {
+            sessionStorage.removeItem('lynk-x-payment');
+            setPaymentStatus('failed');
+            setPaymentError('Payment confirmation timed out. Check your M-Pesa messages — if you were debited please contact support with your M-Pesa reference.');
+            setIsSubmitting(false);
+        }, 10 * 60 * 1000);
+
         const channel = supabase
             .channel(`payment_check_${currentCheckoutId}`)
             .on(
@@ -116,14 +125,17 @@ const CheckoutView: React.FC = () => {
                 (payload) => {
                     const newStatus = payload.new.status;
                     console.log('[Checkout] Transaction status updated:', newStatus);
-                    
+
                     if (newStatus === 'completed') {
+                        clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
                         setPaymentStatus('completed');
                         clearCart();
-                        const orderRef = 'LX-' + Date.now().toString(36).toUpperCase();
-                        router.push(`/checkout/confirmation?order_ref=${orderRef}&items=${items.length}`);
+                        // Use the M-Pesa checkout request ID as the order reference so
+                        // support teams can look it up in the transactions table.
+                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${items.length}`);
                     } else if (newStatus === 'failed' || newStatus === 'cancelled') {
+                        clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
                         setPaymentStatus('failed');
                         setPaymentError('Payment was not completed. Please try again or use a different number.');
@@ -134,6 +146,7 @@ const CheckoutView: React.FC = () => {
             .subscribe();
 
         return () => {
+            clearTimeout(timeoutId);
             supabase.removeChannel(channel);
         };
     }, [currentCheckoutId, paymentStatus, supabase, router, items.length, clearCart]);

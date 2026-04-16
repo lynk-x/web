@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import type { EventCategory, Tag, CategoryTag as RepoCategoryTag } from '@/lib/repositories/reference.repository';
 
 interface Category { id: string; display_name: string; }
 interface TagSuggestion { id: string; name: string; }
@@ -44,16 +45,17 @@ export function useEventFormReference({
         const fetchReferenceData = async () => {
             setIsLoadingReference(true);
             const { createClient } = await import('@/utils/supabase/client');
-            const supabase = createClient();
+            const { createReferenceRepository } = await import('@/lib/repositories');
+            const refRepo = createReferenceRepository(createClient());
 
             const [tagsRes, catsRes, catTagsRes] = await Promise.all([
-                supabase.from('tags').select('id, name').eq('is_active', true),
-                supabase.from('event_categories').select('id, display_name').order('display_name'),
-                supabase.from('category_tags').select('category_id, tag_id'),
+                refRepo.getTags(),
+                refRepo.getEventCategories(),
+                refRepo.getCategoryTags(),
             ]);
 
-            if (tagsRes.data) setTagSuggestions(tagsRes.data);
-            if (catsRes.data) setCategories(catsRes.data);
+            if (tagsRes.data) setTagSuggestions(tagsRes.data.map((t) => ({ id: t.id, name: t.name })));
+            if (catsRes.data) setCategories(catsRes.data.map((c) => ({ id: c.id, display_name: c.display_name })));
             if (catTagsRes.data) setCategoryTags(catTagsRes.data);
             setIsLoadingReference(false);
         };

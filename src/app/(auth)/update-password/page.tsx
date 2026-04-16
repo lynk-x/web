@@ -16,10 +16,11 @@ export default function UpdatePasswordPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // Confirm there is an active session (which the email link sets)
-        // If not, we warn the user, but still allow them to attempt if they just got here.
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (!session) {
+        // Confirm there is an active session (which the email link sets).
+        // getUser() re-validates with the auth server so we correctly detect
+        // expired or missing recovery sessions rather than trusting a cached JWT.
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user) {
                 setError("Warning: You do not appear to have an active recovery session. Please request a new link if the update fails.");
             }
         });
