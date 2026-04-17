@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import styles from './InvoicePage.module.css';
 import { useToast } from '@/components/ui/Toast';
 import BackButton from '@/components/shared/BackButton';
