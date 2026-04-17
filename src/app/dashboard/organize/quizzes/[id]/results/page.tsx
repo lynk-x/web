@@ -82,7 +82,10 @@ export default function QuizResultsPage() {
                 .eq('questionnaire_id', quizId);
             if (rErr) throw rErr;
 
-            const responses = (responseData || []) as Response[];
+            const responses = (responseData || []).map((r: any) => ({
+                ...r,
+                user_profile: Array.isArray(r.user_profile) ? r.user_profile[0] : r.user_profile
+            })) as Response[];
             setResponseCount(responses.length);
 
             // 3. Build leaderboard — group by user, sum scores
