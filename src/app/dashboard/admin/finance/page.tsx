@@ -690,6 +690,7 @@ function FinanceContent() {
                 isOpen={isPayoutRejectModalOpen}
                 onClose={() => { setIsPayoutRejectModalOpen(false); setPendingRejectPayout(null); }}
                 onConfirm={confirmRejectPayout}
+                title="Reject Payout Request"
             />
 
             <Modal
