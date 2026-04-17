@@ -10,6 +10,7 @@ import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import StatCard from '@/components/dashboard/StatCard';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
+import Modal from '@/components/shared/Modal';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 
 interface CheckInLog {
@@ -31,6 +32,9 @@ export default function CheckInLogsPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats] = useState<any>({ scanned: null, remaining: null, rejected: null });
+    const [showManualModal, setShowManualModal] = useState(false);
+    const [manualCode, setManualCode] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
 
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
@@ -63,10 +67,11 @@ export default function CheckInLogsPage() {
             setLogs(mappedLogs);
 
             const scanned = mappedLogs.filter(l => l.status === 'used').length;
+            const rejected = mappedLogs.filter(l => l.status === 'rejected').length;
             setStats({
                 scanned,
                 remaining: mappedLogs.length - scanned,
-                rejected: 0
+                rejected,
             });
 
         } catch (err) {
@@ -96,14 +101,11 @@ export default function CheckInLogsPage() {
     }, [eventId, fetchLogs, supabase]);
 
     const handleManualCheckIn = async () => {
-        const code = window.prompt("Enter Ticket Code:");
-        if (!code) return;
-
-        showToast("Verifying ticket...", "info");
-
+        if (!manualCode.trim()) return;
+        setIsVerifying(true);
         try {
             const { data, error } = await supabase.rpc('verify_and_use_ticket', {
-                p_ticket_code: code,
+                p_ticket_code: manualCode.trim(),
                 p_event_id: eventId
             });
 
@@ -111,13 +113,17 @@ export default function CheckInLogsPage() {
 
             const result = data[0];
             if (result.status === 'success') {
-                showToast(`Verified! Welcome ${result.attendee_name}`, "success");
+                showToast(`Verified! Welcome ${result.attendee_name}`, 'success');
+                setShowManualModal(false);
+                setManualCode('');
                 fetchLogs();
             } else {
-                showToast(result.message, "error");
+                showToast(result.message, 'error');
             }
         } catch (err: any) {
-            showToast(err.message || "Verification failed", "error");
+            showToast(err.message || 'Verification failed', 'error');
+        } finally {
+            setIsVerifying(false);
         }
     };
 
@@ -171,7 +177,7 @@ export default function CheckInLogsPage() {
                 badge={{ label: 'Live Feed', variant: 'success' }}
                 primaryAction={{
                     label: 'Manual Check-in',
-                    onClick: handleManualCheckIn,
+                    onClick: () => setShowManualModal(true),
                     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                 }}
                 secondaryAction={{
@@ -216,6 +222,43 @@ export default function CheckInLogsPage() {
                     emptyMessage="No attendees found for this event."
                 />
             </div>
+
+            <Modal
+                isOpen={showManualModal}
+                onClose={() => { setShowManualModal(false); setManualCode(''); }}
+                title="Manual Check-in"
+                size="small"
+                footer={
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                            className={adminStyles.secondaryButton}
+                            onClick={() => { setShowManualModal(false); setManualCode(''); }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className={adminStyles.primaryButton}
+                            onClick={handleManualCheckIn}
+                            disabled={isVerifying || !manualCode.trim()}
+                        >
+                            {isVerifying ? 'Verifying...' : 'Verify & Check In'}
+                        </button>
+                    </div>
+                }
+            >
+                <p style={{ margin: '0 0 16px', color: 'var(--color-text-secondary)', fontSize: 14 }}>
+                    Enter the ticket code printed on the attendee&apos;s ticket (e.g. T-A3K9-10013).
+                </p>
+                <input
+                    className={adminStyles.input}
+                    placeholder="T-XXXX-NNNNN"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleManualCheckIn(); }}
+                    autoFocus
+                    style={{ fontFamily: 'monospace', letterSpacing: 2 }}
+                />
+            </Modal>
         </div>
     );
 }

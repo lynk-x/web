@@ -169,7 +169,10 @@ export default function EventRefundsPage() {
                                             ? r.user_profile.full_name || `@${r.user_profile.user_name}`
                                             : r.user_id.slice(0, 8) + '...'}
                                     </td>
-                                    <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <td
+                                        title={r.reason || undefined}
+                                        style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: r.reason ? 'help' : 'default' }}
+                                    >
                                         {r.reason || '—'}
                                     </td>
                                     <td style={{ fontWeight: 600 }}>
