@@ -19,7 +19,7 @@ export default async function ResourceIndex() {
 
     const { data: resources } = await supabase
         .from('cms_pages')
-        .select('title, slug, info')
+        .select('title, slug, content')
         .eq('type', 'resource')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
@@ -36,7 +36,7 @@ export default async function ResourceIndex() {
                 {displayResources.map((item, idx) => (
                     <Link key={idx} href={item.slug} className={styles.categoryCard}>
                         <h2 className={styles.cardTitle}>{item.title}</h2>
-                        <p className={styles.cardDesc}>{item.info?.description}</p>
+                        <p className={styles.cardDesc}>{item.content?.description}</p>
                         <span className={styles.cardLink}>Learn More →</span>
                     </Link>
                 ))}

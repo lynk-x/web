@@ -26,7 +26,7 @@ export default async function PricingFeesPage() {
     return (
         <ResourceRenderer 
             title={page.title} 
-            info={page.info as any} 
+            info={page.content as any} 
         />
     );
 }

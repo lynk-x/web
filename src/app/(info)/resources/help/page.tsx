@@ -28,7 +28,7 @@ export default async function HelpCenterPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>
             <ResourceRenderer 
                 title={page.title} 
-                info={page.info as any} 
+                info={page.content as any} 
             />
             
             <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
