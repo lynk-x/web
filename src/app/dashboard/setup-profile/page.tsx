@@ -33,8 +33,8 @@ export default function ProfileSetupPage() {
                     });
                     if (rpcError) throw rpcError;
                     setIsUsernameAvailable(data);
-                } catch (err) {
-                    console.error('Error checking username:', err);
+                } catch {
+                    setIsUsernameAvailable(null);
                 } finally {
                     setIsCheckingUsername(false);
                 }

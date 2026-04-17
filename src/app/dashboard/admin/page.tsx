@@ -30,7 +30,6 @@ export default function AdminDashboard() {
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
         if (error) {
-            console.warn('Failed to load admin summary:', error.message);
             return;
         }
         if (data) setSummary(data);

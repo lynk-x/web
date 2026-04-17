@@ -19,8 +19,10 @@ export default function CreateFeatureFlagPage() {
         description: '',
         is_enabled: false,
         rollout_percent: 100,
-        platforms: ['web', 'ios', 'android']
+        platforms: ['web', 'ios', 'android'],
+        allowed_regions: [] as string[],
     });
+    const [regionInput, setRegionInput] = useState('');
 
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -40,6 +42,7 @@ export default function CreateFeatureFlagPage() {
                     is_enabled: formData.is_enabled,
                     rollout_percent: formData.rollout_percent,
                     platforms: formData.platforms,
+                    allowed_regions: formData.allowed_regions,
                     updated_at: new Date().toISOString()
                 }]);
 
@@ -62,6 +65,17 @@ export default function CreateFeatureFlagPage() {
                 ? prev.platforms.filter(p => p !== platform)
                 : [...prev.platforms, platform]
         }));
+    };
+
+    const addRegion = () => {
+        const code = regionInput.trim().toUpperCase();
+        if (code.length !== 2 || formData.allowed_regions.includes(code)) return;
+        setFormData(prev => ({ ...prev, allowed_regions: [...prev.allowed_regions, code] }));
+        setRegionInput('');
+    };
+
+    const removeRegion = (code: string) => {
+        setFormData(prev => ({ ...prev, allowed_regions: prev.allowed_regions.filter(r => r !== code) }));
     };
 
     return (
@@ -99,6 +113,18 @@ export default function CreateFeatureFlagPage() {
                     />
                 </div>
 
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Enabled</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', cursor: 'pointer' }}>
+                        <input
+                            type="checkbox"
+                            checked={formData.is_enabled}
+                            onChange={e => setFormData({ ...formData, is_enabled: e.target.checked })}
+                        />
+                        <span style={{ fontSize: '14px' }}>Enable flag immediately after creation</span>
+                    </label>
+                </div>
+
                 <div className={styles.formRow} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Rollout Percentage (%)</label>
@@ -126,6 +152,35 @@ export default function CreateFeatureFlagPage() {
                                 </button>
                             ))}
                         </div>
+                    </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Allowed Regions</label>
+                    <p style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px' }}>
+                        ISO 3166-1 alpha-2 codes (e.g. KE, NG, ZA). Leave empty to allow all regions.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <input
+                            className={styles.input}
+                            placeholder="e.g. KE"
+                            maxLength={2}
+                            value={regionInput}
+                            onChange={e => setRegionInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRegion(); } }}
+                            style={{ maxWidth: '120px' }}
+                        />
+                        <button type="button" className={styles.chip} onClick={addRegion}>Add</button>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {formData.allowed_regions.map(code => (
+                            <span key={code} className={styles.chipActive} style={{ cursor: 'pointer' }} onClick={() => removeRegion(code)}>
+                                {code} ✕
+                            </span>
+                        ))}
+                        {formData.allowed_regions.length === 0 && (
+                            <span style={{ fontSize: '12px', opacity: 0.4 }}>All regions</span>
+                        )}
                     </div>
                 </div>
             </form>

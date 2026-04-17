@@ -97,7 +97,7 @@ export default function EventDetailPage() {
                     .select('amount')
                     .eq('event_id', id)
                     .eq('status', 'completed')
-                    .in('category', ['hold', 'incoming'])
+                    .eq('category', 'incoming')
                     .eq('reason', 'ticket_sale'),
                 supabase
                     .from('ticket_scan_logs')

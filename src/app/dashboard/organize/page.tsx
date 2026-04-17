@@ -64,9 +64,10 @@ export default function DashboardOverview() {
                 const activeEvents = allEvents.filter((ev: any) => ev.status === 'published' || ev.status === 'active').length;
                 
                 const now = new Date();
+                const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
                 const upcomingEvents = allEvents.filter((ev: any) => {
                     const startsAt = new Date(ev.starts_at);
-                    return startsAt > now && (ev.status === 'published' || ev.status === 'active');
+                    return startsAt > now && startsAt <= thirtyDaysFromNow && (ev.status === 'published' || ev.status === 'active');
                 }).length;
 
                 const teamSize = teamRes.count || 0;

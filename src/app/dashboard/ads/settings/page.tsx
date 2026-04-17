@@ -28,6 +28,8 @@ function AdsSettingsContent() {
     const [pendingTab, setPendingTab] = useState<string | null>(null);
 
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+    const [isDeactivating, setIsDeactivating] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -154,6 +156,38 @@ function AdsSettingsContent() {
     };
 
 
+    const handleDeactivate = async () => {
+        if (!activeAccount) return;
+        setIsDeactivating(true);
+        try {
+            // Pause all active campaigns
+            const { error: campaignError } = await supabase
+                .from('ad_campaigns')
+                .update({ status: 'paused', updated_at: new Date().toISOString() })
+                .eq('account_id', activeAccount.id)
+                .eq('status', 'active');
+
+            if (campaignError) throw campaignError;
+
+            // Set account to temporarily_suspended
+            const { error: accountError } = await supabase
+                .from('accounts')
+                .update({ status: 'temporarily_suspended' })
+                .eq('id', activeAccount.id);
+
+            if (accountError) throw accountError;
+
+            showToast('Ads account deactivated. All active campaigns have been paused.', 'success');
+            setIsDeactivateModalOpen(false);
+            if (refreshAccounts) await refreshAccounts();
+            router.push('/dashboard/ads');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to deactivate account.', 'error');
+        } finally {
+            setIsDeactivating(false);
+        }
+    };
+
     return (
         <div className={adminStyles.container}>
             <PageHeader
@@ -248,9 +282,10 @@ function AdsSettingsContent() {
                             <button
                                 type="button"
                                 className={adminStyles.btnDanger}
-                                onClick={() => showToast('Deactivation requires support contact.', 'error')}
+                                onClick={() => setIsDeactivateModalOpen(true)}
+                                disabled={isDeactivating}
                             >
-                                Deactivate Ads Account
+                                {isDeactivating ? 'Deactivating...' : 'Deactivate Ads Account'}
                             </button>
                         </div>
                     </>
@@ -266,6 +301,16 @@ function AdsSettingsContent() {
                 title="Unsaved Changes"
                 message="You have unsaved changes. Are you sure you want to leave this tab and lose your progress?"
                 confirmLabel="Leave Tab"
+                variant="danger"
+            />
+
+            <ConfirmationModal
+                isOpen={isDeactivateModalOpen}
+                onClose={() => setIsDeactivateModalOpen(false)}
+                onConfirm={handleDeactivate}
+                title="Deactivate Ads Account"
+                message="This will pause all active campaigns and suspend your ads account. You will need to contact support to reactivate. Are you sure?"
+                confirmLabel={isDeactivating ? 'Deactivating...' : 'Yes, Deactivate'}
                 variant="danger"
             />
         </div>

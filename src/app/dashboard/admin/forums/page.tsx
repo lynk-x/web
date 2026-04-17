@@ -88,7 +88,6 @@ function ForumsContent() {
 
                 setThreads(mappedThreads);
             } catch (err) {
-                console.error('Error fetching forums:', err);
                 showToast('Failed to load forum management data.', 'error');
             } finally {
                 setIsLoading(false);
@@ -182,10 +181,6 @@ function ForumsContent() {
         } catch (err) {
             showToast('Failed to delete forums.', 'error');
         }
-    };
-
-    const handlePlatformAlert = () => {
-        // Removed as per request
     };
 
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {

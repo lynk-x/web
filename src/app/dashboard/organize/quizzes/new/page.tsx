@@ -111,10 +111,9 @@ export default function CreateQuizPage() {
                 .insert({
                     forum_id: forumId,
                     title,
-                    description,
                     type: "quiz",
                     status: "published",
-                    time_limit_seconds: timeLimit,
+                    info: { description, time_limit_seconds: timeLimit },
                     room_code: roomCode,
                 })
                 .select().single();
@@ -125,8 +124,7 @@ export default function CreateQuizPage() {
                 questionnaire_id: qData.id,
                 question_text: q.text,
                 options: q.options,
-                correct_option_index: q.correctIndex,
-                points: 1000,
+                correct: { [q.correctIndex]: 1000 },
                 order_index: idx,
             }));
 

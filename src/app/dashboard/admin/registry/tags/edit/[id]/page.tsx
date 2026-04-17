@@ -54,10 +54,6 @@ export default function EditTagPage() {
                 }
             } catch (error: any) {
                 showToast(error.message, 'error');
-                // Fallback for mock if not found in real DB
-                if (params.id === '1') {
-                    setFormData({ name: 'Music', slug: 'music', type_id: 'event_category', is_official: true, is_active: true });
-                }
             } finally {
                 setIsFetching(false);
             }

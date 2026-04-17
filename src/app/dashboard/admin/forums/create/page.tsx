@@ -58,7 +58,6 @@ export default function CreateForumPage() {
 
                 setEvents(eligible);
             } catch (err) {
-                console.error('Error fetching events:', err);
                 showToast('Failed to load eligible events.', 'error');
             } finally {
                 setIsLoadingEvents(false);
@@ -109,14 +108,13 @@ export default function CreateForumPage() {
                         is_pinned: true,
                     });
 
-                if (msgError) console.error('Error posting welcome message:', msgError);
+                if (msgError) showToast('Forum created but welcome message failed to post.', 'warning');
             }
 
 
             showToast('Forum created successfully!', 'success');
             router.push('/dashboard/admin/forums');
         } catch (err: any) {
-            console.error('Error creating forum:', err);
             showToast(err.message || 'Failed to create forum.', 'error');
         } finally {
             setIsSubmitting(false);

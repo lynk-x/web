@@ -53,7 +53,6 @@ export default function EditPromoCodePage() {
                     is_active: data.is_active,
                 });
             } catch (err: any) {
-                console.error('Error fetching promo code:', err);
                 showToast(err.message || 'Failed to load promo code.', 'error');
                 router.push('/dashboard/admin/finance?tab=promo-codes');
             } finally {

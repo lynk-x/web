@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -13,6 +14,7 @@ export default function CreateBroadcastPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = createClient();
+    const { enabled: isBroadcastEnabled, isLoading: isFlagLoading } = useFeatureFlag('enable_admin_broadcast');
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -36,24 +38,63 @@ export default function CreateBroadcastPage() {
 
         setIsLoading(true);
         try {
-            const tokens = fcmTokens.trim().split('\n').filter(t => t.trim() !== '');
-            const tokenCount = tokens.length;
-            const targetingType = tokenCount > 0 ? 'segmented' : 'global';
+            const providedTokens = fcmTokens.trim().split('\n').map(t => t.trim()).filter(Boolean);
+            const isSegmented = providedTokens.length > 0;
+            const targetingType = isSegmented ? 'segmented' : 'global';
 
-            const { error } = await supabase
+            // 1. Resolve FCM token list
+            let targetTokens: string[];
+            if (isSegmented) {
+                targetTokens = providedTokens;
+            } else {
+                // Global broadcast: fetch all registered device tokens
+                const { data: devices, error: devErr } = await supabase
+                    .from('user_devices')
+                    .select('fcm_token');
+                if (devErr) throw devErr;
+                targetTokens = (devices || []).map((d: any) => d.fcm_token);
+            }
+
+            // 2. Log the broadcast intent
+            const { error: logError } = await supabase
                 .from('notification_broadcast_logs')
                 .insert([{
                     type: notificationType,
                     subject,
                     message,
                     image_url: imageUrl || null,
-                    fcm_tokens_count: tokenCount,
-                    targeting_type: targetingType
+                    fcm_tokens_count: targetTokens.length,
+                    targeting_type: targetingType,
                 }]);
+            if (logError) throw logError;
 
-            if (error) throw error;
+            // 3. Enqueue push notifications in batches of 100
+            const BATCH_SIZE = 100;
+            const queueEntries = targetTokens.map(token => ({
+                channel: 'push',
+                recipient: token,
+                priority: notificationType === 'system' ? 'high' : 'medium',
+                info: {
+                    subject,
+                    body: message,
+                    data: {
+                        type: notificationType,
+                        ...(imageUrl ? { image_url: imageUrl } : {}),
+                    },
+                },
+            }));
 
-            showToast('Broadcast notification sent and logged', 'success');
+            for (let i = 0; i < queueEntries.length; i += BATCH_SIZE) {
+                const { error: qErr } = await supabase
+                    .from('delivery_queue')
+                    .insert(queueEntries.slice(i, i + BATCH_SIZE));
+                if (qErr) throw qErr;
+            }
+
+            showToast(
+                `Broadcast dispatched to ${targetTokens.length} device${targetTokens.length !== 1 ? 's' : ''}`,
+                'success',
+            );
             setIsDirty(false);
             router.push('/dashboard/admin/communications?tab=broadcast');
         } catch (error: any) {
@@ -62,6 +103,14 @@ export default function CreateBroadcastPage() {
             setIsLoading(false);
         }
     };
+
+    if (!isFlagLoading && isBroadcastEnabled === false) {
+        return (
+            <div className={adminStyles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px' }}>Admin broadcast is not available yet.</p>
+            </div>
+        );
+    }
 
     return (
         <div className={adminStyles.container}>

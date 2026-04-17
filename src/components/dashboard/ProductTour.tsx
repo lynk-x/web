@@ -21,11 +21,12 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
         const hasSeen = localStorage.getItem(storageKey);
         
         if (!hasSeen) {
-            // Slight delay so the UI can settle
-            const timer = setTimeout(() => {
-                setRun(true);
-            }, 800);
-            return () => clearTimeout(timer);
+            // Wait for the DOM to fully paint before starting the tour
+            let raf1: number, raf2: number;
+            raf1 = requestAnimationFrame(() => {
+                raf2 = requestAnimationFrame(() => setRun(true));
+            });
+            return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
         }
     }, [storageKey, runOnMount]);
 

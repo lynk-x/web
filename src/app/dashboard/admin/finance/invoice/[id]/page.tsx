@@ -8,6 +8,10 @@ import BackButton from '@/components/shared/BackButton';
 import { formatCurrency } from '@/utils/format';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+
+// Lazy-load the PDF renderer — it's large and only needed on click
+const InvoicePDF = dynamic(() => import('./InvoicePDF'), { ssr: false });
 
 interface TxDetail {
     id: string;
@@ -82,7 +86,46 @@ export default function AdminInvoicePage() {
         fetchTransaction();
     }, [id, supabase, showToast]);
 
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const { enabled: isPdfExportEnabled } = useFeatureFlag('enable_invoice_pdf_export');
+
     const handlePrint = () => window.print();
+
+    const handleDownloadPDF = async () => {
+        if (!tx) return;
+        setIsGeneratingPdf(true);
+        try {
+            const { pdf } = await import('@react-pdf/renderer');
+            const { default: InvoicePDFDoc } = await import('./InvoicePDF');
+            const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency });
+            const blob = await pdf(
+                <InvoicePDFDoc
+                    id={tx.id}
+                    date={tx.date}
+                    referenceId={tx.referenceId}
+                    status={tx.status}
+                    senderName={tx.senderName}
+                    recipientName={tx.recipientName}
+                    eventTitle={tx.eventTitle}
+                    type={tx.type}
+                    description={tx.description}
+                    amount={tx.amount}
+                    currency={tx.currency}
+                    formattedAmount={formatter.format(tx.amount)}
+                />
+            ).toBlob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `invoice-${tx.referenceId}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            showToast('Failed to generate PDF.', 'error');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -204,13 +247,16 @@ export default function AdminInvoicePage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                             Print Invoice
                         </button>
-                        <button
-                            className={`${styles.btn} ${styles.btnDownload}`}
-                            onClick={() => showToast('PDF generation coming soon.', 'info')}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Download PDF
-                        </button>
+                        {isPdfExportEnabled && (
+                            <button
+                                className={`${styles.btn} ${styles.btnDownload}`}
+                                onClick={handleDownloadPDF}
+                                disabled={isGeneratingPdf}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                            </button>
+                        )}
                     </div>
                 </footer>
             </div>

@@ -124,6 +124,20 @@ export default function FeatureFlagTab() {
             )
         },
         {
+            header: 'Regions',
+            render: (flag) => {
+                const regions = (flag as any).allowed_regions as string[] | undefined;
+                if (!regions || regions.length === 0) {
+                    return <span style={{ fontSize: '12px', opacity: 0.4 }}>All</span>;
+                }
+                return (
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {regions.map(r => <Badge key={r} label={r} variant="subtle" />)}
+                    </div>
+                );
+            }
+        },
+        {
             header: 'Status',
             headerStyle: { width: '60px', textAlign: 'right', paddingRight: '0' },
             cellStyle: { width: '60px', textAlign: 'right', paddingRight: '0' },

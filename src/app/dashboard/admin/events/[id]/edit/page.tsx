@@ -81,7 +81,6 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 });
 
             } catch (error: any) {
-                console.error("Error fetching event:", error);
                 showToast("Failed to load event data. It may not exist.", "error");
                 router.push('/dashboard/admin/events');
             } finally {
@@ -186,7 +185,6 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             router.push('/dashboard/admin/events');
 
         } catch (error: any) {
-            console.error("Error updating event:", error);
             showToast(error.message || 'Failed to update event. Please verify inputs.', 'error');
         }
     };

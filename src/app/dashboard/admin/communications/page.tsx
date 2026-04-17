@@ -79,7 +79,6 @@ function CommunicationsContent() {
             if (bannerRes.data) setBanners(bannerRes.data);
             if (spotlightRes.data) setSpotlights(spotlightRes.data);
         } catch (error) {
-            console.error('Error fetching communications data:', error);
             showToast('Failed to load some data', 'error');
         } finally {
             setIsLoading(false);

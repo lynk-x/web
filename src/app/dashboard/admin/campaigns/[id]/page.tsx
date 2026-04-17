@@ -69,7 +69,6 @@ export default function AdminCampaignDetailPage() {
                     endDate: new Date(data.end_at).toLocaleDateString(),
                 });
             } catch (err) {
-                console.error('Error fetching campaign:', err);
                 showToast('Campaign not found.', 'error');
                 router.push('/dashboard/admin/campaigns');
             } finally {

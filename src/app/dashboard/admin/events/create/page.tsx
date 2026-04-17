@@ -114,7 +114,7 @@ export default function AdminCreateEventPage() {
                         .from('event_tags')
                         .insert(eventTagsToInsert);
 
-                    if (eventTagError) console.error("Warning: Tag linking failed", eventTagError);
+                    if (eventTagError) showToast('Event created but some tags failed to link.', 'warning');
                 }
             }
 
@@ -124,7 +124,6 @@ export default function AdminCreateEventPage() {
             router.push('/dashboard/admin/events');
 
         } catch (error: any) {
-            console.error("Error creating event:", error);
             showToast(error.message || 'Failed to create event. Please verify inputs.', 'error');
         }
     };

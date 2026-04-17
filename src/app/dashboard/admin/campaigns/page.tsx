@@ -41,6 +41,7 @@ function CampaignsContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [summary, setSummary] = useState<any>(null);
+    const [campaignPerf, setCampaignPerf] = useState<{ avgCtr: string; avgCpc: string } | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 10;
@@ -49,6 +50,22 @@ function CampaignsContent() {
         const { data, error } = await supabase.rpc('admin_stat_summary');
         if (!error && data) {
             setSummary(data);
+        }
+    }, [supabase]);
+
+    const fetchCampaignPerf = useCallback(async () => {
+        const { data } = await supabase
+            .schema('analytics')
+            .from('mv_ad_campaign_performance')
+            .select('click_through_rate_pct, cost_per_click');
+
+        if (data && data.length > 0) {
+            const avgCtr = data.reduce((sum: number, r: any) => sum + (parseFloat(r.click_through_rate_pct) || 0), 0) / data.length;
+            const avgCpc = data.reduce((sum: number, r: any) => sum + (parseFloat(r.cost_per_click) || 0), 0) / data.length;
+            setCampaignPerf({
+                avgCtr: `${avgCtr.toFixed(1)}%`,
+                avgCpc: `$${avgCpc.toFixed(2)}`
+            });
         }
     }, [supabase]);
 
@@ -128,7 +145,8 @@ function CampaignsContent() {
 
     useEffect(() => {
         fetchDashboardSummary();
-    }, [fetchDashboardSummary]);
+        fetchCampaignPerf();
+    }, [fetchDashboardSummary, fetchCampaignPerf]);
 
     // Reset page on search/filter change
     useEffect(() => {
@@ -304,19 +322,19 @@ function CampaignsContent() {
                             trend="positive"
                             isLoading={!summary} 
                         />
-                        <StatCard 
-                            label="Avg CTR" 
-                            value="3.2%" 
+                        <StatCard
+                            label="Avg CTR"
+                            value={campaignPerf?.avgCtr ?? '—'}
                             change="Across all banners"
                             trend="positive"
-                            isLoading={!summary} 
+                            isLoading={!campaignPerf}
                         />
-                        <StatCard 
-                            label="Avg CPC" 
-                            value="$0.45" 
+                        <StatCard
+                            label="Avg CPC"
+                            value={campaignPerf?.avgCpc ?? '—'}
                             change="Global baseline"
                             trend="neutral"
-                            isLoading={!summary} 
+                            isLoading={!campaignPerf}
                         />
                     </div>
 

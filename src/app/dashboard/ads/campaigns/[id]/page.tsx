@@ -86,13 +86,13 @@ export default function CampaignDetailPage() {
     const [variants, setVariants] = useState<AdVariant[]>([]);
     const [performanceData, setPerformanceData] = useState<DayPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
     const [timeRange, setTimeRange] = useState(30);
 
     const fetchCampaign = useCallback(async () => {
         if (!id || !activeAccount) return;
         setIsLoading(true);
         try {
-            // Fetch campaign + variants in parallel
             const [campRes, variantRes] = await Promise.all([
                 supabase
                     .from('ad_campaigns')
@@ -116,18 +116,26 @@ export default function CampaignDetailPage() {
 
             setCampaign(campRes.data as CampaignDetail);
             setVariants((variantRes.data || []) as AdVariant[]);
+        } catch (err: any) {
+            showToast(err.message || 'Failed to load campaign.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [id, activeAccount, supabase, showToast, router]);
 
-            // Fetch time-series analytics
+    const fetchAnalytics = useCallback(async () => {
+        if (!id) return;
+        setIsAnalyticsLoading(true);
+        try {
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - timeRange);
 
             const { data: analytics } = await supabase
                 .from('ad_analytics')
-                .select('interaction_type, created_at, cost_charged')
+                .select('interaction_type, created_at')
                 .eq('campaign_id', id)
                 .gte('created_at', startDate.toISOString());
 
-            // Build day buckets
             const daysMap: Record<string, DayPoint> = {};
             for (let i = timeRange - 1; i >= 0; i--) {
                 const d = new Date();
@@ -148,14 +156,13 @@ export default function CampaignDetailPage() {
             });
 
             setPerformanceData(Object.values(daysMap).sort((a, b) => a.sortKey - b.sortKey));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load campaign.', 'error');
         } finally {
-            setIsLoading(false);
+            setIsAnalyticsLoading(false);
         }
-    }, [id, activeAccount, supabase, showToast, router, timeRange]);
+    }, [id, supabase, timeRange]);
 
     useEffect(() => { fetchCampaign(); }, [fetchCampaign]);
+    useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
 
     const handleStatusChange = async (newStatus: 'active' | 'paused') => {
         if (!campaign) return;
@@ -201,6 +208,9 @@ export default function CampaignDetailPage() {
                 } : campaign.status === 'paused' ? {
                     label: 'Resume Campaign',
                     onClick: () => handleStatusChange('active'),
+                } : campaign.status === 'rejected' ? {
+                    label: 'Edit & Resubmit',
+                    onClick: () => router.push(`/dashboard/ads/campaigns/${id}/edit`),
                 } : undefined}
                 secondaryAction={{
                     label: 'Edit',
@@ -287,7 +297,12 @@ export default function CampaignDetailPage() {
                         <option value={90}>Last 90 Days</option>
                     </select>
                 </div>
-                <div style={{ width: '100%', height: 280 }}>
+                <div style={{ width: '100%', height: 280, position: 'relative' }}>
+                    {isAnalyticsLoading && (
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', zIndex: 1, fontSize: '13px', opacity: 0.6 }}>
+                            Updating...
+                        </div>
+                    )}
                     <ResponsiveContainer>
                         <AreaChart data={performanceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <defs>

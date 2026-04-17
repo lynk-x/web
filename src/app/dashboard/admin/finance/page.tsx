@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
@@ -34,6 +35,7 @@ function FinanceContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
+    const { enabled: isPayoutMgmtEnabled } = useFeatureFlag('enable_payout_management');
     const initialTab = searchParams.get('tab') || 'transactions';
     const [activeTab, setActiveTab] = useState(initialTab);
     const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +61,10 @@ function FinanceContent() {
     // Selection state
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
     const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
+
+    // Payout rejection modal state
+    const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
+    const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
 
     // Tax Modal state
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
@@ -117,7 +123,6 @@ function FinanceContent() {
                 adRevenue: adSpend
             });
         } catch (error: any) {
-            console.error('Error fetching global stats:', error);
             showToast('Failed to load financial aggregates.', 'error');
         } finally {
             setIsStatsLoading(false);
@@ -274,17 +279,24 @@ function FinanceContent() {
     }, [activeTab, supabase, showToast, startDate, endDate]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
+    // Use refs so the channel is only created once; callbacks always see latest state
+    const fetchDataRef = useRef(fetchData);
+    const fetchGlobalStatsRef = useRef(fetchGlobalStats);
+    const activeTabRef = useRef(activeTab);
+    useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
+    useEffect(() => { fetchGlobalStatsRef.current = fetchGlobalStats; }, [fetchGlobalStats]);
+    useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+
     useEffect(() => {
-        console.log('[Finance] Subscribing to realtime transactions...');
         const channel = supabase
             .channel('admin_finance_updates')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'transactions' },
                 () => {
-                    fetchGlobalStats();
-                    if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTab)) {
-                        fetchData();
+                    fetchGlobalStatsRef.current();
+                    if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTabRef.current)) {
+                        fetchDataRef.current();
                     }
                 }
             )
@@ -292,8 +304,8 @@ function FinanceContent() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'payouts' },
                 () => {
-                    if (activeTab === 'payouts') fetchData();
-                    fetchGlobalStats();
+                    if (activeTabRef.current === 'payouts') fetchDataRef.current();
+                    fetchGlobalStatsRef.current();
                 }
             )
             .subscribe();
@@ -301,7 +313,7 @@ function FinanceContent() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, activeTab, fetchGlobalStats, fetchData]);
+    }, [supabase]);
 
     useEffect(() => {
         fetchGlobalStats();
@@ -393,23 +405,27 @@ function FinanceContent() {
             showToast('Payout successfully initiated.', 'success');
             fetchData();
         } catch (err: any) {
-            console.error('Payout failed:', err);
             showToast(err.message, 'error');
         }
     };
 
-    const handleRejectPayout = async (payout: Payout) => {
-        const reason = window.prompt('Reason for rejection:', 'Does not meet requirements');
-        if (reason === null) return;
-        
+    const handleRejectPayout = (payout: Payout) => {
+        setPendingRejectPayout(payout);
+        setIsPayoutRejectModalOpen(true);
+    };
+
+    const confirmRejectPayout = async (reason: string) => {
+        if (!pendingRejectPayout) return;
         showToast('Rejecting payout...', 'info');
         try {
             const { error } = await supabase.rpc('reject_payout', {
-                p_payout_id: payout.id,
+                p_payout_id: pendingRejectPayout.id,
                 p_reason: reason
             });
             if (error) throw error;
             showToast('Payout rejected and funds returned to escrow.', 'success');
+            setIsPayoutRejectModalOpen(false);
+            setPendingRejectPayout(null);
             fetchData();
         } catch (err: any) {
             showToast(err.message, 'error');
@@ -442,7 +458,7 @@ function FinanceContent() {
     };
 
     const getBulkActions = (): BulkAction[] => {
-        if (activeTab === 'payouts' && selectedPayoutIds.size > 0) {
+        if (activeTab === 'payouts' && selectedPayoutIds.size > 0 && isPayoutMgmtEnabled) {
             return [
                 {
                     label: 'Batch Approve',
@@ -483,9 +499,9 @@ function FinanceContent() {
                         setSelectedPayoutIds(next);
                     }}
                     onSelectAll={() => setSelectedPayoutIds(selectedPayoutIds.size === payouts.length ? new Set() : new Set(payouts.map(p => p.id)))}
-                    onApprove={handleApprovePayout}
-                    onReject={handleRejectPayout}
-                    onRetry={handleRetryPayout}
+                    onApprove={isPayoutMgmtEnabled ? handleApprovePayout : undefined}
+                    onReject={isPayoutMgmtEnabled ? handleRejectPayout : undefined}
+                    onRetry={isPayoutMgmtEnabled ? handleRetryPayout : undefined}
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
@@ -667,6 +683,12 @@ function FinanceContent() {
                 onCancel={() => {
                     setSelectedPayoutIds(new Set());
                 }}
+            />
+
+            <RejectionModal
+                isOpen={isPayoutRejectModalOpen}
+                onClose={() => { setIsPayoutRejectModalOpen(false); setPendingRejectPayout(null); }}
+                onConfirm={confirmRejectPayout}
             />
 
             <Modal

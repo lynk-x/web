@@ -9,12 +9,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
+import { useToast } from '@/components/ui/Toast';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 import ProductTour from '@/components/dashboard/ProductTour';
 
 export default function AdsDashboard() {
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
+    const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [spotlights, setSpotlights] = useState<any[]>([]);
     const [stats, setStats] = useState<any[]>([
@@ -70,8 +72,8 @@ export default function AdsDashboard() {
                         ctaHref: s.redirect_to
                     })));
                 }
-            } catch (error) {
-                console.error('Error fetching ads dashboard data:', error);
+            } catch (error: any) {
+                showToast(error.message || 'Failed to load dashboard data.', 'error');
             } finally {
                 setIsLoading(false);
             }

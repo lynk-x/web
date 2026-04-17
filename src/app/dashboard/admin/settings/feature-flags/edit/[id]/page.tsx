@@ -22,8 +22,10 @@ export default function EditFeatureFlagPage() {
         description: '',
         is_enabled: false,
         rollout_percent: 100,
-        platforms: ['web', 'ios', 'android'] as string[]
+        platforms: ['web', 'ios', 'android'] as string[],
+        allowed_regions: [] as string[],
     });
+    const [regionInput, setRegionInput] = useState('');
 
     const fetchFlag = useCallback(async () => {
         if (!params.id) return;
@@ -42,7 +44,8 @@ export default function EditFeatureFlagPage() {
                     description: data.description || '',
                     is_enabled: data.is_enabled,
                     rollout_percent: data.rollout_percent,
-                    platforms: data.platforms || []
+                    platforms: data.platforms || [],
+                    allowed_regions: data.allowed_regions || [],
                 });
             }
         } catch (error: any) {
@@ -67,6 +70,7 @@ export default function EditFeatureFlagPage() {
                     description: formData.description,
                     rollout_percent: formData.rollout_percent,
                     platforms: formData.platforms,
+                    allowed_regions: formData.allowed_regions,
                     updated_at: new Date().toISOString()
                 })
                 .eq('key', formData.key);
@@ -90,6 +94,17 @@ export default function EditFeatureFlagPage() {
                 ? prev.platforms.filter(p => p !== platform)
                 : [...prev.platforms, platform]
         }));
+    };
+
+    const addRegion = () => {
+        const code = regionInput.trim().toUpperCase();
+        if (code.length !== 2 || formData.allowed_regions.includes(code)) return;
+        setFormData(prev => ({ ...prev, allowed_regions: [...prev.allowed_regions, code] }));
+        setRegionInput('');
+    };
+
+    const removeRegion = (code: string) => {
+        setFormData(prev => ({ ...prev, allowed_regions: prev.allowed_regions.filter(r => r !== code) }));
     };
 
     if (isFetching) {
@@ -159,6 +174,35 @@ export default function EditFeatureFlagPage() {
                                 </button>
                             ))}
                         </div>
+                    </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Allowed Regions</label>
+                    <p style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px' }}>
+                        ISO 3166-1 alpha-2 codes (e.g. KE, NG, ZA). Leave empty to allow all regions.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <input
+                            className={styles.input}
+                            placeholder="e.g. KE"
+                            maxLength={2}
+                            value={regionInput}
+                            onChange={e => setRegionInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRegion(); } }}
+                            style={{ maxWidth: '120px' }}
+                        />
+                        <button type="button" className={styles.chip} onClick={addRegion}>Add</button>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {formData.allowed_regions.map(code => (
+                            <span key={code} className={styles.chipActive} style={{ cursor: 'pointer' }} onClick={() => removeRegion(code)}>
+                                {code} ✕
+                            </span>
+                        ))}
+                        {formData.allowed_regions.length === 0 && (
+                            <span style={{ fontSize: '12px', opacity: 0.4 }}>All regions</span>
+                        )}
                     </div>
                 </div>
             </form>
