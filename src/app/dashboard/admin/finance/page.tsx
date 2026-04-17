@@ -25,6 +25,7 @@ import type { FinanceTransaction } from '@/types/organize';
 import type { TaxRate, FXRate, PromoCode } from '@/types/admin';
 import { exportToCSV } from '@/utils/export';
 import { formatDate, formatCurrency } from '@/utils/format';
+import RejectionModal from '@/components/shared/RejectionModal';
 
 import { useDebounce } from '@/hooks/useDebounce';
 
