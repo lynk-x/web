@@ -109,7 +109,7 @@ export default function AdvertisersLandingPage() {
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
                                     Global Frequency Capping
                                 </h4>
-                                <p className={styles.cardDesc}>Maintain your brand’s prestige. Ensure your audience sees your message just enough to convert, never enough to fatigue.</p>
+                                <p className={styles.cardDesc}>Maintain your brand’s prestige. Ensure your audience sees your message just enough to convert, never enough to fatigue. </p>
                             </div>
                         </div>
                         <div className={styles.splitMedia} />
