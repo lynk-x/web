@@ -19,7 +19,7 @@ export default async function OrganizerAgreementPage() {
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'organizer_agreement')
+        .eq('slug', 'organizer_agreement')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)

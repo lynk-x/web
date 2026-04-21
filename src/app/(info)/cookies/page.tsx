@@ -21,7 +21,7 @@ export default async function CookiePolicyPage() {
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'cookie_policy')
+        .eq('slug', 'cookie_policy')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)

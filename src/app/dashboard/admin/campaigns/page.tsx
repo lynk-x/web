@@ -233,10 +233,11 @@ function CampaignsContent() {
         showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
 
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .update({ status: newStatus as any, updated_at: new Date().toISOString() })
-                .in('id', Array.from(selectedCampaignIds));
+            const { error } = await supabase.rpc('bulk_moderate_campaigns', {
+                p_campaign_ids: Array.from(selectedCampaignIds),
+                p_status: newStatus,
+                p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
+            });
 
             if (error) throw error;
 

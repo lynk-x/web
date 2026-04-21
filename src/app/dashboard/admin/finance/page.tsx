@@ -416,15 +416,27 @@ function FinanceContent() {
     };
 
     const confirmRejectPayout = async (reason: string) => {
-        if (!pendingRejectPayout) return;
-        showToast('Rejecting payout...', 'info');
+        const isBulk = !pendingRejectPayout;
+        const count = isBulk ? selectedPayoutIds.size : 1;
+        
+        showToast(`Rejecting ${count} payout(s)...`, 'info');
         try {
-            const { error } = await supabase.rpc('reject_payout', {
-                p_payout_id: pendingRejectPayout.id,
-                p_reason: reason
-            });
-            if (error) throw error;
-            showToast('Payout rejected and funds returned to escrow.', 'success');
+            if (isBulk) {
+                const { error } = await supabase.rpc('bulk_reject_payouts', {
+                    p_payout_ids: Array.from(selectedPayoutIds),
+                    p_reason: reason
+                });
+                if (error) throw error;
+                setSelectedPayoutIds(new Set());
+            } else {
+                const { error } = await supabase.rpc('reject_payout', {
+                    p_payout_id: pendingRejectPayout.id,
+                    p_reason: reason
+                });
+                if (error) throw error;
+            }
+
+            showToast(`${count > 1 ? 'Payouts' : 'Payout'} rejected and funds returned to escrow.`, 'success');
             setIsPayoutRejectModalOpen(false);
             setPendingRejectPayout(null);
             fetchData();
@@ -465,21 +477,34 @@ function FinanceContent() {
                     label: 'Batch Approve',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
                     onClick: async () => {
-                        showToast(`Approving ${selectedPayoutIds.size} payouts...`, 'info');
+                        showToast(`Initiating background processing for ${selectedPayoutIds.size} payouts...`, 'info');
                         try {
-                            const { error } = await supabase
-                                .from('payouts')
-                                .update({ status: 'processing', updated_at: new Date().toISOString() })
-                                .in('id', Array.from(selectedPayoutIds));
+                            const { data, error } = await supabase.rpc('bulk_approve_payouts', {
+                                p_payout_ids: Array.from(selectedPayoutIds)
+                            });
                             if (error) throw error;
-                            showToast('Batch approved — payouts marked as processing.', 'success');
+                            
+                            if (data.processed_count === 0) {
+                                showToast('No payouts were approved. Check if recipients are identity-verified.', 'warning');
+                            } else {
+                                showToast(`Successfully queued ${data.processed_count} payouts for background fulfillment.`, 'success');
+                                fetchData();
+                            }
                             setSelectedPayoutIds(new Set());
-                            fetchData();
                         } catch (err: any) {
-                            showToast(err.message || 'Failed to approve payouts.', 'error');
+                            showToast(err.message || 'Failed to process bulk payout approval.', 'error');
                         }
                     },
                     variant: 'success'
+                },
+                {
+                    label: 'Batch Reject',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
+                    onClick: () => {
+                        setIsPayoutRejectModalOpen(true);
+                        setPendingRejectPayout(null); // Indicates bulk mode
+                    },
+                    variant: 'danger'
                 }
             ];
         }

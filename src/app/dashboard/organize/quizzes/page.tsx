@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { formatDate } from '@/utils/format';
 import Badge from '@/components/shared/Badge';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 
@@ -37,6 +38,7 @@ export default function QuizzesPage() {
 
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const fetchQuizzes = useCallback(async () => {
         if (!activeAccount) return;
@@ -78,6 +80,7 @@ export default function QuizzesPage() {
                 ...q,
                 event_title: forumTitleMap[q.forum_id] || '—',
             })));
+            setSelectedIds(new Set());
         } catch (e: any) {
             showToast(e.message || 'Failed to load quizzes', 'error');
         } finally {
@@ -92,6 +95,53 @@ export default function QuizzesPage() {
             setIsLoading(false);
         }
     }, [isOrgLoading, activeAccount, fetchQuizzes]);
+
+    const handleSelect = (id: string) => {
+        const next = new Set(selectedIds);
+        next.has(id) ? next.delete(id) : next.add(id);
+        setSelectedIds(next);
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.size === quizzes.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(quizzes.map(q => q.id)));
+    };
+
+    const handleDuplicate = async (id: string) => {
+        showToast('Cloning quiz...', 'info');
+        try {
+            const { data, error } = await supabase.rpc('duplicate_quiz', { p_quiz_id: id });
+            if (error) throw error;
+            showToast('Quiz duplicated to draft.', 'success');
+            fetchQuizzes();
+        } catch (e: any) {
+            showToast(e.message || 'Duplication failed', 'error');
+        }
+    };
+
+    const handleBulkAction = async (action: 'publish' | 'delete' | 'duplicate') => {
+        if (selectedIds.size === 0) return;
+        
+        if (action === 'delete') {
+            if (!confirm(`Are you sure you want to delete ${selectedIds.size} quizzes?`)) return;
+        }
+
+        setIsLoading(true);
+        try {
+            const { data, error } = action === 'publish'
+                ? await supabase.rpc('bulk_update_quiz_status', { p_quiz_ids: Array.from(selectedIds), p_status: 'published' })
+                : action === 'duplicate'
+                    ? await supabase.rpc('bulk_duplicate_quizzes', { p_quiz_ids: Array.from(selectedIds) })
+                    : await supabase.rpc('bulk_delete_quizzes', { p_quiz_ids: Array.from(selectedIds) });
+
+            if (error) throw error;
+            showToast(`Bulk action complete: ${data.processed_count} quizzes processed.`, 'success');
+            fetchQuizzes();
+        } catch (e: any) {
+            showToast(e.message || 'Bulk action failed', 'error');
+            setIsLoading(false);
+        }
+    };
 
     const handleDelete = async (quiz: Quiz) => {
         if (quiz.status !== 'draft') {
@@ -131,6 +181,16 @@ export default function QuizzesPage() {
                 </button>
             </div>
 
+            <BulkActionsBar
+                selectedCount={selectedIds.size}
+                onCancel={() => setSelectedIds(new Set())}
+                actions={[
+                    { label: 'Duplicate Selected', onClick: () => handleBulkAction('duplicate'), variant: 'default' },
+                    { label: 'Publish Selected', onClick: () => handleBulkAction('publish'), variant: 'default' },
+                    { label: 'Delete Selected', onClick: () => handleBulkAction('delete'), variant: 'danger' }
+                ]}
+            />
+
             {isLoading ? (
                 <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
             ) : quizzes.length === 0 ? (
@@ -148,6 +208,13 @@ export default function QuizzesPage() {
                 <table className={adminStyles.table}>
                     <thead>
                         <tr>
+                            <th style={{ width: 40 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.size > 0 && selectedIds.size === quizzes.length}
+                                    onChange={handleSelectAll}
+                                />
+                            </th>
                             <th>Title</th>
                             <th>Event</th>
                             <th>Room Code</th>
@@ -161,6 +228,13 @@ export default function QuizzesPage() {
                             const badge = STATUS_MAP[quiz.status] ?? { label: quiz.status, variant: 'neutral' as BadgeVariant };
                             return (
                                 <tr key={quiz.id}>
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(quiz.id)}
+                                            onChange={() => handleSelect(quiz.id)}
+                                        />
+                                    </td>
                                     <td style={{ fontWeight: 600 }}>{quiz.title}</td>
                                     <td style={{ color: 'var(--color-text-secondary)' }}>{quiz.event_title}</td>
                                     <td>
@@ -182,6 +256,13 @@ export default function QuizzesPage() {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                            <button
+                                                className={adminStyles.secondaryButton}
+                                                onClick={() => handleDuplicate(quiz.id)}
+                                                style={{ fontSize: 13, padding: '4px 12px' }}
+                                            >
+                                                Duplicate
+                                            </button>
                                             <Link
                                                 href={`/dashboard/organize/quizzes/${quiz.id}/results`}
                                                 className={adminStyles.secondaryButton}

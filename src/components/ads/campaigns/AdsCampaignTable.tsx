@@ -27,6 +27,8 @@ interface AdsCampaignTableProps {
     onStatusChange?: (id: string, newStatus: 'active' | 'paused') => void;
     /** Called when user requests deletion of a single campaign */
     onDelete?: (id: string, title: string) => void;
+    /** Called when user requests duplication of a single campaign */
+    onDuplicate?: (id: string) => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
     onPageChange,
     onStatusChange,
     onDelete,
+    onDuplicate,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -142,6 +145,12 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
                 onClick: () => onStatusChange?.(campaign.id, campaign.status === 'paused' ? 'active' : 'pending_approval' as any),
             });
         }
+
+        actions.push({
+            label: 'Duplicate',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+            onClick: () => onDuplicate?.(campaign.id),
+        });
 
         actions.push({
             label: 'Delete',

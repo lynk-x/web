@@ -19,7 +19,7 @@ export default async function RefundPolicyPage() {
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'refund_policy')
+        .eq('slug', 'refund_policy')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)

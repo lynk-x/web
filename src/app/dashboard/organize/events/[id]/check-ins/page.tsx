@@ -11,6 +11,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Modal from '@/components/shared/Modal';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 
 interface CheckInLog {
@@ -127,6 +128,25 @@ export default function CheckInLogsPage() {
         }
     };
 
+    const handleBulkCheckIn = async () => {
+        if (selectedIds.size === 0) return;
+        setIsVerifying(true);
+        showToast(`Checking in ${selectedIds.size} attendees...`, 'info');
+        try {
+            const { data, error } = await supabase.rpc('bulk_check_in_tickets', {
+                p_ticket_ids: Array.from(selectedIds)
+            });
+            if (error) throw error;
+            showToast(`Successfully checked in ${data.processed_count} attendees.`, 'success');
+            setSelectedIds(new Set());
+            fetchLogs();
+        } catch (err: any) {
+            showToast(err.message || 'Bulk check-in failed', 'error');
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     const getStatusVariant = (status: string): BadgeVariant => {
         switch (status) {
             case 'used': return 'success';
@@ -195,6 +215,14 @@ export default function CheckInLogsPage() {
                     },
                     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 }}
+            />
+
+            <BulkActionsBar
+                selectedCount={selectedIds.size}
+                onCancel={() => setSelectedIds(new Set())}
+                actions={[
+                    { label: 'Check-in Selected', onClick: handleBulkCheckIn, variant: 'default' }
+                ]}
             />
 
             <div className={adminStyles.statsGrid}>

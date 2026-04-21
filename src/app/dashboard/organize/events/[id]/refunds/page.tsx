@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 
@@ -43,6 +44,7 @@ export default function EventRefundsPage() {
     const [eventCurrency, setEventCurrency] = useState('KES');
     const [refunds, setRefunds] = useState<RefundRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     // Review modal
     const [selectedRefund, setSelectedRefund] = useState<RefundRequest | null>(null);
@@ -74,6 +76,7 @@ export default function EventRefundsPage() {
             if (refundsRes.error) throw refundsRes.error;
 
             setRefunds(refundsRes.data || []);
+            setSelectedIds(new Set());
         } catch (e: any) {
             showToast('Failed to load refund requests', 'error');
         } finally {
@@ -82,6 +85,40 @@ export default function EventRefundsPage() {
     }, [eventId, activeAccount, supabase, showToast]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    const handleSelect = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const handleSelectAll = () => {
+        const pendingRef = refunds.filter(r => r.status === 'pending');
+        if (selectedIds.size === pendingRef.length && pendingRef.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(pendingRef.map(r => r.id)));
+        }
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedIds.size === 0) return;
+        setIsProcessing(true);
+        showToast(`Approving ${selectedIds.size} refunds...`, 'info');
+        try {
+            const { data, error } = await supabase.rpc('bulk_approve_refund_requests', {
+                p_request_ids: Array.from(selectedIds)
+            });
+            if (error) throw error;
+            showToast(`Successfully approved ${data.processed_count} refunds.`, 'success');
+            fetchData();
+        } catch (e: any) {
+            showToast(e.message || 'Failed to bulk approve refunds', 'error');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const openReview = (refund: RefundRequest) => {
         setSelectedRefund(refund);
@@ -140,6 +177,14 @@ export default function EventRefundsPage() {
                 backHref={`/dashboard/organize/events/${eventId}`}
             />
 
+            <BulkActionsBar
+                selectedCount={selectedIds.size}
+                onCancel={() => setSelectedIds(new Set())}
+                actions={[
+                    { label: 'Approve Selected', onClick: handleBulkApprove, variant: 'default' }
+                ]}
+            />
+
             {isLoading ? (
                 <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
             ) : refunds.length === 0 ? (
@@ -150,6 +195,13 @@ export default function EventRefundsPage() {
                 <table className={adminStyles.table}>
                     <thead>
                         <tr>
+                            <th style={{ width: 40 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.size > 0 && selectedIds.size === refunds.filter(r => r.status === 'pending').length}
+                                    onChange={handleSelectAll}
+                                />
+                            </th>
                             <th>Requested</th>
                             <th>Attendee</th>
                             <th>Reason</th>
@@ -161,8 +213,17 @@ export default function EventRefundsPage() {
                     <tbody>
                         {refunds.map(r => {
                             const badge = STATUS_MAP[r.status] || { label: r.status, variant: 'neutral' as BadgeVariant };
+                            const isPending = r.status === 'pending';
                             return (
                                 <tr key={r.id}>
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(r.id)}
+                                            onChange={() => handleSelect(r.id)}
+                                            disabled={!isPending}
+                                        />
+                                    </td>
                                     <td>{formatDate(r.created_at)}</td>
                                     <td>
                                         {r.user_profile
@@ -180,7 +241,7 @@ export default function EventRefundsPage() {
                                     </td>
                                     <td><Badge variant={badge.variant} label={badge.label} /></td>
                                     <td>
-                                        {r.status === 'pending' && (
+                                        {isPending && (
                                             <button
                                                 className={adminStyles.secondaryButton}
                                                 onClick={() => openReview(r)}

@@ -20,7 +20,7 @@ export default async function TermsPage() {
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'terms_of_service')
+        .eq('slug', 'terms_of_service')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)

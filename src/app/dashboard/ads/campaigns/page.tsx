@@ -155,7 +155,38 @@ export default function CampaignsPage() {
         }
     };
 
+    const handleDuplicate = async (id: string) => {
+        showToast('Cloning campaign...', 'info');
+        try {
+            const { data, error } = await supabase.rpc('duplicate_ad_campaign', {
+                p_campaign_id: id
+            });
+            if (error) throw error;
+            showToast('Campaign duplicated to draft.', 'success');
+            fetchCampaigns();
+        } catch (err: any) {
+            showToast(err.message || 'Duplication failed', 'error');
+        }
+    };
+
+    const handleBulkDuplicate = async () => {
+        if (selectedIds.size === 0) return;
+        showToast(`Cloning ${selectedIds.size} campaigns...`, 'info');
+        try {
+            const { data, error } = await supabase.rpc('bulk_duplicate_ad_campaigns', {
+                p_campaign_ids: Array.from(selectedIds)
+            });
+            if (error) throw error;
+            showToast(`Batch duplication complete: ${data.processed_count} campaigns added to drafts.`, 'success');
+            setSelectedIds(new Set());
+            fetchCampaigns();
+        } catch (error: any) {
+            showToast(error.message || 'Bulk duplication failed', 'error');
+        }
+    };
+
     const bulkActions: BulkAction[] = [
+        { label: 'Duplicate Selected', onClick: handleBulkDuplicate },
         { label: 'Pause Selected', onClick: handleBulkPause },
         { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
     ];
@@ -245,6 +276,7 @@ export default function CampaignsPage() {
                     onPageChange={setCurrentPage}
                     onStatusChange={handleStatusChange}
                     onDelete={handleSingleDelete}
+                    onDuplicate={handleDuplicate}
                 />
             </div>
 

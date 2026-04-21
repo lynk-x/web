@@ -20,7 +20,7 @@ export default async function PrivacyPage() {
     const { data: doc } = await supabase
         .from('legal_documents')
         .select('*')
-        .eq('type', 'privacy_policy')
+        .eq('slug', 'privacy_policy')
         .eq('is_active', true)
         .order('effective_date', { ascending: false })
         .limit(1)

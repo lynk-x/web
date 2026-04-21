@@ -132,10 +132,11 @@ export default function AdminEventsPage() {
     const handleBulkStatusUpdate = async (newStatus: string) => {
         showToast(`Updating ${selectedEventIds.size} events to ${newStatus}...`, 'info');
         try {
-            const { error } = await supabase
-                .from('events')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .in('id', Array.from(selectedEventIds));
+            const { error } = await supabase.rpc('bulk_moderate_events', {
+                p_event_ids: Array.from(selectedEventIds),
+                p_status: newStatus,
+                p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
+            });
 
             if (error) throw error;
 

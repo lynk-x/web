@@ -147,9 +147,41 @@ export default function OrganizerEventsPage() {
         }
     };
 
+    const handleDuplicate = async (eventId: string) => {
+        showToast('Cloning event...', 'info');
+        try {
+            const { data: newId, error } = await supabase.rpc('duplicate_event', {
+                p_event_id: eventId
+            });
+            if (error) throw error;
+            showToast('Event duplicated to draft.', 'success');
+            fetchEvents();
+        } catch (err: any) {
+            showToast(err.message || 'Duplication failed', 'error');
+        }
+    };
+
+    const handleBulkDuplicate = async () => {
+        if (selectedIds.size === 0) return;
+        showToast(`Cloning ${selectedIds.size} events...`, 'info');
+        try {
+            const { data, error } = await supabase.rpc('bulk_duplicate_events', {
+                p_event_ids: Array.from(selectedIds)
+            });
+            if (error) throw error;
+            showToast(`Batch duplication complete: ${data.processed_count} events added to drafts.`, 'success');
+            setSelectedIds(new Set());
+            fetchEvents();
+        } catch (err: any) {
+            showToast(err.message || 'Bulk duplication failed', 'error');
+        }
+    };
+
     const handleBulkAction = (action: string) => {
         if (action === 'delete') {
             setIsDeleteModalOpen(true);
+        } else if (action === 'duplicate') {
+            handleBulkDuplicate();
         } else if (action === 'publish' || action === 'draft') {
             handleBulkStatusUpdate(action === 'publish' ? 'published' : 'draft');
         } else if (action === 'export') {
@@ -239,21 +271,32 @@ export default function OrganizerEventsPage() {
     const handleCancelEvent = async (reason: string) => {
         if (!cancelTarget) return;
 
-        const { error } = await supabase
-            .from('events')
-            .update({
-                status: 'cancelled',
-                // cancellation_reason column added to events table to store this for attendee notifications
-                cancellation_reason: reason,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', cancelTarget.event.id);
+        try {
+            const { error: rpcError } = await supabase.rpc('bulk_refund_event_tickets', {
+                p_event_id: cancelTarget.event.id,
+                p_reason: reason
+            });
 
-        if (error) throw new Error(error.message);
+            if (rpcError) throw rpcError;
 
-        showToast(`"${cancelTarget.event.title}" has been cancelled.`, 'success');
-        setCancelTarget(null);
-        fetchEvents();
+            // Flip the event status
+            const { error: updateError } = await supabase
+                .from('events')
+                .update({
+                    status: 'cancelled',
+                    cancellation_reason: reason,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', cancelTarget.event.id);
+
+            if (updateError) throw updateError;
+
+            showToast(`"${cancelTarget.event.title}" has been cancelled and tickets were refunded.`, 'success');
+            setCancelTarget(null);
+            fetchEvents();
+        } catch (err: any) {
+            showToast(err.message || 'Failed to cancel event and process refunds.', 'error');
+        }
     };
 
     const handleEdit = (event: OrganizerEvent) => {
@@ -324,6 +367,7 @@ export default function OrganizerEventsPage() {
                 selectedCount={selectedIds.size}
                 onCancel={() => setSelectedIds(new Set())}
                 actions={[
+                    { label: 'Duplicate Selected', onClick: () => handleBulkAction('duplicate'), variant: 'default' },
                     { label: 'Export Attendees', onClick: () => handleBulkAction('export'), variant: 'default' },
                     { label: 'Mark Published', onClick: () => handleBulkAction('publish'), variant: 'default' },
                     { label: 'Return to Draft', onClick: () => handleBulkAction('draft'), variant: 'default' },
@@ -343,6 +387,7 @@ export default function OrganizerEventsPage() {
                     onPageChange={setCurrentPage}
                     onEdit={handleEdit}
                     onDelete={handleDeleteSingle}
+                    onDuplicate={handleDuplicate}
                     onStatusChange={handleStatusChange}
                     isLoading={isLoadingEvents}
                 />

@@ -171,8 +171,8 @@ function UsersContent() {
         try {
             const isActive = newStatus === 'active';
             const { error } = await supabase.rpc('bulk_update_user_status', {
-                user_ids: Array.from(selectedUserIds),
-                new_status: newStatus === 'active' ? 'active' : 'temporarily_suspended'
+                p_user_ids: Array.from(selectedUserIds),
+                p_status: newStatus
             });
 
             if (error) throw error;

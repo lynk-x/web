@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -183,6 +184,47 @@ export default function MemberTable() {
         }
     };
 
+    const handleBulkRemove = async () => {
+        if (selectedIds.size === 0 || !activeAccount) return;
+        const count = selectedIds.size;
+        if (!confirm(`Are you sure you want to remove/revoke access for ${count} selected items?`)) return;
+
+        setIsLoading(true);
+        try {
+            // Split selected IDs into members (user_ids) and invites (invitation_ids)
+            // We use the 'members' state to differentiate
+            const selectedMembers = members.filter(m => selectedIds.has(m.id));
+            const memberUserIds = selectedMembers.filter(m => !m.isPending).map(m => m.userId!);
+            const inviteIds = selectedMembers.filter(m => m.isPending).map(m => m.id);
+
+            const results = [];
+
+            if (memberUserIds.length > 0) {
+                results.push(supabase.rpc('bulk_remove_account_members', {
+                    p_account_id: activeAccount.id,
+                    p_user_ids: memberUserIds
+                }));
+            }
+
+            if (inviteIds.length > 0) {
+                results.push(supabase.rpc('bulk_revoke_account_invitations', {
+                    p_invitation_ids: inviteIds
+                }));
+            }
+
+            const responses = await Promise.all(results);
+            const errors = responses.filter(r => r.error);
+            if (errors.length > 0) throw errors[0].error;
+
+            showToast(`Successfully processed ${count} removals.`, "success", "Batch Complete");
+            setSelectedIds(new Set());
+            fetchMembers();
+        } catch (err: any) {
+            showToast(err.message || "Failed to process bulk removal.", "error", "Batch Failed");
+            setIsLoading(false);
+        }
+    };
+
     const columns: Column<AccountMember>[] = [
         {
             header: 'User',
@@ -273,15 +315,24 @@ export default function MemberTable() {
             {isLoading ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'gray' }}>Loading team members...</div>
             ) : (
-                <DataTable<AccountMember>
-                    data={members}
-                    columns={columns}
-                    getActions={getActions}
-                    selectedIds={selectedIds}
-                    onSelect={handleSelect}
-                    onSelectAll={handleSelectAll}
-                    emptyMessage="No team members or pending invites found."
-                />
+                <>
+                    <BulkActionsBar
+                        selectedCount={selectedIds.size}
+                        onCancel={() => setSelectedIds(new Set())}
+                        actions={[
+                            { label: 'Remove/Revoke Selected', onClick: handleBulkRemove, variant: 'danger' }
+                        ]}
+                    />
+                    <DataTable<AccountMember>
+                        data={members}
+                        columns={columns}
+                        getActions={getActions}
+                        selectedIds={selectedIds}
+                        onSelect={handleSelect}
+                        onSelectAll={handleSelectAll}
+                        emptyMessage="No team members or pending invites found."
+                    />
+                </>
             )}
 
             {/* Invite Modal Overlay */}
