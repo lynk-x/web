@@ -25,10 +25,10 @@ const CheckoutView: React.FC = () => {
 
     // Contact form state
     const [formData, setFormData] = useState({
-        fullName: '', email: '', phone: '', mpesaNumber: ''
+        email: '', phone: '', mpesaNumber: ''
     });
     const [formErrors, setFormErrors] = useState({
-        fullName: '', email: '', phone: '', mpesaNumber: ''
+        email: '', phone: '', mpesaNumber: ''
     });
 
     // Platform commission (5% of subtotal)
@@ -82,7 +82,6 @@ const CheckoutView: React.FC = () => {
                     if (profile) {
                         setFormData(prev => ({
                             ...prev,
-                            fullName: profile.full_name || '',
                             email: profile.email || user.email || '',
                             phone: profile.phone_number || '',
                         }));
@@ -225,16 +224,18 @@ const CheckoutView: React.FC = () => {
     };
 
     const validateForm = (): boolean => {
-        const errs = { fullName: '', email: '', phone: '', mpesaNumber: '' };
+        const errs = { email: '', phone: '', mpesaNumber: '' };
         let ok = true;
 
-        if (!formData.fullName.trim()) { errs.fullName = 'Full name is required'; ok = false; }
         if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email)) {
             errs.email = 'Valid email address is required'; ok = false;
         }
-        if (!formData.phone.trim() || !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
-            errs.phone = 'Valid phone number is required'; ok = false;
+        
+        // Phone is now optional, but if entered, must be valid
+        if (formData.phone.trim() && !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
+            errs.phone = 'Please enter a valid phone number'; ok = false;
         }
+
         const mpesaClean = formData.mpesaNumber.replace(/\s+/g, '');
         if (!mpesaClean || !/^(?:0|\+?254)[17]\d{8}$/.test(mpesaClean)) {
             errs.mpesaNumber = 'Valid M-Pesa number required (e.g. 0712345678)'; ok = false;
@@ -261,9 +262,9 @@ const CheckoutView: React.FC = () => {
                 if (user) {
                     await supabase.from('user_profile').upsert({
                         id: user.id,
-                        display_name: formData.fullName.trim(),
                         email: formData.email.toLowerCase().trim(),
-                        phone_number: formData.phone.trim(),
+                        // Auto-fill phone from M-Pesa number if empty
+                        phone_number: formData.phone.trim() || formData.mpesaNumber.trim(),
                     }, { onConflict: 'id' });
                 }
             }
@@ -430,17 +431,12 @@ const CheckoutView: React.FC = () => {
                             ) : (
                                 <>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Full Name</label>
-                                        <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className={`${styles.input} ${formErrors.fullName ? styles.inputError : ''}`} placeholder="John Doe" />
-                                        {formErrors.fullName && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.fullName}</span>}
-                                    </div>
-                                    <div className={styles.formGroup}>
                                         <label className={styles.label}>Email Address</label>
                                         <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
                                         {formErrors.email && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Phone Number</label>
+                                        <label className={styles.label}>Phone Number (Optional)</label>
                                         <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" />
                                         {formErrors.phone && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
                                     </div>
