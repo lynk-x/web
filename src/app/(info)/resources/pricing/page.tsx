@@ -15,7 +15,7 @@ export default async function PricingFeesPage() {
     const { data: page } = await supabase
         .from('cms_pages')
         .select('*')
-        .eq('slug', '/resources/pricing')
+        .eq('slug', 'pricing')
         .eq('status', 'published')
         .single();
 

@@ -15,7 +15,7 @@ export default async function SafetySecurityPage() {
     const { data: page } = await supabase
         .from('cms_pages')
         .select('*')
-        .eq('slug', '/resources/safety')
+        .eq('slug', 'safety')
         .eq('status', 'published')
         .single();
 

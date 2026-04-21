@@ -15,7 +15,7 @@ export default async function HostingGuidePage() {
     const { data: page } = await supabase
         .from('cms_pages')
         .select('*')
-        .eq('slug', '/resources/guide')
+        .eq('slug', 'guide')
         .eq('status', 'published')
         .single();
 

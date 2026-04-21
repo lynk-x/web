@@ -16,7 +16,7 @@ export default async function HelpCenterPage() {
     const { data: page } = await supabase
         .from('cms_pages')
         .select('*')
-        .eq('slug', '/resources/help')
+        .eq('slug', 'help')
         .eq('status', 'published')
         .single();
 

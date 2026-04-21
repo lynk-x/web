@@ -34,7 +34,7 @@ export default async function ResourceIndex() {
             
             <div className={styles.categoryGrid}>
                 {displayResources.map((item, idx) => (
-                    <Link key={idx} href={item.slug} className={styles.categoryCard}>
+                    <Link key={idx} href={`/resources/${item.slug}`} className={styles.categoryCard}>
                         <h2 className={styles.cardTitle}>{item.title}</h2>
                         <p className={styles.cardDesc}>{item.content?.description}</p>
                         <span className={styles.cardLink}>Learn More →</span>
