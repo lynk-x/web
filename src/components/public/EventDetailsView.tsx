@@ -294,6 +294,21 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                                 {Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))} remaining
                                             </div>
                                         )}
+                                        {selectedTicket === tier.id && (
+                                            <div className={styles.qtySelectorInCard} onClick={(e) => e.stopPropagation()}>
+                                                <span className={styles.qtyLabel}>Quantity</span>
+                                                <div className={styles.qtyControls}>
+                                                    <button
+                                                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                                        className={styles.qtyBtn}
+                                                    >&minus;</button>
+                                                    <span className={styles.qtyValue}>{quantity}</span>
+                                                    <button
+                                                        onClick={() => setQuantity(q => q + 1)}
+                                                        className={styles.qtyBtn}>+</button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </motion.div>
                             ))
@@ -309,29 +324,14 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                         >
-                            {selectedTicket !== null && (
-                                <div className={styles.qtySelector}>
-                                    <span className={styles.qtyLabel}>Quantity</span>
-                                    <div className={styles.qtyControls}>
-                                        <button
-                                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                            className={styles.qtyBtn}
-                                        >&minus;</button>
-                                        <span className={styles.qtyValue}>{quantity}</span>
-                                        <button
-                                            onClick={() => setQuantity(q => q + 1)}
-                                            className={styles.qtyBtn}>+</button>
-                                    </div>
-                                </div>
-                            )}
                             <button
                                 onClick={handleGetTicketClick}
                                 className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
                             >
                                 {selectedTicket !== null
-                                    ? `Get ${quantity} ticket${quantity > 1 ? 's' : ''} \u2014 ${event.currency || 'KES'} ${((ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity).toLocaleString()}`
+                                    ? `Proceed to Checkout \u2014 ${event.currency || 'KES'} ${((ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity).toLocaleString()}`
                                     : 'Select a ticket'}
-                                {selectedTicket !== null && <span className={styles.btnSubtext}>Proceed to secure checkout</span>}
+                                {selectedTicket !== null && <span className={styles.btnSubtext}>Secure checkout via M-Pesa</span>}
                             </button>
                         </motion.div>
                     )}
