@@ -288,27 +288,34 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                             <span className={styles.tierName}>{tier.display_name || tier.name}</span>
                                             <span className={styles.tierPrice}>{event.currency || 'KES'} {tier.price.toLocaleString()}</span>
                                         </div>
-                                        <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
-                                        {tier.capacity !== null && (
-                                            <div className={styles.remainingBadge}>
-                                                {Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))} remaining
+                                        <div className={styles.ticketInfoRow}>
+                                            <div className={styles.ticketMeta}>
+                                                <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
+                                                {tier.capacity !== null && (
+                                                    <div className={styles.remainingBadge}>
+                                                        {Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))} remaining
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                        {selectedTicket === tier.id && (
-                                            <div className={styles.qtySelectorInCard} onClick={(e) => e.stopPropagation()}>
-                                                <span className={styles.qtyLabel}>Quantity</span>
-                                                <div className={styles.qtyControls}>
+                                            {selectedTicket === tier.id && (
+                                                <div className={styles.qtyControls} onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
                                                         className={styles.qtyBtn}
+                                                        disabled={quantity <= 1}
                                                     >&minus;</button>
                                                     <span className={styles.qtyValue}>{quantity}</span>
                                                     <button
-                                                        onClick={() => setQuantity(q => q + 1)}
-                                                        className={styles.qtyBtn}>+</button>
+                                                        onClick={() => {
+                                                            const remaining = tier.capacity !== null ? Math.max(0, tier.capacity - (tier.tickets_sold ?? 0)) : Infinity;
+                                                            setQuantity(q => q < remaining ? q + 1 : q);
+                                                        }}
+                                                        className={styles.qtyBtn}
+                                                        disabled={tier.capacity !== null && quantity >= Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))}
+                                                    >+</button>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))

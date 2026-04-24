@@ -22,9 +22,9 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
     const { searchTerm, selectedCategories, selectedDates, selectedTags } = useFilters();
     const hasActiveFilters = searchTerm !== "" || selectedCategories.length > 0 || selectedDates.length > 0 || selectedTags.length > 0;
 
-    // Base Grid: if no filters, only show everything AFTER the first 5 so we don't repeat the carousel.
-    // Otherwise, search everything!
-    const baseGridEvents = hasActiveFilters ? allEvents : allEvents.slice(5);
+    // Base Grid: Use all non-featured events. 
+    // Separation from carousel is now handled in page.tsx.
+    const baseGridEvents = allEvents;
 
     const filteredGridEvents = baseGridEvents.filter(event => {
         // Search Filter
