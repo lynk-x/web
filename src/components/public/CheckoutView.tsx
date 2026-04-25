@@ -22,6 +22,7 @@ const CheckoutView: React.FC = () => {
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'waiting' | 'completed' | 'failed'>('idle');
     const [paymentError, setPaymentError] = useState('');
     const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'card'>('mpesa');
 
     // Contact form state
     const [formData, setFormData] = useState({
@@ -230,14 +231,14 @@ const CheckoutView: React.FC = () => {
         if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email)) {
             errs.email = 'Valid email address is required'; ok = false;
         }
-        
+
         // Phone is now optional, but if entered, must be valid
         if (formData.phone.trim() && !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
             errs.phone = 'Please enter a valid phone number'; ok = false;
         }
 
         const mpesaClean = formData.mpesaNumber.replace(/\s+/g, '');
-        if (!mpesaClean || !/^(?:0|\+?254)[17]\d{8}$/.test(mpesaClean)) {
+        if (paymentMethod === 'mpesa' && (!mpesaClean || !/^(?:0|\+?254)[17]\d{8}$/.test(mpesaClean))) {
             errs.mpesaNumber = 'Valid M-Pesa number required (e.g. 0712345678)'; ok = false;
         }
 
@@ -262,9 +263,8 @@ const CheckoutView: React.FC = () => {
                 if (user) {
                     await supabase.from('user_profile').upsert({
                         id: user.id,
-                        email: formData.email.toLowerCase().trim(),
-                        // Auto-fill phone from M-Pesa number if empty
-                        phone_number: formData.phone.trim() || formData.mpesaNumber.trim(),
+                        email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
+                        phone_number: formData.phone.trim(),
                     }, { onConflict: 'id' });
                 }
             }
@@ -278,7 +278,8 @@ const CheckoutView: React.FC = () => {
                     currency: currency,
                     metadata: {
                         user_id: user.id,
-                        email: formData.email,
+                        email: formData.email.trim() || null,
+                        phone: formData.phone.trim(),
                         items: items.map(i => ({ event_id: i.eventId, tier_id: i.tierId, quantity: i.quantity, promo_code: appliedPromo?.code || null })),
                         // Webhook fulfillment hints
                         event_id: items[0].eventId,
@@ -345,7 +346,9 @@ const CheckoutView: React.FC = () => {
                                         <div key={item.id} className={styles.cartItem}>
                                             <div className={styles.cartItemInfo}>
                                                 <div className={styles.cartItemHeader}>
-                                                    <span>{item.eventTitle}</span>
+                                                    <Link href={`/event/${item.eventReference}`} className={styles.eventLink}>
+                                                        {item.eventTitle}
+                                                    </Link>
                                                     <span>{item.currency} {(item.price * item.quantity).toLocaleString()}</span>
                                                 </div>
                                                 <div className={styles.cartItemDetails}>
@@ -420,7 +423,7 @@ const CheckoutView: React.FC = () => {
                         <section className={styles.section}>
                             <h2 className={styles.sectionTitle}>Contact Information</h2>
                             <p style={{ fontSize: '13px', opacity: 0.6, marginBottom: '16px' }}>
-                                Your tickets will be linked to this email. No account required.
+                                Your tickets will be linked to this phone number. Please ensure its the correct one.
                             </p>
                             {isLoading ? (
                                 <>
@@ -431,15 +434,16 @@ const CheckoutView: React.FC = () => {
                             ) : (
                                 <>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Email Address</label>
-                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
-                                        {formErrors.email && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
+                                        <label className={styles.label}>Phone Number</label>
+                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" />
+                                        {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Phone Number (Optional)</label>
-                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" />
-                                        {formErrors.phone && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
+                                        <label className={styles.label}>Email Address(Optional)</label>
+                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
+                                        {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
                                     </div>
+
                                 </>
                             )}
                         </section>
@@ -451,11 +455,31 @@ const CheckoutView: React.FC = () => {
                             ) : (
                                 <>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>M-Pesa Number</label>
-                                        <input type="tel" name="mpesaNumber" value={formData.mpesaNumber} onChange={handleInputChange} className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`} placeholder="+254 7..." />
-                                        {formErrors.mpesaNumber && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.mpesaNumber}</span>}
+                                        <label className={styles.label}>Payment Method</label>
+                                        <select 
+                                            className={styles.select}
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value as 'mpesa' | 'card')}
+                                        >
+                                            <option value="mpesa">M-Pesa</option>
+                                            <option value="card">Card</option>
+                                        </select>
                                     </div>
-                                    <p className={styles.helperText}>* An STK push will be sent to your phone</p>
+
+                                    {paymentMethod === 'mpesa' ? (
+                                        <>
+                                            <div className={styles.formGroup}>
+                                                <label className={styles.label}>M-Pesa Number</label>
+                                                <input type="tel" name="mpesaNumber" value={formData.mpesaNumber} onChange={handleInputChange} className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`} placeholder="+254 7..." />
+                                                {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
+                                            </div>
+                                            <p className={styles.helperText}>* An STK push will be sent to your phone</p>
+                                        </>
+                                    ) : (
+                                        <div style={{ padding: '24px', textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '16px' }}>
+                                            <p style={{ opacity: 0.6, fontSize: '14px' }}>Card payments coming soon!</p>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </section>
@@ -491,8 +515,8 @@ const CheckoutView: React.FC = () => {
                             Please enter your M-Pesa PIN to complete the purchase.
                         </p>
                         <p className={styles.helperText}>Waiting for confirmation...</p>
-                        <button 
-                            className={styles.cancelBtn} 
+                        <button
+                            className={styles.cancelBtn}
                             onClick={() => {
                                 sessionStorage.removeItem('lynk-x-payment');
                                 setPaymentStatus('idle');

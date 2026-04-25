@@ -28,6 +28,7 @@ export interface Event {
     currency?: string;
     /** Admin-curated flag — true when event appears on homepage carousel */
     is_featured?: boolean;
+    reference: string;
     tags?: string[];
 }
 

@@ -66,7 +66,7 @@ const HeroSection: React.FC<HeroProps> = ({ featuredEvents }) => {
                             {currentEvent.description || "Join us for an unforgettable experience."}
                         </p>
                         <div className={styles.actions}>
-                            <Link href={`/event/${currentEvent.id}`} className={styles.primaryBtn}>
+                            <Link href={`/event/${currentEvent.reference}`} className={styles.primaryBtn}>
                                 Get Tickets
                             </Link>
                             <button className={styles.secondaryBtn}>

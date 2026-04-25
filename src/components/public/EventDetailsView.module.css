@@ -235,10 +235,6 @@
     margin-bottom: var(--spacing-md);
 }
 
-.ticketItem:hover {
-    border-color: var(--color-brand-primary);
-}
-
 .checkbox {
     width: 20px;
     height: 20px;
@@ -299,9 +295,7 @@
 }
 
 .ticketItemActive {
-    background-color: rgba(32, 249, 40, 0.03);
     border-color: var(--color-brand-primary) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 

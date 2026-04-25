@@ -21,4 +21,5 @@ export interface CartItem {
     quantity: number;
     currency: string;
     image?: string;
+    eventReference: string;
 }

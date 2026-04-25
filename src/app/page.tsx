@@ -20,7 +20,7 @@ export default async function Home() {
     //  - is correctly indexed via idx_events_status_active
     supabase
       .from('vw_public_events')
-      .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, is_featured, low_price, currency')
+      .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, is_featured, reference, low_price, currency')
       .order('starts_at', { ascending: true })
       .limit(50),
     supabase.from('event_categories').select('id, display_name').order('display_name'),

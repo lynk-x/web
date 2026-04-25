@@ -3,9 +3,9 @@ import EventDetailsView from '@/components/public/EventDetailsView';
 import { notFound } from 'next/navigation';
 import { Event } from '@/types';
 
-export default async function EventPage({ params }: { params: { id: string } }) {
+export default async function EventPage({ params }: { params: { reference: string } }) {
     const supabase = await createClient();
-    const { id } = await params;
+    const { reference } = await params;
 
     // Select from the raw table but apply the same filters as vw_public_events:
     // - deleted_at IS NULL: hide soft-deleted events
@@ -14,11 +14,11 @@ export default async function EventPage({ params }: { params: { id: string } }) 
         .from('events')
         .select(`
             id, title, description, media, location, timezone, account_id,
-            starts_at, ends_at, is_private, currency,
+            starts_at, ends_at, is_private, currency, reference,
             organizer:accounts!account_id(display_name),
             category:event_categories(display_name)
         `)
-        .eq('id', id)
+        .eq('reference', reference)
         .is('deleted_at', null)
         .in('status', ['published', 'active'])
         .single();

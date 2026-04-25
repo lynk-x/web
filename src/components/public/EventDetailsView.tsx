@@ -68,6 +68,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 eventId: event.id,
                 tierId: selectedTier.id,
                 eventTitle: event.title,
+                eventReference: event.reference,
                 ticketType: selectedTier.display_name || selectedTier.name,
                 price: selectedTier.price,
                 quantity,
@@ -88,7 +89,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
 
             if (!user) {
                 // Redirect to login with return path
-                router.push(`/login?next=/event/${event.id}`);
+                router.push(`/login?next=/event/${event.reference}`);
                 return;
             }
 
@@ -197,8 +198,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 >
                     <div className={styles.detailsContent}>
                         <h1 className={styles.title}>{event.title}</h1>
-                        <p className={styles.location}>Location: {(event.location as any)?.name || 'TBD'}</p>
                         <p className={styles.date}>Date: {dateString}</p>
+                        <p className={styles.location}>Location: {(event.location as any)?.name || 'TBD'}</p>
 
                         <div className={styles.tagGrid}>
                             <span className={styles.tag}>{event.category || 'Event'}</span>

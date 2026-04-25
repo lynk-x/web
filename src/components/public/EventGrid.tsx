@@ -36,6 +36,7 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
                     <EventCard
                         key={event.id}
                         id={event.id}
+                        reference={event.reference}
                         name={event.title}
                         date={new Date(event.start_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         category={event.category || 'General'}

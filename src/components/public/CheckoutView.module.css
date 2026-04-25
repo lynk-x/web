@@ -142,6 +142,50 @@
     color: var(--color-utility-primaryText);
     font-size: 16px;
     outline: none;
+    transition: border-color 0.2s;
+}
+
+.inputError {
+    border-color: #ef4444 !important;
+}
+
+.errorText {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+}
+
+.eventLink {
+    text-decoration: underline;
+    color: inherit;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.eventLink:hover {
+    color: var(--color-brand-primary);
+}
+
+.eventLink:hover {
+    color: var(--color-brand-primary);
+}
+
+.select {
+    width: 100%;
+    padding: var(--spacing-md);
+    background-color: var(--color-interface-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--color-utility-primaryText);
+    font-size: 16px;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    cursor: pointer;
 }
 
 .input:focus {
