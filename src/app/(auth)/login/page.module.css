@@ -198,3 +198,13 @@
 .toggleButton:hover {
     text-decoration: underline;
 }
+
+.modeIcon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    pointer-events: none;
+}
