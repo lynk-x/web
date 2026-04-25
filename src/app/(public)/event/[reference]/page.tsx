@@ -31,7 +31,7 @@ export default async function EventPage({ params }: { params: { reference: strin
     const { data: ticketTiers } = await supabase
         .from('ticket_tiers')
         .select('id, display_name, description, price, capacity, tickets_sold')
-        .eq('event_id', id)
+        .eq('event_id', rawEvent.id)
         .order('price', { ascending: true });
 
     // Fetch active disclaimers linked to this event via its tags.
@@ -43,7 +43,7 @@ export default async function EventPage({ params }: { params: { reference: strin
                 disclaimers(id, title, content, is_active, effective_date)
             )
         `)
-        .eq('event_id', id);
+        .eq('event_id', rawEvent.id);
 
     // Flatten nested join and deduplicate by disclaimer id
     const seen = new Set<string>();
