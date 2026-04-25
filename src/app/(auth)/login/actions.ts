@@ -9,18 +9,19 @@ import { sanitizeInput } from '@/utils/sanitization'
 export async function login(formData: FormData) {
     const supabase = await createClient()
 
-    const email = sanitizeInput(formData.get('email') as string)
+    const email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
+    const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
     // Honour the ?next= param so checkout and other gates land the user where they wanted.
     const next = sanitizeInput((formData.get('next') as string) || '/dashboard')
 
-    const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-    })
+    const { error } = await supabase.auth.signInWithPassword(
+        phone ? { phone, password } : { email: email!, password }
+    )
 
     if (error) {
-        redirect(`/login?error=Could not authenticate user&next=${encodeURIComponent(next)}`)
+        const errorMsg = error.message || 'Could not authenticate user'
+        redirect(`/login?error=${encodeURIComponent(errorMsg)}&next=${encodeURIComponent(next)}`)
     }
 
     revalidatePath('/', 'layout')
@@ -30,16 +31,17 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
-    const email = sanitizeInput(formData.get('email') as string)
+    const email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
+    const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
 
-    const { error } = await supabase.auth.signUp({
-        email,
-        password,
-    })
+    const { error } = await supabase.auth.signUp(
+        phone ? { phone, password } : { email: email!, password }
+    )
 
     if (error) {
-        redirect('/login?error=Could not create account')
+        const errorMsg = error.message || 'Could not create account'
+        redirect(`/login?error=${encodeURIComponent(errorMsg)}`)
     }
 
     revalidatePath('/', 'layout')

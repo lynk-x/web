@@ -18,6 +18,7 @@ export default function AuthPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoginDetail, setIsLoginDetail] = useState(true);
+    const [useEmail, setUseEmail] = useState(false);
     const [formError, setFormError] = useState<string | null>(serverError || null);
 
     // Clear out errors when switching tabs
@@ -80,14 +81,35 @@ export default function AuthPage() {
                         {serverMessage}
                     </div>
                 )}
+
+                <div className={styles.toggleWrapper}>
+                    <button
+                        type="button"
+                        className={styles.toggleButton}
+                        onClick={() => setUseEmail(!useEmail)}
+                    >
+                        {useEmail ? 'Use Phone Number instead' : 'Use Email instead'}
+                    </button>
+                </div>
+
                 <div className={styles.inputWrapper}>
-                    <input
-                        name="email"
-                        type="email"
-                        placeholder="Email"
-                        className={styles.input}
-                        required
-                    />
+                    {useEmail ? (
+                        <input
+                            name="email"
+                            type="email"
+                            placeholder="Email Address"
+                            className={styles.input}
+                            required
+                        />
+                    ) : (
+                        <input
+                            name="phone"
+                            type="tel"
+                            placeholder="Phone Number (e.g. +254...)"
+                            className={styles.input}
+                            required
+                        />
+                    )}
                 </div>
 
                 <div className={styles.inputWrapper}>
