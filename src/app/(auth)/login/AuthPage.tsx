@@ -33,7 +33,7 @@ export default function AuthPage() {
                     src="/lynk-x_combined_logo.svg"
                     alt="Lynk-X"
                     width={180}
-                    height={50}
+                    height={60}
                     style={{ objectFit: 'cover' }}
                     priority
                 />

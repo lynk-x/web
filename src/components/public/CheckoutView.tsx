@@ -22,7 +22,7 @@ const CheckoutView: React.FC = () => {
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'waiting' | 'completed' | 'failed'>('idle');
     const [paymentError, setPaymentError] = useState('');
     const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'card'>('mpesa');
+    const [paymentMethod, setPaymentMethod] = useState<'mpesa'>('mpesa');
 
     // Contact form state
     const [formData, setFormData] = useState({
@@ -372,7 +372,7 @@ const CheckoutView: React.FC = () => {
                                         <span>{currency} {subtotal.toLocaleString()}</span>
                                     </div>
                                     <div className={styles.summaryItem}>
-                                        <span>Included Service Fee</span>
+                                        <span>Service Fee</span>
                                         <span className={styles.feeAmount}>{currency} {commissionAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
@@ -459,27 +459,18 @@ const CheckoutView: React.FC = () => {
                                         <select 
                                             className={styles.select}
                                             value={paymentMethod}
-                                            onChange={(e) => setPaymentMethod(e.target.value as 'mpesa' | 'card')}
+                                            onChange={(e) => setPaymentMethod(e.target.value as 'mpesa')}
                                         >
                                             <option value="mpesa">M-Pesa</option>
-                                            <option value="card">Card</option>
                                         </select>
                                     </div>
 
-                                    {paymentMethod === 'mpesa' ? (
-                                        <>
-                                            <div className={styles.formGroup}>
-                                                <label className={styles.label}>M-Pesa Number</label>
-                                                <input type="tel" name="mpesaNumber" value={formData.mpesaNumber} onChange={handleInputChange} className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`} placeholder="+254 7..." />
-                                                {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
-                                            </div>
-                                            <p className={styles.helperText}>* An STK push will be sent to your phone</p>
-                                        </>
-                                    ) : (
-                                        <div style={{ padding: '24px', textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '16px' }}>
-                                            <p style={{ opacity: 0.6, fontSize: '14px' }}>Card payments coming soon!</p>
-                                        </div>
-                                    )}
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>M-Pesa Number</label>
+                                        <input type="tel" name="mpesaNumber" value={formData.mpesaNumber} onChange={handleInputChange} className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`} placeholder="+254 7..." />
+                                        {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
+                                    </div>
+                                    <p className={styles.helperText}>* An STK push will be sent to your phone</p>
                                 </>
                             )}
                         </section>
