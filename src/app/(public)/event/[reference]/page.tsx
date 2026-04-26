@@ -2,6 +2,42 @@ import { createClient } from '@/utils/supabase/server';
 import EventDetailsView from '@/components/public/EventDetailsView';
 import { notFound } from 'next/navigation';
 import { Event } from '@/types';
+import { Metadata, ResolvingMetadata } from 'next';
+
+export async function generateMetadata(
+    { params }: { params: { reference: string } },
+    parent: ResolvingMetadata
+): Promise<Metadata> {
+    const supabase = await createClient();
+    const { reference } = await params;
+
+    const { data: event } = await supabase
+        .from('events')
+        .select('title, description, media')
+        .eq('reference', reference)
+        .single();
+
+    if (!event) return {};
+
+    const previousImages = (await parent).openGraph?.images || [];
+    const eventImage = event.media?.[0]?.url;
+
+    return {
+        title: `${event.title} | Lynk-X`,
+        description: event.description?.substring(0, 160) || "Experience this amazing event on Lynk-X.",
+        openGraph: {
+            title: event.title,
+            description: event.description,
+            images: eventImage ? [eventImage, ...previousImages] : previousImages,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: event.title,
+            description: event.description,
+            images: eventImage ? [eventImage] : previousImages,
+        },
+    };
+}
 
 export default async function EventPage({ params }: { params: { reference: string } }) {
     const supabase = await createClient();
