@@ -116,6 +116,17 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
         tags: true
     });
 
+    // Close sections by default on mobile
+    useEffect(() => {
+        if (window.innerWidth < 768) {
+            setExpandedSections({
+                dates: false,
+                categories: false,
+                tags: true
+            });
+        }
+    }, []);
+
     const [viewDate, setViewDate] = useState<Date>(new Date());
     const [numMonths, setNumMonths] = useState(1);
 
