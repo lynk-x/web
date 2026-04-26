@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { ToastProvider } from "@/components/ui/Toast";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -37,7 +38,9 @@ export default function RootLayout({
     <html lang="en-GB" className={`${inter.variable} ${interTight.variable}`} suppressHydrationWarning>
       <body>
         <CartProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </CartProvider>
         <Analytics />
         <SpeedInsights />
