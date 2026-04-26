@@ -16,6 +16,7 @@ import BackButton from '@/components/shared/BackButton';
 import TicketTierManager from './TicketTierManager';
 import { useEventForm, type EventFormTab } from '@/hooks/useEventForm';
 import type { OrganizerEventFormData as EventData } from '@/types/organize';
+import { useToast } from '@/components/ui/Toast';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ interface EventFormProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function EventForm({ initialData, pageTitle, submitBtnText, onSubmit, isEditMode = false }: EventFormProps) {
+    const { showToast } = useToast();
     const {
         formData, errors, loading, activeTab, setActiveTab,
         isDraftLoaded, isDirty,
@@ -99,6 +101,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         // Validate current tab before moving forward
         if (validateTab(activeTab)) {
             setActiveTab(target);
+        } else {
+            showToast('Please complete the required fields on this tab before continuing.', 'warning');
         }
     };
 
@@ -167,7 +171,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                             onClick={() => handleSubmit('draft')} 
                             disabled={loading}
                         >
-                            Save as Draft
+                            Save Draft
                         </button>
                     )}
                     <button className={styles.saveBtn} onClick={() => handleSubmit('published')} disabled={loading}>

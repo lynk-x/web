@@ -51,7 +51,7 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ isOpen, disclaimers, 
                     <div className={styles.header}>
                         <h2 className={styles.title}>Important Information</h2>
                         <p className={styles.subtitle}>Please review the legal disclaimers before proceeding.</p>
-                        <button className={styles.closeBtn} onClick={onClose}>
+                        <button className={styles.closeBtn} onClick={onClose} aria-label="Close disclaimer">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -69,12 +69,14 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ isOpen, disclaimers, 
                     </div>
 
                     <div className={styles.footer}>
-                        <label className={styles.checkboxContainer}>
+                        <label className={styles.checkboxContainer} htmlFor="disclaimer-agree">
                             <input
+                                id="disclaimer-agree"
                                 type="checkbox"
                                 checked={hasAgreed}
                                 onChange={(e) => setHasAgreed(e.target.checked)}
                                 className={styles.checkbox}
+                                aria-label="I have read and agree to all the terms mentioned"
                             />
                             <span className={styles.checkmark}></span>
                             <span className={styles.checkboxLabel}>I have read and agree to all the terms mentioned.</span>

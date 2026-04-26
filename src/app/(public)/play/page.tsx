@@ -59,7 +59,17 @@ export default function PlayPage() {
         }
     }
 
-    if (!flagChecked) return null;
+    if (!flagChecked) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.card} style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+                    <div style={{ width: 180, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    <div style={{ width: 260, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    <div style={{ width: 120, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                </div>
+            </div>
+        );
+    }
 
     if (!isFeatureEnabled) {
         return (

@@ -8,6 +8,8 @@ import { createClient } from '@/utils/supabase/client';
 import styles from './CheckoutView.module.css';
 import Skeleton from './Skeleton';
 import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/ui/Toast';
+import { validateKenyanPhone } from '@/utils/phone';
 
 /**
  * CheckoutView — Guest-first ticket purchase flow.
@@ -16,6 +18,7 @@ const CheckoutView: React.FC = () => {
     const { items, getCartTotal, itemCount, removeFromCart, clearCart } = useCart();
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
+    const { showToast } = useToast();
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,7 +136,7 @@ const CheckoutView: React.FC = () => {
                         clearCart();
                         // Use the M-Pesa checkout request ID as the order reference so
                         // support teams can look it up in the transactions table.
-                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${items.length}`);
+                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}`);
                     } else if (newStatus === 'failed' || newStatus === 'cancelled') {
                         clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
@@ -167,7 +170,7 @@ const CheckoutView: React.FC = () => {
                 .maybeSingle();
 
             if (error || !promo) {
-                setPromoError('Invalid or unrecognised promo code.');
+                setPromoError('Promo code not found. Please check the code and try again.');
                 setAppliedPromo(null);
                 return;
             }
@@ -213,7 +216,10 @@ const CheckoutView: React.FC = () => {
         }
     }, [promoCode, subtotal, supabase]);
 
-    const handleRemovePromo = () => setAppliedPromo(null);
+    const handleRemovePromo = () => {
+        setAppliedPromo(null);
+        showToast('Promo code removed.', 'info');
+    };
 
     // ── Form helpers ──────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,8 +243,7 @@ const CheckoutView: React.FC = () => {
             errs.phone = 'Please enter a valid phone number'; ok = false;
         }
 
-        const mpesaClean = formData.mpesaNumber.replace(/\s+/g, '');
-        if (paymentMethod === 'mpesa' && (!mpesaClean || !/^(?:0|\+?254)[17]\d{8}$/.test(mpesaClean))) {
+        if (paymentMethod === 'mpesa' && !validateKenyanPhone(formData.mpesaNumber)) {
             errs.mpesaNumber = 'Valid M-Pesa number required (e.g. 0712345678)'; ok = false;
         }
 
@@ -359,6 +364,7 @@ const CheckoutView: React.FC = () => {
                                                 onClick={() => removeFromCart(item.id)}
                                                 className={styles.removeBtn}
                                                 title="Remove item"
+                                                aria-label={`Remove ${item.eventTitle} from cart`}
                                             >
                                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                                     <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -435,7 +441,7 @@ const CheckoutView: React.FC = () => {
                                 <>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Phone Number</label>
-                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" />
+                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" autoFocus />
                                         {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
@@ -467,7 +473,21 @@ const CheckoutView: React.FC = () => {
 
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>M-Pesa Number</label>
-                                        <input type="tel" name="mpesaNumber" value={formData.mpesaNumber} onChange={handleInputChange} className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`} placeholder="+254 7..." />
+                                        <input
+                                            type="tel"
+                                            name="mpesaNumber"
+                                            value={formData.mpesaNumber}
+                                            onChange={handleInputChange}
+                                            onBlur={() => {
+                                                if (formData.mpesaNumber && !validateKenyanPhone(formData.mpesaNumber)) {
+                                                    setFormErrors(prev => ({ ...prev, mpesaNumber: 'Valid M-Pesa number required (e.g. 0712345678)' }));
+                                                } else {
+                                                    setFormErrors(prev => ({ ...prev, mpesaNumber: '' }));
+                                                }
+                                            }}
+                                            className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`}
+                                            placeholder="+254 7..."
+                                        />
                                         {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
                                     </div>
                                     <p className={styles.helperText}>* An STK push will be sent to your phone</p>
@@ -477,7 +497,23 @@ const CheckoutView: React.FC = () => {
 
                         <div className={styles.footerActions}>
                             {paymentError && (
-                                <p style={{ color: 'red', textAlign: 'center', marginBottom: '1rem' }}>{paymentError}</p>
+                                <div style={{ marginBottom: '1rem', padding: '12px 16px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                    <p style={{ color: 'var(--color-interface-error)', fontSize: '14px', margin: '0 0 8px' }}>{paymentError}</p>
+                                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                        <button
+                                            onClick={() => { setPaymentError(''); setPaymentStatus('idle'); setIsSubmitting(false); }}
+                                            style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.5)', background: 'transparent', color: 'var(--color-interface-error)', cursor: 'pointer' }}
+                                        >
+                                            Try Again
+                                        </button>
+                                        <a
+                                            href="mailto:support@lynk-x.com"
+                                            style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}
+                                        >
+                                            Contact Support
+                                        </a>
+                                    </div>
+                                </div>
                             )}
                             {isLoading ? (
                                 <Skeleton width="100%" height="56px" borderRadius="8px" />

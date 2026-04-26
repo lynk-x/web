@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import DOMPurify from 'dompurify';
 import styles from './OutreachPreview.module.css';
 
 interface OutreachPreviewProps {
@@ -34,7 +35,7 @@ const OutreachPreview: React.FC<OutreachPreviewProps> = ({ subject, message, aud
                 )}
                 {hasContent ? (
                     <div
-                        dangerouslySetInnerHTML={{ __html: message || '<p>No content yet...</p>' }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message || '<p>No content yet...</p>') }}
                     />
                 ) : (
                     <div className={styles.emptyPreview}>

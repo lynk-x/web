@@ -5,6 +5,7 @@ import styles from './CreateEventForm.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
 
 interface TicketType {
     name: string;
@@ -26,6 +27,7 @@ const CreateEventForm = () => {
     const { activeAccount } = useOrganization();
     const router = useRouter();
 
+    const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [realCategories, setRealCategories] = useState<{id: string, display_name: string}[]>([]);
 
@@ -94,7 +96,7 @@ const CreateEventForm = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!activeAccount) {
-            alert('Please select an active organization first.');
+            showToast('Please select an active organization first.', 'warning');
             return;
         }
 
@@ -155,11 +157,11 @@ const CreateEventForm = () => {
                 if (tierError) throw tierError;
             }
 
-            alert('Event Created Successfully!');
+            showToast('Event created successfully!', 'success');
             router.push('/dashboard/organize');
         } catch (error: any) {
             console.error('Error creating event:', error);
-            alert(`Error: ${error.message}`);
+            showToast(error.message || 'Failed to create event.', 'error');
         } finally {
             setIsSubmitting(false);
         }

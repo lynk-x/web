@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import DOMPurify from 'dompurify';
 import styles from './CmsRenderer.module.css';
 
 interface CmsSection {
@@ -62,7 +63,7 @@ export default function CmsRenderer({ content, className = '' }: CmsRendererProp
     return (
         <div
             className={`${styles.prose} ${className}`}
-            dangerouslySetInnerHTML={{ __html: typeof content === 'string' ? content : JSON.stringify(content) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(typeof content === 'string' ? content : JSON.stringify(content)) }}
         />
     );
 }

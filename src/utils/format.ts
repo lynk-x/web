@@ -219,3 +219,42 @@ export function formatDateTimeInTimezone(
         return formatDateTime(d);
     }
 }
+
+/**
+ * Formats a date as "Thursday 11th Mar, 2007" in the event's canonical timezone.
+ * Used for high-fidelity event detail views.
+ */
+export function formatEventDate(date: string | Date | number, tz?: string | null): string {
+    if (!date) return '-';
+    const d = new Date(
+        typeof date === 'number' ? date : typeof date === 'string' ? date : date.getTime()
+    );
+    if (isNaN(d.getTime())) return '-';
+
+    const getOrdinal = (n: number) => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    };
+
+    try {
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            timeZone: tz || undefined,
+        });
+        const parts = formatter.formatToParts(d);
+        
+        const weekday = parts.find(p => p.type === 'weekday')?.value;
+        const day = parts.find(p => p.type === 'day')?.value;
+        const month = parts.find(p => p.type === 'month')?.value;
+        const year = parts.find(p => p.type === 'year')?.value;
+
+        const dayNum = parseInt(day || '0');
+        return `${weekday} ${dayNum}${getOrdinal(dayNum)} ${month}, ${year}`;
+    } catch {
+        return formatDate(d);
+    }
+}

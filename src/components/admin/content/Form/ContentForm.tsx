@@ -164,6 +164,7 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
                         value={formData.title}
                         onChange={handleInputChange}
                         required
+                        autoFocus
                     />
                     {renderValidationHint('title')}
                 </div>
@@ -243,7 +244,7 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
                             <div className={styles.previewContent}>
                                 <h1 className={styles.previewTitle}>{formData.title || 'Untitled'}</h1>
                                 <div className={styles.previewMeta}>
-                                    {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {formData.type}
+                                    {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} • {formData.type}
                                 </div>
                                 <CmsRenderer content={formData.content} />
                             </div>

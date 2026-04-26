@@ -8,9 +8,10 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
-import { formatDateTimeInTimezone } from '@/utils/format';
+import { formatDateTimeInTimezone, formatEventDate, formatTime } from '@/utils/format';
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
+import { useToast } from '@/components/ui/Toast';
 
 interface EventDetailsViewProps {
     event: Event;
@@ -30,6 +31,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const router = useRouter();
     const { addToCart } = useCart();
     const supabase = createClient();
+    const { showToast } = useToast();
 
     const [isAboutExpanded, setIsAboutExpanded] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
@@ -120,7 +122,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     };
 
     // Format the event date/time in the event's canonical timezone
-    const dateString = formatDateTimeInTimezone(event.start_datetime, event.timezone, true);
+    const dateString = formatEventDate(event.start_datetime, event.timezone);
+    const timeString = formatDateTimeInTimezone(event.start_datetime, event.timezone, true).split(' ').slice(1).join(' ');
 
     const handleShare = async () => {
         if (typeof navigator !== 'undefined') {
@@ -136,7 +139,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 }
             } else {
                 navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard!');
+                showToast('Link copied to clipboard!', 'success');
             }
         }
     };
@@ -150,7 +153,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
             transition={{ duration: 0.5 }}
         >
             <header className={styles.header}>
-                <Link href="/" className={styles.backBtn}>
+                <Link href="/" className={styles.backBtn} aria-label="Back to events">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -165,7 +168,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         priority
                     />
                 </div>
-                <button className={styles.shareBtn} onClick={handleShare}>
+                <button className={styles.shareBtn} onClick={handleShare} aria-label="Share event">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M8.59 13.51L15.42 17.49M15.41 6.51L8.59 10.49M21 5C21 6.65685 19.6569 8 18 8C16.3431 8 15 6.65685 15 5C15 3.34315 16.3431 2 18 2C19.6569 2 21 3.34315 21 5ZM9 12C9 13.6569 7.65685 15 6 15C4.34315 15 3 13.6569 3 12C3 10.3431 4.34315 9 6 9C7.65685 9 9 10.3431 9 12ZM21 19C21 20.6569 19.6569 22 18 22C16.3431 22 15 20.6569 15 19C15 17.3431 16.3431 16 18 16C19.6569 16 21 17.3431 21 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -183,7 +186,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         {(event.media as any)?.cover_image_url ? (
                             <img src={(event.media as any).cover_image_url} alt={event.title} className={styles.heroImage} />
                         ) : (
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.heroIcon}>
+                            <svg role="img" aria-label="No event image available" width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.heroIcon}>
                                 <path d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16M14 14L15.586 12.414C15.9611 12.0391 16.4697 11.8284 17 11.8284C17.5303 11.8284 18.0389 12.0391 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         )}
@@ -198,7 +201,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 >
                     <div className={styles.detailsContent}>
                         <h1 className={styles.title}>{event.title}</h1>
-                        <p className={styles.date}>Date: {dateString}</p>
+                        <p className={styles.date}>{dateString} • {timeString}</p>
                         <p className={styles.location}>Location: {(event.location as any)?.name || 'TBD'}</p>
 
                         <div className={styles.tagGrid}>
@@ -269,13 +272,17 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         ) : ticketTiers.length === 0 ? (
                             <p>No tickets currently available for this event.</p>
                         ) : (
-                            ticketTiers.map(tier => (
-                                <motion.div 
-                                    key={tier.id} 
-                                    className={`${styles.ticketItem} ${selectedTicket === tier.id ? styles.ticketItemActive : ''}`} 
-                                    onClick={() => toggleTicket(tier.id)}
-                                    whileHover={{ scale: 1.01, borderColor: 'var(--color-brand-primary)' }}
-                                    whileTap={{ scale: 0.98 }}
+                            ticketTiers.map(tier => {
+                                const tierRemaining = tier.capacity !== null ? Math.max(0, tier.capacity - (tier.tickets_sold ?? 0)) : Infinity;
+                                const isTierSoldOut = tier.capacity !== null && tierRemaining === 0;
+                                return (
+                                <motion.div
+                                    key={tier.id}
+                                    className={`${styles.ticketItem} ${selectedTicket === tier.id ? styles.ticketItemActive : ''} ${isTierSoldOut ? styles.ticketItemSoldOut : ''}`}
+                                    onClick={() => !isTierSoldOut && toggleTicket(tier.id)}
+                                    style={{ cursor: isTierSoldOut ? 'not-allowed' : 'pointer', opacity: isTierSoldOut ? 0.55 : 1 }}
+                                    whileHover={!isTierSoldOut ? { scale: 1.01, borderColor: 'var(--color-brand-primary)' } : {}}
+                                    whileTap={!isTierSoldOut ? { scale: 0.98 } : {}}
                                 >
                                     <div className={`${styles.checkbox} ${selectedTicket === tier.id ? styles.checkboxChecked : ''}`}>
                                         {selectedTicket === tier.id && (
@@ -292,9 +299,13 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                         <div className={styles.ticketInfoRow}>
                                             <div className={styles.ticketMeta}>
                                                 <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
-                                                {tier.capacity !== null && (
+                                                {isTierSoldOut ? (
+                                                    <div className={styles.remainingBadge} style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--color-interface-error)' }}>
+                                                        Sold Out
+                                                    </div>
+                                                ) : tier.capacity !== null && (
                                                     <div className={styles.remainingBadge}>
-                                                        {Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))} remaining
+                                                        {tierRemaining} remaining
                                                     </div>
                                                 )}
                                             </div>
@@ -319,7 +330,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                         </div>
                                     </div>
                                 </motion.div>
-                            ))
+                                );
+                            })
 
                         )}
                     </div>

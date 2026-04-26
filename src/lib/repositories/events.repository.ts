@@ -297,6 +297,7 @@ export function createEventsRepository(client: DbClient) {
                 .from('event_waitlists')
                 .select('id, event_id, user_id, status, created_at')
                 .eq('event_id', eventId)
+                .is('deleted_at', null)
                 .order('created_at', { ascending: true })
                 .range(from, from + size - 1);
 
