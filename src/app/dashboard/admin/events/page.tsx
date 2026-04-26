@@ -16,10 +16,12 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import RejectionModal from '@/components/shared/RejectionModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function AdminEventsPage() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
 
     const [events, setEvents] = useState<Event[]>([]);
@@ -150,7 +152,7 @@ export default function AdminEventsPage() {
     };
 
     const handleBulkDelete = async () => {
-        if (!confirm(`Are you sure you want to delete ${selectedEventIds.size} events?`)) return;
+        if (!await confirm(`Are you sure you want to delete ${selectedEventIds.size} events?`, { title: 'Delete Events', confirmLabel: 'Delete' })) return;
         showToast(`Deleting ${selectedEventIds.size} events...`, 'info');
         try {
             const { error } = await supabase
@@ -230,7 +232,7 @@ export default function AdminEventsPage() {
     };
 
     const handleSingleDelete = async (event: Event) => {
-        if (!confirm(`Are you sure you want to delete ${event.title}?`)) return;
+        if (!await confirm(`Delete "${event.title}"?`, { title: 'Delete Event', confirmLabel: 'Delete' })) return;
         showToast(`Deleting ${event.title}...`, 'info');
         try {
             const { error } = await supabase
@@ -258,7 +260,8 @@ export default function AdminEventsPage() {
 
     return (
         <div className={styles.container}>
-            <PageHeader 
+            {ConfirmDialog}
+            <PageHeader
                 title="Event Management" 
                 subtitle="Review, approve, and moderate events across the platform."
             />

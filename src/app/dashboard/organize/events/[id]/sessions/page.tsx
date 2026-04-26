@@ -9,6 +9,7 @@ import { formatDate, formatTime } from '@/utils/format';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Modal from '@/components/shared/Modal';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface EventSession {
     id: string;
@@ -25,6 +26,7 @@ interface EventSession {
 export default function EventSessionsPage() {
     const { id: eventId } = useParams<{ id: string }>();
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
@@ -135,7 +137,7 @@ export default function EventSessionsPage() {
     };
 
     const handleDelete = async (sessionId: string) => {
-        if (!confirm('Delete this session?')) return;
+        if (!await confirm('Delete this session?')) return;
         try {
             const { error } = await supabase
                 .from('event_sessions')
@@ -151,6 +153,7 @@ export default function EventSessionsPage() {
 
     return (
         <div className={adminStyles.page}>
+            {ConfirmDialog}
             <SubPageHeader
                 title="Sessions"
                 subtitle={eventTitle ? `Manage sessions for "${eventTitle}"` : 'Manage event sessions'}

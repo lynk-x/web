@@ -12,6 +12,7 @@ import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface SponsorshipInvitation {
     id: string;
@@ -66,6 +67,7 @@ export default function EventSponsorshipsPage() {
     const { id: eventId } = useParams<{ id: string }>();
     const { enabled: isSponsorshipsEnabled, isLoading: isFlagLoading } = useFeatureFlag('enable_event_sponsorships');
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
@@ -229,7 +231,7 @@ export default function EventSponsorshipsPage() {
     };
 
     const handleRevoke = async (invitationId: string) => {
-        if (!confirm('Revoke this invitation?')) return;
+        if (!await confirm('Revoke this invitation?')) return;
         try {
             const { error } = await supabase
                 .from('sponsorship_invitations')
@@ -329,7 +331,7 @@ export default function EventSponsorshipsPage() {
             showToast('Cannot delete a tier with active sponsorships', 'error');
             return;
         }
-        if (!confirm(`Delete tier "${tier.name}"? This cannot be undone.`)) return;
+        if (!await confirm(`Delete tier "${tier.name}"? This cannot be undone.`)) return;
         try {
             const { error } = await supabase
                 .from('sponsorship_tiers')
@@ -355,6 +357,7 @@ export default function EventSponsorshipsPage() {
 
     return (
         <div className={adminStyles.page}>
+            {ConfirmDialog}
             <SubPageHeader
                 title="Sponsorships"
                 subtitle={eventTitle ? `Manage sponsorship packages for "${eventTitle}"` : 'Manage event sponsorships'}

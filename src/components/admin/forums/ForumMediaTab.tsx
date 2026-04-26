@@ -8,10 +8,12 @@ import adminStyles from '@/app/dashboard/admin/page.module.css';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Badge from '@/components/shared/Badge';
 import { ForumMedia } from '@/types/admin';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function ForumMediaTab() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [media, setMedia] = useState<ForumMedia[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +62,7 @@ export default function ForumMediaTab() {
     }, [fetchMedia]);
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this media?')) return;
+        if (!await confirm('Are you sure you want to delete this media?')) return;
         
         try {
             const { error } = await supabase
@@ -89,6 +91,7 @@ export default function ForumMediaTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+            {ConfirmDialog}
             <TableToolbar 
                 searchPlaceholder="Search by caption, event, or uploader..." 
                 searchValue={searchTerm} 

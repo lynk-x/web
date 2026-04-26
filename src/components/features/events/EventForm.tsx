@@ -17,6 +17,7 @@ import TicketTierManager from './TicketTierManager';
 import { useEventForm, type EventFormTab } from '@/hooks/useEventForm';
 import type { OrganizerEventFormData as EventData } from '@/types/organize';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ interface EventFormProps {
 
 export default function EventForm({ initialData, pageTitle, submitBtnText, onSubmit, isEditMode = false }: EventFormProps) {
     const { showToast } = useToast();
+    const { confirm: confirmModal, ConfirmDialog } = useConfirmModal();
     const {
         formData, errors, loading, activeTab, setActiveTab,
         isDraftLoaded, isDirty,
@@ -131,6 +133,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className={styles.container}>
+            {ConfirmDialog}
             <header className={styles.header}>
                 <div>
                     <BackButton label="Back to Events" isDirty={isDirty} />
@@ -159,7 +162,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                         </div>
                         <div className={styles.draftActions}>
                             <button onClick={applyDraft} className={styles.restoreBtn}>Restore Previous Work</button>
-                            <button onClick={discardDraft} className={styles.discardBtn}>Ignore</button>
+                            <button onClick={async () => { if (await confirmModal('Discard draft? This cannot be undone.', { title: 'Discard Draft', confirmLabel: 'Discard' })) discardDraft(); }} className={styles.discardBtn}>Ignore</button>
                         </div>
                     </div>
                 )}

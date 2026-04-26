@@ -9,6 +9,7 @@ import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface SubscriptionPlan {
     id: string;
@@ -42,6 +43,7 @@ interface SubscriptionPrice {
 
 export default function SubscriptionPlansPage() {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const supabase = useMemo(() => createClient(), []);
 
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -234,7 +236,7 @@ export default function SubscriptionPlansPage() {
     };
 
     const handleDeletePrice = async (priceId: string) => {
-        if (!confirm('Delete this price tier?')) return;
+        if (!await confirm('Delete this price tier?')) return;
         try {
             const { error } = await supabase
                 .from('subscription_prices')
@@ -264,6 +266,7 @@ export default function SubscriptionPlansPage() {
 
     return (
         <div className={adminStyles.page}>
+            {ConfirmDialog}
             <PageHeader
                 title="Subscription Plans"
                 subtitle="Manage subscription plans and pricing tiers"

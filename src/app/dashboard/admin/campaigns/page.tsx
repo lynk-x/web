@@ -8,6 +8,7 @@ import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTa
 import AdAssetsTab from '@/components/admin/campaigns/AdAssetsTab';
 import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
 import AdPricingTab from '@/components/admin/campaigns/AdPricingTab';
+import AdCreditsTab from '@/components/admin/campaigns/AdCreditsTab';
 import Link from 'next/link';
 
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -19,17 +20,19 @@ import RejectionModal from '@/components/shared/RejectionModal';
 import Tabs from '@/components/dashboard/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 function CampaignsContent() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
     const initialTab = (searchParams.get('tab') as string) || 'campaigns';
-    const [activeTab, setActiveTab] = useState<'campaigns' | 'assets' | 'analytics' | 'pricing'>(
-        ['campaigns', 'assets', 'analytics', 'pricing'].includes(initialTab) ? initialTab as 'campaigns' | 'assets' | 'analytics' | 'pricing' : 'campaigns'
+    const [activeTab, setActiveTab] = useState<'campaigns' | 'assets' | 'analytics' | 'pricing' | 'credits'>(
+        ['campaigns', 'assets', 'analytics', 'pricing', 'credits'].includes(initialTab) ? initialTab as 'campaigns' | 'assets' | 'analytics' | 'pricing' | 'credits' : 'campaigns'
     );
     
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -71,7 +74,7 @@ function CampaignsContent() {
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
-        if (tab && ['campaigns', 'assets', 'analytics', 'pricing'].includes(tab)) {
+        if (tab && ['campaigns', 'assets', 'analytics', 'pricing', 'credits'].includes(tab)) {
             setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
@@ -211,7 +214,7 @@ function CampaignsContent() {
     };
 
     const handleSingleDelete = async (campaign: Campaign) => {
-        if (!confirm(`Are you sure you want to delete ${campaign.name}?`)) return;
+        if (!await confirm(`Are you sure you want to delete ${campaign.name}?`)) return;
         showToast(`Deleting ${campaign.name}...`, 'info');
         try {
             const { error } = await supabase
@@ -251,7 +254,7 @@ function CampaignsContent() {
     };
 
     const handleBulkDelete = async () => {
-        if (!confirm(`Are you sure you want to delete ${selectedCampaignIds.size} campaigns?`)) return;
+        if (!await confirm(`Are you sure you want to delete ${selectedCampaignIds.size} campaigns?`)) return;
         showToast(`Deleting ${selectedCampaignIds.size} campaigns...`, 'info');
 
         try {
@@ -297,6 +300,7 @@ function CampaignsContent() {
 
     return (
         <>
+            {ConfirmDialog}
             <Tabs
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -304,7 +308,8 @@ function CampaignsContent() {
                     { id: 'campaigns', label: 'Campaign List' },
                     { id: 'analytics', label: 'Cross-Campaign Stats' },
                     { id: 'assets', label: 'Ad Asset Library' },
-                    { id: 'pricing', label: 'Ad Pricing Tiers' }
+                    { id: 'pricing', label: 'Ad Pricing Tiers' },
+                    { id: 'credits', label: 'Ad Credits' }
                 ]}
             />
 
@@ -405,6 +410,7 @@ function CampaignsContent() {
             {activeTab === 'assets' && <AdAssetsTab />}
             {activeTab === 'analytics' && <AdAnalyticsTab />}
             {activeTab === 'pricing' && <AdPricingTab />}
+            {activeTab === 'credits' && <AdCreditsTab />}
         </>
     );
 }
@@ -412,7 +418,7 @@ function CampaignsContent() {
 export default function AdminCampaignsPage() {
     return (
         <div className={styles.container}>
-            <PageHeader 
+            <PageHeader
                 title="Ad Campaign Moderation" 
                 subtitle="Manage brand visibility and ad revenue distribution."
             />

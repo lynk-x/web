@@ -6,6 +6,7 @@ import Badge from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,7 @@ interface UserBlocksTabProps {
  */
 export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const supabase = useMemo(() => createClient(), []);
 
     const [blocks, setBlocks] = useState<UserBlock[]>([]);
@@ -78,7 +80,7 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
 
     /** Removes a block — only for admin moderation use (e.g. confirmed block-evasion). */
     const handleRemoveBlock = async (block: UserBlock) => {
-        if (!confirm(`Remove block: ${block.blocker_name} → ${block.blocked_name}?`)) return;
+        if (!await confirm(`Remove block: ${block.blocker_name} → ${block.blocked_name}?`)) return;
         try {
             const { error } = await supabase
                 .from('user_blocks')
@@ -136,6 +138,7 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
 
     return (
         <div>
+            {ConfirmDialog}
             <div style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '13px', opacity: 0.6, lineHeight: 1.6 }}>
                     Read-only view of active user blocks. Admins can remove a block if it is being used to evade moderation restrictions.

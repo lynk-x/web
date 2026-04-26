@@ -42,7 +42,7 @@ const CheckoutView: React.FC = () => {
     // Promo state
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<{
-        code: string; discount: number; promoId: string;
+        code: string; discount: number; promoId: string; type: string; value: number;
     } | null>(null);
     const [promoError, setPromoError] = useState('');
     const [promoLoading, setPromoLoading] = useState(false);
@@ -51,7 +51,8 @@ const CheckoutView: React.FC = () => {
     const subtotal = getCartTotal();
     const commissionAmount = subtotal * commissionRate;
     const discountAmount = appliedPromo?.discount || 0;
-    const total = Math.max(0, subtotal - discountAmount);
+    // Total is subtotal + fee - discount. If free entry, ensure it hits zero.
+    const total = Math.max(0, (subtotal + commissionAmount) - discountAmount);
 
     const currency = items[0]?.currency || 'KES';
 
@@ -198,16 +199,15 @@ const CheckoutView: React.FC = () => {
 
             let discount: number;
             if (promo.type === 'free_entry') {
-                discount = subtotal;
-
+                discount = subtotal + commissionAmount;
             } else if (promo.type === 'percent') {
-                discount = (subtotal * promo.value) / 100;
+                discount = ((subtotal + commissionAmount) * promo.value) / 100;
             } else {
                 // 'fixed'
-                discount = Math.min(promo.value, subtotal);
+                discount = Math.min(promo.value, subtotal + commissionAmount);
             }
 
-            setAppliedPromo({ code, discount, promoId: promo.id });
+            setAppliedPromo({ code, discount, promoId: promo.id, type: promo.type, value: promo.value });
             setPromoCode('');
         } catch {
             setPromoError('Failed to validate promo code. Please try again.');
@@ -234,13 +234,14 @@ const CheckoutView: React.FC = () => {
         const errs = { email: '', phone: '', mpesaNumber: '' };
         let ok = true;
 
-        if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email)) {
-            errs.email = 'Valid email address is required'; ok = false;
+        // Phone Number is required
+        if (!formData.phone.trim() || !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
+            errs.phone = 'Please enter a valid phone number'; ok = false;
         }
 
-        // Phone is now optional, but if entered, must be valid
-        if (formData.phone.trim() && !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
-            errs.phone = 'Please enter a valid phone number'; ok = false;
+        // Email Address is now optional, but if entered, must be valid
+        if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+            errs.email = 'Please enter a valid email address'; ok = false;
         }
 
         if (paymentMethod === 'mpesa' && !validateKenyanPhone(formData.mpesaNumber)) {
@@ -386,7 +387,12 @@ const CheckoutView: React.FC = () => {
                                     {appliedPromo ? (
                                         <div className={`${styles.summaryItem} ${styles.discount}`}>
                                             <div className={styles.appliedPromoInfo}>
-                                                <span>Promo: {appliedPromo.code}</span>
+                                                <span>
+                                                    Promo: {appliedPromo.code} 
+                                                    {appliedPromo.type === 'percent' && ` (-${appliedPromo.value}%)`}
+                                                    {appliedPromo.type === 'fixed' && ` (-${currency} ${appliedPromo.value})`}
+                                                    {appliedPromo.type === 'free_entry' && ` (Free)`}
+                                                </span>
                                                 <button onClick={handleRemovePromo} className={styles.removePromoBtn}>Remove</button>
                                             </div>
                                             <span>-{currency} {appliedPromo.discount.toLocaleString()}</span>

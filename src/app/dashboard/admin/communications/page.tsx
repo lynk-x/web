@@ -17,12 +17,14 @@ import { useToast } from '@/components/ui/Toast';
 import LegalDocTable from '@/components/admin/content/LegalDocTable';
 import Badge from '@/components/shared/Badge';
 import DataTable, { Column } from '@/components/shared/DataTable';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 function CommunicationsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const supabase = useMemo(() => createClient(), []);
 
     const initialTab = (searchParams.get('tab') as string) || 'spotlights';
@@ -265,7 +267,7 @@ function CommunicationsContent() {
     };
 
     const handleDeleteBanner = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this banner?')) return;
+        if (!await confirm('Are you sure you want to delete this banner?')) return;
         try {
             const { error } = await supabase.from('system_banners').delete().eq('id', id);
             if (error) throw error;
@@ -292,7 +294,7 @@ function CommunicationsContent() {
     };
 
     const handleDeleteSpotlight = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this spotlight?')) return;
+        if (!await confirm('Are you sure you want to delete this spotlight?')) return;
         try {
             const { error } = await supabase.from('spotlights').delete().eq('id', id);
             if (error) throw error;
@@ -305,6 +307,7 @@ function CommunicationsContent() {
 
     return (
         <div className={adminStyles.container}>
+            {ConfirmDialog}
             <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 className={adminStyles.title}>Communications</h1>

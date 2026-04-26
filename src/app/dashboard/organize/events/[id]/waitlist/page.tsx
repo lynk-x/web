@@ -10,6 +10,7 @@ import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface WaitlistEntry {
     id: string;
@@ -35,6 +36,7 @@ const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
 export default function EventWaitlistPage() {
     const { id: eventId } = useParams<{ id: string }>();
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
@@ -100,7 +102,7 @@ export default function EventWaitlistPage() {
             showToast('No pending entries to invite', 'error');
             return;
         }
-        if (!confirm(`Invite all ${pendingEntries.length} pending attendees?`)) return;
+        if (!await confirm(`Invite all ${pendingEntries.length} pending attendees?`)) return;
 
         try {
             const now = new Date().toISOString();
@@ -125,7 +127,7 @@ export default function EventWaitlistPage() {
     };
 
     const handleRemove = async (entryId: string) => {
-        if (!confirm('Remove this person from the waitlist?')) return;
+        if (!await confirm('Remove this person from the waitlist?')) return;
         try {
             const { error } = await supabase
                 .from('event_waitlists')
@@ -147,6 +149,7 @@ export default function EventWaitlistPage() {
 
     return (
         <div className={adminStyles.page}>
+            {ConfirmDialog}
             <SubPageHeader
                 title="Waitlist"
                 subtitle={eventTitle

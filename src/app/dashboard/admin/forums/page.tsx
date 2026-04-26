@@ -23,10 +23,12 @@ import { exportToCSV } from '@/utils/export';
 import { createClient } from '@/utils/supabase/client';
 import { formatRelativeTime } from '@/utils/format';
 import StatCard from '@/components/dashboard/StatCard';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 function ForumsContent() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -164,7 +166,7 @@ function ForumsContent() {
     };
 
     const handleBulkDelete = async () => {
-        if (!confirm(`Are you sure? This will delete ${selectedThreadIds.size} forums. This action cannot be undone.`)) return;
+        if (!await confirm(`Are you sure? This will delete ${selectedThreadIds.size} forums. This action cannot be undone.`)) return;
 
         showToast(`Deleting ${selectedThreadIds.size} forums...`, 'info');
         try {
@@ -219,7 +221,8 @@ function ForumsContent() {
 
     return (
         <div className={adminStyles.container}>
-            <PageHeader 
+            {ConfirmDialog}
+            <PageHeader
                 title="Forum Management" 
                 subtitle="Monitor and moderate event forums and messages." 
             />

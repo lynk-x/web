@@ -7,6 +7,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/app/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ interface AdAsset {
  */
 export default function AdAssetsTab() {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const supabase = useMemo(() => createClient(), []);
 
     const [assets, setAssets] = useState<AdAsset[]>([]);
@@ -72,7 +74,7 @@ export default function AdAssetsTab() {
     useEffect(() => { fetchAssets(); }, [fetchAssets]);
 
     const handleDelete = async (asset: AdAsset) => {
-        if (!confirm(`Delete asset for campaign "${asset.campaign_title}"? This cannot be undone.`)) return;
+        if (!await confirm(`Delete asset for campaign "${asset.campaign_title}"? This cannot be undone.`)) return;
         try {
             const { error } = await supabase.from('ad_assets').delete().eq('id', asset.id);
             if (error) throw error;
@@ -158,6 +160,7 @@ export default function AdAssetsTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            {ConfirmDialog}
             <TableToolbar searchPlaceholder="Search by campaign or asset type..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {mediaGroups.map(g => (

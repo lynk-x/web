@@ -10,6 +10,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatDate } from '@/utils/format';
 import { sanitizeInput } from '@/utils/sanitization';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 
 export interface AccountMember {
@@ -38,6 +39,7 @@ const getRoleLabel = (role: string): string => {
 
 export default function MemberTable() {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
@@ -187,7 +189,7 @@ export default function MemberTable() {
     const handleBulkRemove = async () => {
         if (selectedIds.size === 0 || !activeAccount) return;
         const count = selectedIds.size;
-        if (!confirm(`Are you sure you want to remove/revoke access for ${count} selected items?`)) return;
+        if (!await confirm(`Are you sure you want to remove/revoke access for ${count} selected items?`)) return;
 
         setIsLoading(true);
         try {
@@ -288,6 +290,7 @@ export default function MemberTable() {
 
     return (
         <div style={{ padding: 0, background: 'transparent', border: 'none' }}>
+            {ConfirmDialog}
             {/* Header and Invite Button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>

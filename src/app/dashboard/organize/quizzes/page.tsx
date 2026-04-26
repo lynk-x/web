@@ -12,6 +12,7 @@ import Badge from '@/components/shared/Badge';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface Quiz {
     id: string;
@@ -32,6 +33,7 @@ const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
 export default function QuizzesPage() {
     const router = useRouter();
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const { enabled: isQuizEnabled, isLoading: isFlagLoading } = useFeatureFlag('enable_live_quiz');
@@ -123,7 +125,7 @@ export default function QuizzesPage() {
         if (selectedIds.size === 0) return;
         
         if (action === 'delete') {
-            if (!confirm(`Are you sure you want to delete ${selectedIds.size} quizzes?`)) return;
+            if (!await confirm(`Are you sure you want to delete ${selectedIds.size} quizzes?`)) return;
         }
 
         setIsLoading(true);
@@ -148,7 +150,7 @@ export default function QuizzesPage() {
             showToast('Only draft quizzes can be deleted', 'error');
             return;
         }
-        if (!confirm(`Delete quiz "${quiz.title}"? This cannot be undone.`)) return;
+        if (!await confirm(`Delete quiz "${quiz.title}"? This cannot be undone.`)) return;
         try {
             const { error } = await supabase.from('questionnaires').delete().eq('id', quiz.id);
             if (error) throw error;
@@ -169,6 +171,7 @@ export default function QuizzesPage() {
 
     return (
         <div className={adminStyles.page}>
+            {ConfirmDialog}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                 <div>
                     <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Quizzes</h1>

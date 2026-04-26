@@ -101,10 +101,8 @@ export function useEventFormData({ initialData, isEditMode = false }: UseEventFo
     }, [formData, isEditMode, initialData, setDraft]);
 
     const discardDraft = () => {
-        if (confirm('Discard draft? This cannot be undone.')) {
-            setDraft(null);
-            if (isDraftLoaded) window.location.reload();
-        }
+        setDraft(null);
+        if (isDraftLoaded) window.location.reload();
     };
 
     return {
