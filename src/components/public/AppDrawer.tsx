@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import styles from './AppDrawer.module.css';
 
 interface AppDrawerProps {
@@ -15,9 +17,11 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
 }) => {
     const [currency, setCurrency] = useState('all');
     const [region, setRegion] = useState('Global');
+    const [isAuthed, setIsAuthed] = useState(false);
+    const router = useRouter();
 
     // Auto-detect currency from cookie (set by Edge middleware)
-    React.useEffect(() => {
+    useEffect(() => {
         if (typeof document !== 'undefined') {
             const countryCode = document.cookie
                 .split('; ')
@@ -38,6 +42,23 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
             }
         }
     }, []);
+
+    // Check auth state once when drawer mounts
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setIsAuthed(!!session);
+        });
+    }, []);
+
+    const handlePortalClick = (type: 'organizer' | 'advertiser') => {
+        onClose();
+        if (isAuthed) {
+            router.push(`/dashboard?type=${type}`);
+        } else {
+            router.push(`/login?next=${encodeURIComponent(`/dashboard?type=${type}`)}`);
+        }
+    };
 
     return (
         <>
@@ -60,7 +81,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                     <div className={styles.menuSection}>
                         <h3 className={styles.menuSectionTitle}>Dashboards</h3>
                         <div className={styles.portalGrid}>
-                            <Link href="/dashboard/organize" className={styles.portalItem} onClick={onClose}>
+                            <button className={styles.portalItem} onClick={() => handlePortalClick('organizer')}>
                                 <div className={`${styles.portalIcon} ${styles.organizerIcon}`}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -73,9 +94,9 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                     <span className={styles.portalTitle}>Organizers</span>
                                     <span className={styles.portalDesc}>Manage your events</span>
                                 </div>
-                            </Link>
+                            </button>
 
-                            <Link href="/dashboard/ads" className={styles.portalItem} onClick={onClose}>
+                            <button className={styles.portalItem} onClick={() => handlePortalClick('advertiser')}>
                                 <div className={`${styles.portalIcon} ${styles.adsIcon}`}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -87,7 +108,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                     <span className={styles.portalTitle}>Ad Center</span>
                                     <span className={styles.portalDesc}>Manage your ads</span>
                                 </div>
-                            </Link>
+                            </button>
                         </div>
                     </div>
 

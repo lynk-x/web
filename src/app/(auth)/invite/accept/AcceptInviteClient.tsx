@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "./page.module.css";
@@ -15,7 +15,6 @@ export default function AcceptInviteClient({ token }: { token: string }) {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<boolean>(false);
     const [inviteDetails, setInviteDetails] = useState<any>(null);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
         checkSessionAndInvite();
@@ -32,8 +31,6 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             setIsLoading(false);
             return;
         }
-
-        setUserEmail(user.email || null);
 
         try {
             // Just check if the token exists to show who invited them. We do this securely by not exposing raw data.
@@ -74,15 +71,17 @@ export default function AcceptInviteClient({ token }: { token: string }) {
         setIsAccepting(true);
         setError(null);
         try {
-            const { data, error } = await supabase.rpc("accept_account_invitation", {
+            const { error } = await supabase.rpc("accept_account_invitation", {
                 p_token: token,
             });
 
             if (error) throw error;
 
             setSuccess(true);
+            // Go to profile setup so they can complete their identity before entering the dashboard.
+            // setup-profile will redirect to /dashboard/organize once done.
             setTimeout(() => {
-                router.push("/dashboard/organize");
+                router.push("/dashboard/setup-profile?type=organize");
             }, 2000);
         } catch (err: any) {
             setError(err.message || "Failed to accept invitation.");

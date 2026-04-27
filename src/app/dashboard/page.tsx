@@ -1,38 +1,35 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
 import styles from './page.module.css';
-import Link from 'next/link';
 
-/**
- * Dashboard Root Page
- * 
- * Handles workspace selection for returning users or redirection 
- * to onboarding for new users.
- */
-export default function DashboardRootPage() {
+function DashboardRoot() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, profile, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
-    const { accounts: allAccounts, activeAccount, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
+    const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
-    // Attendee accounts are consumer-facing and have no dashboard workspace.
-    // Only organizer / advertiser / platform accounts are shown here.
-    const accounts = allAccounts.filter(a => a.type !== 'attendee');
+    // ?type=organizer|advertiser — set by the drawer to pre-filter the workspace list
+    const typeParam = searchParams.get('type') as 'organizer' | 'advertiser' | null;
+
+    // Non-attendee accounts, optionally filtered by the type the user arrived from
+    const businessAccounts = allAccounts.filter(a => a.type !== 'attendee');
+    const displayAccounts = typeParam
+        ? businessAccounts.filter(a => a.type === typeParam)
+        : businessAccounts;
 
     const handleSelectWorkspace = useCallback((account: any) => {
         setIsRedirecting(true);
         setActiveAccountId(account.id);
-
         const path = account.type === 'platform'
             ? '/dashboard/admin'
             : account.type === 'advertiser'
                 ? '/dashboard/ads'
                 : '/dashboard/organize';
-
         router.push(path);
     }, [router, setActiveAccountId]);
 
@@ -44,24 +41,26 @@ export default function DashboardRootPage() {
             return;
         }
 
-        // Only redirect to onboarding if we're sure the context has settled:
-        // allAccounts is loaded and there are truly no non-attendee workspaces.
-        if (allAccounts.length === 0) {
-            router.replace('/onboarding');
-            return;
-        }
-
-        // If the user only has attendee accounts (no organizer/advertiser), go to onboarding.
-        if (accounts.length === 0 && allAccounts.length > 0) {
-            router.replace('/onboarding');
-            return;
-        }
-
         if (!profile || !profile.full_name || profile.full_name.trim() === '') {
             router.replace('/dashboard/setup-profile');
             return;
         }
-    }, [allAccounts, accounts, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, profile, router]);
+
+        // No business accounts at all → onboarding to create one
+        if (businessAccounts.length === 0) {
+            const dest = typeParam
+                ? `/onboarding?type=${typeParam}`
+                : '/onboarding';
+            router.replace(dest);
+            return;
+        }
+
+        // Has business accounts but none match the requested type → go to onboarding for that type
+        if (typeParam && displayAccounts.length === 0) {
+            router.replace(`/onboarding?type=${typeParam}`);
+            return;
+        }
+    }, [businessAccounts, displayAccounts, typeParam, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, profile, router]);
 
     if (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting) {
         return (
@@ -80,26 +79,32 @@ export default function DashboardRootPage() {
                     </span>
                 </div>
                 <style jsx>{`
-                    @keyframes spin {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 `}</style>
             </div>
         );
     }
 
-    if (accounts.length > 0) {
+    const typeLabel = typeParam === 'advertiser' ? 'Ad Center' : typeParam === 'organizer' ? 'Organizer' : null;
+    const createUrl = typeParam ? `/onboarding?type=${typeParam}` : '/onboarding';
+
+    if (displayAccounts.length > 0) {
         return (
             <div className={styles.container}>
                 <div className={styles.onboardingWrapper}>
                     <div className={styles.header}>
-                        <h1 className={styles.title}>Your Workspaces</h1>
-                        <p className={styles.subtitle}>Select a workspace to manage your events or advertising campaigns.</p>
+                        <h1 className={styles.title}>
+                            {typeLabel ? `Your ${typeLabel} Workspaces` : 'Your Workspaces'}
+                        </h1>
+                        <p className={styles.subtitle}>
+                            {typeLabel
+                                ? `Select a workspace or create a new ${typeLabel} account.`
+                                : 'Select a workspace to continue.'}
+                        </p>
                     </div>
 
                     <div className={styles.workspaceGrid}>
-                        {accounts.map((acc) => (
+                        {displayAccounts.map((acc) => (
                             <div
                                 key={acc.id}
                                 className={styles.workspaceCard}
@@ -107,11 +112,9 @@ export default function DashboardRootPage() {
                             >
                                 <div className={styles.cardHeader}>
                                     <div className={styles.avatar}>
-                                        {acc.logoUrl ? (
-                                            <img src={acc.logoUrl} alt={acc.name} />
-                                        ) : (
-                                            acc.name.charAt(0)
-                                        )}
+                                        {acc.logoUrl
+                                            ? <img src={acc.logoUrl} alt={acc.name} />
+                                            : acc.name.charAt(0)}
                                     </div>
                                     <div className={styles.orgInfo}>
                                         <h3 className={styles.orgName}>{acc.name}</h3>
@@ -135,19 +138,18 @@ export default function DashboardRootPage() {
                             </div>
                         ))}
 
-                        <Link href="/onboarding?create=true" className={`${styles.workspaceCard} ${styles.addNewCard}`}>
+                        <div
+                            className={`${styles.workspaceCard} ${styles.addNewCard}`}
+                            onClick={() => router.push(createUrl)}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <div className={styles.plusIcon}>+</div>
                             <span>Create New Workspace</span>
-                        </Link>
+                        </div>
                     </div>
                 </div>
 
-                {/* Floating Logout Button */}
-                <button 
-                    className={styles.logoutBtn} 
-                    onClick={logout}
-                    title="Sign Out"
-                >
+                <button className={styles.logoutBtn} onClick={logout} title="Sign Out">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16 17 21 12 16 7"></polyline>
@@ -160,4 +162,12 @@ export default function DashboardRootPage() {
     }
 
     return null;
+}
+
+export default function DashboardRootPage() {
+    return (
+        <Suspense fallback={null}>
+            <DashboardRoot />
+        </Suspense>
+    );
 }

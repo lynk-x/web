@@ -7,197 +7,155 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { sanitizeInput } from '@/utils/sanitization';
 import styles from './onboarding.module.css';
 
-type OnboardingStep = 'ROLE_SELECTION' | 'DETAILS' | 'VERIFICATION';
+type OnboardingStep = 'DETAILS' | 'VERIFICATION';
 type AccountType = 'organizer' | 'advertiser';
 
 function OnboardingFlow() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const supabase = createClient();
-    const { refreshAccounts, accounts: allAccounts, isLoading: isLoadingOrg } = useOrganization();
-    
-    // Check if we are explicitly here to create a new workspace
+    const { refreshAccounts } = useOrganization();
+
+    // ?type=organizer|advertiser  ?create=true (adding a new workspace)
+    const typeParam = searchParams.get('type') as AccountType | null;
     const isCreatingNew = searchParams.get('create') === 'true';
 
-    // Auto-redirect if they already have an account (prevents returning users session issues)
-    // ONLY redirect if they aren't explicitly trying to create a new one.
-    useEffect(() => {
-        if (!isLoadingOrg && !isCreatingNew && allAccounts.some(a => a.type !== 'attendee')) {
-            console.log('[Onboarding] Business accounts found, redirecting to dashboard');
-            router.replace('/dashboard');
-        }
-    }, [allAccounts, isLoadingOrg, isCreatingNew, router]);
+    const [step, setStep] = useState<OnboardingStep>('DETAILS');
+    const [accountType, setAccountType] = useState<AccountType>(typeParam ?? 'organizer');
 
-    // Flow State
-    const [step, setStep] = useState<OnboardingStep>('ROLE_SELECTION');
-    const [accountType, setAccountType] = useState<AccountType>('organizer');
-
-    // Form State
+    // Form state
     const [orgName, setOrgName] = useState('');
     const [orgDesc, setOrgDesc] = useState('');
     const [country, setCountry] = useState('KE');
-    const [countries, setCountries] = useState<{code: string, display_name: string}[]>([]);
+    const [countries, setCountries] = useState<{ code: string; display_name: string }[]>([]);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch active countries
-    useEffect(() => {
-        const fetchCountries = async () => {
-            const { data, error } = await supabase
-                .from('countries')
-                .select('code, display_name')
-                .eq('is_active', true)
-                .order('display_name');
-            
-            if (data) setCountries(data);
-        };
-        fetchCountries();
-    }, [supabase]);
-    
-    // KYC State
-    const [kycDocumentType, setKycDocumentType] = useState<string>('national_id');
-    const [kycFiles, setKycFiles] = useState<{file: File, preview: string}[]>([]);
+    // KYC state
+    const [kycDocumentType, setKycDocumentType] = useState('national_id');
+    const [kycFiles, setKycFiles] = useState<{ file: File; preview: string }[]>([]);
     const [skipping, setSkipping] = useState(false);
     const kycFileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleNext = () => {
-        if (step === 'ROLE_SELECTION') setStep('DETAILS');
-        else if (step === 'DETAILS') setStep('VERIFICATION');
-        setError(null);
-    };
+    // Redirect logged-in users who already have an account of this type,
+    // unless they are explicitly creating a new one.
+    useEffect(() => {
+        if (isCreatingNew) return;
+        // No redirect here — the dashboard page handles the "already has account" redirect.
+        // Onboarding is now publicly accessible; users who aren't logged in will hit the
+        // auth check inside handleCreateOrganization.
+    }, [isCreatingNew]);
 
-    const handleBack = () => {
-        if (step === 'VERIFICATION') setStep('DETAILS');
-        else if (step === 'DETAILS') setStep('ROLE_SELECTION');
-        setError(null);
-    };
+    // Fetch active countries
+    useEffect(() => {
+        supabase
+            .from('countries')
+            .select('code, display_name')
+            .eq('is_active', true)
+            .order('display_name')
+            .then(({ data }) => { if (data) setCountries(data); });
+    }, []);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         setLoading(true);
         try {
-            const fileExt = file.name.split('.').pop();
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Not authenticated');
-
-            // Upload to avatars bucket under the user's ID as a temp org logo.
-            // Once the account is created, the logo URL is written into accounts.media.
-            // Path: /{user_id}/org-logo.{ext} — complies with avatars RLS policy.
+            if (!user) {
+                router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+                return;
+            }
+            const fileExt = file.name.split('.').pop();
             const filePath = `${user.id}/org-logo.${fileExt}`;
-
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file, { upsert: true });
-
             if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-
+            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
             setLogoUrl(publicUrl);
-        } catch (err: any) {
+        } catch {
             setError('Failed to upload logo.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreateOrganization = async (e?: React.FormEvent | null, isSkipAction: boolean = false) => {
+    const handleCreateOrganization = async (e?: React.FormEvent | null, isSkipAction = false) => {
         if (e) e.preventDefault();
 
-        const cleanName = sanitizeInput(orgName.trim());
-        const cleanDesc = sanitizeInput(orgDesc.trim());
-
-        if (!cleanName) {
-            setError('Organization name is required.');
+        // Ensure the user is authenticated before creating an account
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
 
+        const cleanName = sanitizeInput(orgName.trim());
+        const cleanDesc = sanitizeInput(orgDesc.trim());
+        if (!cleanName) { setError('Organization name is required.'); return; }
+
         if (isSkipAction) setSkipping(true);
         else setLoading(true);
-
         setError(null);
 
         try {
-            // 1. Create the account via RPC (handles account + default wallet + member row)
             const { data: accountId, error: rpcError } = await supabase.rpc('create_organization_account', {
                 p_org_name: cleanName,
                 p_account_type: accountType,
-                p_country_code: country
+                p_country_code: country,
             });
-
             if (rpcError) throw rpcError;
 
-            // 2. Update additional branding (logo URL + description).
             if (logoUrl || cleanDesc) {
                 const { error: updateError } = await supabase
                     .from('accounts')
                     .update({
-                        // Merge into the JSONB info and media columns
                         ...(logoUrl ? { media: { logo: logoUrl } } : {}),
                         ...(cleanDesc ? { info: { description: cleanDesc } } : {}),
                     })
                     .eq('id', accountId);
-
                 if (updateError) console.error('Branding update failed (non-fatal):', updateError);
             }
 
-            // 3. Handle KYC Documents Upload
             if (kycFiles.length > 0) {
                 const uploadedPaths: string[] = [];
                 for (const item of kycFiles) {
                     const fileExt = item.file.name.split('.').pop();
                     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                    const filePath = `${accountId}/${fileName}`;
-
                     const { error: uploadError } = await supabase.storage
                         .from('accounts')
-                        .upload(filePath, item.file);
-
+                        .upload(`${accountId}/${fileName}`, item.file);
                     if (!uploadError) {
                         const { data: { publicUrl } } = supabase.storage
                             .from('accounts')
-                            .getPublicUrl(filePath);
+                            .getPublicUrl(`${accountId}/${fileName}`);
                         uploadedPaths.push(publicUrl);
                     }
                 }
-
                 if (uploadedPaths.length > 0) {
                     await supabase.from('identity_verifications').insert({
                         account_id: accountId,
                         document_type: kycDocumentType,
                         uploaded_documents: uploadedPaths,
-                        status: 'submitted'
+                        status: 'submitted',
                     });
                 }
             }
 
-            // 4. Refresh Context & Verify
+            // Refresh context and set active account
             let memberships = await refreshAccounts();
-            
-            // If the account isn't visible yet, wait a bit and retry once
             if (!memberships.some((m: any) => m.id === accountId)) {
-                console.log('[Onboarding] New account not visible yet, retrying fetch...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 memberships = await refreshAccounts();
             }
+            if (accountId) localStorage.setItem('lynks_active_account_id', accountId);
 
-            // 5. Explicitly set active account to satisfy the guard immediately
-            if (accountId) {
-                localStorage.setItem('lynks_active_account_id', accountId);
-            }
-
-            if (accountType === 'advertiser') {
-                window.location.href = '/dashboard/setup-profile?type=ads';
-            } else {
-                window.location.href = '/dashboard/setup-profile?type=organize';
-            }
-
+            // Redirect to user profile setup, then dashboard
+            const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
+            window.location.href = `/dashboard/setup-profile?type=${dashType}`;
         } catch (err: any) {
             console.error('Error creating organization:', err);
             setError(err.message || 'Failed to create organization. Please try again.');
@@ -209,12 +167,10 @@ function OnboardingFlow() {
     const handleKycFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
-
-        const newFiles = Array.from(files).map(file => ({
-            file,
-            preview: URL.createObjectURL(file)
-        }));
-        setKycFiles(prev => [...prev, ...newFiles]);
+        setKycFiles(prev => [
+            ...prev,
+            ...Array.from(files).map(file => ({ file, preview: URL.createObjectURL(file) })),
+        ]);
     };
 
     const removeKycFile = (index: number) => {
@@ -226,81 +182,52 @@ function OnboardingFlow() {
         });
     };
 
+    const isAdvertiser = accountType === 'advertiser';
+    const accentColor = isAdvertiser ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
+    const accentBg = isAdvertiser ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)';
+
     return (
         <div className={styles.container}>
             <div className={styles.onboardingWrapper}>
                 <div className={styles.header}>
                     <h1 className={styles.title}>
-                        {step === 'ROLE_SELECTION' ? 'Choose Your Path' : 
-                         step === 'DETAILS' ? 'Branding & Identity' : 'Identity Verification'}
+                        {step === 'DETAILS' ? 'Set Up Your Workspace' : 'Identity Verification'}
                     </h1>
                     <p className={styles.subtitle}>
-                        {step === 'ROLE_SELECTION'
-                            ? 'Select the primary goal for your new workspace.'
-                            : step === 'DETAILS' 
-                            ? `Let's make your ${accountType === 'organizer' ? 'Organising' : 'Advertising'} brand stand out.`
-                            : 'Upload your identification documents to verify your account and start operating.'}
+                        {step === 'DETAILS'
+                            ? `Let's get your ${isAdvertiser ? 'Advertising' : 'Organiser'} brand ready.`
+                            : 'Upload your identification documents to verify your account.'}
                     </p>
                 </div>
 
+                {/* Account type toggle — only shown when no type was passed via URL */}
+                {!typeParam && (
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
+                        <button
+                            onClick={() => setAccountType('organizer')}
+                            className={styles.backBtn}
+                            style={!isAdvertiser ? { borderColor: accentColor, color: accentColor } : {}}
+                        >
+                            Event Organizer
+                        </button>
+                        <button
+                            onClick={() => setAccountType('advertiser')}
+                            className={styles.backBtn}
+                            style={isAdvertiser ? { borderColor: accentColor, color: accentColor } : {}}
+                        >
+                            Advertiser
+                        </button>
+                    </div>
+                )}
+
                 <div className={styles.stepIndicator}>
-                    <div className={`${styles.stepDot} ${step === 'ROLE_SELECTION' ? styles.stepDotActive : ''}`} />
                     <div className={`${styles.stepDot} ${step === 'DETAILS' ? styles.stepDotActive : ''}`} />
                     <div className={`${styles.stepDot} ${step === 'VERIFICATION' ? styles.stepDotActive : ''}`} />
                 </div>
 
-                {step === 'ROLE_SELECTION' && (
-                    <div className={styles.roleGrid}>
-                        {/* Event Organizer Card */}
-                        <div
-                            className={`${styles.roleCard} ${accountType === 'organizer' ? styles.roleCardActive : ''}`}
-                            onClick={() => setAccountType('organizer')}
-                        >
-                            <div className={styles.roleIcon} style={{ background: 'rgba(32, 249, 40, 0.1)', color: 'var(--color-brand-primary)' }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                            </div>
-                            <h2 className={styles.roleName}>Event Organizer</h2>
-                            <p className={styles.roleDesc}>Create, manage, and sell tickets. Access powerful analytics and team management.</p>
-
-                            {accountType === 'organizer' && (
-                                <button className={styles.submitBtn} onClick={handleNext} style={{ marginTop: '32px' }}>
-                                    Continue as Organizer
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Advertiser Card */}
-                        <div
-                            className={`${styles.roleCard} ${styles.roleCardAds} ${accountType === 'advertiser' ? styles.roleCardActive : ''}`}
-                            onClick={() => setAccountType('advertiser')}
-                        >
-                            <div className={styles.roleIcon} style={{ background: 'rgba(249, 201, 32, 0.1)', color: 'var(--color-brand-secondary)' }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                    <path d="M2 17l10 5 10-5"></path>
-                                    <path d="M2 12l10 5 10-5"></path>
-                                </svg>
-                            </div>
-                            <h2 className={styles.roleName}>Advertiser</h2>
-                            <p className={styles.roleDesc}>Promote your brand with high-impact ads across the discovery feed.</p>
-
-                            {accountType === 'advertiser' && (
-                                <button className={styles.submitBtn} onClick={handleNext} style={{ marginTop: '32px', background: 'var(--color-brand-secondary)' }}>
-                                    Continue as Advertiser
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
                 {step === 'DETAILS' && (
                     <div className={styles.formCard}>
-                        <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className={styles.form}>
+                        <form onSubmit={(e) => { e.preventDefault(); setStep('VERIFICATION'); setError(null); }} className={styles.form}>
                             {/* Logo Upload */}
                             <div className={styles.logoSection}>
                                 <div className={styles.logoPreview} onClick={() => fileInputRef.current?.click()}>
@@ -317,7 +244,7 @@ function OnboardingFlow() {
                                     type="text"
                                     value={orgName}
                                     onChange={(e) => setOrgName(e.target.value)}
-                                    placeholder="e.g. Electric Vibes Events"
+                                    placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
                                     className={styles.input}
                                     required
                                 />
@@ -325,7 +252,7 @@ function OnboardingFlow() {
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Operating Country</label>
-                                <select 
+                                <select
                                     className={styles.input}
                                     value={country}
                                     onChange={(e) => setCountry(e.target.value)}
@@ -339,7 +266,7 @@ function OnboardingFlow() {
                             </div>
 
                             <div className={styles.inputGroup}>
-                                <label className={styles.label}>Description (Optional)</label>
+                                <label className={styles.label}>Description <span style={{ fontSize: '12px', opacity: 0.5 }}>(Optional)</span></label>
                                 <textarea
                                     value={orgDesc}
                                     onChange={(e) => setOrgDesc(e.target.value)}
@@ -350,14 +277,11 @@ function OnboardingFlow() {
                             </div>
 
                             <div className={styles.actions}>
-                                <button type="button" className={styles.backBtn} onClick={handleBack} disabled={loading}>
-                                    Go Back
-                                </button>
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
                                     disabled={loading || !orgName.trim()}
-                                    style={accountType === 'advertiser' ? { background: 'var(--color-brand-secondary)' } : {}}
+                                    style={{ background: accentColor }}
                                 >
                                     Continue to Verification
                                 </button>
@@ -373,9 +297,9 @@ function OnboardingFlow() {
                         <form onSubmit={(e) => handleCreateOrganization(e)} className={styles.form}>
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Document Type</label>
-                                <select 
-                                    className={styles.input} 
-                                    value={kycDocumentType} 
+                                <select
+                                    className={styles.input}
+                                    value={kycDocumentType}
                                     onChange={(e) => setKycDocumentType(e.target.value)}
                                     style={{ background: 'rgba(0, 0, 0, 0.4)' }}
                                 >
@@ -388,27 +312,24 @@ function OnboardingFlow() {
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>
-                                    Upload Documents 
+                                    Upload Documents{' '}
                                     <span style={{ fontSize: '12px', opacity: 0.5 }}>Front & Back if applicable</span>
                                 </label>
-                                <div 
-                                    className={styles.kycUploadArea} 
-                                    onClick={() => kycFileInputRef.current?.click()}
-                                >
+                                <div className={styles.kycUploadArea} onClick={() => kycFileInputRef.current?.click()}>
                                     <div style={{ textAlign: 'center' }}>
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '8px', opacity: 0.5 }}>
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                                         </svg>
                                         <p style={{ fontSize: '14px', opacity: 0.8 }}>Click to upload files</p>
                                         <p style={{ fontSize: '11px', opacity: 0.4, marginTop: '4px' }}>PNG, JPG or PDF up to 10MB</p>
                                     </div>
                                 </div>
-                                <input 
-                                    type="file" 
-                                    multiple 
-                                    ref={kycFileInputRef} 
-                                    onChange={handleKycFileChange} 
-                                    style={{ display: 'none' }} 
+                                <input
+                                    type="file"
+                                    multiple
+                                    ref={kycFileInputRef}
+                                    onChange={handleKycFileChange}
+                                    style={{ display: 'none' }}
                                     accept="image/*,application/pdf"
                                 />
 
@@ -432,21 +353,21 @@ function OnboardingFlow() {
                             </div>
 
                             <div className={styles.actions}>
-                                <button type="button" className={styles.backBtn} onClick={handleBack} disabled={loading}>
+                                <button type="button" className={styles.backBtn} onClick={() => { setStep('DETAILS'); setError(null); }} disabled={loading}>
                                     Go Back
                                 </button>
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
                                     disabled={loading || kycFiles.length === 0}
-                                    style={accountType === 'advertiser' ? { background: 'var(--color-brand-secondary)' } : {}}
+                                    style={{ background: accentColor }}
                                 >
                                     {loading ? 'Processing...' : 'Complete & Launch'}
                                 </button>
                             </div>
-                            
-                            <button 
-                                type="button" 
+
+                            <button
+                                type="button"
                                 className={styles.skipBtn}
                                 onClick={() => handleCreateOrganization(null, true)}
                                 disabled={loading || skipping}
@@ -467,17 +388,14 @@ function OnboardingFlow() {
 export default function OnboardingPage() {
     return (
         <Suspense fallback={
-            <div className={styles.container}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                    <div className={styles.spinner} style={{
-                        width: '32px',
-                        height: '32px',
-                        border: '2px solid rgba(255, 255, 255, 0.1)',
-                        borderTopColor: 'var(--color-brand-primary)',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite'
-                    }} />
-                </div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <div style={{
+                    width: '32px', height: '32px',
+                    border: '2px solid rgba(255,255,255,0.1)',
+                    borderTopColor: 'var(--color-brand-primary)',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                }} />
             </div>
         }>
             <OnboardingFlow />
