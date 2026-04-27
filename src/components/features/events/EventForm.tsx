@@ -43,6 +43,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         thumbnailPreview,
         tagInput, setTagInput,
         categories, popularTags, hasCategorySpecificTags,
+        isLoadingReference, referenceError,
         handleInputChange, handleToggle,
         handleImageSelect, handleRemoveImage,
         handleAddTag, handleRemoveTag, handleTagKeyDown,
@@ -272,10 +273,15 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                     onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
                                 >
                                     <option value="">Select a category</option>
-                                    {categories.length > 0
-                                        ? categories.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)
-                                        : <option value="">Loading categories...</option>
-                                    }
+                                    {isLoadingReference ? (
+                                        <option value="">Loading categories...</option>
+                                    ) : referenceError ? (
+                                        <option value="">Error loading categories</option>
+                                    ) : categories.length > 0 ? (
+                                        categories.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)
+                                    ) : (
+                                        <option value="">No categories found</option>
+                                    )}
                                 </select>
                                 <p className={styles.errorMessage}>{errors.category}</p>
                             </div>
@@ -310,7 +316,11 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                     )}
 
                                     {/* Suggested Tags (Choice Chips) */}
-                                    {popularTags.length > 0 && (
+                                    {isLoadingReference ? (
+                                        <p style={{ fontSize: '12px', opacity: 0.5 }}>Loading suggestions...</p>
+                                    ) : referenceError ? (
+                                        <p style={{ fontSize: '12px', color: 'var(--color-interface-error)' }}>Failed to load tags</p>
+                                    ) : popularTags.length > 0 ? (
                                         <>
                                             {(tagInput || hasCategorySpecificTags) && (
                                                 <p style={{ fontSize: '12px', opacity: 0.6, marginBottom: '8px', color: 'var(--color-utility-primaryText)' }}>
@@ -332,6 +342,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 })}
                                             </div>
                                         </>
+                                    ) : (
+                                        <p style={{ fontSize: '12px', opacity: 0.5 }}>No tags available</p>
                                     )}
                                 </div>
                                 <p className={styles.errorMessage}>{errors.tags}</p>

@@ -53,6 +53,7 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         popularTags,
         hasCategorySpecificTags,
         isLoadingReference,
+        error: referenceError,
     } = useEventFormReference({
         selectedCategory: formData.category,
         tagInput,
@@ -242,6 +243,7 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         popularTags,
         hasCategorySpecificTags,
         isLoadingReference,
+        referenceError,
 
         handleInputChange, handleToggle,
         handleImageSelect, handleRemoveImage,

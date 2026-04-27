@@ -35,10 +35,26 @@ function OnboardingFlow() {
     // Form State
     const [orgName, setOrgName] = useState('');
     const [orgDesc, setOrgDesc] = useState('');
+    const [country, setCountry] = useState('KE');
+    const [countries, setCountries] = useState<{code: string, display_name: string}[]>([]);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch active countries
+    useEffect(() => {
+        const fetchCountries = async () => {
+            const { data, error } = await supabase
+                .from('countries')
+                .select('code, display_name')
+                .eq('is_active', true)
+                .order('display_name');
+            
+            if (data) setCountries(data);
+        };
+        fetchCountries();
+    }, [supabase]);
     
     // KYC State
     const [kycDocumentType, setKycDocumentType] = useState<string>('national_id');
@@ -111,7 +127,8 @@ function OnboardingFlow() {
             // 1. Create the account via RPC (handles account + default wallet + member row)
             const { data: accountId, error: rpcError } = await supabase.rpc('create_organization_account', {
                 p_org_name: cleanName,
-                p_account_type: accountType
+                p_account_type: accountType,
+                p_country_code: country
             });
 
             if (rpcError) throw rpcError;
@@ -176,9 +193,9 @@ function OnboardingFlow() {
             }
 
             if (accountType === 'advertiser') {
-                window.location.href = '/dashboard/ads';
+                window.location.href = '/dashboard/setup-profile?type=ads';
             } else {
-                window.location.href = '/dashboard/organize/events';
+                window.location.href = '/dashboard/setup-profile?type=organize';
             }
 
         } catch (err: any) {
@@ -304,6 +321,21 @@ function OnboardingFlow() {
                                     className={styles.input}
                                     required
                                 />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Operating Country</label>
+                                <select 
+                                    className={styles.input}
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    style={{ background: 'rgba(0, 0, 0, 0.4)' }}
+                                >
+                                    {countries.map(c => (
+                                        <option key={c.code} value={c.code}>{c.display_name}</option>
+                                    ))}
+                                    {countries.length === 0 && <option value="KE">Kenya</option>}
+                                </select>
                             </div>
 
                             <div className={styles.inputGroup}>

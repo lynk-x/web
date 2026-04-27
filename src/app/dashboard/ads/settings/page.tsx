@@ -38,13 +38,18 @@ function AdsSettingsContent() {
         description: '',
         support_email: '',
         phone_number: '',
-        // Business Profile
         business_name: '',
         tax_id: '',
         registration_number: '',
         billing_address: ''
     });
 
+    const [initialFormData, setInitialFormData] = useState(formData);
+
+    const isDirty = useMemo(() => {
+        if (!activeAccount) return false;
+        return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+    }, [formData, initialFormData, activeAccount]);
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
@@ -63,8 +68,7 @@ function AdsSettingsContent() {
                 .eq('account_id', activeAccount.id)
                 .maybeSingle();
 
-            // Contact/profile data is in business_profile.info JSONB
-            setFormData({
+            const newValues = {
                 name: activeAccount.name || '',
                 website: (bizData?.info as any)?.website || '',
                 description: (bizData?.info as any)?.description || '',
@@ -74,25 +78,14 @@ function AdsSettingsContent() {
                 tax_id: bizData?.tax_id || '',
                 registration_number: bizData?.registration_number || '',
                 billing_address: typeof bizData?.billing_address === 'string' ? bizData.billing_address : JSON.stringify(bizData?.billing_address || '')
-            });
+            };
+
+            setFormData(newValues);
+            setInitialFormData(newValues);
         };
 
         fetchAllData();
     }, [isOrgLoading, activeAccount, supabase]);
-
-    const isDirty = useMemo(() => {
-        if (!activeAccount) return false;
-        return (
-            formData.name !== (activeAccount.name || '') ||
-            formData.support_email !== '' ||
-            formData.description !== '' ||
-            formData.phone_number !== '' ||
-            formData.business_name !== '' ||
-            formData.tax_id !== '' ||
-            formData.registration_number !== '' ||
-            formData.billing_address !== ''
-        );
-    }, [formData, activeAccount]);
 
     const handleTabChange = (newTab: string) => {
         if (isDirty && activeTab !== newTab) {
@@ -147,6 +140,7 @@ function AdsSettingsContent() {
             if (bizError) throw bizError;
 
             showToast('Settings saved successfully.', 'success');
+            setInitialFormData(formData);
             if (refreshAccounts) await refreshAccounts();
         } catch (error: any) {
             showToast(error.message || 'Failed to save settings', 'error');

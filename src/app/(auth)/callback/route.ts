@@ -22,18 +22,7 @@ export async function GET(request: Request) {
       let finalRedirect = next
       
       if (next === '/verify-success' && user) {
-        const { data: memberships } = await supabase
-          .from('account_members')
-          .select('accounts!inner(type)')
-          .eq('user_id', user.id)
-          .neq('accounts.type', 'attendee')
-          .limit(1)
-
-        if (!memberships || memberships.length === 0) {
-          finalRedirect = '/onboarding'
-        } else {
-          finalRedirect = '/dashboard'
-        }
+        finalRedirect = '/dashboard'
       }
 
       return NextResponse.redirect(`${origin}${finalRedirect}`)

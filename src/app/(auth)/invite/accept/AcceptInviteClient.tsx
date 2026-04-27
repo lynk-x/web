@@ -82,7 +82,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
 
             setSuccess(true);
             setTimeout(() => {
-                router.push("/dashboard/organize/events");
+                router.push("/dashboard/organize");
             }, 2000);
         } catch (err: any) {
             setError(err.message || "Failed to accept invitation.");

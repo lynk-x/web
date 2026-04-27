@@ -9,7 +9,7 @@ import styles from './setup.module.css';
 
 export default function ProfileSetupPage() {
     const router = useRouter();
-    const { user, profile } = useAuth();
+    const { user, profile, isLoading: isLoadingAuth, isLoadingProfile } = useAuth();
     const supabase = createClient();
 
     const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -20,6 +20,19 @@ export default function ProfileSetupPage() {
     const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
+
+    // Auto-redirect if profile is already complete
+    useEffect(() => {
+        if (!isLoadingAuth && !isLoadingProfile && !hasCheckedInitial) {
+            if (profile && profile.full_name && profile.full_name.trim() !== '') {
+                const params = new URLSearchParams(window.location.search);
+                const type = params.get('type') || 'organize';
+                router.replace(`/dashboard/${type}`);
+            }
+            setHasCheckedInitial(true);
+        }
+    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router]);
 
     // Debounced username check
     useEffect(() => {
@@ -98,9 +111,13 @@ export default function ProfileSetupPage() {
                 .eq('id', user.id);
 
             if (updateError) throw updateError;
+            
+            // Get type from URL params to decide where to land
+            const params = new URLSearchParams(window.location.search);
+            const type = params.get('type') || 'organize';
 
-            // Success: Direct them to complete the onboarding (Organization setup)
-            router.push('/onboarding');
+            // Success: Direct them to the workspace overview
+            router.push(`/dashboard/${type}`);
         } catch (err: any) {
             setError(err.message || 'Failed to update profile.');
         } finally {
@@ -112,8 +129,8 @@ export default function ProfileSetupPage() {
         <div className={styles.container}>
             <div className={styles.setupCard}>
                 <div className={styles.header}>
-                    <h1 className={styles.title}>Welcome to Lynk-X</h1>
-                    <p className={styles.subtitle}>Let&apos;s set up your profile to get you started as an organizer or advertiser.</p>
+                    <h1 className={styles.title}>Finalize Your Identity</h1>
+                    <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your public persona across the platform.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>

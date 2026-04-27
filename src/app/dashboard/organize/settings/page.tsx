@@ -60,26 +60,18 @@ function SettingsContent() {
         description: '',
         support_email: '',
         phone_number: '',
-        // Business Profile
         business_name: '',
         tax_id: '',
         registration_number: '',
         billing_address: ''
     });
 
+    const [initialFormData, setInitialFormData] = useState(formData);
+
     const isDirty = useMemo(() => {
         if (!activeAccount) return false;
-        return (
-            formData.name !== (activeAccount.name || '') ||
-            formData.support_email !== '' ||
-            formData.description !== '' ||
-            formData.phone_number !== '' ||
-            formData.business_name !== '' ||
-            formData.tax_id !== '' ||
-            formData.registration_number !== '' ||
-            formData.billing_address !== ''
-        );
-    }, [formData, activeAccount]);
+        return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+    }, [formData, initialFormData, activeAccount]);
 
     useEffect(() => {
         if (activeAccount) {
@@ -90,31 +82,20 @@ function SettingsContent() {
                     .eq('account_id', activeAccount.id)
                     .maybeSingle();
 
-                if (!error && data) {
-                    setFormData({
-                        name: activeAccount.name || '',
-                        website: (data.info as any)?.website || '',
-                        description: (data.info as any)?.description || '',
-                        support_email: (data.info as any)?.contact_email || '',
-                        phone_number: (data.info as any)?.phone_number || '',
-                        business_name: (data.info as any)?.legal_name || '',
-                        tax_id: data.tax_id || '',
-                        registration_number: data.registration_number || '',
-                        billing_address: typeof data.billing_address === 'string' ? data.billing_address : JSON.stringify(data.billing_address || '')
-                    });
-                } else {
-                    setFormData({
-                        name: activeAccount.name || '',
-                        website: '',
-                        description: '',
-                        support_email: '',
-                        phone_number: '',
-                        business_name: '',
-                        tax_id: '',
-                        registration_number: '',
-                        billing_address: ''
-                    });
-                }
+                const newValues = {
+                    name: activeAccount.name || '',
+                    website: (data?.info as any)?.website || '',
+                    description: (data?.info as any)?.description || '',
+                    support_email: (data?.info as any)?.contact_email || '',
+                    phone_number: (data?.info as any)?.phone_number || '',
+                    business_name: (data?.info as any)?.legal_name || '',
+                    tax_id: data?.tax_id || '',
+                    registration_number: data?.registration_number || '',
+                    billing_address: typeof data?.billing_address === 'string' ? data.billing_address : JSON.stringify(data?.billing_address || '')
+                };
+
+                setFormData(newValues);
+                setInitialFormData(newValues);
             };
             fetchBusinessData();
         }
@@ -158,6 +139,7 @@ function SettingsContent() {
             if (bizError) throw bizError;
 
             showToast('Settings saved successfully.', 'success');
+            setInitialFormData(formData);
             if (refreshAccounts) await refreshAccounts();
         } catch (err: any) {
             showToast(err.message || 'Failed to update settings.', 'error');

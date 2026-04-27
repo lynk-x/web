@@ -40,24 +40,49 @@ export function useEventFormReference({
     const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
     const [categoryTags, setCategoryTags] = useState<CategoryTag[]>([]);
     const [isLoadingReference, setIsLoadingReference] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
         const fetchReferenceData = async () => {
             setIsLoadingReference(true);
-            const { createClient } = await import('@/utils/supabase/client');
-            const { createReferenceRepository } = await import('@/lib/repositories');
-            const refRepo = createReferenceRepository(createClient());
+            setError(null);
+            try {
+                const { createClient } = await import('@/utils/supabase/client');
+                const { createReferenceRepository } = await import('@/lib/repositories');
+                const refRepo = createReferenceRepository(createClient());
 
-            const [tagsRes, catsRes, catTagsRes] = await Promise.all([
-                refRepo.getTags(),
-                refRepo.getEventCategories(),
-                refRepo.getCategoryTags(),
-            ]);
+                console.log('Fetching reference data (tags, categories, category_tags)...');
+                const [tagsRes, catsRes, catTagsRes] = await Promise.all([
+                    refRepo.getTags(),
+                    refRepo.getEventCategories(),
+                    refRepo.getCategoryTags(),
+                ]);
 
-            if (tagsRes.data) setTagSuggestions(tagsRes.data.map((t) => ({ id: t.id, name: t.name })));
-            if (catsRes.data) setCategories(catsRes.data.map((c) => ({ id: c.id, display_name: c.display_name })));
-            if (catTagsRes.data) setCategoryTags(catTagsRes.data);
-            setIsLoadingReference(false);
+                if (tagsRes.error) console.error('Error fetching tags:', tagsRes.error);
+                if (catsRes.error) console.error('Error fetching categories:', catsRes.error);
+                if (catTagsRes.error) console.error('Error fetching category tags:', catTagsRes.error);
+
+                const firstError = tagsRes.error || catsRes.error || catTagsRes.error;
+                if (firstError) setError(firstError);
+
+                if (tagsRes.data) {
+                    console.log(`Fetched ${tagsRes.data.length} tags`);
+                    setTagSuggestions(tagsRes.data.map((t) => ({ id: t.id, name: t.name })));
+                }
+                if (catsRes.data) {
+                    console.log(`Fetched ${catsRes.data.length} categories`);
+                    setCategories(catsRes.data.map((c) => ({ id: c.id, display_name: c.display_name })));
+                }
+                if (catTagsRes.data) {
+                    console.log(`Fetched ${catTagsRes.data.length} category-tag mappings`);
+                    setCategoryTags(catTagsRes.data);
+                }
+            } catch (err) {
+                console.error('Unexpected error in useEventFormReference:', err);
+                setError(err instanceof Error ? err : new Error('Failed to load reference data'));
+            } finally {
+                setIsLoadingReference(false);
+            }
         };
 
         fetchReferenceData();
@@ -88,6 +113,7 @@ export function useEventFormReference({
         categoryTags,
         popularTags,
         isLoadingReference,
+        error,
         hasCategorySpecificTags: categoryTags.some(ct => ct.category_id === selectedCategory),
     };
 }

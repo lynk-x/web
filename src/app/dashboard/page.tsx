@@ -44,11 +44,6 @@ export default function DashboardRootPage() {
             return;
         }
 
-        if (!profile || !profile.full_name || profile.full_name.trim() === '') {
-            router.replace('/dashboard/setup-profile');
-            return;
-        }
-
         // Only redirect to onboarding if we're sure the context has settled:
         // allAccounts is loaded and there are truly no non-attendee workspaces.
         if (allAccounts.length === 0) {
@@ -62,9 +57,10 @@ export default function DashboardRootPage() {
             return;
         }
 
-        // Single-account auto-redirect is intentionally removed:
-        // Even with one workspace, the picker must remain accessible so the user can
-        // create a second account of a different type (e.g. add an ads workspace).
+        if (!profile || !profile.full_name || profile.full_name.trim() === '') {
+            router.replace('/dashboard/setup-profile');
+            return;
+        }
     }, [allAccounts, accounts, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, profile, router]);
 
     if (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting) {
@@ -98,8 +94,8 @@ export default function DashboardRootPage() {
             <div className={styles.container}>
                 <div className={styles.onboardingWrapper}>
                     <div className={styles.header}>
-                        <h1 className={styles.title}>Welcome back, {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}</h1>
-                        <p className={styles.subtitle}>Choose a workspace to continue your progress.</p>
+                        <h1 className={styles.title}>Your Workspaces</h1>
+                        <p className={styles.subtitle}>Select a workspace to manage your events or advertising campaigns.</p>
                     </div>
 
                     <div className={styles.workspaceGrid}>

@@ -45,9 +45,9 @@ export async function signup(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    // Send new users through onboarding so they pick a role and create an account workspace.
-    // They will be redirected to the correct dashboard after onboarding completes.
-    redirect('/onboarding')
+    // Send new users to dashboard. The DashboardRootPage will handle redirection 
+    // to onboarding if they have no workspaces.
+    redirect('/dashboard')
 }
 
 export async function resetPassword(formData: FormData) {
