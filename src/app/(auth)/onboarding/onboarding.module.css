@@ -450,18 +450,29 @@
 
 .skipBtn {
     margin-top: 16px;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 13px;
-    font-weight: 500;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 15px;
     cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.2s;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-align: center;
 }
 
-.skipBtn:hover {
-    color: rgba(255, 255, 255, 0.8);
+.skipBtn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.skipBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Animations */
