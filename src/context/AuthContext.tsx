@@ -18,6 +18,7 @@ interface AuthContextType {
     user: User | null;
     profile: UserProfile | null;
     isLoading: boolean;
+    isLoadingProfile: boolean;
     logout: () => Promise<void>;
 }
 
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
     const fetchProfile = async (userId: string) => {
         const usersRepo = createUsersRepository(supabase);
@@ -59,11 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Fetch profile in the background — don't block the loading state on it.
             if (newUser) {
+                setIsLoadingProfile(true);
                 fetchProfile(newUser.id).then((profileData) => {
-                    if (mounted) setProfile(profileData);
+                    if (mounted) {
+                        setProfile(profileData);
+                        setIsLoadingProfile(false);
+                    }
                 });
             } else {
                 setProfile(null);
+                setIsLoadingProfile(false);
             }
         });
 
@@ -93,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             user,
             profile,
             isLoading,
+            isLoadingProfile,
             logout
         }}>
             {children}

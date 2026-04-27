@@ -15,7 +15,7 @@ import Link from 'next/link';
  */
 export default function DashboardRootPage() {
     const router = useRouter();
-    const { user, profile, isLoading: isLoadingAuth, logout } = useAuth();
+    const { user, profile, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
     const { accounts: allAccounts, activeAccount, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -37,20 +37,18 @@ export default function DashboardRootPage() {
     }, [router, setActiveAccountId]);
 
     useEffect(() => {
-        if (isLoadingAuth || isLoadingOrg) return;
+        if (isLoadingAuth || isLoadingProfile || isLoadingOrg) return;
 
         if (!user) {
             router.replace('/login');
             return;
         }
 
-        if (user && profile && (!profile.full_name || profile.full_name.trim() === '')) {
+        if (!profile.full_name || profile.full_name.trim() === '') {
             router.replace('/dashboard/setup-profile');
             return;
         }
 
-        // 2. Identify and route to the correct dashboard workspace.
-        
         // Only redirect to onboarding if we're sure the context has settled:
         // allAccounts is loaded and there are truly no non-attendee workspaces.
         if (allAccounts.length === 0) {
@@ -67,9 +65,9 @@ export default function DashboardRootPage() {
         // Single-account auto-redirect is intentionally removed:
         // Even with one workspace, the picker must remain accessible so the user can
         // create a second account of a different type (e.g. add an ads workspace).
-    }, [allAccounts, accounts, isLoadingAuth, isLoadingOrg, user, profile, router]);
+    }, [allAccounts, accounts, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, profile, router]);
 
-    if (isLoadingAuth || isLoadingOrg || isRedirecting) {
+    if (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting) {
         return (
             <div className={styles.container}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
