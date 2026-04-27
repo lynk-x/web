@@ -43,6 +43,7 @@ function OnboardingFlow() {
     // KYC State
     const [kycDocumentType, setKycDocumentType] = useState<string>('national_id');
     const [kycFiles, setKycFiles] = useState<{file: File, preview: string}[]>([]);
+    const [skipping, setSkipping] = useState(false);
     const kycFileInputRef = useRef<HTMLInputElement>(null);
 
     const handleNext = () => {
@@ -90,8 +91,8 @@ function OnboardingFlow() {
         }
     };
 
-    const handleCreateOrganization = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreateOrganization = async (e?: React.FormEvent | null, isSkipAction: boolean = false) => {
+        if (e) e.preventDefault();
 
         const cleanName = sanitizeInput(orgName.trim());
         const cleanDesc = sanitizeInput(orgDesc.trim());
@@ -101,7 +102,9 @@ function OnboardingFlow() {
             return;
         }
 
-        setLoading(true);
+        if (isSkipAction) setSkipping(true);
+        else setLoading(true);
+
         setError(null);
 
         try {
@@ -169,8 +172,8 @@ function OnboardingFlow() {
         } catch (err: any) {
             console.error('Error creating organization:', err);
             setError(err.message || 'Failed to create organization. Please try again.');
-        } finally {
             setLoading(false);
+            setSkipping(false);
         }
     };
 
@@ -323,7 +326,7 @@ function OnboardingFlow() {
                     <div className={styles.formCard}>
                         {error && <div className={styles.errorBox}>{error}</div>}
 
-                        <form onSubmit={handleCreateOrganization} className={styles.form}>
+                        <form onSubmit={(e) => handleCreateOrganization(e)} className={styles.form}>
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Document Type</label>
                                 <select 
@@ -401,10 +404,10 @@ function OnboardingFlow() {
                             <button 
                                 type="button" 
                                 className={styles.skipBtn}
-                                onClick={handleCreateOrganization}
-                                disabled={loading}
+                                onClick={() => handleCreateOrganization(null, true)}
+                                disabled={loading || skipping}
                             >
-                                Skip for now (Limited access)
+                                {skipping ? 'Redirecting...' : 'Skip for now (Limited access)'}
                             </button>
                         </form>
                     </div>
