@@ -176,9 +176,9 @@ function OnboardingFlow() {
             }
 
             if (accountType === 'advertiser') {
-                router.push('/dashboard/ads');
+                window.location.href = '/dashboard/ads';
             } else {
-                router.push('/dashboard/organize/events');
+                window.location.href = '/dashboard/organize/events';
             }
 
         } catch (err: any) {
