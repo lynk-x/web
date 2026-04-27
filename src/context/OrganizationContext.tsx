@@ -39,13 +39,6 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchAccounts = React.useCallback(async (): Promise<Account[]> => {
-        // If auth is still checking, we must remain in loading state.
-        if (isLoadingAuth) {
-            setIsLoading(true);
-            return [];
-        }
-
-        // Auth is finished. If no user, we have no accounts.
         if (!user) {
             setAccounts([]);
             setStoredActiveAccountId(null);
@@ -60,7 +53,6 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
             if (error) {
                 console.error("[OrganizationContext] Error fetching accounts:", error);
-                setIsLoading(false);
                 return [];
             }
 
@@ -91,13 +83,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         } finally {
             setIsLoading(false);
         }
-    }, [user, isLoadingAuth, supabase]);
+    }, [user, supabase]);
 
     useEffect(() => {
         if (!isLoadingAuth) {
             fetchAccounts();
-        } else {
-            setIsLoading(true);
         }
     }, [isLoadingAuth, fetchAccounts]);
 
