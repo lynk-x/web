@@ -32,7 +32,6 @@ interface OrganizationContextType {
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
-    const supabase = createClient();
     const { user, isLoading: isLoadingAuth } = useAuth();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [activeAccountId, setStoredActiveAccountId] = useState<string | null>(null);
@@ -48,7 +47,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
         setIsLoading(true);
         try {
-            const accountsRepo = createAccountsRepository(supabase);
+            const accountsRepo = createAccountsRepository(createClient());
             const { data: memberships, error } = await accountsRepo.getMembershipsForUser(user.id);
 
             if (error) {
@@ -83,7 +82,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         } finally {
             setIsLoading(false);
         }
-    }, [user, supabase]);
+    }, [user]);
 
     useEffect(() => {
         if (!isLoadingAuth) {

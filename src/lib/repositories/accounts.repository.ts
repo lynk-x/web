@@ -76,7 +76,9 @@ export function createAccountsRepository(client: DbClient) {
 
             if (error) return { data: null, error: toError(error) };
 
-            const memberships: AccountMembership[] = (data ?? []).map((member: any) => {
+            const memberships: AccountMembership[] = (data ?? [])
+            .filter((member: any) => member.accounts != null)
+            .map((member: any) => {
                 const wallets: { currency: string; balance: number }[] =
                     member.accounts.account_wallets ?? [];
                 const primaryWallet =
