@@ -44,7 +44,7 @@ export default function DashboardRootPage() {
             return;
         }
 
-        if (!profile.full_name || profile.full_name.trim() === '') {
+        if (!profile || !profile.full_name || profile.full_name.trim() === '') {
             router.replace('/dashboard/setup-profile');
             return;
         }
