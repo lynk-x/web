@@ -160,11 +160,20 @@ function OnboardingFlow() {
                 }
             }
 
-            // 4. Refresh Context & Redirect
-            await refreshAccounts();
+            // 4. Refresh Context & Verify
+            let memberships = await refreshAccounts();
+            
+            // If the account isn't visible yet, wait a bit and retry once
+            if (!memberships.some((m: any) => m.id === accountId)) {
+                console.log('[Onboarding] New account not visible yet, retrying fetch...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                memberships = await refreshAccounts();
+            }
 
-            // Give the platform a tiny moment to settle state propagation
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // 5. Explicitly set active account to satisfy the guard immediately
+            if (accountId) {
+                localStorage.setItem('lynks_active_account_id', accountId);
+            }
 
             if (accountType === 'advertiser') {
                 router.push('/dashboard/ads');

@@ -26,7 +26,7 @@ interface OrganizationContextType {
     activeAccount: Account | null;
     setActiveAccountId: (id: string) => void;
     isLoading: boolean;
-    refreshAccounts: () => Promise<void>;
+    refreshAccounts: () => Promise<Account[]>;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
@@ -38,12 +38,12 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     const [activeAccountId, setStoredActiveAccountId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchAccounts = async () => {
+    const fetchAccounts = async (): Promise<Account[]> => {
         if (!user) {
             setAccounts([]);
             setStoredActiveAccountId(null);
             setIsLoading(false);
-            return;
+            return [];
         }
         setIsLoading(true);
         try {
@@ -52,7 +52,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
             if (error) {
                 console.error("[OrganizationContext] Error fetching accounts:", error);
-                return;
+                return [];
             }
 
             if (memberships && memberships.length > 0) {
@@ -70,9 +70,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                     setStoredActiveAccountId(memberships[0].id);
                     localStorage.setItem('lynks_active_account_id', memberships[0].id);
                 }
+                return memberships;
             } else {
                 setAccounts([]);
                 setStoredActiveAccountId(null);
+                return [];
             }
         } finally {
             setIsLoading(false);
