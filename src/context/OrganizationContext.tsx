@@ -33,18 +33,26 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
-    const { user } = useAuth();
+    const { user, isLoading: isLoadingAuth } = useAuth();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [activeAccountId, setStoredActiveAccountId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchAccounts = async (): Promise<Account[]> => {
+        // If auth is still checking, we must remain in loading state.
+        if (isLoadingAuth) {
+            setIsLoading(true);
+            return [];
+        }
+
+        // Auth is finished. If no user, we have no accounts.
         if (!user) {
             setAccounts([]);
             setStoredActiveAccountId(null);
             setIsLoading(false);
             return [];
         }
+
         setIsLoading(true);
         try {
             const accountsRepo = createAccountsRepository(supabase);
@@ -82,8 +90,10 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     };
 
     useEffect(() => {
-        fetchAccounts();
-    }, [user]);
+        if (!isLoadingAuth) {
+            fetchAccounts();
+        }
+    }, [user, isLoadingAuth]);
 
     const setActiveAccountId = (id: string) => {
         if (accounts.some(a => a.id === id)) {
