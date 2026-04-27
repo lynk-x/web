@@ -43,24 +43,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         let mounted = true;
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // Safety valve: if onAuthStateChange never fires (e.g. bad network / misconfigured
+        // Supabase URL), unblock the loading spinner after 5 s so the UI doesn't hang forever.
+        const timeout = setTimeout(() => {
+            if (mounted) setIsLoading(false);
+        }, 5000);
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (!mounted) return;
 
+            clearTimeout(timeout);
             const newUser = session?.user ?? null;
             setUser(newUser);
-
-            if (newUser) {
-                const profileData = await fetchProfile(newUser.id);
-                if (mounted) setProfile(profileData);
-            } else {
-                if (mounted) setProfile(null);
-            }
-
             setIsLoading(false);
+
+            // Fetch profile in the background — don't block the loading state on it.
+            if (newUser) {
+                fetchProfile(newUser.id).then((profileData) => {
+                    if (mounted) setProfile(profileData);
+                });
+            } else {
+                setProfile(null);
+            }
         });
 
         return () => {
             mounted = false;
+            clearTimeout(timeout);
             subscription.unsubscribe();
         };
     }, []);
