@@ -25,7 +25,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    margin-left: 280px; /* Width of ResourceSidebar */
+    margin-left: 0;
 }
 
 .contentInner {
