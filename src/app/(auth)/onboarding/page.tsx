@@ -163,6 +163,9 @@ function OnboardingFlow() {
             // 4. Refresh Context & Redirect
             await refreshAccounts();
 
+            // Give the platform a tiny moment to settle state propagation
+            await new Promise(resolve => setTimeout(resolve, 800));
+
             if (accountType === 'advertiser') {
                 router.push('/dashboard/ads');
             } else {
