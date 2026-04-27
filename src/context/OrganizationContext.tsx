@@ -52,6 +52,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
             if (error) {
                 console.error("[OrganizationContext] Error fetching accounts:", error);
+                setAccounts([]);
+                setStoredActiveAccountId(null);
                 return [];
             }
 

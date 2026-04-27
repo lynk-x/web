@@ -1,0 +1,128 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: radial-gradient(ellipse at top, rgba(32, 249, 40, 0.04) 0%, transparent 60%),
+                var(--color-background, #0a0a0a);
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--color-brand-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.wrapper {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-text-primary, #fff);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.subtitle {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+    max-width: 420px;
+}
+
+.roleGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+}
+
+.roleCard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 28px 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    text-align: left;
+}
+
+.organizerCard:hover {
+    border-color: rgba(32, 249, 40, 0.4);
+    background: rgba(32, 249, 40, 0.04);
+    transform: translateY(-2px);
+}
+
+.advertiserCard:hover {
+    border-color: rgba(249, 201, 32, 0.4);
+    background: rgba(249, 201, 32, 0.04);
+    transform: translateY(-2px);
+}
+
+.roleIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.roleName {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary, #fff);
+    margin: 0;
+}
+
+.roleDesc {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.cta {
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+    .roleGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .title {
+        font-size: 26px;
+    }
+}
