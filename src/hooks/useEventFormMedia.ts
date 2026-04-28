@@ -21,6 +21,7 @@ interface UseEventFormMediaOptions {
 export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFormMediaOptions) {
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialUrl);
+    const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
     /**
      * Reads the selected file into a data URL and exposes it as a preview.
@@ -30,12 +31,19 @@ export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFo
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        setIsLoadingMedia(true);
         setThumbnailFile(file);
+
         const reader = new FileReader();
         reader.onloadend = () => {
             const url = reader.result as string;
             setThumbnailPreview(url);
             onUrlChange(url);
+            setIsLoadingMedia(false);
+        };
+        reader.onerror = () => {
+            setIsLoadingMedia(false);
         };
         reader.readAsDataURL(file);
     };
@@ -49,6 +57,8 @@ export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFo
     return {
         thumbnailFile,
         thumbnailPreview,
+        isLoadingMedia,
+        setIsLoadingMedia,
         handleImageSelect,
         handleRemoveImage,
     };

@@ -64,6 +64,8 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
     const {
         thumbnailFile,
         thumbnailPreview,
+        isLoadingMedia,
+        setIsLoadingMedia,
         handleImageSelect,
         handleRemoveImage,
     } = useEventFormMedia({
@@ -238,6 +240,8 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         formData, errors, loading, activeTab, setActiveTab,
         isDraftLoaded, isDirty,
         thumbnailFile, thumbnailPreview,
+        isLoadingMedia,
+        setIsLoadingMedia,
         tagInput, setTagInput,
         categories,
         popularTags,

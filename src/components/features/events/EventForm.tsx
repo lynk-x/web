@@ -41,6 +41,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         isDraftLoaded, isDirty,
         hasDraft, applyDraft,
         thumbnailPreview,
+        isLoadingMedia,
         tagInput, setTagInput,
         categories, popularTags, hasCategorySpecificTags,
         isLoadingReference, referenceError,
@@ -201,25 +202,42 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                 {activeTab === 'cover' && (
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Cover Image <span className={styles.requiredIndicator}>*Required</span></h2>
-                        {thumbnailPreview ? (
-                            <div className={styles.imagePreviewContainer} style={{ position: 'relative', width: '100%', height: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <img src={thumbnailPreview} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '8px' }}>
-                                    <label htmlFor="cover-upload-change" className={styles.secondaryBtn} style={{ cursor: 'pointer', background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}>Change</label>
-                                    <button type="button" onClick={handleRemoveImage} className={styles.secondaryBtn} style={{ background: 'rgba(0,0,0,0.6)', color: '#ff4d4d', backdropFilter: 'blur(4px)', borderColor: '#ff4d4d' }}>Remove</button>
+                        <div style={{ position: 'relative' }}>
+                            {isLoadingMedia && (
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    inset: 0, 
+                                    background: 'rgba(0,0,0,0.6)', 
+                                    zIndex: 10, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    borderRadius: '12px',
+                                    backdropFilter: 'blur(4px)'
+                                }}>
+                                    <div className="loading-spinner"></div>
                                 </div>
-                                <input id="cover-upload-change" type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
-                            </div>
-                        ) : (
-                            <div className={styles.uploadArea}>
-                                <label htmlFor="cover-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '100%', height: '100%' }}>
-                                    <svg className={styles.uploadIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                    <span className={styles.uploadText}>Drag &amp; drop cover image or click to browse</span>
-                                    <span style={{ fontSize: '12px', opacity: 0.5, marginTop: '8px' }}>Recommended: 1920x1080px (16:9)</span>
-                                </label>
-                                <input id="cover-upload" type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
-                            </div>
-                        )}
+                            )}
+                            {thumbnailPreview ? (
+                                <div className={styles.imagePreviewContainer} style={{ position: 'relative', width: '100%', height: '300px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <img src={thumbnailPreview} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '8px' }}>
+                                        <label htmlFor="cover-upload-change" className={styles.secondaryBtn} style={{ cursor: 'pointer', background: 'rgba(0,0,0,0.6)', color: 'white', backdropFilter: 'blur(4px)' }}>Change</label>
+                                        <button type="button" onClick={handleRemoveImage} className={styles.secondaryBtn} style={{ background: 'rgba(0,0,0,0.6)', color: '#ff4d4d', backdropFilter: 'blur(4px)', borderColor: '#ff4d4d' }}>Remove</button>
+                                    </div>
+                                    <input id="cover-upload-change" type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                                </div>
+                            ) : (
+                                <div className={styles.uploadArea}>
+                                    <label htmlFor="cover-upload" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '100%', height: '100%' }}>
+                                        <svg className={styles.uploadIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                        <span className={styles.uploadText}>Drag &amp; drop cover image or click to browse</span>
+                                        <span style={{ fontSize: '12px', opacity: 0.5, marginTop: '8px' }}>Recommended: 1920x1080px (16:9)</span>
+                                    </label>
+                                    <input id="cover-upload" type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                                </div>
+                            )}
+                        </div>
                         {errors.thumbnailUrl && <p className={styles.errorMessage} style={{ textAlign: 'center', marginTop: '12px' }}>{errors.thumbnailUrl}</p>}
                     </section>
                 )}

@@ -78,6 +78,7 @@ export default function CreateEventPage() {
                     title: data.title,
                     description: data.description,
                     category_id: data.category,
+                    currency: data.currency,
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
                     // Write location into the JSONB location column
@@ -101,9 +102,9 @@ export default function CreateEventPage() {
                     display_name: t.display_name,
                     price: parseFloat(t.price),
                     capacity: parseInt(t.capacity),
-                    max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
+                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
+                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
                 }));
 
                 const { error: ticketError } = await supabase
