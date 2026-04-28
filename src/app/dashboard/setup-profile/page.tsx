@@ -26,8 +26,11 @@ export default function ProfileSetupPage() {
     useEffect(() => {
         if (!isLoadingAuth && !isLoadingProfile && !hasCheckedInitial) {
             if (profile && profile.full_name && profile.full_name.trim() !== '') {
-                const params = new URLSearchParams(window.location.search);
-                const type = params.get('type') || 'organize';
+                let type = 'organize';
+                if (typeof window !== 'undefined') {
+                    const params = new URLSearchParams(window.location.search);
+                    type = params.get('type') || 'organize';
+                }
                 router.replace(`/dashboard/${type}`);
             }
             setHasCheckedInitial(true);
@@ -113,8 +116,11 @@ export default function ProfileSetupPage() {
             if (updateError) throw updateError;
             
             // Get type from URL params to decide where to land
-            const params = new URLSearchParams(window.location.search);
-            const type = params.get('type') || 'organize';
+            let type = 'organize';
+            if (typeof window !== 'undefined') {
+                const params = new URLSearchParams(window.location.search);
+                type = params.get('type') || 'organize';
+            }
 
             // Success: Direct them to the workspace overview
             router.push(`/dashboard/${type}`);
@@ -129,7 +135,7 @@ export default function ProfileSetupPage() {
         <div className={styles.container}>
             <div className={styles.setupCard}>
                 <div className={styles.header}>
-                    <h1 className={styles.title}>Finalize Your Identity</h1>
+                    <h1 className={styles.title}>Create Your Identity</h1>
                     <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your public persona across the platform.</p>
                 </div>
 

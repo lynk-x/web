@@ -1,11 +1,8 @@
 .container {
-    min-height: 100vh;
-    background-color: #000;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 24px;
-    background: radial-gradient(circle at center, rgba(32, 249, 40, 0.05) 0%, transparent 60%);
+    min-height: calc(100vh - var(--spacing-xxl) * 2);
     font-family: var(--font-primary, 'Outfit', sans-serif);
 }
 
