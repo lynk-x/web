@@ -5,7 +5,7 @@ import styles from './CampaignDetail.module.css';
 import { Campaign } from '@/types/admin';
 import Badge from '../../../shared/Badge';
 import { formatCurrency, formatNumber, formatString } from '@/utils/format';
-import adminStyles from '../../../../app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 
 interface CampaignDetailProps {
     campaign: Campaign;

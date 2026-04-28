@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 
 export interface EventTag {
     id: string;

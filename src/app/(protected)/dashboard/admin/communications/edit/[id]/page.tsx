@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ContentForm from '@/components/admin/content/Form/ContentForm';
 import BackButton from '@/components/shared/BackButton';
-import styles from '@/app/dashboard/admin/page.module.css';
+import styles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { ContentItem } from '@/types/admin';

@@ -9,7 +9,7 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
 import { useRouter } from 'next/navigation';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { sanitizeInput } from '@/utils/sanitization';
 import Modal from '@/components/shared/Modal';

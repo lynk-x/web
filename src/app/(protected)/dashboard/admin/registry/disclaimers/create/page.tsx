@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import SubPageHeader from '@/components/shared/SubPageHeader';
-import styles from '@/app/dashboard/admin/settings/page.module.css';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 
 export default function CreateDisclaimerPage() {
     const router = useRouter();

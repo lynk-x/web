@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { formatRelativeTime, formatFileSize } from '@/utils/format';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Badge from '@/components/shared/Badge';
 import { ForumMedia } from '@/types/admin';

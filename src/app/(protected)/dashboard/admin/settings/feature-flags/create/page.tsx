@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '@/app/dashboard/admin/page.module.css';
+import styles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { sanitizeInput } from '@/utils/sanitization';
 import SubPageHeader from '@/components/shared/SubPageHeader';

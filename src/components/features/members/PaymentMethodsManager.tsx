@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import type { AccountPaymentMethod } from '@/types/organize';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/shared/Modal';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import Badge from '@/components/shared/Badge';
 
 interface Props {

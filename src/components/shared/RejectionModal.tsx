@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Modal from './Modal';
-import adminStyles from '@/app/dashboard/admin/page.css'; // Assuming this exists or using inline
 import styles from './Modal.module.css';
 
 interface RejectionModalProps {

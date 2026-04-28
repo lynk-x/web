@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import adminStyles from '../../app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import styles from './DateRangeRow.module.css';
 
 interface DateRangeRowProps {

@@ -6,7 +6,7 @@ import Badge from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import FilterGroup from '@/components/dashboard/FilterGroup';
 import { createClient } from '@/utils/supabase/client';
 

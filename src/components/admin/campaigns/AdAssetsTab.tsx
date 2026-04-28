@@ -5,7 +5,7 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 

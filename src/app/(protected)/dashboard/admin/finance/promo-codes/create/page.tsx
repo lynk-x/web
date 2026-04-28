@@ -3,7 +3,7 @@
 import React from 'react';
 import PromoCodeForm from '@/components/admin/finance/PromoCodeForm';
 import SubPageHeader from '@/components/shared/SubPageHeader';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 
 export default function CreatePromoCodePage() {
     return (

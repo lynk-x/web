@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '@/app/dashboard/admin/page.module.css';
+import styles from '@/app/(protected)/dashboard/admin/page.module.css';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
 interface BackButtonProps {

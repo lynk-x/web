@@ -2,7 +2,7 @@
 
 import ContentForm from '@/components/admin/content/Form/ContentForm';
 import SubPageHeader from '@/components/shared/SubPageHeader';
-import styles from '@/app/dashboard/admin/page.module.css';
+import styles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { useState } from 'react';
 
 export default function AdminCreateContentPage() {

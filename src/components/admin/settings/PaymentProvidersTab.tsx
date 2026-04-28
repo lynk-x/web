@@ -6,7 +6,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import Badge from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import Modal from '@/components/shared/Modal';
 import type { PlatformPaymentProvider } from '@/types/admin';
 

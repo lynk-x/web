@@ -9,7 +9,7 @@ import styles from './page.module.css';
 function DashboardRoot() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, isProfileComplete, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
+    const { user, profile, isProfileComplete, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 

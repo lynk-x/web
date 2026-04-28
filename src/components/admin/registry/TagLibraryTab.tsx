@@ -7,7 +7,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
 import { useRouter } from 'next/navigation';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import Badge from '@/components/shared/Badge';
 

@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency, formatDate } from '@/utils/format';
-import adminStyles from '@/app/dashboard/admin/page.module.css';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import type { BadgeVariant } from '@/types/shared';
 
 interface AdCredit {
