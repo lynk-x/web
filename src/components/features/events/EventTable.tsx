@@ -139,6 +139,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                     </div>
                 ),
             },
+            {
                 header: 'Date',
                 render: (event) => (
                     <div style={{ fontSize: '13px' }}>
@@ -184,12 +185,12 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             },
         ];
 
-        const getActions = (event: OrganizerEvent): ActionItem[] => {
+        const getAdminActions = (event: OrganizerEvent): ActionItem[] => {
             const actions: ActionItem[] = [
                 {
                     label: 'View Details',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                    onClick: () => router.push(`/event/${event.id}`)
+                    onClick: () => router.push(`/event/${event.eventReference || event.id}`)
                 },
                 {
                     label: 'Attendee List',
@@ -276,7 +277,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             <DataTable<OrganizerEvent>
                 data={adminEvents}
                 columns={columns}
-                getActions={getActions}
+                getActions={getAdminActions}
                 selectedIds={selectedIds}
                 onSelect={onSelect}
                 onSelectAll={onSelectAll}
@@ -350,7 +351,12 @@ const EventTable: React.FC<EventTableProps> = (props) => {
         },
     ];
 
-    const getActions = (event: EventRow): ActionItem[] => [
+    const getOrganizerActions = (event: EventRow): ActionItem[] => [
+        {
+            label: 'View Event',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+            onClick: () => router.push(`/event/${event.reference || event.id}`),
+        },
         {
             label: 'Edit Event',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
@@ -376,7 +382,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
         <DataTable<EventRow>
             data={orgEvents}
             columns={columns}
-            getActions={getActions}
+            getActions={getOrganizerActions}
             selectedIds={selectedIds}
             onSelect={onSelect}
             onSelectAll={onSelectAll}

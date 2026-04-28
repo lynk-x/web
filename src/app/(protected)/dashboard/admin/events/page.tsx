@@ -80,7 +80,7 @@ export default function AdminEventsPage() {
                 location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
                 status: e.status,
                 attendees: e.attendee_count || 0,
-                eventCode: e.reference,
+                eventReference: e.reference,
                 isPrivate: e.is_private,
                 thumbnailUrl: e.thumbnail,
                 reportsCount: e.reports_count || 0

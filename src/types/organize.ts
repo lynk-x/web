@@ -49,6 +49,8 @@ export interface EventRow {
     endDate?: string;
     time: string;
     endTime?: string;
+    /** Unique share/lookup code — from `events.reference` column */
+    reference?: string;
 }
 
 /** A financial transaction — aligned to the `transactions` DB table.
