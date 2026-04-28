@@ -105,16 +105,16 @@ function OnboardingFlow() {
             const { data: accountId, error: rpcError } = await supabase.rpc('create_organization_account', {
                 p_org_name: cleanName,
                 p_account_type: accountType,
-                p_country_code: country,
             });
             if (rpcError) throw rpcError;
 
-            if (logoUrl || cleanDesc) {
+            if (logoUrl || cleanDesc || country) {
                 const { error: updateError } = await supabase
                     .from('accounts')
                     .update({
                         ...(logoUrl ? { media: { logo: logoUrl } } : {}),
                         ...(cleanDesc ? { info: { description: cleanDesc } } : {}),
+                        ...(country ? { country_code: country } : {}),
                     })
                     .eq('id', accountId);
                 if (updateError) console.error('Branding update failed (non-fatal):', updateError);
