@@ -12,14 +12,13 @@ import { toError } from './types';
 export interface Tag {
     id: string;
     name: string;
-    tag_type_id?: string;
+    type_id?: string;
     use_count?: number;
 }
 
 export interface EventCategory {
     id: string;
     display_name: string;
-    icon?: string | null;
 }
 
 export interface CategoryTag {
@@ -86,7 +85,7 @@ export function createReferenceRepository(client: DbClient) {
         async getTags(): Promise<RepoResult<Tag[]>> {
             const { data, error } = await client
                 .from('tags')
-                .select('id, name, tag_type_id, use_count')
+                .select('id, name, type_id, use_count')
                 .eq('is_active', true)
                 .order('use_count', { ascending: false });
 
@@ -98,7 +97,7 @@ export function createReferenceRepository(client: DbClient) {
         async getEventCategories(): Promise<RepoResult<EventCategory[]>> {
             const { data, error } = await client
                 .from('event_categories')
-                .select('id, display_name, icon')
+                .select('id, display_name')
                 .order('display_name', { ascending: true });
 
             if (error) return { data: null, error: toError(error) };
