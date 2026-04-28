@@ -17,7 +17,7 @@
  * from all three sub-hooks simultaneously.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sanitizeInput } from '@/utils/sanitization';
 import type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticket } from '@/types/organize';
 
@@ -106,6 +106,29 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         setErrors(next);
         return Object.keys(next).length === 0;
     };
+
+    /**
+     * Live validation for date/time consistency.
+     */
+    useEffect(() => {
+        if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
+            const start = new Date(`${formData.startDate}T${formData.startTime}`);
+            const end = new Date(`${formData.endDate}T${formData.endTime}`);
+            
+            if (end < start) {
+                setErrors(prev => ({ 
+                    ...prev, 
+                    endDate: 'End date/time cannot be before start date/time' 
+                }));
+            } else if (errors.endDate === 'End date/time cannot be before start date/time') {
+                setErrors(prev => {
+                    const next = { ...prev };
+                    delete next.endDate;
+                    return next;
+                });
+            }
+        }
+    }, [formData.startDate, formData.endDate, formData.startTime, formData.endTime, errors.endDate]);
 
     /**
      * validateTab — validates only the fields on the current tab.

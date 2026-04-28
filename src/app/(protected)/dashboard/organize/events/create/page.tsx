@@ -116,21 +116,37 @@ export default function CreateEventPage() {
 
             // 5. Link Tags
             if (data.tags.length > 0 && newEvent) {
-                // First, ensure all tags exist (upsert by name/slug)
                 const tagsToUpsert = data.tags.map(tag => ({
                     name: tag,
                     slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
                     is_official: false
                 }));
 
-                const { data: resolvedTags, error: tagUpsertError } = await supabase
+                // Fetch existing tags first to avoid upsert RLS issues
+                const { data: existingTags, error: tagFetchError } = await supabase
                     .from('tags')
-                    .upsert(tagsToUpsert, { onConflict: 'slug' })
-                    .select('id');
+                    .select('id, slug')
+                    .in('slug', tagsToUpsert.map(t => t.slug));
 
-                if (tagUpsertError) throw tagUpsertError;
+                if (tagFetchError) throw tagFetchError;
 
-                if (resolvedTags) {
+                let resolvedTags = existingTags || [];
+                const existingSlugs = new Set(resolvedTags.map(t => t.slug));
+                const newTagsToCreate = tagsToUpsert.filter(t => !existingSlugs.has(t.slug));
+
+                // Attempt to create new tags if any, but don't crash if RLS blocks it
+                if (newTagsToCreate.length > 0) {
+                    const { data: createdTags } = await supabase
+                        .from('tags')
+                        .insert(newTagsToCreate)
+                        .select('id, slug');
+                    
+                    if (createdTags) {
+                        resolvedTags = [...resolvedTags, ...createdTags];
+                    }
+                }
+
+                if (resolvedTags.length > 0) {
                     const eventTagsToInsert = resolvedTags.map(tag => ({
                         event_id: newEvent.id,
                         tag_id: tag.id
@@ -140,7 +156,7 @@ export default function CreateEventPage() {
                         .from('event_tags')
                         .insert(eventTagsToInsert);
 
-                    if (eventTagError) console.error("Warning: Tag linking failed", eventTagError);
+                    if (eventTagError) console.error("Error linking tags:", eventTagError);
                 }
             }
 
