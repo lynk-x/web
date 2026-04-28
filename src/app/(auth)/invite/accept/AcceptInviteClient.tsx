@@ -37,7 +37,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             // actually, just let them accept it straight via RPC or we can get basic info if we join
             const { data, error: fetchErr } = await supabase
                 .from("account_invitations")
-                .select("id, invitee_email, role_slug, accepted_at, expires_at, accounts:account_id(display_name), inviter:invited_by(full_name, user_name)")
+                .select("id, account_id, invitee_email, role_slug, accepted_at, expires_at, accounts:account_id(display_name, slug), inviter:invited_by(full_name, user_name)")
                 .eq("token", token)
                 .single();
 
@@ -81,7 +81,11 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             // Go to profile setup so they can complete their identity before entering the dashboard.
             // setup-profile will redirect to /dashboard/organize once done.
             setTimeout(() => {
-                router.push("/dashboard/setup-profile?type=organize");
+                const accountRef = inviteDetails?.accounts?.slug || inviteDetails?.accounts?.id || inviteDetails?.account_id;
+                const accountParam = accountRef ? `&accountRef=${accountRef}` : '';
+                // Since this is joining an existing organization, it's typically an organizer account
+                // (Advertiser accounts also exist, but organize is the default).
+                router.push(`/dashboard/setup-profile?type=organize${accountParam}`);
             }, 2000);
         } catch (err: any) {
             setError(err.message || "Failed to accept invitation.");

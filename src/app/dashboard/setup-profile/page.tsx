@@ -4,12 +4,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import styles from './setup.module.css';
 
 export default function ProfileSetupPage() {
     const router = useRouter();
     const { user, profile, isLoading: isLoadingAuth, isLoadingProfile } = useAuth();
+    const { setActiveAccountId } = useOrganization();
     const supabase = createClient();
 
     const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -21,21 +23,32 @@ export default function ProfileSetupPage() {
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
+    const [accountType, setAccountType] = useState('organize');
+    const [accountRef, setAccountRef] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            setAccountType(params.get('type') || 'organize');
+            setAccountRef(params.get('accountRef') || params.get('accountId'));
+        }
+    }, []);
 
     // Auto-redirect if profile is already complete
     useEffect(() => {
         if (!isLoadingAuth && !isLoadingProfile && !hasCheckedInitial) {
             if (profile && profile.full_name && profile.full_name.trim() !== '') {
-                let type = 'organize';
-                if (typeof window !== 'undefined') {
-                    const params = new URLSearchParams(window.location.search);
-                    type = params.get('type') || 'organize';
+                if (accountRef) {
+                    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountRef)) {
+                        localStorage.setItem('lynks_active_account_id', accountRef);
+                    }
+                    setActiveAccountId(accountRef);
                 }
-                router.replace(`/dashboard/${type}`);
+                router.replace(`/dashboard/${accountType}`);
             }
             setHasCheckedInitial(true);
         }
-    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router]);
+    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router, accountType, accountRef, setActiveAccountId]);
 
     // Debounced username check
     useEffect(() => {
@@ -115,15 +128,15 @@ export default function ProfileSetupPage() {
 
             if (updateError) throw updateError;
             
-            // Get type from URL params to decide where to land
-            let type = 'organize';
-            if (typeof window !== 'undefined') {
-                const params = new URLSearchParams(window.location.search);
-                type = params.get('type') || 'organize';
+            if (accountRef) {
+                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountRef)) {
+                    localStorage.setItem('lynks_active_account_id', accountRef);
+                }
+                setActiveAccountId(accountRef);
             }
 
             // Success: Direct them to the workspace overview
-            router.push(`/dashboard/${type}`);
+            router.push(`/dashboard/${accountType}`);
         } catch (err: any) {
             setError(err.message || 'Failed to update profile.');
         } finally {
@@ -131,12 +144,15 @@ export default function ProfileSetupPage() {
         }
     };
 
+    const isAds = accountType === 'ads';
+    const displayRole = isAds ? 'Advertiser' : 'Organizer';
+
     return (
         <div className={styles.container}>
             <div className={styles.setupCard}>
                 <div className={styles.header}>
-                    <h1 className={styles.title}>Create Your Identity</h1>
-                    <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your public persona across the platform.</p>
+                    <h1 className={styles.title}>Create Your {displayRole} Identity</h1>
+                    <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your public persona as {isAds ? 'an advertiser' : 'an organizer'} on the platform.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>

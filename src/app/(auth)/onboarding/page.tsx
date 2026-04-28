@@ -153,9 +153,12 @@ function OnboardingFlow() {
             }
             if (accountId) localStorage.setItem('lynks_active_account_id', accountId);
 
+            const newAccount = memberships.find((m: any) => m.id === accountId);
+            const accountRef = newAccount?.slug || accountId;
+
             // Redirect to user profile setup, then dashboard
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
-            window.location.href = `/dashboard/setup-profile?type=${dashType}`;
+            window.location.href = `/dashboard/setup-profile?type=${dashType}&accountRef=${accountRef}`;
         } catch (err: any) {
             console.error('Error creating organization:', err);
             setError(err.message || 'Failed to create organization. Please try again.');

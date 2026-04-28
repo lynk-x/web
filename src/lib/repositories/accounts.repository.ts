@@ -11,6 +11,7 @@ import { toError } from './types';
 
 export interface AccountMembership {
     id: string;
+    slug?: string;
     name: string;
     logoUrl?: string;
     role: string;
@@ -65,6 +66,7 @@ export function createAccountsRepository(client: DbClient) {
                     is_primary,
                     accounts:account_id (
                         id,
+                        slug,
                         display_name,
                         type,
                         media,
@@ -86,6 +88,7 @@ export function createAccountsRepository(client: DbClient) {
 
                 return {
                     id: member.accounts.id,
+                    slug: member.accounts.slug,
                     name: member.accounts.display_name,
                     logoUrl: (member.accounts.media as any)?.logo ?? undefined,
                     role: member.role_slug,

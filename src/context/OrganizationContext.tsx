@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export interface Account {
     id: string;
+    slug?: string;
     name: string;
     /** Extracted from accounts.media->>'logo' */
     logoUrl?: string;
@@ -61,16 +62,20 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                 setAccounts(memberships);
 
                 const savedId = localStorage.getItem('lynks_active_account_id');
-                const primaryAccount = memberships.find(a => a.isPrimary);
+                const businessAccounts = memberships.filter(a => a.type !== 'attendee');
+                const fallbackAccounts = businessAccounts.length > 0 ? businessAccounts : memberships;
+                
+                const isValidSavedId = savedId && fallbackAccounts.some(a => a.id === savedId);
+                const primaryAccount = fallbackAccounts.find(a => a.isPrimary);
 
-                if (savedId && memberships.some(a => a.id === savedId)) {
+                if (isValidSavedId) {
                     setStoredActiveAccountId(savedId);
                 } else if (primaryAccount) {
                     setStoredActiveAccountId(primaryAccount.id);
                     localStorage.setItem('lynks_active_account_id', primaryAccount.id);
                 } else {
-                    setStoredActiveAccountId(memberships[0].id);
-                    localStorage.setItem('lynks_active_account_id', memberships[0].id);
+                    setStoredActiveAccountId(fallbackAccounts[0].id);
+                    localStorage.setItem('lynks_active_account_id', fallbackAccounts[0].id);
                 }
                 return memberships;
             } else {
@@ -92,10 +97,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         }
     }, [isLoadingAuth, fetchAccounts]);
 
-    const setActiveAccountId = (id: string) => {
-        if (accounts.some(a => a.id === id)) {
-            setStoredActiveAccountId(id);
-            localStorage.setItem('lynks_active_account_id', id);
+    const setActiveAccountId = (idOrSlug: string) => {
+        const targetAccount = accounts.find(a => a.id === idOrSlug || a.slug === idOrSlug);
+        if (targetAccount) {
+            setStoredActiveAccountId(targetAccount.id);
+            localStorage.setItem('lynks_active_account_id', targetAccount.id);
         }
     };
 
