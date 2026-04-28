@@ -30,19 +30,19 @@ function DashboardRoot() {
             : account.type === 'advertiser'
                 ? '/dashboard/ads'
                 : '/dashboard/organize';
-        router.push(path);
-    }, [router, setActiveAccountId]);
+
+        if (!isProfileComplete) {
+            router.push(`/setup-profile?next=${encodeURIComponent(path)}&accountRef=${account.id}`);
+        } else {
+            router.push(path);
+        }
+    }, [router, setActiveAccountId, isProfileComplete]);
 
     useEffect(() => {
         if (isLoadingAuth || isLoadingProfile || isLoadingOrg) return;
 
         if (!user) {
             router.replace('/login');
-            return;
-        }
-
-        if (!profile || !profile.full_name || profile.full_name.trim() === '') {
-            router.replace('/setup-profile');
             return;
         }
 
@@ -60,7 +60,7 @@ function DashboardRoot() {
             router.replace(`/onboarding?type=${typeParam}`);
             return;
         }
-    }, [businessAccounts, displayAccounts, typeParam, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, profile, router]);
+    }, [businessAccounts, displayAccounts, typeParam, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, router]);
 
     if (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting) {
         return (

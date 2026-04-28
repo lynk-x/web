@@ -25,12 +25,14 @@ export default function ProfileSetupPage() {
     const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
     const [accountType, setAccountType] = useState('organize');
     const [accountRef, setAccountRef] = useState<string | null>(null);
+    const [nextUrl, setNextUrl] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             setAccountType(params.get('type') || 'organize');
             setAccountRef(params.get('accountRef') || params.get('accountId'));
+            setNextUrl(params.get('next'));
         }
     }, []);
 
@@ -44,11 +46,18 @@ export default function ProfileSetupPage() {
                     }
                     setActiveAccountId(accountRef);
                 }
-                router.replace(`/dashboard/${accountType}`);
+                
+                if (nextUrl) {
+                    router.replace(nextUrl);
+                } else if (accountRef) {
+                    router.replace(`/dashboard/${accountType}`);
+                } else {
+                    router.replace('/dashboard');
+                }
             }
             setHasCheckedInitial(true);
         }
-    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router, accountType, accountRef, setActiveAccountId]);
+    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router, accountType, accountRef, nextUrl, setActiveAccountId]);
 
     // Debounced username check
     useEffect(() => {
@@ -135,8 +144,14 @@ export default function ProfileSetupPage() {
                 setActiveAccountId(accountRef);
             }
 
-            // Success: Direct them to the workspace overview
-            router.push(`/dashboard/${accountType}`);
+            // Success: Direct them to the workspace overview or next url
+            if (nextUrl) {
+                router.push(nextUrl);
+            } else if (accountRef) {
+                router.push(`/dashboard/${accountType}`);
+            } else {
+                router.push('/dashboard');
+            }
         } catch (err: any) {
             setError(err.message || 'Failed to update profile.');
         } finally {

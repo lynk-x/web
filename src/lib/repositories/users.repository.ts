@@ -15,7 +15,6 @@ export interface UserProfile {
     avatar_url: string | null;
     country_code?: string | null;
     gender?: string | null;
-    user_type?: string;
     kyc_status?: string;
     last_seen_at?: string | null;
     created_at?: string;
@@ -27,7 +26,7 @@ export function createUsersRepository(client: DbClient) {
         async getProfile(userId: string): Promise<RepoResult<UserProfile>> {
             const { data, error } = await client
                 .from('user_profile')
-                .select('id, email, user_name, full_name, avatar_url, country_code, gender, user_type, kyc_status, last_seen_at, created_at')
+                .select('id, email, user_name, full_name, avatar_url, country_code, gender, kyc_status, last_seen_at, created_at')
                 .eq('id', userId)
                 .single();
 

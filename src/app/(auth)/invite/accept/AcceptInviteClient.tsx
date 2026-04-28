@@ -79,13 +79,16 @@ export default function AcceptInviteClient({ token }: { token: string }) {
 
             setSuccess(true);
             // Go to profile setup so they can complete their identity before entering the dashboard.
-            // setup-profile will redirect to /dashboard/organize once done.
+            // setup-profile will redirect to the next url once done.
             setTimeout(() => {
                 const accountRef = inviteDetails?.accounts?.slug || inviteDetails?.accounts?.id || inviteDetails?.account_id;
                 const accountParam = accountRef ? `&accountRef=${accountRef}` : '';
                 // Since this is joining an existing organization, it's typically an organizer account
-                // (Advertiser accounts also exist, but organize is the default).
-                router.push(`/setup-profile?type=organize${accountParam}`);
+                // unless explicitly specified. We try to infer if possible, else default to organize.
+                const roleType = inviteDetails?.role_slug === 'advertiser' ? 'ads' : 'organize';
+                const nextUrl = encodeURIComponent(`/dashboard/${roleType}`);
+                
+                router.push(`/setup-profile?type=${roleType}&next=${nextUrl}${accountParam}`);
             }, 2000);
         } catch (err: any) {
             setError(err.message || "Failed to accept invitation.");
