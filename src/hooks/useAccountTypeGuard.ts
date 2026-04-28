@@ -66,7 +66,8 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         if (!hasMatchingAccount) {
             // User has NO account of this type — send to onboarding to create one.
             console.log('[AccountTypeGuard] No matching accounts found. Redirecting to onboarding.');
-            router.replace('/onboarding');
+            const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
+            router.replace(`/onboarding?type=${defaultType}`);
             setIsAuthorized(false);
             setIsChecking(false);
             return;
@@ -91,16 +92,10 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         }
 
         // 4. Case: wrong account type is active, but they DO have a matching one
-        if (matchingAccounts.length === 1) {
-            console.log('[AccountTypeGuard] Switching active account to the only matching one.');
-            setActiveAccountId(matchingAccounts[0].id);
-            // The context will update, causing a re-render and re-evaluating the active account
-            return;
-        } else {
-            // User has multiple matching accounts, force them to pick one.
-            console.log('[AccountTypeGuard] Multiple matching accounts exist. Redirecting to picker.');
-            router.replace('/dashboard');
-        }
+        // User has matching accounts, force them to pick one from the picker.
+        console.log('[AccountTypeGuard] Wrong active account, but matching accounts exist. Redirecting to picker.');
+        const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
+        router.replace(`/dashboard?type=${defaultType}`);
 
         setIsAuthorized(false);
         setIsChecking(false);
