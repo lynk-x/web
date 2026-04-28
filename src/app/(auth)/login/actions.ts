@@ -34,6 +34,7 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
     const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
+    const next = sanitizeInput((formData.get('next') as string) || '/dashboard')
 
     const { error } = await supabase.auth.signUp(
         phone ? { phone, password } : { email: email!, password }
@@ -41,13 +42,12 @@ export async function signup(formData: FormData) {
 
     if (error) {
         const errorMsg = error.message || 'Could not create account'
-        redirect(`/login?error=${encodeURIComponent(errorMsg)}`)
+        redirect(`/login?error=${encodeURIComponent(errorMsg)}&next=${encodeURIComponent(next)}`)
     }
 
     revalidatePath('/', 'layout')
-    // Send new users to dashboard. The DashboardRootPage will handle redirection 
-    // to onboarding if they have no workspaces.
-    redirect('/dashboard')
+    // Send new users to the intended destination (usually dashboard, which handles onboarding redirect)
+    redirect(next)
 }
 
 export async function resetPassword(formData: FormData) {
