@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, use } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { exportToCSV } from '@/utils/export';
@@ -11,7 +11,8 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import type { Attendee } from '@/types/organize';
 
-export default function EventAttendeesPage({ params }: { params: { id: string } }) {
+export default function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
@@ -30,7 +31,7 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
                 const { data, error } = await supabase
                     .from('vw_attendees_list')
                     .select('*')
-                    .eq('event_id', params.id)
+                    .eq('event_id', id)
                     .order('purchase_date', { ascending: false });
 
                 if (error) throw error;
@@ -54,7 +55,7 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
         };
 
         fetchAttendees();
-    }, [params.id, supabase, showToast]);
+    }, [id, supabase, showToast]);
 
     // Filter Logic
     const filteredAttendees = attendees.filter(a => {
@@ -104,7 +105,7 @@ export default function EventAttendeesPage({ params }: { params: { id: string } 
             label: 'Export CSV',
             onClick: () => {
                 showToast('Generating export...', 'info');
-                exportToCSV(filteredAttendees, `attendees_export_${params.id}`);
+                exportToCSV(filteredAttendees, `attendees_export_${id}`);
             }
         }
     ];

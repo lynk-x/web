@@ -16,7 +16,9 @@ export interface OrganizerEvent {
     title: string;
     organizer: string;
     date: string;
+    endDate?: string;
     time: string;
+    endTime?: string;
     location: string;
     /**
      * Exhaustive alignment with `event_status` schema enum.
@@ -44,7 +46,9 @@ export interface EventRow {
     /** Revenue calculated from `ticket_tiers.price` * `quantity_sold` */
     revenue: number;
     date: string;
+    endDate?: string;
     time: string;
+    endTime?: string;
 }
 
 /** A financial transaction — aligned to the `transactions` DB table.

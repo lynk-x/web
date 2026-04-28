@@ -43,6 +43,7 @@ interface SharedProps {
     totalPages?: number;
     onPageChange?: (page: number) => void;
     isLoading?: boolean;
+    className?: string;
 }
 
 // ─── Mode-specific Props ──────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
         selectedIds, onSelect, onSelectAll,
         currentPage = 1, totalPages = 1,
         onPageChange, isLoading = false,
-        mode = 'admin', events,
+        mode = 'admin', events, className = '',
     } = props;
 
     const onDuplicate = (props as any).onDuplicate;
@@ -138,13 +139,30 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                     </div>
                 ),
             },
-            {
                 header: 'Date',
-                render: (event) => <div style={{ fontSize: '13px' }}>{event.date}</div>,
+                render: (event) => (
+                    <div style={{ fontSize: '13px' }}>
+                        {event.date}
+                        {event.endDate && event.endDate !== event.date && (
+                            <span style={{ opacity: 0.6, display: 'block', fontSize: '11px' }}>
+                                → {event.endDate}
+                            </span>
+                        )}
+                    </div>
+                ),
             },
             {
                 header: 'Time',
-                render: (event) => <div style={{ fontSize: '13px' }}>{event.time}</div>,
+                render: (event) => (
+                    <div style={{ fontSize: '13px' }}>
+                        {event.time}
+                        {event.endTime && (
+                            <span style={{ opacity: 0.6, fontSize: '11px' }}>
+                                {' — '}{event.endTime}
+                            </span>
+                        )}
+                    </div>
+                ),
             },
             {
                 header: 'Details',
@@ -266,6 +284,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                 totalPages={totalPages}
                 onPageChange={onPageChange}
                 isLoading={isLoading}
+                className={className}
                 emptyMessage="No events found matching criteria."
             />
         );
@@ -305,11 +324,29 @@ const EventTable: React.FC<EventTableProps> = (props) => {
         },
         {
             header: 'Date',
-            render: (event) => <div style={{ fontSize: '13px' }}>{event.date}</div>,
+            render: (event) => (
+                <div style={{ fontSize: '13px' }}>
+                    {event.date}
+                    {event.endDate && event.endDate !== event.date && (
+                        <span style={{ opacity: 0.6, display: 'block', fontSize: '11px' }}>
+                            → {event.endDate}
+                        </span>
+                    )}
+                </div>
+            ),
         },
         {
             header: 'Time',
-            render: (event) => <div style={{ fontSize: '13px' }}>{event.time}</div>,
+            render: (event) => (
+                <div style={{ fontSize: '13px' }}>
+                    {event.time}
+                    {event.endTime && (
+                        <span style={{ opacity: 0.6, fontSize: '11px' }}>
+                            {' — '}{event.endTime}
+                        </span>
+                    )}
+                </div>
+            ),
         },
     ];
 
@@ -347,6 +384,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             totalPages={totalPages}
             onPageChange={onPageChange}
             isLoading={isLoading}
+            className={className}
             emptyMessage="No events found matching criteria."
         />
     );

@@ -64,7 +64,9 @@ export function formatDate(date: string | Date | number): string {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-';
     
-    return d.toLocaleDateString('en-GB'); // en-GB uses dd/mm/yyyy
+    return d.toLocaleDateString('en-US', {
+        dateStyle: 'medium'
+    });
 }
 
 /**
@@ -75,14 +77,10 @@ export function formatDateTime(date: string | Date | number): string {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-';
     
-    return d.toLocaleString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    }).replace(',', '');
+    return d.toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
 }
 
 /**
@@ -93,10 +91,10 @@ export function formatTime(date: string | Date | number): string {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-';
     
-    return d.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
+    return d.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: false
+        hour12: true
     });
 }
 
@@ -161,10 +159,8 @@ export function formatDateInTimezone(date: string | Date | number, tz?: string |
     if (!tz) return formatDate(d);
 
     try {
-        return new Intl.DateTimeFormat('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
+        return new Intl.DateTimeFormat('en-US', {
+            dateStyle: 'medium',
             timeZone: tz,
         }).format(d);
     } catch {
@@ -205,16 +201,13 @@ export function formatDateTimeInTimezone(
 
     try {
         const opts: Intl.DateTimeFormatOptions = {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
+            dateStyle: 'medium',
+            timeStyle: 'short',
+            hour12: true,
             timeZone: tz,
             ...(showTz ? { timeZoneName: 'short' } : {}),
         };
-        return new Intl.DateTimeFormat('en-GB', opts).format(d).replace(',', '');
+        return new Intl.DateTimeFormat('en-US', opts).format(d);
     } catch {
         return formatDateTime(d);
     }

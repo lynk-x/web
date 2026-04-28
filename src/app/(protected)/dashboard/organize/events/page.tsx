@@ -36,7 +36,7 @@ export default function OrganizerEventsPage() {
     const [cancelTarget, setCancelTarget] = useState<{ event: OrganizerEvent; ticketsSold: number } | null>(null);
 
     // Filter States
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'past'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | OrganizerEvent['status']>('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -62,10 +62,8 @@ export default function OrganizerEventsPage() {
             if (error) throw error;
 
             const formattedEvents: OrganizerEvent[] = (data || []).map((e: any) => {
-                // Map event_status enum to simplified UI status
-                let uiStatus: OrganizerEvent['status'] = 'active';
-                if (e.status === 'draft') uiStatus = 'draft';
-                if (['completed', 'archived', 'cancelled'].includes(e.status)) uiStatus = 'completed';
+                // Map event_status enum directly to preserve granularity for filtering
+                const uiStatus = e.status as OrganizerEvent['status'];
 
                 // tickets_sold = number of tickets sold per tier (schema column)
                 const ticketsSold = (e.ticket_tiers || []).reduce((acc: number, t: any) => acc + (t.tickets_sold || 0), 0);
@@ -75,7 +73,9 @@ export default function OrganizerEventsPage() {
                     title: e.title,
                     organizer: activeAccount.name,
                     date: formatDate(e.starts_at),
+                    endDate: e.ends_at ? formatDate(e.ends_at) : undefined,
                     time: formatTime(e.starts_at),
+                    endTime: e.ends_at ? formatTime(e.ends_at) : undefined,
                     location: (e.location as any)?.name || 'TBD',
                     status: uiStatus,
                     attendees: ticketsSold,
@@ -112,11 +112,7 @@ export default function OrganizerEventsPage() {
 
         const matchesStatus = statusFilter === 'all'
             ? true
-            : statusFilter === 'draft'
-                ? event.status === 'draft'
-                : statusFilter === 'past'
-                    ? event.status === 'completed' || event.status === 'archived' || event.status === 'cancelled'
-                    : event.status === 'active' || event.status === 'published';
+            : event.status === statusFilter;
 
         return matchesSearch && matchesStatus;
     });
@@ -352,9 +348,14 @@ export default function OrganizerEventsPage() {
                 <FilterGroup
                     options={[
                         { value: 'all', label: 'All' },
+                        { value: 'draft', label: 'Draft' },
+                        { value: 'published', label: 'Published' },
                         { value: 'active', label: 'Active' },
-                        { value: 'draft', label: 'Drafts' },
-                        { value: 'past', label: 'Past' },
+                        { value: 'completed', label: 'Completed' },
+                        { value: 'archived', label: 'Archived' },
+                        { value: 'cancelled', label: 'Cancelled' },
+                        { value: 'postponed', label: 'Postponed' },
+                        { value: 'suspended', label: 'Suspended' }
                     ]}
                     currentValue={statusFilter}
                     onChange={(val) => { setStatusFilter(val as any); setCurrentPage(1); }}
@@ -376,39 +377,38 @@ export default function OrganizerEventsPage() {
             />
 
             {/* Table */}
-            <div className={`${styles.tableWrapper} tour-events-table`}>
-                {!isLoadingEvents && events.length === 0 && !searchTerm ? (
-                    <div style={{ textAlign: 'center', padding: '64px 24px' }}>
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: '0 auto 16px', display: 'block', opacity: 0.35 }}>
-                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                        <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: 8 }}>No events yet</p>
-                        <p style={{ fontSize: '14px', opacity: 0.55, marginBottom: 24 }}>Create your first event and start selling tickets.</p>
-                        <button
-                            onClick={() => router.push('/dashboard/organize/events/create')}
-                            style={{ padding: '10px 24px', borderRadius: '8px', background: 'var(--color-brand-primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
-                        >
-                            Create Event
-                        </button>
-                    </div>
-                ) : (
-                    <EventTable
-                        events={paginatedEvents}
-                        selectedIds={selectedIds}
-                        onSelect={handleSelect}
-                        onSelectAll={handleSelectAll}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteSingle}
-                        onDuplicate={handleDuplicate}
-                        onStatusChange={handleStatusChange}
-                        isLoading={isLoadingEvents}
-                    />
-                )}
-            </div>
+            {!isLoadingEvents && events.length === 0 && !searchTerm ? (
+                <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: '0 auto 16px', display: 'block', opacity: 0.35 }}>
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: 8 }}>No events yet</p>
+                    <p style={{ fontSize: '14px', opacity: 0.55, marginBottom: 24 }}>Create your first event and start selling tickets.</p>
+                    <button
+                        onClick={() => router.push('/dashboard/organize/events/create')}
+                        style={{ padding: '10px 24px', borderRadius: '8px', background: 'var(--color-brand-primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                    >
+                        Create Event
+                    </button>
+                </div>
+            ) : (
+                <EventTable
+                    events={paginatedEvents}
+                    selectedIds={selectedIds}
+                    onSelect={handleSelect}
+                    onSelectAll={handleSelectAll}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteSingle}
+                    onDuplicate={handleDuplicate}
+                    onStatusChange={handleStatusChange}
+                    isLoading={isLoadingEvents}
+                    className="tour-events-table"
+                />
+            )}
 
             {/* Modals */}
             <ConfirmationModal
