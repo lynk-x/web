@@ -37,6 +37,7 @@ export default function CreateQuizPage() {
         { text: "", options: ["", "", "", ""], correctIndex: 0 },
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState<"questions" | "settings">("questions");
 
     const fetchForums = useCallback(async () => {
         if (!activeAccount) return;
@@ -150,69 +151,90 @@ export default function CreateQuizPage() {
                 title="Create Live Quiz"
                 subtitle="Build an interactive quiz for your event attendees."
                 backLabel="Back to Quizzes"
+                primaryAction={{
+                    label: "Create & Launch Quiz",
+                    type: "submit",
+                    formId: "create-quiz-form",
+                    isLoading: isSubmitting
+                }}
             />
 
-            <form onSubmit={handleSubmit} className={adminStyles.formGrid} style={{ marginTop: '24px' }}>
-                <div className={adminStyles.pageCard}>
-                    <h2 className={adminStyles.sectionTitle}>Basic Settings</h2>
-                    <div className={adminStyles.formGrid}>
-                        <div className={adminStyles.formGroup}>
-                            <label className={adminStyles.label}>Link to Event / Forum <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                            <select className={adminStyles.select} value={forumId} onChange={(e) => setForumId(e.target.value)} required>
-                                <option value="" disabled>Select an Event</option>
-                                {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
-                            </select>
-                        </div>
-                        <div className={adminStyles.formGroup}>
-                            <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                            <input className={adminStyles.input} type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ultimate Tech Trivia!" required />
-                        </div>
-                        <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                            <label className={adminStyles.label}>Description</label>
-                            <textarea className={adminStyles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short intro for the waiting lobby..." rows={3} />
-                        </div>
-                        <div className={adminStyles.formGroup} style={{ maxWidth: '120px' }}>
-                            <label className={adminStyles.label}>Time (Sec) <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                            <input className={adminStyles.input} type="number" min="5" max="120" value={timeLimit} onChange={(e) => setTimeLimit(Number(e.target.value))} required />
-                        </div>
-                    </div>
-                </div>
+            <div className={adminStyles.tabs} style={{ marginTop: '24px', marginBottom: '24px' }}>
+                <button 
+                    type="button" 
+                    className={`${adminStyles.tab} ${activeTab === 'questions' ? adminStyles.tabActive : ''}`}
+                    onClick={() => setActiveTab('questions')}
+                >
+                    Questions ({questions.length})
+                </button>
+                <button 
+                    type="button" 
+                    className={`${adminStyles.tab} ${activeTab === 'settings' ? adminStyles.tabActive : ''}`}
+                    onClick={() => setActiveTab('settings')}
+                >
+                    Settings
+                </button>
+            </div>
 
-                <div className={adminStyles.pageCard}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Questions</h2>
-                        <button type="button" className={adminStyles.btnSecondary} onClick={handleAddQuestion} style={{ fontSize: '12px' }}>+ Add Question</button>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {questions.map((q, qIndex) => (
-                            <div key={qIndex} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--color-interface-outline)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                    <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-brand-primary)' }}>Q{qIndex + 1}</span>
-                                    {questions.length > 1 && (
-                                        <button type="button" onClick={() => handleRemoveQuestion(qIndex)} style={{ border: 'none', background: 'transparent', color: 'var(--color-interface-error)', fontSize: '12px', cursor: 'pointer' }}>Remove</button>
-                                    )}
-                                </div>
-                                <input className={adminStyles.input} type="text" placeholder="Type your question..." value={q.text} onChange={(e) => handleQuestionChange(qIndex, "text", e.target.value)} style={{ fontWeight: 600, marginBottom: '12px' }} required />
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    {q.options.map((opt, oIndex) => (
-                                        <div key={oIndex} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px', border: q.correctIndex === oIndex ? '1px solid var(--color-brand-primary)' : '1px solid transparent' }}>
-                                            <input type="radio" name={`correct-${qIndex}`} checked={q.correctIndex === oIndex} onChange={() => handleQuestionChange(qIndex, "correctIndex", oIndex)} style={{ cursor: 'pointer', accentColor: 'var(--color-brand-primary)' }} />
-                                            <input className={adminStyles.input} type="text" placeholder={`Opt ${oIndex + 1}`} value={opt} onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)} style={{ background: 'transparent', border: 'none', padding: 0 }} required />
-                                        </div>
-                                    ))}
-                                </div>
+            <form id="create-quiz-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {activeTab === 'settings' && (
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Basic Settings</h2>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Link to Event / Forum <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <select className={adminStyles.select} value={forumId} onChange={(e) => setForumId(e.target.value)} required>
+                                    <option value="" disabled>Select an Event</option>
+                                    {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
+                                </select>
                             </div>
-                        ))}
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input className={adminStyles.input} type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ultimate Tech Trivia!" required />
+                            </div>
+                            <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                <label className={adminStyles.label}>Description</label>
+                                <textarea className={adminStyles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short intro for the waiting lobby..." rows={3} />
+                            </div>
+                            <div className={adminStyles.formGroup} style={{ maxWidth: '120px' }}>
+                                <label className={adminStyles.label}>Time (Sec) <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input className={adminStyles.input} type="number" min="5" max="120" value={timeLimit} onChange={(e) => setTimeLimit(Number(e.target.value))} required />
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
 
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                    <button type="button" className={adminStyles.btnGhost} onClick={() => router.back()}>Cancel</button>
-                    <button type="submit" className={adminStyles.btnPrimary} disabled={isSubmitting || forums.length === 0}>
-                        {isSubmitting ? "Launching..." : "Create & Launch Quiz"}
-                    </button>
-                </div>
+                {activeTab === 'questions' && (
+                    <div className={adminStyles.pageCard}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Questions</h2>
+                            <button type="button" className={adminStyles.btnSecondary} onClick={handleAddQuestion} style={{ fontSize: '12px' }}>+ Add Question</button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {questions.map((q, qIndex) => (
+                                <div key={qIndex} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--color-interface-outline)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                        <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-brand-primary)' }}>Q{qIndex + 1}</span>
+                                        {questions.length > 1 && (
+                                            <button type="button" onClick={() => handleRemoveQuestion(qIndex)} style={{ border: 'none', background: 'transparent', color: 'var(--color-interface-error)', fontSize: '12px', cursor: 'pointer' }}>Remove</button>
+                                        )}
+                                    </div>
+                                    <input className={adminStyles.input} type="text" placeholder="Type your question..." value={q.text} onChange={(e) => handleQuestionChange(qIndex, "text", e.target.value)} style={{ fontWeight: 600, marginBottom: '12px' }} required />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        {q.options.map((opt, oIndex) => (
+                                            <div key={oIndex} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px', border: q.correctIndex === oIndex ? '1px solid var(--color-brand-primary)' : '1px solid transparent' }}>
+                                                <input type="radio" name={`correct-${qIndex}`} checked={q.correctIndex === oIndex} onChange={() => handleQuestionChange(qIndex, "correctIndex", oIndex)} style={{ cursor: 'pointer', accentColor: 'var(--color-brand-primary)' }} />
+                                                <input className={adminStyles.input} type="text" placeholder={`Opt ${oIndex + 1}`} value={opt} onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)} style={{ background: 'transparent', border: 'none', padding: 0 }} required />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
             </form>
         </div>
     );

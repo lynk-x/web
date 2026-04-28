@@ -80,28 +80,23 @@ const Sidebar = () => {
 
             {/* Navigation Links */}
             <nav className={styles.nav}>
-                {navGroups[mode]?.map((group, gIdx) => (
-                    <div key={gIdx} className={styles.navGroup}>
-                        {group.title && <div className={styles.groupTitle}>{group.title}</div>}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
-                            {group.items.map((item) => {
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                                    >
-                                        <span style={{ color: 'inherit', display: 'flex', alignItems: 'center' }}>
-                                            {item.icon}
-                                        </span>
-                                        <span>{item.name}</span>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </div>
-                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
+                    {navGroups[mode]?.flatMap(group => group.items).map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                            >
+                                <span style={{ color: 'inherit', display: 'flex', alignItems: 'center' }}>
+                                    {item.icon}
+                                </span>
+                                <span>{item.name}</span>
+                            </Link>
+                        );
+                    })}
+                </div>
             </nav>
 
             {/* Organization Switcher */}

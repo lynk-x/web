@@ -179,7 +179,7 @@ export default function QuizzesPage() {
                         Manage live quizzes for your event forums.
                     </p>
                 </div>
-                <button className={adminStyles.primaryButton} onClick={() => router.push('/dashboard/organize/quizzes/new')}>
+                <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/organize/quizzes/new')}>
                     + Create Quiz
                 </button>
             </div>
@@ -261,13 +261,13 @@ export default function QuizzesPage() {
                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                             <Link
                                                 href={`/dashboard/organize/quizzes/${quiz.id}/host`}
-                                                className={adminStyles.primaryButton}
+                                                className={adminStyles.btnPrimary}
                                                 style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
                                             >
                                                 Host Live
                                             </Link>
                                             <button
-                                                className={adminStyles.secondaryButton}
+                                                className={adminStyles.btnSecondary}
                                                 onClick={() => handleDuplicate(quiz.id)}
                                                 style={{ fontSize: 13, padding: '4px 12px' }}
                                             >
@@ -275,21 +275,21 @@ export default function QuizzesPage() {
                                             </button>
                                             <Link
                                                 href={`/dashboard/organize/quizzes/${quiz.id}/edit`}
-                                                className={adminStyles.secondaryButton}
+                                                className={adminStyles.btnSecondary}
                                                 style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
                                             >
                                                 Edit
                                             </Link>
                                             <Link
                                                 href={`/dashboard/organize/quizzes/${quiz.id}/results`}
-                                                className={adminStyles.secondaryButton}
+                                                className={adminStyles.btnSecondary}
                                                 style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
                                             >
                                                 Results
                                             </Link>
                                             {quiz.status === 'draft' && (
                                                 <button
-                                                    className={adminStyles.dangerButton}
+                                                    className={adminStyles.btnDanger}
                                                     onClick={() => handleDelete(quiz)}
                                                     style={{ fontSize: 13, padding: '4px 10px' }}
                                                 >

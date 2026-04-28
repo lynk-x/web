@@ -181,7 +181,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
                                 <h3 style={{ fontSize: 48, letterSpacing: 4, margin: '0 0 16px' }}>{quiz.room_code}</h3>
                                 <p style={{ color: 'var(--color-text-secondary)', marginBottom: 32 }}>Waiting for participants to join...</p>
                                 <button 
-                                    className={adminStyles.primaryButton} 
+                                    className={adminStyles.btnPrimary} 
                                     onClick={handleStart}
                                     disabled={isUpdating}
                                     style={{ padding: '12px 40px', fontSize: 18 }}
@@ -200,7 +200,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
                                 
                                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                                     <button 
-                                        className={adminStyles.primaryButton} 
+                                        className={adminStyles.btnPrimary} 
                                         onClick={handleNext}
                                         disabled={isUpdating}
                                         style={{ padding: '12px 32px' }}
@@ -210,7 +210,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
                                          'Next Question'}
                                     </button>
                                     <button 
-                                        className={adminStyles.secondaryButton} 
+                                        className={adminStyles.btnSecondary} 
                                         onClick={handleReset}
                                         disabled={isUpdating}
                                     >
@@ -225,7 +225,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
                                 <h3 style={{ fontSize: 32, margin: '0 0 16px' }}>Quiz Finished!</h3>
                                 <p style={{ color: 'var(--color-text-secondary)', marginBottom: 32 }}>All questions have been answered.</p>
                                 <button 
-                                    className={adminStyles.primaryButton} 
+                                    className={adminStyles.btnPrimary} 
                                     onClick={() => router.push(`/dashboard/organize/quizzes/${quizId}/results`)}
                                 >
                                     View Full Results

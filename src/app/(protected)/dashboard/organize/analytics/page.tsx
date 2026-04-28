@@ -13,6 +13,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
+import Tabs from '@/components/dashboard/Tabs';
 
 export default function AnalyticsPage() {
     const { showToast } = useToast();
@@ -150,6 +151,8 @@ export default function AnalyticsPage() {
         showToast('Report downloaded.', 'success');
     };
 
+    const [activeTab, setActiveTab] = useState('summary');
+
     return (
         <div className={adminStyles.container}>
             <PageHeader
@@ -211,63 +214,74 @@ export default function AnalyticsPage() {
                 </TableToolbar>
             </div>
 
-
-
-            <div className={adminStyles.subPageGridBalanced} style={{ marginTop: '24px' }}>
-                <div className={`${adminStyles.pageCard} tour-analytics-trend`}>
-                    <h2 className={adminStyles.sectionTitle}>Performance Trend</h2>
-                    <div style={{ height: '300px', width: '100%', marginTop: '16px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={timeSeriesData}>
-                                <defs>
-                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="var(--color-brand-primary)" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="var(--color-brand-primary)" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `KES ${value / 1000}k`} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
-                                    itemStyle={{ color: 'var(--color-brand-primary)' }}
-                                />
-                                <Area type="monotone" dataKey="revenue" stroke="var(--color-brand-primary)" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className={adminStyles.pageCard}>
-                    <h2 className={adminStyles.sectionTitle}>Ticket Sales by Event</h2>
-                    <div style={{ height: '300px', width: '100%', marginTop: '16px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={filteredData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis
-                                    dataKey="event"
-                                    stroke="rgba(255,255,255,0.3)"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => val.length > 15 ? val.substring(0, 12) + '...' : val}
-                                />
-                                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip
-                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                    contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
-                                />
-                                <Bar dataKey="ticketsSold" fill="var(--color-brand-primary)" radius={[4, 4, 0, 0]} barSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+            <div style={{ marginTop: '24px' }}>
+                <Tabs 
+                    options={[
+                        { id: 'summary', label: 'Summary' },
+                        { id: 'breakdown', label: 'Breakdown' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                />
             </div>
 
-            <div className={adminStyles.pageCard} style={{ marginTop: '24px' }}>
-                <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '16px' }}>Event Performance Breakdown</h2>
-                <PerformanceTable data={filteredData} />
-            </div>
+            {activeTab === 'summary' ? (
+                <div className={adminStyles.subPageGridBalanced} style={{ marginTop: '24px' }}>
+                    <div className={`${adminStyles.pageCard} tour-analytics-trend`}>
+                        <h2 className={adminStyles.sectionTitle}>Performance Trend</h2>
+                        <div style={{ height: '300px', width: '100%', marginTop: '16px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={timeSeriesData}>
+                                    <defs>
+                                        <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="var(--color-brand-primary)" stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor="var(--color-brand-primary)" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `KES ${value / 1000}k`} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
+                                        itemStyle={{ color: 'var(--color-brand-primary)' }}
+                                    />
+                                    <Area type="monotone" dataKey="revenue" stroke="var(--color-brand-primary)" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Ticket Sales by Event</h2>
+                        <div style={{ height: '300px', width: '100%', marginTop: '16px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={filteredData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis
+                                        dataKey="event"
+                                        stroke="rgba(255,255,255,0.3)"
+                                        fontSize={10}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickFormatter={(val) => val.length > 15 ? val.substring(0, 12) + '...' : val}
+                                    />
+                                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                        contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
+                                    />
+                                    <Bar dataKey="ticketsSold" fill="var(--color-brand-primary)" radius={[4, 4, 0, 0]} barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className={adminStyles.pageCard} style={{ marginTop: '24px' }}>
+                    <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '16px' }}>Event Performance Breakdown</h2>
+                    <PerformanceTable data={filteredData} />
+                </div>
+            )}
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgAnalyticsJoyride_${activeAccount.id}` : 'hasSeenOrgAnalyticsJoyride_guest'}
                 steps={[
