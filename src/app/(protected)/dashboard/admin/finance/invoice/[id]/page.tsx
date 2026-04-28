@@ -48,6 +48,7 @@ export default function AdminInvoicePage() {
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
+                    .schema('transactions')
                     .from('transactions')
                     .select(`
                         id, amount, status, created_at, currency, description, reason, reference,

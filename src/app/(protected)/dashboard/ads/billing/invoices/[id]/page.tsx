@@ -51,6 +51,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             try {
                 // Try wallet_top_ups first (billing page lists these as invoices)
                 const { data: topUp } = await supabase
+                    .schema('wallet_top_ups')
                     .from('wallet_top_ups')
                     .select('id, amount, status, created_at, currency, provider_ref, metadata')
                     .eq('id', id)
@@ -86,6 +87,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                 // Fallback: try transactions table
                 const { data, error } = await supabase
+                    .schema('transactions')
                     .from('transactions')
                     .select('id, amount, status, created_at, currency, reason, metadata')
                     .eq('id', id)

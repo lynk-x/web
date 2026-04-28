@@ -137,7 +137,10 @@ function FinanceContent() {
             const to = from + itemsPerPage - 1;
 
             if (['transactions', 'refunds', 'revenue', 'escrow'].includes(activeTab)) {
-                let query = supabase.from('transactions').select(`
+                let query = supabase
+                    .schema('transactions')
+                    .from('transactions')
+                    .select(`
                     *,
                     event:events(title),
                     sender:user_profile!sender_id(full_name, user_name),
@@ -186,7 +189,10 @@ function FinanceContent() {
                     recipient: tx.recipient?.full_name || tx.recipient?.user_name
                 })));
             } else if (activeTab === 'payouts') {
-                let query = supabase.from('payouts').select(`
+                let query = supabase
+                    .schema('payouts')
+                    .from('payouts')
+                    .select(`
                     *,
                     account:accounts(display_name),
                     verifications:identity_verifications!account_id(status)
@@ -293,7 +299,7 @@ function FinanceContent() {
             .channel('admin_finance_updates')
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'transactions' },
+                { event: '*', schema: 'transactions', table: 'transactions' },
                 () => {
                     fetchGlobalStatsRef.current();
                     if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTabRef.current)) {
@@ -303,7 +309,7 @@ function FinanceContent() {
             )
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'payouts' },
+                { event: '*', schema: 'payouts', table: 'payouts' },
                 () => {
                     if (activeTabRef.current === 'payouts') fetchDataRef.current();
                     fetchGlobalStatsRef.current();

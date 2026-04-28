@@ -50,7 +50,7 @@ export function createNotificationsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('notifications')
+                .schema('notifications').from('notifications')
                 .select('id, user_id, type, title, body, is_read, action_url, created_at')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
@@ -63,7 +63,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Count unread notifications for a user. */
         async countUnread(userId: string): Promise<RepoResult<number>> {
             const { count, error } = await client
-                .from('notifications')
+                .schema('notifications').from('notifications')
                 .select('id', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('is_read', false);
@@ -75,7 +75,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Mark a single notification as read. */
         async markRead(notificationId: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('notifications')
+                .schema('notifications').from('notifications')
                 .update({ is_read: true })
                 .eq('id', notificationId);
 
@@ -86,7 +86,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Mark all notifications for a user as read. */
         async markAllRead(userId: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('notifications')
+                .schema('notifications').from('notifications')
                 .update({ is_read: true })
                 .eq('user_id', userId)
                 .eq('is_read', false);
@@ -98,7 +98,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Delete a notification. */
         async delete(notificationId: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('notifications')
+                .schema('notifications').from('notifications')
                 .delete()
                 .eq('id', notificationId);
 
@@ -109,7 +109,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Fetch notification preferences for a user. */
         async getPreferences(userId: string): Promise<RepoResult<NotificationPreferences>> {
             const { data, error } = await client
-                .from('notification_preferences')
+                .schema('notifications').from('notification_preferences')
                 .select('*')
                 .eq('user_id', userId)
                 .single();
@@ -124,7 +124,7 @@ export function createNotificationsRepository(client: DbClient) {
             prefs: Partial<Omit<NotificationPreferences, 'user_id' | 'updated_at'>>
         ): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('notification_preferences')
+                .schema('notifications').from('notification_preferences')
                 .upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' });
 
             if (error) return { data: null, error: toError(error) };

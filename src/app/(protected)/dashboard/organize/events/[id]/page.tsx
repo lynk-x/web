@@ -48,8 +48,6 @@ const STATUS_BADGE_MAP: Record<string, { label: string; variant: BadgeVariant }>
     completed: { label: 'Completed', variant: 'neutral' },
     cancelled: { label: 'Cancelled', variant: 'error' },
     suspended: { label: 'Suspended', variant: 'warning' },
-    postponed: { label: 'Postponed', variant: 'warning' },
-    archived: { label: 'Archived', variant: 'neutral' },
 };
 
 export default function EventDetailPage() {
@@ -93,6 +91,7 @@ export default function EventDetailPage() {
             // Fetch revenue, scan count, and forum members in parallel
             const [revResult, scanResult, forumResult] = await Promise.all([
                 supabase
+                    .schema('transactions')
                     .from('transactions')
                     .select('amount')
                     .eq('event_id', id)
@@ -100,6 +99,7 @@ export default function EventDetailPage() {
                     .eq('category', 'incoming')
                     .eq('reason', 'ticket_sale'),
                 supabase
+                    .schema('ticket_scan_logs')
                     .from('ticket_scan_logs')
                     .select('id', { count: 'exact', head: true })
                     .eq('status', 'success')

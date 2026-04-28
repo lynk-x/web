@@ -311,7 +311,6 @@ export default function AdminEventsPage() {
                         { value: 'active', label: 'Active' },
                         { value: 'rejected', label: 'Rejected' },
                         { value: 'completed', label: 'Completed' },
-                        { value: 'archived', label: 'Archived' },
                         { value: 'cancelled', label: 'Cancelled' },
                         { value: 'suspended', label: 'Suspended' },
                     ].map(({ value, label }) => (

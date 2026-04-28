@@ -87,6 +87,7 @@ export default function AnalyticsPage() {
 
             if (ids.length > 0) {
                 const { data: txData, error: txErr } = await supabase
+                    .schema('transactions')
                     .from('transactions')
                     .select('amount, created_at')
                     .in('event_id', ids)

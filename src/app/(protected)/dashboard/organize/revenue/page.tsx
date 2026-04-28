@@ -72,6 +72,7 @@ function RevenueContent() {
         try {
             // Payouts for this account
             const { data: payoutData, error: payoutError } = await supabase
+                .schema('payouts')
                 .from('payouts')
                 .select('*')
                 .eq('account_id', activeAccount.id)
@@ -102,6 +103,7 @@ function RevenueContent() {
 
             // Refund transactions for this account's events
             const { data: refundData, error: refundError } = await supabase
+                .schema('transactions')
                 .from('transactions')
                 .select('id, amount, currency, status, created_at, updated_at, event_id, ticket_id, metadata')
                 .eq('recipient_account_id', activeAccount.id)
@@ -177,6 +179,7 @@ function RevenueContent() {
         try {
             // First find the primary payout method
             const { data: methodData, error: methodError } = await supabase
+                .schema('public')
                 .from('account_payment_methods')
                 .select('id')
                 .eq('account_id', activeAccount.id)

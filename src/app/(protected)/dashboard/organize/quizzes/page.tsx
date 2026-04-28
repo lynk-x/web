@@ -259,6 +259,13 @@ export default function QuizzesPage() {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                            <Link
+                                                href={`/dashboard/organize/quizzes/${quiz.id}/host`}
+                                                className={adminStyles.primaryButton}
+                                                style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
+                                            >
+                                                Host Live
+                                            </Link>
                                             <button
                                                 className={adminStyles.secondaryButton}
                                                 onClick={() => handleDuplicate(quiz.id)}
@@ -266,6 +273,13 @@ export default function QuizzesPage() {
                                             >
                                                 Duplicate
                                             </button>
+                                            <Link
+                                                href={`/dashboard/organize/quizzes/${quiz.id}/edit`}
+                                                className={adminStyles.secondaryButton}
+                                                style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
+                                            >
+                                                Edit
+                                            </Link>
                                             <Link
                                                 href={`/dashboard/organize/quizzes/${quiz.id}/results`}
                                                 className={adminStyles.secondaryButton}

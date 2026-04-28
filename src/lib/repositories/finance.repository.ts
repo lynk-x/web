@@ -88,6 +88,7 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             let query = client
+                .schema('transactions')
                 .from('transactions')
                 .select('id, account_id, sender_id, recipient_id, amount, currency, status, reason, category, reference, event_id, initiated_by, created_at')
                 .eq('account_id', accountId)
@@ -112,6 +113,7 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             let query = client
+                .schema('payouts')
                 .from('payouts')
                 .select('id, account_id, amount, currency, status, payout_method_id, reference, notes, requested_at, processed_at')
                 .eq('account_id', accountId)
@@ -150,6 +152,7 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
+                .schema('wallet_top_ups')
                 .from('wallet_top_ups')
                 .select('id, account_id, user_id, amount, currency, status, provider, created_at')
                 .eq('user_id', userId)
@@ -183,6 +186,7 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
+                .schema('refund_requests')
                 .from('refund_requests')
                 .select('id, ticket_id, user_id, amount, currency, status, reason, created_at')
                 .eq('user_id', userId)

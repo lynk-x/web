@@ -206,6 +206,7 @@ export default function OrganizerEventsPage() {
         try {
             // Fetch tickets for selected events with user profiles
             const { data, error } = await supabase
+                .schema('tickets')
                 .from('tickets')
                 .select(`
                     id,
@@ -352,9 +353,7 @@ export default function OrganizerEventsPage() {
                         { value: 'published', label: 'Published' },
                         { value: 'active', label: 'Active' },
                         { value: 'completed', label: 'Completed' },
-                        { value: 'archived', label: 'Archived' },
                         { value: 'cancelled', label: 'Cancelled' },
-                        { value: 'postponed', label: 'Postponed' },
                         { value: 'suspended', label: 'Suspended' }
                     ]}
                     currentValue={statusFilter}

@@ -83,7 +83,6 @@ const getStatusVariant = (status: string): BadgeVariant => {
         case 'cancelled': return 'error';
         case 'completed':
         case 'ended': return 'neutral';
-        case 'archived': return 'subtle';
         default: return 'neutral';
     }
 };
