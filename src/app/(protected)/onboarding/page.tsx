@@ -158,7 +158,7 @@ function OnboardingFlow() {
 
             // Redirect to user profile setup, then dashboard
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
-            window.location.href = `/dashboard/setup-profile?type=${dashType}&accountRef=${accountRef}`;
+            window.location.href = `/setup-profile?type=${dashType}&accountRef=${accountRef}`;
         } catch (err: any) {
             console.error('Error creating organization:', err);
             setError(err.message || 'Failed to create organization. Please try again.');

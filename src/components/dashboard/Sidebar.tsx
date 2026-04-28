@@ -40,10 +40,10 @@ const Sidebar = () => {
         }
     }, [pathname]);
 
-    // Hide the sidebar on pages that don't belong inside a workspace:
-    // - /dashboard         (workspace picker / account selector)
-    // - /dashboard/setup-profile (profile setup, no account context yet)
-    const SIDEBAR_HIDDEN_PATHS = ['/dashboard', '/dashboard/setup-profile'];
+    // Hide the sidebar on the workspace picker page — all other dashboard
+    // sub-routes (organize, ads, admin) show the sidebar.
+    // Note: /setup-profile is no longer under /dashboard, so no need to hide it here.
+    const SIDEBAR_HIDDEN_PATHS = ['/dashboard'];
     if (SIDEBAR_HIDDEN_PATHS.includes(pathname)) return null;
 
     return (

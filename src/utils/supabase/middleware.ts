@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // ── Protect authenticated routes ───────────────────────────────────────
-    const protectedRoutes = ['/dashboard', '/onboarding']
+    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile']
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
     if (!user && isProtectedRoute) {

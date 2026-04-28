@@ -1,9 +1,26 @@
+/**
+ * OrganizationContext — manages the user's account memberships and active workspace.
+ *
+ * Provides the list of accounts the user belongs to, the currently active account,
+ * and a function to switch between them. Active account ID is persisted in
+ * localStorage to survive page reloads.
+ *
+ * Design decisions:
+ *   - Uses the same module-level Supabase client singleton as AuthContext
+ *     to ensure cookie/auth state is always in sync.
+ *   - Business accounts (organizer, advertiser, platform) are preferred
+ *     over attendee accounts when selecting a default active workspace.
+ */
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { createAccountsRepository } from '@/lib/repositories';
 import { useAuth } from '@/context/AuthContext';
+
+/** Module-level singleton — shared with AuthContext. */
+const supabase = createClient();
 
 export interface Account {
     id: string;
@@ -48,7 +65,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
         setIsLoading(true);
         try {
-            const accountsRepo = createAccountsRepository(createClient());
+            const accountsRepo = createAccountsRepository(supabase);
             const { data: memberships, error } = await accountsRepo.getMembershipsForUser(user.id);
 
             if (error) {

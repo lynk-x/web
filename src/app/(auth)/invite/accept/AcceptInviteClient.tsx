@@ -85,7 +85,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
                 const accountParam = accountRef ? `&accountRef=${accountRef}` : '';
                 // Since this is joining an existing organization, it's typically an organizer account
                 // (Advertiser accounts also exist, but organize is the default).
-                router.push(`/dashboard/setup-profile?type=organize${accountParam}`);
+                router.push(`/setup-profile?type=organize${accountParam}`);
             }, 2000);
         } catch (err: any) {
             setError(err.message || "Failed to accept invitation.");

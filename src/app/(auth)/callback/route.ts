@@ -15,6 +15,12 @@ export async function GET(request: Request) {
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser()
       
+      // Safety net: if the session exchange succeeded but getUser returns null
+      // (e.g. race condition, token revoked), don't silently redirect to dashboard.
+      if (!user) {
+        return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Session could not be established. Please try again.')}`)
+      }
+
       // Intelligent Redirection logic:
       // 1. If 'next' is provided and explicitly different from default, honor it (invites, resets).
       // 2. If no 'next' (default), check if user is a new user with only an 'attendee' account.

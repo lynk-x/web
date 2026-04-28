@@ -9,7 +9,7 @@ import styles from './page.module.css';
 function DashboardRoot() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, profile, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
+    const { user, isProfileComplete, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -42,7 +42,7 @@ function DashboardRoot() {
         }
 
         if (!profile || !profile.full_name || profile.full_name.trim() === '') {
-            router.replace('/dashboard/setup-profile');
+            router.replace('/setup-profile');
             return;
         }
 

@@ -1,3 +1,17 @@
+/**
+ * AuthContext — global authentication state for authenticated routes.
+ *
+ * Provides the Supabase user, their profile, and a logout function.
+ * Consumed by dashboard, onboarding, and setup-profile pages via
+ * the shared (protected) layout.
+ *
+ * Design decisions:
+ *   - Module-level singleton for createClient() to match Supabase SSR docs
+ *     and avoid unstable references in hooks.
+ *   - `isProfileComplete` is derived here so all guards can use it as
+ *     a single source of truth instead of reimplementing the check.
+ */
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -6,12 +20,16 @@ import { createClient } from '@/utils/supabase/client';
 import { createUsersRepository } from '@/lib/repositories';
 import type { User } from '@supabase/supabase-js';
 
+/** Module-level singleton — one client per browser tab. */
+const supabase = createClient();
+
 interface UserProfile {
     id: string;
     email: string;
     user_name: string;
     full_name: string | null;
     avatar_url: string | null;
+    user_type?: string;
 }
 
 interface AuthContextType {
@@ -19,13 +37,14 @@ interface AuthContextType {
     profile: UserProfile | null;
     isLoading: boolean;
     isLoadingProfile: boolean;
+    /** True when the profile has at least a full_name set. */
+    isProfileComplete: boolean;
     logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const supabase = createClient();
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -81,6 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
+    /** Derived: true when the user has completed their profile setup. */
+    const isProfileComplete = Boolean(profile?.full_name?.trim());
+
     const logout = async () => {
         setIsLoading(true);
         try {
@@ -101,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             profile,
             isLoading,
             isLoadingProfile,
+            isProfileComplete,
             logout
         }}>
             {children}

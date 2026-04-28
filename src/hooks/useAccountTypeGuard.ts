@@ -10,7 +10,9 @@
  *  B) User has an account of the required type, but a different one is currently active
  *     → redirect to /dashboard so they can switch to the right workspace.
  *
-
+ * Profile completeness is checked via AuthContext's `isProfileComplete` flag
+ * (single source of truth — no duplicated logic).
+ *
  * Usage:
  *   const { isAuthorized, isChecking } = useAccountTypeGuard(['organizer'])
  *
@@ -40,8 +42,8 @@ interface GuardResult {
  */
 export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
     const router = useRouter();
-    const { accounts, activeAccount, setActiveAccountId, isLoading: isOrgLoading } = useOrganization();
-    const { profile, isLoading: isAuthLoading } = useAuth();
+    const { accounts, activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const { isProfileComplete, isLoading: isAuthLoading } = useAuth();
     
     const [isChecking, setIsChecking] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -50,22 +52,12 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         // Wait for both contexts to finish loading.
         if (isOrgLoading || isAuthLoading) return;
 
-        // Debugging for production guard issues
-        console.log('[AccountTypeGuard] Checking access:', {
-            activeAccount: activeAccount?.id,
-            activeType: activeAccount?.type,
-            allowedTypes,
-            totalAccounts: accounts.length,
-            hasProfile: !!profile?.full_name
-        });
-
         // 1. Check whether the user owns any account of the required type at all.
         const matchingAccounts = accounts.filter(a => allowedTypes.includes(a.type as AccountType));
         const hasMatchingAccount = matchingAccounts.length > 0;
 
         if (!hasMatchingAccount) {
             // User has NO account of this type — send to onboarding to create one.
-            console.log('[AccountTypeGuard] No matching accounts found. Redirecting to onboarding.');
             const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
             router.replace(`/onboarding?type=${defaultType}`);
             setIsAuthorized(false);
@@ -73,11 +65,10 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
             return;
         }
 
-        // 2. Check profile completeness
-        if (!profile || !profile.full_name || profile.full_name.trim() === '') {
-            console.log('[AccountTypeGuard] Profile incomplete. Redirecting to setup-profile.');
+        // 2. Check profile completeness (single source of truth from AuthContext)
+        if (!isProfileComplete) {
             const type = allowedTypes.includes('advertiser') ? 'ads' : 'organize';
-            router.replace(`/dashboard/setup-profile?type=${type}`);
+            router.replace(`/setup-profile?type=${type}`);
             setIsAuthorized(false);
             setIsChecking(false);
             return;
@@ -85,7 +76,6 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
 
         // 3. Case: active account is the correct type
         if (activeAccount && allowedTypes.includes(activeAccount.type as AccountType)) {
-            console.log('[AccountTypeGuard] Authorized');
             setIsAuthorized(true);
             setIsChecking(false);
             return;
@@ -93,13 +83,12 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
 
         // 4. Case: wrong account type is active, but they DO have a matching one
         // User has matching accounts, force them to pick one from the picker.
-        console.log('[AccountTypeGuard] Wrong active account, but matching accounts exist. Redirecting to picker.');
         const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
         router.replace(`/dashboard?type=${defaultType}`);
 
         setIsAuthorized(false);
         setIsChecking(false);
-    }, [isOrgLoading, isAuthLoading, accounts, activeAccount, allowedTypes, router, setActiveAccountId, profile]);
+    }, [isOrgLoading, isAuthLoading, accounts, activeAccount, allowedTypes, router, isProfileComplete]);
 
     return { isChecking, isAuthorized };
 }
