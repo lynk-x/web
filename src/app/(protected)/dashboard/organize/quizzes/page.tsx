@@ -199,13 +199,6 @@ export default function QuizzesPage() {
             ) : quizzes.length === 0 ? (
                 <div className={adminStyles.emptyState}>
                     <p>No quizzes yet. Create one to engage your event audience.</p>
-                    <button
-                        className={adminStyles.primaryButton}
-                        style={{ marginTop: 16 }}
-                        onClick={() => router.push('/dashboard/organize/quizzes/new')}
-                    >
-                        Create Your First Quiz
-                    </button>
                 </div>
             ) : (
                 <table className={adminStyles.table}>

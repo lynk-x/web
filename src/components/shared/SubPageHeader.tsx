@@ -27,6 +27,7 @@ interface SubPageHeaderProps extends React.PropsWithChildren<{
         label: string;
         variant?: BadgeVariant;
     };
+    hideDivider?: boolean;
 }> {}
 
 const SubPageHeader: React.FC<SubPageHeaderProps> = ({
@@ -39,10 +40,16 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
     primaryAction,
     secondaryAction,
     badge,
+    hideDivider = false,
     children
 }) => {
     return (
-        <header className={styles.header} style={{ marginBottom: '32px', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '24px' }}>
+        <header className={styles.header} style={{ 
+            marginBottom: '12px', 
+            alignItems: 'center', 
+            borderBottom: hideDivider ? 'none' : '1px solid var(--color-interface-outline)', 
+            paddingBottom: hideDivider ? '0' : '24px' 
+        }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                 <BackButton label={backLabel} isDirty={isDirty} href={backHref} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
