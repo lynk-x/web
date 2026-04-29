@@ -17,7 +17,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
         .from("feature_flags")
         .select("is_enabled")
         .eq("key", "live_quiz")
-        .single();
+        .maybeSingle();
 
     if (!flagData?.is_enabled) {
         return (

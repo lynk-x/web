@@ -17,13 +17,25 @@ export default function PlayPage() {
 
     useEffect(() => {
         const checkFeatureFlag = async () => {
-            const { data } = await supabase
-                .from('feature_flags')
-                .select('is_enabled')
-                .eq('key', 'live_quiz')
-                .single();
-            setIsFeatureEnabled(data?.is_enabled === true);
-            setFlagChecked(true);
+            try {
+                const { data, error } = await supabase
+                    .from('feature_flags')
+                    .select('is_enabled')
+                    .eq('key', 'live_quiz')
+                    .maybeSingle();
+                
+                if (error) {
+                    console.error("Feature flag error:", error);
+                    setIsFeatureEnabled(false);
+                } else {
+                    setIsFeatureEnabled(data?.is_enabled === true);
+                }
+            } catch (err) {
+                console.error("Failed to check feature flag:", err);
+                setIsFeatureEnabled(false);
+            } finally {
+                setFlagChecked(true);
+            }
         };
         checkFeatureFlag();
     }, []);

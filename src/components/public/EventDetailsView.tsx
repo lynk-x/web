@@ -124,8 +124,27 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     };
 
     // Format the event date/time in the event's canonical timezone
-    const dateString = formatEventDate(event.start_datetime, event.timezone);
-    const timeString = formatTimeInTimezone(event.start_datetime, event.timezone);
+    const start = event.start_datetime;
+    const end = event.end_datetime;
+    const tz = event.timezone;
+
+    const startDateStr = formatEventDate(start, tz);
+    const startTimeStr = formatTimeInTimezone(start, tz);
+    
+    let dateTimeDisplay = `${startDateStr} • ${startTimeStr}`;
+    
+    if (end) {
+        const endDateStr = formatEventDate(end, tz);
+        const endTimeStr = formatTimeInTimezone(end, tz);
+        
+        if (startDateStr === endDateStr) {
+            // Same day: Thursday 11th Mar, 2007 • 06:00 PM - 09:00 PM
+            dateTimeDisplay = `${startDateStr} • ${startTimeStr} - ${endTimeStr}`;
+        } else {
+            // Different days: Thursday 11th Mar, 2007, 06:00 PM - Friday 12th Mar, 2007, 02:00 AM
+            dateTimeDisplay = `${startDateStr}, ${startTimeStr} - ${endDateStr}, ${endTimeStr}`;
+        }
+    }
 
     const handleShare = async () => {
         if (typeof navigator !== 'undefined') {
@@ -212,7 +231,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 <span className={styles.tag}>{event.category || 'Event'}</span>
                             </div>
                         </div>
-                        <p className={styles.date}>{dateString} • {timeString}</p>
+                        <p className={styles.date}>{dateTimeDisplay}</p>
                         <p className={styles.location}>Location: {(event.location as any)?.name || 'TBD'}</p>
 
                         <div className={styles.sectionHeader} onClick={() => setIsAboutExpanded(!isAboutExpanded)}>
@@ -358,7 +377,6 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 {selectedTicket !== null
                                     ? `Proceed to Checkout \u2014 ${event.currency || 'KES'} ${((ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity).toLocaleString()}`
                                     : 'Select a ticket'}
-                                {selectedTicket !== null && <span className={styles.btnSubtext}>Secure checkout via M-Pesa</span>}
                             </button>
                         </motion.div>
                     )}

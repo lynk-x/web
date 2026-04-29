@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import EventCard from './EventCard';
 import styles from './EventGrid.module.css';
 import { Event } from "@/types";
-import { formatDateTimeInTimezone } from '@/utils/format';
+import { formatDateInTimezone, formatTimeInTimezone } from '@/utils/format';
 
 interface EventGridProps {
     events: Event[];
@@ -33,19 +33,39 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
         <div className={styles.container}>
             <div id="event-grid-top" />
             <div className={styles.grid}>
-                {currentEvents.map((event) => (
-                    <EventCard
-                        key={event.id}
-                        id={event.id}
-                        reference={event.reference}
-                        name={event.title}
-                        date={formatDateTimeInTimezone(event.start_datetime, event.timezone)}
-                        category={event.category || 'General'}
-                        isActive={false}
-                        price={(event.low_price && event.currency) ? `${event.currency} ${event.low_price}` : 'Free'}
-                        image={(event.media as any)?.cover_image_url}
-                    />
-                ))}
+                {currentEvents.map((event) => {
+                    const start = event.start_datetime;
+                    const end = event.end_datetime;
+                    const tz = event.timezone;
+                    
+                    const startDateStr = formatDateInTimezone(start, tz);
+                    const startTimeStr = formatTimeInTimezone(start, tz);
+                    let rangeStr = `${startDateStr} • ${startTimeStr}`;
+
+                    if (end) {
+                        const endDateStr = formatDateInTimezone(end, tz);
+                        const endTimeStr = formatTimeInTimezone(end, tz);
+                        if (startDateStr === endDateStr) {
+                            rangeStr = `${startDateStr} • ${startTimeStr} - ${endTimeStr}`;
+                        } else {
+                            rangeStr = `${startDateStr} - ${endDateStr}`;
+                        }
+                    }
+
+                    return (
+                        <EventCard
+                            key={event.id}
+                            id={event.id}
+                            reference={event.reference}
+                            name={event.title}
+                            date={rangeStr}
+                            category={event.category || 'General'}
+                            isActive={false}
+                            price={(event.low_price && event.currency) ? `${event.currency} ${event.low_price}` : 'Free'}
+                            image={(event.media as any)?.cover_image_url}
+                        />
+                    );
+                })}
             </div>
 
             {totalPages > 1 && (
