@@ -21,7 +21,7 @@ export default function PlayPage() {
                 const { data, error } = await supabase
                     .from('feature_flags')
                     .select('is_enabled')
-                    .eq('key', 'live_quiz')
+                    .eq('key', 'enable_live_quiz')
                     .maybeSingle();
                 
                 if (error) {
@@ -109,7 +109,7 @@ export default function PlayPage() {
                         maxLength={10}
                         placeholder="Game PIN"
                         value={pin}
-                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} // Numeric only
+                        onChange={(e) => setPin(e.target.value)} // Allow alphanumeric PINs
                         required
                     />
                     {error && <div className={styles.error}>{error}</div>}

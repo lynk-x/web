@@ -16,7 +16,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
     const { data: flagData } = await supabase
         .from("feature_flags")
         .select("is_enabled")
-        .eq("key", "live_quiz")
+        .eq("key", "enable_live_quiz")
         .maybeSingle();
 
     if (!flagData?.is_enabled) {
