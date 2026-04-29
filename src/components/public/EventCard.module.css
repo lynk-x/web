@@ -20,7 +20,7 @@
 .imagePlaceholder {
     width: 100%;
     aspect-ratio: 16 / 9;
-    background-color: #1e293b;
+    background-color: var(--color-interface-surface);
     display: flex;
     align-items: center;
     justify-content: center;
