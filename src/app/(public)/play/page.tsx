@@ -87,8 +87,8 @@ export default function PlayPage() {
         return (
             <div className={styles.container}>
                 <div className={styles.card}>
-                    <h2>Feature Disabled</h2>
-                    <p>Live quizzes are currently disabled by the administrator.</p>
+                    <h1 style={{ fontWeight: 900, marginBottom: '16px' }}>Feature Disabled</h1>
+                    <p style={{ opacity: 0.6 }}>Live quizzes are currently disabled by the administrator. Please check back later!</p>
                 </div>
             </div>
         );
@@ -96,11 +96,12 @@ export default function PlayPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.logoImgWrapper}>
-                <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={220} height={100} priority />
-            </div>
-            <div className={styles.logo}>Quiz<span>Live!</span></div>
             <div className={styles.card}>
+                <div className={styles.logoImgWrapper}>
+                    <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={220} height={100} priority />
+                </div>
+                <div className={styles.logo}>Lynk-X <span>Live!</span></div>
+                
                 <form onSubmit={handleJoin} className={styles.form}>
                     <input
                         className={styles.input}
@@ -122,6 +123,7 @@ export default function PlayPage() {
                 </form>
             </div>
             <div className={styles.footer}>
+                Powered by Lynk-X
             </div>
         </div>
     );
