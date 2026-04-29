@@ -22,8 +22,8 @@ export default async function QuizPage({ params }: QuizPageProps) {
     if (!flagData?.is_enabled) {
         return (
             <div style={{ padding: "4rem", textAlign: "center" }}>
-                <h1>Feature Disabled</h1>
-                <p>Live quizzes are currently disabled.</p>
+                <h1>Live Quizzes Coming Soon!</h1>
+                <p>We're preparing something exciting. Check back during live events to join the action!</p>
             </div>
         );
     }

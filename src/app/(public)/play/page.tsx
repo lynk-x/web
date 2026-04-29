@@ -83,12 +83,22 @@ export default function PlayPage() {
         );
     }
 
+    const brandHeader = (
+        <>
+            <div className={styles.logoImgWrapper}>
+                <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={220} height={100} priority />
+            </div>
+            <div className={styles.logo}>Lynk-X <span>Live!</span></div>
+        </>
+    );
+
     if (!isFeatureEnabled) {
         return (
             <div className={styles.container}>
+                {brandHeader}
                 <div className={styles.card}>
-                    <h1 style={{ fontWeight: 900, marginBottom: '16px' }}>Feature Disabled</h1>
-                    <p style={{ opacity: 0.6 }}>Live quizzes are currently disabled by the administrator. Please check back later!</p>
+                    <h1 style={{ fontWeight: 900, marginBottom: '16px' }}>Live Quizzes Coming Soon!</h1>
+                    <p style={{ opacity: 0.6 }}>We're preparing something exciting. Check back during live events to join the action!</p>
                 </div>
             </div>
         );
@@ -96,12 +106,8 @@ export default function PlayPage() {
 
     return (
         <div className={styles.container}>
+            {brandHeader}
             <div className={styles.card}>
-                <div className={styles.logoImgWrapper}>
-                    <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={220} height={100} priority />
-                </div>
-                <div className={styles.logo}>Lynk-X <span>Live!</span></div>
-                
                 <form onSubmit={handleJoin} className={styles.form}>
                     <input
                         className={styles.input}
@@ -109,7 +115,7 @@ export default function PlayPage() {
                         maxLength={10}
                         placeholder="Game PIN"
                         value={pin}
-                        onChange={(e) => setPin(e.target.value)} // Allow alphanumeric PINs
+                        onChange={(e) => setPin(e.target.value)}
                         required
                     />
                     {error && <div className={styles.error}>{error}</div>}
@@ -121,9 +127,6 @@ export default function PlayPage() {
                         {loading ? 'Joining...' : 'Enter'}
                     </button>
                 </form>
-            </div>
-            <div className={styles.footer}>
-                Powered by Lynk-X
             </div>
         </div>
     );
