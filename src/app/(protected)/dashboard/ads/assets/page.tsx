@@ -58,7 +58,7 @@ export default function AdsAssetsPage() {
 
             const campaignIds = ownCampaigns.map(c => c.id);
             const { data, error } = await supabase
-                .from('ad_assets')
+                .from('ad_media')
                 .select('*, ad_campaigns(title)')
                 .in('campaign_id', campaignIds)
                 .order('created_at', { ascending: false });
@@ -172,9 +172,9 @@ export default function AdsAssetsPage() {
                 .from('ad_media')
                 .getPublicUrl(filePath);
 
-            // 3. Insert into ad_assets
+            // 3. Insert into ad_media
             const { error: insertError } = await supabase
-                .from('ad_assets')
+                .from('ad_media')
                 .insert({
                     campaign_id: tempSelectedCampaignId,
                     media_type: file.type.startsWith('video') ? 'video' : 'image',
@@ -201,7 +201,7 @@ export default function AdsAssetsPage() {
         if (!assetToDelete) return;
         try {
             const { error } = await supabase
-                .from('ad_assets')
+                .from('ad_media')
                 .delete()
                 .eq('id', assetToDelete);
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import EventCard from './EventCard';
 import styles from './EventGrid.module.css';
 import { Event } from "@/types";
+import { formatDateTimeInTimezone } from '@/utils/format';
 
 interface EventGridProps {
     events: Event[];
@@ -38,7 +39,7 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
                         id={event.id}
                         reference={event.reference}
                         name={event.title}
-                        date={new Date(event.start_datetime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        date={formatDateTimeInTimezone(event.start_datetime, event.timezone)}
                         category={event.category || 'General'}
                         isActive={false}
                         price={(event.low_price && event.currency) ? `${event.currency} ${event.low_price}` : 'Free'}

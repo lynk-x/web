@@ -214,6 +214,30 @@ export function formatDateTimeInTimezone(
 }
 
 /**
+ * Formats a UTC date string as `HH:mm AM/PM` in the event's canonical local timezone.
+ */
+export function formatTimeInTimezone(date: string | Date | number, tz?: string | null): string {
+    if (!date) return '-';
+    const d = new Date(
+        typeof date === 'number' ? date : typeof date === 'string' ? date : date.getTime()
+    );
+    if (isNaN(d.getTime())) return '-';
+
+    if (!tz) return formatTime(d);
+
+    try {
+        return new Intl.DateTimeFormat('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: tz,
+        }).format(d);
+    } catch {
+        return formatTime(d);
+    }
+}
+
+/**
  * Formats a date as "Thursday 11th Mar, 2007" in the event's canonical timezone.
  * Used for high-fidelity event detail views.
  */

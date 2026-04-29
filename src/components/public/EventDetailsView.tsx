@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
-import { formatDateTimeInTimezone, formatEventDate, formatTime } from '@/utils/format';
+import { formatDateTimeInTimezone, formatEventDate, formatTime, formatTimeInTimezone } from '@/utils/format';
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 import { useToast } from '@/components/ui/Toast';
@@ -123,7 +123,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
 
     // Format the event date/time in the event's canonical timezone
     const dateString = formatEventDate(event.start_datetime, event.timezone);
-    const timeString = formatDateTimeInTimezone(event.start_datetime, event.timezone, true).split(' ').slice(1).join(' ');
+    const timeString = formatTimeInTimezone(event.start_datetime, event.timezone);
 
     const handleShare = async () => {
         if (typeof navigator !== 'undefined') {
@@ -200,13 +200,14 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                     transition={{ delay: 0.3, duration: 0.5 }}
                 >
                     <div className={styles.detailsContent}>
-                        <h1 className={styles.title}>{event.title}</h1>
+                        <div className={styles.titleRow}>
+                            <h1 className={styles.title}>{event.title}</h1>
+                            <div className={styles.tagGrid} style={{ marginBottom: 0, marginTop: '8px' }}>
+                                <span className={styles.tag}>{event.category || 'Event'}</span>
+                            </div>
+                        </div>
                         <p className={styles.date}>{dateString} • {timeString}</p>
                         <p className={styles.location}>Location: {(event.location as any)?.name || 'TBD'}</p>
-
-                        <div className={styles.tagGrid}>
-                            <span className={styles.tag}>{event.category || 'Event'}</span>
-                        </div>
 
                         <div className={styles.sectionHeader} onClick={() => setIsAboutExpanded(!isAboutExpanded)}>
                             <h2 className={styles.sectionTitle}>About the event</h2>

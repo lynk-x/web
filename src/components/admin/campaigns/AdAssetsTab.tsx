@@ -11,15 +11,15 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Mirrors `ad_assets` joined with `ad_campaigns!campaign_id(title, type, status)`. */
+/** Mirrors `ad_media` joined with `ad_campaigns!campaign_id(title, type, status)`. */
 interface AdAsset {
     id: string;
     campaign_id: string;
     campaign_title: string;
     campaign_type: string;
     campaign_status: string;
-    /** asset MIME/media type (e.g. 'image/png', 'video/mp4') */
-    type: string;
+    /** asset MIME/media type (e.g. 'image', 'video') */
+    media_type: string;
     call_to_action: string | null;
     url: string;
     is_primary: boolean;
@@ -29,7 +29,7 @@ interface AdAsset {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
- * Campaigns tab showing all `ad_assets` across all campaigns.
+ * Campaigns tab showing all `ad_media` across all campaigns.
  * Allows admins to review uploaded creative assets and delete rogue uploads.
  */
 export default function AdAssetsTab() {
@@ -48,7 +48,7 @@ export default function AdAssetsTab() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .from('ad_assets')
+                .from('ad_media')
                 .select('*, campaign:ad_campaigns!campaign_id(title, type, status)')
                 .order('created_at', { ascending: false });
             if (error) throw error;
@@ -58,7 +58,7 @@ export default function AdAssetsTab() {
                 campaign_title: a.campaign?.title ?? 'Unknown Campaign',
                 campaign_type: a.campaign?.type ?? '—',
                 campaign_status: a.campaign?.status ?? '—',
-                type: a.type,
+                media_type: a.media_type,
                 call_to_action: a.call_to_action,
                 url: a.url,
                 is_primary: a.is_primary,
@@ -76,7 +76,7 @@ export default function AdAssetsTab() {
     const handleDelete = async (asset: AdAsset) => {
         if (!await confirm(`Delete asset for campaign "${asset.campaign_title}"? This cannot be undone.`)) return;
         try {
-            const { error } = await supabase.from('ad_assets').delete().eq('id', asset.id);
+            const { error } = await supabase.from('ad_media').delete().eq('id', asset.id);
             if (error) throw error;
             setAssets(prev => prev.filter(a => a.id !== asset.id));
             showToast('Asset deleted.', 'success');
@@ -91,9 +91,9 @@ export default function AdAssetsTab() {
     const filtered = assets.filter(a => {
         const matchSearch =
             a.campaign_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.media_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (a.call_to_action ?? '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchType = typeFilter === 'all' || a.type.startsWith(typeFilter);
+        const matchType = typeFilter === 'all' || a.media_type.startsWith(typeFilter);
         return matchSearch && matchType;
     });
 
@@ -121,15 +121,15 @@ export default function AdAssetsTab() {
             render: (a) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {/* Thumbnail preview for images */}
-                    {a.type.startsWith('image') ? (
+                    {a.media_type === 'image' ? (
                         <img src={a.url} alt="ad asset" style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
                         <div style={{ width: 48, height: 32, borderRadius: '4px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', opacity: 0.5 }}>
-                            {a.type.split('/')[0].toUpperCase()}
+                            {a.media_type.toUpperCase()}
                         </div>
                     )}
                     <div>
-                        <div style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.7 }}>{a.type}</div>
+                        <div style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.7 }}>{a.media_type}</div>
                         {a.is_primary && <Badge label="Primary" variant="warning" />}
                     </div>
                 </div>

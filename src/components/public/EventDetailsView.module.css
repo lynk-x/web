@@ -151,9 +151,17 @@
     font-family: var(--font-heading);
     font-size: 32px;
     font-weight: 700;
-    margin-bottom: var(--spacing-xs);
     color: var(--color-utility-primaryText);
     line-height: 1.2;
+    flex: 1;
+}
+
+.titleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
 }
 
 .location {

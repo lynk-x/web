@@ -366,28 +366,37 @@ export default function CreateCampaignForm({
 
     // ── Schedule Timeline ─────────────────────────────────────────────────────
 
-    const scheduleWeeks = useMemo(() => {
+    const scheduleTimeline = useMemo(() => {
         const start = formData.start_at ? new Date(formData.start_at) : null;
         const end = formData.end_at ? new Date(formData.end_at) : null;
         if (!start || !end || end <= start) return [];
 
-        const weeks: { label: string; active: boolean }[] = [];
+        const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        const timeline: { label: string; active: boolean }[] = [];
         const cursor = new Date(start);
-        
-        while (cursor <= end) {
-            const weekStart = new Date(cursor);
-            const weekEnd = new Date(cursor);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            
-            // For the timeline visualization, we show 'blocks' starting from the first day
-            weeks.push({
-                label: weekStart.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-                active: true,
-            });
-            cursor.setDate(cursor.getDate() + 7);
-            if (weeks.length > 20) break; // Safety cap
+
+        if (diffDays <= 14) {
+            // Daily granularity for short campaigns
+            while (cursor <= end) {
+                timeline.push({
+                    label: cursor.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+                    active: true,
+                });
+                cursor.setDate(cursor.getDate() + 1);
+            }
+        } else {
+            // Weekly granularity for longer campaigns
+            while (cursor <= end) {
+                const weekStart = new Date(cursor);
+                timeline.push({
+                    label: `Wk: ${weekStart.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`,
+                    active: true,
+                });
+                cursor.setDate(cursor.getDate() + 7);
+                if (timeline.length > 24) break; // Safety cap
+            }
         }
-        return weeks;
+        return timeline;
     }, [formData.start_at, formData.end_at]);
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -569,8 +578,8 @@ export default function CreateCampaignForm({
                 }
 
                 // Re-insert all assets: delete old ones, re-insert all
-                await supabase.from('ad_assets').delete().eq('campaign_id', formData.id);
-                await supabase.from('ad_assets').insert(
+                await supabase.from('ad_media').delete().eq('campaign_id', formData.id);
+                await supabase.from('ad_media').insert(
                     uploadedCreatives.map((c, idx) => ({
                         campaign_id: formData.id,
                         media_type: c.mediaType || 'image',
@@ -610,7 +619,7 @@ export default function CreateCampaignForm({
                         );
                     }
 
-                    await supabase.from('ad_assets').insert(
+                    await supabase.from('ad_media').insert(
                         uploadedCreatives.map((c, idx) => ({
                             campaign_id: campaign.id,
                             media_type: c.mediaType || 'image',
@@ -774,18 +783,20 @@ export default function CreateCampaignForm({
                                 )}
                                 */}
 
-                                {scheduleWeeks.length > 0 && (
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Campaign Timeline</label>
-                                        <div className={styles.timeline}>
-                                            {scheduleWeeks.map((w, i) => (
-                                                <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
-                                                    <span className={styles.timelineLabel}>{w.label}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                 {/* Timeline (Disabled for now)
+                                 {scheduleTimeline.length > 0 && (
+                                     <div className={styles.inputGroup}>
+                                         <label className={styles.label}>Campaign Timeline</label>
+                                         <div className={styles.timeline}>
+                                             {scheduleTimeline.map((w, i) => (
+                                                 <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
+                                                     <span className={styles.timelineLabel}>{w.label}</span>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 )}
+                                 */}
                             </div>
                         )}
 
@@ -1040,19 +1051,20 @@ export default function CreateCampaignForm({
                                     ))}
                                 </div>
 
-                                {/* Schedule repeat in review */}
-                                {scheduleWeeks.length > 0 && (
-                                    <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
-                                        <label className={styles.label}>Campaign Window</label>
-                                        <div className={styles.timeline}>
-                                            {scheduleWeeks.map((w, i) => (
-                                                <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
-                                                    <span className={styles.timelineLabel}>{w.label}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                 {/* Schedule repeat in review (Disabled for now)
+                                 {scheduleTimeline.length > 0 && (
+                                     <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
+                                         <label className={styles.label}>Campaign Window</label>
+                                         <div className={styles.timeline}>
+                                             {scheduleTimeline.map((w: { label: string; active: boolean }, i: number) => (
+                                                 <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
+                                                     <span className={styles.timelineLabel}>{w.label}</span>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 )}
+                                 */}
 
                                 {/* Forecast in review (Disabled for now)
                                 {forecast && (

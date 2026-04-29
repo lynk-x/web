@@ -25,7 +25,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 .from('ad_campaign_campaigns_with_assets') // or just ad_campaigns
                 .select(`
                     *,
-                    ad_assets (call_to_action, url, is_primary, media_type),
+                    ad_media (call_to_action, url, is_primary, media_type),
                     ad_campaign_regions (country_code),
                     campaign_tags (tags (name))
                 `)
@@ -38,7 +38,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                     .from('ad_campaigns')
                     .select(`
                         *,
-                        ad_assets (call_to_action, url, is_primary, media_type),
+                        ad_media (call_to_action, url, is_primary, media_type),
                         ad_campaign_regions (country_code),
                         campaign_tags (tags (name))
                     `)
@@ -52,7 +52,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 }
                 
                 // Process rawData
-                const assets = (rawData.ad_assets as any[]) || [];
+                const assets = (rawData.ad_media as any[]) || [];
                 const regions = (rawData.ad_campaign_regions as any[]) || [];
                 const tags = (rawData.campaign_tags as any[]) || [];
 
@@ -83,7 +83,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 return;
             }
 
-            const assets = (data.ad_assets as any[]) || [];
+            const assets = (data.ad_media as any[]) || [];
             const regions = (data.ad_campaign_regions as any[]) || [];
             const tags = (data.campaign_tags as any[]) || [];
 

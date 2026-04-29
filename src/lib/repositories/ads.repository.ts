@@ -1,6 +1,6 @@
 /**
  * Ads repository — wraps queries against:
- *   ad_campaigns, ad_assets, ad_campaign_regions, campaign_tags, ad_analytics
+ *   ad_campaigns, ad_media, ad_campaign_regions, campaign_tags, ad_analytics
  *
  * Used by advertiser dashboard campaign management and admin ads panel.
  */
@@ -150,15 +150,18 @@ export function createAdsRepository(client: DbClient) {
         },
 
         /** Fetch all creative assets for a campaign. */
-        async getAssets(campaignId: string): Promise<RepoResult<AdAsset[]>> {
+        async getMedia(campaignId: string): Promise<RepoResult<any[]>> {
             const { data, error } = await client
-                .from('ad_assets')
-                .select('id, campaign_id, asset_type, url, mime_type, file_size, created_at')
+                .from('ad_media')
+                .select('id, campaign_id, media_type, url, created_at')
                 .eq('campaign_id', campaignId)
                 .order('created_at', { ascending: false });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as AdAsset[], error: null };
+            
+            // Map media_type to asset_type for compatibility if necessary, 
+            // but better to align the interface.
+            return { data: data as any[], error: null };
         },
 
         /** Fetch regional targeting for a campaign. */

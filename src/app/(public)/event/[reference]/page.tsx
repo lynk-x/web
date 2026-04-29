@@ -68,6 +68,8 @@ export default async function EventPage({ params }: { params: { reference: strin
         .from('ticket_tiers')
         .select('id, display_name, description, price, capacity, tickets_sold')
         .eq('event_id', rawEvent.id)
+        .is('deleted_at', null)
+        .eq('is_hidden', false)
         .order('price', { ascending: true });
 
     // Fetch active disclaimers linked to this event via its tags.
