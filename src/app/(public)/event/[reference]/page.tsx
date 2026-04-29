@@ -12,7 +12,7 @@ export async function generateMetadata(
     const { reference } = await params;
 
     const { data: event } = await supabase
-        .from('events')
+        .from('vw_public_events')
         .select('title, description, media')
         .eq('reference', reference)
         .single();
@@ -20,7 +20,7 @@ export async function generateMetadata(
     if (!event) return {};
 
     const previousImages = (await parent).openGraph?.images || [];
-    const eventImage = event.media?.[0]?.url;
+    const eventImage = (event.media as any)?.thumbnail;
 
     return {
         title: `${event.title} | Lynk-X`,
@@ -43,20 +43,10 @@ export default async function EventPage({ params }: { params: { reference: strin
     const supabase = await createClient();
     const { reference } = await params;
 
-    // Select from the raw table but apply the same filters as vw_public_events:
-    // - deleted_at IS NULL: hide soft-deleted events
-    // - status IN ('published', 'active'): only publicly visible events
     const { data: rawEvent, error } = await supabase
-        .from('events')
-        .select(`
-            id, title, description, media, location, timezone, account_id,
-            starts_at, ends_at, is_private, currency, reference,
-            organizer:accounts!account_id(display_name),
-            category:event_categories(display_name)
-        `)
+        .from('vw_public_events')
+        .select('*')
         .eq('reference', reference)
-        .is('deleted_at', null)
-        .in('status', ['published', 'active'])
         .single();
 
     if (error || !rawEvent) {
@@ -107,8 +97,8 @@ export default async function EventPage({ params }: { params: { reference: strin
         start_datetime: rawEvent.starts_at,
         end_datetime: rawEvent.ends_at,
         timezone: rawEvent.timezone ?? undefined,
-        organizer_name: (rawEvent.organizer as { display_name?: string } | null)?.display_name,
-        category: (rawEvent.category as { display_name?: string } | null)?.display_name,
+        organizer_name: rawEvent.organizer_name,
+        category: rawEvent.category,
     };
 
     return (
