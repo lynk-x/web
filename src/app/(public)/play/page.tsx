@@ -86,9 +86,9 @@ export default function PlayPage() {
     const brandHeader = (
         <>
             <div className={styles.logoImgWrapper}>
-                <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={220} height={100} priority />
+                <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={280} height={130} priority />
             </div>
-            <div className={styles.logo}>Lynk-X <span>Live!</span></div>
+            <div className={styles.logo}>Live <span>Quiz!</span></div>
         </>
     );
 
