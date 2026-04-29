@@ -63,7 +63,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const handleAcceptDisclaimer = () => {
         setIsDisclaimerOpen(false);
 
+        const eventImage = (event as any).cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.poster || (event.media as any)?.hero;
         const selectedTier = ticketTiers.find(t => t.id === selectedTicket);
+
         if (selectedTier) {
             addToCart({
                 id: `${event.id}-ticket-${selectedTier.id}`,
@@ -75,7 +77,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 price: selectedTier.price,
                 quantity,
                 currency: event.currency || 'KES',
-                image: (event.media as any)?.thumbnail_url || (event.media as any)?.cover_image_url
+                image: eventImage
             });
             router.push('/checkout');
         }
@@ -183,8 +185,12 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                     transition={{ delay: 0.2, duration: 0.5 }}
                 >
                     <div className={styles.hero}>
-                        {(event.media as any)?.cover_image_url ? (
-                            <img src={(event.media as any).cover_image_url} alt={event.title} className={styles.heroImage} />
+                        {((event as any).cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.poster) ? (
+                            <img 
+                                src={(event as any).cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.poster} 
+                                alt={event.title} 
+                                className={styles.heroImage} 
+                            />
                         ) : (
                             <svg role="img" aria-label="No event image available" width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.heroIcon}>
                                 <path d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16M14 14L15.586 12.414C15.9611 12.0391 16.4697 11.8284 17 11.8284C17.5303 11.8284 18.0389 12.0391 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

@@ -24,7 +24,8 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
 }
 
 @media (min-width: 768px) {

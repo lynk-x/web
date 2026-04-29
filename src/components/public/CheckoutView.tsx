@@ -275,6 +275,19 @@ const CheckoutView: React.FC = () => {
                 }
             }
             if (!user) throw new Error('Could not establish session');
+            
+            // Step 1.5: Reserve tickets (lock inventory) before payment
+            // This ensures tickets aren't sold out while the user is paying.
+            // Note: We loop through items but since current app usually checks out 1 event at a time,
+            // we focus on the first item for the primary reservation.
+            const { data: reservationId, error: reserveError } = await supabase.rpc('lock_tickets_for_checkout', {
+                p_tier_id: items[0].tierId,
+                p_quantity: items[0].quantity
+            });
+
+            if (reserveError) {
+                throw new Error(reserveError.message || 'Failed to reserve tickets. They might have just sold out.');
+            }
 
             // Step 2: Initiate real STK Push via Edge Function
             const { data, error: funcError } = await supabase.functions.invoke('mpesa-stk-push', {

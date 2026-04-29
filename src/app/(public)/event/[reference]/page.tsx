@@ -13,14 +13,14 @@ export async function generateMetadata(
 
     const { data: event } = await supabase
         .from('vw_public_events')
-        .select('title, description, media')
+        .select('title, description, media, cover_image_url')
         .eq('reference', reference)
         .single();
 
     if (!event) return {};
 
     const previousImages = (await parent).openGraph?.images || [];
-    const eventImage = (event.media as any)?.thumbnail;
+    const eventImage = (event as any).cover_image_url || (event.media as any)?.thumbnail;
 
     return {
         title: `${event.title} | Lynk-X`,
