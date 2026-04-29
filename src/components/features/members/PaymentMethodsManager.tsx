@@ -30,12 +30,19 @@ export default function PaymentMethodsManager({ accountId }: Props) {
         try {
             const { data, error } = await supabase
                 .from('account_payment_methods')
-                .select('*')
+                .select('*, provider:platform_payment_providers(provider_name)')
                 .eq('account_id', accountId)
                 .order('is_primary', { ascending: false });
 
             if (error) throw error;
-            setMethods(data || []);
+            
+            // Flatten the provider name from the join
+            const flattenedData = (data || []).map((item: any) => ({
+                ...item,
+                provider: item.provider?.provider_name || 'unknown'
+            }));
+            
+            setMethods(flattenedData);
         } catch (err: any) {
             showToast(err.message, 'error');
         } finally {
@@ -57,16 +64,23 @@ export default function PaymentMethodsManager({ accountId }: Props) {
         try {
             const isFirst = methods.length === 0;
 
-            const { error } = await supabase
-                .from('account_payment_methods')
-                .insert({
-                    account_id: accountId,
-                    provider: newMethod.provider,
-                    provider_identity: newMethod.identity,
-                    is_primary: isFirst
-                });
+            // Use RPC instead of direct insert to handle provider name to ID mapping
+            const { data: methodId, error: rpcError } = await supabase.rpc('add_payout_method', {
+                p_provider_name: newMethod.provider,
+                p_identity: newMethod.identity,
+                p_label: newMethod.provider === 'mpesa' ? `M-Pesa (${newMethod.identity.slice(-4)})` : undefined
+            });
 
-            if (error) throw error;
+            if (rpcError) throw rpcError;
+
+            // If it's the first method, set it as primary
+            if (isFirst && methodId) {
+                await supabase
+                    .from('account_payment_methods')
+                    .update({ is_primary: true })
+                    .eq('id', methodId);
+            }
+
             showToast('New payout destination added successfully.', 'success', 'Success');
             setIsAddModalOpen(false);
             setNewMethod({ provider: 'mpesa', identity: '' });

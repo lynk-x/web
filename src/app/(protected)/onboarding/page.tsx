@@ -242,18 +242,6 @@ function OnboardingFlow() {
                             </div>
 
                             <div className={styles.inputGroup}>
-                                <label className={styles.label}>Organization Name</label>
-                                <input
-                                    type="text"
-                                    value={orgName}
-                                    onChange={(e) => setOrgName(e.target.value)}
-                                    placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
-                                    className={styles.input}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.inputGroup}>
                                 <label className={styles.label}>Operating Country</label>
                                 <select
                                     className={styles.input}
@@ -266,6 +254,18 @@ function OnboardingFlow() {
                                     ))}
                                     {countries.length === 0 && <option value="KE">Kenya</option>}
                                 </select>
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Organization Name</label>
+                                <input
+                                    type="text"
+                                    value={orgName}
+                                    onChange={(e) => setOrgName(e.target.value)}
+                                    placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
+                                    className={styles.input}
+                                    required
+                                />
                             </div>
 
                             <div className={styles.inputGroup}>

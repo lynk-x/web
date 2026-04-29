@@ -162,14 +162,14 @@ export default function AdsAssetsPage() {
             const filePath = `${activeAccount!.id}/${Date.now()}.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('ad_assets')
+                .from('ad_media')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
             // 2. Get Public URL
             const { data: { publicUrl } } = supabase.storage
-                .from('ad_assets')
+                .from('ad_media')
                 .getPublicUrl(filePath);
 
             // 3. Insert into ad_assets

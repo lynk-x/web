@@ -519,9 +519,9 @@ export default function CreateCampaignForm({
                 if (!c.file) return c;
                 const ext = c.file.name.split('.').pop();
                 const path = `${activeAccount.id}/ads/${Date.now()}_creative_${idx}.${ext}`;
-                const { error } = await supabase.storage.from('ad_assets').upload(path, c.file);
+                const { error } = await supabase.storage.from('ad_media').upload(path, c.file);
                 if (error) throw error;
-                const { data } = supabase.storage.from('ad_assets').getPublicUrl(path);
+                const { data } = supabase.storage.from('ad_media').getPublicUrl(path);
                 return { ...c, imageUrl: data.publicUrl };
             }));
 
@@ -726,10 +726,6 @@ export default function CreateCampaignForm({
                                             </div>
                                         )}
                                     </div>
-                                </div>
-
-                                {/* Budget */}
-                                <div className={styles.row}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="total_budget">
                                             Total Budget ($) <span className={styles.requiredIndicator}>*Required</span>
@@ -738,6 +734,10 @@ export default function CreateCampaignForm({
                                         <input id="total_budget" name="total_budget" type="number" className={styles.input}
                                             placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
                                     </div>
+                                </div>
+
+                                {/* Budget & Bidding */}
+                                <div className={styles.row}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="daily_limit">
                                             Daily Limit ($)
@@ -756,7 +756,7 @@ export default function CreateCampaignForm({
                                     </div>
                                 </div>
 
-                                {/* #5 Performance Forecast */}
+                                {/* Performance Forecast (Disabled for now)
                                 {forecast && (
                                     <div className={styles.forecastCard}>
                                         <div className={styles.forecastTitle}>📈 Estimated Reach ({forecast.days} days)</div>
@@ -772,6 +772,7 @@ export default function CreateCampaignForm({
                                         </div>
                                     </div>
                                 )}
+                                */}
 
                                 {scheduleWeeks.length > 0 && (
                                     <div className={styles.inputGroup}>
@@ -803,7 +804,7 @@ export default function CreateCampaignForm({
 
                                 {/* Multi-Country Targeting */}
                                 <div className={styles.inputGroup}>
-                                    <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Up to 5 countries)</span></label>
+                                    <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Leave empty for worldwide)</span></label>
                                     <div className={styles.tagInput}>
                                         {formData.target_countries?.map(code => {
                                             const country = countries.find(c => c.code === code);
@@ -816,7 +817,7 @@ export default function CreateCampaignForm({
                                         })}
                                         <input
                                             className={styles.tagInputField}
-                                            placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Max 5 regions'}
+                                            placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Leave empty for worldwide'}
                                             value={countryInput}
                                             onChange={e => setCountryInput(e.target.value)}
                                             onKeyDown={e => {
@@ -855,7 +856,7 @@ export default function CreateCampaignForm({
                                     {/* Market Competition Insights */}
                                     {marketSuggestions.length > 0 && (
                                         <div className={styles.marketInsights}>
-                                            <div className={styles.marketInsightsTitle}>📊 Regional Market Density</div>
+                                            <div className={styles.marketInsightsTitle}>Regional Market Density</div>
                                             <div className={styles.marketGrid}>
                                                 {marketSuggestions.map(s => {
                                                     const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
@@ -1053,7 +1054,7 @@ export default function CreateCampaignForm({
                                     </div>
                                 )}
 
-                                {/* Forecast in review */}
+                                {/* Forecast in review (Disabled for now)
                                 {forecast && (
                                     <div className={styles.forecastCard} style={{ marginTop: '12px' }}>
                                         <div className={styles.forecastTitle}>📈 Estimated Reach</div>
@@ -1069,6 +1070,7 @@ export default function CreateCampaignForm({
                                         </div>
                                     </div>
                                 )}
+                                */}
 
                                 <div className={styles.launchNote}>
                                     By launching, your campaign will be submitted for admin approval before going live.
@@ -1122,7 +1124,7 @@ export default function CreateCampaignForm({
                         <div className={styles.mockDevice}>
                             <div className={styles.deviceContent}>
                                 <div className={styles.adPreviewWrapper}>
-                                    {formData.type === 'interstitial' ? (
+                                    {formData.type === 'interstitial' || formData.type === 'interstitial_video' ? (
                                         <div className={styles.mockAdInterstitial}>
                                             <div className={styles.mockAdHeader}>
                                                 <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>AD</div>
@@ -1131,15 +1133,25 @@ export default function CreateCampaignForm({
                                             </div>
                                             <div className={styles.mockAdMedia}>
                                                 {(activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl) ? (
-                                                    <img src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    formData.type === 'interstitial_video' ? (
+                                                        <video src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay muted loop />
+                                                    ) : (
+                                                        <img src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    )
                                                 ) : (
-                                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
-                                                        <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                                                    </svg>
+                                                    formData.type === 'interstitial_video' ? (
+                                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5">
+                                                            <polygon points="5 3 19 12 5 21 5 3" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                                                        </svg>
+                                                    )
                                                 )}
                                             </div>
                                             <div className={styles.mockAdInfo}>
-                                                <span className={styles.mockAdBadge}>Ad • INTERSTITIAL</span>
+                                                <span className={styles.mockAdBadge}>Ad • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
                                                 <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{activeCreative.headline || formData.adHeadline || 'Your Catchy Headline'}</div>
                                                 <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
                                                 {/* #7 Interactive Preview Button */}

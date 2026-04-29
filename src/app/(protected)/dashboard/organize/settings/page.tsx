@@ -307,6 +307,7 @@ function SettingsContent() {
                 message="Your organization will be removed from public listings. Ongoing events may be affected. Contact support to reverse this."
                 confirmLabel="Deactivate"
                 variant="danger"
+                confirmText="DEACTIVATE"
             />
         </div>
     );

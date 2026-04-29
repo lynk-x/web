@@ -234,73 +234,78 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
 
             <form id="edit-quiz-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {activeTab === 'settings' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        <div className={adminStyles.pageCard}>
-                            <h2 className={adminStyles.sectionTitle}>Basic Settings</h2>
-                            <div className={adminStyles.formGrid}>
-                                <div className={adminStyles.formGroup}>
-                                    <label className={adminStyles.label}>Link to Event / Forum <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <select className={adminStyles.select} value={forumId} onChange={(e) => setForumId(e.target.value)} required>
-                                        <option value="" disabled>Select an Event</option>
-                                        {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
-                                    </select>
-                                </div>
-                                <div className={adminStyles.formGroup}>
-                                    <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <input className={adminStyles.input} type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ultimate Tech Trivia!" required />
-                                </div>
-                                <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                                    <label className={adminStyles.label}>Description</label>
-                                    <textarea className={adminStyles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short intro for the waiting lobby..." rows={3} />
-                                </div>
-                                <div className={adminStyles.formGroup} style={{ maxWidth: '120px' }}>
-                                    <label className={adminStyles.label}>Time (Sec) <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <input className={adminStyles.input} type="number" min="5" max="120" value={timeLimit} onChange={(e) => setTimeLimit(Number(e.target.value))} required />
-                                </div>
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Basic Information</h2>
+                        <div className={adminStyles.formGrid}>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Link to Event / Forum <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <select className={adminStyles.select} value={forumId} onChange={(e) => setForumId(e.target.value)} required>
+                                    <option value="" disabled>Select an Event</option>
+                                    {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
+                                </select>
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input className={adminStyles.input} type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ultimate Tech Trivia!" required />
+                            </div>
+                            <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                <label className={adminStyles.label}>Description</label>
+                                <textarea className={adminStyles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short intro for the waiting lobby..." rows={3} />
                             </div>
                         </div>
 
-                        <div className={adminStyles.pageCard}>
-                            <h2 className={adminStyles.sectionTitle}>Game Mechanics</h2>
-                            <div className={adminStyles.formGrid}>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <div className={styles.toggleRow}>
-                                        <label className={adminStyles.label} style={{ margin: 0 }}>Speed Bonus</label>
-                                        <label className={styles.switch}>
-                                            <input type="checkbox" checked={gameSettings.speed_bonus} onChange={() => handleToggleSetting('speed_bonus')} />
-                                            <span className={styles.slider}></span>
-                                        </label>
-                                    </div>
-                                    <div className={styles.toggleRow}>
-                                        <label className={adminStyles.label} style={{ margin: 0 }}>Streak Bonus</label>
-                                        <label className={styles.switch}>
-                                            <input type="checkbox" checked={gameSettings.streak_bonus} onChange={() => handleToggleSetting('streak_bonus')} />
-                                            <span className={styles.slider}></span>
-                                        </label>
-                                    </div>
-                                    <div className={styles.toggleRow}>
-                                        <label className={adminStyles.label} style={{ margin: 0 }}>Show Leaderboard</label>
-                                        <label className={styles.switch}>
-                                            <input type="checkbox" checked={gameSettings.show_leaderboard} onChange={() => handleToggleSetting('show_leaderboard')} />
-                                            <span className={styles.slider}></span>
-                                        </label>
-                                    </div>
+                        <h2 className={adminStyles.sectionTitle} style={{ marginTop: '32px' }}>Game Mechanics</h2>
+                        <div className={adminStyles.formGrid}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div className={styles.toggleRow}>
+                                    <label className={adminStyles.label} style={{ margin: 0 }}>Speed Bonus</label>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={gameSettings.speed_bonus} onChange={() => handleToggleSetting('speed_bonus')} />
+                                        <span className={styles.slider}></span>
+                                    </label>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <div className={styles.toggleRow}>
-                                        <label className={adminStyles.label} style={{ margin: 0 }}>Auto-Advance</label>
-                                        <label className={styles.switch}>
-                                            <input type="checkbox" checked={gameSettings.auto_advance} onChange={() => handleToggleSetting('auto_advance')} />
-                                            <span className={styles.slider}></span>
-                                        </label>
-                                    </div>
-                                    <div className={styles.toggleRow}>
-                                        <label className={adminStyles.label} style={{ margin: 0 }}>Show Results Chart</label>
-                                        <label className={styles.switch}>
-                                            <input type="checkbox" checked={gameSettings.show_answers} onChange={() => handleToggleSetting('show_answers')} />
-                                            <span className={styles.slider}></span>
-                                        </label>
-                                    </div>
+                                <div className={styles.toggleRow}>
+                                    <label className={adminStyles.label} style={{ margin: 0 }}>Streak Bonus</label>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={gameSettings.streak_bonus} onChange={() => handleToggleSetting('streak_bonus')} />
+                                        <span className={styles.slider}></span>
+                                    </label>
+                                </div>
+                                <div className={styles.toggleRow}>
+                                    <label className={adminStyles.label} style={{ margin: 0 }}>Show Leaderboard</label>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={gameSettings.show_leaderboard} onChange={() => handleToggleSetting('show_leaderboard')} />
+                                        <span className={styles.slider}></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div className={styles.toggleRow}>
+                                    <label className={adminStyles.label} style={{ margin: 0 }}>Auto-Advance</label>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={gameSettings.auto_advance} onChange={() => handleToggleSetting('auto_advance')} />
+                                        <span className={styles.slider}></span>
+                                    </label>
+                                </div>
+                                <div className={styles.toggleRow}>
+                                    <label className={adminStyles.label} style={{ margin: 0 }}>Show Results Chart</label>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={gameSettings.show_answers} onChange={() => handleToggleSetting('show_answers')} />
+                                        <span className={styles.slider}></span>
+                                    </label>
+                                </div>
+                                <div className={styles.toggleRow} style={{ borderBottom: 'none' }}>
+                                    <label className={adminStyles.label} style={{ margin: 0 }}>Time (Sec)</label>
+                                    <input 
+                                        className={adminStyles.input} 
+                                        type="number" 
+                                        min="5" 
+                                        max="120" 
+                                        value={timeLimit} 
+                                        onChange={(e) => setTimeLimit(Number(e.target.value))} 
+                                        required 
+                                        style={{ width: '80px', padding: '4px 8px' }}
+                                    />
                                 </div>
                             </div>
                         </div>

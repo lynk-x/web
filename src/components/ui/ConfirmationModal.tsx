@@ -12,6 +12,7 @@ interface ConfirmationModalProps {
     confirmLabel?: string;
     cancelLabel?: string;
     variant?: 'danger' | 'default';
+    confirmText?: string;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -22,8 +23,18 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     message,
     confirmLabel = 'Confirm',
     cancelLabel = 'Cancel',
-    variant = 'danger'
+    variant = 'danger',
+    confirmText
 }) => {
+    const [inputValue, setInputValue] = React.useState('');
+
+    // Reset input when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setInputValue('');
+        }
+    }, [isOpen]);
+
     // Close on Escape key
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,6 +47,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
+
+    const isConfirmDisabled = confirmText ? inputValue !== confirmText : false;
 
     return (
         <div className={styles.overlay} onClick={onClose}>
@@ -52,6 +65,21 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
                 <div className={styles.body}>
                     <p>{message}</p>
+                    {confirmText && (
+                        <div className={styles.confirmInputContainer}>
+                            <p className={styles.confirmPrompt}>
+                                Please type <strong>{confirmText}</strong> to confirm.
+                            </p>
+                            <input
+                                type="text"
+                                className={styles.confirmInput}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                placeholder={confirmText}
+                                autoFocus
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.footer}>
@@ -64,6 +92,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             onConfirm();
                             onClose();
                         }}
+                        disabled={isConfirmDisabled}
                     >
                         {confirmLabel}
                     </button>
