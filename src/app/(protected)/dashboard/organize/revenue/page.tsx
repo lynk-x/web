@@ -328,7 +328,7 @@ function RevenueContent() {
                         placement: 'center',
                         title: 'Revenue & Payouts',
                         content: 'Track your ticket sales earnings and manage your linked wallets.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-revenue-payout',

@@ -223,7 +223,7 @@ function AnalyticsContent() {
                         placement: 'center',
                         title: 'Ads Analytics',
                         content: 'See exactly how your ads are performing across Lynk-X.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-ads-analytics-range',

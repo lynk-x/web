@@ -290,7 +290,7 @@ export default function AnalyticsPage() {
                         placement: 'center',
                         title: 'Event Analytics',
                         content: 'Dive deep into your event performance and ticket sales.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-analytics-range',

@@ -438,7 +438,7 @@ export default function OrganizerEventsPage() {
                         placement: 'center',
                         title: 'Manage Your Events',
                         content: 'This is where you can view, edit, and manage all your Lynk-X events.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-events-filter',

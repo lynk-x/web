@@ -288,7 +288,7 @@ export default function CampaignsPage() {
                         placement: 'center',
                         title: 'Manage Ad Campaigns',
                         content: 'Track, optimize, and edit all your active or paused campaigns.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-campaigns-filter',

@@ -182,7 +182,7 @@ export default function DashboardOverview() {
                         placement: 'center',
                         title: 'Welcome to your Organize Dashboard!',
                         content: 'Let\'s get you set up to host unforgettable events. Follow this quick tour to learn the ropes.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-stats',

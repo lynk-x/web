@@ -151,7 +151,7 @@ export default function AdsDashboard() {
                         placement: 'center',
                         title: 'Welcome to Ads Manager!',
                         content: 'Promote your business and reach a wider audience across Lynk-X.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-ads-stats',

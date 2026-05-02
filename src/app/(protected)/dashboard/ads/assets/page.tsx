@@ -353,7 +353,7 @@ export default function AdsAssetsPage() {
                         placement: 'center',
                         title: 'Creative Library',
                         content: 'Store and manage all your banners and videos for your ad campaigns.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-assets-upload',

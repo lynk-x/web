@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
+import { Joyride, EventData, STATUS, Step } from 'react-joyride';
 
 interface ProductTourProps {
     storageKey: string;
@@ -30,7 +30,7 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
         }
     }, [storageKey, runOnMount]);
 
-    const handleJoyrideCallback = (data: CallBackProps) => {
+    const handleJoyrideCallback = (data: EventData) => {
         const { status } = data;
         const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
         
@@ -44,7 +44,7 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
 
     return (
         <Joyride
-            callback={handleJoyrideCallback}
+            onEvent={handleJoyrideCallback}
             continuous
             hideCloseButton
             run={run}
@@ -52,16 +52,16 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
             showProgress
             showSkipButton
             steps={steps}
+            options={{
+                zIndex: 10000,
+                primaryColor: 'var(--color-brand-primary, #20f928)',
+                textColor: 'var(--color-utility-primaryText, #ffffff)',
+                backgroundColor: 'var(--color-interface-surface, #1e1e1e)',
+                arrowColor: 'var(--color-interface-surface, #1e1e1e)',
+                overlayColor: 'rgba(0, 0, 0, 0.7)',
+            }}
             styles={{
-                options: {
-                    zIndex: 10000,
-                    primaryColor: 'var(--color-brand-primary, #20f928)',
-                    textColor: 'var(--color-utility-primaryText, #ffffff)',
-                    backgroundColor: 'var(--color-interface-surface, #1e1e1e)',
-                    arrowColor: 'var(--color-interface-surface, #1e1e1e)',
-                    overlayColor: 'rgba(0, 0, 0, 0.7)',
-                },
-                buttonNext: {
+                buttonPrimary: {
                     backgroundColor: 'var(--color-brand-primary, #20f928)',
                     color: '#000000',
                     borderRadius: '8px',

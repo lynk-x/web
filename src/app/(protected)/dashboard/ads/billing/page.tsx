@@ -159,7 +159,7 @@ export default function AdsBillingPage() {
                         placement: 'center',
                         title: 'Finance & Ad Spend',
                         content: 'Manage your campaign budgets, top up your wallet, and track your ad expenses.',
-                        disableBeacon: true,
+                        skipBeacon: true,
                     },
                     {
                         target: '.tour-billing-balance',
