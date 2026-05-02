@@ -5,7 +5,6 @@ import Navbar from "@/components/public/Navbar";
 import AppDrawer from "@/components/public/AppDrawer";
 import styles from "./layout.module.css";
 import { FilterProvider } from "@/context/FilterContext";
-import { AuthProvider } from '@/context/AuthContext';
 
 export default function ResourceLayout({
     children,
@@ -15,27 +14,25 @@ export default function ResourceLayout({
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     return (
-        <AuthProvider>
-            <FilterProvider>
-                <div className={styles.page}>
-                    <Navbar 
-                        onMenuClick={() => setIsDrawerOpen(true)} 
-                        hideCart={true} 
-                        showBack={true} 
-                    />
-                    <AppDrawer
-                        isOpen={isDrawerOpen}
-                        onClose={() => setIsDrawerOpen(false)}
-                    />
-                    <div className={styles.layoutWrapper}>
-                        <main className={styles.mainContent}>
-                            <div className={styles.contentInner}>
-                                {children}
-                            </div>
-                        </main>
-                    </div>
+        <FilterProvider>
+            <div className={styles.page}>
+                <Navbar 
+                    onMenuClick={() => setIsDrawerOpen(true)} 
+                    hideCart={true} 
+                    showBack={true} 
+                />
+                <AppDrawer
+                    isOpen={isDrawerOpen}
+                    onClose={() => setIsDrawerOpen(false)}
+                />
+                <div className={styles.layoutWrapper}>
+                    <main className={styles.mainContent}>
+                        <div className={styles.contentInner}>
+                            {children}
+                        </div>
+                    </main>
                 </div>
-            </FilterProvider>
-        </AuthProvider>
+            </div>
+        </FilterProvider>
     );
 }

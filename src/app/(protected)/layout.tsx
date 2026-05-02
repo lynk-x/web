@@ -10,7 +10,6 @@
  * handled by the proxy in src/proxy.ts.
  */
 
-import { AuthProvider } from '@/context/AuthContext';
 import { OrganizationProvider } from '@/context/OrganizationContext';
 import { ToastProvider } from '@/components/ui/Toast';
 
@@ -20,12 +19,10 @@ export default function ProtectedLayout({
     children: React.ReactNode;
 }) {
     return (
-        <AuthProvider>
-            <OrganizationProvider>
-                <ToastProvider>
-                    {children}
-                </ToastProvider>
-            </OrganizationProvider>
-        </AuthProvider>
+        <OrganizationProvider>
+            <ToastProvider>
+                {children}
+            </ToastProvider>
+        </OrganizationProvider>
     );
 }
