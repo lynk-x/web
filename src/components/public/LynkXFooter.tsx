@@ -18,6 +18,7 @@ const LynkXFooter: React.FC = () => {
                             <li><Link href="/for/organizers" className={styles.link}>For Organizers</Link></li>
                             <li><Link href="/for/advertisers" className={styles.link}>For Advertisers</Link></li>
                             <li><Link href="/for/attendees" className={styles.link}>For Attendees</Link></li>
+                            <li><Link href="/resources/pricing" className={styles.link}>Pricing & Fees</Link></li>
                         </ul>
                     </div>
 
@@ -27,17 +28,26 @@ const LynkXFooter: React.FC = () => {
                             <li><Link href="/resources/help" className={styles.link}>Help Center</Link></li>
                             <li><Link href="/resources/guide" className={styles.link}>Hosting Guide</Link></li>
                             <li><Link href="/resources/safety" className={styles.link}>Safety & Security</Link></li>
+                            <li><Link href="/resources/guidelines" className={styles.link}>Community Guidelines</Link></li>
+                        </ul>
+                    </div>
+
+                    <div className={styles.column}>
+                        <h4 className={styles.columnTitle}>Legal</h4>
+                        <ul className={styles.linkList}>
+                            <li><Link href="/privacy" className={styles.link}>Privacy Policy</Link></li>
+                            <li><Link href="/terms" className={styles.link}>Terms of Service</Link></li>
+                            <li><Link href="/cookies" className={styles.link}>Cookie Policy</Link></li>
+                            <li><Link href="/refund" className={styles.link}>Refund Policy</Link></li>
                             <li><Link href="/organizer-agreement" className={styles.link}>Organizer Agreement</Link></li>
                         </ul>
                     </div>
 
                     <div className={styles.column}>
-                        <h4 className={styles.columnTitle}>Platform</h4>
+                        <h4 className={styles.columnTitle}>Company</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="/privacy" className={styles.link}>Privacy</Link></li>
-                            <li><Link href="/terms" className={styles.link}>Terms</Link></li>
-                            <li><Link href="/cookies" className={styles.link}>Cookies</Link></li>
-                            <li><Link href="/refund" className={styles.link}>Refunds</Link></li>
+                            <li><Link href="/resources/mission" className={styles.link}>Our Mission</Link></li>
+                            <li><Link href="/resources/brand" className={styles.link}>Brand Assets</Link></li>
                         </ul>
                     </div>
                 </div>
