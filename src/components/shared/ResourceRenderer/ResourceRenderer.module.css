@@ -145,6 +145,49 @@
     background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
 }
 
+/* Handle lone items in a grid (e.g. 3rd item in a 2-column grid) */
+@media (min-width: 900px) {
+    .safetyCard:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 48px;
+    }
+
+    .safetyCard:last-child:nth-child(odd) .cardHeader {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .safetyCard:last-child:nth-child(odd) .cardText {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .safetyCard:last-child:nth-child(odd) .cardContent {
+        max-width: 600px;
+    }
+
+    .safetyCard:last-child:nth-child(odd) .cardDetails {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .safetyCard:last-child:nth-child(odd) .detailsList {
+        align-items: center;
+    }
+    
+    .safetyCard:last-child:nth-child(odd) .detailItem {
+        text-align: center;
+        justify-content: center;
+    }
+}
+
 @media (max-width: 768px) {
     .title {
         font-size: 32px;
