@@ -8,6 +8,8 @@ interface ResourceItem {
     title: string;
     content: string;
     details?: string[];
+    imageUrl?: string;
+    downloadUrl?: string;
 }
 
 interface ResourceSection {
@@ -147,6 +149,12 @@ const ResourceSectionComponent: React.FC<ResourceSection> = ({ title, descriptio
                             </div>
                         </div>
                         
+                        {item.imageUrl && (
+                            <div className={styles.assetPreview}>
+                                <img src={item.imageUrl} alt={item.title} className={styles.assetImage} />
+                            </div>
+                        )}
+
                         {item.details && item.details.length > 0 && (
                             <div className={styles.cardDetails}>
                                 <div className={styles.detailsDivider} />
@@ -158,6 +166,20 @@ const ResourceSectionComponent: React.FC<ResourceSection> = ({ title, descriptio
                                         </li>
                                     ))}
                                 </ul>
+                            </div>
+                        )}
+
+                        {item.downloadUrl && (
+                            <div className={styles.downloadSection}>
+                                <div className={styles.detailsDivider} />
+                                <a 
+                                    href={item.downloadUrl} 
+                                    download 
+                                    className={styles.downloadButton}
+                                >
+                                    {getIcon('download')}
+                                    Download Asset
+                                </a>
                             </div>
                         )}
                     </div>
