@@ -31,6 +31,8 @@
 .contentInner {
     padding: 32px 64px;
     width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
     animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

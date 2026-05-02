@@ -5,6 +5,7 @@
 
 .header {
     margin-bottom: 48px;
+    text-align: center;
 }
 
 .title {
@@ -20,6 +21,7 @@
     opacity: 0.5;
     line-height: 1.6;
     max-width: 700px;
+    margin: 0 auto;
 }
 
 .content {
