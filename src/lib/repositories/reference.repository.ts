@@ -46,21 +46,45 @@ export interface SystemConfigEntry {
     data_type: 'string' | 'number' | 'boolean' | 'json';
 }
 
+/**
+ * Legal documents are keyed by `(slug, version)` in the DB — there is no `type` column.
+ * The `slug` field is the canonical document key (e.g. 'terms_of_service').
+ */
+export type LegalDocumentSlug =
+    | 'terms_of_service'
+    | 'privacy_policy'
+    | 'organizer_agreement'
+    | 'cookie_policy'
+    | 'refund_policy';
+
 export interface LegalDocument {
     id: string;
-    type: 'terms_of_service' | 'privacy_policy' | 'organizer_agreement' | 'cookie_policy' | 'refund_policy';
+    slug: LegalDocumentSlug | string;
     version: string;
     title: string;
-    content?: string | null;
+    /** content is jsonb in the DB: `{ sections: [{ title, body }] }` */
+    content?: Record<string, unknown> | null;
     is_active: boolean;
     effective_date: string;
 }
+
+/** Matches DB enum `system_banner_target`. The PWA should request 'all' (and any web-relevant surface). */
+export type SystemBannerTarget =
+    | 'all'
+    | 'home'
+    | 'discover'
+    | 'wallet'
+    | 'profile'
+    | 'organizer_dashboard'
+    | 'advertiser_dashboard'
+    | 'pulse_dashboard';
 
 export interface SystemBanner {
     id: string;
     title: string;
     content: string;
     type: 'info' | 'warning' | 'error' | 'success';
+    target: SystemBannerTarget;
     is_active: boolean;
     starts_at: string;
     ends_at?: string | null;
@@ -159,27 +183,34 @@ export function createReferenceRepository(client: DbClient) {
             return { data: data as SystemConfigEntry[], error: null };
         },
 
-        /** Fetch the active version of a legal document. */
-        async getLegalDocument(type: LegalDocument['type']): Promise<RepoResult<LegalDocument>> {
+        /** Fetch the active version of a legal document by its slug. */
+        async getLegalDocument(slug: LegalDocumentSlug | string): Promise<RepoResult<LegalDocument | null>> {
             const { data, error } = await client
                 .from('legal_documents')
-                .select('id, type, version, title, content, is_active, effective_date')
-                .eq('type', type)
+                .select('id, slug, version, title, content, is_active, effective_date')
+                .eq('slug', slug)
                 .eq('is_active', true)
-                .single();
+                .order('effective_date', { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as LegalDocument, error: null };
+            return { data: data as LegalDocument | null, error: null };
         },
 
-        /** Fetch currently active system-wide banners. */
-        async getActiveSystemBanners(): Promise<RepoResult<SystemBanner[]>> {
+        /**
+         * Fetch currently active banners targeted at the given surface (or 'all').
+         * Filters by start/end window so callers don't see scheduled-future banners.
+         */
+        async getActiveSystemBanners(target: SystemBannerTarget = 'all'): Promise<RepoResult<SystemBanner[]>> {
             const now = new Date().toISOString();
+            const targets = target === 'all' ? ['all'] : [target, 'all'];
 
             const { data, error } = await client
                 .from('system_banners')
-                .select('id, title, content, type, is_active, starts_at, ends_at, action_url')
+                .select('id, title, content, type, target, is_active, starts_at, ends_at, action_url')
                 .eq('is_active', true)
+                .in('target', targets)
                 .lte('starts_at', now)
                 .or(`ends_at.is.null,ends_at.gte.${now}`);
 

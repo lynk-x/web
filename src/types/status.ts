@@ -16,7 +16,7 @@ export type ForumStatus = 'open' | 'read_only' | 'archived';
 export type UserStatus = 'active' | 'suspended' | 'partially_active';
 
 /** Matches `payout_status` enum */
-export type PayoutStatus = 'requested' | 'processing' | 'completed' | 'failed' | 'rejected';
+export type PayoutStatus = 'requested' | 'processing' | 'completed' | 'failed' | 'rejected' | 'hold';
 
 /** Matches `payment_status` enum */
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';

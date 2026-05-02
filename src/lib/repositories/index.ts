@@ -22,4 +22,5 @@ export { createForumRepository } from './forum.repository';
 export { createNotificationsRepository } from './notifications.repository';
 export { createReferenceRepository } from './reference.repository';
 
-export type { DbClient, RepoResult, ListOptions } from './types';
+export type { DbClient, RepoResult, RepoListResult, RepoError, ListOptions } from './types';
+export { isNotFound, isPermissionDenied, isUniqueViolation } from './types';

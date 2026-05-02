@@ -19,7 +19,8 @@ interface Questionnaire {
     id: string;
     title: string;
     status: string;
-    room_code: string | null;
+    forum_channel_id: string | null;
+    forum_channels?: { display_name: string } | null;
     info: { description?: string; time_limit_seconds?: number } | null;
     questions: Question[];
 }
@@ -65,7 +66,7 @@ export default function QuizResultsPage() {
             // 1. Load questionnaire + questions
             const { data: qData, error: qErr } = await supabase
                 .from('questionnaires')
-                .select('id, title, status, room_code, info, questions(id, question_text, options, correct, order_index)')
+                .select('id, title, status, forum_channel_id, info, forum_channels(display_name), questions(id, question_text, options, correct, order_index)')
                 .eq('id', quizId)
                 .single();
             if (qErr) throw qErr;
@@ -73,7 +74,8 @@ export default function QuizResultsPage() {
             const sortedQuestions = [...((qData.questions as Question[]) || [])].sort(
                 (a, b) => a.order_index - b.order_index,
             );
-            setQuestionnaire({ ...qData, questions: sortedQuestions });
+            const channel = Array.isArray(qData.forum_channels) ? qData.forum_channels[0] : qData.forum_channels;
+            setQuestionnaire({ ...qData, forum_channels: channel, questions: sortedQuestions });
 
             // 2. Load responses with user display names
             const { data: responseData, error: rErr } = await supabase
@@ -154,7 +156,7 @@ export default function QuizResultsPage() {
         <div className={adminStyles.page}>
             <SubPageHeader
                 title={questionnaire.title}
-                subtitle={`Quiz Results · Room: ${questionnaire.room_code || '—'} · ${responseCount} response${responseCount !== 1 ? 's' : ''}`}
+                subtitle={`Quiz Results · Channel: ${questionnaire.forum_channels?.display_name || '—'} · ${responseCount} response${responseCount !== 1 ? 's' : ''}`}
                 backHref="/dashboard/organize/quizzes"
             />
 
@@ -183,11 +185,11 @@ export default function QuizResultsPage() {
             {leaderboard.length === 0 ? (
                 <div className={adminStyles.emptyState}>
                     <p>
-                        No responses yet. Share room code{' '}
-                        <code style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 6px', borderRadius: 4, letterSpacing: 2 }}>
-                            {questionnaire.room_code}
+                        No responses yet. Quiz is bound to channel{' '}
+                        <code style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 6px', borderRadius: 4 }}>
+                            #{questionnaire.forum_channels?.display_name || '...'}
                         </code>{' '}
-                        with your audience to get started.
+                        on the event forum.
                     </p>
                 </div>
             ) : (

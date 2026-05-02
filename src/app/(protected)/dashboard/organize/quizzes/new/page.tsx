@@ -15,6 +15,11 @@ interface EventForum {
     forum_id: string;
 }
 
+interface ForumChannel {
+    id: string;
+    display_name: string;
+}
+
 interface QuestionInput {
     text: string;
     options: [string, string, string, string];
@@ -28,9 +33,12 @@ export default function CreateQuizPage() {
     const supabase = createClient();
 
     const [forums, setForums] = useState<EventForum[]>([]);
+    const [channels, setChannels] = useState<ForumChannel[]>([]);
     const [loadingForums, setLoadingForums] = useState(true);
+    const [loadingChannels, setLoadingChannels] = useState(false);
 
     const [forumId, setForumId] = useState("");
+    const [channelId, setChannelId] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [timeLimit, setTimeLimit] = useState(20);
@@ -74,6 +82,24 @@ export default function CreateQuizPage() {
         }
     }, [activeAccount, supabase, showToast]);
 
+    const fetchChannels = useCallback(async (fId: string) => {
+        setLoadingChannels(true);
+        try {
+            const { data, error } = await supabase
+                .from("forum_channels")
+                .select("id, display_name")
+                .eq("forum_id", fId);
+            if (error) throw error;
+            setChannels(data || []);
+            if (data && data.length > 0) setChannelId(data[0].id);
+            else setChannelId("");
+        } catch (err: any) {
+            showToast("Failed to load channels for this forum.", "error");
+        } finally {
+            setLoadingChannels(false);
+        }
+    }, [supabase]);
+
     useEffect(() => {
         if (!isOrgLoading) {
             if (activeAccount) {
@@ -83,6 +109,15 @@ export default function CreateQuizPage() {
             }
         }
     }, [isOrgLoading, activeAccount, fetchForums]);
+
+    useEffect(() => {
+        if (forumId) {
+            fetchChannels(forumId);
+        } else {
+            setChannels([]);
+            setChannelId("");
+        }
+    }, [forumId, fetchChannels]);
 
     const handleAddQuestion = () => {
         setQuestions([...questions, { text: "", options: ["", "", "", ""], correctIndex: 0 }]);
@@ -118,11 +153,11 @@ export default function CreateQuizPage() {
 
         setIsSubmitting(true);
         try {
-            const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
             const { data: qData, error: qError } = await supabase
                 .from("questionnaires")
                 .insert({
                     forum_id: forumId,
+                    forum_channel_id: channelId || null,
                     title,
                     type: "quiz",
                     status: "published",
@@ -131,7 +166,6 @@ export default function CreateQuizPage() {
                         time_limit_seconds: timeLimit,
                         settings: gameSettings
                     },
-                    room_code: roomCode,
                 })
                 .select().single();
 
@@ -204,6 +238,21 @@ export default function CreateQuizPage() {
                                     <option value="" disabled>Select an Event</option>
                                     {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
                                 </select>
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Target Channel</label>
+                                <select 
+                                    className={adminStyles.select} 
+                                    value={channelId} 
+                                    onChange={(e) => setChannelId(e.target.value)}
+                                    disabled={loadingChannels || channels.length === 0}
+                                >
+                                    <option value="">No specific channel</option>
+                                    {channels.map((c) => <option key={c.id} value={c.id}>#{c.display_name}</option>)}
+                                </select>
+                                {channels.length === 0 && forumId && !loadingChannels && (
+                                    <p style={{ fontSize: 11, color: 'var(--color-interface-error)', marginTop: 4 }}>No channels found for this forum.</p>
+                                )}
                             </div>
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>

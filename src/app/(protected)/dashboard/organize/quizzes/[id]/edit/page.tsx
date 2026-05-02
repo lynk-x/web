@@ -15,6 +15,11 @@ interface EventForum {
     forum_id: string;
 }
 
+interface ForumChannel {
+    id: string;
+    display_name: string;
+}
+
 interface QuestionInput {
     id?: string;
     text: string;
@@ -30,9 +35,12 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
     const supabase = createClient();
 
     const [forums, setForums] = useState<EventForum[]>([]);
+    const [channels, setChannels] = useState<ForumChannel[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingChannels, setLoadingChannels] = useState(false);
 
     const [forumId, setForumId] = useState("");
+    const [channelId, setChannelId] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [timeLimit, setTimeLimit] = useState(20);
@@ -81,6 +89,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
             setDescription(quiz.info?.description || "");
             setTimeLimit(quiz.info?.time_limit_seconds || 20);
             setForumId(quiz.forum_id);
+            setChannelId(quiz.forum_channel_id || "");
             if (quiz.info?.settings) {
                 setGameSettings(prev => ({ ...prev, ...quiz.info.settings }));
             }
@@ -104,6 +113,27 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
         }
     }, [activeAccount, id, supabase, showToast, router]);
 
+    const fetchChannels = useCallback(async (fId: string) => {
+        setLoadingChannels(true);
+        try {
+            const { data, error } = await supabase
+                .from("forum_channels")
+                .select("id, display_name")
+                .eq("forum_id", fId);
+            if (error) throw error;
+            setChannels(data || []);
+            // Don't auto-reset channelId if it already matches one of the channels (e.g. initial load)
+            if (data && data.length > 0 && !data.find(c => c.id === channelId)) {
+                // Only auto-select if we aren't already editing a quiz that has a channel
+                if (!channelId) setChannelId(data[0].id);
+            }
+        } catch (err: any) {
+            showToast("Failed to load channels.", "error");
+        } finally {
+            setLoadingChannels(false);
+        }
+    }, [supabase, channelId, showToast]);
+
     useEffect(() => {
         if (!isOrgLoading) {
             if (activeAccount) {
@@ -113,6 +143,14 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
             }
         }
     }, [isOrgLoading, activeAccount, fetchData]);
+
+    useEffect(() => {
+        if (forumId) {
+            fetchChannels(forumId);
+        } else {
+            setChannels([]);
+        }
+    }, [forumId, fetchChannels]);
 
     const handleAddQuestion = () => {
         setQuestions([...questions, { text: "", options: ["", "", "", ""], correctIndex: 0 }]);
@@ -153,6 +191,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                 .from("questionnaires")
                 .update({
                     forum_id: forumId,
+                    forum_channel_id: channelId || null,
                     title,
                     info: { 
                         description, 
@@ -243,6 +282,21 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                                     <option value="" disabled>Select an Event</option>
                                     {forums.map((f) => <option key={f.id} value={f.forum_id}>{f.title}</option>)}
                                 </select>
+                            </div>
+                            <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Target Channel</label>
+                                <select 
+                                    className={adminStyles.select} 
+                                    value={channelId} 
+                                    onChange={(e) => setChannelId(e.target.value)}
+                                    disabled={loadingChannels || channels.length === 0}
+                                >
+                                    <option value="">No specific channel</option>
+                                    {channels.map((c) => <option key={c.id} value={c.id}>#{c.display_name}</option>)}
+                                </select>
+                                {channels.length === 0 && forumId && !loadingChannels && (
+                                    <p style={{ fontSize: 11, color: 'var(--color-interface-error)', marginTop: 4 }}>No channels found for this forum.</p>
+                                )}
                             </div>
                             <div className={adminStyles.formGroup}>
                                 <label className={adminStyles.label}>Quiz Title <span className={adminStyles.requiredIndicator}>*Required</span></label>

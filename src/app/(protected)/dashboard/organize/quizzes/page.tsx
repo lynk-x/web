@@ -18,10 +18,11 @@ interface Quiz {
     id: string;
     title: string;
     status: 'draft' | 'published' | 'closed';
-    room_code: string | null;
+    forum_channel_id: string | null;
     forum_id: string;
     created_at: string;
     event_title?: string;
+    forum_channels?: { display_name: string } | null;
 }
 
 const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
@@ -72,7 +73,7 @@ export default function QuizzesPage() {
             // 3. Get questionnaires for those forums
             const { data, error } = await supabase
                 .from('questionnaires')
-                .select('id, title, status, room_code, forum_id, created_at')
+                .select('id, title, status, forum_channel_id, forum_id, created_at, forum_channels(display_name)')
                 .in('forum_id', forumIds)
                 .eq('type', 'quiz')
                 .order('created_at', { ascending: false });
@@ -81,6 +82,7 @@ export default function QuizzesPage() {
             setQuizzes((data || []).map((q: any) => ({
                 ...q,
                 event_title: forumTitleMap[q.forum_id] || '—',
+                forum_channels: Array.isArray(q.forum_channels) ? q.forum_channels[0] : q.forum_channels
             })));
             setSelectedIds(new Set());
         } catch (e: any) {
@@ -213,7 +215,7 @@ export default function QuizzesPage() {
                             </th>
                             <th>Title</th>
                             <th>Event</th>
-                            <th>Room Code</th>
+                            <th>Channel</th>
                             <th>Status</th>
                             <th>Created</th>
                             <th></th>
@@ -234,16 +236,16 @@ export default function QuizzesPage() {
                                     <td style={{ fontWeight: 600 }}>{quiz.title}</td>
                                     <td style={{ color: 'var(--color-text-secondary)' }}>{quiz.event_title}</td>
                                     <td>
-                                        {quiz.room_code ? (
-                                            <code style={{
+                                        {quiz.forum_channels?.display_name ? (
+                                            <span style={{
                                                 background: 'rgba(255,255,255,0.06)',
                                                 padding: '2px 8px',
                                                 borderRadius: 6,
                                                 fontSize: 13,
-                                                letterSpacing: 2,
+                                                fontWeight: 600
                                             }}>
-                                                {quiz.room_code}
-                                            </code>
+                                                #{quiz.forum_channels.display_name}
+                                            </span>
                                         ) : '—'}
                                     </td>
                                     <td><Badge variant={badge.variant} label={badge.label} /></td>

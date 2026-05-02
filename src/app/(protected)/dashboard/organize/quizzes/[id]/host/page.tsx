@@ -19,7 +19,8 @@ interface Questionnaire {
     id: string;
     title: string;
     status: string;
-    room_code: string | null;
+    forum_channel_id: string | null;
+    forum_channels?: { display_name: string } | null;
     current_question_index: number;
     quiz_state: string;
     questions: Question[];
@@ -42,7 +43,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
         try {
             const { data, error } = await supabase
                 .from('questionnaires')
-                .select('*, questions(*)')
+                .select('*, forum_channels(display_name), questions(*)')
                 .eq('id', quizId)
                 .single();
             if (error) throw error;
@@ -50,7 +51,8 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
             const sortedQuestions = [...((data.questions as Question[]) || [])].sort(
                 (a, b) => a.order_index - b.order_index,
             );
-            setQuiz({ ...data, questions: sortedQuestions });
+            const channel = Array.isArray(data.forum_channels) ? data.forum_channels[0] : data.forum_channels;
+            setQuiz({ ...data, forum_channels: channel, questions: sortedQuestions });
         } catch (e: any) {
             showToast(e.message || 'Failed to load quiz host data', 'error');
         } finally {
@@ -159,7 +161,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
         <div className={adminStyles.page}>
             <SubPageHeader
                 title={`Host: ${quiz.title}`}
-                subtitle={`Control the live experience for Room: ${quiz.room_code}`}
+                subtitle={`Control the live experience for Channel: ${quiz.forum_channels?.display_name || '—'}`}
                 backHref="/dashboard/organize/quizzes"
             />
 
@@ -178,7 +180,7 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
                     <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid var(--color-interface-outline)' }}>
                         {quiz.quiz_state === 'lobby' && (
                             <>
-                                <h3 style={{ fontSize: 48, letterSpacing: 4, margin: '0 0 16px' }}>{quiz.room_code}</h3>
+                                <h3 style={{ fontSize: 48, letterSpacing: 4, margin: '0 0 16px' }}>#{quiz.forum_channels?.display_name || '...'}</h3>
                                 <p style={{ color: 'var(--color-text-secondary)', marginBottom: 32 }}>Waiting for participants to join...</p>
                                 <button 
                                     className={adminStyles.btnPrimary} 

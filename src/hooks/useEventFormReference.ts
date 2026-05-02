@@ -40,7 +40,7 @@ export function useEventFormReference({
     const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
     const [categoryTags, setCategoryTags] = useState<CategoryTag[]>([]);
     const [isLoadingReference, setIsLoadingReference] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
+    const [error, setError] = useState<{ message: string; code?: string } | null>(null);
 
     useEffect(() => {
         const fetchReferenceData = async () => {

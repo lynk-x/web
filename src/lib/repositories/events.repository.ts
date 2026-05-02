@@ -5,7 +5,7 @@
  * Used by organizer dashboard, public event pages, and admin event management.
  */
 
-import type { DbClient, ListOptions, RepoResult } from './types';
+import type { DbClient, ListOptions, RepoResult, RepoListResult } from './types';
 import { toError } from './types';
 import type { EventStatus } from '@/types/status';
 
@@ -13,21 +13,23 @@ export interface EventRow {
     id: string;
     account_id: string;
     title: string;
-    description?: string | null;
+    /** NOT NULL in DB. */
+    description: string;
     status: EventStatus;
-    // start_datetime / end_datetime are aliases provided by api.v1_events
-    // (the raw table columns are starts_at / ends_at)
+    /** Aliased by api.v1_events from `starts_at`. */
     start_datetime: string;
     end_datetime: string;
-    timezone?: string | null;
+    /** NOT NULL in DB. */
+    timezone: string;
     location?: Record<string, unknown> | null;
     media?: Record<string, unknown> | null;
     category_id?: string | null;
+    /** Joined from event_categories.display_name. Read-only. */
     category_name?: string | null;
     is_private: boolean;
     is_featured?: boolean;
     is_online?: boolean;
-    currency?: string | null;
+    currency: string;
     total_capacity?: number | null;
     reference?: string | null;
     created_at: string;
@@ -38,17 +40,22 @@ export interface TicketTier {
     id: string;
     event_id: string;
     display_name: string;
-    price: number;
-    quantity_total: number;
-    quantity_sold: number;
     description?: string | null;
-    sale_start_at?: string | null;
-    sale_end_at?: string | null;
+    price: number;
+    capacity: number;
+    tickets_sold: number;
+    tickets_reserved: number;
+    sales_start?: string | null;
+    sales_end?: string | null;
+    min_per_order: number;
     max_per_order?: number | null;
-    status: string;
+    is_hidden: boolean;
+    deleted_at?: string | null;
     created_at: string;
+    updated_at: string;
 }
 
+/** Shape returned by `get_event_analytics` RPC (jsonb). */
 export interface EventAnalytics {
     tickets_sold: number;
     total_capacity: number;
@@ -58,11 +65,18 @@ export interface EventAnalytics {
     forum_members: number;
 }
 
+/** Matches DB enum `waitlist_status`. */
+export type WaitlistStatus = 'pending' | 'invited' | 'joined' | 'expired';
+
 export interface EventWaitlistEntry {
     id: string;
     event_id: string;
     user_id: string;
-    status: 'waiting' | 'invited' | 'joined' | 'expired';
+    ticket_tier_id?: string | null;
+    status: WaitlistStatus;
+    position: number;
+    invited_at?: string | null;
+    expires_at?: string | null;
     created_at: string;
 }
 
@@ -71,43 +85,49 @@ export function createEventsRepository(client: DbClient) {
         /** Fetch a single event by ID. */
         async findById(eventId: string): Promise<RepoResult<EventRow>> {
             const { data, error } = await client
-                .from('api.v1_events')
+                .schema('api').from('v1_events')
                 .select('*')
                 .eq('id', eventId)
-                .single();
+                .maybeSingle();
 
             if (error) return { data: null, error: toError(error) };
             return { data: data as EventRow, error: null };
         },
 
         /** Fetch all events for an account (organizer dashboard). */
-        async findByAccountId(accountId: string, opts?: ListOptions): Promise<RepoResult<EventRow[]>> {
+        async findByAccountId(accountId: string, opts?: ListOptions): Promise<RepoListResult<EventRow>> {
             const page = opts?.page ?? 1;
             const size = opts?.pageSize ?? 20;
             const from = (page - 1) * size;
 
-            // Queries api.v1_events which aliases starts_at→start_datetime, ends_at→end_datetime
-            // and provides category_name via a JOIN on event_categories.
-            const { data, error } = await client
-                .from('api.v1_events')
-                .select('id, account_id, title, status, start_datetime, end_datetime, timezone, location, media, category_id, category_name, is_private, is_featured, is_online, currency, total_capacity, reference, created_at, updated_at')
+            const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
+            const { data, error, count } = await client
+                .schema('api').from('v1_events')
+                .select(
+                    'id, account_id, title, status, start_datetime, end_datetime, timezone, location, media, category_id, category_name, is_private, is_featured, is_online, currency, total_capacity, reference, created_at, updated_at',
+                    selectOpts
+                )
                 .eq('account_id', accountId)
                 .order('created_at', { ascending: false })
                 .range(from, from + size - 1);
 
-            if (error) return { data: null, error: toError(error) };
-            return { data: data as EventRow[], error: null };
+            if (error) return { data: null, total: null, error: toError(error) };
+            return { data: data as EventRow[], total: count ?? null, error: null };
         },
 
         /** Fetch published events for public discovery. */
-        async findPublished(opts?: ListOptions & { category_id?: string }): Promise<RepoResult<EventRow[]>> {
+        async findPublished(opts?: ListOptions & { category_id?: string }): Promise<RepoListResult<EventRow>> {
             const page = opts?.page ?? 1;
             const size = opts?.pageSize ?? 20;
             const from = (page - 1) * size;
 
+            const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .from('api.v1_events')
-                .select('id, account_id, title, description, start_datetime, end_datetime, timezone, location, media, category_id, category_name, currency, is_featured, is_online')
+                .schema('api').from('v1_events')
+                .select(
+                    'id, account_id, title, description, start_datetime, end_datetime, timezone, location, media, category_id, category_name, currency, is_featured, is_online',
+                    selectOpts
+                )
                 .eq('status', 'published')
                 .order('start_datetime', { ascending: true })
                 .range(from, from + size - 1);
@@ -116,32 +136,39 @@ export function createEventsRepository(client: DbClient) {
                 query = query.eq('category_id', opts.category_id);
             }
 
-            const { data, error } = await query;
-            if (error) return { data: null, error: toError(error) };
-            return { data: data as EventRow[], error: null };
+            const { data, error, count } = await query;
+            if (error) return { data: null, total: null, error: toError(error) };
+            return { data: data as EventRow[], total: count ?? null, error: null };
         },
 
-        /** Fetch an event by its organizer-assigned PIN. Wraps `get_event_by_pin` RPC. */
-        async findByPin(pin: string): Promise<RepoResult<EventRow>> {
+        /**
+         * Fetch an event by its organizer-assigned PIN. Wraps `get_event_by_pin` RPC.
+         * RPC returns a TABLE (id, title) — Supabase represents this as an array.
+         */
+        async findByPin(pin: string): Promise<RepoResult<{ id: string; title: string }>> {
             const { data, error } = await client.rpc('get_event_by_pin', { p_pin: pin });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as EventRow, error: null };
+            const row = Array.isArray(data) ? data[0] : data;
+            return { data: row as { id: string; title: string }, error: null };
         },
 
-        /** Create a new event. */
+        /**
+         * Create a new event. `description`, `timezone`, and `currency` are NOT NULL in the DB.
+         * `media.thumbnail` is required when status is 'published' or 'active' (CHECK constraint).
+         */
         async create(params: {
             accountId: string;
             title: string;
-            description?: string;
-            category?: string;
+            description: string;
+            timezone: string;
+            currency: string;
             startDatetime: string;
             endDatetime: string;
-            timezone?: string;
+            category?: string;
             location?: Record<string, unknown>;
             media?: Record<string, unknown>;
             isPrivate?: boolean;
-            currency?: string;
             status?: EventStatus;
         }): Promise<RepoResult<EventRow>> {
             const { data, error } = await client
@@ -167,11 +194,10 @@ export function createEventsRepository(client: DbClient) {
             return { data: data as EventRow, error: null };
         },
 
-        /** Update an event's fields. */
+        /** Update an event's fields. Translates view-aliased names back to real columns. */
         async update(eventId: string, fields: Partial<Omit<EventRow, 'id' | 'account_id' | 'created_at' | 'updated_at'>>): Promise<RepoResult<EventRow>> {
-            // Translate view-aliased names back to the real table column names.
-            // EventRow uses start_datetime/end_datetime/category_id as returned by api.v1_events;
-            // public.events stores them as starts_at/ends_at/category_id.
+            // EventRow uses start_datetime/end_datetime as returned by api.v1_events;
+            // public.events stores them as starts_at/ends_at.
             // category_name and total_capacity are read-only computed/joined fields — strip them.
             const { start_datetime, end_datetime, category_name, total_capacity, ...rest } = fields as any;
             const dbFields: Record<string, unknown> = { ...rest };
@@ -200,7 +226,10 @@ export function createEventsRepository(client: DbClient) {
             return { data: null, error: null };
         },
 
-        /** Soft-delete an event. */
+        /**
+         * Soft-delete an event. The `trg_cascade_event_soft_delete` trigger fans out to
+         * forums, tickets, etc. RLS gates write access to organizer/owner roles.
+         */
         async delete(eventId: string): Promise<RepoResult<null>> {
             const { error } = await client
                 .from('events')
@@ -225,8 +254,9 @@ export function createEventsRepository(client: DbClient) {
         async getTiers(eventId: string): Promise<RepoResult<TicketTier[]>> {
             const { data, error } = await client
                 .from('ticket_tiers')
-                .select('*')
+                .select('id, event_id, display_name, description, price, capacity, tickets_sold, tickets_reserved, sales_start, sales_end, min_per_order, max_per_order, is_hidden, deleted_at, created_at, updated_at')
                 .eq('event_id', eventId)
+                .is('deleted_at', null)
                 .order('price', { ascending: true });
 
             if (error) return { data: null, error: toError(error) };
@@ -238,10 +268,11 @@ export function createEventsRepository(client: DbClient) {
             eventId: string;
             displayName: string;
             price: number;
-            quantityTotal: number;
+            capacity: number;
             description?: string;
-            saleStartAt?: string;
-            saleEndAt?: string;
+            salesStart?: string;
+            salesEnd?: string;
+            minPerOrder?: number;
             maxPerOrder?: number;
         }): Promise<RepoResult<TicketTier>> {
             const { data, error } = await client
@@ -249,11 +280,12 @@ export function createEventsRepository(client: DbClient) {
                 .insert({
                     event_id: params.eventId,
                     display_name: params.displayName,
-                    price: params.price,
-                    quantity_total: params.quantityTotal,
                     description: params.description,
-                    sale_start_at: params.saleStartAt,
-                    sale_end_at: params.saleEndAt,
+                    price: params.price,
+                    capacity: params.capacity,
+                    sales_start: params.salesStart,
+                    sales_end: params.salesEnd,
+                    min_per_order: params.minPerOrder ?? 1,
                     max_per_order: params.maxPerOrder,
                 })
                 .select()
@@ -264,7 +296,7 @@ export function createEventsRepository(client: DbClient) {
         },
 
         /** Update a ticket tier. */
-        async updateTier(tierId: string, fields: Partial<Pick<TicketTier, 'display_name' | 'price' | 'quantity_total' | 'description' | 'sale_start_at' | 'sale_end_at' | 'max_per_order' | 'status'>>): Promise<RepoResult<TicketTier>> {
+        async updateTier(tierId: string, fields: Partial<Pick<TicketTier, 'display_name' | 'description' | 'price' | 'capacity' | 'sales_start' | 'sales_end' | 'min_per_order' | 'max_per_order' | 'is_hidden'>>): Promise<RepoResult<TicketTier>> {
             const { data, error } = await client
                 .from('ticket_tiers')
                 .update(fields)
@@ -276,11 +308,11 @@ export function createEventsRepository(client: DbClient) {
             return { data: data as TicketTier, error: null };
         },
 
-        /** Delete a ticket tier. */
+        /** Soft-delete a ticket tier. */
         async deleteTier(tierId: string): Promise<RepoResult<null>> {
             const { error } = await client
                 .from('ticket_tiers')
-                .delete()
+                .update({ deleted_at: new Date().toISOString() })
                 .eq('id', tierId);
 
             if (error) return { data: null, error: toError(error) };
@@ -295,10 +327,9 @@ export function createEventsRepository(client: DbClient) {
 
             const { data, error } = await client
                 .from('event_waitlists')
-                .select('id, event_id, user_id, status, created_at')
+                .select('id, event_id, user_id, ticket_tier_id, status, position, invited_at, expires_at, created_at')
                 .eq('event_id', eventId)
-                .is('deleted_at', null)
-                .order('created_at', { ascending: true })
+                .order('position', { ascending: true })
                 .range(from, from + size - 1);
 
             if (error) return { data: null, error: toError(error) };

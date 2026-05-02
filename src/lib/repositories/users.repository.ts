@@ -21,16 +21,36 @@ export interface UserProfile {
 
 export function createUsersRepository(client: DbClient) {
     return {
-        /** Fetch a single user's profile by their auth UID. Used in AuthContext. */
-        async getProfile(userId: string): Promise<RepoResult<UserProfile>> {
+        /** Fetch a single user's profile by their auth UID. Returns null when the row is not found. */
+        async getProfile(userId: string): Promise<RepoResult<UserProfile | null>> {
             const { data, error } = await client
                 .from('user_profile')
                 .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as UserProfile, error: null };
+            return { data: data as UserProfile | null, error: null };
+        },
+
+        /**
+         * Batch-fetch profiles by id. Use this in lists (forum messages, ticket holders,
+         * scan logs) to avoid N+1 lookups against `getProfile`. Returns rows in arbitrary
+         * order — caller indexes by `id` if a stable mapping is needed.
+         */
+        async getProfilesByIds(userIds: readonly string[]): Promise<RepoResult<UserProfile[]>> {
+            if (userIds.length === 0) return { data: [], error: null };
+
+            // Dedupe to keep the URL short for large lists.
+            const ids = Array.from(new Set(userIds));
+
+            const { data, error } = await client
+                .from('user_profile')
+                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
+                .in('id', ids);
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as UserProfile[], error: null };
         },
 
         /** Check whether a username is available. Wraps `is_username_available` RPC. */

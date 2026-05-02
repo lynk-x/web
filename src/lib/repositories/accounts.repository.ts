@@ -16,6 +16,8 @@ export interface AccountMembership {
     logoUrl?: string;
     role: string;
     type: 'attendee' | 'organizer' | 'advertiser' | 'platform';
+    /** Account default currency (from accounts.country_code → countries.currency). */
+    currency?: string;
     wallet_balance?: number;
     wallet_currency?: string;
     payout_routing?: Record<string, unknown>;
@@ -31,10 +33,16 @@ export interface AccountWallet {
     updated_at: string;
 }
 
+/**
+ * Account payment method as exposed to the UI. The DB stores a `provider_id` FK;
+ * this shape flattens the joined provider name for convenience.
+ */
 export interface AccountPaymentMethod {
     id: string;
     account_id: string;
-    provider: string;
+    provider_id: string;
+    provider_name: string;
+    provider_display_name: string;
     provider_identity: string;
     is_primary: boolean;
     metadata?: Record<string, unknown>;
@@ -42,14 +50,31 @@ export interface AccountPaymentMethod {
     updated_at: string;
 }
 
+/**
+ * Invitation lifecycle is implicit on the DB side:
+ *   accepted_at IS NOT NULL → 'accepted'
+ *   expires_at < now()      → 'expired'
+ *   else                    → 'pending'
+ */
+export type InvitationStatus = 'pending' | 'accepted' | 'expired';
+
 export interface AccountInvitation {
     id: string;
     account_id: string;
-    email: string;
+    invitee_email: string | null;
+    invitee_phone: string | null;
     role_slug: string;
-    status: 'pending' | 'accepted' | 'revoked' | 'expired';
+    accepted_at: string | null;
+    expires_at: string;
     created_at: string;
-    expires_at?: string;
+    /** Computed client-side from accepted_at and expires_at. */
+    status: InvitationStatus;
+}
+
+function deriveInvitationStatus(row: { accepted_at: string | null; expires_at: string }): InvitationStatus {
+    if (row.accepted_at) return 'accepted';
+    if (new Date(row.expires_at).getTime() < Date.now()) return 'expired';
+    return 'pending';
 }
 
 export function createAccountsRepository(client: DbClient) {
@@ -71,6 +96,8 @@ export function createAccountsRepository(client: DbClient) {
                         type,
                         media,
                         payout_routing,
+                        country_code,
+                        countries:country_code (currency),
                         account_wallets (currency, balance)
                     )
                 `)
@@ -79,26 +106,29 @@ export function createAccountsRepository(client: DbClient) {
             if (error) return { data: null, error: toError(error) };
 
             const memberships: AccountMembership[] = (data ?? [])
-            .filter((member: any) => member.accounts != null)
-            .map((member: any) => {
-                const wallets: { currency: string; balance: number }[] =
-                    member.accounts.account_wallets ?? [];
-                const primaryWallet =
-                    wallets.find((w) => w.currency === 'KES') ?? wallets[0];
+                .filter((member: any) => member.accounts != null)
+                .map((member: any) => {
+                    const accountCurrency: string | undefined = member.accounts.countries?.currency;
+                    const wallets: { currency: string; balance: number }[] =
+                        member.accounts.account_wallets ?? [];
+                    const primaryWallet =
+                        (accountCurrency ? wallets.find((w) => w.currency === accountCurrency) : undefined) ?? wallets[0];
 
-                return {
-                    id: member.accounts.id,
-                    slug: member.accounts.slug,
-                    name: member.accounts.display_name,
-                    logoUrl: (member.accounts.media as any)?.logo ?? undefined,
-                    role: member.role_slug,
-                    type: member.accounts.type,
-                    wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
-                    wallet_currency: primaryWallet?.currency ?? 'KES',
-                    payout_routing: member.accounts.payout_routing ?? {},
-                    isPrimary: member.is_primary,
-                };
-            }).sort((a, b) => (a.isPrimary === b.isPrimary ? 0 : a.isPrimary ? -1 : 1));
+                    return {
+                        id: member.accounts.id,
+                        slug: member.accounts.slug,
+                        name: member.accounts.display_name,
+                        logoUrl: (member.accounts.media as any)?.logo ?? undefined,
+                        role: member.role_slug,
+                        type: member.accounts.type,
+                        currency: accountCurrency,
+                        wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
+                        wallet_currency: primaryWallet?.currency ?? accountCurrency ?? 'USD',
+                        payout_routing: member.accounts.payout_routing ?? {},
+                        isPrimary: member.is_primary,
+                    };
+                })
+                .sort((a, b) => (a.isPrimary === b.isPrimary ? 0 : a.isPrimary ? -1 : 1));
 
             return { data: memberships, error: null };
         },
@@ -114,19 +144,36 @@ export function createAccountsRepository(client: DbClient) {
             return { data: data as AccountWallet[], error: null };
         },
 
-        /** Fetch all stored payment methods for an account. */
+        /** Fetch all stored payment methods for an account, with provider names joined. */
         async getPaymentMethods(accountId: string): Promise<RepoResult<AccountPaymentMethod[]>> {
             const { data, error } = await client
                 .from('account_payment_methods')
-                .select('id, account_id, provider, provider_identity, is_primary, metadata, created_at, updated_at')
+                .select(`
+                    id, account_id, provider_id, provider_identity, is_primary, metadata, created_at, updated_at,
+                    platform_payment_providers:provider_id (provider_name, display_name)
+                `)
                 .eq('account_id', accountId)
                 .order('is_primary', { ascending: false });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as AccountPaymentMethod[], error: null };
+
+            const methods: AccountPaymentMethod[] = (data ?? []).map((row: any) => ({
+                id: row.id,
+                account_id: row.account_id,
+                provider_id: row.provider_id,
+                provider_name: row.platform_payment_providers?.provider_name ?? '',
+                provider_display_name: row.platform_payment_providers?.display_name ?? '',
+                provider_identity: row.provider_identity,
+                is_primary: row.is_primary,
+                metadata: row.metadata,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            }));
+
+            return { data: methods, error: null };
         },
 
-        /** Fetch pending invitations for an account. */
+        /** Fetch invitations for an account with derived `status`. */
         async getInvitations(accountId: string, opts?: ListOptions): Promise<RepoResult<AccountInvitation[]>> {
             const page = opts?.page ?? 1;
             const size = opts?.pageSize ?? 20;
@@ -134,29 +181,41 @@ export function createAccountsRepository(client: DbClient) {
 
             const { data, error } = await client
                 .from('account_invitations')
-                .select('id, account_id, email, role_slug, status, created_at, expires_at')
+                .select('id, account_id, invitee_email, invitee_phone, role_slug, accepted_at, expires_at, created_at')
                 .eq('account_id', accountId)
                 .order('created_at', { ascending: false })
                 .range(from, from + size - 1);
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as AccountInvitation[], error: null };
+
+            const invitations: AccountInvitation[] = (data ?? []).map((row: any) => ({
+                ...row,
+                status: deriveInvitationStatus(row),
+            }));
+
+            return { data: invitations, error: null };
         },
 
-        /** Create a new member invitation. Wraps `create_account_invitation` RPC. */
+        /**
+         * Create a new member invitation. Wraps `create_account_invitation` RPC.
+         * RPC must validate caller is account admin/owner, generate the token,
+         * set expires_at, and (out-of-band) trigger the invitation email.
+         */
         async createInvitation(params: {
             accountId: string;
-            email: string;
-            role: string;
-        }): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('create_account_invitation', {
+            email?: string;
+            phone?: string;
+            roleSlug: string;
+        }): Promise<RepoResult<{ invitation_id: string; token: string }>> {
+            const { data, error } = await client.rpc('create_account_invitation', {
                 p_account_id: params.accountId,
-                p_email: params.email,
-                p_role: params.role,
+                p_invitee_email: params.email ?? null,
+                p_invitee_phone: params.phone ?? null,
+                p_role_slug: params.roleSlug,
             });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: null, error: null };
+            return { data: data as { invitation_id: string; token: string }, error: null };
         },
 
         /** Revoke a pending invitation. Wraps `revoke_account_invitation` RPC. */
@@ -169,28 +228,35 @@ export function createAccountsRepository(client: DbClient) {
             return { data: null, error: null };
         },
 
-        /** Accept an invitation. Wraps `accept_account_invitation` RPC. */
-        async acceptInvitation(invitationId: string): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('accept_account_invitation', {
-                p_invitation_id: invitationId,
+        /**
+         * Accept an invitation. Wraps `accept_account_invitation` RPC.
+         * Caller must be authenticated and their email/phone must match the invitee
+         * recorded on the invitation row (verified server-side).
+         */
+        async acceptInvitation(token: string): Promise<RepoResult<{ account_id: string }>> {
+            const { data, error } = await client.rpc('accept_account_invitation', {
+                p_token: token,
             });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: null, error: null };
+            return { data: data as { account_id: string }, error: null };
         },
 
         /** Create a new organization account. Wraps `create_organization_account` RPC. */
         async createOrganization(params: {
-            accountType: string;
-            displayName: string;
-        }): Promise<RepoResult<{ id: string }>> {
+            orgName: string;
+            contactEmail?: string;
+            accountType?: 'organizer' | 'advertiser';
+        }): Promise<RepoResult<{ account_id: string }>> {
             const { data, error } = await client.rpc('create_organization_account', {
-                p_account_type: params.accountType,
-                p_display_name: params.displayName,
+                p_org_name: params.orgName,
+                p_contact_email: params.contactEmail ?? null,
+                p_account_type: params.accountType ?? 'organizer',
             });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as { id: string }, error: null };
+            // RPC returns a uuid — wrap in a stable object shape for callers.
+            return { data: { account_id: data as string }, error: null };
         },
     };
 }
