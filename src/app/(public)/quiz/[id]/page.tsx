@@ -60,7 +60,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
     // but in a production app you'd get the user session -> sync score to DB.
 
     return (
-        <main style={{ minHeight: "100vh", backgroundColor: "#f2f2f2" }}>
+        <main style={{ minHeight: "100vh", backgroundColor: "#0a0a0a" }}>
             <LiveQuizClient
                 questionnaire={questionnaire}
                 questions={questions}
