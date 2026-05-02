@@ -35,18 +35,18 @@ const LynkXFooter: React.FC = () => {
                     <div className={styles.column}>
                         <h4 className={styles.columnTitle}>Legal</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="/terms" className={styles.link}>Terms of Service</Link></li>
                             <li><Link href="/privacy" className={styles.link}>Privacy Policy</Link></li>
                             <li><Link href="/cookies" className={styles.link}>Cookie Policy</Link></li>
                             <li><Link href="/refund" className={styles.link}>Refund Policy</Link></li>
+                            <li><Link href="/terms" className={styles.link}>Terms of Service</Link></li>
                         </ul>
                     </div>
 
                     <div className={styles.column}>
                         <h4 className={styles.columnTitle}>Company</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="/resources/mission" className={styles.link}>Our Mission</Link></li>
                             <li><Link href="/resources/brand" className={styles.link}>Brand Assets</Link></li>
+                            <li><Link href="/resources/mission" className={styles.link}>Our Mission</Link></li>
                             <li><Link href="/contact" className={styles.link}>Contact Us</Link></li>
                         </ul>
                     </div>
