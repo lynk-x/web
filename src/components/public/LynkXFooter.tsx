@@ -47,6 +47,7 @@ const LynkXFooter: React.FC = () => {
                         <ul className={styles.linkList}>
                             <li><Link href="/resources/mission" className={styles.link}>Our Mission</Link></li>
                             <li><Link href="/resources/brand" className={styles.link}>Brand Assets</Link></li>
+                            <li><Link href="/contact" className={styles.link}>Contact Us</Link></li>
                         </ul>
                     </div>
                 </div>

@@ -56,12 +56,6 @@ export default async function ResourcePage({ params }: Props) {
                 title={page.title} 
                 info={page.content as any} 
             />
-            
-            {slug === 'help' && (
-                <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-                    <ContactForm />
-                </div>
-            )}
         </div>
     );
 }
