@@ -46,11 +46,8 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
         <Joyride
             onEvent={handleJoyrideCallback}
             continuous
-            hideCloseButton
             run={run}
             scrollToFirstStep
-            showProgress
-            showSkipButton
             steps={steps}
             options={{
                 zIndex: 10000,
@@ -59,6 +56,8 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
                 backgroundColor: 'var(--color-interface-surface, #1e1e1e)',
                 arrowColor: 'var(--color-interface-surface, #1e1e1e)',
                 overlayColor: 'rgba(0, 0, 0, 0.7)',
+                showProgress: true,
+                buttons: ['back', 'primary', 'skip'],
             }}
             styles={{
                 buttonPrimary: {
