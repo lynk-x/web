@@ -149,16 +149,17 @@ export default function LiveQuizClient({
     if (gameState === "intro" || gameState === "lobby" || currentQuestionIndex === -1) {
         return (
             <div className={styles.container}>
+                <div className={styles.logoImgWrapper}>
+                    <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={180} height={50} priority />
+                </div>
+                <div className={styles.logo}>Quiz <span>Live!</span></div>
+                <h1 className={styles.title}>{questionnaire.title}</h1>
+                
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     className={styles.introScreen}
                 >
-                    <div className={styles.logoImgWrapper}>
-                        <Image src="/lynk-x_combined_logo.svg" alt="Lynk-X" width={180} height={50} priority />
-                    </div>
-                    <div className={styles.logo}>Lynk-X <span>Live!</span></div>
-                    <h1 className={styles.title}>{questionnaire.title}</h1>
                     <p className={styles.description}>
                         {questionnaire.info?.description || "Waiting for the host to start..."}
                     </p>
