@@ -42,7 +42,7 @@
 
 .searchWrapper {
     margin-top: var(--spacing-sm);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
 }
 
 .heroWrapper {
