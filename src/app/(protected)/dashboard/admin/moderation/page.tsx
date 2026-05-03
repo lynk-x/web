@@ -52,13 +52,14 @@ export default function AdminModerationPage() {
             const to = from + itemsPerPage - 1;
 
             let query = supabase
-                .from('moderation')
+                .schema('api')
+                .from('v1_moderation_queue')
                 .select('*', { count: 'exact' })
                 .in('status', ['pending_review', 'flagged', 'appealed']);
 
             // Server-Side Filtering
             if (debouncedSearch) {
-                query = query.ilike('reason', `%${debouncedSearch}%`);
+                query = query.ilike('reason_label', `%${debouncedSearch}%`);
             }
             if (typeFilter !== 'all') {
                 query = query.eq('item_type', typeFilter);

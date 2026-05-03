@@ -9,9 +9,10 @@ import { formatDateInTimezone, formatTimeInTimezone } from '@/utils/format';
 interface EventGridProps {
     events: Event[];
     itemsPerPage?: number;
+    isLoading?: boolean;
 }
 
-const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
+const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8, isLoading = false }) => {
     const [currentPage, setCurrentPage] = useState(1);
 
     const totalPages = Math.ceil(events.length / itemsPerPage);
@@ -26,6 +27,20 @@ const EventGrid: React.FC<EventGridProps> = ({ events, itemsPerPage = 8 }) => {
             gridElement.scrollIntoView({ behavior: 'smooth' });
         }
     };
+
+    if (isLoading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+                <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    border: '3px solid rgba(255,255,255,0.1)',
+                    borderTopColor: 'var(--color-brand-primary)',
+                    animation: 'spin 0.7s linear infinite',
+                }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     if (!events || events.length === 0) return null;
 

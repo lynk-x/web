@@ -143,8 +143,8 @@ function FinanceContent() {
                     .select(`
                     *,
                     event:events(title),
-                    sender:user_profile!sender_id(full_name, user_name),
-                    recipient:user_profile!recipient_id(full_name, user_name)
+                    initiator:user_profile!initiated_by(full_name, user_name),
+                    recipient_account:accounts!recipient_account_id(display_name)
                 `, { count: 'exact' });
 
                 if (activeTab === 'refunds') {
@@ -185,8 +185,8 @@ function FinanceContent() {
                     category: tx.category,
                     reference: tx.reference,
                     event: tx.event?.title,
-                    sender: tx.sender?.full_name || tx.sender?.user_name,
-                    recipient: tx.recipient?.full_name || tx.recipient?.user_name
+                    sender: tx.initiator?.full_name || tx.initiator?.user_name,
+                    recipient: tx.recipient_account?.display_name
                 })));
             } else if (activeTab === 'payouts') {
                 let query = supabase

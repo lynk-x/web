@@ -2,6 +2,11 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export interface UserLocation {
+    lat: number;
+    lng: number;
+}
+
 interface FilterContextType {
     selectedCategories: string[];
     setSelectedCategories: React.Dispatch<React.SetStateAction<string[]>>;
@@ -11,6 +16,8 @@ interface FilterContextType {
     setSelectedDates: React.Dispatch<React.SetStateAction<Date[]>>;
     searchTerm: string;
     setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
+    userLocation: UserLocation | null;
+    setUserLocation: React.Dispatch<React.SetStateAction<UserLocation | null>>;
     clearFilters: () => void;
 }
 
@@ -21,12 +28,14 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [selectedDates, setSelectedDates] = useState<Date[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
 
     const clearFilters = () => {
         setSelectedCategories([]);
         setSelectedTags([]);
         setSelectedDates([]);
         setSearchTerm('');
+        setUserLocation(null);
     };
 
     return (
@@ -35,6 +44,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
             selectedTags, setSelectedTags,
             selectedDates, setSelectedDates,
             searchTerm, setSearchTerm,
+            userLocation, setUserLocation,
             clearFilters
         }}>
             {children}

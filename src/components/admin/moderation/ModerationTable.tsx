@@ -11,10 +11,21 @@ export interface ModerationEntry {
     item_id: string;
     item_type: 'event' | 'campaign' | 'forum_message' | 'forum_media' | 'user_profile';
     status: 'pending_review' | 'approved' | 'rejected' | 'flagged' | 'appealed' | 'resolved';
-    reason: string;
+    reviewer_id: string | null;
+    review: Record<string, unknown> | null;
+    info: Record<string, unknown> | null;
     created_at: string;
-    metadata: any;
-    report_id?: string;
+    updated_at: string;
+    report_id: string | null;
+    report_reference: string | null;
+    reporter_id: string | null;
+    target_user_id: string | null;
+    target_event_id: string | null;
+    target_message_id: string | null;
+    is_escalated: boolean | null;
+    report_description: string | null;
+    reason_id: string | null;
+    reason_label: string | null;
 }
 
 interface ModerationTableProps {
@@ -79,7 +90,7 @@ const ModerationTable: React.FC<ModerationTableProps> = ({
             render: (entry) => (
                 <div style={{ maxWidth: '300px' }}>
                     <div style={{ fontSize: '14px', fontWeight: 500 }}>
-                        {entry.reason || 'No reason provided'}
+                        {entry.reason_label || 'No reason provided'}
                     </div>
                     {entry.report_id && (
                         <div style={{ fontSize: '11px', color: 'var(--color-interface-error)', marginTop: '4px' }}>

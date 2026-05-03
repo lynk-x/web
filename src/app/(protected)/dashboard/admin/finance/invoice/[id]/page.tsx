@@ -51,10 +51,10 @@ export default function AdminInvoicePage() {
                     .schema('transactions')
                     .from('transactions')
                     .select(`
-                        id, amount, status, created_at, currency, description, reason, reference,
+                        id, amount, status, created_at, currency, reason, reference,
                         event:events!event_id(title),
-                        sender:profiles!sender_id(full_name, user_name),
-                        recipient:profiles!recipient_id(full_name, user_name)
+                        initiator:user_profile!initiated_by(full_name, user_name),
+                        recipient_account:accounts!recipient_account_id(display_name)
                     `)
                     .eq('id', id)
                     .maybeSingle();
@@ -74,8 +74,8 @@ export default function AdminInvoicePage() {
                     type: d.reason || 'transaction',
                     status: d.status,
                     referenceId: d.reference || `TXN-${d.id.slice(0, 8).toUpperCase()}`,
-                    senderName: d.sender?.full_name || d.sender?.user_name || 'Platform',
-                    recipientName: d.recipient?.full_name || d.recipient?.user_name || 'Platform',
+                    senderName: d.initiator?.full_name || d.initiator?.user_name || 'Platform',
+                    recipientName: d.recipient_account?.display_name || 'Platform',
                     eventTitle: d.event?.title || '',
                 });
             } catch (err: any) {

@@ -74,12 +74,15 @@ const ModerationDetailModal: React.FC<ModerationDetailModalProps> = ({
                     )}
                 </div>
 
-                {entry.reason && (
+                {entry.reason_label && (
                     <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                         <label style={{ display: 'block', fontSize: '11px', color: '#ef4444', marginBottom: '4px', fontWeight: 600 }}>
-                            REVIEWER FLAG REASON
+                            REPORT REASON
                         </label>
-                        <p style={{ margin: 0, fontSize: '14px' }}>{entry.reason}</p>
+                        <p style={{ margin: 0, fontSize: '14px' }}>{entry.reason_label}</p>
+                        {entry.report_description && (
+                            <p style={{ margin: '6px 0 0', fontSize: '13px', opacity: 0.75 }}>{entry.report_description}</p>
+                        )}
                     </div>
                 )}
             </div>
