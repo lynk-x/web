@@ -27,6 +27,10 @@ const CheckoutView: React.FC = () => {
     const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<'mpesa'>('mpesa');
 
+    // Reservation state — set once tickets are locked, before payment is initiated
+    const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
+    const [reservationSecondsLeft, setReservationSecondsLeft] = useState(0);
+
     // Contact form state
     const [formData, setFormData] = useState({
         email: '', phone: '', mpesaNumber: ''
@@ -122,7 +126,7 @@ const CheckoutView: React.FC = () => {
                 'postgres_changes',
                 {
                     event: 'UPDATE',
-                    schema: 'public',
+                    schema: 'transactions',
                     table: 'transactions',
                     filter: `provider_ref=eq.${currentCheckoutId}`
                 },
@@ -154,6 +158,19 @@ const CheckoutView: React.FC = () => {
             supabase.removeChannel(channel);
         };
     }, [currentCheckoutId, paymentStatus, supabase, router, items.length, clearCart]);
+
+    // ── Reservation countdown ─────────────────────────────────────────────────
+    useEffect(() => {
+        if (!reservationExpiresAt) return;
+        const tick = () => {
+            const secs = Math.max(0, Math.floor((reservationExpiresAt.getTime() - Date.now()) / 1000));
+            setReservationSecondsLeft(secs);
+            if (secs === 0) setReservationExpiresAt(null);
+        };
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [reservationExpiresAt]);
 
     // ── Real promo code lookup ────────────────────────────────────────────────
     const handleApplyPromo = useCallback(async () => {
@@ -276,18 +293,23 @@ const CheckoutView: React.FC = () => {
             }
             if (!user) throw new Error('Could not establish session');
             
-            // Step 1.5: Reserve tickets (lock inventory) before payment
-            // This ensures tickets aren't sold out while the user is paying.
-            // Note: We loop through items but since current app usually checks out 1 event at a time,
-            // we focus on the first item for the primary reservation.
-            const { data: reservationId, error: reserveError } = await supabase.rpc('lock_tickets_for_checkout', {
-                p_tier_id: items[0].tierId,
-                p_quantity: items[0].quantity
-            });
-
-            if (reserveError) {
-                throw new Error(reserveError.message || 'Failed to reserve tickets. They might have just sold out.');
+            // Step 1.5: Reserve all cart items before initiating payment.
+            // lock_tickets_for_checkout is atomic per tier — run sequentially so a
+            // failure on item 2 doesn't leave item 1 locked without payment.
+            const reservations: Array<{ tierId: string; reservationId: string }> = [];
+            for (const item of items) {
+                const { data: resId, error: reserveError } = await supabase.rpc('lock_tickets_for_checkout', {
+                    p_tier_id: item.tierId,
+                    p_quantity: item.quantity,
+                });
+                if (reserveError) {
+                    throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
+                }
+                reservations.push({ tierId: item.tierId, reservationId: resId as string });
             }
+
+            // Show the 15-minute countdown from this point forward.
+            setReservationExpiresAt(new Date(Date.now() + 15 * 60 * 1000));
 
             // Step 2: Initiate real STK Push via Edge Function
             const { data, error: funcError } = await supabase.functions.invoke('mpesa-stk-push', {
@@ -299,12 +321,15 @@ const CheckoutView: React.FC = () => {
                         user_id: user.id,
                         email: formData.email.trim() || null,
                         phone: formData.phone.trim(),
-                        items: items.map(i => ({ event_id: i.eventId, tier_id: i.tierId, quantity: i.quantity, promo_code: appliedPromo?.code || null })),
-                        // Webhook fulfillment hints
-                        event_id: items[0].eventId,
-                        tier_id: items[0].tierId,
-                        quantity: items[0].quantity,
-                        promo_code: appliedPromo?.code || null
+                        // Each item carries its own reservation_id so the webhook's
+                        // purchase_tickets() call can honour the locked inventory.
+                        items: items.map(i => ({
+                            event_id: i.eventId,
+                            tier_id: i.tierId,
+                            quantity: i.quantity,
+                            reservation_id: reservations.find(r => r.tierId === i.tierId)?.reservationId ?? null,
+                            promo_code: appliedPromo?.code || null,
+                        })),
                     }
                 }
             });
@@ -352,6 +377,17 @@ const CheckoutView: React.FC = () => {
                     <div className={styles.summaryColumn}>
                         <section className={styles.section}>
                             <h2 className={styles.sectionTitle}>Order Summary</h2>
+                            {reservationExpiresAt && reservationSecondsLeft > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: reservationSecondsLeft < 120 ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', border: `1px solid ${reservationSecondsLeft < 120 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}` }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: reservationSecondsLeft < 120 ? '#ef4444' : '#22c55e' }}>
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                                        <polyline points="12 6 12 12 16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    </svg>
+                                    <span style={{ fontSize: 13, color: reservationSecondsLeft < 120 ? '#ef4444' : 'rgba(255,255,255,0.7)' }}>
+                                        Tickets reserved — {Math.floor(reservationSecondsLeft / 60)}:{String(reservationSecondsLeft % 60).padStart(2, '0')} remaining
+                                    </span>
+                                </div>
+                            )}
 
                             {isLoading ? (
                                 <>
