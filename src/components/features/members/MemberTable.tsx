@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -97,8 +98,8 @@ export default function MemberTable() {
             }));
 
             setMembers([...mappedMembers, ...mappedInvites]);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load team members.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load team members.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -148,8 +149,8 @@ export default function MemberTable() {
             setInviteEmail('');
             setInviteRole('viewer');
             fetchMembers(); // refresh
-        } catch (err: any) {
-            showToast(err.message || "We couldn't send the invitation. Please try again later.", "error", "Delivery Failed");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "We couldn't send the invitation. Please try again later.", "error", "Delivery Failed");
         } finally {
             setIsInviting(false);
         }
@@ -164,8 +165,8 @@ export default function MemberTable() {
             if (error) throw error;
             showToast("The pending invitation has been revoked.", "success", "Revoked");
             fetchMembers();
-        } catch (err: any) {
-            showToast(err.message || "Failed to revoke invitation.", "error", "Error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to revoke invitation.", "error", "Error");
         }
     };
 
@@ -181,8 +182,8 @@ export default function MemberTable() {
             if (error) throw error;
             showToast("Member access has been permanently removed.", "success", "Member Removed");
             fetchMembers();
-        } catch (err: any) {
-            showToast(err.message || "Failed to remove member.", "error", "Error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to remove member.", "error", "Error");
         }
     };
 
@@ -221,8 +222,8 @@ export default function MemberTable() {
             showToast(`Successfully processed ${count} removals.`, "success", "Batch Complete");
             setSelectedIds(new Set());
             fetchMembers();
-        } catch (err: any) {
-            showToast(err.message || "Failed to process bulk removal.", "error", "Batch Failed");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to process bulk removal.", "error", "Batch Failed");
             setIsLoading(false);
         }
     };

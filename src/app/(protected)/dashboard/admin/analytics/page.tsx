@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -114,8 +115,8 @@ function PlatformTab() {
                 use_count: r.use_count,
                 recent_event_count: r.recent_event_count,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load platform data', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load platform data', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -186,8 +187,8 @@ function DemographicsTab() {
                 .order('user_count', { ascending: false });
             if (error) throw error;
             setRows(data || []);
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -275,8 +276,8 @@ function AdvertisingTab() {
                 ctr: parseFloat(r.ctr ?? '0'),
                 total_spend: parseFloat(r.total_spend ?? '0'),
             })));
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -335,8 +336,8 @@ function SearchTab() {
                 results_count: r.results_count,
                 created_at: r.created_at,
             })));
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsLoading(false);
         }

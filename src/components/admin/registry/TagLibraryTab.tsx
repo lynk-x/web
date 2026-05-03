@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -58,8 +59,8 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
 
             setTagTypes(typesRes.data || []);
             setTags(tagsRes.data || []);
-        } catch (error: any) {
-            showToast(error.message || "Failed to sync tag library data.", 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || "Failed to sync tag library data.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -79,8 +80,8 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
             if (error) throw error;
             setTags(prev => prev.map(t => t.id === id ? { ...t, is_active: !currentValue } : t));
             showToast(`Tag status updated`, 'success');
-        } catch (error: any) {
-            showToast(`Update failed: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Update failed: ${getErrorMessage(error)}`, 'error');
         }
     };
 
@@ -94,8 +95,8 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
             if (error) throw error;
             setTagTypes(prev => prev.map(t => t.id === id ? { ...t, is_active: !currentValue } : t));
             showToast(`Type status updated`, 'success');
-        } catch (error: any) {
-            showToast(`Update failed: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Update failed: ${getErrorMessage(error)}`, 'error');
         }
     };
 

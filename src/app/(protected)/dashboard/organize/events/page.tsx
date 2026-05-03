@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -86,8 +87,8 @@ export default function OrganizerEventsPage() {
             });
 
             setEvents(formattedEvents);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load events.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load events.', 'error');
         } finally {
             setIsLoadingEvents(false);
         }
@@ -152,8 +153,8 @@ export default function OrganizerEventsPage() {
             if (error) throw error;
             showToast('Event duplicated to draft.', 'success');
             fetchEvents();
-        } catch (err: any) {
-            showToast(err.message || 'Duplication failed', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Duplication failed', 'error');
         }
     };
 
@@ -168,8 +169,8 @@ export default function OrganizerEventsPage() {
             showToast(`Batch duplication complete: ${data.processed_count} events added to drafts.`, 'success');
             setSelectedIds(new Set());
             fetchEvents();
-        } catch (err: any) {
-            showToast(err.message || 'Bulk duplication failed', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Bulk duplication failed', 'error');
         }
     };
 
@@ -196,8 +197,8 @@ export default function OrganizerEventsPage() {
             showToast(`Successfully updated ${selectedIds.size} events to ${newStatus}.`, 'success');
             setSelectedIds(new Set());
             fetchEvents();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update events.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update events.', 'error');
         }
     };
 
@@ -238,8 +239,8 @@ export default function OrganizerEventsPage() {
 
             exportToCSV(exportData, `attendee_list_${new Date().toISOString().split('T')[0]}`);
             showToast('Attendee list exported successfully.', 'success');
-        } catch (err: any) {
-            showToast(err.message || 'Failed to export attendee list.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to export attendee list.', 'error');
         }
     };
 
@@ -257,8 +258,8 @@ export default function OrganizerEventsPage() {
             showToast(`Successfully deleted ${selectedIds.size} events.`, 'success');
             setSelectedIds(new Set());
             fetchEvents();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to delete events. Events with sold tickets cannot be deleted.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to delete events. Events with sold tickets cannot be deleted.', 'error');
         } finally {
             setIsDeleteModalOpen(false);
         }
@@ -291,8 +292,8 @@ export default function OrganizerEventsPage() {
             showToast(`"${cancelTarget.event.title}" has been cancelled and tickets were refunded.`, 'success');
             setCancelTarget(null);
             fetchEvents();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to cancel event and process refunds.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to cancel event and process refunds.', 'error');
         }
     };
 
@@ -315,8 +316,8 @@ export default function OrganizerEventsPage() {
             if (error) throw error;
             showToast(`Event status updated to ${newStatus}.`, 'success');
             fetchEvents();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update event status.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update event status.', 'error');
         }
     };
 

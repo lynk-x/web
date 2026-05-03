@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './page.module.css';
@@ -66,8 +67,8 @@ export default function CampaignsPage() {
                 };
             });
             setCampaigns(formatted);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to fetch campaigns', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to fetch campaigns', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -133,8 +134,8 @@ export default function CampaignsPage() {
             showToast('Campaigns paused.', 'success');
             setSelectedIds(new Set());
             fetchCampaigns();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to pause campaigns', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to pause campaigns', 'error');
         }
     };
 
@@ -150,8 +151,8 @@ export default function CampaignsPage() {
             showToast(`Successfully deleted ${selectedIds.size} campaigns.`, 'success');
             setSelectedIds(new Set());
             fetchCampaigns();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to delete campaigns', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to delete campaigns', 'error');
         }
     };
 
@@ -164,8 +165,8 @@ export default function CampaignsPage() {
             if (error) throw error;
             showToast('Campaign duplicated to draft.', 'success');
             fetchCampaigns();
-        } catch (err: any) {
-            showToast(err.message || 'Duplication failed', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Duplication failed', 'error');
         }
     };
 
@@ -180,8 +181,8 @@ export default function CampaignsPage() {
             showToast(`Batch duplication complete: ${data.processed_count} campaigns added to drafts.`, 'success');
             setSelectedIds(new Set());
             fetchCampaigns();
-        } catch (error: any) {
-            showToast(error.message || 'Bulk duplication failed', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Bulk duplication failed', 'error');
         }
     };
 
@@ -203,8 +204,8 @@ export default function CampaignsPage() {
             if (error) throw error;
             showToast(`Campaign ${newStatus === 'paused' ? 'paused' : 'is now active'}.`, newStatus === 'paused' ? 'warning' : 'success');
             fetchCampaigns();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update campaign status.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update campaign status.', 'error');
         }
     };
 
@@ -219,8 +220,8 @@ export default function CampaignsPage() {
             if (error) throw error;
             showToast(`"${title}" deleted.`, 'success');
             fetchCampaigns();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to delete campaign.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to delete campaign.', 'error');
         }
     };
 

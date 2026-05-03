@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import styles from '../../page.module.css';
@@ -65,8 +66,8 @@ export default function AdsAssetsPage() {
 
             if (error) throw error;
             setAssets(data || []);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to fetch assets', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to fetch assets', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -189,8 +190,8 @@ export default function AdsAssetsPage() {
 
             showToast(`${file.name} uploaded successfully!`, 'success');
             fetchAssets();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to upload asset', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to upload asset', 'error');
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -208,8 +209,8 @@ export default function AdsAssetsPage() {
             if (error) throw error;
             showToast('Asset deleted successfully', 'success');
             fetchAssets();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to delete asset', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to delete asset', 'error');
         } finally {
             setAssetToDelete(null);
         }

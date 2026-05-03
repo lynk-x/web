@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import adminStyles from '../page.module.css';
@@ -72,8 +73,8 @@ export default function AdminModerationPage() {
             if (error) throw error;
             setEntries(data || []);
             setTotalCount(count || 0);
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -128,8 +129,8 @@ export default function AdminModerationPage() {
             showToast(`${entry.item_type} approved and set to active.`, 'success');
             fetchQueue();
             fetchDashboardSummary();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -166,8 +167,8 @@ export default function AdminModerationPage() {
             setIsRejectionModalOpen(false);
             fetchQueue();
             fetchDashboardSummary();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -216,8 +217,8 @@ export default function AdminModerationPage() {
             setSelectedIds(new Set());
             fetchQueue();
             fetchDashboardSummary();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -255,8 +256,8 @@ export default function AdminModerationPage() {
             setIsRejectionModalOpen(false);
             fetchQueue();
             fetchDashboardSummary();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

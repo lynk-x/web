@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -135,8 +136,8 @@ function CampaignsContent() {
                 startDate: new Date(c.start_at).toLocaleDateString(),
                 endDate: new Date(c.end_at).toLocaleDateString(),
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load campaigns.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load campaigns.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -208,8 +209,8 @@ function CampaignsContent() {
             fetchCampaigns();
             fetchDashboardSummary();
             setIsRejectionModalOpen(false);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update campaign status.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update campaign status.', 'error');
         }
     };
 

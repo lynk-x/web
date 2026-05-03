@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,8 +52,8 @@ export default function CreateFeatureFlagPage() {
             showToast('Feature flag created successfully', 'success');
             router.push('/dashboard/admin/settings');
             router.refresh(); // Ensure the table updates
-        } catch (error: any) {
-            showToast(error.message || 'Failed to create feature flag', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to create feature flag', 'error');
         } finally {
             setIsLoading(false);
         }

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -64,8 +65,8 @@ export default function AdAssetsTab() {
                 is_primary: a.is_primary,
                 created_at: a.created_at,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load ad assets', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load ad assets', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -80,8 +81,8 @@ export default function AdAssetsTab() {
             if (error) throw error;
             setAssets(prev => prev.filter(a => a.id !== asset.id));
             showToast('Asset deleted.', 'success');
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

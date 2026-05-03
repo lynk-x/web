@@ -104,7 +104,7 @@ function UsersContent() {
 
             setUsers(mappedUsers);
             setTotalCount(count || 0);
-        } catch (err: any) {
+        } catch (err: unknown) {
             showToast('Failed to load user database.', 'error');
         } finally {
             setIsLoading(false);

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -57,8 +58,8 @@ export default function CreateBannerPage() {
             showToast('System banner created successfully', 'success');
             setIsDirty(false);
             router.push('/dashboard/admin/communications?tab=banners');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to create banner', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to create banner', 'error');
         } finally {
             setIsLoading(false);
         }

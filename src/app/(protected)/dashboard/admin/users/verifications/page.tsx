@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -68,8 +69,8 @@ function KycVerificationsContent() {
 
             setVerifications(mapped);
             setTotalCount(count || 0);
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -95,8 +96,8 @@ function KycVerificationsContent() {
             showToast('Verification approved successfully.', 'success');
             setIsDetailModalOpen(false);
             fetchVerifications();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -116,8 +117,8 @@ function KycVerificationsContent() {
             showToast('Verification rejected with feedback.', 'success');
             setIsDetailModalOpen(false);
             fetchVerifications();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

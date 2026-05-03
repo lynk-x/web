@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -91,8 +92,8 @@ export default function DashboardOverview() {
                     })));
                 }
 
-            } catch (error: any) {
-                showToast(error.message || "Failed to load dashboard data.", "error");
+            } catch (error: unknown) {
+                showToast(getErrorMessage(error) || "Failed to load dashboard data.", "error");
             } finally {
                 setIsLoading(false);
             }

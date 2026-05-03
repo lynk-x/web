@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -42,8 +43,8 @@ export default function AdminEditContentPage() {
                         lastUpdated: new Date(data.updated_at).toLocaleDateString()
                     });
                 }
-            } catch (err: any) {
-                showToast(err.message, 'error');
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err), 'error');
                 router.push('/dashboard/admin/communications?tab=content');
             } finally {
                 setIsLoading(false);

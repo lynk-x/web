@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
@@ -49,8 +50,8 @@ export default function CampaignAssetsPage() {
             if (campaignRes.data) setCampaignTitle(campaignRes.data.title);
             if (assetsRes.error) throw assetsRes.error;
             setAssets(assetsRes.data || []);
-        } catch (e: any) {
-            showToast(e.message || 'Failed to load assets', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to load assets', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -68,8 +69,8 @@ export default function CampaignAssetsPage() {
             if (error) throw error;
             setAssets(prev => prev.map(a => a.id === id ? { ...a, is_hidden: isHidden } : a));
             showToast(isHidden ? 'Asset hidden' : 'Asset is now visible', 'success');
-        } catch (e: any) {
-            showToast(e.message || 'Update failed', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Update failed', 'error');
         }
     };
 
@@ -85,8 +86,8 @@ export default function CampaignAssetsPage() {
             if (error) throw error;
             setAssets(prev => prev.map(a => ({ ...a, is_hidden: false })));
             showToast(`${hidden.length} asset${hidden.length > 1 ? 's' : ''} made visible`, 'success');
-        } catch (e: any) {
-            showToast(e.message || 'Update failed', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Update failed', 'error');
         }
     };
 

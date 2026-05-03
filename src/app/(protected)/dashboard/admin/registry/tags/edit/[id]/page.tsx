@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -52,8 +53,8 @@ export default function EditTagPage() {
                         is_active: tag.is_active
                     });
                 }
-            } catch (error: any) {
-                showToast(error.message, 'error');
+            } catch (error: unknown) {
+                showToast(getErrorMessage(error), 'error');
             } finally {
                 setIsFetching(false);
             }
@@ -77,8 +78,8 @@ export default function EditTagPage() {
             showToast('Tag updated successfully', 'success');
             setIsDirty(false);
             router.push('/dashboard/admin/registry');
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
         } finally {
             setIsLoading(false);
         }

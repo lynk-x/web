@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -60,8 +61,8 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             }
 
             setInviteDetails(data);
-        } catch (err: any) {
-            setError(err.message || "Invalid invitation.");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err) || "Invalid invitation.");
         } finally {
             setIsLoading(false);
         }
@@ -90,8 +91,8 @@ export default function AcceptInviteClient({ token }: { token: string }) {
                 
                 router.push(`/setup-profile?type=${roleType}&next=${nextUrl}${accountParam}`);
             }, 2000);
-        } catch (err: any) {
-            setError(err.message || "Failed to accept invitation.");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err) || "Failed to accept invitation.");
             setIsAccepting(false);
         }
     };

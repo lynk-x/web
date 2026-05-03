@@ -5,8 +5,9 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   
-  // Follow the 'next' redirect if provided (e.g. from password resets), otherwise default to email verified
-  const next = searchParams.get('next') ?? '/verify-success'
+  // Validate `next` starts with `/` to prevent open-redirect attacks.
+  const rawNext = searchParams.get('next') ?? ''
+  const next = rawNext.startsWith('/') ? rawNext : '/verify-success'
 
   if (code) {
     const supabase = await createClient()

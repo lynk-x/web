@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -127,8 +128,8 @@ function CommunicationsContent() {
             if (error) throw error;
             showToast(`${doc.title} ${!doc.is_active ? 'activated' : 'deactivated'}`, 'success');
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -201,8 +202,8 @@ function CommunicationsContent() {
             showToast(`Bulk ${action} successful`, 'success');
             setSelectedContentIds(new Set());
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -261,8 +262,8 @@ function CommunicationsContent() {
             if (error) throw error;
             showToast(`Banner ${!banner.is_active ? 'activated' : 'deactivated'}`, 'success');
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -273,8 +274,8 @@ function CommunicationsContent() {
             if (error) throw error;
             showToast('Banner deleted', 'success');
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -288,8 +289,8 @@ function CommunicationsContent() {
             if (error) throw error;
             showToast(`Spotlight ${!spotlight.is_active ? 'activated' : 'deactivated'}`, 'success');
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -300,8 +301,8 @@ function CommunicationsContent() {
             if (error) throw error;
             showToast('Spotlight deleted', 'success');
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

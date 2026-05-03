@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './UserForm.module.css';
@@ -128,8 +129,8 @@ export default function UserForm({
             
             onDirtyChange?.(false);
             router.push('/dashboard/admin/users');
-        } catch (err: any) {
-            showToast(err.message || 'Action failed', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Action failed', 'error');
         } finally {
             setIsSubmitting(false);
             onSubmittingChange?.(false);

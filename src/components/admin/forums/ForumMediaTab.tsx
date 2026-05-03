@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -50,8 +51,8 @@ export default function ForumMediaTab() {
                 is_approved: m.is_approved,
                 created_at: m.created_at,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load media', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load media', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -73,8 +74,8 @@ export default function ForumMediaTab() {
             if (error) throw error;
             showToast('Media deleted', 'success');
             setMedia(prev => prev.filter(m => m.id !== id));
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

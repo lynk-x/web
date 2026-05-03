@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useEffect, useState, use } from 'react';
 import EventForm from '@/components/features/events/EventForm';
@@ -80,7 +81,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     currency: event.currency || 'KES'
                 });
 
-            } catch (error: any) {
+            } catch (error: unknown) {
                 showToast("Failed to load event data. It may not exist.", "error");
                 router.push('/dashboard/admin/events');
             } finally {
@@ -184,8 +185,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             showToast('Event updated successfully!', 'success');
             router.push('/dashboard/admin/events');
 
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update event. Please verify inputs.', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update event. Please verify inputs.', 'error');
         }
     };
 

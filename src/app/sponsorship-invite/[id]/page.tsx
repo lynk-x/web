@@ -57,7 +57,7 @@ export default function SponsorshipInvitePage() {
                 }
 
                 setData(inv as any);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error(err);
             } finally {
                 setIsLoading(false);

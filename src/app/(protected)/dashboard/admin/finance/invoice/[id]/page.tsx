@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -78,8 +79,8 @@ export default function AdminInvoicePage() {
                     recipientName: d.recipient_account?.display_name || 'Platform',
                     eventTitle: d.event?.title || '',
                 });
-            } catch (err: any) {
-                showToast(err.message || 'Failed to load invoice', 'error');
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err) || 'Failed to load invoice', 'error');
             } finally {
                 setIsLoading(false);
             }

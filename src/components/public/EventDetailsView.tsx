@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -117,7 +118,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
 
             setWaitlistStatus('joined');
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Could not join waitlist. Please try again.';
+            const msg = err instanceof Error ? getErrorMessage(err) : 'Could not join waitlist. Please try again.';
             setWaitlistError(msg);
             setWaitlistStatus('error');
         }
@@ -156,7 +157,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         url: window.location.href,
                     });
                 } catch (error) {
-                    console.log('Error sharing:', error);
+                    // navigator.share throws AbortError when user dismisses — ignore
                 }
             } else {
                 navigator.clipboard.writeText(window.location.href);

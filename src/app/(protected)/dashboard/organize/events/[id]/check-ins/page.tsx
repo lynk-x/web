@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -122,8 +123,8 @@ export default function CheckInLogsPage() {
             } else {
                 showToast(result.message, 'error');
             }
-        } catch (err: any) {
-            showToast(err.message || 'Verification failed', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Verification failed', 'error');
         } finally {
             setIsVerifying(false);
         }
@@ -141,8 +142,8 @@ export default function CheckInLogsPage() {
             showToast(`Successfully checked in ${data.processed_count} attendees.`, 'success');
             setSelectedIds(new Set());
             fetchLogs();
-        } catch (err: any) {
-            showToast(err.message || 'Bulk check-in failed', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Bulk check-in failed', 'error');
         } finally {
             setIsVerifying(false);
         }

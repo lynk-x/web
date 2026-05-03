@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, use } from 'react';
 import { useToast } from '@/components/ui/Toast';
@@ -47,8 +48,8 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 }));
 
                 setAttendees(mapped);
-            } catch (err: any) {
-                showToast(err.message || 'Failed to load attendees.', 'error');
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err) || 'Failed to load attendees.', 'error');
             } finally {
                 setIsLoading(false);
             }

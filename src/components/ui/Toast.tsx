@@ -38,13 +38,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         // Auto-remove after 5 seconds
         setTimeout(() => {
-            console.log('--- AUTO REMOVING TOAST ---', id);
             setToasts((prev) => prev.filter((t) => t.id !== id));
         }, 5000);
     }, []);
 
     const removeToast = (id: string) => {
-        console.log('--- MANUAL REMOVE TOAST ---', id);
         setToasts((prev) => prev.filter((t) => t.id !== id));
     };
 

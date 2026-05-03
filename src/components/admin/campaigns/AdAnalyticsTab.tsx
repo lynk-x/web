@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -83,8 +84,8 @@ export default function AdAnalyticsTab() {
                 }
             });
             setRows(Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date)));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load analytics', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load analytics', 'error');
         } finally {
             setIsLoading(false);
         }

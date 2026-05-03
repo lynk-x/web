@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -75,8 +76,8 @@ export default function CreateQuizPage() {
 
             setForums(validForums);
             if (validForums.length > 0) setForumId(validForums[0].forum_id);
-        } catch (err: any) {
-            showToast(err.message || "Failed to load events.", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to load events.", "error");
         } finally {
             setLoadingForums(false);
         }
@@ -93,7 +94,7 @@ export default function CreateQuizPage() {
             setChannels(data || []);
             if (data && data.length > 0) setChannelId(data[0].id);
             else setChannelId("");
-        } catch (err: any) {
+        } catch (err: unknown) {
             showToast("Failed to load channels for this forum.", "error");
         } finally {
             setLoadingChannels(false);
@@ -184,8 +185,8 @@ export default function CreateQuizPage() {
 
             showToast("Quiz created successfully!", "success");
             router.push(`/quiz/${qData.id}`);
-        } catch (err: any) {
-            showToast(err.message || "Failed to create quiz.", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to create quiz.", "error");
         } finally {
             setIsSubmitting(false);
         }

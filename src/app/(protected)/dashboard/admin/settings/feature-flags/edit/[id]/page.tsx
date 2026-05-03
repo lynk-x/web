@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -48,8 +49,8 @@ export default function EditFeatureFlagPage() {
                     allowed_regions: data.allowed_regions || [],
                 });
             }
-        } catch (error: any) {
-            showToast(error.message || 'Failed to fetch feature flag', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to fetch feature flag', 'error');
         } finally {
             setIsFetching(false);
         }
@@ -80,8 +81,8 @@ export default function EditFeatureFlagPage() {
             showToast('Feature flag updated successfully', 'success');
             router.push('/dashboard/admin/settings');
             router.refresh();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update feature flag', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update feature flag', 'error');
         } finally {
             setIsLoading(false);
         }

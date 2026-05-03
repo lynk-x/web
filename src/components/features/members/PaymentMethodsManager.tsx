@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/Toast';
@@ -43,8 +44,8 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             }));
             
             setMethods(flattenedData);
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -86,8 +87,8 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             setNewMethod({ provider: 'mpesa', identity: '' });
             fetchMethods();
 
-        } catch (err: any) {
-            showToast(err.message || 'Failed to add payout destination.', 'error', 'Error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to add payout destination.', 'error', 'Error');
         } finally {
             setIsSaving(false);
         }
@@ -109,8 +110,8 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             if (error) throw error;
             showToast('Default payout destination updated.', 'success', 'Success');
             fetchMethods();
-        } catch (err: any) {
-            showToast(err.message, 'error', 'Error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error', 'Error');
         }
     };
 
@@ -126,8 +127,8 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             showToast('Payout destination removed.', 'success', 'Success');
             setMethodToDelete(null);
             fetchMethods();
-        } catch (err: any) {
-            showToast(err.message, 'error', 'Error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error', 'Error');
         }
     };
 

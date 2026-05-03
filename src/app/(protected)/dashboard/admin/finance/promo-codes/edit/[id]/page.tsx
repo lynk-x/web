@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -52,8 +53,8 @@ export default function EditPromoCodePage() {
                     valid_until: data.valid_until,
                     is_active: data.is_active,
                 });
-            } catch (err: any) {
-                showToast(err.message || 'Failed to load promo code.', 'error');
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err) || 'Failed to load promo code.', 'error');
                 router.push('/dashboard/admin/finance?tab=promo-codes');
             } finally {
                 setIsLoading(false);

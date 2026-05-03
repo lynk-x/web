@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -82,7 +83,7 @@ export default function SubscriptionPlansPage() {
 
             if (error) throw error;
             setPlans(data || []);
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to load subscription plans', 'error');
         } finally {
             setIsLoading(false);
@@ -98,7 +99,7 @@ export default function SubscriptionPlansPage() {
 
             if (error) throw error;
             setAllFeatures(data || []);
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to load features', 'error');
         }
     }, [supabase, showToast]);
@@ -189,8 +190,8 @@ export default function SubscriptionPlansPage() {
             showToast(editingPlan ? 'Plan updated' : 'Plan created', 'success');
             setIsModalOpen(false);
             fetchPlans();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to save plan', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to save plan', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -228,8 +229,8 @@ export default function SubscriptionPlansPage() {
             showToast('Price added', 'success');
             setIsPriceModalOpen(false);
             fetchPlans();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to add price', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to add price', 'error');
         } finally {
             setIsSavingPrice(false);
         }
@@ -245,7 +246,7 @@ export default function SubscriptionPlansPage() {
             if (error) throw error;
             showToast('Price deleted', 'success');
             fetchPlans();
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to delete price', 'error');
         }
     };
@@ -259,7 +260,7 @@ export default function SubscriptionPlansPage() {
             if (error) throw error;
             showToast(`Plan ${plan.is_active ? 'deactivated' : 'activated'}`, 'success');
             fetchPlans();
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to update plan', 'error');
         }
     };

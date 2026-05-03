@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -50,8 +51,8 @@ export default function RegionsTab() {
                     ? `${c.tax_rates[0].display_name} ${c.tax_rates[0].rate_percent}%${c.tax_rates[0].is_inclusive ? ' (incl.)' : ''}`
                     : 'None',
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load countries', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load countries', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -70,8 +71,8 @@ export default function RegionsTab() {
             if (error) throw error;
             setCountries(prev => prev.map(c => c.code === code ? { ...c, is_active: !current } : c));
             showToast(`${code} ${!current ? 'activated' : 'deactivated'}`, 'success');
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

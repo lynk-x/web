@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -128,8 +129,8 @@ export default function QuizResultsPage() {
                 };
             });
             setQuestionStats(stats);
-        } catch (e: any) {
-            showToast(e.message || 'Failed to load quiz results', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to load quiz results', 'error');
         } finally {
             setIsLoading(false);
         }

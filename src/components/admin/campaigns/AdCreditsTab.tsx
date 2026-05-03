@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -79,8 +80,8 @@ export default function AdCreditsTab() {
                 created_at: r.created_at,
                 revoked_at: r.revoked_at,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load credits', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load credits', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -121,8 +122,8 @@ export default function AdCreditsTab() {
             setIsIssueModalOpen(false);
             setIssueAccountId(''); setIssueAmount(''); setIssueExpiry(''); setIssueNote('');
             fetchCredits();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to issue credit', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to issue credit', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -141,8 +142,8 @@ export default function AdCreditsTab() {
             if (error) throw error;
             showToast('Credit revoked.', 'success');
             fetchCredits();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to revoke credit', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to revoke credit', 'error');
         }
     };
 

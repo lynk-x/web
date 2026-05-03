@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect, useCallback } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
@@ -50,8 +51,8 @@ export default function DisclaimerTable() {
 
             if (error) throw error;
             setDisclaimers(data || []);
-        } catch (error: any) {
-            showToast(error.message || "Failed to load disclaimers. Please check your connection.", 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || "Failed to load disclaimers. Please check your connection.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -71,8 +72,8 @@ export default function DisclaimerTable() {
             if (error) throw error;
             setDisclaimers(prev => prev.map(d => d.id === id ? { ...d, is_active: !currentValue } : d));
             showToast(`Disclaimer updated successfully.`, 'success');
-        } catch (error: any) {
-            showToast(error.message || `Failed to update disclaimer.`, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || `Failed to update disclaimer.`, 'error');
         }
     };
 

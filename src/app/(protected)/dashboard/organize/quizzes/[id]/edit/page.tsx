@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
@@ -105,8 +106,8 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
 
             setQuestions(fetchedQuestions);
             setInitialQuestionIds(fetchedQuestions.map((q: any) => q.id));
-        } catch (err: any) {
-            showToast(err.message || "Failed to load quiz.", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to load quiz.", "error");
             router.push("/dashboard/organize/quizzes");
         } finally {
             setLoading(false);
@@ -127,7 +128,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                 // Only auto-select if we aren't already editing a quiz that has a channel
                 if (!channelId) setChannelId(data[0].id);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             showToast("Failed to load channels.", "error");
         } finally {
             setLoadingChannels(false);
@@ -228,8 +229,8 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
 
             showToast("Quiz updated successfully!", "success");
             router.push("/dashboard/organize/quizzes");
-        } catch (err: any) {
-            showToast(err.message || "Failed to update quiz.", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to update quiz.", "error");
         } finally {
             setIsSubmitting(false);
         }

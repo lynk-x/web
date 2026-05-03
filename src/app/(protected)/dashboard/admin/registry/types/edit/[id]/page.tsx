@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -40,8 +41,8 @@ export default function EditTagTypePage() {
                         is_active: data.is_active
                     });
                 }
-            } catch (error: any) {
-                showToast(error.message, 'error');
+            } catch (error: unknown) {
+                showToast(getErrorMessage(error), 'error');
                 // Fallback for mock
                 if (params.id === 'event_category') {
                     setFormData({ description: 'Primary categorization for events', is_active: true });
@@ -69,8 +70,8 @@ export default function EditTagTypePage() {
             showToast('Tag type updated successfully', 'success');
             setIsDirty(false);
             router.push('/dashboard/admin/registry');
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
         } finally {
             setIsLoading(false);
         }

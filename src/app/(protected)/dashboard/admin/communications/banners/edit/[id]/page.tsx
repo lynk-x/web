@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -49,8 +50,8 @@ export default function EditBannerPage() {
                     setActionUrl(data.action_url || '');
                     setIsDirty(false);
                 }
-            } catch (err: any) {
-                showToast(err.message, 'error');
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err), 'error');
                 router.push('/dashboard/admin/communications?tab=banners');
             } finally {
                 setIsLoading(false);
@@ -92,8 +93,8 @@ export default function EditBannerPage() {
             showToast('System banner updated successfully', 'success');
             setIsDirty(false);
             router.push('/dashboard/admin/communications?tab=banners');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update banner', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update banner', 'error');
         } finally {
             setIsSubmitting(false);
         }

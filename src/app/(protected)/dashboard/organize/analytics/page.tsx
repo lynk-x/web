@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -110,8 +111,8 @@ export default function AnalyticsPage() {
 
                 setTimeSeriesData(series.length > 0 ? series : []);
             }
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load performance metrics.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load performance metrics.', 'error');
         } finally {
             setIsLoading(false);
         }

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -72,8 +73,8 @@ export default function AdsDashboard() {
                         ctaHref: s.redirect_to
                     })));
                 }
-            } catch (error: any) {
-                showToast(error.message || 'Failed to load dashboard data.', 'error');
+            } catch (error: unknown) {
+                showToast(getErrorMessage(error) || 'Failed to load dashboard data.', 'error');
             } finally {
                 setIsLoading(false);
             }

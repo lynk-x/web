@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -55,8 +56,8 @@ export default function AdPricingTab() {
                 base_price: parseFloat(r.base_price),
                 updated_at: r.updated_at,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load pricing', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load pricing', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -81,8 +82,8 @@ export default function AdPricingTab() {
             showToast(`Updated ${row.ad_type} / ${row.interaction_type} → $${parsed.toFixed(4)}`, 'success');
             setEditingId(null);
             fetchPricing();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

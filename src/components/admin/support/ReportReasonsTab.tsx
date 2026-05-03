@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -47,8 +48,8 @@ export default function ReportReasonsTab() {
                 .order('id');
             if (error) throw error;
             setReasons(data || []);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load report reasons', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load report reasons', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -65,8 +66,8 @@ export default function ReportReasonsTab() {
             if (error) throw error;
             setReasons(prev => prev.map(r => r.id === reason.id ? { ...r, is_active: !reason.is_active } : r));
             showToast(`"${reason.id}" ${!reason.is_active ? 'enabled' : 'disabled'}`, 'success');
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -87,8 +88,8 @@ export default function ReportReasonsTab() {
             showToast('Report reason added.', 'success');
             setNewId(''); setNewCategory(''); setNewDescription('');
             fetchReasons();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         } finally {
             setIsAdding(false);
         }

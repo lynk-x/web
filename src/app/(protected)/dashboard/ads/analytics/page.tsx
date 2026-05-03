@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import styles from './page.module.css';
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
@@ -107,8 +108,8 @@ function AnalyticsContent() {
 
             setPerformanceData(Object.values(daysMap).sort((a, b) => a.sortKey - b.sortKey));
 
-        } catch (error: any) {
-            showToast(error.message || 'Failed to fetch analytics', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to fetch analytics', 'error');
         } finally {
             setIsLoading(false);
         }

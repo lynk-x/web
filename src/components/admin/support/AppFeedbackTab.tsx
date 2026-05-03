@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -106,8 +107,8 @@ export default function AppFeedbackTab({
                 admin_notes: f.admin_notes,
                 created_at: f.created_at,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load feedback', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load feedback', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -124,8 +125,8 @@ export default function AppFeedbackTab({
             if (error) throw error;
             setItems(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
             showToast(`Feedback marked as ${newStatus}`, 'success');
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

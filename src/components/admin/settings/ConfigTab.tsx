@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -58,8 +59,8 @@ export default function ConfigTab() {
 
             if (error) throw error;
             setConfigs(data || []);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to fetch configurations', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to fetch configurations', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -84,8 +85,8 @@ export default function ConfigTab() {
             ));
 
             showToast(`Configuration "${key}" ${!currentValue ? 'enabled' : 'disabled'}`, 'success');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update configuration', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update configuration', 'error');
         }
     };
 
@@ -130,8 +131,8 @@ export default function ConfigTab() {
             showToast(`Configuration ${editingConfig ? 'updated' : 'created'} successfully`, 'success');
             setIsModalOpen(false);
             fetchConfigs();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to save configuration', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to save configuration', 'error');
         } finally {
             setIsSaving(false);
         }

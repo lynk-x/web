@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -82,8 +83,8 @@ export default function ForumMessagesTab() {
                 edit_count: m.edit_count,
                 created_at: m.created_at,
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load messages', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load messages', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -100,8 +101,8 @@ export default function ForumMessagesTab() {
             if (error) throw error;
             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_hidden: !msg.is_hidden } : m));
             showToast(`Message ${!msg.is_hidden ? 'hidden' : 'made visible'}`, 'success');
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -114,8 +115,8 @@ export default function ForumMessagesTab() {
             if (error) throw error;
             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_pinned: false } : m));
             showToast('Message unpinned.', 'success');
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 

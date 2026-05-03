@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './PromoCodeForm.module.css';
@@ -62,7 +63,7 @@ export default function PromoCodeForm({
                     .order('title');
                 if (eventError) throw eventError;
                 setEvents(eventsData || []);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('Error fetching form refs:', err);
                 showToast('Failed to load events.', 'error');
             } finally {
@@ -153,9 +154,9 @@ export default function PromoCodeForm({
 
             router.push('/dashboard/admin/finance?tab=promo-codes');
             router.refresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error saving promo code:', error);
-            showToast(error.message || 'Failed to save promo code.', 'error');
+            showToast(getErrorMessage(error) || 'Failed to save promo code.', 'error');
         } finally {
             setIsSubmitting(false);
         }

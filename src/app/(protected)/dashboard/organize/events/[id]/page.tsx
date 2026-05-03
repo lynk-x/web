@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -123,8 +124,8 @@ export default function EventDetailPage() {
                     .eq('forum_id', forumResult.data.id);
                 setForumMemberCount(count || 0);
             }
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load event details.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load event details.', 'error');
         } finally {
             setIsLoading(false);
         }

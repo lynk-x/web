@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './CreateEventForm.module.css';
@@ -159,9 +160,9 @@ const CreateEventForm = () => {
 
             showToast('Event created successfully!', 'success');
             router.push('/dashboard/organize');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error creating event:', error);
-            showToast(error.message || 'Failed to create event.', 'error');
+            showToast(getErrorMessage(error) || 'Failed to create event.', 'error');
         } finally {
             setIsSubmitting(false);
         }

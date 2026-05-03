@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -73,8 +74,8 @@ export default function CreateMappingPage() {
 
             showToast('Mapping successfully created', 'success');
             router.push('/dashboard/admin/registry');
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
         } finally {
             setIsLoading(false);
         }

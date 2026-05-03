@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -65,7 +66,7 @@ export default function EventSessionsPage() {
 
             if (error) throw error;
             setSessions(data || []);
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to load sessions', 'error');
         } finally {
             setIsLoading(false);
@@ -129,8 +130,8 @@ export default function EventSessionsPage() {
 
             setIsModalOpen(false);
             fetchSessions();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to save session', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to save session', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -146,7 +147,7 @@ export default function EventSessionsPage() {
             if (error) throw error;
             showToast('Session deleted', 'success');
             fetchSessions();
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to delete session', 'error');
         }
     };

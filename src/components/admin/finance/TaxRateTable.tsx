@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useMemo } from 'react';
 import DataTable, { Column } from '../../shared/DataTable';
@@ -30,8 +31,8 @@ const TaxRateTable: React.FC<TaxRateTableProps> = ({ data, isLoading, onUpdate, 
             if (error) throw error;
             showToast(`${rate.name} updated`, 'success');
             onUpdate?.();
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
         }
     };
 

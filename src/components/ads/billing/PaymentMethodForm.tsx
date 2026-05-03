@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useMemo } from 'react';
 import styles from './PaymentMethodForm.module.css';
@@ -126,8 +127,8 @@ export default function PaymentMethodForm({ accountId, supabase, onSuccess, onCa
             showToast('Payment method saved successfully.', 'success');
             if (onSuccess) onSuccess();
             else router.push('/dashboard/ads/billing');
-        } catch (err: any) {
-            setFormError(err.message || 'Failed to save payment method.');
+        } catch (err: unknown) {
+            setFormError(getErrorMessage(err) || 'Failed to save payment method.');
         } finally {
             setIsSaving(false);
         }

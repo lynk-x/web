@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -110,7 +111,7 @@ export default function ProfileSetupPage() {
                 .getPublicUrl(filePath);
 
             setAvatarUrl(publicUrl);
-        } catch (err: any) {
+        } catch (err: unknown) {
             setError('Failed to upload image. Please try again.');
         }
     };
@@ -152,8 +153,8 @@ export default function ProfileSetupPage() {
             } else {
                 router.push('/dashboard');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to update profile.');
+        } catch (err: unknown) {
+            setError(getErrorMessage(err) || 'Failed to update profile.');
         } finally {
             setIsSubmitting(false);
         }

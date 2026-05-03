@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -85,8 +86,8 @@ export default function QuizzesPage() {
                 forum_channels: Array.isArray(q.forum_channels) ? q.forum_channels[0] : q.forum_channels
             })));
             setSelectedIds(new Set());
-        } catch (e: any) {
-            showToast(e.message || 'Failed to load quizzes', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to load quizzes', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -118,8 +119,8 @@ export default function QuizzesPage() {
             if (error) throw error;
             showToast('Quiz duplicated to draft.', 'success');
             fetchQuizzes();
-        } catch (e: any) {
-            showToast(e.message || 'Duplication failed', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Duplication failed', 'error');
         }
     };
 
@@ -141,8 +142,8 @@ export default function QuizzesPage() {
             if (error) throw error;
             showToast(`Bulk action complete: ${data.processed_count} quizzes processed.`, 'success');
             fetchQuizzes();
-        } catch (e: any) {
-            showToast(e.message || 'Bulk action failed', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Bulk action failed', 'error');
             setIsLoading(false);
         }
     };
@@ -158,8 +159,8 @@ export default function QuizzesPage() {
             if (error) throw error;
             showToast('Quiz deleted', 'success');
             fetchQuizzes();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to delete quiz', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to delete quiz', 'error');
         }
     };
 

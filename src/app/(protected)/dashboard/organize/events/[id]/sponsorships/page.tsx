@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -134,7 +135,7 @@ export default function EventSponsorshipsPage() {
             if (invitesRes.data) setInvitations(invitesRes.data as any);
             if (performanceRes.data) setSponsorships(performanceRes.data);
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Fetch error:', e);
             showToast('Failed to load sponsorship data', 'error');
         } finally {
@@ -222,9 +223,9 @@ export default function EventSponsorshipsPage() {
             setSelectedTierId('');
             setIsCustomTier(false);
             fetchData();
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Invite error:', e);
-            showToast(e.message || 'Failed to send invitation', 'error');
+            showToast(getErrorMessage(e) || 'Failed to send invitation', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -242,7 +243,7 @@ export default function EventSponsorshipsPage() {
             if (error) throw error;
             showToast('Invitation revoked', 'success');
             fetchData();
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to revoke invitation', 'error');
         }
     };
@@ -319,8 +320,8 @@ export default function EventSponsorshipsPage() {
             resetTierForm();
             fetchAllTiers();
             fetchData();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to save tier', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to save tier', 'error');
         } finally {
             setIsSavingTier(false);
         }
@@ -342,8 +343,8 @@ export default function EventSponsorshipsPage() {
             showToast('Tier deleted', 'success');
             fetchAllTiers();
             fetchData();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to delete tier', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to delete tier', 'error');
         }
     };
 

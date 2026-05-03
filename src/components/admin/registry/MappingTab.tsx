@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -92,8 +93,8 @@ export default function MappingTab({ forceView }: MappingTabProps) {
                 }));
                 setEventMappings(mapped);
             }
-        } catch (error: any) {
-            showToast(error.message || "Failed to synchronize tag mappings.", 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || "Failed to synchronize tag mappings.", 'error');
         } finally {
             setIsLoading(false);
         }

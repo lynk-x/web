@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -114,8 +115,8 @@ export default function CreateForumPage() {
 
             showToast('Forum created successfully!', 'success');
             router.push('/dashboard/admin/forums');
-        } catch (err: any) {
-            showToast(err.message || 'Failed to create forum.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to create forum.', 'error');
         } finally {
             setIsSubmitting(false);
         }

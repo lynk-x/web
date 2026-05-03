@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -141,8 +142,8 @@ function SettingsContent() {
             showToast('Settings saved successfully.', 'success');
             setInitialFormData(formData);
             if (refreshAccounts) await refreshAccounts();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update settings.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update settings.', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -160,8 +161,8 @@ function SettingsContent() {
             if (error) throw error;
             showToast('Account deactivation requested. Our team will process this within 24 hours.', 'success');
             setIsDeleteModalOpen(false);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to deactivate account.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to deactivate account.', 'error');
         }
     };
 

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -66,8 +67,8 @@ export default function NewLegalVersionPage() {
             showToast('Legal document version created successfully', 'success');
             setIsDirty(false);
             router.push('/dashboard/admin/communications?tab=legal');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to create document', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to create document', 'error');
         } finally {
             setIsLoading(false);
         }

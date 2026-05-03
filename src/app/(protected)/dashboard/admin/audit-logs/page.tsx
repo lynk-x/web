@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './page.module.css';
@@ -66,8 +67,8 @@ export default function AdminAuditLogsPage() {
             if (actions) {
                 setActionTypes(actions);
             }
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load logs', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load logs', 'error');
         } finally {
             setIsLoading(false);
         }

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import DataTable from '@/components/shared/DataTable';
@@ -41,8 +42,8 @@ export default function PaymentProvidersTab() {
             }));
 
             setData(mappedData);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to load payment providers', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to load payment providers', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -69,8 +70,8 @@ export default function PaymentProvidersTab() {
             showToast('Payment provider updated successfully.', 'success');
             setIsEditing(null);
             fetchData();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update payment provider.', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update payment provider.', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -90,8 +91,8 @@ export default function PaymentProvidersTab() {
             if (error) throw error;
             showToast(`Provider ${newStatus ? 'activated' : 'deactivated'} successfully.`, 'success');
             setData(prev => prev.map(p => p.id === provider.id ? { ...p, is_active: newStatus } : p));
-        } catch (error: any) {
-            showToast(error.message || 'Failed to toggle status.', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to toggle status.', 'error');
         }
     };
 

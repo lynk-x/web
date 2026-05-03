@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
@@ -62,8 +63,8 @@ export default function AdsBillingPage() {
             setInvoices(mapped);
             setRawTotalSpend(totalSpend);
             setWalletBalance(Number(walletRes.data?.balance ?? 0));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load billing data.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load billing data.', 'error');
         } finally {
             setIsLoading(false);
         }

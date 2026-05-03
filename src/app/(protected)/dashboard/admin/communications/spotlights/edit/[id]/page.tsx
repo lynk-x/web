@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -52,8 +53,8 @@ export default function EditSpotlightPage() {
                     setIsActive(data.is_active);
                     setIsDirty(false);
                 }
-            } catch (err: any) {
-                showToast(err.message, 'error');
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err), 'error');
                 router.push('/dashboard/admin/communications?tab=spotlights');
             } finally {
                 setIsLoading(false);
@@ -97,8 +98,8 @@ export default function EditSpotlightPage() {
             showToast('Hero Spotlight updated successfully', 'success');
             setIsDirty(false);
             router.push('/dashboard/admin/communications?tab=spotlights');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update spotlight', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update spotlight', 'error');
         } finally {
             setIsSubmitting(false);
         }

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,7 +69,7 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
         try {
             await onConfirm(finalReason);
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to cancel event.';
+            const msg = err instanceof Error ? getErrorMessage(err) : 'Failed to cancel event.';
             setError(msg);
         } finally {
             setIsSubmitting(false);

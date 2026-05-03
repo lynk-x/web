@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -116,8 +117,8 @@ export default function CampaignDetailPage() {
 
             setCampaign(campRes.data as CampaignDetail);
             setVariants((variantRes.data || []) as AdVariant[]);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load campaign.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load campaign.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -174,8 +175,8 @@ export default function CampaignDetailPage() {
             if (error) throw error;
             showToast(`Campaign ${newStatus === 'paused' ? 'paused' : 'activated'}.`, 'success');
             fetchCampaign();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update status.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update status.', 'error');
         }
     };
 

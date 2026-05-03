@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -97,8 +98,8 @@ export default function CreateBroadcastPage() {
             );
             setIsDirty(false);
             router.push('/dashboard/admin/communications?tab=broadcast');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to send broadcast', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to send broadcast', 'error');
         } finally {
             setIsLoading(false);
         }

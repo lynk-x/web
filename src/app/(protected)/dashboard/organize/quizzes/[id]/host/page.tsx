@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -53,8 +54,8 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
             );
             const channel = Array.isArray(data.forum_channels) ? data.forum_channels[0] : data.forum_channels;
             setQuiz({ ...data, forum_channels: channel, questions: sortedQuestions });
-        } catch (e: any) {
-            showToast(e.message || 'Failed to load quiz host data', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to load quiz host data', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -108,8 +109,8 @@ export default function QuizHostPage({ params }: { params: Promise<{ id: string 
                 .update(updates)
                 .eq('id', quizId);
             if (error) throw error;
-        } catch (e: any) {
-            showToast(e.message || 'Failed to update quiz state', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to update quiz state', 'error');
         } finally {
             setIsUpdating(false);
         }

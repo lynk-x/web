@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -137,8 +138,8 @@ function RevenueContent() {
                 date: formatDate(r.created_at),
             })));
 
-        } catch (err: any) {
-            showToast(err.message || 'Failed to sync your financial records. Please try again.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to sync your financial records. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -202,8 +203,8 @@ function RevenueContent() {
             showToast('Payout request submitted. Our team will review it shortly.', 'success');
             setPayoutAmount('');
             fetchFinancialData(); // Refresh payout list
-        } catch (err: any) {
-            showToast(err.message || 'Failed to submit payout request.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to submit payout request.', 'error');
         }
     };
 

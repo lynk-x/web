@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -114,8 +115,8 @@ function SupportContent() {
                 })));
             }
 
-        } catch (err: any) {
-            showToast(err.message || "Failed to load reports", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to load reports", "error");
         } finally {
             setIsLoading(false);
         }

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import EventForm from '@/components/features/events/EventForm';
 import { useRouter } from 'next/navigation';
@@ -123,8 +124,8 @@ export default function AdminCreateEventPage() {
             showToast('Event created successfully!', 'success');
             router.push('/dashboard/admin/events');
 
-        } catch (error: any) {
-            showToast(error.message || 'Failed to create event. Please verify inputs.', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to create event. Please verify inputs.', 'error');
         }
     };
 

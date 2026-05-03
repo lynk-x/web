@@ -38,7 +38,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     status: (data.status === 'permanently_suspended' || data.status === 'temporarily_suspended') ? 'suspended' : 'active',
                     bio: data.bio
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 showToast('Failed to load user data.', 'error');
             } finally {
                 setIsLoading(false);

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -119,7 +120,7 @@ export default function WalletPage() {
                 campaign_title: r.ad_campaigns?.title ?? 'Unknown Campaign',
                 currency: r.ad_credits?.currency ?? '',
             })));
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to load wallet data', 'error');
         } finally {
             setIsLoading(false);
@@ -156,8 +157,8 @@ export default function WalletPage() {
             setIsModalOpen(false);
             setAmount('');
             fetchData();
-        } catch (e: any) {
-            showToast(e.message || 'Top-up failed', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Top-up failed', 'error');
         } finally {
             setIsSubmitting(false);
         }

@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -142,8 +143,8 @@ function AdsSettingsContent() {
             showToast('Settings saved successfully.', 'success');
             setInitialFormData(formData);
             if (refreshAccounts) await refreshAccounts();
-        } catch (error: any) {
-            showToast(error.message || 'Failed to save settings', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to save settings', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -175,8 +176,8 @@ function AdsSettingsContent() {
             setIsDeactivateModalOpen(false);
             if (refreshAccounts) await refreshAccounts();
             router.push('/dashboard/ads');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to deactivate account.', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to deactivate account.', 'error');
         } finally {
             setIsDeactivating(false);
         }

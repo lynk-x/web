@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styles from './CreateCampaignForm.module.css';
@@ -635,9 +636,9 @@ export default function CreateCampaignForm({
             onDirtyChange?.(false);
             router.push(redirectPath);
             router.refresh();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Submission error:', err);
-            showToast(err.message || 'Failed to save campaign.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to save campaign.', 'error');
         } finally {
             setIsSubmitting(false);
         }

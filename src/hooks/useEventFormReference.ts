@@ -51,7 +51,6 @@ export function useEventFormReference({
                 const { createReferenceRepository } = await import('@/lib/repositories');
                 const refRepo = createReferenceRepository(createClient());
 
-                console.log('Fetching reference data (tags, categories, category_tags)...');
                 const [tagsRes, catsRes, catTagsRes] = await Promise.all([
                     refRepo.getTags(),
                     refRepo.getEventCategories(),
@@ -66,15 +65,12 @@ export function useEventFormReference({
                 if (firstError) setError(firstError);
 
                 if (tagsRes.data) {
-                    console.log(`Fetched ${tagsRes.data.length} tags`);
                     setTagSuggestions(tagsRes.data.map((t) => ({ id: t.id, name: t.name })));
                 }
                 if (catsRes.data) {
-                    console.log(`Fetched ${catsRes.data.length} categories`);
                     setCategories(catsRes.data.map((c) => ({ id: c.id, display_name: c.display_name })));
                 }
                 if (catTagsRes.data) {
-                    console.log(`Fetched ${catTagsRes.data.length} category-tag mappings`);
                     setCategoryTags(catTagsRes.data);
                 }
             } catch (err) {

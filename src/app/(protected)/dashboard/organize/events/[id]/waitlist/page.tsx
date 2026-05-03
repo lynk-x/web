@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -67,7 +68,7 @@ export default function EventWaitlistPage() {
             if (waitlistRes.error) throw waitlistRes.error;
 
             setEntries(waitlistRes.data || []);
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to load waitlist', 'error');
         } finally {
             setIsLoading(false);
@@ -91,8 +92,8 @@ export default function EventWaitlistPage() {
             if (error) throw error;
             showToast('Invitation sent', 'success');
             fetchData();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to send invitation', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to send invitation', 'error');
         }
     };
 
@@ -121,7 +122,7 @@ export default function EventWaitlistPage() {
             if (error) throw error;
             showToast(`${pendingEntries.length} invitations sent`, 'success');
             fetchData();
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to invite all', 'error');
         }
     };
@@ -136,7 +137,7 @@ export default function EventWaitlistPage() {
             if (error) throw error;
             showToast('Entry removed', 'success');
             fetchData();
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to remove entry', 'error');
         }
     };

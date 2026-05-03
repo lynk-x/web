@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -41,8 +42,8 @@ export default function FeatureFlagTab() {
 
             if (error) throw error;
             setFlags(data || []);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to fetch feature flags', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to fetch feature flags', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -67,8 +68,8 @@ export default function FeatureFlagTab() {
             ));
 
             showToast(`Feature "${key}" ${!currentValue ? 'turned ON' : 'turned OFF'}`, 'success');
-        } catch (error: any) {
-            showToast(error.message || 'Failed to update feature flag', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to update feature flag', 'error');
         }
     };
 

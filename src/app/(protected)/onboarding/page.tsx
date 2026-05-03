@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -159,9 +160,9 @@ function OnboardingFlow() {
             // Redirect to user profile setup, then dashboard
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
             window.location.href = `/setup-profile?type=${dashType}&accountRef=${accountRef}`;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error creating organization:', err);
-            setError(err.message || 'Failed to create organization. Please try again.');
+            setError(getErrorMessage(err) || 'Failed to create organization. Please try again.');
             setLoading(false);
             setSkipping(false);
         }

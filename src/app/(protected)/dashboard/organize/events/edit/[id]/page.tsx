@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useEffect, useState } from 'react';
 import EventForm from '@/components/features/events/EventForm';
@@ -90,7 +91,7 @@ export default function EditEventPage() {
                     timezone: event.timezone || 'UTC'
                 });
 
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("Error fetching event:", error);
                 showToast("Failed to load event data. It may not exist or belong to your organization.", "error");
                 router.push('/dashboard/organize/events');
@@ -254,9 +255,9 @@ export default function EditEventPage() {
             showToast('Event updated successfully!', 'success');
             router.push('/dashboard/organize/events');
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating event:", error);
-            showToast(error.message || 'Failed to update event. Please verify inputs.', 'error');
+            showToast(getErrorMessage(error) || 'Failed to update event. Please verify inputs.', 'error');
         }
     };
 

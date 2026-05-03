@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
@@ -123,7 +124,7 @@ function FinanceContent() {
                 payoutRequestCount: data.payout_count,
                 adRevenue: adSpend
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             showToast('Failed to load financial aggregates.', 'error');
         } finally {
             setIsStatsLoading(false);
@@ -278,8 +279,8 @@ function FinanceContent() {
                     };
                 }));
             }
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -386,8 +387,8 @@ function FinanceContent() {
             }
             setIsTaxModalOpen(false);
             fetchData();
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
         }
     };
 
@@ -411,8 +412,8 @@ function FinanceContent() {
             
             showToast('Payout successfully initiated.', 'success');
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -446,8 +447,8 @@ function FinanceContent() {
             setIsPayoutRejectModalOpen(false);
             setPendingRejectPayout(null);
             fetchData();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -468,9 +469,9 @@ function FinanceContent() {
             if (error) throw error;
             showToast('FX rates synchronized successfully.', 'success');
             fetchData();
-        } catch (err: any) {
+        } catch (err: unknown) {
             // If the RPC doesn't exist yet, surface the error clearly instead of silently failing
-            showToast(err.message || 'FX sync function not available.', 'error');
+            showToast(getErrorMessage(err) || 'FX sync function not available.', 'error');
         } finally {
             setIsSyncingFX(false);
         }
@@ -497,8 +498,8 @@ function FinanceContent() {
                                 fetchData();
                             }
                             setSelectedPayoutIds(new Set());
-                        } catch (err: any) {
-                            showToast(err.message || 'Failed to process bulk payout approval.', 'error');
+                        } catch (err: unknown) {
+                            showToast(getErrorMessage(err) || 'Failed to process bulk payout approval.', 'error');
                         }
                     },
                     variant: 'success'

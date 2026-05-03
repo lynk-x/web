@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -99,8 +100,8 @@ export default function EventInsightsPage() {
             });
 
             setTimeSeriesData(Object.entries(byDay).map(([name, revenue]) => ({ name, revenue })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load event analytics.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load event analytics.', 'error');
         } finally {
             setIsLoading(false);
         }

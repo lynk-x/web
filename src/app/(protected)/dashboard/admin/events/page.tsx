@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -85,8 +86,8 @@ export default function AdminEventsPage() {
                 thumbnailUrl: e.thumbnail,
                 reportsCount: e.reports_count || 0
             })));
-        } catch (err: any) {
-            showToast(err.message || 'Failed to load events.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load events.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -228,8 +229,8 @@ export default function AdminEventsPage() {
             fetchEvents();
             fetchDashboardSummary();
             setIsRejectionModalOpen(false);
-        } catch (err: any) {
-            showToast(err.message || 'Failed to update event status.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update event status.', 'error');
         }
     };
 

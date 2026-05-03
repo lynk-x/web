@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect } from 'react';
 import styles from './ContentForm.module.css';
@@ -144,8 +145,8 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
             showToast(isEditing ? 'Content updated successfully!' : 'Content created successfully!', 'success');
             onDirtyChange?.(false);
             router.push('/dashboard/admin/communications?tab=content');
-        } catch (err: any) {
-            showToast(err.message || 'An error occurred', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'An error occurred', 'error');
         } finally {
             setIsSubmitting(false);
         }

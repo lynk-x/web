@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
@@ -64,14 +65,15 @@ const CheckoutView: React.FC = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                // 0. Restore pending payment state from sessionStorage (survives refresh)
+                // 0. Restore pending payment state from sessionStorage (survives refresh).
+                // Only the checkoutId is persisted — phone numbers are not stored to
+                // avoid XSS-readable PII in sessionStorage.
                 const saved = sessionStorage.getItem('lynk-x-payment');
                 if (saved) {
-                    const { checkoutId, phone } = JSON.parse(saved);
+                    const { checkoutId } = JSON.parse(saved);
                     if (checkoutId) {
                         setCurrentCheckoutId(checkoutId);
                         setPaymentStatus('waiting');
-                        setFormData(prev => ({ ...prev, mpesaNumber: phone || prev.mpesaNumber }));
                         setIsSubmitting(true);
                     }
                 }
@@ -109,7 +111,6 @@ const CheckoutView: React.FC = () => {
     useEffect(() => {
         if (!currentCheckoutId || paymentStatus !== 'waiting') return;
 
-        console.log('[Checkout] Listening for payment completion:', currentCheckoutId);
 
         // Time-out after 10 minutes — if the Daraja webhook never fires the user
         // would otherwise be stuck on the spinner indefinitely.
@@ -132,7 +133,6 @@ const CheckoutView: React.FC = () => {
                 },
                 (payload) => {
                     const newStatus = payload.new.status;
-                    console.log('[Checkout] Transaction status updated:', newStatus);
 
                     if (newStatus === 'completed') {
                         clearTimeout(timeoutId);
@@ -343,12 +343,11 @@ const CheckoutView: React.FC = () => {
             setPaymentStatus('waiting');
             sessionStorage.setItem('lynk-x-payment', JSON.stringify({
                 checkoutId: data.checkoutRequestId,
-                phone: formData.mpesaNumber,
             }));
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Payment error:', err);
-            setPaymentError(err.message || 'Payment failed to initiate.');
+            setPaymentError(getErrorMessage(err) || 'Payment failed to initiate.');
             setIsSubmitting(false);
         }
     };

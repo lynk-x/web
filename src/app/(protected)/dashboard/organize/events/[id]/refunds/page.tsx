@@ -1,4 +1,5 @@
 "use client";
+import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -77,7 +78,7 @@ export default function EventRefundsPage() {
 
             setRefunds(refundsRes.data || []);
             setSelectedIds(new Set());
-        } catch (e: any) {
+        } catch (e: unknown) {
             showToast('Failed to load refund requests', 'error');
         } finally {
             setIsLoading(false);
@@ -113,8 +114,8 @@ export default function EventRefundsPage() {
             if (error) throw error;
             showToast(`Successfully approved ${data.processed_count} refunds.`, 'success');
             fetchData();
-        } catch (e: any) {
-            showToast(e.message || 'Failed to bulk approve refunds', 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || 'Failed to bulk approve refunds', 'error');
         } finally {
             setIsProcessing(false);
         }
@@ -158,8 +159,8 @@ export default function EventRefundsPage() {
             showToast(`Refund ${decision}`, 'success');
             setSelectedRefund(null);
             fetchData();
-        } catch (e: any) {
-            showToast(e.message || `Failed to ${decision === 'approved' ? 'approve' : 'reject'} refund`, 'error');
+        } catch (e: unknown) {
+            showToast(getErrorMessage(e) || `Failed to ${decision === 'approved' ? 'approve' : 'reject'} refund`, 'error');
         } finally {
             setIsProcessing(false);
         }
