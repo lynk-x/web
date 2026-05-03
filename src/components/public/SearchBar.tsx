@@ -54,29 +54,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFocus, onBlur, categories, tags
                 </svg>
             </div>
 
-            <div
-                className={styles.locationIcon}
-                onClick={handleNearMe}
-                title={userLocation ? 'Clear location filter' : 'Find events near me'}
-                style={{
-                    color: userLocation ? 'var(--color-brand-primary)' : undefined,
-                    opacity: isLocating ? 0.5 : 1,
-                }}
-            >
-                {isLocating ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" strokeDasharray="31.4" strokeDashoffset="10"
-                            style={{ animation: 'spin 0.8s linear infinite', transformOrigin: '12px 12px' }} />
-                        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                    </svg>
-                ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                        <circle cx="12" cy="12" r="8" strokeOpacity="0.3" />
-                    </svg>
-                )}
-            </div>
+            {/* TODO: Rebuild location 'Near Me' functionality inside the FilterPopup/Settings for a cleaner UI */}
+
 
             <input
                 type="text"
@@ -89,9 +68,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFocus, onBlur, categories, tags
             />
 
             <div className={styles.searchIcon}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </div>
 

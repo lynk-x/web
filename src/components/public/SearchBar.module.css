@@ -11,7 +11,7 @@
     width: 100%;
     padding: var(--spacing-lg) var(--spacing-xxl);
     padding-right: 48px;
-    padding-left: 96px; /* Increased to accommodate filter and location icons */
+    padding-left: 56px; 
     background-color: var(--color-interface-surface);
     border: 1px solid transparent;
     border-radius: var(--radius-full);
@@ -40,25 +40,7 @@
     justify-content: center;
 }
 
-.locationIcon {
-    position: absolute;
-    left: calc(var(--spacing-sm) + 40px);
-    padding: var(--spacing-md);
-    color: var(--color-utility-primaryText);
-    opacity: 0.6;
-    cursor: pointer;
-    transition: all 0.2s;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
-.locationIcon:hover {
-    opacity: 1;
-    color: var(--color-brand-primary);
-    transform: scale(1.1);
-}
 
 .filterIcon {
     position: absolute;
