@@ -57,9 +57,17 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         const hasMatchingAccount = matchingAccounts.length > 0;
 
         if (!hasMatchingAccount) {
-            // User has NO account of this type — send to onboarding to create one.
-            const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
-            router.replace(`/onboarding?type=${defaultType}`);
+            // Check if they have ANY other business account first.
+            const hasOtherBusinessAccount = accounts.some(a => a.type !== 'attendee');
+            
+            if (hasOtherBusinessAccount) {
+                // They have accounts, just not of this type. Send to picker to switch or create.
+                router.replace('/dashboard');
+            } else {
+                // User has NO business accounts at all — send to onboarding to create one.
+                const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
+                router.replace(`/onboarding?type=${defaultType}`);
+            }
             setIsAuthorized(false);
             setIsChecking(false);
             return;

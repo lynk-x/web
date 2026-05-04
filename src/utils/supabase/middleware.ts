@@ -53,7 +53,7 @@ export async function updateSession(request: NextRequest) {
 
         if (!membership) {
             const url = request.nextUrl.clone()
-            url.pathname = '/dashboard/organize'
+            url.pathname = '/dashboard'
             return NextResponse.redirect(url)
         }
     }
