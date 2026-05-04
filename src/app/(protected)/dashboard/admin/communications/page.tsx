@@ -48,18 +48,49 @@ function CommunicationsContent() {
     };
 
     const [contents, setContents] = useState<ContentItem[]>([]);
+    const [contentTotal, setContentTotal] = useState(0);
+    const [publishedPagesCount, setPublishedPagesCount] = useState(0);
     const [legalDocs, setLegalDocs] = useState<LegalDocument[]>([]);
+    const [legalTotal, setLegalTotal] = useState(0);
     const [broadcastLogs, setBroadcastLogs] = useState<BroadcastLog[]>([]);
     const [banners, setBanners] = useState<SystemBanner[]>([]);
     const [spotlights, setSpotlights] = useState<Spotlight[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // ─── Legal Documents State & Pagination ──────────────────────────────
+    const [legalDocPage, setLegalDocPage] = useState(1);
+    const legalDocsPerPage = 5;
+
+    // ─── Content State & Search ──────────────────────────────────────────
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
+            const cmsFrom = (currentPage - 1) * itemsPerPage;
+            const legalFrom = (legalDocPage - 1) * legalDocsPerPage;
+
+            let cmsQuery = supabase
+                .from('cms_pages')
+                .select('*', { count: 'exact' })
+                .order('updated_at', { ascending: false })
+                .range(cmsFrom, cmsFrom + itemsPerPage - 1);
+            if (searchTerm) cmsQuery = cmsQuery.ilike('title', `%${searchTerm}%`);
+            if (typeFilter !== 'all') cmsQuery = cmsQuery.eq('type', typeFilter);
+            if (statusFilter !== 'all') cmsQuery = cmsQuery.eq('status', statusFilter);
+
             const [cmsRes, legalRes, broadcastRes, bannerRes, spotlightRes] = await Promise.all([
-                supabase.from('cms_pages').select('*').order('updated_at', { ascending: false }),
-                supabase.from('legal_documents').select('*').order('effective_date', { ascending: false }),
+                cmsQuery,
+                supabase
+                    .from('legal_documents')
+                    .select('*', { count: 'exact' })
+                    .order('effective_date', { ascending: false })
+                    .range(legalFrom, legalFrom + legalDocsPerPage - 1),
                 supabase.from('notification_broadcast_logs').select('*').order('created_at', { ascending: false }),
                 supabase.from('system_banners').select('*').order('starts_at', { ascending: false }),
                 supabase.from('spotlights').select('*').order('target', { ascending: true }).order('display_order', { ascending: true })
@@ -76,8 +107,12 @@ function CommunicationsContent() {
                     status: item.status,
                     content: item.content
                 })));
+                setContentTotal(cmsRes.count ?? 0);
             }
-            if (legalRes.data) setLegalDocs(legalRes.data);
+            if (legalRes.data) {
+                setLegalDocs(legalRes.data);
+                setLegalTotal(legalRes.count ?? 0);
+            }
             if (broadcastRes.data) setBroadcastLogs(broadcastRes.data);
             if (bannerRes.data) setBanners(bannerRes.data);
             if (spotlightRes.data) setSpotlights(spotlightRes.data);
@@ -86,29 +121,32 @@ function CommunicationsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, currentPage, itemsPerPage, legalDocPage, legalDocsPerPage, searchTerm, typeFilter, statusFilter]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
+    // Fetch platform-wide published pages count once (unaffected by tab filters)
+    useEffect(() => {
+        supabase
+            .from('cms_pages')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'published')
+            .then(({ count }) => { if (count !== null) setPublishedPagesCount(count); });
+    }, [supabase]);
 
     // ─── Stats Calculation ──────────────────────────────────────────────
     const stats = {
-        publishedPages: contents.filter(c => c.status === 'published').length,
+        publishedPages: publishedPagesCount,
         activePolicies: legalDocs.filter(l => l.is_active).length,
         totalNotifications: broadcastLogs.reduce((acc, log) => acc + (log.fcm_tokens_count || 0), 0),
         activeSpotlights: spotlights.filter(s => s.is_active).length
     };
 
-    // ─── Legal Documents State & Pagination ──────────────────────────────
-    const [legalDocPage, setLegalDocPage] = useState(1);
-    const legalDocsPerPage = 5;
-    const totalLegalPages = Math.ceil(legalDocs.length / legalDocsPerPage);
-    const paginatedLegalDocs = legalDocs.slice(
-        (legalDocPage - 1) * legalDocsPerPage,
-        legalDocPage * legalDocsPerPage
-    );
+    // ─── Legal Documents Pagination ──────────────────────────────────────
+    const totalLegalPages = Math.ceil(legalTotal / legalDocsPerPage);
+    const paginatedLegalDocs = legalDocs;
 
     const handleToggleLegalActive = async (doc: LegalDocument) => {
         try {
@@ -133,27 +171,8 @@ function CommunicationsContent() {
         }
     };
 
-    // ─── Content State & Search ──────────────────────────────────────────
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
-
-    const filteredContent = contents.filter(item => {
-        const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.slug.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = typeFilter === 'all' || item.type === typeFilter;
-        const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-        return matchesSearch && matchesType && matchesStatus;
-    });
-
-    const totalPages = Math.ceil(filteredContent.length / itemsPerPage);
-    const paginatedContent = filteredContent.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const totalPages = Math.ceil(contentTotal / itemsPerPage);
+    const paginatedContent = contents;
 
     useEffect(() => {
         setCurrentPage(1);

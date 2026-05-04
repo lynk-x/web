@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthProvider } from "@/context/AuthContext";
+import QueryProvider from "@/context/QueryProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,13 +45,15 @@ export default function RootLayout({
   return (
     <html lang="en-GB" className={`${inter.variable} ${interTight.variable}`} suppressHydrationWarning>
       <body>
-        <AuthProvider>
-          <CartProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </CartProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <CartProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </CartProvider>
+          </AuthProvider>
+        </QueryProvider>
         <Analytics />
         <SpeedInsights />
       </body>

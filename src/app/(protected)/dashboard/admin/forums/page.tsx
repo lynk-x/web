@@ -52,6 +52,8 @@ function ForumsContent() {
         router.replace(`${pathname}?${params.toString()}`);
     };
     const [threads, setThreads] = useState<ForumThread[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [platformStats, setPlatformStats] = useState({ total: 0, open: 0, readOnly: 0, escalations: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -59,16 +61,45 @@ function ForumsContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
+    // Fetch platform-wide stats once (unaffected by filters/pagination)
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const { data } = await supabase
+                    .schema('analytics')
+                    .from('mv_forum_performance')
+                    .select('status, escalated_reports_count');
+                if (data) {
+                    setPlatformStats({
+                        total: data.length,
+                        open: data.filter((f: any) => f.status === 'open').length,
+                        readOnly: data.filter((f: any) => f.status === 'read_only').length,
+                        escalations: data.reduce((acc: number, f: any) => acc + (parseInt(f.escalated_reports_count) || 0), 0),
+                    });
+                }
+            } catch { /* non-critical */ }
+        };
+        fetchStats();
+    }, [supabase]);
+
     useEffect(() => {
         const fetchForums = async () => {
             setIsLoading(true);
             try {
-                // Fetch from our new public materialized view
-                const { data, error } = await supabase
+                const from = (currentPage - 1) * itemsPerPage;
+                const to = from + itemsPerPage - 1;
+
+                let query = supabase
                     .schema('analytics')
                     .from('mv_forum_performance')
-                    .select('*')
-                    .order('last_activity_at', { ascending: false });
+                    .select('*', { count: 'exact' })
+                    .order('last_activity_at', { ascending: false })
+                    .range(from, to);
+
+                if (searchTerm) query = query.ilike('event_title', `%${searchTerm}%`);
+                if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+
+                const { data, error, count } = await query;
 
                 if (error) throw error;
 
@@ -89,6 +120,7 @@ function ForumsContent() {
                 }));
 
                 setThreads(mappedThreads);
+                setTotalCount(count ?? 0);
             } catch (err) {
                 showToast('Failed to load forum management data.', 'error');
             } finally {
@@ -97,22 +129,10 @@ function ForumsContent() {
         };
 
         fetchForums();
-    }, [supabase, showToast]);
+    }, [supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
 
-    // Filter Logic
-    const filteredThreads = threads.filter(thread => {
-        const matchesSearch = thread.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            thread.eventName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || thread.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredThreads.length / itemsPerPage);
-    const paginatedThreads = filteredThreads.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    const paginatedThreads = threads;
 
     // Reset pagination when filter changes
     useEffect(() => {
@@ -209,15 +229,7 @@ function ForumsContent() {
         { label: 'Delete Selection', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
-    const stats = useMemo(() => {
-        const total = threads.length;
-        // Status values match the forum_status DB enum (lowercase)
-        const open = threads.filter(t => t.status === 'open').length;
-        const readOnly = threads.filter(t => t.status === 'read_only').length;
-        const escalations = threads.reduce((acc, t) => acc + (t.escalatedCount || 0), 0);
-
-        return { total, open, readOnly, escalations };
-    }, [threads]);
+    const stats = platformStats;
 
     return (
         <div className={adminStyles.container}>

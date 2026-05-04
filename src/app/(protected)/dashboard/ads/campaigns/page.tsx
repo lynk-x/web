@@ -28,18 +28,29 @@ export default function CampaignsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
+    const [totalCount, setTotalCount] = useState(0);
+
     const fetchCampaigns = useCallback(async () => {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            let query = supabase
                 .from('ad_campaigns')
                 .select(`
-                    id, title, type, start_at, end_at, status, total_budget, spent_amount, target_url, 
+                    id, title, type, start_at, end_at, status, total_budget, spent_amount, target_url,
                     total_impressions, total_clicks
-                `)
+                `, { count: 'exact' })
                 .eq('account_id', activeAccount.id)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (searchTerm) query = query.ilike('title', `%${searchTerm}%`);
+            if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+
+            const { data, error, count } = await query;
 
             if (error) throw error;
 
@@ -67,12 +78,13 @@ export default function CampaignsPage() {
                 };
             });
             setCampaigns(formatted);
+            setTotalCount(count ?? 0);
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to fetch campaigns', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     useEffect(() => {
         if (!isOrgLoading) {
@@ -84,21 +96,10 @@ export default function CampaignsPage() {
         }
     }, [isOrgLoading, activeAccount, fetchCampaigns]);
 
-    // Filter Logic
-    const filteredCampaigns = campaigns.filter(c => {
-        const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    const paginatedCampaigns = campaigns;
 
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
-    const paginatedCampaigns = filteredCampaigns.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset stuff when filters change
+    // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
         setSelectedIds(new Set());

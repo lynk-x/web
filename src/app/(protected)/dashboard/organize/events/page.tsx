@@ -29,6 +29,7 @@ export default function OrganizerEventsPage() {
 
     // Data State
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [isLoadingEvents, setIsLoadingEvents] = useState(true);
 
     // Modal State
@@ -49,24 +50,31 @@ export default function OrganizerEventsPage() {
         if (!activeAccount) return;
         setIsLoadingEvents(true);
         try {
-            // Query events table directly — joined with ticket_tiers for sell-through data
-            const { data, error } = await supabase
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            let query = supabase
                 .from('events')
                 .select(`
                     id, title, status, starts_at, media, location,
                     reference, is_private,
                     ticket_tiers(tickets_sold, capacity)
-                `)
+                `, { count: 'exact' })
                 .eq('account_id', activeAccount.id)
-                .order('starts_at', { ascending: false });
+                .order('starts_at', { ascending: false })
+                .range(from, to);
+
+            if (searchTerm) {
+                query = query.or(`title.ilike.%${searchTerm}%`);
+            }
+            if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+
+            const { data, error, count } = await query;
 
             if (error) throw error;
 
             const formattedEvents: OrganizerEvent[] = (data || []).map((e: any) => {
-                // Map event_status enum directly to preserve granularity for filtering
                 const uiStatus = e.status as OrganizerEvent['status'];
-
-                // tickets_sold = number of tickets sold per tier (schema column)
                 const ticketsSold = (e.ticket_tiers || []).reduce((acc: number, t: any) => acc + (t.tickets_sold || 0), 0);
 
                 return {
@@ -87,12 +95,13 @@ export default function OrganizerEventsPage() {
             });
 
             setEvents(formattedEvents);
+            setTotalCount(count ?? 0);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load events.', 'error');
         } finally {
             setIsLoadingEvents(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     // ── Initialization & Data Fetching ───────────────────────────────────────
     useEffect(() => {
@@ -106,24 +115,14 @@ export default function OrganizerEventsPage() {
         }
     }, [isOrgLoading, activeAccount, fetchEvents]);
 
-    // Filter Logic
-    const filteredEvents = events.filter(event => {
-        const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            event.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    const paginatedEvents = events;
 
-        const matchesStatus = statusFilter === 'all'
-            ? true
-            : event.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-    });
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-    const paginatedEvents = filteredEvents.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedIds(new Set());
+    }, [searchTerm, statusFilter]);
 
     // Selection Logic
     const handleSelect = (id: string) => {
@@ -358,7 +357,7 @@ export default function OrganizerEventsPage() {
                         { value: 'suspended', label: 'Suspended' }
                     ]}
                     currentValue={statusFilter}
-                    onChange={(val) => { setStatusFilter(val as any); setCurrentPage(1); }}
+                    onChange={(val) => setStatusFilter(val as any)}
                 />
                 </TableToolbar>
             </div>

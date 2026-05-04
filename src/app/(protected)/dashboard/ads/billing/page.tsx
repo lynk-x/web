@@ -20,7 +20,8 @@ export default function AdsBillingPage() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [walletBalance, setWalletBalance] = useState(0);
     const [rawTotalSpend, setRawTotalSpend] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,12 +31,16 @@ export default function AdsBillingPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
             const [topupsRes, walletRes, campaignsRes] = await Promise.all([
                 supabase
                     .from('wallet_top_ups')
-                    .select('id, amount, status, created_at, currency')
+                    .select('id, amount, status, created_at, currency', { count: 'exact' })
                     .eq('account_id', activeAccount.id)
-                    .order('created_at', { ascending: false }),
+                    .order('created_at', { ascending: false })
+                    .range(from, to),
                 supabase
                     .from('account_wallets')
                     .select('balance')
@@ -49,18 +54,17 @@ export default function AdsBillingPage() {
             ]);
 
             const currency = 'USD';
-            let totalSpend = (campaignsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
+            const totalSpend = (campaignsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
 
-            const mapped: Invoice[] = (topupsRes.data || []).map((tx: any) => {
-                return {
-                    id: tx.id,
-                    date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                    amount: formatCurrency(Number(tx.amount), tx.currency || currency),
-                    status: tx.status === 'completed' ? 'paid' : tx.status === 'pending' ? 'pending' : 'overdue'
-                };
-            });
+            const mapped: Invoice[] = (topupsRes.data || []).map((tx: any) => ({
+                id: tx.id,
+                date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                amount: formatCurrency(Number(tx.amount), tx.currency || currency),
+                status: tx.status === 'completed' ? 'paid' : tx.status === 'pending' ? 'pending' : 'overdue'
+            }));
 
-            setInvoices(mapped);
+            setAllInvoices(mapped);
+            setTotalCount(topupsRes.count ?? 0);
             setRawTotalSpend(totalSpend);
             setWalletBalance(Number(walletRes.data?.balance ?? 0));
         } catch (err: unknown) {
@@ -68,7 +72,7 @@ export default function AdsBillingPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage]);
 
     useEffect(() => {
         if (!isOrgLoading) {
@@ -80,17 +84,25 @@ export default function AdsBillingPage() {
         }
     }, [isOrgLoading, activeAccount, fetchBillingData]);
 
-    const filteredInvoices = invoices.filter(inv =>
-        inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.status.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Search is kept client-side since it filters over formatted date strings
+    const invoices = searchQuery
+        ? allInvoices.filter(inv =>
+            inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.status.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        : allInvoices;
 
-    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
-    const paginatedInvoices = filteredInvoices.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const totalPages = searchQuery
+        ? Math.ceil(invoices.length / itemsPerPage)
+        : Math.ceil(totalCount / itemsPerPage);
+    const paginatedInvoices = searchQuery
+        ? invoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+        : invoices;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const currency = 'USD';
 

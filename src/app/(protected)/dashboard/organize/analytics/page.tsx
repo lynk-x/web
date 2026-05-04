@@ -1,13 +1,11 @@
 "use client";
-import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import PerformanceTable, { type PerformanceEvent } from '@/components/features/analytics/PerformanceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
-import { createClient } from '@/utils/supabase/client';
 import { formatCurrency } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -15,36 +13,35 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import Tabs from '@/components/dashboard/Tabs';
+import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
+
+interface AnalyticsResult {
+  insights: PerformanceEvent[];
+  timeSeries: { name: string; revenue: number; tickets: number }[];
+}
 
 export default function AnalyticsPage() {
     const { showToast } = useToast();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
-    const supabase = useMemo(() => createClient(), []);
 
     const [timeRange, setTimeRange] = useState('30');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [detailedInsights, setDetailedInsights] = useState<PerformanceEvent[]>([]);
-    const [timeSeriesData, setTimeSeriesData] = useState<{ name: string; revenue: number; tickets: number }[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('summary');
 
+    const { data, isLoading } = useSupabaseQuery<AnalyticsResult>(
+        ['analytics', activeAccount?.id, timeRange],
+        async (supabase) => {
+            if (!activeAccount) return { insights: [], timeSeries: [] };
 
-
-    const fetchAnalytics = useCallback(async () => {
-        if (!activeAccount) return;
-        setIsLoading(true);
-        try {
             const { data: eventsData, error: evErr } = await supabase
                 .from('events')
-                .select(`id, title, status, ticket_tiers(price, capacity, tickets_sold)`)
-                .eq('account_id', activeAccount.id);
+                .select('id, title, status, ticket_tiers(price, capacity, tickets_sold)')
+                .eq('account_id', activeAccount.id)
+                .throwOnError();
 
             if (evErr) throw evErr;
 
-            let totalAccRevenue = 0;
-            let totalAccTicketsSold = 0;
-            let totalAccCapacity = 0;
-
-            const mappedInsights: PerformanceEvent[] = (eventsData || []).map((eventData: any) => {
+            const insights: PerformanceEvent[] = (eventsData || []).map((eventData: any) => {
                 let eventRevenue = 0;
                 let eventSold = 0;
                 let eventTotalCapacity = 0;
@@ -55,37 +52,25 @@ export default function AnalyticsPage() {
                     eventTotalCapacity += tier.capacity || 0;
                 });
 
-                totalAccRevenue += eventRevenue;
-                totalAccTicketsSold += eventSold;
-                totalAccCapacity += eventTotalCapacity;
-
-                const eventRev = eventRevenue;
-                const netRev = eventRev * 0.95;
-
                 return {
                     id: eventData.id,
                     event: eventData.title,
                     ticketsSold: eventSold,
-                    totalRevenue: eventRev,
-                    netRevenue: netRev,
-                    conversionRate: eventTotalCapacity > 0 ? ((eventSold / eventTotalCapacity) * 100).toFixed(1) + '%' : 'N/A',
-                    status: eventData.status
+                    totalRevenue: eventRevenue,
+                    netRevenue: eventRevenue * 0.95,
+                    conversionRate: eventTotalCapacity > 0
+                        ? ((eventSold / eventTotalCapacity) * 100).toFixed(1) + '%'
+                        : 'N/A',
+                    status: eventData.status,
                 };
             });
 
-            setDetailedInsights(mappedInsights);
-
-
-
+            // Time-series: completed incoming transactions for the time window
             const since = new Date();
             since.setDate(since.getDate() - parseInt(timeRange, 10));
 
-            const { data: eventIds } = await supabase
-                .from('events')
-                .select('id')
-                .eq('account_id', activeAccount.id);
-
-            const ids = (eventIds || []).map((e: any) => e.id);
+            const ids = (eventsData || []).map((e: any) => e.id);
+            let timeSeries: { name: string; revenue: number; tickets: number }[] = [];
 
             if (ids.length > 0) {
                 const { data: txData, error: txErr } = await supabase
@@ -105,33 +90,25 @@ export default function AnalyticsPage() {
                     byDay[day] = (byDay[day] || 0) + tx.amount;
                 });
 
-                const series = Object.entries(byDay)
+                timeSeries = Object.entries(byDay)
                     .map(([name, revenue]) => ({ name, revenue, tickets: 0 }))
                     .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
-
-                setTimeSeriesData(series.length > 0 ? series : []);
             }
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to load performance metrics.', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [activeAccount, supabase, showToast, timeRange]);
 
-    useEffect(() => {
-        if (!isOrgLoading && activeAccount) {
-            fetchAnalytics();
-        } else if (!isOrgLoading && !activeAccount) {
+            return { insights, timeSeries };
+        },
+        {
+            enabled: !isOrgLoading && !!activeAccount,
+            onError: (err: Error) => showToast(err.message || 'Failed to load performance metrics.', 'error'),
+        } as any,
+    );
 
-            setIsLoading(false);
-            setDetailedInsights([]);
-        }
-    }, [isOrgLoading, activeAccount, fetchAnalytics]);
+    const insights = data?.insights ?? [];
+    const timeSeriesData = data?.timeSeries ?? [];
 
-    const filteredData = detailedInsights.filter(item => {
-        const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase();
-        return matchesStatus;
-    });
+    const filteredData = insights.filter(item =>
+        statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase()
+    );
 
     const handleExport = () => {
         if (filteredData.length === 0) {
@@ -145,14 +122,12 @@ export default function AnalyticsPage() {
                 tickets_sold: e.ticketsSold,
                 total_revenue: e.totalRevenue,
                 conversion_rate: e.conversionRate,
-                status: e.status
+                status: e.status,
             })),
             `analytics_report_${timeRange}days`
         );
         showToast('Report downloaded.', 'success');
     };
-
-    const [activeTab, setActiveTab] = useState('summary');
 
     return (
         <div className={adminStyles.container}>
@@ -165,61 +140,56 @@ export default function AnalyticsPage() {
             />
 
             <div className={adminStyles.statsGrid} style={{ marginBottom: '24px' }}>
-                <StatCard 
-                    label="Gross Revenue" 
-                    value={formatCurrency(detailedInsights.reduce((sum, e) => sum + e.totalRevenue, 0), activeAccount?.wallet_currency)} 
+                <StatCard
+                    label="Gross Revenue"
+                    value={formatCurrency(insights.reduce((sum, e) => sum + e.totalRevenue, 0), activeAccount?.wallet_currency)}
                     isLoading={isLoading}
                 />
-                <StatCard 
-                    label="Estimated Net" 
-                    value={formatCurrency(detailedInsights.reduce((sum, e) => sum + e.netRevenue, 0), activeAccount?.wallet_currency)} 
+                <StatCard
+                    label="Estimated Net"
+                    value={formatCurrency(insights.reduce((sum, e) => sum + e.netRevenue, 0), activeAccount?.wallet_currency)}
                     trend="positive"
                     isLoading={isLoading}
                 />
-                <StatCard 
-                    label="Tickets Sold" 
-                    value={detailedInsights.reduce((sum, e) => sum + e.ticketsSold, 0)} 
+                <StatCard
+                    label="Tickets Sold"
+                    value={insights.reduce((sum, e) => sum + e.ticketsSold, 0)}
                     isLoading={isLoading}
                 />
             </div>
 
             <div className="tour-analytics-range">
-                <TableToolbar
-                    searchPlaceholder="Filter events..."
-                searchValue=""
-                onSearchChange={() => { }}
-            >
-                <div className={adminStyles.filterGroup}>
-                    {['all', 'active', 'past', 'draft'].map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setStatusFilter(status)}
-                            className={`${adminStyles.chip} ${statusFilter === status ? adminStyles.chipActive : ''}`}
-                        >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </button>
-                    ))}
-                </div>
-
-                <select
-                    className={adminStyles.select}
-                    value={timeRange}
-                    onChange={(e) => setTimeRange(e.target.value)}
-                    style={{ width: 'auto' }}
-                >
-                    <option value="7">Last 7 Days</option>
-                    <option value="30">Last 30 Days</option>
-                    <option value="90">Last 90 Days</option>
-                    <option value="365">Last Year</option>
+                <TableToolbar searchPlaceholder="Filter events..." searchValue="" onSearchChange={() => {}}>
+                    <div className={adminStyles.filterGroup}>
+                        {['all', 'active', 'past', 'draft'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`${adminStyles.chip} ${statusFilter === status ? adminStyles.chipActive : ''}`}
+                            >
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                    <select
+                        className={adminStyles.select}
+                        value={timeRange}
+                        onChange={(e) => setTimeRange(e.target.value)}
+                        style={{ width: 'auto' }}
+                    >
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">Last Year</option>
                     </select>
                 </TableToolbar>
             </div>
 
             <div style={{ marginTop: '24px' }}>
-                <Tabs 
+                <Tabs
                     options={[
                         { id: 'summary', label: 'Summary' },
-                        { id: 'breakdown', label: 'Breakdown' }
+                        { id: 'breakdown', label: 'Breakdown' },
                     ]}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
@@ -241,7 +211,7 @@ export default function AnalyticsPage() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                     <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `KES ${value / 1000}k`} />
+                                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `KES ${v / 1000}k`} />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
                                         itemStyle={{ color: 'var(--color-brand-primary)' }}
@@ -283,26 +253,13 @@ export default function AnalyticsPage() {
                     <PerformanceTable data={filteredData} />
                 </div>
             )}
+
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgAnalyticsJoyride_${activeAccount.id}` : 'hasSeenOrgAnalyticsJoyride_guest'}
                 steps={[
-                    {
-                        target: 'body',
-                        placement: 'center',
-                        title: 'Event Analytics',
-                        content: 'Dive deep into your event performance and ticket sales.',
-                        skipBeacon: true,
-                    },
-                    {
-                        target: '.tour-analytics-range',
-                        title: 'Time Range & Filters',
-                        content: 'Adjust the date range or status to see specific historical performance trends.',
-                    },
-                    {
-                        target: '.tour-analytics-trend',
-                        title: 'Performance Trend',
-                        content: 'Visualize your revenue and sales growth over time in this chart.',
-                    }
+                    { target: 'body', placement: 'center', title: 'Event Analytics', content: 'Dive deep into your event performance and ticket sales.', skipBeacon: true },
+                    { target: '.tour-analytics-range', title: 'Time Range & Filters', content: 'Adjust the date range or status to see specific historical performance trends.' },
+                    { target: '.tour-analytics-trend', title: 'Performance Trend', content: 'Visualize your revenue and sales growth over time in this chart.' },
                 ]}
             />
         </div>
