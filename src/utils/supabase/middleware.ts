@@ -44,12 +44,16 @@ export async function updateSession(request: NextRequest) {
     // Non-admin users attempting to access /dashboard/admin are redirected.
     // Full role verification happens in RLS — this just prevents the shell from rendering.
     if (user && pathname.startsWith('/dashboard/admin')) {
-        const { data: membership } = await supabase
+        const { data: membership, error } = await supabase
             .from('account_members')
-            .select('id, accounts!inner(type)')
+            .select('id, accounts:account_id!inner(type)')
             .eq('user_id', user.id)
             .eq('accounts.type', 'platform')
             .maybeSingle()
+
+        if (error) {
+            console.error('[Middleware] Admin check error:', error)
+        }
 
         if (!membership) {
             const url = request.nextUrl.clone()
