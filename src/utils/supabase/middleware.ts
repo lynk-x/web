@@ -44,18 +44,15 @@ export async function updateSession(request: NextRequest) {
     // Non-admin users attempting to access /dashboard/admin are redirected.
     // Full role verification happens in RLS — this just prevents the shell from rendering.
     if (user && pathname.startsWith('/dashboard/admin')) {
-        const { data: membership, error } = await supabase
-            .from('account_members')
-            .select('id, accounts:account_id!inner(type)')
-            .eq('user_id', user.id)
-            .eq('accounts.type', 'platform')
-            .maybeSingle()
+        // Use the built-in RPC for a clean, server-side admin check.
+        // This avoids complex join syntax issues in the middleware.
+        const { data: isAdmin, error } = await supabase.rpc('is_system_admin')
 
         if (error) {
-            console.error('[Middleware] Admin check error:', error)
+            console.error('[Middleware] Admin RPC check error:', error)
         }
 
-        if (!membership) {
+        if (!isAdmin) {
             const url = request.nextUrl.clone()
             url.pathname = '/dashboard'
             return NextResponse.redirect(url)
