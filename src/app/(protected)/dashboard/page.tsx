@@ -46,21 +46,11 @@ function DashboardRoot() {
             return;
         }
 
-        // No business accounts at all → onboarding to create one
-        if (businessAccounts.length === 0) {
-            const dest = typeParam
-                ? `/onboarding?type=${typeParam}`
-                : '/onboarding';
-            router.replace(dest);
-            return;
-        }
+        // We no longer auto-redirect to onboarding here. This prevents loops
+        // and allows users to see the empty state of the dashboard picker.
+        // The user can manually click "Create New Account" if they have no memberships.
+    }, [isLoadingAuth, isLoadingProfile, isLoadingOrg, user, router]);
 
-        // Has business accounts but none match the requested type → go to onboarding for that type
-        if (typeParam && displayAccounts.length === 0) {
-            router.replace(`/onboarding?type=${typeParam}`);
-            return;
-        }
-    }, [businessAccounts, displayAccounts, typeParam, isLoadingAuth, isLoadingProfile, isLoadingOrg, user, router]);
 
     if (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting) {
         return (
