@@ -69,8 +69,10 @@ function UsersContent() {
                 status: u.status,
                 lastActive: formatRelativeTime(u.last_active_at),
                 isVerified: u.is_verified,
+                kycTier: u.kyc_tier || (u.is_verified ? 'Tier 2' : 'Tier 1'), // Mocking for UI preview
                 reportsCount: u.reports_count || 0,
                 userName: u.user_name,
+                countryCode: u.country_code || 'KE',
                 businessEmail: undefined,
                 taxId: undefined,
                 registrationNumber: undefined
@@ -201,7 +203,6 @@ function UsersContent() {
             <Tabs
                 options={[
                     { id: 'accounts', label: 'Accounts' },
-                    { id: 'profiles', label: 'Profiles' }
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -254,8 +255,8 @@ export default function AdminUsersPage() {
     return (
         <div className={sharedStyles.container}>
             <PageHeader
-                title="User Management"
-                subtitle="Monitor and manage platform users, roles, and account statuses."
+                title="Identity Management"
+                subtitle="Monitor and manage platform identities, kyc verification levels, and roles."
                 actionLabel="Add New User"
                 actionHref="/dashboard/admin/users/create"
                 actionIcon={

@@ -72,9 +72,21 @@ const UserTable: React.FC<UserTableProps> = ({
     const router = useRouter();
 
     /** Column definitions for the user table. */
-    const allColumns: Column<User>[] = [
+    const columns: Column<User>[] = [
         {
-            header: 'User', // Primary identity: Avatar + Name + Email
+            header: 'Reference',
+            render: (user) => <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.6 }}>#{user.id.slice(0, 8).toUpperCase()}</span>,
+        },
+        {
+            header: 'Country',
+            render: (user) => <span style={{ fontSize: '13px' }}>{user.countryCode || '—'}</span>,
+        },
+        {
+            header: 'Type',
+            render: (user) => <Badge label={user.role} variant={getRoleVariant(user.role)} />,
+        },
+        {
+            header: 'Users',
             render: (user) => (
                 <div className={styles.userInfo}>
                     <div className={styles.userAvatar}>{getInitials(user.name)}</div>
@@ -86,28 +98,12 @@ const UserTable: React.FC<UserTableProps> = ({
             ),
         },
         {
-            header: 'Username',
-            render: (user) => <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>@{user.userName || '—'}</span>,
-        },
-        {
-            header: 'Full Name',
-            render: (user) => user.name,
-        },
-        {
-            header: 'Role',
-            render: (user) => <Badge label={user.role} variant={getRoleVariant(user.role)} />,
-        },
-        {
-            header: 'Verification',
+            header: 'KYC Tier',
             render: (user) => (
-                user.isVerified ? (
-                    <div style={{ color: 'var(--color-brand-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        Verified
-                    </div>
-                ) : (
-                    <span style={{ opacity: 0.4, fontSize: '13px' }}>Unverified</span>
-                )
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>{user.kycTier || 'Tier 0'}</span>
+                    <span style={{ fontSize: '10px', opacity: 0.5 }}>{user.isVerified ? 'Verified' : 'Pending'}</span>
+                </div>
             ),
         },
         {
@@ -116,53 +112,7 @@ const UserTable: React.FC<UserTableProps> = ({
                 <Badge label={formatString(user.status)} variant={getStatusVariant(user.status)} showDot />
             ),
         },
-        {
-            header: 'Business Email',
-            render: (user) => <span style={{ fontSize: '13px' }}>{user.businessEmail || '—'}</span>,
-        },
-        {
-            header: 'Tax ID',
-            render: (user) => <span style={{ fontSize: '13px', fontFamily: 'monospace' }}>{user.taxId || '—'}</span>,
-        },
-        {
-            header: 'Reg No',
-            render: (user) => <span style={{ fontSize: '13px', fontFamily: 'monospace' }}>{user.registrationNumber || '—'}</span>,
-        },
-        {
-            header: 'Country',
-            render: (user) => <span style={{ fontSize: '13px' }}>{user.countryCode || '—'}</span>,
-        },
-        {
-            header: 'Gender',
-            render: (user) => <span style={{ fontSize: '13px', textTransform: 'capitalize' }}>{user.gender || '—'}</span>,
-        },
-        {
-            header: 'Reports',
-            render: (user) => (
-                <div style={{ fontSize: '13px' }}>
-                    {(user.reportsCount || 0) > 0 ? (
-                        <Badge label={`${user.reportsCount} Pending`} variant="error" showDot />
-                    ) : (
-                        <span style={{ opacity: 0.4 }}>0</span>
-                    )}
-                </div>
-            ),
-        },
-        {
-            header: 'Last Active',
-            render: (user) => user.lastActive,
-        },
     ];
-
-    const columns = allColumns.filter(col => {
-        if (view === 'accounts') {
-            // Accounts focus: Role, Status, Plan, Verification, Auth Details + Org data if applicable
-            return ['User', 'Role', 'Status', 'Verification', 'Business Email', 'Tax ID'].includes(col.header as string);
-        } else {
-            // Profiles focus: Personal details, Activity, Metadata
-            return ['Username', 'Full Name', 'Country', 'Gender', 'Reports', 'Last Active'].includes(col.header as string);
-        }
-    });
 
     /** Row-level actions for the user action menu. */
     const getActions = (user: User): ActionItem[] => [

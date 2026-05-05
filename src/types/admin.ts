@@ -179,6 +179,7 @@ export interface User {
     lastActive: string;
     /** Set when last_seen_at is populated (more accurate than updated_at-based derivation). */
     lastSeenAt?: string;
+    kycTier?: string;
     isVerified?: boolean;
     reportsCount?: number;
     userName?: string;

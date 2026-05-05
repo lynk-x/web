@@ -201,7 +201,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Operations',
             items: [
                 {
-                    name: 'Users', href: '/dashboard/admin/users', icon: (
+                    name: 'Identity', href: '/dashboard/admin/users', icon: (
                         <svg {...svgProps}>
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -231,15 +231,6 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     name: 'Campaigns', href: '/dashboard/admin/campaigns', icon: (
                         <svg {...svgProps}>
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    )
-                },
-                {
-                    name: 'Identity', href: '/dashboard/admin/users/verifications', icon: (
-                        <svg {...svgProps}>
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M12 8v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
