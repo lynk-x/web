@@ -52,37 +52,12 @@ function UsersContent() {
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         try {
-            let query = supabase
-                .schema('analytics')
-                .from('mv_user_performance')
-                .select(`
-                    id, 
-                    full_name, 
-                    user_name, 
-                    email, 
-                    role, 
-                    status, 
-                    last_active_at, 
-                    is_verified, 
-                    reports_count
-                `, { count: 'exact' });
-
-            // Server-side Filtering
-            if (debouncedSearch.trim()) {
-                query = query.or(`full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%,user_name.ilike.%${debouncedSearch}%`);
-            }
-
-            if (roleFilter !== 'all') {
-                query = query.eq('role', roleFilter);
-            }
-
-            // Pagination
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            const { data, error, count } = await query
-                .order('last_active_at', { ascending: false })
-                .range(from, to);
+            const { data, error } = await supabase.rpc('get_admin_user_performance', {
+                p_search: debouncedSearch.trim(),
+                p_role: roleFilter,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
+            });
 
             if (error) throw error;
 
@@ -96,14 +71,13 @@ function UsersContent() {
                 isVerified: u.is_verified,
                 reportsCount: u.reports_count || 0,
                 userName: u.user_name,
-                // business_email, tax_id, registration_number do not exist on the accounts table
                 businessEmail: undefined,
                 taxId: undefined,
                 registrationNumber: undefined
             }));
 
             setUsers(mappedUsers);
-            setTotalCount(count || 0);
+            setTotalCount(data?.[0]?.total_count || 0);
         } catch (err: unknown) {
             showToast('Failed to load user database.', 'error');
         } finally {

@@ -96,20 +96,20 @@ function PlatformTab() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [ledgerRes, tagsRes] = await Promise.all([
-                supabase.schema('analytics').from('mv_platform_financial_ledger').select('*').order('id', { ascending: false }).limit(30),
-                supabase.schema('analytics').from('mv_tag_leaderboard').select('*').order('use_count', { ascending: false }).limit(15),
-            ]);
-            if (ledgerRes.error) throw ledgerRes.error;
-            if (tagsRes.error) throw tagsRes.error;
-            setLedger((ledgerRes.data || []).map((r: any) => ({
+            const { data, error } = await supabase.rpc('get_admin_analytics', { p_category: 'platform' });
+            if (error) throw error;
+
+            const ledgerData = data.ledger || [];
+            const tagsData = data.tags || [];
+
+            setLedger(ledgerData.map((r: any) => ({
                 id: r.id,
                 total_volume: parseFloat(r.total_volume || '0'),
                 platform_fee_collected: parseFloat(r.platform_fee_collected || '0'),
                 tax_collected: parseFloat(r.tax_collected || '0'),
                 payouts_processed: parseFloat(r.payouts_processed || '0'),
             })));
-            setTags((tagsRes.data || []).map((r: any) => ({
+            setTags(tagsData.map((r: any) => ({
                 id: r.id,
                 name: r.name,
                 use_count: r.use_count,
@@ -180,11 +180,7 @@ function DemographicsTab() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .schema('analytics')
-                .from('mv_platform_demographics')
-                .select('*')
-                .order('user_count', { ascending: false });
+            const { data, error } = await supabase.rpc('get_admin_analytics', { p_category: 'demographics' });
             if (error) throw error;
             setRows(data || []);
         } catch (err: unknown) {
@@ -261,12 +257,7 @@ function AdvertisingTab() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .schema('analytics')
-                .from('mv_ad_campaign_performance')
-                .select('*')
-                .order('total_spend', { ascending: false })
-                .limit(50);
+            const { data, error } = await supabase.rpc('get_admin_analytics', { p_category: 'advertising' });
             if (error) throw error;
             setCampaigns((data || []).map((r: any) => ({
                 id: r.id,
