@@ -47,29 +47,16 @@ export default function AdminEventsPage() {
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            let query = supabase.schema('analytics')
-                .from('mv_event_performance')
-                .select('*', { count: 'exact' });
-
-            // Server-Side Filtering
-            if (debouncedSearch) {
-                query = query.ilike('event_title', `%${debouncedSearch}%`);
-            }
-            if (statusFilter !== 'all') {
-                query = query.eq('status', statusFilter);
-            }
-
-            // Server-Side Pagination
-            const { data, error, count } = await query
-                .order('starts_at', { ascending: false })
-                .range(from, to);
+            const { data, error } = await supabase.rpc('get_admin_events', {
+                p_search: debouncedSearch,
+                p_status: statusFilter,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
+            });
 
             if (error) throw error;
 
-            setTotalCount(count || 0);
+            setTotalCount(data?.[0]?.total_count || 0);
             setEvents((data || []).map((e: any) => ({
                 id: e.id,
                 title: e.event_title,

@@ -78,22 +78,21 @@ export default function AdminMap() {
         async function fetchLocations() {
             try {
                 setIsLoading(true);
-                const { data, error: queryError } = await supabase
-                    .schema('analytics')
-                    .from('mv_event_performance')
-                    .select('id, event_title, coordinates, revenue, reports_count')
-                    .eq('status', 'published');
+                const { data, error: queryError } = await supabase.rpc('get_admin_events', {
+                    p_status: 'published',
+                    p_limit: 1000 // Get all for map
+                });
 
                 if (queryError) {
-                    console.error('AdminMap: Error fetching event performance data:', queryError);
+                    console.error('AdminMap: Error fetching event data:', queryError);
                     setError(queryError.message);
                     return;
                 }
 
                 if (data) {
-                    const mapped: EventLocation[] = data
-                        .filter(item => item.coordinates)
-                        .map(item => {
+                    const mapped: EventLocation[] = (data as any[])
+                        .filter((item: any) => item.coordinates)
+                        .map((item: any) => {
                             try {
                                 // Supabase returns GeoJSON for PostGIS types
                                 const coords = item.coordinates as any;
@@ -114,7 +113,7 @@ export default function AdminMap() {
                                 return null;
                             }
                         })
-                        .filter((item): item is EventLocation => item !== null);
+                        .filter((item: any): item is EventLocation => item !== null);
                     
                     setLocations(mapped);
                 }
