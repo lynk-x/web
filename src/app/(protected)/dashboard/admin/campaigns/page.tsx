@@ -58,17 +58,12 @@ function CampaignsContent() {
     }, [supabase]);
 
     const fetchCampaignPerf = useCallback(async () => {
-        const { data } = await supabase
-            .schema('analytics')
-            .from('mv_ad_campaign_performance')
-            .select('click_through_rate_pct, cost_per_click');
+        const { data, error } = await supabase.rpc('get_admin_ad_performance');
 
-        if (data && data.length > 0) {
-            const avgCtr = data.reduce((sum: number, r: any) => sum + (parseFloat(r.click_through_rate_pct) || 0), 0) / data.length;
-            const avgCpc = data.reduce((sum: number, r: any) => sum + (parseFloat(r.cost_per_click) || 0), 0) / data.length;
+        if (!error && data) {
             setCampaignPerf({
-                avgCtr: `${avgCtr.toFixed(1)}%`,
-                avgCpc: `$${avgCpc.toFixed(2)}`
+                avgCtr: `${data.avg_ctr}%`,
+                avgCpc: `$${data.avg_cpc}`
             });
         }
     }, [supabase]);
@@ -93,40 +88,23 @@ function CampaignsContent() {
         
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            let query = supabase
-                .from('ad_campaigns')
-                .select(`
-                    *,
-                    accounts!account_id(display_name)
-                `, { count: 'exact' });
-
-            // Server-Side Filtering
-            if (debouncedSearch) {
-                query = query.ilike('title', `%${debouncedSearch}%`);
-            }
-            if (statusFilter !== 'all') {
-                query = query.eq('status', statusFilter);
-            }
-            if (adTypeFilter !== 'all') {
-                query = query.eq('type', adTypeFilter);
-            }
-
-            // Server-Side Pagination
-            const { data, error, count } = await query
-                .order('created_at', { ascending: false })
-                .range(from, to);
+            const { data, error } = await supabase.rpc('get_admin_campaigns', {
+                p_search: debouncedSearch,
+                p_status: statusFilter,
+                p_type: adTypeFilter,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
+            });
 
             if (error) throw error;
+            const total = data?.[0]?.total_count || 0;
+            setTotalCount(total);
 
-            setTotalCount(count || 0);
             setCampaigns((data || []).map((c: any) => ({
                 id: c.id,
                 campaignRef: c.reference || `CAM-${c.id.slice(0, 8).toUpperCase()}`,
                 name: c.title,
-                client: c.accounts?.display_name || 'Unknown Client',
+                client: c.account_name,
                 adType: c.type,
                 budget: parseFloat(c.total_budget),
                 spend: parseFloat(c.spent_amount) || 0,
@@ -174,36 +152,13 @@ function CampaignsContent() {
         try {
             const updatedAt = new Date().toISOString();
 
-            // 1. Update the campaign table status
-            const { error: campaignError } = await supabase
-                .from('ad_campaigns')
-                .update({ status: newStatus as any, updated_at: updatedAt })
-                .eq('id', campaign.id);
+            const { error } = await supabase.rpc('moderate_item', {
+                p_moderation_id: campaign.id,
+                p_status: newStatus === 'active' ? 'approved' : 'rejected',
+                p_reason: reason || 'Status updated via Admin Campaigns dashboard.'
+            });
 
-            if (campaignError) throw campaignError;
-
-            // 2. Synchronise with moderation_reviews
-            if (newStatus === 'rejected' || newStatus === 'active') {
-                const snapshot = {
-                    title: campaign.name,
-                    client: campaign.client,
-                    adType: campaign.adType,
-                    endDate: campaign.endDate
-                };
-
-                const { error: modError } = await supabase
-                    .from('moderation_reviews')
-                    .upsert({
-                        item_id: campaign.id,
-                        item_type: 'campaign',
-                        status: newStatus === 'active' ? 'approved' : 'rejected',
-                        reason: reason || 'Status updated via Admin Campaigns dashboard.',
-                        metadata: snapshot,
-                        updated_at: updatedAt
-                    }, { onConflict: 'item_id, item_type' });
-
-                if (modError) throw modError;
-            }
+            if (error) throw error;
 
             showToast(`${campaign.name} successfully updated.`, 'success');
             fetchCampaigns();
@@ -237,9 +192,9 @@ function CampaignsContent() {
         showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
 
         try {
-            const { error } = await supabase.rpc('bulk_moderate_campaigns', {
-                p_campaign_ids: Array.from(selectedCampaignIds),
-                p_status: newStatus,
+            const { error } = await supabase.rpc('bulk_moderate_items', {
+                p_moderation_ids: Array.from(selectedCampaignIds),
+                p_status: newStatus === 'active' ? 'approved' : 'rejected',
                 p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
             });
 

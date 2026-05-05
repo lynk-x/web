@@ -108,21 +108,15 @@ function FinanceContent() {
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const [statsRes, adsRes] = await Promise.all([
-                supabase.rpc('admin_stat_summary'),
-                supabase.from('ad_campaigns').select('spent_amount').is('deleted_at', null)
-            ]);
-
-            if (statsRes.error) throw statsRes.error;
-            const data = statsRes.data;
-            const adSpend = (adsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
+            const { data, error } = await supabase.rpc('get_admin_financial_summary');
+            if (error) throw error;
     
             setGlobalStats({
-                platformRevenue: data.commission_volume + adSpend,
+                platformRevenue: data.platform_revenue,
                 pendingPayouts: data.pending_payouts,
-                ticketCommission: data.commission_volume,
+                ticketCommission: data.ticket_commission,
                 payoutRequestCount: data.payout_count,
-                adRevenue: adSpend
+                adRevenue: data.ad_revenue
             });
         } catch (error: unknown) {
             showToast('Failed to load financial aggregates.', 'error');
@@ -138,99 +132,59 @@ function FinanceContent() {
             const to = from + itemsPerPage - 1;
 
             if (['transactions', 'refunds', 'revenue', 'escrow'].includes(activeTab)) {
-                let query = supabase
-                    .schema('transactions')
-                    .from('transactions')
-                    .select(`
-                    *,
-                    event:events(title),
-                    initiator:user_profile!initiated_by(full_name, user_name),
-                    recipient_account:accounts!recipient_account_id(display_name)
-                `, { count: 'exact' });
+                let categoryFilter = 'all';
+                if (activeTab === 'escrow') categoryFilter = 'hold';
 
-                if (activeTab === 'refunds') {
-                    query = query.in('reason', ['ticket_refund', 'ad_refund']);
-                } else if (activeTab === 'revenue') {
-                    query = query.in('reason', ['ticket_sale', 'ad_campaign_payment', 'subscription_payment']);
-                } else if (activeTab === 'escrow') {
-                    query = query.eq('category', 'hold');
-                }
-
-                if (startDate) {
-                    query = query.gte('created_at', new Date(startDate).toISOString());
-                }
-                if (endDate) {
-                    const d = new Date(endDate);
-                    d.setHours(23, 59, 59, 999);
-                    query = query.lte('created_at', d.toISOString());
-                }
-
-                if (debouncedSearch) {
-                    query = query.ilike('reference', `%${debouncedSearch}%`);
-                }
-
-                const { data, error, count } = await query
-                    .order('created_at', { ascending: false })
-                    .range(from, to);
+                const { data, error } = await supabase.rpc('get_admin_transactions', {
+                    p_search: debouncedSearch,
+                    p_category: categoryFilter,
+                    p_start_date: startDate ? new Date(startDate).toISOString() : null,
+                    p_end_date: endDate ? new Date(endDate).toISOString() : null,
+                    p_offset: (currentPage - 1) * itemsPerPage,
+                    p_limit: itemsPerPage
+                });
 
                 if (error) throw error;
-                setTotalCount(count || 0);
+                const total = data?.[0]?.total_count || 0;
+                setTotalCount(total);
 
-                setTransactions((data || []).map(tx => ({
+                setTransactions((data || []).map((tx: any) => ({
                     id: tx.id,
-                    description: `${tx.reason.replace(/_/g, ' ')} for ${tx.event?.title || 'System'}`,
+                    description: `${tx.reason.replace(/_/g, ' ')} for ${tx.event_title || 'System'}`,
                     amount: tx.amount,
-                    date: tx.created_at || new Date().toISOString(),
+                    date: tx.created_at,
                     status: tx.status,
                     type: tx.reason,
                     category: tx.category,
                     reference: tx.reference,
-                    event: tx.event?.title,
-                    sender: tx.initiator?.full_name || tx.initiator?.user_name,
-                    recipient: tx.recipient_account?.display_name
+                    event: tx.event_title,
+                    sender: tx.sender_name,
+                    recipient: tx.recipient_name
                 })));
             } else if (activeTab === 'payouts') {
-                let query = supabase
-                    .schema('payouts')
-                    .from('payouts')
-                    .select(`
-                    *,
-                    account:accounts(display_name),
-                    verifications:identity_verifications!account_id(status)
-                `, { count: 'exact' });
-
-                if (startDate) {
-                    query = query.gte('created_at', new Date(startDate).toISOString());
-                }
-                if (endDate) {
-                    const d = new Date(endDate);
-                    d.setHours(23, 59, 59, 999);
-                    query = query.lte('created_at', d.toISOString());
-                }
-
-                if (debouncedSearch) {
-                    query = query.ilike('reference', `%${debouncedSearch}%`);
-                }
-
-                const { data, error, count } = await query
-                    .order('created_at', { ascending: false })
-                    .range(from, to);
+                const { data, error } = await supabase.rpc('get_admin_payouts', {
+                    p_search: debouncedSearch,
+                    p_start_date: startDate ? new Date(startDate).toISOString() : null,
+                    p_end_date: endDate ? new Date(endDate).toISOString() : null,
+                    p_offset: (currentPage - 1) * itemsPerPage,
+                    p_limit: itemsPerPage
+                });
 
                 if (error) throw error;
-                setTotalCount(count || 0);
+                const total = data?.[0]?.total_count || 0;
+                setTotalCount(total);
 
-                setPayouts((data || []).map(p => ({
+                setPayouts((data || []).map((p: any) => ({
                     id: p.id,
-                    recipient: p.account?.display_name || 'Unknown Account',
+                    recipient: p.recipient_name,
                     amount: p.amount,
                     status: p.status,
-                    requestedAt: p.created_at || p.processed_at || new Date().toISOString(),
+                    requestedAt: p.created_at,
                     reference: p.reference,
-                    bankName: p.channel_metadata?.target?.bank_name || 'M-Pesa',
+                    bankName: p.bank_name,
                     type: p.method,
-                    notes: (p as any).admin_notes,
-                    kyc_status: (p.verifications as any)?.[0]?.status || 'pending',
-                    is_verified: (p.verifications as any)?.[0]?.status === 'approved'
+                    kyc_status: p.kyc_status,
+                    is_verified: p.is_verified
                 })));
             } else if (activeTab === 'tax-rates') {
                 // ... Tax rates, fx rates, etc. usually stay small and don't require server-side scaling

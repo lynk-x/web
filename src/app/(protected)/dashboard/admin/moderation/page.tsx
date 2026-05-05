@@ -111,20 +111,13 @@ export default function AdminModerationPage() {
     const handleApprove = async (entry: ModerationEntry) => {
         showToast(`Approving ${entry.item_type}...`, 'info');
         try {
-            const { error: modError } = await supabase
-                .from('moderation')
-                .update({ status: 'approved', updated_at: new Date().toISOString() })
-                .eq('id', entry.id);
+            const { error } = await supabase.rpc('moderate_item', {
+                p_moderation_id: entry.id,
+                p_status: 'approved',
+                p_reason: 'Approved via Admin Moderation Dashboard.'
+            });
 
-            if (modError) throw modError;
-
-            const table = entry.item_type === 'event' ? 'events' : 'ad_campaigns';
-            const { error: itemError } = await supabase
-                .from(table)
-                .update({ status: 'active', updated_at: new Date().toISOString() })
-                .eq('id', entry.item_id);
-
-            if (itemError) throw itemError;
+            if (error) throw error;
 
             showToast(`${entry.item_type} approved and set to active.`, 'success');
             fetchQueue();
@@ -144,24 +137,13 @@ export default function AdminModerationPage() {
 
         showToast(`Rejecting ${selectedEntry.item_type}...`, 'info');
         try {
-            const { error: modError } = await supabase
-                .from('moderation')
-                .update({
-                    status: 'rejected',
-                    review: { reason },
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', selectedEntry.id);
+            const { error } = await supabase.rpc('moderate_item', {
+                p_moderation_id: selectedEntry.id,
+                p_status: 'rejected',
+                p_reason: reason
+            });
 
-            if (modError) throw modError;
-
-            const table = selectedEntry.item_type === 'event' ? 'events' : 'ad_campaigns';
-            const { error: itemError } = await supabase
-                .from(table)
-                .update({ status: 'rejected', updated_at: new Date().toISOString() })
-                .eq('id', selectedEntry.item_id);
-
-            if (itemError) throw itemError;
+            if (error) throw error;
 
             showToast(`${selectedEntry.item_type} rejected with feedback.`, 'success');
             setIsRejectionModalOpen(false);
@@ -194,24 +176,13 @@ export default function AdminModerationPage() {
         showToast(`Approving ${selectedIds.size} items...`, 'info');
         try {
             const ids = Array.from(selectedIds);
-            const { error } = await supabase
-                .from('moderation')
-                .update({ status: 'approved', updated_at: new Date().toISOString() })
-                .in('id', ids);
+            const { error } = await supabase.rpc('bulk_moderate_items', {
+                p_moderation_ids: ids,
+                p_status: 'approved',
+                p_reason: 'Bulk approved via Admin Moderation Dashboard.'
+            });
 
             if (error) throw error;
-
-            // Activate the underlying items
-            const selected = entries.filter(e => selectedIds.has(e.id));
-            const eventIds = selected.filter(e => e.item_type === 'event').map(e => e.item_id);
-            const campaignIds = selected.filter(e => e.item_type === 'campaign').map(e => e.item_id);
-
-            if (eventIds.length > 0) {
-                await supabase.from('events').update({ status: 'active', updated_at: new Date().toISOString() }).in('id', eventIds);
-            }
-            if (campaignIds.length > 0) {
-                await supabase.from('ad_campaigns').update({ status: 'active', updated_at: new Date().toISOString() }).in('id', campaignIds);
-            }
 
             showToast(`${ids.length} items approved.`, 'success');
             setSelectedIds(new Set());
@@ -233,23 +204,13 @@ export default function AdminModerationPage() {
         const ids = Array.from(selectedIds);
         showToast(`Rejecting ${ids.length} items...`, 'info');
         try {
-            const { error } = await supabase
-                .from('moderation')
-                .update({ status: 'rejected', review: { reason }, updated_at: new Date().toISOString() })
-                .in('id', ids);
+            const { error } = await supabase.rpc('bulk_moderate_items', {
+                p_moderation_ids: ids,
+                p_status: 'rejected',
+                p_reason: reason
+            });
 
             if (error) throw error;
-
-            const selected = entries.filter(e => selectedIds.has(e.id));
-            const eventIds = selected.filter(e => e.item_type === 'event').map(e => e.item_id);
-            const campaignIds = selected.filter(e => e.item_type === 'campaign').map(e => e.item_id);
-
-            if (eventIds.length > 0) {
-                await supabase.from('events').update({ status: 'rejected', updated_at: new Date().toISOString() }).in('id', eventIds);
-            }
-            if (campaignIds.length > 0) {
-                await supabase.from('ad_campaigns').update({ status: 'rejected', updated_at: new Date().toISOString() }).in('id', campaignIds);
-            }
 
             showToast(`${ids.length} items rejected.`, 'success');
             setSelectedIds(new Set());

@@ -75,17 +75,15 @@ function CommunicationsContent() {
             const cmsFrom = (currentPage - 1) * itemsPerPage;
             const legalFrom = (legalDocPage - 1) * legalDocsPerPage;
 
-            let cmsQuery = supabase
-                .from('cms_pages')
-                .select('*', { count: 'exact' })
-                .order('updated_at', { ascending: false })
-                .range(cmsFrom, cmsFrom + itemsPerPage - 1);
-            if (searchTerm) cmsQuery = cmsQuery.ilike('title', `%${searchTerm}%`);
-            if (typeFilter !== 'all') cmsQuery = cmsQuery.eq('type', typeFilter);
-            if (statusFilter !== 'all') cmsQuery = cmsQuery.eq('status', statusFilter);
+            const { data: cmsData, error: cmsError } = await supabase.rpc('get_admin_cms_list', {
+                p_search: searchTerm,
+                p_type: typeFilter,
+                p_status: statusFilter,
+                p_offset: cmsFrom,
+                p_limit: itemsPerPage
+            });
 
-            const [cmsRes, legalRes, broadcastRes, bannerRes, spotlightRes] = await Promise.all([
-                cmsQuery,
+            const [legalRes, broadcastRes, bannerRes, spotlightRes] = await Promise.all([
                 supabase
                     .from('legal_documents')
                     .select('*', { count: 'exact' })
@@ -96,8 +94,8 @@ function CommunicationsContent() {
                 supabase.from('spotlights').select('*').order('target', { ascending: true }).order('display_order', { ascending: true })
             ]);
 
-            if (cmsRes.data) {
-                setContents(cmsRes.data.map(item => ({
+            if (cmsData) {
+                setContents(cmsData.map((item: any) => ({
                     id: item.id,
                     title: item.title,
                     slug: item.slug,
@@ -105,9 +103,9 @@ function CommunicationsContent() {
                     author: 'System',
                     lastUpdated: new Date(item.updated_at).toLocaleDateString(),
                     status: item.status,
-                    content: item.content
+                    content: '' // Don't fetch full content in list
                 })));
-                setContentTotal(cmsRes.count ?? 0);
+                setContentTotal(cmsData?.[0]?.total_count || 0);
             }
             if (legalRes.data) {
                 setLegalDocs(legalRes.data);
@@ -150,18 +148,10 @@ function CommunicationsContent() {
 
     const handleToggleLegalActive = async (doc: LegalDocument) => {
         try {
-            // If activating, deactivate others of the same type
-            if (!doc.is_active) {
-                await supabase
-                    .from('legal_documents')
-                    .update({ is_active: false })
-                    .eq('type', doc.type);
-            }
-
-            const { error } = await supabase
-                .from('legal_documents')
-                .update({ is_active: !doc.is_active })
-                .eq('id', doc.id);
+            const { error } = await supabase.rpc('manage_legal_document', {
+                p_doc_id: doc.id,
+                p_is_active: !doc.is_active
+            });
 
             if (error) throw error;
             showToast(`${doc.title} ${!doc.is_active ? 'activated' : 'deactivated'}`, 'success');
@@ -274,10 +264,10 @@ function CommunicationsContent() {
 
     const handleToggleBanner = async (banner: SystemBanner) => {
         try {
-            const { error } = await supabase
-                .from('system_banners')
-                .update({ is_active: !banner.is_active })
-                .eq('id', banner.id);
+            const { error } = await supabase.rpc('manage_system_banner', {
+                p_banner_id: banner.id,
+                p_is_active: !banner.is_active
+            });
             if (error) throw error;
             showToast(`Banner ${!banner.is_active ? 'activated' : 'deactivated'}`, 'success');
             fetchData();
