@@ -7,6 +7,7 @@ import adminStyles from './page.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import SystemHealth from '@/components/admin/system/SystemHealth';
+import WorldClock from '@/components/admin/overview/WorldClock';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
@@ -49,6 +50,8 @@ export default function AdminDashboard() {
                 title="Admin Overview"
                 subtitle="Welcome back, Administrator. Here's what's happening today."
             />
+
+            <WorldClock />
 
             <section style={{ marginBottom: 'var(--spacing-xl)' }}>
                 <SystemHealth summary={summary} />

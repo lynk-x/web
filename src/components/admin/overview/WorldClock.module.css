@@ -1,0 +1,98 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card {
+    background-color: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-brand-primary), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-brand-primary);
+}
+
+.card:hover::before {
+    opacity: 0.5;
+}
+
+.cityName {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+}
+
+.time {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -1px;
+}
+
+.date {
+    font-size: 12px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.4;
+}
+
+.utcBadge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 10px;
+    background: rgba(32, 249, 40, 0.1);
+    color: var(--color-brand-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.isDay {
+    color: #ffb74d;
+    font-size: 14px;
+}
+
+.isNight {
+    color: #64b5f6;
+    font-size: 14px;
+}
