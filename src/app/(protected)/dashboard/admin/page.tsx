@@ -14,13 +14,16 @@ const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), {
 
 interface AdminSummary {
     total_users: number;
+    active_users_24h: number;
     active_events: number;
     active_campaigns: number;
     pending_moderation: number;
-    pending_kyc: number;
+    kyc_pending_review: number;
     pending_payouts: number;
-    total_transactions_today: number;
-    total_revenue_today: number;
+    total_transactions: number;
+    commission_volume: number;
+    gross_volume: number;
+    escrow_balance_total: number;
 }
 
 export default function AdminDashboard() {
@@ -30,6 +33,7 @@ export default function AdminDashboard() {
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
         if (error) {
+            console.error('Error fetching admin summary:', error);
             return;
         }
         if (data) setSummary(data);
@@ -46,68 +50,8 @@ export default function AdminDashboard() {
                 subtitle="Welcome back, Administrator. Here's what's happening today."
             />
 
-            {/* Quick Stats */}
-            <div className={sharedStyles.statsGrid}>
-                <Link href="/dashboard/admin/moderation" style={{ textDecoration: 'none' }}>
-                    <StatCard
-                        label="Pending Moderation"
-                        value={summary?.pending_moderation ?? 0}
-                        change="Items awaiting review"
-                        trend={(summary?.pending_moderation ?? 0) > 0 ? "negative" : "positive"}
-                        isLoading={!summary}
-                    />
-                </Link>
-                <Link href="/dashboard/admin/users/verifications" style={{ textDecoration: 'none' }}>
-                    <StatCard
-                        label="Pending KYC"
-                        value={summary?.pending_kyc ?? 0}
-                        change="Verifications to review"
-                        trend={(summary?.pending_kyc ?? 0) > 0 ? "negative" : "positive"}
-                        isLoading={!summary}
-                    />
-                </Link>
-                <Link href="/dashboard/admin/finance" style={{ textDecoration: 'none' }}>
-                    <StatCard
-                        label="Pending Payouts"
-                        value={summary?.pending_payouts ?? 0}
-                        change="Awaiting approval"
-                        trend="neutral"
-                        isLoading={!summary}
-                    />
-                </Link>
-                <Link href="/dashboard/admin/users" style={{ textDecoration: 'none' }}>
-                    <StatCard
-                        label="Total Users"
-                        value={summary?.total_users ?? 0}
-                        change="Platform accounts"
-                        trend="positive"
-                        isLoading={!summary}
-                    />
-                </Link>
-                <Link href="/dashboard/admin/events" style={{ textDecoration: 'none' }}>
-                    <StatCard
-                        label="Active Events"
-                        value={summary?.active_events ?? 0}
-                        change="Currently live"
-                        trend="positive"
-                        isLoading={!summary}
-                    />
-                </Link>
-                <Link href="/dashboard/admin/campaigns" style={{ textDecoration: 'none' }}>
-                    <StatCard
-                        label="Active Campaigns"
-                        value={summary?.active_campaigns ?? 0}
-                        change="Running ads"
-                        trend="positive"
-                        isLoading={!summary}
-                    />
-                </Link>
-            </div>
-
-            {/* System Health */}
-            <section>
-                <h2 className={sharedStyles.sectionTitle}>System Health</h2>
-                <SystemHealth />
+            <section style={{ marginBottom: 'var(--spacing-xl)' }}>
+                <SystemHealth summary={summary} />
             </section>
 
             {/* Map Section */}

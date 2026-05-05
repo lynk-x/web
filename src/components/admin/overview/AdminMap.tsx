@@ -63,51 +63,113 @@ interface EventLocation {
     isReported: boolean;
 }
 
+const supabase = createClient();
+
 export default function AdminMap() {
-    const supabase = createClient();
     const [isMounted, setIsMounted] = useState(false);
     const [zoom, setZoom] = useState(6);
     const [locations, setLocations] = useState<EventLocation[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
 
         async function fetchLocations() {
-            const { data } = await supabase
-                .schema('analytics')
-                .from('mv_event_performance')
-                .select('id, event_title, coordinates, revenue, reports_count')
-                .eq('status', 'published');
+            try {
+                setIsLoading(true);
+                const { data, error: queryError } = await supabase
+                    .schema('analytics')
+                    .from('mv_event_performance')
+                    .select('id, event_title, coordinates, revenue, reports_count')
+                    .eq('status', 'published');
 
-            if (data) {
-                const mapped: EventLocation[] = data
-                    .filter(item => item.coordinates)
-                    .map(item => {
-                        // Supabase returns GeoJSON for PostGIS types
-                        const coords = item.coordinates as any;
-                        return {
-                            id: item.id,
-                            name: item.event_title,
-                            // GeoJSON is [lng, lat]
-                            lat: coords.coordinates[1],
-                            lng: coords.coordinates[0],
-                            revenue: Number(item.revenue) || 0,
-                            isReported: (Number(item.reports_count) || 0) > 0
-                        };
-                    });
-                setLocations(mapped);
+                if (queryError) {
+                    console.error('AdminMap: Error fetching event performance data:', queryError);
+                    setError(queryError.message);
+                    return;
+                }
+
+                if (data) {
+                    const mapped: EventLocation[] = data
+                        .filter(item => item.coordinates)
+                        .map(item => {
+                            try {
+                                // Supabase returns GeoJSON for PostGIS types
+                                const coords = item.coordinates as any;
+                                if (!coords || !coords.coordinates || coords.coordinates.length < 2) {
+                                    return null;
+                                }
+                                return {
+                                    id: item.id,
+                                    name: item.event_title,
+                                    // GeoJSON is [lng, lat]
+                                    lat: coords.coordinates[1],
+                                    lng: coords.coordinates[0],
+                                    revenue: Number(item.revenue) || 0,
+                                    isReported: (Number(item.reports_count) || 0) > 0
+                                };
+                            } catch (err) {
+                                console.error('AdminMap: Failed to parse coordinates for item', item.id, err);
+                                return null;
+                            }
+                        })
+                        .filter((item): item is EventLocation => item !== null);
+                    
+                    setLocations(mapped);
+                }
+            } catch (err) {
+                console.error('AdminMap: Unexpected error in fetchLocations:', err);
+                setError('An unexpected error occurred while loading map data.');
+            } finally {
+                setIsLoading(false);
             }
         }
 
         fetchLocations();
     }, []);
 
-    if (!isMounted) {
-        return <div style={{ height: '100%', width: '100%', backgroundColor: '#1a1a1a' }}></div>;
-    }
+    if (!isMounted) return <div style={{ height: '100%', width: '100%', backgroundColor: '#1a1a1a' }}></div>;
 
     return (
-        <div style={{ height: '100%', width: '100%', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: '100%', overflow: 'hidden', position: 'relative' }}>
+            {isLoading && (
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 1000,
+                    background: 'rgba(0,0,0,0.7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--color-brand-primary)',
+                    backdropFilter: 'blur(4px)',
+                    fontSize: '14px',
+                    fontWeight: 500
+                }}>
+                    <span style={{ marginRight: '10px' }}>⚡</span> Syncing live activity...
+                </div>
+            )}
+            {error && (
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 1001,
+                    background: 'rgba(255, 59, 48, 0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--color-interface-error)',
+                    padding: '20px',
+                    textAlign: 'center',
+                    backdropFilter: 'blur(8px)'
+                }}>
+                    <span style={{ fontSize: '24px', marginBottom: '10px' }}>⚠️</span>
+                    <div style={{ fontWeight: 600 }}>Sync Failed</div>
+                    <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>{error}</div>
+                </div>
+            )}
             <MapContainer
                 center={[-1.2921, 36.8219]}
                 zoom={5}
@@ -121,7 +183,7 @@ export default function AdminMap() {
                 <ZoomTracker onZoomChange={setZoom} />
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
                     noWrap={true}
                     bounds={[[-90, -180], [90, 180]]}
                 />

@@ -2,7 +2,14 @@
 
 import styles from './SystemHealth.module.css';
 
-const SystemHealth = () => {
+interface SystemHealthProps {
+    summary: {
+        active_users_24h: number;
+        [key: string]: any;
+    } | null;
+}
+
+const SystemHealth = ({ summary }: SystemHealthProps) => {
     return (
         <div className={styles.grid}>
             <div className={styles.card}>
@@ -93,8 +100,8 @@ const SystemHealth = () => {
                     </div>
                 </div>
                 <div className={styles.metric}>
-                    <span className={styles.value}>842</span>
-                    <span className={styles.label}>Currently Online</span>
+                    <span className={styles.value}>{summary?.active_users_24h ?? '...'}</span>
+                    <span className={styles.label}>Active (24h)</span>
                 </div>
                 <div className={styles.chartPlaceholder}>
                     {/* Mock Chart Visualization */}
