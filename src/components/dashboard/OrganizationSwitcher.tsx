@@ -66,15 +66,14 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                 >
                     <div className={styles.dropdownHeader}>Switch Organization</div>
                     <div className={styles.accountList}>
-                        {accounts.map((account) => (
+                        {/* Business Accounts Section */}
+                        {accounts.filter(a => a.type !== 'attendee').map((account) => (
                             <button
                                 key={account.id}
                                 className={`${styles.accountItem} ${account.id === activeAccount.id ? styles.selected : ''}`}
                                 onClick={() => {
                                     setActiveAccountId(account.id);
                                     setIsOpen(false);
-                                    // Optional: You might want to refresh the current page data here, 
-                                    // but since it's all driven by Context now, components should auto-update.
                                 }}
                             >
                                 <div className={styles.avatarSmall}>
@@ -92,6 +91,35 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                 </div>
                             </button>
                         ))}
+
+                        {/* Personal Account Section */}
+                        {accounts.some(a => a.type === 'attendee') && (
+                            <>
+                                <div className={styles.divider} />
+                                <div className={styles.sectionHeader}>Personal</div>
+                                {accounts.filter(a => a.type === 'attendee').map((account) => (
+                                    <button
+                                        key={account.id}
+                                        className={`${styles.accountItem} ${account.id === activeAccount.id ? styles.selected : ''}`}
+                                        onClick={() => {
+                                            setIsOpen(false);
+                                            router.push('/'); // Redirect to main app
+                                        }}
+                                    >
+                                        <div className={styles.avatarSmall}>
+                                            <div className={styles.avatarFallback} style={{ color: '#aaa' }}>
+                                                {user?.email?.charAt(0).toUpperCase() || 'P'}
+                                            </div>
+                                        </div>
+                                        <div className={styles.textContainer}>
+                                            <span className={styles.accountName}>Personal Profile</span>
+                                            <span className={styles.accountRole}>Switch to App</span>
+                                        </div>
+                                        <svg className={styles.checkIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4 }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                    </button>
+                                ))}
+                            </>
+                        )}
                     </div>
                     <div className={styles.dropdownFooter}>
                         <button

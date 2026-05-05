@@ -300,24 +300,22 @@ export default function AdminModerationPage() {
                 </div>
             )}
 
-            <div className={adminStyles.pageCard}>
-                <ModerationTable
-                    entries={entries}
-                    isLoading={isLoading}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    onViewDetails={(e) => {
-                        setSelectedEntry(e);
-                        setIsDetailModalOpen(true);
-                    }}
-                    selectedIds={selectedIds}
-                    onSelect={handleSelectEntry}
-                    onSelectAll={handleSelectAll}
-                />
-            </div>
+            <ModerationTable
+                entries={entries}
+                isLoading={isLoading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onViewDetails={(e) => {
+                    setSelectedEntry(e);
+                    setIsDetailModalOpen(true);
+                }}
+                selectedIds={selectedIds}
+                onSelect={handleSelectEntry}
+                onSelectAll={handleSelectAll}
+            />
 
             <ModerationDetailModal 
                 isOpen={isDetailModalOpen}

@@ -151,25 +151,23 @@ function KycVerificationsContent() {
                 />
             </TableToolbar>
 
-            <div className={adminStyles.pageCard}>
-                <KycVerificationTable 
-                    data={verifications}
-                    isLoading={isLoading}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    onViewDetails={(v) => {
-                        setSelectedVerification(v);
-                        setIsDetailModalOpen(true);
-                    }}
-                    onApprove={handleApprove}
-                    onReject={(v) => {
-                        setSelectedVerification(v);
-                        setIsDetailModalOpen(true);
-                        // The modal itself handles the rejection UI
-                    }}
-                />
-            </div>
+            <KycVerificationTable 
+                data={verifications}
+                isLoading={isLoading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onViewDetails={(v) => {
+                    setSelectedVerification(v);
+                    setIsDetailModalOpen(true);
+                }}
+                onApprove={handleApprove}
+                onReject={(v) => {
+                    setSelectedVerification(v);
+                    setIsDetailModalOpen(true);
+                    // The modal itself handles the rejection UI
+                }}
+            />
 
             <KycDetailModal 
                 isOpen={isDetailModalOpen}

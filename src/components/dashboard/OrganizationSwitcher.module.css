@@ -161,9 +161,24 @@
 }
 
 .accountList {
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: auto;
     padding: 8px;
+}
+
+.divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 8px 4px;
+}
+
+.sectionHeader {
+    padding: 8px 10px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.3);
 }
 
 .accountItem {

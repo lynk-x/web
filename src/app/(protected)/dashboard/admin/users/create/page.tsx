@@ -23,14 +23,12 @@ export default function CreateUserPage() {
                     isLoading: isSubmitting
                 }}
             />
-            <div className={adminStyles.pageCard}>
-                <UserForm 
-                    formId="user-form" 
-                    hideActions={true} 
-                    onDirtyChange={setIsDirty}
-                    onSubmittingChange={setIsSubmitting}
-                />
-            </div>
+            <UserForm 
+                formId="user-form" 
+                hideActions={true} 
+                onDirtyChange={setIsDirty}
+                onSubmittingChange={setIsSubmitting}
+            />
         </div>
     );
 }
