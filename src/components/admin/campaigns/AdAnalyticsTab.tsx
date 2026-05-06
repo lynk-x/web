@@ -54,6 +54,7 @@ export default function AdAnalyticsTab() {
             since.setDate(since.getDate() - 30);
 
             const { data, error } = await supabase
+                .schema('ad_analytics')
                 .from('ad_analytics')
                 .select('campaign_id, interaction_type, cost_charged, created_at, campaign:ad_campaigns!campaign_id(title, type)')
                 .gte('created_at', since.toISOString())

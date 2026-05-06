@@ -7,6 +7,7 @@
 
 import Sidebar from '@/components/dashboard/Sidebar';
 import MobileNudge from '@/components/dashboard/MobileNudge';
+import InactivityGuard from '@/components/dashboard/InactivityGuard';
 import styles from './layout.module.css';
 
 export default function DashboardLayout({
@@ -15,12 +16,14 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className={styles.layout}>
-            <Sidebar />
-            <MobileNudge />
-            <main className={styles.main}>
-                {children}
-            </main>
-        </div>
+        <InactivityGuard>
+            <div className={styles.layout}>
+                <Sidebar />
+                <MobileNudge />
+                <main className={styles.main}>
+                    {children}
+                </main>
+            </div>
+        </InactivityGuard>
     );
 }

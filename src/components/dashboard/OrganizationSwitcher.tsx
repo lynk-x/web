@@ -103,7 +103,7 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                         className={`${styles.accountItem} ${account.id === activeAccount.id ? styles.selected : ''}`}
                                         onClick={() => {
                                             setIsOpen(false);
-                                            router.push('/'); // Redirect to main app
+                                            window.location.href = 'https://app.lynk-x.app'; // Redirect to main app
                                         }}
                                     >
                                         <div className={styles.avatarSmall}>
