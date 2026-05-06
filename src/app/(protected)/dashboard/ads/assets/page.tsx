@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
 
 const SIZES = ['All', '320x480', '468x60'];
@@ -218,19 +219,13 @@ export default function AdsAssetsPage() {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Creative Library</h1>
-                    <p className={styles.subtitle}>Upload and manage your ad creatives and media assets.</p>
-                </div>
-                <button
-                    className={`${styles.btnPrimary} tour-assets-upload`}
-                    onClick={triggerUpload}
-                    disabled={isUploading}
-                >
-                    <span>{isUploading ? 'Validating...' : '+ Upload Asset'}</span>
-                </button>
-            </header>
+            <PageHeader
+                title="Creative Library"
+                subtitle="Upload and manage your ad creatives and media assets."
+                actionLabel={isUploading ? 'Validating...' : '+ Upload Asset'}
+                onActionClick={triggerUpload}
+                actionClassName="tour-assets-upload"
+            />
 
             {/* Hidden Input */}
             <input
@@ -257,7 +252,7 @@ export default function AdsAssetsPage() {
                 </div>
             </div>
 
-            <div className={localStyles.grid}>
+            <div className={`${localStyles.grid} tour-assets-grid`}>
                 {filteredAssets.map((asset) => (
                     <div key={asset.id} className={localStyles.assetCard}>
                         <div className={localStyles.cardHeader}>
@@ -363,7 +358,7 @@ export default function AdsAssetsPage() {
                     {
                         target: '.tour-assets-filter',
                         title: 'Quick Discovery',
-                        content: 'Filter your library by asset type (Image, Video) or status to quickly find what you need.',
+                        content: 'Filter your library by format (Interstitial, Banner) to quickly find what you need.',
                     },
                     {
                         target: '.tour-assets-grid',

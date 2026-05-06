@@ -268,18 +268,20 @@ export default function CampaignsPage() {
                     itemTypeLabel="campaigns"
                 />
 
-                <AdsCampaignTable
-                    campaigns={paginatedCampaigns}
-                    selectedIds={selectedIds}
-                    onSelect={handleSelect}
-                    onSelectAll={handleSelectAll}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleSingleDelete}
-                    onDuplicate={handleDuplicate}
-                />
+                <div className="tour-campaigns-list">
+                    <AdsCampaignTable
+                        campaigns={paginatedCampaigns}
+                        selectedIds={selectedIds}
+                        onSelect={handleSelect}
+                        onSelectAll={handleSelectAll}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleSingleDelete}
+                        onDuplicate={handleDuplicate}
+                    />
+                </div>
             </div>
 
             <ProductTour
@@ -303,9 +305,9 @@ export default function CampaignsPage() {
                         content: 'Review key stats like remaining budget and total spend. You can edit, pause or duplicate campaigns directly from this list.',
                     },
                     {
-                        target: 'a[href*="/edit"]',
+                        target: '.tour-campaigns-list',
                         title: 'Optimization',
-                        content: 'Click "Edit" to adjust your targeting or update the creative assets for an ongoing campaign.',
+                        content: 'Review and optimize your targeting or update creative assets for individual campaigns.',
                     }
                 ]}
             />

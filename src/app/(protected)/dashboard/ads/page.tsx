@@ -33,11 +33,8 @@ export default function AdsDashboard() {
             setIsLoading(true);
             try {
                 // Fetch stats and spotlights
-                const [adsRes, spotlightsRes] = await Promise.all([
-                    supabase
-                        .from('ad_campaigns')
-                        .select('id, status, total_budget, spent_amount')
-                        .eq('account_id', activeAccount.id),
+                const [statsRes, spotlightsRes] = await Promise.all([
+                    supabase.rpc('get_ads_dashboard_stats', { p_account_id: activeAccount.id }),
                     supabase
                         .from('spotlights')
                         .select('*')
@@ -46,21 +43,16 @@ export default function AdsDashboard() {
                         .order('display_order', { ascending: true })
                 ]);
 
-                if (adsRes.error) throw adsRes.error;
+                if (statsRes.error) throw statsRes.error;
 
-                const allAds = adsRes.data || [];
-                const totalCampaigns = allAds.length;
-                const activeCampaigns = allAds.filter((c: any) => c.status === 'active').length;
-                const pendingApproval = allAds.filter((c: any) => c.status === 'pending_approval').length;
-                const remainingBudget = allAds.reduce((acc: number, c: any) => acc + (Number(c.total_budget || 0) - Number(c.spent_amount || 0)), 0);
-
+                const dashboardStats = statsRes.data || {};
                 const currency = 'USD';
 
                 setStats([
-                    { label: 'Total Campaigns', value: totalCampaigns.toLocaleString(), change: 'Lifetime count' },
-                    { label: 'Active Campaigns', value: activeCampaigns.toLocaleString(), change: 'Running now' },
-                    { label: 'Pending Approval', value: pendingApproval.toLocaleString(), change: 'Under review' },
-                    { label: 'Remaining Budget', value: formatCurrency(remainingBudget, currency), change: 'Available funds' },
+                    { label: 'Total Campaigns', value: (dashboardStats.total_campaigns || 0).toLocaleString(), change: 'Lifetime count' },
+                    { label: 'Active Campaigns', value: (dashboardStats.active_campaigns || 0).toLocaleString(), change: 'Running now' },
+                    { label: 'Pending Approval', value: (dashboardStats.pending_approval || 0).toLocaleString(), change: 'Under review' },
+                    { label: 'Remaining Budget', value: formatCurrency(dashboardStats.remaining_budget || 0, currency), change: 'Available funds' },
                 ]);
 
                 if (spotlightsRes.data) {
@@ -128,7 +120,7 @@ export default function AdsDashboard() {
                     <Link href="/dashboard/ads/analytics" className={`${styles.actionCard} tour-ads-analytics`}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </Link>
-                    <Link href="/dashboard/ads/assets" className={styles.actionCard}>
+                    <Link href="/dashboard/ads/assets" className={`${styles.actionCard} tour-library`}>
                         <span className={styles.actionLabel}>Creative Library</span>
                     </Link>
                     <Link href="/dashboard/ads/billing" className={styles.actionCard}>
@@ -170,7 +162,7 @@ export default function AdsDashboard() {
                         content: 'Analyze your ad spend and conversion rates to optimize your marketing strategy.',
                     },
                     {
-                        target: 'a[href*="assets"]',
+                        target: '.tour-library',
                         title: 'Creative Library',
                         content: 'Manage your banners, videos and other creative assets for your ads.',
                     }

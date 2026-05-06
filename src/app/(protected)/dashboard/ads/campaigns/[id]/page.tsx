@@ -16,6 +16,8 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
+import StatCard from '@/components/dashboard/StatCard';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
     draft: { label: 'Draft', variant: 'subtle' },
@@ -128,39 +130,33 @@ export default function CampaignDetailPage() {
         if (!id) return;
         setIsAnalyticsLoading(true);
         try {
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - timeRange);
-
-            const { data: analytics } = await supabase
-                .from('ad_analytics')
-                .select('interaction_type, created_at')
-                .eq('campaign_id', id)
-                .gte('created_at', startDate.toISOString());
-
-            const daysMap: Record<string, DayPoint> = {};
-            for (let i = timeRange - 1; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const isoKey = d.toISOString().slice(0, 10);
-                const label = timeRange <= 7
-                    ? d.toLocaleDateString('en-US', { weekday: 'short' })
-                    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                daysMap[isoKey] = { name: label, impressions: 0, clicks: 0, sortKey: d.getTime() };
-            }
-
-            (analytics || []).forEach((a: any) => {
-                const isoKey = new Date(a.created_at).toISOString().slice(0, 10);
-                if (daysMap[isoKey]) {
-                    if (a.interaction_type === 'impression') daysMap[isoKey].impressions++;
-                    if (a.interaction_type === 'click') daysMap[isoKey].clicks++;
-                }
+            const { data, error } = await supabase.rpc('get_campaign_performance_metrics', {
+                p_campaign_id: id,
+                p_days: timeRange
             });
 
-            setPerformanceData(Object.values(daysMap).sort((a, b) => a.sortKey - b.sortKey));
+            if (error) throw error;
+
+            const formatted = (data || []).map((d: any) => {
+                const date = new Date(d.day);
+                const label = timeRange <= 7
+                    ? date.toLocaleDateString('en-US', { weekday: 'short' })
+                    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return {
+                    name: label,
+                    impressions: Number(d.impressions),
+                    clicks: Number(d.clicks),
+                    sortKey: date.getTime()
+                };
+            });
+
+            setPerformanceData(formatted);
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load analytics', 'error');
         } finally {
             setIsAnalyticsLoading(false);
         }
-    }, [id, supabase, timeRange]);
+    }, [id, supabase, timeRange, showToast]);
 
     useEffect(() => { fetchCampaign(); }, [fetchCampaign]);
     useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
@@ -268,17 +264,17 @@ export default function CampaignDetailPage() {
             )}
 
             {/* KPI Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-                <KpiCard label="Impressions" value={formatNumber(campaign.total_impressions)} />
-                <KpiCard label="Clicks" value={formatNumber(campaign.total_clicks)} />
-                <KpiCard label="CTR" value={`${ctr.toFixed(2)}%`} />
-                <KpiCard label="CPC" value={formatCurrency(cpc, campaign.currency)} />
-                <KpiCard label="Spent" value={formatCurrency(campaign.spent_amount, campaign.currency)} sub={`${budgetUsed.toFixed(0)}% of budget`} />
-                <KpiCard label="Remaining" value={formatCurrency(campaign.remaining_budget, campaign.currency)} />
+            <div className={`${adminStyles.statsGrid} tour-campaign-stats`} style={{ marginBottom: '28px' }}>
+                <StatCard label="Impressions" value={formatNumber(campaign.total_impressions)} trend="neutral" />
+                <StatCard label="Clicks" value={formatNumber(campaign.total_clicks)} trend="neutral" />
+                <StatCard label="CTR" value={`${ctr.toFixed(2)}%`} trend="neutral" />
+                <StatCard label="CPC" value={formatCurrency(cpc, campaign.currency)} trend="neutral" />
+                <StatCard label="Spent" value={formatCurrency(campaign.spent_amount, campaign.currency)} trend="neutral" subText={`${budgetUsed.toFixed(0)}% of budget`} />
+                <StatCard label="Remaining" value={formatCurrency(campaign.remaining_budget, campaign.currency)} trend="neutral" />
             </div>
 
             {/* Performance Chart */}
-            <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
+            <div className={`${adminStyles.pageCard} tour-campaign-chart`} style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Performance Over Time</h2>
                     <select
@@ -417,29 +413,33 @@ export default function CampaignDetailPage() {
                     )}
                 </div>
             </div>
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsCampaignDetailJoyride_${activeAccount.id}` : 'hasSeenAdsCampaignDetailJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Campaign Intelligence',
+                        content: 'This deep-dive view provides real-time performance data and creative A/B testing results for this specific campaign.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-campaign-stats',
+                        title: 'Performance Snapshot',
+                        content: 'Track your primary success metrics including Click-Through Rate (CTR) and Cost Per Click (CPC) to measure ROI.',
+                    },
+                    {
+                        target: '.tour-campaign-chart',
+                        title: 'Delivery Trends',
+                        content: 'Visualize how your ads are being delivered over time. Use the date range selector to analyze specific periods.',
+                    }
+                ]}
+            />
         </div>
     );
 }
 
 // ── Helper Components ──────────────────────────────────────────────────────
-
-function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-    return (
-        <div style={{
-            background: 'var(--color-interface-surface)',
-            border: '1px solid var(--color-interface-outline)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '18px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-        }}>
-            <span style={{ fontSize: '12px', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>{label}</span>
-            <span style={{ fontSize: '22px', fontWeight: 700 }}>{value}</span>
-            {sub && <span style={{ fontSize: '12px', opacity: 0.5 }}>{sub}</span>}
-        </div>
-    );
-}
 
 function DetailRow({ label, value, isLink }: { label: string; value: string; isLink?: boolean }) {
     return (

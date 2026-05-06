@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatCurrency } from '@/utils/format';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -37,77 +38,42 @@ function AnalyticsContent() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            // Get all campaign IDs for this account
-            const { data: campaigns } = await supabase
-                .from('ad_campaigns')
-                .select('id')
-                .eq('account_id', activeAccount.id);
-
-            const campaignIds = (campaigns || []).map(c => c.id);
-            if (campaignIds.length === 0) {
-                setPerformanceData([]);
-                setKpis({
-                    impressions: '0',
-                    clicks: '0',
-                    ctr: '0.00%',
-                    // Use formatCurrency so the symbol matches the account's currency
-                    cpc: formatCurrency(0)
-                });
-                setIsLoading(false);
-                return;
-            }
-
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - timeRange);
-
-            const { data: analytics, error } = await supabase
-                .from('ad_analytics')
-                .select('*')
-                .in('campaign_id', campaignIds)
-                .gte('created_at', startDate.toISOString());
+            const { data, error } = await supabase.rpc('get_ads_performance_metrics', {
+                p_account_id: activeAccount.id,
+                p_days: timeRange
+            });
 
             if (error) throw error;
 
-            // Process KPIs
-            const impressions = analytics.filter(a => a.interaction_type === 'impression');
-            const clicks = analytics.filter(a => a.interaction_type === 'click');
-            const totalCost = analytics.reduce((acc, a) => acc + Number(a.cost_charged || 0), 0);
+            const results = data || [];
+            const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions), 0);
+            const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks), 0);
+            const totalCost = results.reduce((acc: number, r: any) => acc + Number(r.total_cost), 0);
 
-            const ctr = impressions.length > 0 ? (clicks.length / impressions.length) * 100 : 0;
-            const cpc = clicks.length > 0 ? totalCost / clicks.length : 0;
+            const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+            const cpc = clicks > 0 ? totalCost / clicks : 0;
 
             setKpis({
-                impressions: impressions.length.toLocaleString(),
-                clicks: clicks.length.toLocaleString(),
+                impressions: impressions.toLocaleString(),
+                clicks: clicks.toLocaleString(),
                 ctr: `${ctr.toFixed(2)}%`,
                 cpc: formatCurrency(cpc)
             });
 
-            // Build a day-bucket map keyed by ISO date string (YYYY-MM-DD) so that entries
-            // from different weeks on a 30/90-day range don't collide on the same weekday key.
-            const daysMap: Record<string, { name: string; impressions: number; clicks: number; sortKey: number }> = {};
-            for (let i = timeRange - 1; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                // ISO key prevents weekday collisions across weeks
-                const isoKey = d.toISOString().slice(0, 10);
-                // Display label: e.g. "Mar 4" for long ranges, weekday for 7-day
+            const formatted = results.map((r: any) => {
+                const date = new Date(r.day);
                 const label = timeRange <= 7
-                    ? d.toLocaleDateString('en-US', { weekday: 'short' })
-                    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                daysMap[isoKey] = { name: label, impressions: 0, clicks: 0, sortKey: d.getTime() };
-            }
-
-            analytics.forEach(a => {
-                const isoKey = new Date(a.created_at).toISOString().slice(0, 10);
-                if (daysMap[isoKey]) {
-                    if (a.interaction_type === 'impression') daysMap[isoKey].impressions++;
-                    if (a.interaction_type === 'click') daysMap[isoKey].clicks++;
-                }
+                    ? date.toLocaleDateString('en-US', { weekday: 'short' })
+                    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return {
+                    name: label,
+                    impressions: Number(r.impressions),
+                    clicks: Number(r.clicks),
+                    sortKey: date.getTime()
+                };
             });
 
-            setPerformanceData(Object.values(daysMap).sort((a, b) => a.sortKey - b.sortKey));
-
+            setPerformanceData(formatted);
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to fetch analytics', 'error');
         } finally {
@@ -140,18 +106,21 @@ function AnalyticsContent() {
     };
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <h1 className={styles.title}>Analytics</h1>
-                <select
-                    className={`${styles.dateRangeBtn} tour-ads-analytics-range`}
-                    value={timeRange}
-                    onChange={(e) => handleRangeChange(Number(e.target.value))}
-                >
-                    <option value={7}>Last 7 Days</option>
-                    <option value={30}>Last 30 Days</option>
-                    <option value={90}>Last 90 Days</option>
-                </select>
-            </header>
+            <PageHeader
+                title="Ads Analytics"
+                subtitle="Analyze your campaign reach and performance."
+                customAction={
+                    <select
+                        className={`${styles.dateRangeBtn} tour-ads-analytics-range`}
+                        value={timeRange}
+                        onChange={(e) => handleRangeChange(Number(e.target.value))}
+                    >
+                        <option value={7}>Last 7 Days</option>
+                        <option value={30}>Last 30 Days</option>
+                        <option value={90}>Last 90 Days</option>
+                    </select>
+                }
+            />
 
             {/* Overview Cards */}
             <div className={`${sharedStyles.statsGrid} tour-ads-analytics-stats`}>
