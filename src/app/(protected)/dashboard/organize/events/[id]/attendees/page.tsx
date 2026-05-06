@@ -11,10 +11,13 @@ import AttendeeTable from '@/components/features/events/attendees/AttendeeTable'
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import type { Attendee } from '@/types/organize';
+import ProductTour from '@/components/dashboard/ProductTour';
+import { useOrganization } from '@/context/OrganizationContext';
 
 export default function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { showToast } = useToast();
+    const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
     const [attendees, setAttendees] = useState<Attendee[]>([]);
@@ -144,7 +147,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 itemTypeLabel="attendees"
             />
 
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px' }} className="tour-attendee-list">
                 <AttendeeTable
                     attendees={paginatedAttendees}
                     selectedIds={selectedIds}
@@ -161,6 +164,28 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                     Loading attendees...
                 </div>
             )}
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenEventAttendeesJoyride_${activeAccount.id}_${id}` : `hasSeenEventAttendeesJoyride_guest_${id}`}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Attendee Management',
+                        content: 'This list shows all registered attendees for your event. You can search, filter and perform bulk actions directly from here.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-attendee-list',
+                        title: 'Registration Details',
+                        content: 'View ticket status, purchase date and contact information for each attendee.',
+                    },
+                    {
+                        target: 'button[onClick*="exportToCSV"]',
+                        title: 'Data Portability',
+                        content: 'Need your attendee list offline? Select participants and click "Export CSV" to download the data.',
+                    }
+                ]}
+            />
         </div>
     );
 }

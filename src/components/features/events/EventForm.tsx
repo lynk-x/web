@@ -18,6 +18,8 @@ import { useEventForm, type EventFormTab } from '@/hooks/useEventForm';
 import type { OrganizerEventFormData as EventData } from '@/types/organize';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import ProductTour from '@/components/dashboard/ProductTour';
+import { useOrganization } from '@/context/OrganizationContext';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ interface EventFormProps {
 
 export default function EventForm({ initialData, pageTitle, submitBtnText, onSubmit, isEditMode = false }: EventFormProps) {
     const { showToast } = useToast();
+    const { activeAccount } = useOrganization();
     const { confirm: confirmModal, ConfirmDialog } = useConfirmModal();
     const {
         formData, errors, loading, activeTab, setActiveTab,
@@ -169,7 +172,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </div>
                 )}
 
-                <div className={styles.actions}>
+                <div className={`${styles.actions} tour-form-actions`}>
                     {!isEditMode && (
                         <button 
                             className={styles.secondaryBtn} 
@@ -186,7 +189,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
             </header>
 
             {/* Tab Navigation */}
-            <div className={styles.tabs}>
+            <div className={`${styles.tabs} tour-form-tabs`}>
                 {renderTab('cover', 'Cover Image')}
                 {renderTab('basics', 'Basics')}
                 {renderTab('category', 'Category')}
@@ -497,6 +500,28 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </section>
                 )}
             </div>
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenEventFormJoyride_${activeAccount.id}` : 'hasSeenEventFormJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: isEditMode ? 'Edit your Event' : 'Create an Event',
+                        content: 'Fill in your event details across the different tabs. We\'ve made it easy to organize your information step by step.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-form-tabs',
+                        title: 'Form Navigation',
+                        content: 'Switch between sections like Cover Image, Basics and Tickets. We validate each tab to ensure you don\'t miss any required fields.',
+                    },
+                    {
+                        target: '.tour-form-actions',
+                        title: 'Save your progress',
+                        content: 'You can save your event as a draft at any time and return to it later. Once you\'re ready, click Publish to go live.',
+                    }
+                ]}
+            />
         </div>
     );
 }

@@ -9,6 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useCountries, Country } from '@/hooks/useCountries';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,7 @@ export default function CreateCampaignForm({
     const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'review'>('details');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [previewClicked, setPreviewClicked] = useState(false); // #7 interactive preview
 
@@ -100,7 +102,7 @@ export default function CreateCampaignForm({
     const [countryInput, setCountryInput] = useState('');
     const [countrySuggestions, setCountrySuggestions] = useState<Country[]>([]);
     const [marketSuggestions, setMarketSuggestions] = useState<MarketSuggestion[]>([]);
-    
+
 
 
     // ── Active Creative Index (for A/B multi-creative picker) ─────────────────
@@ -231,7 +233,7 @@ export default function CreateCampaignForm({
     useEffect(() => {
         const isDirty = JSON.stringify(formData) !== JSON.stringify(defaultData);
         onDirtyChange?.(isDirty);
-        
+
         if (isDirty) {
             const handleBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
             window.addEventListener('beforeunload', handleBeforeUnload);
@@ -274,8 +276,8 @@ export default function CreateCampaignForm({
     /** Add a country to targeting. */
     const addCountry = (code: string) => {
         if (!code || formData.target_countries.includes(code) || formData.target_countries.length >= 5) return;
-        setFormData(prev => ({ 
-            ...prev, 
+        setFormData(prev => ({
+            ...prev,
             target_countries: [...prev.target_countries, code]
         }));
         setCountryInput('');
@@ -319,7 +321,7 @@ export default function CreateCampaignForm({
         const file = e.target.files?.[0];
         if (!file) return;
         const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-        
+
         // For previews, we still use FileReader for images, but for video we use a blob URL
         if (mediaType === 'video') {
             const videoUrl = URL.createObjectURL(file);
@@ -357,7 +359,6 @@ export default function CreateCampaignForm({
     }, [formData.total_budget, formData.start_at, formData.end_at, pricing]);
 
     // ── Schedule Timeline ─────────────────────────────────────────────────────
-
     const scheduleTimeline = useMemo(() => {
         const start = formData.start_at ? new Date(formData.start_at) : null;
         const end = formData.end_at ? new Date(formData.end_at) : null;
@@ -392,47 +393,105 @@ export default function CreateCampaignForm({
     }, [formData.start_at, formData.end_at]);
 
     // ── Validation ────────────────────────────────────────────────────────────
-
     const validateTab = (tab: string): boolean => {
         setFormError('');
-        
+        const newErrors: Record<string, string> = {};
+
         if (tab === 'details') {
-            if (!formData.title.trim()) { setFormError('Campaign title is required.'); return false; }
+            if (!formData.title.trim()) newErrors.title = 'Campaign title is required.';
+            
             const budget = parseFloat(formData.total_budget);
-            if (isNaN(budget) || budget <= 0) { setFormError('Valid positive total budget is required.'); return false; }
-            
+            if (isNaN(budget) || budget <= 0) newErrors.total_budget = 'Valid positive total budget is required.';
+
             const bid = parseFloat(formData.max_bid_amount);
-            if (isNaN(bid) || bid <= 0) { setFormError('A valid positive max bid is required.'); return false; }
-            if (bid > budget) { setFormError(`Max bid ($${bid}) cannot exceed total budget ($${budget}).`); return false; }
+            if (isNaN(bid) || bid <= 0) {
+                newErrors.max_bid_amount = 'Valid positive max bid is required.';
+            } else if (!isNaN(budget) && bid > budget) {
+                newErrors.max_bid_amount = `Max bid ($${bid}) cannot exceed total budget ($${budget}).`;
+            }
+
+            if (!formData.start_at) newErrors.start_at = 'Start date is required.';
+            if (!formData.end_at) newErrors.end_at = 'End date is required.';
             
-            if (!formData.start_at || !formData.end_at) { setFormError('Both start date and end date are required.'); return false; }
-            if (new Date(formData.end_at) <= new Date(formData.start_at)) { setFormError('End date must be after start date.'); return false; }
+            if (formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at)) {
+                newErrors.end_at = 'End date must be after start date.';
+            }
         }
 
         if (tab === 'targeting') {
             const url = formData.target_url.trim();
-            if (!url || !url.startsWith('https://')) {
-                setFormError('A valid secure target URL (https://...) is required.');
-                return false;
-            }
-            try {
-                new URL(url);
-            } catch {
-                setFormError('Target URL is not a valid URL format.');
-                return false;
+            if (!url) {
+                newErrors.target_url = 'Target URL is required.';
+            } else if (!url.startsWith('https://')) {
+                newErrors.target_url = 'A secure target URL (https://...) is required.';
+            } else {
+                try {
+                    new URL(url);
+                } catch {
+                    newErrors.target_url = 'Target URL is not in a valid format.';
+                }
             }
         }
 
         if (tab === 'creative') {
             const primaryCreative = formData.creatives[0];
-            if (!primaryCreative.headline.trim()) { setFormError('Ad Headline is required for the primary creative.'); return false; }
+            if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Ad headline is required.';
             if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
-                setFormError('An ad image asset is required for the primary creative.');
-                return false;
+                newErrors['creative.0.asset'] = 'An ad asset is required.';
             }
         }
 
-        return true;
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const validateForm = (): boolean => {
+        setFormError('');
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.title.trim()) newErrors.title = 'Campaign title is required.';
+
+        const budget = parseFloat(formData.total_budget);
+        if (isNaN(budget) || budget <= 0) newErrors.total_budget = 'Valid positive total budget is required.';
+
+        const limit = parseFloat(formData.daily_limit);
+        if (formData.daily_limit && (isNaN(limit) || limit <= 0 || limit > budget)) {
+            newErrors.daily_limit = 'Daily limit must be a positive number and cannot exceed total budget.';
+        }
+
+        const bid = parseFloat(formData.max_bid_amount);
+        if (isNaN(bid) || bid <= 0) {
+            newErrors.max_bid_amount = 'Valid positive max bid amount is required.';
+        } else {
+            if (formData.daily_limit && !isNaN(limit) && (bid > limit)) {
+                newErrors.max_bid_amount = `Max bid ($${bid}) cannot be higher than the daily limit ($${limit}).`;
+            }
+            if (!isNaN(budget) && bid > budget) {
+                newErrors.max_bid_amount = `Max bid ($${bid}) cannot exceed the total campaign budget ($${budget}).`;
+            }
+        }
+
+        if (!formData.start_at) newErrors.start_at = 'Start date is required.';
+        if (!formData.end_at) newErrors.end_at = 'End date is required.';
+        if (formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at)) {
+            newErrors.end_at = 'End date must be after start date.';
+        }
+
+        const primaryCreative = formData.creatives[0];
+        if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Ad headline is required.';
+        if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
+            newErrors['creative.0.asset'] = 'An ad asset is required.';
+        }
+
+        const url = formData.target_url.trim();
+        if (!url) {
+            newErrors.target_url = 'Target URL is required.';
+        } else if (!url.startsWith('https://')) {
+            newErrors.target_url = 'A secure target URL (https://...) is required.';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleTabSwitch = (target: 'details' | 'targeting' | 'creative' | 'review') => {
@@ -450,59 +509,8 @@ export default function CreateCampaignForm({
         if (validateTab(activeTab)) {
             setActiveTab(target);
         } else {
-            showToast(formError || 'Please complete the current section first.', 'warning');
+            showToast('Please review the errors on this tab before continuing.', 'warning');
         }
-    };
-
-    const validateForm = (): boolean => {
-        if (!formData.title.trim()) { setFormError('Campaign title is required.'); return false; }
-
-        const budget = parseFloat(formData.total_budget);
-        if (isNaN(budget) || budget <= 0) { setFormError('Valid positive total budget is required.'); return false; }
-
-        const limit = parseFloat(formData.daily_limit);
-        if (formData.daily_limit && (isNaN(limit) || limit <= 0 || limit > budget)) {
-            setFormError('Daily limit must be a positive number and cannot exceed total budget.');
-            return false;
-        }
-
-        const bid = parseFloat(formData.max_bid_amount);
-        if (isNaN(bid) || bid <= 0) {
-            setFormError('A valid positive max bid amount is required.');
-            return false;
-        }
-
-        // Logic sync: Max bid cannot exceed the daily spending limit (if specified)
-        if (formData.daily_limit && (bid > limit)) {
-            setFormError(`Max bid ($${bid}) cannot be higher than the daily limit ($${limit}).`);
-            return false;
-        }
-
-        // Logic sync: Max bid cannot exceed total budget
-        if (bid > budget) {
-            setFormError(`Max bid ($${bid}) cannot exceed the total campaign budget ($${budget}).`);
-            return false;
-        }
-
-        if (!formData.start_at || !formData.end_at) { setFormError('Both start date and end date are required.'); return false; }
-        if (new Date(formData.end_at) <= new Date(formData.start_at)) {
-            setFormError('End date must be after start date.');
-            return false;
-        }
-
-        const primaryCreative = formData.creatives[0];
-        if (!primaryCreative.headline.trim()) { setFormError('Ad Headline is required for the primary creative.'); return false; }
-        if (!formData.target_url.trim() || !formData.target_url.startsWith('https://')) {
-            setFormError('A valid secure target URL (https://...) is required.');
-            return false;
-        }
-        if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
-            setFormError('An ad image asset is required for the primary creative.');
-            return false;
-        }
-
-        setFormError('');
-        return true;
     };
 
     // ── Submit ────────────────────────────────────────────────────────────────
@@ -649,15 +657,15 @@ export default function CreateCampaignForm({
 
             {/* ── Left: Form ─────────────────────────────────────────── */}
             <div className={adminStyles.formColumn}>
-                <div className={adminStyles.pageCard} style={{ padding: '0' }}>
+                <div className={`${adminStyles.pageCard} tour-ads-form-container`} style={{ padding: '0' }}>
 
                     {/* Tab Nav */}
-                    <div className={styles.tabs} style={{ padding: '0 24px' }}>
+                    <div className={`${styles.tabs} tour-ads-form-tabs`} style={{ padding: '0 24px' }}>
                         {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
                             <div
                                 key={tab}
-                                className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''}`}
-                                onClick={() => setActiveTab(tab)}
+                                className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-ads-tab-${tab}`}
+                                onClick={() => handleTabSwitch(tab)}
                             >
                                 {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
                             </div>
@@ -674,18 +682,20 @@ export default function CreateCampaignForm({
                                     <label className={styles.label} htmlFor="title">
                                         Title <span className={styles.requiredIndicator}>*Required</span>
                                     </label>
-                                    <input id="title" name="title" type="text" className={styles.input}
+                                    <input id="title" name="title" type="text" className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
                                         placeholder="e.g. Festival Promo" value={formData.title}
                                         onChange={handleInputChange} required />
+                                    {errors.title && <p className={styles.errorMessage}>{errors.title}</p>}
                                 </div>
 
                                 <div className={styles.inputGroup}>
                                     <label className={styles.label} htmlFor="description">
                                         Description
                                     </label>
-                                    <textarea id="description" name="description" className={styles.textarea}
+                                    <textarea id="description" name="description" className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
                                         placeholder="Internal description or overview..." value={formData.description}
                                         onChange={handleInputChange} />
+                                    {errors.description && <p className={styles.errorMessage}>{errors.description}</p>}
                                 </div>
 
                                 {/* Dates - Moved up below Description */}
@@ -694,15 +704,17 @@ export default function CreateCampaignForm({
                                         <label className={styles.label} htmlFor="start_at">
                                             Start Date <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input id="start_at" name="start_at" type="date" className={styles.input}
+                                        <input id="start_at" name="start_at" type="date" className={`${styles.input} ${errors.start_at ? styles.inputError : ''}`}
                                             value={formData.start_at} onChange={handleInputChange} required />
+                                        {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="end_at">
                                             End Date <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input id="end_at" name="end_at" type="date" className={styles.input}
+                                        <input id="end_at" name="end_at" type="date" className={`${styles.input} ${errors.end_at ? styles.inputError : ''}`}
                                             value={formData.end_at} onChange={handleInputChange} required />
+                                        {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
                                     </div>
                                 </div>
 
@@ -744,51 +756,20 @@ export default function CreateCampaignForm({
                                             Daily Limit ($)
                                             <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
                                         </label>
-                                        <input id="daily_limit" name="daily_limit" type="number" className={styles.input}
+                                        <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
                                             placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
+                                        {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="max_bid_amount">
                                             Max Bid ($) <span className={styles.requiredIndicator}>*Required</span>
                                             <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
                                         </label>
-                                        <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={styles.input}
+                                        <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
                                             placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
+                                        {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
                                     </div>
                                 </div>
-
-                                {/* Performance Forecast (Disabled for now)
-                                {forecast && (
-                                    <div className={styles.forecastCard}>
-                                        <div className={styles.forecastTitle}>📈 Estimated Reach ({forecast.days} days)</div>
-                                        <div className={styles.forecastGrid}>
-                                            <div className={styles.forecastItem}>
-                                                <span className={styles.forecastLabel}>Impressions</span>
-                                                <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
-                                            </div>
-                                            <div className={styles.forecastItem}>
-                                                <span className={styles.forecastLabel}>Clicks Est.</span>
-                                                <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                */}
-
-                                 {/* Timeline (Disabled for now)
-                                 {scheduleTimeline.length > 0 && (
-                                     <div className={styles.inputGroup}>
-                                         <label className={styles.label}>Campaign Timeline</label>
-                                         <div className={styles.timeline}>
-                                             {scheduleTimeline.map((w, i) => (
-                                                 <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
-                                                     <span className={styles.timelineLabel}>{w.label}</span>
-                                                 </div>
-                                             ))}
-                                         </div>
-                                     </div>
-                                 )}
-                                 */}
                             </div>
                         )}
 
@@ -800,9 +781,10 @@ export default function CreateCampaignForm({
                                     <label className={styles.label} htmlFor="target_url">
                                         Destination URL <span className={styles.requiredIndicator}>*Required</span>
                                     </label>
-                                    <input id="target_url" name="target_url" type="url" className={styles.input}
+                                    <input id="target_url" name="target_url" type="url" className={`${styles.input} ${errors.target_url ? styles.inputError : ''}`}
                                         placeholder="https://lynk-x.com/event/..." value={formData.target_url}
                                         onChange={handleInputChange} required />
+                                    {errors.target_url && <p className={styles.errorMessage}>{errors.target_url}</p>}
                                 </div>
 
                                 {/* Multi-Country Targeting */}
@@ -827,8 +809,8 @@ export default function CreateCampaignForm({
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
                                                     // Add the first matching country if any
-                                                    const match = countries.find(c => 
-                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) && 
+                                                    const match = countries.find(c =>
+                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
                                                         !formData.target_countries?.includes(c.code)
                                                     );
                                                     if (match) addCountry(match.code);
@@ -840,8 +822,8 @@ export default function CreateCampaignForm({
                                         {countryInput && (
                                             <div className={styles.countryDropdown}>
                                                 {countries
-                                                    .filter(c => 
-                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) && 
+                                                    .filter(c =>
+                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
                                                         !formData.target_countries?.includes(c.code)
                                                     )
                                                     .slice(0, 5)
@@ -854,69 +836,69 @@ export default function CreateCampaignForm({
                                             </div>
                                         )}
                                     </div>
-                                    </div>
-                                    
-                                    {/* Market Competition Insights */}
-                                    {marketSuggestions.length > 0 && (
-                                        <div className={styles.marketInsights}>
-                                            <div className={styles.marketInsightsTitle}>Regional Market Density</div>
-                                            <div className={styles.marketGrid}>
-                                                {marketSuggestions.map(s => {
-                                                    const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
-                                                    return (
-                                                        <div key={s.country_code} className={styles.marketItem}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span className={styles.marketCountry}>{name}</span>
-                                                                <span className={`${styles.badge} ${styles['badge' + s.competition_level.charAt(0).toUpperCase() + s.competition_level.slice(1)]}`}>
-                                                                    {s.competition_level.toUpperCase()}
-                                                                </span>
-                                                            </div>
-                                                            <div className={styles.marketNote}>
-                                                                {s.suggested_modifier > 1.0 
-                                                                    ? `High volume. Recommend ${s.suggested_modifier}x bid modifier.`
-                                                                    : 'Healthy inventory. Base bids are sufficient.'
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
+                                </div>
 
-                                    {/* Interest Tag Targeting */}
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Interest Tags <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(max 10 — used for audience matching)</span></label>
-                                        <div className={styles.tagInput}>
-                                            {formData.target_tags.map(tag => (
-                                                <span key={tag} className={styles.tag}>
-                                                    {tag}
-                                                    <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
-                                                </span>
-                                            ))}
-                                            <input
-                                                className={styles.tagInputField}
-                                                placeholder={formData.target_tags.length < 10 ? 'Add a tag...' : 'Max 10 tags'}
-                                                value={tagInput}
-                                                onChange={e => setTagInput(e.target.value)}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
-                                                    if (e.key === 'Backspace' && !tagInput && formData.target_tags.length > 0) {
-                                                        removeTag(formData.target_tags[formData.target_tags.length - 1]);
-                                                    }
-                                                }}
-                                                disabled={formData.target_tags.length >= 10}
-                                            />
+                                {/* Market Competition Insights */}
+                                {marketSuggestions.length > 0 && (
+                                    <div className={styles.marketInsights}>
+                                        <div className={styles.marketInsightsTitle}>Regional Market Density</div>
+                                        <div className={styles.marketGrid}>
+                                            {marketSuggestions.map(s => {
+                                                const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
+                                                return (
+                                                    <div key={s.country_code} className={styles.marketItem}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <span className={styles.marketCountry}>{name}</span>
+                                                            <span className={`${styles.badge} ${styles['badge' + s.competition_level.charAt(0).toUpperCase() + s.competition_level.slice(1)]}`}>
+                                                                {s.competition_level.toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <div className={styles.marketNote}>
+                                                            {s.suggested_modifier > 1.0
+                                                                ? `High volume. Recommend ${s.suggested_modifier}x bid modifier.`
+                                                                : 'Healthy inventory. Base bids are sufficient.'
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                        <div className={styles.tagSuggestions}>
-                                            {tagSuggestions.filter(t => !formData.target_tags.includes(t)).map(t => (
-                                                <button key={t} type="button" className={styles.tagSuggestion} onClick={() => addTag(t)}>
-                                                    + {t}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Interest Tag Targeting */}
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label}>Interest Tags <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(max 10 — used for audience matching)</span></label>
+                                    <div className={styles.tagInput}>
+                                        {formData.target_tags.map(tag => (
+                                            <span key={tag} className={styles.tag}>
+                                                {tag}
+                                                <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
+                                            </span>
+                                        ))}
+                                        <input
+                                            className={styles.tagInputField}
+                                            placeholder={formData.target_tags.length < 10 ? 'Add a tag...' : 'Max 10 tags'}
+                                            value={tagInput}
+                                            onChange={e => setTagInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
+                                                if (e.key === 'Backspace' && !tagInput && formData.target_tags.length > 0) {
+                                                    removeTag(formData.target_tags[formData.target_tags.length - 1]);
+                                                }
+                                            }}
+                                            disabled={formData.target_tags.length >= 10}
+                                        />
+                                    </div>
+                                    <div className={styles.tagSuggestions}>
+                                        {tagSuggestions.filter(t => !formData.target_tags.includes(t)).map(t => (
+                                            <button key={t} type="button" className={styles.tagSuggestion} onClick={() => addTag(t)}>
+                                                + {t}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
+                            </div>
                         )}
 
                         {/* ── Tab: Creatives (A/B) ── */}
@@ -954,10 +936,11 @@ export default function CreateCampaignForm({
                                                 Headline / Call to Action
                                                 {i === 0 && <span className={styles.requiredIndicator}>*Required</span>}
                                             </label>
-                                            <input type="text" className={styles.input}
+                                            <input type="text" className={`${styles.input} ${errors[`creative.${i}.headline`] ? styles.inputError : ''}`}
                                                 placeholder="e.g. Get 20% Off Tickets Today!"
                                                 value={c.headline}
                                                 onChange={e => updateCreative(i, { headline: e.target.value })} />
+                                            {errors[`creative.${i}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${i}.headline`]}</p>}
                                         </div>
 
                                         <div className={styles.inputGroup}>
@@ -970,7 +953,7 @@ export default function CreateCampaignForm({
                                             </label>
 
                                             {c.preview || c.imageUrl ? (
-                                                <div className={styles.assetPreviewBox}>
+                                                <div className={`${styles.assetPreviewBox} ${errors[`creative.${i}.asset`] ? styles.inputError : ''}`}>
                                                     {c.mediaType === 'video' ? (
                                                         <video
                                                             src={c.preview || c.imageUrl}
@@ -998,18 +981,19 @@ export default function CreateCampaignForm({
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className={styles.uploadArea} onClick={() => fileInputRefs.current[i]?.click()}>
+                                                <div className={`${styles.uploadArea} ${errors[`creative.${i}.asset`] ? styles.inputError : ''}`} onClick={() => fileInputRefs.current[i]?.click()}>
                                                     <svg className={styles.uploadIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                                         <rect x="3" y="3" width="18" height="18" rx="2" />
                                                         <circle cx="8.5" cy="8.5" r="1.5" />
                                                         <polyline points="21 15 16 10 5 21" />
                                                     </svg>
-                                                     <p style={{ marginTop: '12px', fontSize: '14px', opacity: 0.7 }}>
-                                                         Click to upload {formData.type === 'interstitial_video' ? 'a video' : 'an image'}
-                                                     </p>
-                                                     <p style={{ fontSize: '12px', opacity: 0.4 }}>
-                                                         {formData.type === 'banner' ? '16:9' : '9:16'} · {formData.type === 'interstitial_video' ? 'MP4, MOV' : 'PNG, JPG, WEBP'}
-                                                     </p>
+                                                    <p style={{ marginTop: '12px', fontSize: '14px', opacity: 0.7 }}>
+                                                        Click to upload {formData.type === 'interstitial_video' ? 'a video' : 'an image'}
+                                                    </p>
+                                                    <p style={{ fontSize: '12px', opacity: 0.4 }}>
+                                                        {formData.type === 'banner' ? '16:9' : '9:16'} · {formData.type === 'interstitial_video' ? 'MP4, MOV' : 'PNG, JPG, WEBP'}
+                                                    </p>
+                                                    {errors[`creative.${i}.asset`] && <p className={styles.errorMessage}>{errors[`creative.${i}.asset`]}</p>}
                                                 </div>
                                             )}
                                             <input type="file" ref={el => { fileInputRefs.current[i] = el; }} style={{ display: 'none' }}
@@ -1043,7 +1027,7 @@ export default function CreateCampaignForm({
                                     ))}
                                 </div>
 
-                                 {/* Schedule repeat in review (Disabled for now)
+                                {/* Schedule repeat in review (Disabled for now)
                                  {scheduleTimeline.length > 0 && (
                                      <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
                                          <label className={styles.label}>Campaign Window</label>
@@ -1095,7 +1079,7 @@ export default function CreateCampaignForm({
                                         <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => {
                                             const flow = ['details', 'targeting', 'creative', 'review'];
                                             const idx = flow.indexOf(activeTab);
-                                            if (idx > 0) setActiveTab(flow[idx - 1] as any);
+                                            if (idx > 0) handleTabSwitch(flow[idx - 1] as any);
                                         }}>Back</button>
                                     )}
                                 </div>
@@ -1104,7 +1088,7 @@ export default function CreateCampaignForm({
                                         <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
                                             const flow = ['details', 'targeting', 'creative', 'review'];
                                             const idx = flow.indexOf(activeTab);
-                                            if (idx < flow.length - 1) setActiveTab(flow[idx + 1] as any);
+                                            if (idx < flow.length - 1) handleTabSwitch(flow[idx + 1] as any);
                                         }}>
                                             Next →
                                         </button>

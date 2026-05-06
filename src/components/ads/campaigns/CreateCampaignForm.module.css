@@ -95,6 +95,10 @@
     border-color: var(--color-brand-primary);
 }
 
+.inputError {
+    border-color: #ff4d4d !important;
+}
+
 .textarea {
     resize: vertical;
     min-height: 100px;

@@ -14,6 +14,8 @@ import SubPageHeader from '@/components/shared/SubPageHeader';
 import Modal from '@/components/shared/Modal';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import type { ActionItem } from '@/components/shared/TableRowActions';
+import ProductTour from '@/components/dashboard/ProductTour';
+import { useOrganization } from '@/context/OrganizationContext';
 
 interface CheckInLog {
     id: string;
@@ -28,6 +30,7 @@ interface CheckInLog {
 export default function CheckInLogsPage() {
     const { id: eventId } = useParams() as { id: string };
     const { showToast } = useToast();
+    const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
     const [logs, setLogs] = useState<CheckInLog[]>([]);
@@ -227,13 +230,13 @@ export default function CheckInLogsPage() {
                 ]}
             />
 
-            <div className={adminStyles.statsGrid}>
+            <div className={`${adminStyles.statsGrid} tour-checkin-stats`}>
                 <StatCard label="Total Scanned" value={stats.scanned} color="var(--color-interface-success)" isLoading={isLoading} />
                 <StatCard label="Remaining" value={stats.remaining} isLoading={isLoading} />
                 <StatCard label="Rejected Scans" value={stats.rejected} color="var(--color-interface-error)" isLoading={isLoading} />
             </div>
 
-            <div style={{ marginTop: '24px' }}>
+            <div style={{ marginTop: '24px' }} className="tour-checkin-feed">
                 <DataTable<CheckInLog>
                     data={logs}
                     columns={columns}
@@ -289,6 +292,28 @@ export default function CheckInLogsPage() {
                     style={{ fontFamily: 'monospace', letterSpacing: 2 }}
                 />
             </Modal>
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenEventCheckinsJoyride_${activeAccount.id}_${eventId}` : `hasSeenEventCheckinsJoyride_guest_${eventId}`}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Live Check-in Feed',
+                        content: 'Monitor your event entrance in real-time. This feed updates automatically as staff scan tickets at the gate.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-checkin-stats',
+                        title: 'Entry Progress',
+                        content: 'Track total scans, remaining attendees and rejected tickets to manage gate flow effectively.',
+                    },
+                    {
+                        target: '.tour-checkin-feed',
+                        title: 'Verification Log',
+                        content: 'Review individual scan details, including the staff member who performed the scan and the exact time of entry.',
+                    }
+                ]}
+            />
         </div>
     );
 }

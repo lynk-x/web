@@ -269,7 +269,7 @@ export default function CampaignDetailPage() {
                 <StatCard label="Clicks" value={formatNumber(campaign.total_clicks)} trend="neutral" />
                 <StatCard label="CTR" value={`${ctr.toFixed(2)}%`} trend="neutral" />
                 <StatCard label="CPC" value={formatCurrency(cpc, campaign.currency)} trend="neutral" />
-                <StatCard label="Spent" value={formatCurrency(campaign.spent_amount, campaign.currency)} trend="neutral" subText={`${budgetUsed.toFixed(0)}% of budget`} />
+                <StatCard label="Spent" value={formatCurrency(campaign.spent_amount, campaign.currency)} trend="neutral" change={`${budgetUsed.toFixed(0)}% of budget`} />
                 <StatCard label="Remaining" value={formatCurrency(campaign.remaining_budget, campaign.currency)} trend="neutral" />
             </div>
 
