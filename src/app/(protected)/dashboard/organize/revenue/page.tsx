@@ -14,6 +14,7 @@ import Tabs from '@/components/dashboard/Tabs';
 import { formatDate, formatCurrency } from '@/utils/format';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
+import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
 
 function RevenueContent() {
@@ -230,55 +231,43 @@ function RevenueContent() {
 
     return (
         <div className={styles.dashboardPage}>
-            {/* Header */}
-            <div className={styles.pageHeader}>
-                <div>
-                    <h1 className={styles.pageTitle}>Revenue & Payouts</h1>
-                    <p className={styles.pageSubtitle}>Track your earnings and transaction history.</p>
-                </div>
-                {/* Payout request: inline amount input + button */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} className="tour-revenue-payout">
-                    {!activeAccount?.payout_routing?.method ? (
-                        <Link 
-                            href="/dashboard/organize/settings?tab=payout" 
-                            className={styles.secondaryBtn}
-                            style={{ color: 'var(--color-brand-primary)', borderColor: 'var(--color-brand-primary)', fontSize: '13px' }}
+            <PageHeader
+                title="Revenue & Payouts"
+                subtitle="Track your earnings and transaction history."
+                actionClassName="tour-revenue-payout"
+                actionLabel={!activeAccount?.payout_routing?.method ? "Connect Payout Method" : undefined}
+                onActionClick={!activeAccount?.payout_routing?.method ? () => router.push('/dashboard/organize/settings?tab=payout') : undefined}
+                customAction={activeAccount?.payout_routing?.method ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <select
+                            value={payoutCurrency}
+                            onChange={(e) => setPayoutCurrency(e.target.value)}
+                            className={styles.currencySelect}
                         >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                            Connect Payout Method
-                        </Link>
-                    ) : (
-                        <>
-                            <select
-                                value={payoutCurrency}
-                                onChange={(e) => setPayoutCurrency(e.target.value)}
-                                className={styles.currencySelect}
-                            >
-                                {wallets.length > 0 ? (
-                                    wallets.map(w => (
-                                        <option key={w.currency} value={w.currency}>{w.currency}</option>
-                                    ))
-                                ) : (
-                                    <option value={activeAccount?.wallet_currency || 'KES'}>
-                                        {activeAccount?.wallet_currency || 'KES'}
-                                    </option>
-                                )}
-                            </select>
-                            <input
-                                type="number"
-                                min="1"
-                                placeholder="Amount"
-                                value={payoutAmount}
-                                onChange={(e) => setPayoutAmount(e.target.value)}
-                                style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '120px', fontSize: '14px' }}
-                            />
-                            <button className={styles.primaryBtn} onClick={handleRequestPayout}>
-                                Request Payout
-                            </button>
-                        </>
-                    )}
-                </div>
-            </div>
+                            {wallets.length > 0 ? (
+                                wallets.map(w => (
+                                    <option key={w.currency} value={w.currency}>{w.currency}</option>
+                                ))
+                            ) : (
+                                <option value={activeAccount?.wallet_currency || 'KES'}>
+                                    {activeAccount?.wallet_currency || 'KES'}
+                                </option>
+                            )}
+                        </select>
+                        <input
+                            type="number"
+                            min="1"
+                            placeholder="Amount"
+                            value={payoutAmount}
+                            onChange={(e) => setPayoutAmount(e.target.value)}
+                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '120px', fontSize: '14px' }}
+                        />
+                        <button className={styles.primaryBtn} onClick={handleRequestPayout}>
+                            Request Payout
+                        </button>
+                    </div>
+                ) : undefined}
+            />
 
             {/* Tabs */}
             <div className="tour-revenue-tabs">
@@ -328,18 +317,23 @@ function RevenueContent() {
                         target: 'body',
                         placement: 'center',
                         title: 'Revenue & Payouts',
-                        content: 'Track your ticket sales earnings and manage your linked wallets.',
+                        content: 'This is where you manage your earnings from ticket sales. You can view balances across multiple currencies and track your payout history.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-revenue-payout',
                         title: 'Request a Payout',
-                        content: 'Ready to cash out? Simply enter your desired amount and currency here.',
+                        content: 'When you\'re ready to receive your funds, enter the amount here and click Request. Our team will process it to your connected bank or mobile wallet.',
                     },
                     {
                         target: '.tour-revenue-tabs',
-                        title: 'View Your Accounts',
-                        content: 'Switch between viewing your available Wallets and tracking past Payout requests.',
+                        title: 'Account Ledger',
+                        content: 'Switch between "Wallets" to see current balances, "Payouts" to track requests and "Refunds" to view customer cancellations.',
+                    },
+                    {
+                        target: 'a[href*="settings?tab=payout"]',
+                        title: 'Connect Payout Method',
+                        content: 'If you haven\'t already, make sure to connect a valid bank account or mobile money wallet in your settings to receive payments.',
                     }
                 ]}
             />

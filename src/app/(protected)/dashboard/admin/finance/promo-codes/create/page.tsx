@@ -10,7 +10,7 @@ export default function CreatePromoCodePage() {
         <div className={adminStyles.container}>
             <SubPageHeader 
                 title="Create Promo Code"
-                subtitle="Configure a new discount code for accounts, events, or ticket tiers."
+                subtitle="Configure a new discount code for accounts, events or ticket tiers."
             />
             <PromoCodeForm isEditing={false} />
         </div>

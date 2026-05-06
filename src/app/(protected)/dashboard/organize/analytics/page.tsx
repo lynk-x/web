@@ -33,69 +33,13 @@ export default function AnalyticsPage() {
         async (supabase) => {
             if (!activeAccount) return { insights: [], timeSeries: [] };
 
-            const { data: eventsData, error: evErr } = await supabase
-                .from('events')
-                .select('id, title, status, ticket_tiers(price, capacity, tickets_sold)')
-                .eq('account_id', activeAccount.id)
-                .throwOnError();
-
-            if (evErr) throw evErr;
-
-            const insights: PerformanceEvent[] = (eventsData || []).map((eventData: any) => {
-                let eventRevenue = 0;
-                let eventSold = 0;
-                let eventTotalCapacity = 0;
-
-                (eventData.ticket_tiers || []).forEach((tier: any) => {
-                    eventSold += tier.tickets_sold || 0;
-                    eventRevenue += (tier.tickets_sold || 0) * (tier.price || 0);
-                    eventTotalCapacity += tier.capacity || 0;
-                });
-
-                return {
-                    id: eventData.id,
-                    event: eventData.title,
-                    ticketsSold: eventSold,
-                    totalRevenue: eventRevenue,
-                    netRevenue: eventRevenue * 0.95,
-                    conversionRate: eventTotalCapacity > 0
-                        ? ((eventSold / eventTotalCapacity) * 100).toFixed(1) + '%'
-                        : 'N/A',
-                    status: eventData.status,
-                };
+            const { data: metrics, error } = await supabase.rpc('get_organizer_performance_metrics', {
+                p_account_id: activeAccount.id,
+                p_days: parseInt(timeRange, 10)
             });
 
-            // Time-series: completed incoming transactions for the time window
-            const since = new Date();
-            since.setDate(since.getDate() - parseInt(timeRange, 10));
-
-            const ids = (eventsData || []).map((e: any) => e.id);
-            let timeSeries: { name: string; revenue: number; tickets: number }[] = [];
-
-            if (ids.length > 0) {
-                const { data: txData, error: txErr } = await supabase
-                    .schema('transactions')
-                    .from('transactions')
-                    .select('amount, created_at')
-                    .in('event_id', ids)
-                    .eq('category', 'incoming')
-                    .eq('status', 'completed')
-                    .gte('created_at', since.toISOString());
-
-                if (txErr) throw txErr;
-
-                const byDay: Record<string, number> = {};
-                (txData || []).forEach((tx: any) => {
-                    const day = new Date(tx.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' });
-                    byDay[day] = (byDay[day] || 0) + tx.amount;
-                });
-
-                timeSeries = Object.entries(byDay)
-                    .map(([name, revenue]) => ({ name, revenue, tickets: 0 }))
-                    .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
-            }
-
-            return { insights, timeSeries };
+            if (error) throw error;
+            return metrics;
         },
         {
             enabled: !isOrgLoading && !!activeAccount,
@@ -257,9 +201,28 @@ export default function AnalyticsPage() {
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgAnalyticsJoyride_${activeAccount.id}` : 'hasSeenOrgAnalyticsJoyride_guest'}
                 steps={[
-                    { target: 'body', placement: 'center', title: 'Event Analytics', content: 'Dive deep into your event performance and ticket sales.', skipBeacon: true },
-                    { target: '.tour-analytics-range', title: 'Time Range & Filters', content: 'Adjust the date range or status to see specific historical performance trends.' },
-                    { target: '.tour-analytics-trend', title: 'Performance Trend', content: 'Visualize your revenue and sales growth over time in this chart.' },
+                    { 
+                        target: 'body', 
+                        placement: 'center', 
+                        title: 'Event Analytics', 
+                        content: 'Welcome to your analytics command center. Here you can track everything from ticket sales to conversion rates across your entire organization.', 
+                        skipBeacon: true 
+                    },
+                    { 
+                        target: '.tour-analytics-range', 
+                        title: 'Time Range & Filters', 
+                        content: 'Adjust the date range or filter by event status to analyze specific trends over the last week, month or year.' 
+                    },
+                    { 
+                        target: '.tour-analytics-trend', 
+                        title: 'Performance Trend', 
+                        content: 'This chart visualizes your gross revenue growth. Hover over the data points for specific daily breakdowns.' 
+                    },
+                    {
+                        target: 'button[onClick*="handleExport"]',
+                        title: 'Export Reports',
+                        content: 'Need to present this data? Click here to download a full CSV report of your current performance metrics.'
+                    }
                 ]}
             />
         </div>

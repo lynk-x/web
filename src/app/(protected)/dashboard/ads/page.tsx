@@ -150,24 +150,29 @@ export default function AdsDashboard() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Welcome to Ads Manager!',
-                        content: 'Promote your business and reach a wider audience across Lynk-X.',
+                        title: 'Ads Command Center',
+                        content: 'Welcome to your Advertising Dashboard. From here, you can launch campaigns that reach thousands of Lynk-X attendees across our mobile and web platforms.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-ads-stats',
                         title: 'Campaign Performance',
-                        content: 'Monitor your active campaigns and track your remaining budget at a glance.',
+                        content: 'Monitor your active reach, total impressions and ad engagement (clicks) in real-time.',
                     },
                     {
                         target: '.tour-create-campaign',
-                        title: 'Launch a campaign',
-                        content: 'Select your target audience, set your budget, and go live with a new ad.',
+                        title: 'Start Advertising',
+                        content: 'Ready to grow your event? Create a new ad campaign, set your budget and choose your target audience here.',
                     },
                     {
                         target: '.tour-ads-analytics',
-                        title: 'Deep dive into data',
-                        content: 'See exactly how your ads are performing with detailed analytics.',
+                        title: 'Deep Insights',
+                        content: 'Analyze your ad spend and conversion rates to optimize your marketing strategy.',
+                    },
+                    {
+                        target: 'a[href*="assets"]',
+                        title: 'Creative Library',
+                        content: 'Manage your banners, videos and other creative assets for your ads.',
                     }
                 ]}
             />

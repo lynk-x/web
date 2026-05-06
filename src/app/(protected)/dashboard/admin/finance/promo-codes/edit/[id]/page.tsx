@@ -78,7 +78,7 @@ export default function EditPromoCodePage() {
         <div className={adminStyles.container}>
             <SubPageHeader 
                 title={`Edit Code: ${initialData.code}`}
-                subtitle="Modify discount values, usage limits, or validity periods."
+                subtitle="Modify discount values, usage limits or validity periods."
             />
             <PromoCodeForm initialData={initialData} isEditing={true} />
         </div>

@@ -584,7 +584,7 @@ function FinanceContent() {
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Finance"
-                subtitle="Monitor platform revenue, manage payouts, and configure financial settings."
+                subtitle="Monitor platform revenue, manage payouts and configure financial settings."
                 actionLabel="Export Transactions"
                 onActionClick={handleBulkExport}
                 actionIcon={

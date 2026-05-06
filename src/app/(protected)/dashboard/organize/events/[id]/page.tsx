@@ -12,6 +12,9 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 interface TicketTier {
     id: string;
@@ -89,40 +92,18 @@ export default function EventDetailPage() {
 
             setEvent(data as EventDetail);
 
-            // Fetch revenue, scan count, and forum members in parallel
-            const [revResult, scanResult, forumResult] = await Promise.all([
-                supabase
-                    .schema('transactions')
-                    .from('transactions')
-                    .select('amount')
-                    .eq('event_id', id)
-                    .eq('status', 'completed')
-                    .eq('category', 'incoming')
-                    .eq('reason', 'ticket_sale'),
-                supabase
-                    .schema('ticket_scan_logs')
-                    .from('ticket_scan_logs')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('status', 'success')
-                    .in('ticket_id', (data.ticket_tiers || []).map((t: any) => t.id)),
-                supabase
-                    .from('forums')
-                    .select('id')
-                    .eq('event_id', id)
-                    .maybeSingle()
-            ]);
+            // Fetch consolidated summary metrics via RPC
+            const { data: summary, error: summaryErr } = await supabase.rpc('get_event_summary_stats', {
+                p_event_id: id,
+                p_account_id: activeAccount.id
+            });
 
-            if (revResult.data) {
-                setRevenueTotal(revResult.data.reduce((sum: number, t: any) => sum + Number(t.amount), 0));
-            }
-            setScanCount(scanResult.count || 0);
+            if (summaryErr) throw summaryErr;
 
-            if (forumResult.data) {
-                const { count } = await supabase
-                    .from('forum_members')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('forum_id', forumResult.data.id);
-                setForumMemberCount(count || 0);
+            if (summary) {
+                setRevenueTotal(summary.revenue || 0);
+                setScanCount(summary.scans || 0);
+                setForumMemberCount(summary.community || 0);
             }
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load event details.', 'error');
@@ -165,22 +146,39 @@ export default function EventDetailPage() {
             />
 
             {/* Stats Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-                <StatCard label="Tickets Sold" value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} sub={`${sellThrough}% sell-through`} />
-                <StatCard label="Revenue" value={formatCurrency(revenueTotal, event.currency)} />
-                <StatCard label="Check-ins" value={formatNumber(scanCount)} sub={totalSold > 0 ? `${((scanCount / totalSold) * 100).toFixed(0)}% scanned` : undefined} />
-                <StatCard label="Community" value={formatNumber(forumMemberCount)} sub="forum members" />
+            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+                <StatCard 
+                    label="Tickets Sold" 
+                    value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} 
+                    change={`${sellThrough}% sell-through`}
+                    trend={Number(sellThrough) >= 50 ? 'positive' : 'neutral'}
+                />
+                <StatCard 
+                    label="Revenue" 
+                    value={formatCurrency(revenueTotal, event.currency)} 
+                    trend={revenueTotal > 0 ? 'positive' : 'neutral'}
+                />
+                <StatCard 
+                    label="Check-ins" 
+                    value={formatNumber(scanCount)} 
+                    change={totalSold > 0 ? `${((scanCount / totalSold) * 100).toFixed(0)}% scanned` : undefined}
+                />
+                <StatCard 
+                    label="Community" 
+                    value={formatNumber(forumMemberCount)} 
+                    change="forum members"
+                />
             </div>
 
             {/* Quick Links */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }} className="tour-event-links">
                 <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
                 <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in Scanner" />
                 <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
             </div>
 
             {/* Ticket Tiers */}
-            <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
+            <div className={`${adminStyles.pageCard} tour-event-tiers`} style={{ marginBottom: '24px' }}>
                 <h2 className={adminStyles.sectionTitle}>Ticket Tiers</h2>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
@@ -247,29 +245,39 @@ export default function EventDetailPage() {
                     </div>
                 )}
             </div>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenEventDetailJoyride_${activeAccount.id}_${id}` : `hasSeenEventDetailJoyride_guest_${id}`}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Event Intelligence',
+                        content: 'This page provides real-time insights into your event performance. Track sales, revenue and attendee engagement from a single view.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-event-stats',
+                        title: 'Performance Snapshot',
+                        content: 'Monitor your critical KPIs including total ticket sales, gross revenue and forum community growth.',
+                    },
+                    {
+                        target: '.tour-event-links',
+                        title: 'Quick Management',
+                        content: 'Jump directly to the attendee list, scanner interface or detailed event analytics.',
+                    },
+                    {
+                        target: '.tour-event-tiers',
+                        title: 'Tier Performance',
+                        content: 'View a breakdown of fill rates and sales windows for each ticket tier.',
+                    }
+                ]}
+            />
         </div>
     );
 }
 
 // ── Helper Components ──────────────────────────────────────────────────────
-
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-    return (
-        <div style={{
-            background: 'var(--color-interface-surface)',
-            border: '1px solid var(--color-interface-outline)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-        }}>
-            <span style={{ fontSize: '13px', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>{label}</span>
-            <span style={{ fontSize: '24px', fontWeight: 700 }}>{value}</span>
-            {sub && <span style={{ fontSize: '13px', opacity: 0.5 }}>{sub}</span>}
-        </div>
-    );
-}
 
 function QuickLink({ href, label }: { href: string; label: string }) {
     return (

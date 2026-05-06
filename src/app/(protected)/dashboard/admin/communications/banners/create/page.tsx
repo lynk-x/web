@@ -35,7 +35,7 @@ export default function CreateBannerPage() {
         if (e) e.preventDefault();
 
         if (!title || !content || !startsAt) {
-            showToast('Title, content, and start date are required', 'error');
+            showToast('Title, content and start date are required', 'error');
             return;
         }
 

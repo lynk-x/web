@@ -252,7 +252,7 @@ export default function AdminEventsPage() {
             {ConfirmDialog}
             <PageHeader
                 title="Event Management" 
-                subtitle="Review, approve, and moderate events across the platform."
+                subtitle="Review, approve and moderate events across the platform."
                 actionLabel="Create Event"
                 actionHref="/dashboard/admin/events/create"
                 actionIcon={

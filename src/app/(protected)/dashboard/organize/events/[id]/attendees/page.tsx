@@ -120,7 +120,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
             />
 
             <TableToolbar
-                searchPlaceholder="Search by name, email, or order ID..."
+                searchPlaceholder="Search by name, email or order ID..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >

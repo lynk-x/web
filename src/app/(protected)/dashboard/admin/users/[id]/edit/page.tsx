@@ -23,7 +23,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             try {
                 const { data, error } = await supabase
                     .from('user_profile')
-                    .select('id, full_name, user_name, email, role, status, bio')
+                    .select('id, full_name, user_name, email, role, status, bio, country_code, kyc_tier')
                     .eq('id', id)
                     .single();
 
@@ -32,10 +32,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 setUser({
                     id: data.id,
                     name: data.full_name,
-                    userName: data.user_name,
                     email: data.email,
                     role: data.role as any,
-                    status: (data.status === 'permanently_suspended' || data.status === 'temporarily_suspended') ? 'suspended' : 'active',
+                    status: data.status as any,
+                    countryCode: data.country_code,
+                    kycTier: data.kyc_tier as any,
                     bio: data.bio
                 });
             } catch (err: unknown) {

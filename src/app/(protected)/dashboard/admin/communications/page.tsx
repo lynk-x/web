@@ -326,7 +326,7 @@ function CommunicationsContent() {
             <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 className={adminStyles.title}>Communications</h1>
-                    <p className={adminStyles.subtitle}>Manage platform content, spotlights, and notifications.</p>
+                    <p className={adminStyles.subtitle}>Manage platform content, spotlights and notifications.</p>
                 </div>
                 <button
                     className={adminStyles.btnPrimary}

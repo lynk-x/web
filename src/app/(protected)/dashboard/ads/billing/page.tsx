@@ -110,7 +110,7 @@ export default function AdsBillingPage() {
         <div className={adminStyles.container}>
             <PageHeader
                 title="Finance & Ad Spend"
-                subtitle="Track your ad spend, manage your wallet balance, and view transaction history."
+                subtitle="Track your ad spend, manage your wallet balance and view transaction history."
             />
 
             <div className={adminStyles.subPageGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
@@ -170,19 +170,19 @@ export default function AdsBillingPage() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Finance & Ad Spend',
-                        content: 'Manage your campaign budgets, top up your wallet, and track your ad expenses.',
+                        title: 'Billing & Payments',
+                        content: 'Manage your organization\'s payment methods and track your advertising spend history.',
                         skipBeacon: true,
                     },
                     {
-                        target: '.tour-billing-balance',
-                        title: 'Available Balance',
-                        content: 'Add funds here to ensure your ad campaigns continue running smoothly without interruptions.',
+                        target: '.tour-ads-billing-methods',
+                        title: 'Funding Your Campaigns',
+                        content: 'Securely add or update your credit cards and mobile money accounts to ensure uninterrupted ad delivery.',
                     },
                     {
-                        target: '.tour-billing-history',
-                        title: 'Transaction History',
-                        content: 'Review all past wallet top-ups and their current status right here.',
+                        target: '.tour-ads-billing-history',
+                        title: 'Invoicing & Receipts',
+                        content: 'Download historical invoices and track every transaction related to your ad campaigns.',
                     }
                 ]}
             />

@@ -288,19 +288,24 @@ export default function CampaignsPage() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Manage Ad Campaigns',
-                        content: 'Track, optimize, and edit all your active or paused campaigns.',
+                        title: 'Your Ad Campaigns',
+                        content: 'This list shows all your marketing efforts. You can monitor budgets, schedules and delivery status for each individual campaign.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-campaigns-filter',
-                        title: 'Filter Campaigns',
-                        content: 'Easily find campaigns by status like Pending, Active, or Draft.',
+                        title: 'Refine Your View',
+                        content: 'Filter your campaigns by status (Active, Paused, Completed) to focus on what matters most right now.',
                     },
                     {
                         target: '.tour-campaigns-table',
-                        title: 'Campaign Data',
-                        content: 'Select multiple campaigns to pause or delete them at once.',
+                        title: 'Campaign Details',
+                        content: 'Review key stats like remaining budget and total spend. You can edit, pause or duplicate campaigns directly from this list.',
+                    },
+                    {
+                        target: 'a[href*="/edit"]',
+                        title: 'Optimization',
+                        content: 'Click "Edit" to adjust your targeting or update the creative assets for an ongoing campaign.',
                     }
                 ]}
             />

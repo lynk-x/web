@@ -14,6 +14,8 @@ import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import PageHeader from '@/components/dashboard/PageHeader';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 interface Quiz {
     id: string;
@@ -175,27 +177,25 @@ export default function QuizzesPage() {
     return (
         <div className={adminStyles.page}>
             {ConfirmDialog}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                <div>
-                    <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Quizzes</h1>
-                    <p style={{ margin: '4px 0 0', color: 'var(--color-text-secondary)', fontSize: 14 }}>
-                        Manage live quizzes for your event forums.
-                    </p>
-                </div>
-                <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/organize/quizzes/new')}>
-                    + Create Quiz
-                </button>
-            </div>
-
-            <BulkActionsBar
-                selectedCount={selectedIds.size}
-                onCancel={() => setSelectedIds(new Set())}
-                actions={[
-                    { label: 'Duplicate Selected', onClick: () => handleBulkAction('duplicate'), variant: 'default' },
-                    { label: 'Publish Selected', onClick: () => handleBulkAction('publish'), variant: 'default' },
-                    { label: 'Delete Selected', onClick: () => handleBulkAction('delete'), variant: 'danger' }
-                ]}
+            <PageHeader
+                title="Quizzes"
+                subtitle="Manage live quizzes for your event forums."
+                actionLabel="+ Create Quiz"
+                onActionClick={() => router.push('/dashboard/organize/quizzes/new')}
+                actionClassName="tour-create-quiz"
             />
+
+            <div className="tour-bulk-actions">
+                <BulkActionsBar
+                    selectedCount={selectedIds.size}
+                    onCancel={() => setSelectedIds(new Set())}
+                    actions={[
+                        { label: 'Duplicate Selected', onClick: () => handleBulkAction('duplicate'), variant: 'default' },
+                        { label: 'Publish Selected', onClick: () => handleBulkAction('publish'), variant: 'default' },
+                        { label: 'Delete Selected', onClick: () => handleBulkAction('delete'), variant: 'danger' }
+                    ]}
+                />
+            </div>
 
             {isLoading ? (
                 <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
@@ -300,6 +300,34 @@ export default function QuizzesPage() {
                     </tbody>
                 </table>
             )}
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenOrgQuizzesJoyride_${activeAccount.id}` : 'hasSeenOrgQuizzesJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Interactive Quizzes',
+                        content: 'Quizzes are a powerful way to engage your audience during live events. You can create multiple-choice challenges and host them in real-time.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-create-quiz',
+                        title: 'Build a Quiz',
+                        content: 'Start by creating a new quiz. You can add questions, set correct answers and link it to specific event forum channels.',
+                    },
+                    {
+                        target: `.${adminStyles.table}`,
+                        title: 'Quiz Management',
+                        content: 'Monitor all your quizzes here. You can see which event and channel they belong to, as well as their current status.',
+                    },
+                    {
+                        target: 'a[href*="/host"]',
+                        title: 'Go Live!',
+                        content: 'When your event starts, click "Host Live" to launch the interactive presenter view and start accepting attendee responses.',
+                    }
+                ]}
+            />
         </div>
     );
 }

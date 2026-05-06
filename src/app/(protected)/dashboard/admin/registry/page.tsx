@@ -40,7 +40,7 @@ function RegistryContent() {
         <div className={adminStyles.container}>
             <PageHeader 
                 title="Registry &amp; Disclaimers" 
-                subtitle="Manage platform taxonomy, tag hierarchies, and event disclaimers." 
+                subtitle="Manage platform taxonomy, tag hierarchies and event disclaimers." 
             />
 
             <Tabs

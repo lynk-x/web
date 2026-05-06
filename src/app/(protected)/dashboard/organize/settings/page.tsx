@@ -14,6 +14,7 @@ import Tabs from '@/components/dashboard/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 function SettingsContent() {
     const { showToast } = useToast();
@@ -195,13 +196,14 @@ function SettingsContent() {
         <div className={adminStyles.container}>
             <PageHeader
                 title="Organizer Settings"
-                subtitle="Configure your organization profile, team members, and advertising preferences."
+                subtitle="Configure your organization profile, team members and advertising preferences."
                 actionLabel={isSaving ? "Saving..." : "Save Settings"}
                 onActionClick={handleSave}
                 actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>}
+                actionClassName="tour-settings-save"
             />
 
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '24px' }} className="tour-settings-tabs">
                 <Tabs
                     options={[
                         { id: 'account', label: 'Account' },
@@ -217,7 +219,11 @@ function SettingsContent() {
             <div className={adminStyles.container} ref={settingsContainerRef}>
                 {activeTab === 'account' && (
                     <div className={adminStyles.pageCard}>
-                        {activeAccount && <KycStatusCard accountId={activeAccount.id} />}
+                        {activeAccount && (
+                            <div className="tour-settings-kyc">
+                                <KycStatusCard accountId={activeAccount.id} />
+                            </div>
+                        )}
                         <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
                         <div className={adminStyles.formGrid}>
                             <div className={adminStyles.formGroup}>
@@ -309,6 +315,34 @@ function SettingsContent() {
                 confirmLabel="Deactivate"
                 variant="danger"
                 confirmText="DEACTIVATE"
+            />
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenOrgSettingsJoyride_${activeAccount.id}` : 'hasSeenOrgSettingsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Organizer Settings',
+                        content: 'Configure your organization\'s identity, team members and payout preferences.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-settings-tabs',
+                        title: 'Configuration Tabs',
+                        content: 'Switch between Account profile, Team member management and Billing/Payout setup.',
+                    },
+                    {
+                        target: '.tour-settings-kyc',
+                        title: 'KYC Verification',
+                        content: 'To receive payouts, you must verify your identity. Check your current verification status here.',
+                    },
+                    {
+                        target: '.tour-settings-save',
+                        title: 'Apply Changes',
+                        content: 'Don\'t forget to save your settings after making any changes to your profile or preferences.',
+                    }
+                ]}
             />
         </div>
     );

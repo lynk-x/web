@@ -36,20 +36,11 @@ export default function DashboardOverview() {
             setIsLoading(true);
 
             try {
-                // Fetch events, team, and spotlights
-                const [eventsRes, teamRes, spotlightsRes] = await Promise.all([
-                    supabase
-                        .from('events')
-                        .select(`
-                            id,
-                            status,
-                            starts_at
-                        `)
-                        .eq('account_id', activeAccount.id),
-                    supabase
-                        .from('account_members')
-                        .select('id', { count: 'exact' })
-                        .eq('account_id', activeAccount.id),
+                // Fetch consolidated stats and spotlights in parallel
+                const [statsRes, spotlightsRes] = await Promise.all([
+                    supabase.rpc('get_organizer_dashboard_stats', {
+                        p_account_id: activeAccount.id
+                    }),
                     supabase
                         .from('spotlights')
                         .select('*')
@@ -58,26 +49,14 @@ export default function DashboardOverview() {
                         .order('display_order', { ascending: true })
                 ]);
 
-                if (eventsRes.error) throw eventsRes.error;
+                if (statsRes.error) throw statsRes.error;
 
-                const allEvents = eventsRes.data || [];
-                const totalEvents = allEvents.length;
-                const activeEvents = allEvents.filter((ev: any) => ev.status === 'published' || ev.status === 'active').length;
-                
-                const now = new Date();
-                const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-                const upcomingEvents = allEvents.filter((ev: any) => {
-                    const startsAt = new Date(ev.starts_at);
-                    return startsAt > now && startsAt <= thirtyDaysFromNow && (ev.status === 'published' || ev.status === 'active');
-                }).length;
-
-                const teamSize = teamRes.count || 0;
-
+                const data = statsRes.data;
                 setStats({
-                    totalEvents,
-                    upcomingEvents,
-                    activeEvents,
-                    teamSize
+                    totalEvents: data.total_events,
+                    upcomingEvents: data.upcoming_events,
+                    activeEvents: data.active_events,
+                    teamSize: data.team_size
                 });
 
                 // Set Spotlights
@@ -103,14 +82,13 @@ export default function DashboardOverview() {
             if (activeAccount) {
                 fetchDashboardData();
             } else {
-                // If accounts.length === 0 or activeAccount is missing, stop loading
                 setIsLoading(false);
                 if (accounts.length === 0) {
                     setStats({ totalEvents: 0, upcomingEvents: 0, activeEvents: 0, teamSize: 0 });
                 }
             }
         }
-    }, [isOrgLoading, activeAccount, accounts, supabase]);
+    }, [isOrgLoading, activeAccount, accounts, supabase, showToast]);
     return (
         <div className={sharedStyles.container}>
             <PageHeader
@@ -159,11 +137,19 @@ export default function DashboardOverview() {
                     <button className={`${styles.actionCard} tour-view-analytics`} onClick={() => router.push('/dashboard/organize/analytics')}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </button>
-                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/revenue')}>
-                        <span className={styles.actionLabel}>View Revenue</span>
+                    <button className={`${styles.actionBtn} tour-revenue`} onClick={() => router.push('/dashboard/organize/revenue')}>
+                        <div className={styles.actionIcon}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+                        <div className={styles.actionText}>
+                            <span className={styles.actionTitle}>Revenue</span>
+                            <span className={styles.actionDesc}>Payouts & history</span>
+                        </div>
                     </button>
-                    <button className={styles.actionCard} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
-                        <span className={styles.actionLabel}>Manage Team</span>
+                    <button className={`${styles.actionBtn} tour-team`} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
+                        <div className={styles.actionIcon}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+                        <div className={styles.actionText}>
+                            <span className={styles.actionTitle}>Team</span>
+                            <span className={styles.actionDesc}>Manage members</span>
+                        </div>
                     </button>
                 </div>
             </section>
@@ -182,24 +168,34 @@ export default function DashboardOverview() {
                         target: 'body',
                         placement: 'center',
                         title: 'Welcome to your Organize Dashboard!',
-                        content: 'Let\'s get you set up to host unforgettable events. Follow this quick tour to learn the ropes.',
+                        content: 'Let\'s get you set up to host unforgettable events. This dashboard is your central hub for all organizer activities.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-stats',
                         title: 'Performance Overview',
-                        content: 'Here you can track your total events, active events, and team size at a glance.',
+                        content: 'Track your total events, upcoming scheduled events and active public listings at a glance. You can also see your current team size.',
                     },
                     {
                         target: '.tour-create-event',
                         title: 'Launch a new event',
-                        content: 'Ready to start? Click here to create your next event, set up ticket tiers, and add your graphics.',
+                        content: 'Ready to start? Click here to create your next event, set up ticket tiers and add your marketing materials.',
                     },
                     {
                         target: '.tour-view-analytics',
                         title: 'Understand your audience',
-                        content: 'Dive deep into your event analytics and ticket sales data here.',
-                    }
+                        content: 'Dive deep into your event analytics and ticket sales data to understand your growth and attendee behavior.',
+                    },
+                    {
+                        target: '.tour-revenue',
+                        title: 'Financial Health',
+                        content: 'Quick access to your revenue dashboard, payout history and wallet balances.',
+                    },
+                    {
+                        target: '.tour-team',
+                        title: 'Team Management',
+                        content: 'Invite collaborators and manage permissions for your organization.',
+                    },
                 ]}
             />
         </div>

@@ -13,7 +13,7 @@ export default function AdminCreateContentPage() {
         <div className={styles.container}>
             <SubPageHeader
                 title="Create New Content"
-                subtitle="Draft a new page, blog post, or platform announcement."
+                subtitle="Draft a new page, blog post or platform announcement."
                 isDirty={isDirty}
                 primaryAction={{
                     label: 'Create Content',

@@ -108,7 +108,7 @@ export default function AdminAuditLogsPage() {
 
 
             <TableToolbar
-                searchPlaceholder="Search by action, actor, or target..."
+                searchPlaceholder="Search by action, actor or target..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >

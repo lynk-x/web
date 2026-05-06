@@ -345,26 +345,30 @@ export default function AdsAssetsPage() {
                 confirmLabel="Delete Asset"
                 variant="danger"
             />
-
             <ProductTour
                 storageKey={activeAccount ? `hasSeenAdsAssetsJoyride_${activeAccount.id}` : 'hasSeenAdsAssetsJoyride_guest'}
                 steps={[
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Creative Library',
-                        content: 'Store and manage all your banners and videos for your ad campaigns.',
+                        title: 'Creative Assets Manager',
+                        content: 'Store and organize all your marketing materials here. These assets can be reused across multiple ad campaigns.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-assets-upload',
-                        title: 'Upload Assets',
-                        content: 'Click here to upload new creatives. Remember they must match expected dimensions exactly.',
+                        title: 'Expand Your Library',
+                        content: 'Upload high-resolution banners, promo videos and brand logos here.',
                     },
                     {
                         target: '.tour-assets-filter',
-                        title: 'Filter by Size',
-                        content: 'Quickly find assets that match specific ad placement sizes.',
+                        title: 'Quick Discovery',
+                        content: 'Filter your library by asset type (Image, Video) or status to quickly find what you need.',
+                    },
+                    {
+                        target: '.tour-assets-grid',
+                        title: 'Media Gallery',
+                        content: 'Preview your assets, check their dimensions and manage their availability for future campaigns.',
                     }
                 ]}
             />

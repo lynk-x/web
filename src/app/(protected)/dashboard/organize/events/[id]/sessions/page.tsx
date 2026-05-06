@@ -97,7 +97,7 @@ export default function EventSessionsPage() {
 
     const handleSave = async () => {
         if (!title.trim() || !startsAt || !endsAt) {
-            showToast('Title, start, and end times are required', 'error');
+            showToast('Title, start and end times are required', 'error');
             return;
         }
 

@@ -11,6 +11,8 @@ interface PageHeaderProps {
     onActionClick?: () => void;
     actionHref?: string;
     actionIcon?: React.ReactNode;
+    actionClassName?: string;
+    customAction?: React.ReactNode;
 }
 
 export default function PageHeader({
@@ -19,14 +21,17 @@ export default function PageHeader({
     actionLabel,
     onActionClick,
     actionHref,
-    actionIcon
+    actionIcon,
+    actionClassName,
+    customAction
 }: PageHeaderProps) {
     const renderAction = () => {
+        if (customAction) return customAction;
         if (!actionLabel) return null;
 
         if (actionHref) {
             return (
-                <Link href={actionHref} className={styles.btnPrimary}>
+                <Link href={actionHref} className={`${styles.btnPrimary} ${actionClassName || ''}`}>
                     {actionIcon}
                     {actionLabel}
                 </Link>
@@ -34,7 +39,7 @@ export default function PageHeader({
         }
 
         return (
-            <button className={styles.btnPrimary} onClick={onActionClick}>
+            <button className={`${styles.btnPrimary} ${actionClassName || ''}`} onClick={onActionClick}>
                 {actionIcon}
                 {actionLabel}
             </button>

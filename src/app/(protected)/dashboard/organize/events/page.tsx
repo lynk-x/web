@@ -363,17 +363,17 @@ export default function OrganizerEventsPage() {
             </div>
 
             {/* Bulk Actions */}
-            <BulkActionsBar
-                selectedCount={selectedIds.size}
-                onCancel={() => setSelectedIds(new Set())}
-                actions={[
-                    { label: 'Duplicate Selected', onClick: () => handleBulkAction('duplicate'), variant: 'default' },
-                    { label: 'Export Attendees', onClick: () => handleBulkAction('export'), variant: 'default' },
-                    { label: 'Mark Published', onClick: () => handleBulkAction('publish'), variant: 'default' },
-                    { label: 'Return to Draft', onClick: () => handleBulkAction('draft'), variant: 'default' },
-                    { label: 'Delete', onClick: () => handleBulkAction('delete'), variant: 'danger' }
-                ]}
-            />
+            <div className="tour-bulk-actions">
+                <BulkActionsBar
+                    selectedCount={selectedIds.size}
+                    onCancel={() => setSelectedIds(new Set())}
+                    actions={[
+                        { label: 'Duplicate Selected', onClick: () => handleBulkAction('duplicate'), variant: 'default' },
+                        { label: 'Publish Selected', onClick: () => handleBulkAction('publish'), variant: 'default' },
+                        { label: 'Delete Selected', onClick: () => handleBulkAction('delete'), variant: 'danger' }
+                    ]}
+                />
+            </div>
 
             {/* Table */}
             {!isLoadingEvents && events.length === 0 && !searchTerm ? (
@@ -437,23 +437,27 @@ export default function OrganizerEventsPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Manage Your Events',
-                        content: 'This is where you can view, edit, and manage all your Lynk-X events.',
+                        content: 'This is where you can view, edit and manage all your Lynk-X events. You can see their status, dates and ticket sales at a glance.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-events-filter',
                         title: 'Filter & Search',
-                        content: 'Quickly find specific events by status or name.',
+                        content: 'Quickly find specific events by status (Draft, Published, Active) or search by name.',
                     },
                     {
                         target: '.tour-events-table',
                         title: 'Event List',
-                        content: 'Select events to perform bulk actions like publishing, exporting attendees, or deleting.',
-                    }
+                        content: 'View details for each event. Use the checkboxes to select multiple events for bulk actions.',
+                    },
+                    {
+                        target: '.tour-bulk-actions',
+                        title: 'Management Actions',
+                        content: 'Perform bulk actions like duplicating, publishing or deleting selected events.',
+                    },
                 ]}
             />
         </div>
     );
 }
-
 

@@ -97,7 +97,7 @@ export default function EditTagPage() {
         <div className={styles.container}>
             <SubPageHeader
                 title={`Edit Tag: ${formData.name}`}
-                subtitle="Modify label, classification, or status of this tag."
+                subtitle="Modify label, classification or status of this tag."
                 primaryAction={{
                     label: "Save Changes",
                     onClick: handleSave,

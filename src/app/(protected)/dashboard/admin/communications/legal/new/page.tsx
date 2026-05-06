@@ -78,7 +78,7 @@ export default function NewLegalVersionPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <SubPageHeader
                 title="New Legal Version"
-                subtitle="Draft a new version of policies, terms, or agreements."
+                subtitle="Draft a new version of policies, terms or agreements."
                 isDirty={isDirty}
                 primaryAction={{
                     label: 'Publish Version',

@@ -230,7 +230,7 @@ export default function AdminUsersPage() {
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Identity Management"
-                subtitle="Monitor and manage platform identities, kyc verification levels, and roles."
+                subtitle="Monitor and manage platform identities, kyc verification levels and roles."
                 actionLabel="Create Account"
                 actionHref="/dashboard/admin/users/create"
                 actionIcon={

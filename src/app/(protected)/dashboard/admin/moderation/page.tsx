@@ -226,7 +226,7 @@ export default function AdminModerationPage() {
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Moderation Queue"
-                subtitle="Review pending content, flag violations, and handle user reports from a single cockpit."
+                subtitle="Review pending content, flag violations and handle user reports from a single cockpit."
             />
 
             <div className={sharedStyles.statsGrid}>

@@ -12,6 +12,7 @@ import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import type { BadgeVariant } from '@/types/shared';
 import { useCurrencies } from '@/hooks/useCurrencies';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 interface WalletBalance {
     id: string;
@@ -173,6 +174,7 @@ export default function WalletPage() {
                 subtitle="Manage your account balances and fund your wallet"
                 actionLabel="+ Top Up"
                 onActionClick={() => setIsModalOpen(true)}
+                actionClassName="tour-wallet-topup"
             />
 
             {isLoading ? (
@@ -180,7 +182,7 @@ export default function WalletPage() {
             ) : (
                 <>
                     {/* Balance cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
+                    <div className="tour-wallet-balances" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
                         {balances.length === 0 ? (
                             <div className={adminStyles.card} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
                                 No wallets yet. Top up to get started.
@@ -202,7 +204,7 @@ export default function WalletPage() {
 
                     {/* Ad Credits */}
                     {adCredits.length > 0 && (
-                        <>
+                        <div className="tour-wallet-credits">
                             <h3 style={{ fontSize: 16, fontWeight: 600, margin: '32px 0 4px' }}>Ad Credits</h3>
                             <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-tertiary)' }}>
                                 Platform-issued credits applied to your ad spend. Non-withdrawable.
@@ -258,11 +260,11 @@ export default function WalletPage() {
                                     </table>
                                 </>
                             )}
-                        </>
+                        </div>
                     )}
 
                     {/* Top-up history */}
-                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Top-up History</h3>
+                    <h3 className="tour-wallet-history" style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Top-up History</h3>
                     {topUps.length === 0 ? (
                         <div className={adminStyles.emptyState}>
                             <p>No top-ups yet.</p>
@@ -336,6 +338,39 @@ export default function WalletPage() {
                     </div>
                 </Modal>
             )}
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenOrgWalletJoyride_${activeAccount.id}` : 'hasSeenOrgWalletJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Your Wallet',
+                        content: 'Manage your organization\'s funds here. You can top up your balance, view ad credits and track your transaction history.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-wallet-topup',
+                        title: 'Add Funds',
+                        content: 'Need to run ads or pay for features? Click here to securely top up your wallet using mobile money or card.',
+                    },
+                    {
+                        target: '.tour-wallet-balances',
+                        title: 'Current Balances',
+                        content: 'View your available and pending balances across different currencies.',
+                    },
+                    {
+                        target: '.tour-wallet-credits',
+                        title: 'Ad Credits',
+                        content: 'Track any promotional credits issued by Lynk-X. These are automatically applied to your ad spend.',
+                    },
+                    {
+                        target: '.tour-wallet-history',
+                        title: 'Transaction Log',
+                        content: 'Review all your past top-ups and their current status to stay on top of your finances.',
+                    }
+                ]}
+            />
         </div>
     );
 }
