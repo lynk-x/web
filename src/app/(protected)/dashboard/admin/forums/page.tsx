@@ -190,28 +190,33 @@ function ForumsContent() {
 
         showToast(`Deleting ${selectedThreadIds.size} forums...`, 'info');
         try {
-            const { error } = await supabase
-                .from('forums')
-                .delete()
-                .in('id', Array.from(selectedThreadIds));
+            // Soft-delete by archiving: hard-deleting forums via client bypasses RLS.
+            // Archive is the admin-safe equivalent of deletion.
+            const { error } = await supabase.rpc('bulk_update_forum_status', {
+                forum_ids: Array.from(selectedThreadIds),
+                new_status: 'archived'
+            });
 
             if (error) throw error;
 
-            showToast(`Deleted ${selectedThreadIds.size} forums.`, 'success');
-            setThreads(prev => prev.filter(t => !selectedThreadIds.has(t.id)));
+            showToast(`Archived ${selectedThreadIds.size} forums.`, 'success');
+            setThreads(prev => prev.map(t =>
+                selectedThreadIds.has(t.id) ? { ...t, status: 'archived' as ForumThread['status'] } : t
+            ));
             setSelectedThreadIds(new Set());
         } catch (err) {
-            showToast('Failed to delete forums.', 'error');
+            showToast('Failed to archive forums.', 'error');
         }
     };
 
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
         showToast('Updating status...', 'info');
         try {
-            const { error } = await supabase
-                .from('forums')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq('id', id);
+            // Route through the bulk RPC with a single-element array for consistency
+            const { error } = await supabase.rpc('bulk_update_forum_status', {
+                forum_ids: [id],
+                new_status: newStatus
+            });
 
             if (error) throw error;
 

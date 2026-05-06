@@ -170,7 +170,7 @@ export default function AdminEventsPage() {
     };
 
     const handleSingleStatusUpdate = async (event: Event, newStatus: string, reason?: string) => {
-        // If it's a rejection, we need the modal first.
+        // If it's a rejection, collect a reason via the modal first.
         if (newStatus === 'rejected' && !reason) {
             setPendingModerationItem({ id: event.id, title: event.title, status: newStatus });
             setIsRejectionModalOpen(true);
@@ -179,37 +179,40 @@ export default function AdminEventsPage() {
 
         showToast(`Updating ${event.title} to ${newStatus}...`, 'info');
         try {
-            const updatedAt = new Date().toISOString();
-            
-            // 1. Update the event table status
-            const { error: eventError } = await supabase
-                .from('events')
-                .update({ status: newStatus as any, updated_at: updatedAt })
-                .eq('id', event.id);
+            // For approval/rejection, use the secure moderate_item RPC which needs the
+            // moderation table's own UUID (not the event ID). Look it up first.
+            if (newStatus === 'active' || newStatus === 'rejected') {
+                const { data: modRow } = await supabase
+                    .from('moderation')
+                    .select('id')
+                    .eq('item_id', event.id)
+                    .eq('item_type', 'event')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
 
-            if (eventError) throw eventError;
-
-            // 2. Synchronise with moderation_reviews
-            if (newStatus === 'rejected' || newStatus === 'active') {
-                const snapshot = {
-                    title: event.title,
-                    organizer: event.organizer,
-                    location: event.location,
-                    thumbnail: event.thumbnailUrl
-                };
-
-                const { error: modError } = await supabase
-                    .from('moderation_reviews')
-                    .upsert({
-                        item_id: event.id,
-                        item_type: 'event',
-                        status: newStatus === 'active' ? 'approved' : 'rejected',
-                        reason: reason || 'Status updated via Admin Events dashboard.',
-                        metadata: snapshot,
-                        updated_at: updatedAt
-                    }, { onConflict: 'item_id, item_type' });
-
-                if (modError) throw modError;
+                if (!modRow) {
+                    // No moderation record exists yet — fall back to direct update
+                    const { error } = await supabase
+                        .from('events')
+                        .update({ status: newStatus as any, updated_at: new Date().toISOString() })
+                        .eq('id', event.id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.rpc('moderate_item', {
+                        p_moderation_id: modRow.id,
+                        p_status: newStatus === 'active' ? 'approved' : 'rejected',
+                        p_reason: reason || 'Status updated via Admin Events dashboard.'
+                    });
+                    if (error) throw error;
+                }
+            } else {
+                // Non-moderation status changes (archive, cancel, etc.) update the table directly
+                const { error } = await supabase
+                    .from('events')
+                    .update({ status: newStatus as any, updated_at: new Date().toISOString() })
+                    .eq('id', event.id);
+                if (error) throw error;
             }
 
             showToast(`${event.title} status updated.`, 'success');

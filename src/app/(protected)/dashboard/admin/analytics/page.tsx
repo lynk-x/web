@@ -182,7 +182,17 @@ function DemographicsTab() {
         try {
             const { data, error } = await supabase.rpc('get_admin_analytics', { p_category: 'demographics' });
             if (error) throw error;
-            setRows(data || []);
+            // mv_platform_demographics stores raw `age` int; convert to age buckets here
+            setRows((data || []).map((r: any) => ({
+                ...r,
+                age_bucket: r.age == null ? 'Unknown'
+                    : r.age < 18 ? 'Under 18'
+                    : r.age < 25 ? '18–24'
+                    : r.age < 35 ? '25–34'
+                    : r.age < 45 ? '35–44'
+                    : r.age < 55 ? '45–54'
+                    : '55+'
+            })));
         } catch (err: unknown) {
             showToast(getErrorMessage(err), 'error');
         } finally {
@@ -264,7 +274,8 @@ function AdvertisingTab() {
                 campaign_title: r.campaign_title,
                 total_impressions: r.total_impressions ?? 0,
                 total_clicks: r.total_clicks ?? 0,
-                ctr: parseFloat(r.ctr ?? '0'),
+                // mv_ad_campaign_performance uses click_through_rate_pct, not ctr
+                ctr: parseFloat(r.click_through_rate_pct ?? r.ctr ?? '0'),
                 total_spend: parseFloat(r.total_spend ?? '0'),
             })));
         } catch (err: unknown) {
@@ -315,7 +326,9 @@ function SearchTab() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
+            // Correct schema: search_analytics.search_analytics (not public)
             const { data, error } = await supabase
+                .schema('search_analytics')
                 .from('search_analytics')
                 .select('*')
                 .order('created_at', { ascending: false })
