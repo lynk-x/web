@@ -243,7 +243,7 @@ function CommunicationsContent() {
         },
         {
             header: 'Type',
-            render: (log) => <Badge label={log.type.replace('_', ' ')} variant="info" />,
+            render: (log) => <Badge label={(log.type || 'unknown').replace('_', ' ')} variant="info" />,
         },
         {
             header: 'Targeting',
@@ -416,7 +416,7 @@ function CommunicationsContent() {
                                         )}
                                         <div>
                                             <div style={{ fontWeight: 600, fontSize: '15px' }}>{s.title}</div>
-                                            <div style={{ fontSize: '12px', opacity: 0.6, textTransform: 'uppercase' }}>{s.target.replace('_', ' ')} • Order: {s.display_order}</div>
+                                            <div style={{ fontSize: '12px', opacity: 0.6, textTransform: 'uppercase' }}>{(s.target || 'all').replace('_', ' ')} • Order: {s.display_order}</div>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '12px' }}>

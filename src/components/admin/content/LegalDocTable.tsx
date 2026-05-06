@@ -23,7 +23,8 @@ interface LegalDocTableProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Human-readable labels for the legal_document_type enum. */
-const formatDocType = (type: LegalDocument['type']): string => {
+const formatDocType = (type?: string): string => {
+    if (!type) return 'Unknown';
     return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
@@ -48,7 +49,7 @@ const LegalDocTable: React.FC<LegalDocTableProps> = ({
             header: 'Type',
             render: (doc) => (
                 <span style={{ fontSize: '12px', opacity: 0.7 }}>
-                    {formatDocType(doc.type)}
+                    {formatDocType(doc.type || (doc as any).slug)}
                 </span>
             ),
         },

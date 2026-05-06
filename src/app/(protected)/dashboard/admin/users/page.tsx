@@ -16,9 +16,6 @@ import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import { formatRelativeTime } from '@/utils/format';
 import { useDebounce } from '@/hooks/useDebounce';
-import Tabs from '@/components/dashboard/Tabs';
-
-type Tab = 'accounts' | 'profiles';
 
 function UsersContent() {
     const searchParams = useSearchParams();
@@ -39,10 +36,7 @@ function UsersContent() {
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
 
-    const initialTab = (searchParams.get('tab') as string) || 'accounts';
-    const [activeTab, setActiveTab] = useState<Tab>(
-        (['accounts', 'profiles'].includes(initialTab) ? initialTab as 'accounts' | 'organizers' | 'sponsors' : 'accounts') as Tab
-    );
+
 
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
@@ -103,19 +97,7 @@ function UsersContent() {
         }
     }, [searchParams]);
 
-    useEffect(() => {
-        const tab = searchParams.get('tab') as string;
-        if (tab && ['accounts', 'profiles'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
-        }
-    }, [searchParams]);
 
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -200,13 +182,7 @@ function UsersContent() {
                 />
             </div>
 
-            <Tabs
-                options={[
-                    { id: 'accounts', label: 'Accounts' },
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+
 
             <TableToolbar
                 searchPlaceholder="Search by name or email..."
@@ -227,14 +203,12 @@ function UsersContent() {
                 />
             </TableToolbar>
 
-            {activeTab === 'accounts' && (
-                <BulkActionsBar
-                    selectedCount={selectedUserIds.size}
-                    actions={bulkActions}
-                    onCancel={() => setSelectedUserIds(new Set())}
-                    itemTypeLabel="users"
-                />
-            )}
+            <BulkActionsBar
+                selectedCount={selectedUserIds.size}
+                actions={bulkActions}
+                onCancel={() => setSelectedUserIds(new Set())}
+                itemTypeLabel="users"
+            />
 
             <UserTable
                 users={users}
@@ -245,7 +219,7 @@ function UsersContent() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
-                view={activeTab}
+                view="accounts"
             />
         </>
     );
