@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import styles from './InactivityGuard.module.css';
 
 /**
@@ -17,6 +18,7 @@ export default function InactivityGuard({ children }: { children: React.ReactNod
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const router = useRouter();
     const pathname = usePathname();
+    const { logout } = useAuth();
 
     const resetTimer = useCallback(() => {
         if (isLocked) return;
@@ -52,9 +54,9 @@ export default function InactivityGuard({ children }: { children: React.ReactNod
         };
     }, [resetTimer]);
 
-    const handleUnlock = () => {
-        // Redirect to login to force a fresh session
-        // Pass the current pathname so the user can return exactly where they were
+    const handleUnlock = async () => {
+        // Clear session and redirect to login to force a fresh session
+        await logout();
         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     };
 
