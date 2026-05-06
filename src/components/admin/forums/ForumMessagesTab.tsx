@@ -43,7 +43,7 @@ const typeVariant: Record<string, any> = {
  * Reads `forum_messages` joined through forums → events for context.
  * Allows admins to hide/unhide and unpin individual messages.
  */
-export default function ForumMessagesTab() {
+export default function ForumMessagesTab({ forumId }: { forumId?: string }) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
@@ -58,7 +58,7 @@ export default function ForumMessagesTab() {
     const fetchMessages = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('forum_messages')
                 .select(`
                     id, forum_id, message_type, content, is_pinned, is_hidden, edit_count, created_at,
@@ -66,8 +66,13 @@ export default function ForumMessagesTab() {
                     channel:forum_channels(slug),
                     forum:forums!forum_id(event:events!event_id(title))
                 `)
-                .order('created_at', { ascending: false })
-                .limit(500);
+                .order('created_at', { ascending: false });
+
+            if (forumId) {
+                query = query.eq('forum_id', forumId);
+            }
+
+            const { data, error } = await query.limit(500);
             if (error) throw error;
             setMessages((data || []).map((m: any) => ({
                 id: m.id,
@@ -88,7 +93,7 @@ export default function ForumMessagesTab() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, forumId]);
 
     useEffect(() => { fetchMessages(); }, [fetchMessages]);
 

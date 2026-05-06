@@ -8,8 +8,8 @@ import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
 import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
 import ForumMediaTab from '@/components/admin/forums/ForumMediaTab';
 import Link from 'next/link';
-import Tabs from '@/components/dashboard/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
+import Modal from '@/components/shared/Modal';
 
 /**
  * Mock forums — aligned to `forum_status` schema enum.
@@ -33,24 +33,12 @@ function ForumsContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const initialTab = (searchParams.get('tab') as string) || 'forums';
-    const [activeTab, setActiveTab] = useState<'forums' | 'messages' | 'media'>(
-        ['forums', 'messages', 'media'].includes(initialTab) ? initialTab as 'forums' | 'messages' | 'media' : 'forums'
-    );
+    const [viewerConfig, setViewerConfig] = useState<{ isOpen: boolean, type: 'messages' | 'media', thread?: ForumThread }>({
+        isOpen: false,
+        type: 'messages'
+    });
 
-    useEffect(() => {
-        const tab = searchParams.get('tab') as string;
-        if (tab && ['forums', 'messages', 'media'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
-        }
-    }, [searchParams]);
 
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Extract<typeof activeTab, string>);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
     const [threads, setThreads] = useState<ForumThread[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [platformStats, setPlatformStats] = useState({ total: 0, open: 0, readOnly: 0, escalations: 0 });
@@ -69,7 +57,7 @@ function ForumsContent() {
         const fetchForumsData = async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase.rpc('get_admin_analytics', { p_category: 'forums' });
+                const { data, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'forums' });
                 if (error) throw error;
 
                 const rows: any[] = data || [];
@@ -116,8 +104,7 @@ function ForumsContent() {
             eventName: f.event_title,
             eventId: f.event_id,
             status: f.status,
-            announcementsCount: parseInt(f.announcements_count) || 0,
-            liveChatsCount: parseInt(f.live_chats_count) || 0,
+            messageCount: parseInt(f.message_count) || 0,
             mediaCount: parseInt(f.media_count) || 0,
             reportsCount: parseInt(f.reports_count) || 0,
             escalatedCount: parseInt(f.escalated_reports_count) || 0,
@@ -269,77 +256,72 @@ function ForumsContent() {
                 />
             </div>
 
-            {/* ── Tab switcher ── */}
-            <Tabs
-                options={[
-                    { id: 'forums', label: 'Forums' },
-                    { id: 'messages', label: 'Messages' },
-                    { id: 'media', label: 'Media' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+
 
             {/* ── Forum list tab (existing content) ── */}
-            {activeTab === 'forums' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                    <TableToolbar
-                        searchPlaceholder="Search forum name or event..."
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        {/* Status filter chips — aligned to forum_status schema enum */}
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {[
-                                { value: 'all', label: 'All' },
-                                { value: 'open', label: 'Open' },
-                                { value: 'read_only', label: 'Read Only' },
-                                { value: 'archived', label: 'Archived' },
-                            ].map(({ value, label }) => (
-                                <button
-                                    key={value}
-                                    className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
-                                    onClick={() => setStatusFilter(value)}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-                    </TableToolbar>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                <TableToolbar
+                    searchPlaceholder="Search forum name or event..."
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                >
+                    {/* Status filter chips — aligned to forum_status schema enum */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {[
+                            { value: 'all', label: 'All' },
+                            { value: 'open', label: 'Open' },
+                            { value: 'read_only', label: 'Read Only' },
+                            { value: 'archived', label: 'Archived' },
+                        ].map(({ value, label }) => (
+                            <button
+                                key={value}
+                                className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
+                                onClick={() => setStatusFilter(value)}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </TableToolbar>
 
-                    <BulkActionsBar
-                        selectedCount={selectedThreadIds.size}
-                        actions={bulkActions}
-                        onCancel={() => setSelectedThreadIds(new Set())}
-                        itemTypeLabel="forums"
+                <BulkActionsBar
+                    selectedCount={selectedThreadIds.size}
+                    actions={bulkActions}
+                    onCancel={() => setSelectedThreadIds(new Set())}
+                    itemTypeLabel="forums"
+                />
+
+                {isLoading ? (
+                    <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
+                ) : (
+                    <ForumTable
+                        threads={paginatedThreads}
+                        selectedIds={selectedThreadIds}
+                        onSelect={handleSelectThread}
+                        onSelectAll={handleSelectAll}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onStatusChange={handleSingleStatusUpdate}
+                        onBrowseMessages={(thread) => setViewerConfig({ isOpen: true, type: 'messages', thread })}
+                        onBrowseMedia={(thread) => setViewerConfig({ isOpen: true, type: 'media', thread })}
                     />
+                )}
+            </div>
 
-                    {isLoading ? (
-                        <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
-                    ) : (
-                        <ForumTable
-                            threads={paginatedThreads}
-                            selectedIds={selectedThreadIds}
-                            onSelect={handleSelectThread}
-                            onSelectAll={handleSelectAll}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                            onStatusChange={handleSingleStatusUpdate}
-                        />
-                    )}
-                </div>
-            )}
-
-            {/* ── Messages tab ── */}
-            {activeTab === 'messages' && (
-                <ForumMessagesTab />
-            )}
-
-            {/* ── Media tab ── */}
-            {activeTab === 'media' && (
-                <ForumMediaTab />
-            )}
+            {/* ── Contextual Moderation Modal ── */}
+            <Modal
+                isOpen={viewerConfig.isOpen}
+                onClose={() => setViewerConfig(prev => ({ ...prev, isOpen: false }))}
+                title={viewerConfig.type === 'messages' ? `Moderating Messages: ${viewerConfig.thread?.title}` : `Media Gallery: ${viewerConfig.thread?.title}`}
+                size="large"
+            >
+                {viewerConfig.type === 'messages' ? (
+                    <ForumMessagesTab forumId={viewerConfig.thread?.id} />
+                ) : (
+                    <ForumMediaTab forumId={viewerConfig.thread?.id} />
+                )}
+            </Modal>
         </div>
     );
 }

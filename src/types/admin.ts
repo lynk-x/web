@@ -81,10 +81,8 @@ export interface ForumThread {
      * Previous code used 'Open'/'Read_only'/'Archived' (wrong casing vs DB enum).
      */
     status: 'open' | 'read_only' | 'archived';
-    /** Count of `forum_messages` where `category = 'announcement'` */
-    announcementsCount: number;
-    /** Count of `forum_messages` where `category = 'chat'` */
-    liveChatsCount: number;
+    /** Total messages in this forum (from forum_messages table) */
+    messageCount: number;
     /** Count of `forum_media` attachments for this forum's event */
     mediaCount: number;
     reportsCount: number;

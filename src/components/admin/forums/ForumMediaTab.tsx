@@ -11,7 +11,7 @@ import Badge from '@/components/shared/Badge';
 import { ForumMedia } from '@/types/admin';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
-export default function ForumMediaTab() {
+export default function ForumMediaTab({ forumId }: { forumId?: string }) {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
@@ -26,7 +26,7 @@ export default function ForumMediaTab() {
     const fetchMedia = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('forum_media')
                 .select(`
                     *,
@@ -34,6 +34,12 @@ export default function ForumMediaTab() {
                     uploader:user_profile!uploader_id(full_name)
                 `)
                 .order('created_at', { ascending: false });
+
+            if (forumId) {
+                query = query.eq('forum_id', forumId);
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
 
@@ -56,7 +62,7 @@ export default function ForumMediaTab() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, forumId]);
 
     useEffect(() => {
         fetchMedia();
