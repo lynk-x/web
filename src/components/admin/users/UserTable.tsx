@@ -8,6 +8,8 @@ import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { formatString, getInitials } from '@/utils/format';
 import type { ActionItem } from '../../shared/TableRowActions';
+import AccountMembersDrawer from './AccountMembersDrawer';
+import AccountGovernanceDrawer from './AccountGovernanceDrawer';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -70,16 +72,18 @@ const UserTable: React.FC<UserTableProps> = ({
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
+    const [selectedAccountForMembers, setSelectedAccountForMembers] = React.useState<User | null>(null);
+    const [selectedAccountForGovernance, setSelectedAccountForGovernance] = React.useState<User | null>(null);
 
     /** Column definitions for the user table. */
     const columns: Column<User>[] = [
         {
-            header: 'Reference',
-            render: (user) => <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.6 }}>#{user.id.slice(0, 8).toUpperCase()}</span>,
+            header: 'Country',
+            render: (user) => <span style={{ fontSize: '13px', fontWeight: 600 }}>{user.countryCode || 'KE'}</span>,
         },
         {
-            header: 'Country',
-            render: (user) => <span style={{ fontSize: '13px' }}>{user.countryCode || '—'}</span>,
+            header: 'Reference',
+            render: (user) => <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.6 }}>#{user.id.slice(0, 8).toUpperCase()}</span>,
         },
         {
             header: 'Type',
@@ -88,12 +92,43 @@ const UserTable: React.FC<UserTableProps> = ({
         {
             header: 'Users',
             render: (user) => (
-                <div className={styles.userInfo}>
-                    <div className={styles.userAvatar}>{getInitials(user.name)}</div>
-                    <div className={styles.userDetails}>
-                        <span className={styles.userName}>{user.name}</span>
-                        <span className={styles.userEmail}>{user.email}</span>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '50%', 
+                        backgroundColor: 'var(--color-brand-primary)', 
+                        color: 'black',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        border: '2px solid var(--color-interface-surface)',
+                        boxShadow: '0 0 0 1px var(--color-interface-outline)'
+                    }}>
+                        {getInitials(user.name)}
                     </div>
+                    {/* Mocking a second avatar for 'overlapping' look if it's an org/admin */}
+                    {(user.role === 'admin' || user.role === 'platform') && (
+                        <div style={{ 
+                            width: '28px', 
+                            height: '28px', 
+                            borderRadius: '50%', 
+                            backgroundColor: 'var(--color-brand-secondary)', 
+                            color: 'black',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            marginLeft: '-10px',
+                            border: '2px solid var(--color-interface-surface)',
+                            boxShadow: '0 0 0 1px var(--color-interface-outline)'
+                        }}>
+                            +1
+                        </div>
+                    )}
                 </div>
             ),
         },
@@ -117,84 +152,57 @@ const UserTable: React.FC<UserTableProps> = ({
     /** Row-level actions for the user action menu. */
     const getActions = (user: User): ActionItem[] => [
         {
-            label: 'View Details',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-            onClick: () => showToast(`Opening details for ${user.name}...`, 'info'),
+            label: 'View Members',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
+            onClick: () => setSelectedAccountForMembers(user),
         },
         {
-            label: 'Edit User',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-            onClick: () => router.push(`/dashboard/admin/users/${user.id}/edit`),
+            label: 'KYC & Wallets',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>,
+            onClick: () => setSelectedAccountForGovernance(user),
         },
         {
-            label: 'Reset Password',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
-            onClick: () => {
-                showToast(`Sending reset link to ${user.email}...`, 'info');
-                setTimeout(() => showToast('Password reset link sent.', 'success'), 1500);
-            },
+            type: 'divider' as const,
         },
         {
-            label: user.status === 'active' ? 'Suspend User' : 'Activate User',
-            icon: user.status === 'active' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-            ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            ),
-            onClick: async () => {
-                const newStatus = user.status === 'active' ? 'suspended' : 'active';
-                const isActive = newStatus === 'active';
-
-                showToast(`${isActive ? 'Activating' : 'Suspending'} ${user.name}...`, 'info');
-
-                try {
-                    await router.push('/dashboard/admin/users');
-                    // Wait, I should probably pass an onUpdate handler here instead of using router.push
-                    // For now, let's just use the router to reload the page or tell the user to refresh.
-
-                    const { createClient } = await import('@/utils/supabase/client');
-                    const supabase = createClient();
-                    const { error: updateError } = await supabase
-                        .from('user_profile')
-                        .update({ 
-                            status: isActive ? 'active' : 'temporarily_suspended', 
-                            updated_at: new Date().toISOString() 
-                        })
-                        .eq('id', user.id);
-
-                    if (updateError) throw updateError;
-                    showToast('User status updated.', 'success');
-                    window.location.reload(); // Simple refresh for now
-                } catch (err) {
-                    showToast('Failed to update user status.', 'error');
-                }
-            },
+            label: user.status === 'active' ? 'Suspend Account' : 'Activate Account',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
+            onClick: () => showToast(`Toggling suspension for ${user.name}`, 'info'),
         },
         {
-            label: 'Delete User',
+            label: 'Lock Account',
             variant: 'danger' as const,
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
-            onClick: () => {
-                showToast(`Deleting user ${user.name}...`, 'info');
-                setTimeout(() => showToast('User deleted successfully.', 'success'), 1500);
-            },
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+            onClick: () => showToast(`CRITICAL: Locking account ${user.id.slice(0, 8)}`, 'error'),
         },
     ];
 
     return (
-        <DataTable<User>
-            data={users}
-            columns={columns}
-            getActions={getActions}
-            isLoading={isLoading}
-            selectedIds={selectedIds}
-            onSelect={onSelect}
-            onSelectAll={onSelectAll}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
-            emptyMessage="No users found matching criteria."
-        />
+        <>
+            <DataTable<User>
+                data={users}
+                columns={columns}
+                getActions={getActions}
+                isLoading={isLoading}
+                selectedIds={selectedIds}
+                onSelect={onSelect}
+                onSelectAll={onSelectAll}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+                emptyMessage="No users found matching criteria."
+            />
+
+            <AccountMembersDrawer 
+                account={selectedAccountForMembers} 
+                onClose={() => setSelectedAccountForMembers(null)} 
+            />
+
+            <AccountGovernanceDrawer
+                account={selectedAccountForGovernance}
+                onClose={() => setSelectedAccountForGovernance(null)}
+            />
+        </>
     );
 };
 

@@ -69,10 +69,10 @@ function UsersContent() {
                 status: u.status,
                 lastActive: formatRelativeTime(u.last_active_at),
                 isVerified: u.is_verified,
-                kycTier: u.kyc_tier || (u.is_verified ? 'Tier 2' : 'Tier 1'), // Mocking for UI preview
+                kycTier: u.kyc_tier,
                 reportsCount: u.reports_count || 0,
                 userName: u.user_name,
-                countryCode: u.country_code || 'KE',
+                countryCode: u.country_code,
                 businessEmail: undefined,
                 taxId: undefined,
                 registrationNumber: undefined
