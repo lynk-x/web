@@ -72,7 +72,7 @@ export default function InactivityGuard({ children }: { children: React.ReactNod
                     </div>
                     <h2 className={styles.title}>Session Locked</h2>
                     <p className={styles.text}>
-                        Your session has been locked due to inactivity to protect your account security.
+                        Your session has been locked due to inactivity.
                     </p>
                     <button className={styles.button} onClick={handleUnlock}>
                         Re-authenticate

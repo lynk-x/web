@@ -63,6 +63,13 @@
     justify-content: space-between;
 }
 
+.cardTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
 /* ── Two-column layout for charts / tables side-by-side ── */
 .splitRow {
     display: grid;
@@ -138,4 +145,76 @@
     opacity: 0.35;
     text-align: right;
     margin-top: 8px;
+}
+
+/* ── New Additions ── */
+.tabContent {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.select {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    padding: 8px 16px;
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.loading {
+    padding: 60px;
+    text-align: center;
+    opacity: 0.5;
+    font-size: 14px;
+}
+
+.funnel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px 0;
+}
+
+.funnelStep {
+    height: 40px;
+    background: linear-gradient(90deg, var(--color-brand-primary), transparent);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-left: 4px solid var(--color-brand-primary);
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.funnelStep:hover {
+    opacity: 1;
+}
+
+.funnelStep span {
+    white-space: nowrap;
 }

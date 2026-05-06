@@ -459,7 +459,7 @@ function CommunicationsContent() {
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Active & Scheduled Banners</h2>
 
-                        {liveBanner ? (
+                        {liveBanner && (
                             <div style={{ marginBottom: '32px', padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-interface-outline)' }}>
                                 <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.5, marginBottom: '12px', fontWeight: 600 }}>Live Banner Highlight</div>
                                 <div style={{
@@ -478,10 +478,6 @@ function CommunicationsContent() {
                                         <strong style={{ color: `var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})` }}>{liveBanner.title}:</strong> {liveBanner.content}
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div style={{ marginBottom: '32px', padding: '24px', textAlign: 'center', opacity: 0.5, border: '1px dashed var(--color-interface-outline)', borderRadius: '12px' }}>
-                                No banners currently active.
                             </div>
                         )}
 
@@ -513,7 +509,11 @@ function CommunicationsContent() {
                                     </div>
                                 </div>
                             ))}
-                            {banners.length === 0 && !isLoading && <div style={{ textAlign: 'center', padding: '16px 0', opacity: 0.5 }}>No banners found.</div>}
+                            {banners.length === 0 && !isLoading && (
+                                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5, border: '1px dashed var(--color-interface-outline)', borderRadius: '12px' }}>
+                                    No banners configured or scheduled yet.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
