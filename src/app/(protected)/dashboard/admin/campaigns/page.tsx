@@ -3,6 +3,8 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
@@ -28,6 +30,7 @@ function CampaignsContent() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
+    const { executeAction } = useModerationAction();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -160,50 +163,47 @@ function CampaignsContent() {
             return;
         }
 
-        showToast(`Updating ${campaign.name} to ${newStatus}...`, 'info');
-        try {
-            const moderationId = campaign.moderationId;
-            if (!moderationId) {
-                showToast(`No moderation record found for ${campaign.name}.`, 'error');
-                return;
+        await executeAction(
+            () => {
+                const moderationId = campaign.moderationId;
+                if (!moderationId) throw new Error(`No moderation record found for ${campaign.name}.`);
+
+                return supabase.rpc('moderate_item', {
+                    p_moderation_id: moderationId,
+                    p_status: newStatus === 'active' ? 'approved' : 'rejected',
+                    p_reason: reason || 'Status updated via Admin Campaigns dashboard.'
+                });
+            },
+            {
+                loadingMessage: `Updating ${campaign.name} to ${newStatus}...`,
+                successMessage: `${campaign.name} updated`,
+                onSuccess: () => {
+                    fetchCampaigns();
+                    fetchDashboardSummary();
+                    setIsRejectionModalOpen(false);
+                }
             }
-
-            const { error } = await supabase.rpc('moderate_item', {
-                p_moderation_id: moderationId,
-                p_status: newStatus === 'active' ? 'approved' : 'rejected',
-                p_reason: reason || 'Status updated via Admin Campaigns dashboard.'
-            });
-
-            if (error) throw error;
-
-            showToast(`${campaign.name} successfully updated.`, 'success');
-            fetchCampaigns();
-            fetchDashboardSummary();
-            setIsRejectionModalOpen(false);
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to update campaign status.', 'error');
-        }
+        );
     };
 
     const handleFlag = async (campaign: Campaign) => {
         const isFlagging = !campaign.isFlagged;
-        showToast(`${isFlagging ? 'Flagging' : 'Unflagging'} ${campaign.name}...`, 'info');
-        try {
-            const moderationId = campaign.moderationId;
-            if (!moderationId) throw new Error('Moderation record missing.');
+        await executeAction(
+            () => {
+                const moderationId = campaign.moderationId;
+                if (!moderationId) throw new Error('Moderation record missing.');
 
-            const { error } = await supabase
-                .from('moderation')
-                .update({ status: isFlagging ? 'flagged' : 'pending_review' })
-                .eq('id', moderationId);
-
-            if (error) throw error;
-
-            showToast(`${campaign.name} ${isFlagging ? 'flagged for review' : 'unflagged'}.`, 'success');
-            fetchCampaigns();
-        } catch (err) {
-            showToast('Failed to update flag status.', 'error');
-        }
+                return supabase
+                    .from('moderation')
+                    .update({ status: isFlagging ? 'flagged' : 'pending_review' })
+                    .eq('id', moderationId);
+            },
+            {
+                loadingMessage: `${isFlagging ? 'Flagging' : 'Unflagging'} ${campaign.name}...`,
+                successMessage: `${campaign.name} flag updated`,
+                onSuccess: fetchCampaigns
+            }
+        );
     };
 
     const handlePreview = async (campaign: Campaign) => {
@@ -388,19 +388,22 @@ function CampaignsContent() {
                         searchValue={searchTerm}
                         onSearchChange={setSearchTerm}
                     >
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <select 
-                                className={adminStyles.filterSelect}
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                            >
-                                <option value="all">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="pending_approval">Pending approval</option>
-                                <option value="paused">Paused</option>
-                                <option value="rejected">Rejected</option>
-                                <option value="completed">Completed</option>
-                            </select>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <StatusFilterChips
+                                options={[
+                                    { value: 'all', label: 'All Status' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'pending_approval', label: 'Pending' },
+                                    { value: 'paused', label: 'Paused' },
+                                    { value: 'rejected', label: 'Rejected' },
+                                    { value: 'completed', label: 'Completed' },
+                                ]}
+                                currentValue={statusFilter}
+                                onChange={setStatusFilter}
+                            />
+                            
+                            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-interface-outline)', opacity: 0.3, margin: '0 4px' }} />
+
                             <select 
                                 className={adminStyles.filterSelect}
                                 value={adTypeFilter}

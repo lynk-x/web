@@ -3,6 +3,8 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import EventTable, { Event } from '@/components/features/events/EventTable';
@@ -23,6 +25,7 @@ export default function AdminEventsPage() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
+    const { executeAction } = useModerationAction();
     const router = useRouter();
 
     const [events, setEvents] = useState<Event[]>([]);
@@ -122,43 +125,41 @@ export default function AdminEventsPage() {
     // --- Global Actions ---
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
-        showToast(`Updating ${selectedEventIds.size} events to ${newStatus}...`, 'info');
-        try {
-            const { error } = await supabase.rpc('bulk_moderate_events', {
+        await executeAction(
+            () => supabase.rpc('bulk_moderate_events', {
                 p_event_ids: Array.from(selectedEventIds),
                 p_status: newStatus,
                 p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
-            });
-
-            if (error) throw error;
-
-            showToast(`Successfully moved ${selectedEventIds.size} events to ${newStatus}.`, 'success');
-            fetchEvents();
-            fetchDashboardSummary();
-            setSelectedEventIds(new Set());
-        } catch (err) {
-            showToast('Failed to update events.', 'error');
-        }
+            }),
+            {
+                loadingMessage: `Updating ${selectedEventIds.size} events...`,
+                successMessage: `Bulk update successful`,
+                onSuccess: () => {
+                    fetchEvents();
+                    fetchDashboardSummary();
+                    setSelectedEventIds(new Set());
+                }
+            }
+        );
     };
 
     const handleBulkDelete = async () => {
         if (!await confirm(`Are you sure you want to delete ${selectedEventIds.size} events?`, { title: 'Delete Events', confirmLabel: 'Delete' })) return;
-        showToast(`Deleting ${selectedEventIds.size} events...`, 'info');
-        try {
-            const { error } = await supabase
+        await executeAction(
+            () => supabase
                 .from('events')
                 .delete()
-                .in('id', Array.from(selectedEventIds));
-
-            if (error) throw error;
-
-            showToast(`Deleted ${selectedEventIds.size} events.`, 'success');
-            fetchEvents();
-            fetchDashboardSummary();
-            setSelectedEventIds(new Set());
-        } catch (err) {
-            showToast('Failed to delete events.', 'error');
-        }
+                .in('id', Array.from(selectedEventIds)),
+            {
+                loadingMessage: `Deleting ${selectedEventIds.size} events...`,
+                successMessage: `Deleted ${selectedEventIds.size} events`,
+                onSuccess: () => {
+                    fetchEvents();
+                    fetchDashboardSummary();
+                    setSelectedEventIds(new Set());
+                }
+            }
+        );
     };
 
     const handleExportEventData = () => {
@@ -177,70 +178,65 @@ export default function AdminEventsPage() {
             return;
         }
 
-        showToast(`Updating ${event.title} to ${newStatus}...`, 'info');
-        try {
-            // For approval/rejection, use the secure moderate_item RPC which needs the
-            // moderation table's own UUID (not the event ID). Look it up first.
-            if (newStatus === 'active' || newStatus === 'rejected') {
-                const { data: modRow } = await supabase
-                    .from('moderation')
-                    .select('id')
-                    .eq('item_id', event.id)
-                    .eq('item_type', 'event')
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+        await executeAction(
+            async () => {
+                if (newStatus === 'active' || newStatus === 'rejected') {
+                    const { data: modRow } = await supabase
+                        .from('moderation')
+                        .select('id')
+                        .eq('item_id', event.id)
+                        .eq('item_type', 'event')
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
 
-                if (!modRow) {
-                    // No moderation record exists yet — fall back to direct update
-                    const { error } = await supabase
+                    if (!modRow) {
+                        return supabase
+                            .from('events')
+                            .update({ status: newStatus as any, updated_at: new Date().toISOString() })
+                            .eq('id', event.id);
+                    } else {
+                        return supabase.rpc('moderate_item', {
+                            p_moderation_id: modRow.id,
+                            p_status: newStatus === 'active' ? 'approved' : 'rejected',
+                            p_reason: reason || 'Status updated via Admin Events dashboard.'
+                        });
+                    }
+                } else {
+                    return supabase
                         .from('events')
                         .update({ status: newStatus as any, updated_at: new Date().toISOString() })
                         .eq('id', event.id);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabase.rpc('moderate_item', {
-                        p_moderation_id: modRow.id,
-                        p_status: newStatus === 'active' ? 'approved' : 'rejected',
-                        p_reason: reason || 'Status updated via Admin Events dashboard.'
-                    });
-                    if (error) throw error;
                 }
-            } else {
-                // Non-moderation status changes (archive, cancel, etc.) update the table directly
-                const { error } = await supabase
-                    .from('events')
-                    .update({ status: newStatus as any, updated_at: new Date().toISOString() })
-                    .eq('id', event.id);
-                if (error) throw error;
+            },
+            {
+                loadingMessage: `Updating ${event.title}...`,
+                successMessage: `Status updated`,
+                onSuccess: () => {
+                    fetchEvents();
+                    fetchDashboardSummary();
+                    setIsRejectionModalOpen(false);
+                }
             }
-
-            showToast(`${event.title} status updated.`, 'success');
-            fetchEvents();
-            fetchDashboardSummary();
-            setIsRejectionModalOpen(false);
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to update event status.', 'error');
-        }
+        );
     };
 
     const handleSingleDelete = async (event: Event) => {
         if (!await confirm(`Delete "${event.title}"?`, { title: 'Delete Event', confirmLabel: 'Delete' })) return;
-        showToast(`Deleting ${event.title}...`, 'info');
-        try {
-            const { error } = await supabase
+        await executeAction(
+            () => supabase
                 .from('events')
                 .delete()
-                .eq('id', event.id);
-
-            if (error) throw error;
-
-            showToast(`${event.title} deleted.`, 'success');
-            fetchEvents();
-            fetchDashboardSummary();
-        } catch (err) {
-            showToast('Failed to delete event.', 'error');
-        }
+                .eq('id', event.id),
+            {
+                loadingMessage: `Deleting ${event.title}...`,
+                successMessage: `${event.title} deleted`,
+                onSuccess: () => {
+                    fetchEvents();
+                    fetchDashboardSummary();
+                }
+            }
+        );
     };
 
     const bulkActions: BulkAction[] = [
@@ -294,8 +290,8 @@ export default function AdminEventsPage() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
+                <StatusFilterChips
+                    options={[
                         { value: 'all', label: 'All' },
                         { value: 'draft', label: 'Draft' },
                         { value: 'published', label: 'Published' },
@@ -304,16 +300,10 @@ export default function AdminEventsPage() {
                         { value: 'completed', label: 'Completed' },
                         { value: 'cancelled', label: 'Cancelled' },
                         { value: 'suspended', label: 'Suspended' },
-                    ].map(({ value, label }) => (
-                        <button
-                            key={value}
-                            className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
-                            onClick={() => setStatusFilter(value)}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
+                    ]}
+                    currentValue={statusFilter}
+                    onChange={setStatusFilter}
+                />
             </TableToolbar>
 
             <BulkActionsBar

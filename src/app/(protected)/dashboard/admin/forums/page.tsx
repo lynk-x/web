@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
@@ -33,6 +35,7 @@ function ForumsContent() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
+    const { executeAction } = useModerationAction();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -153,68 +156,58 @@ function ForumsContent() {
 
     const handleUpdateStatus = async (newStatus: string) => {
         const count = selectedThreadIds.size;
-        showToast(`Updating ${count} forums to ${newStatus}...`, 'info');
-
-        try {
-            const { error } = await supabase.rpc('bulk_update_forum_status', {
+        await executeAction(
+            () => supabase.rpc('bulk_update_forum_status', {
                 forum_ids: Array.from(selectedThreadIds),
                 new_status: newStatus
-            });
-
-            if (error) throw error;
-
-            showToast(`Successfully moved ${count} forums to ${newStatus}.`, 'success');
-
-            // Refresh local state to avoid full re-fetch
-            setThreads(prev => prev.map(t =>
-                selectedThreadIds.has(t.id) ? { ...t, status: newStatus as ForumThread['status'] } : t
-            ));
-            setSelectedThreadIds(new Set());
-        } catch (err) {
-            showToast('Failed to update forum status.', 'error');
-        }
+            }),
+            {
+                loadingMessage: `Updating ${count} forums to ${newStatus}...`,
+                successMessage: `Successfully moved ${count} forums to ${newStatus}`,
+                onSuccess: () => {
+                    setThreads(prev => prev.map(t =>
+                        selectedThreadIds.has(t.id) ? { ...t, status: newStatus as ForumThread['status'] } : t
+                    ));
+                    setSelectedThreadIds(new Set());
+                }
+            }
+        );
     };
 
     const handleBulkDelete = async () => {
         if (!await confirm(`Are you sure? This will delete ${selectedThreadIds.size} forums. This action cannot be undone.`)) return;
-
-        showToast(`Deleting ${selectedThreadIds.size} forums...`, 'info');
-        try {
-            // Soft-delete by archiving: hard-deleting forums via client bypasses RLS.
-            // Archive is the admin-safe equivalent of deletion.
-            const { error } = await supabase.rpc('bulk_update_forum_status', {
+        await executeAction(
+            () => supabase.rpc('bulk_update_forum_status', {
                 forum_ids: Array.from(selectedThreadIds),
                 new_status: 'archived'
-            });
-
-            if (error) throw error;
-
-            showToast(`Archived ${selectedThreadIds.size} forums.`, 'success');
-            setThreads(prev => prev.map(t =>
-                selectedThreadIds.has(t.id) ? { ...t, status: 'archived' as ForumThread['status'] } : t
-            ));
-            setSelectedThreadIds(new Set());
-        } catch (err) {
-            showToast('Failed to archive forums.', 'error');
-        }
+            }),
+            {
+                loadingMessage: `Deleting ${selectedThreadIds.size} forums...`,
+                successMessage: `Archived ${selectedThreadIds.size} forums`,
+                onSuccess: () => {
+                    setThreads(prev => prev.map(t =>
+                        selectedThreadIds.has(t.id) ? { ...t, status: 'archived' as ForumThread['status'] } : t
+                    ));
+                    setSelectedThreadIds(new Set());
+                }
+            }
+        );
     };
 
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
-        showToast('Updating status...', 'info');
-        try {
-            // Route through the bulk RPC with a single-element array for consistency
-            const { error } = await supabase.rpc('bulk_update_forum_status', {
+        await executeAction(
+            () => supabase.rpc('bulk_update_forum_status', {
                 forum_ids: [id],
                 new_status: newStatus
-            });
-
-            if (error) throw error;
-
-            showToast('Forum status updated.', 'success');
-            setThreads(prev => prev.map(t => t.id === id ? { ...t, status: newStatus as ForumThread['status'] } : t));
-        } catch (err) {
-            showToast('Failed to update status.', 'error');
-        }
+            }),
+            {
+                loadingMessage: 'Updating status...',
+                successMessage: 'Forum status updated',
+                onSuccess: () => {
+                    setThreads(prev => prev.map(t => t.id === id ? { ...t, status: newStatus as ForumThread['status'] } : t));
+                }
+            }
+        );
     };
 
     const bulkActions: BulkAction[] = [
@@ -266,46 +259,37 @@ function ForumsContent() {
 
 
 
-            {/* ── Forum list tab (existing content) ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                <TableToolbar
-                    searchPlaceholder="Search forum name or event..."
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                >
-                    {/* Status filter chips — aligned to forum_status schema enum */}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {[
-                            { value: 'all', label: 'All' },
-                            { value: 'open', label: 'Open' },
-                            { value: 'read_only', label: 'Read Only' },
-                            { value: 'archived', label: 'Archived' },
-                        ].map(({ value, label }) => (
-                            <button
-                                key={value}
-                                className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
-                                onClick={() => setStatusFilter(value)}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </TableToolbar>
-
-                <BulkActionsBar
-                    selectedCount={selectedThreadIds.size}
-                    actions={bulkActions}
-                    onCancel={() => setSelectedThreadIds(new Set())}
-                    itemTypeLabel="forums"
+            <TableToolbar
+                searchPlaceholder="Search forum name or event..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+                <StatusFilterChips
+                    options={[
+                        { value: 'all', label: 'All' },
+                        { value: 'open', label: 'Open' },
+                        { value: 'read_only', label: 'Read Only' },
+                        { value: 'archived', label: 'Archived' },
+                    ]}
+                    currentValue={statusFilter}
+                    onChange={setStatusFilter}
                 />
+            </TableToolbar>
 
-                {isLoading ? (
-                    <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
-                ) : (
-                    <ForumTable
-                        threads={paginatedThreads}
-                        selectedIds={selectedThreadIds}
-                        onSelect={handleSelectThread}
+            <BulkActionsBar
+                selectedCount={selectedThreadIds.size}
+                actions={bulkActions}
+                onCancel={() => setSelectedThreadIds(new Set())}
+                itemTypeLabel="forums"
+            />
+
+            {isLoading ? (
+                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
+            ) : (
+                <ForumTable
+                    threads={paginatedThreads}
+                    selectedIds={selectedThreadIds}
+                    onSelect={handleSelectThread}
                         onSelectAll={handleSelectAll}
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -315,8 +299,7 @@ function ForumsContent() {
                         onViewReports={(thread) => setViewerConfig({ isOpen: true, type: 'reports', thread })}
                     />
                 )}
-            </div>
-
+            
             {/* ── Contextual Moderation Modal ── */}
             <Modal
                 isOpen={viewerConfig.isOpen}
@@ -328,7 +311,7 @@ function ForumsContent() {
                 size="large"
             >
                 {viewerConfig.type === 'reports' && viewerConfig.thread?.eventId && (
-                    <ForumReportsTab eventId={viewerConfig.thread.eventId} />
+                    <ForumReportsTab eventId={viewerConfig.thread.eventId!} />
                 )}
 
                 {viewerConfig.type === 'edit' && viewerConfig.thread && (
@@ -380,32 +363,34 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
 
     useEffect(() => { fetchReports(); }, [fetchReports]);
 
+    const { executeAction } = useModerationAction();
+
     const getActions = (report: Report): ActionItem[] => [
         {
             label: 'Resolve',
             variant: 'success',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-            onClick: async () => {
-                const { error } = await supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'resolved' });
-                if (error) showToast(error.message, 'error');
-                else {
-                    showToast('Report resolved', 'success');
-                    fetchReports();
+            onClick: () => executeAction(
+                () => supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'resolved' }),
+                {
+                    loadingMessage: 'Resolving report...',
+                    successMessage: 'Report resolved',
+                    onSuccess: fetchReports
                 }
-            }
+            )
         },
         {
             label: 'Dismiss',
             variant: 'danger',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-            onClick: async () => {
-                const { error } = await supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'dismissed' });
-                if (error) showToast(error.message, 'error');
-                else {
-                    showToast('Report dismissed', 'info');
-                    fetchReports();
+            onClick: () => executeAction(
+                () => supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'dismissed' }),
+                {
+                    loadingMessage: 'Dismissing report...',
+                    successMessage: 'Report dismissed',
+                    onSuccess: fetchReports
                 }
-            }
+            )
         }
     ];
 
