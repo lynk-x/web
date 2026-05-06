@@ -11,6 +11,7 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency, formatDate } from '@/utils/format';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import StatCard from '@/components/dashboard/StatCard';
 import type { BadgeVariant } from '@/types/shared';
 
 interface AdCredit {
@@ -216,20 +217,26 @@ export default function AdCreditsTab() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             {ConfirmDialog}
-
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                {[
-                    { label: 'Outstanding Credits', value: `$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Platform liability' },
-                    { label: 'Active Grants', value: activeCount, sub: 'Across all advertisers' },
-                    { label: 'Issued This Month', value: issuedThisMonth, sub: 'New grants' },
-                ].map(s => (
-                    <div key={s.label} className={adminStyles.card} style={{ padding: '16px 20px' }}>
-                        <p style={{ margin: 0, fontSize: 12, opacity: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
-                        <p style={{ margin: '6px 0 2px', fontSize: 22, fontWeight: 700 }}>{s.value}</p>
-                        <p style={{ margin: 0, fontSize: 12, opacity: 0.5 }}>{s.sub}</p>
-                    </div>
-                ))}
+            
+            <div className={adminStyles.statsGrid}>
+                <StatCard 
+                    label="Outstanding Credits" 
+                    value={`$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                    change="Platform liability"
+                    isLoading={isLoading}
+                />
+                <StatCard 
+                    label="Active Grants" 
+                    value={activeCount} 
+                    change="Across all advertisers"
+                    isLoading={isLoading}
+                />
+                <StatCard 
+                    label="Issued This Month" 
+                    value={issuedThisMonth} 
+                    change="New grants"
+                    isLoading={isLoading}
+                />
             </div>
 
             <TableToolbar

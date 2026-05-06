@@ -6,14 +6,14 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
-import AdAssetsTab from '@/components/admin/campaigns/AdAssetsTab';
-import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
+import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
 import AdPricingTab from '@/components/admin/campaigns/AdPricingTab';
 import AdCreditsTab from '@/components/admin/campaigns/AdCreditsTab';
 import Link from 'next/link';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
+import Modal from '@/components/shared/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
@@ -22,6 +22,7 @@ import Tabs from '@/components/dashboard/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { formatCurrency } from '@/utils/format';
 
 function CampaignsContent() {
     const supabase = useMemo(() => createClient(), []);
@@ -32,8 +33,8 @@ function CampaignsContent() {
     const searchParams = useSearchParams();
 
     const initialTab = (searchParams.get('tab') as string) || 'campaigns';
-    const [activeTab, setActiveTab] = useState<'campaigns' | 'assets' | 'analytics' | 'pricing' | 'credits'>(
-        ['campaigns', 'assets', 'analytics', 'pricing', 'credits'].includes(initialTab) ? initialTab as 'campaigns' | 'assets' | 'analytics' | 'pricing' | 'credits' : 'campaigns'
+    const [activeTab, setActiveTab] = useState<'campaigns' | 'pricing' | 'credits'>(
+        ['campaigns', 'pricing', 'credits'].includes(initialTab) ? initialTab as 'campaigns' | 'pricing' | 'credits' : 'campaigns'
     );
     
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -46,6 +47,16 @@ function CampaignsContent() {
     const [totalCount, setTotalCount] = useState(0);
     const [summary, setSummary] = useState<any>(null);
     const [campaignPerf, setCampaignPerf] = useState<{ avgCtr: string; avgCpc: string } | null>(null);
+
+    const [viewerConfig, setViewerConfig] = useState<{
+        isOpen: boolean;
+        type: 'preview' | 'stats' | 'none';
+        campaign: Campaign | null;
+        mediaUrl?: string;
+    }>({ isOpen: false, type: 'none', campaign: null });
+
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 10;
@@ -70,7 +81,7 @@ function CampaignsContent() {
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
-        if (tab && ['campaigns', 'assets', 'analytics', 'pricing', 'credits'].includes(tab)) {
+        if (tab && ['campaigns', 'pricing', 'credits'].includes(tab)) {
             setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
@@ -151,13 +162,10 @@ function CampaignsContent() {
 
         showToast(`Updating ${campaign.name} to ${newStatus}...`, 'info');
         try {
-            const updatedAt = new Date().toISOString();
-
             const moderationId = campaign.moderationId;
             if (!moderationId) {
-                showToast(`No moderation record found for ${campaign.name}. Creating one...`, 'info');
-                // Fallback or automatic creation logic could go here, but for now we throw to be safe
-                throw new Error('Moderation record missing. Please contact system admin.');
+                showToast(`No moderation record found for ${campaign.name}.`, 'error');
+                return;
             }
 
             const { error } = await supabase.rpc('moderate_item', {
@@ -174,6 +182,75 @@ function CampaignsContent() {
             setIsRejectionModalOpen(false);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to update campaign status.', 'error');
+        }
+    };
+
+    const handleFlag = async (campaign: Campaign) => {
+        const isFlagging = !campaign.isFlagged;
+        showToast(`${isFlagging ? 'Flagging' : 'Unflagging'} ${campaign.name}...`, 'info');
+        try {
+            const moderationId = campaign.moderationId;
+            if (!moderationId) throw new Error('Moderation record missing.');
+
+            const { error } = await supabase
+                .from('moderation')
+                .update({ status: isFlagging ? 'flagged' : 'pending_review' })
+                .eq('id', moderationId);
+
+            if (error) throw error;
+
+            showToast(`${campaign.name} ${isFlagging ? 'flagged for review' : 'unflagged'}.`, 'success');
+            fetchCampaigns();
+        } catch (err) {
+            showToast('Failed to update flag status.', 'error');
+        }
+    };
+
+    const handlePreview = async (campaign: Campaign) => {
+        setViewerConfig({ isOpen: true, type: 'preview', campaign, mediaUrl: undefined });
+        
+        const { data, error } = await supabase
+            .from('ad_media')
+            .select('url')
+            .eq('campaign_id', campaign.id)
+            .limit(1)
+            .single();
+
+        if (!error && data) {
+            setViewerConfig(prev => ({ ...prev, mediaUrl: data.url }));
+        }
+    };
+
+    const handleViewStats = (campaign: Campaign) => {
+        setViewerConfig({ isOpen: true, type: 'stats', campaign });
+    };
+
+    const handleEdit = (campaign: Campaign) => {
+        setEditingCampaign(campaign);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveCampaign = async (campaignId: string, updates: any) => {
+        showToast(`Saving changes...`, 'info');
+        try {
+            const { error } = await supabase
+                .from('ad_campaigns')
+                .update({
+                    title: updates.name,
+                    total_budget: updates.budget,
+                    start_at: updates.startDate,
+                    end_at: updates.endDate,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', campaignId);
+
+            if (error) throw error;
+
+            showToast(`Campaign updated successfully.`, 'success');
+            setIsEditModalOpen(false);
+            fetchCampaigns();
+        } catch (err) {
+            showToast('Failed to update campaign.', 'error');
         }
     };
 
@@ -270,8 +347,6 @@ function CampaignsContent() {
                 onTabChange={handleTabChange}
                 options={[
                     { id: 'campaigns', label: 'Campaign List' },
-                    { id: 'analytics', label: 'Cross-Campaign Stats' },
-                    { id: 'assets', label: 'Ad Asset Library' },
                     { id: 'pricing', label: 'Ad Pricing Tiers' },
                     { id: 'credits', label: 'Ad Credits' }
                 ]}
@@ -352,6 +427,10 @@ function CampaignsContent() {
                         onSelectAll={() => handleSelectAll(campaigns.map(c => c.id))}
                         onStatusChange={handleSingleStatusUpdate}
                         onDelete={handleSingleDelete}
+                        onPreview={handlePreview}
+                        onViewStats={handleViewStats}
+                        onFlag={handleFlag}
+                        onEdit={handleEdit}
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
@@ -368,11 +447,70 @@ function CampaignsContent() {
                         }}
                         title={`Reject Campaign: ${pendingModerationItem?.title}`}
                     />
+
+                    {/* ── Admin Moderation Modal ── */}
+                    <Modal
+                        isOpen={viewerConfig.isOpen}
+                        onClose={() => setViewerConfig(prev => ({ ...prev, isOpen: false }))}
+                        title={
+                            viewerConfig.type === 'preview' ? `Preview Ad: ${viewerConfig.campaign?.name}` :
+                            `Campaign Performance: ${viewerConfig.campaign?.name}`
+                        }
+                        size="medium"
+                    >
+                        {viewerConfig.type === 'preview' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '20px' }}>
+                                <div style={{ 
+                                    width: '100%', 
+                                    aspectRatio: viewerConfig.campaign?.adType === 'banner' ? '320/50' : '9/16',
+                                    maxHeight: '400px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    overflow: 'hidden'
+                                }}>
+                                    {viewerConfig.mediaUrl ? (
+                                        <img 
+                                            src={viewerConfig.mediaUrl} 
+                                            alt="Ad Creative" 
+                                            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                                        />
+                                    ) : (
+                                        <div style={{ opacity: 0.5 }}>Loading creative...</div>
+                                    )}
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 500 }}>{viewerConfig.campaign?.adType?.toUpperCase()} Ad</div>
+                                    <div style={{ fontSize: '12px', opacity: 0.6 }}>Targeting: {viewerConfig.campaign?.client}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewerConfig.type === 'stats' && viewerConfig.campaign && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', padding: '20px' }}>
+                                <StatCard label="Impressions" value={viewerConfig.campaign.impressions} trend="neutral" />
+                                <StatCard label="Clicks" value={viewerConfig.campaign.clicks} trend="positive" />
+                                <StatCard 
+                                    label="CTR" 
+                                    value={`${((viewerConfig.campaign.clicks / (viewerConfig.campaign.impressions || 1)) * 100).toFixed(2)}%`} 
+                                    trend="positive" 
+                                />
+                                <StatCard label="Total Spend" value={formatCurrency(viewerConfig.campaign.spend)} trend="neutral" />
+                            </div>
+                        )}
+                    </Modal>
+
+                    <EditCampaignModal 
+                        isOpen={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        onSave={handleSaveCampaign}
+                        campaign={editingCampaign}
+                    />
                 </>
             )}
 
-            {activeTab === 'assets' && <AdAssetsTab />}
-            {activeTab === 'analytics' && <AdAnalyticsTab />}
             {activeTab === 'pricing' && <AdPricingTab />}
             {activeTab === 'credits' && <AdCreditsTab />}
         </>

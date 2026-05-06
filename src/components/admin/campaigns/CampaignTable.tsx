@@ -24,6 +24,10 @@ interface CampaignTableProps {
     onPageChange?: (page: number) => void;
     onStatusChange?: (campaign: Campaign, newStatus: string) => void;
     onDelete?: (campaign: Campaign) => void;
+    onPreview?: (campaign: Campaign) => void;
+    onViewStats?: (campaign: Campaign) => void;
+    onFlag?: (campaign: Campaign) => void;
+    onEdit?: (campaign: Campaign) => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -60,6 +64,10 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
     onPageChange,
     onStatusChange,
     onDelete,
+    onPreview,
+    onViewStats,
+    onFlag,
+    onEdit,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -67,15 +75,14 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
     /** Column definitions for the campaign table. */
     const columns: Column<Campaign>[] = [
         {
-            header: 'Campaign',
+            header: 'Reference',
             render: (campaign) => (
                 <div>
-                    <div style={{ fontWeight: 500 }}>{campaign.name}</div>
-                    <div style={{ fontSize: '12px', opacity: 0.6 }}>{campaign.client}</div>
-                    {campaign.campaignRef && (
-                        // campaign_ref — unique ad campaign identifier
-                        <div style={{ fontSize: '11px', opacity: 0.4, fontFamily: 'monospace' }}>{campaign.campaignRef}</div>
-                    )}
+                    <div style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px', opacity: 0.8, fontFamily: 'var(--font-mono, monospace)' }}>
+                        {campaign.campaignRef || 'N/A'}
+                    </div>
+                    <div style={{ fontWeight: 500, fontSize: '13px' }}>{campaign.name}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.6 }}>by {campaign.client}</div>
                 </div>
             ),
         },
@@ -103,27 +110,17 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
             ),
         },
         {
-            header: 'Performance',
-            render: (campaign) => (
-                <div className={styles.metrics}>
-                    <span className={styles.metricValue}>{formatNumber(campaign.impressions)} Impr.</span>
-                    <span className={styles.metricLabel}>{formatNumber(campaign.clicks)} Clicks</span>
-                </div>
-            ),
+            header: 'Start Date',
+            render: (campaign) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{campaign.startDate}</div>,
+        },
+        {
+            header: 'End Date',
+            render: (campaign) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{campaign.endDate}</div>,
         },
         {
             header: 'Status',
             render: (campaign) => (
                 <Badge label={formatString(campaign.status)} variant={getStatusVariant(campaign.status)} showDot />
-            ),
-        },
-        {
-            header: 'Dates',
-            render: (campaign) => (
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                    <div>{campaign.startDate}</div>
-                    <div style={{ opacity: 0.6 }}>to {campaign.endDate}</div>
-                </div>
             ),
         },
     ];
@@ -132,14 +129,34 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
     const getActions = (campaign: Campaign): ActionItem[] => {
         const actions: ActionItem[] = [
             {
+                label: 'Preview Ad',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>,
+                onClick: () => onPreview?.(campaign),
+            },
+            {
+                label: 'Edit',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
+                onClick: () => onEdit?.(campaign),
+            },
+            {
+                label: 'View Stats',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
+                onClick: () => onViewStats?.(campaign),
+            },
+            {
                 label: 'View Details',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
                 onClick: () => router.push(`/dashboard/admin/campaigns/${campaign.id}`),
             },
+            { divider: true },
+            {
+                label: campaign.isFlagged ? 'Unflag Review' : 'Flag for Review',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>,
+                onClick: () => onFlag?.(campaign),
+            },
         ];
 
-        // Draft campaigns can be approved (set to active) by admin
-        // Campaigns awaiting review
+        // Status Transitions
         if (campaign.status === 'pending_approval' || campaign.status === 'draft') {
             actions.push(
                 {

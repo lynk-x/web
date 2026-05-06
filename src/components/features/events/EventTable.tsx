@@ -115,6 +115,14 @@ const EventTable: React.FC<EventTableProps> = (props) => {
 
         const columns: Column<OrganizerEvent>[] = [
             {
+                header: 'Reference',
+                render: (event) => (
+                    <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px', opacity: 0.8, fontFamily: 'var(--font-mono, monospace)' }}>
+                        {event.eventReference || 'N/A'}
+                    </span>
+                ),
+            },
+            {
                 header: 'Event',
                 render: (event) => (
                     <div className={styles.eventInfo}>
@@ -170,9 +178,6 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                     <div style={{ fontSize: '13px', opacity: 0.8 }}>
                         <div>{event.location}</div>
                         <div style={{ fontSize: '11px', opacity: 0.6 }}>{event.attendees} attendees</div>
-                        {event.eventReference && (
-                            <div style={{ fontSize: '11px', opacity: 0.5, fontFamily: 'monospace' }}>#{event.eventReference}</div>
-                        )}
                     </div>
                 ),
             },
@@ -295,6 +300,14 @@ const EventTable: React.FC<EventTableProps> = (props) => {
     const orgEvents = events as EventRow[];
 
     const columns: Column<EventRow>[] = [
+        {
+            header: 'Reference',
+            render: (event) => (
+                <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px', opacity: 0.8, fontFamily: 'var(--font-mono, monospace)' }}>
+                    {event.reference || 'N/A'}
+                </span>
+            ),
+        },
         {
             header: 'Event Name',
             render: (event) => <div style={{ fontWeight: 500 }}>{event.name}</div>,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
@@ -10,6 +10,10 @@ import ForumMediaTab from '@/components/admin/forums/ForumMediaTab';
 import Link from 'next/link';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Modal from '@/components/shared/Modal';
+import ReportTable from '@/components/admin/moderation/ReportTable';
+import Tabs from '@/components/dashboard/Tabs';
+import { Report } from '@/types/admin';
+import type { ActionItem } from '@/types/shared';
 
 /**
  * Mock forums — aligned to `forum_status` schema enum.
@@ -33,9 +37,13 @@ function ForumsContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const [viewerConfig, setViewerConfig] = useState<{ isOpen: boolean, type: 'messages' | 'media', thread?: ForumThread }>({
+    const [viewerConfig, setViewerConfig] = useState<{ 
+        isOpen: boolean, 
+        type: 'edit' | 'reports', 
+        thread?: ForumThread
+    }>({
         isOpen: false,
-        type: 'messages'
+        type: 'edit'
     });
 
 
@@ -303,8 +311,8 @@ function ForumsContent() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                         onStatusChange={handleSingleStatusUpdate}
-                        onBrowseMessages={(thread) => setViewerConfig({ isOpen: true, type: 'messages', thread })}
-                        onBrowseMedia={(thread) => setViewerConfig({ isOpen: true, type: 'media', thread })}
+                        onEditForum={(thread) => setViewerConfig({ isOpen: true, type: 'edit', thread })}
+                        onViewReports={(thread) => setViewerConfig({ isOpen: true, type: 'reports', thread })}
                     />
                 )}
             </div>
@@ -313,16 +321,96 @@ function ForumsContent() {
             <Modal
                 isOpen={viewerConfig.isOpen}
                 onClose={() => setViewerConfig(prev => ({ ...prev, isOpen: false }))}
-                title={viewerConfig.type === 'messages' ? `Moderating Messages: ${viewerConfig.thread?.title}` : `Media Gallery: ${viewerConfig.thread?.title}`}
+                title={
+                    viewerConfig.type === 'reports' ? `Moderating Reports: ${viewerConfig.thread?.title}` :
+                    `Edit Forum: ${viewerConfig.thread?.title}`
+                }
                 size="large"
             >
-                {viewerConfig.type === 'messages' ? (
-                    <ForumMessagesTab forumId={viewerConfig.thread?.id} />
-                ) : (
-                    <ForumMediaTab forumId={viewerConfig.thread?.id} />
+                {viewerConfig.type === 'reports' && viewerConfig.thread?.eventId && (
+                    <ForumReportsTab eventId={viewerConfig.thread.eventId} />
+                )}
+
+                {viewerConfig.type === 'edit' && viewerConfig.thread && (
+                    <div style={{ padding: '40px', textAlign: 'center', opacity: 0.6 }}>
+                        Forum configuration and settings will be editable here.
+                    </div>
                 )}
             </Modal>
         </div>
+    );
+}
+
+// ─── Sub-Component: ForumReportsTab ──────────────────────────────────────────
+
+function ForumReportsTab({ eventId }: { eventId: string }) {
+    const { showToast } = useToast();
+    const supabase = useMemo(() => createClient(), []);
+    const [reports, setReports] = useState<Report[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchReports = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .schema('reports')
+                .from('reports')
+                .select('*, reporter:user_profile!reporter_id(user_name)')
+                .eq('target_event_id', eventId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setReports((data || []).map(r => ({
+                id: r.id,
+                targetType: 'event',
+                targetId: r.target_event_id,
+                title: `Report #${r.reference}`,
+                description: (r as any).info?.description || 'No description provided.',
+                date: new Date(r.created_at).toLocaleDateString(),
+                reporter: r.reporter?.user_name || 'Anonymous',
+                status: r.status,
+                reasonId: r.reason_id
+            })));
+        } catch (err: unknown) {
+            showToast('Failed to load reports', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, eventId, showToast]);
+
+    useEffect(() => { fetchReports(); }, [fetchReports]);
+
+    const getActions = (report: Report): ActionItem[] => [
+        {
+            label: 'Resolve',
+            variant: 'success',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+            onClick: async () => {
+                const { error } = await supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'resolved' });
+                if (error) showToast(error.message, 'error');
+                else {
+                    showToast('Report resolved', 'success');
+                    fetchReports();
+                }
+            }
+        },
+        {
+            label: 'Dismiss',
+            variant: 'danger',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            onClick: async () => {
+                const { error } = await supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'dismissed' });
+                if (error) showToast(error.message, 'error');
+                else {
+                    showToast('Report dismissed', 'info');
+                    fetchReports();
+                }
+            }
+        }
+    ];
+
+    return (
+        <ReportTable reports={reports} isLoading={isLoading} getActions={getActions} />
     );
 }
 

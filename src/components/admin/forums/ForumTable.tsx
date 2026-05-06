@@ -23,8 +23,8 @@ interface ForumTableProps {
     totalPages?: number;
     onPageChange?: (page: number) => void;
     onStatusChange?: (id: string, status: string) => void;
-    onBrowseMessages?: (thread: ForumThread) => void;
-    onBrowseMedia?: (thread: ForumThread) => void;
+    onEditForum?: (thread: ForumThread) => void;
+    onViewReports?: (thread: ForumThread) => void;
 }
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
@@ -35,9 +35,9 @@ interface ForumTableProps {
  */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
-        case 'Open': return 'success';
-        case 'Read_only': return 'warning';
-        case 'Archived': return 'subtle';
+        case 'open': return 'success';
+        case 'read_only': return 'warning';
+        case 'archived': return 'subtle';
         default: return 'neutral';
     }
 };
@@ -45,9 +45,9 @@ const getStatusVariant = (status: string): BadgeVariant => {
 /** Human-readable label for the forum_status enum. */
 const formatForumStatus = (status: string): string => {
     switch (status) {
-        case 'Open': return 'Open';
-        case 'Read_only': return 'Read Only';
-        case 'Archived': return 'Archived';
+        case 'open': return 'Open';
+        case 'read_only': return 'Read Only';
+        case 'archived': return 'Archived';
         default: return status;
     }
 };
@@ -68,8 +68,8 @@ const ForumTable: React.FC<ForumTableProps> = ({
     totalPages = 1,
     onPageChange,
     onStatusChange,
-    onBrowseMessages,
-    onBrowseMedia,
+    onEditForum,
+    onViewReports,
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
@@ -77,16 +77,19 @@ const ForumTable: React.FC<ForumTableProps> = ({
     /** Column definitions for the forum table. */
     const columns: Column<ForumThread>[] = [
         {
+            header: 'Reference',
+            render: (thread) => (
+                <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px', opacity: 0.8 }}>
+                    {thread.reference || 'N/A'}
+                </span>
+            ),
+        },
+        {
             header: 'Name',
             render: (thread) => (
                 <div>
                     <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {thread.title}
-                        {thread.reference && (
-                            <span style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', opacity: 0.5, fontWeight: 400 }}>
-                                {thread.reference}
-                            </span>
-                        )}
                     </div>
                     <div style={{ fontSize: '12px', opacity: 0.6 }}>
                         for <span style={{ color: 'var(--color-brand-primary)' }}>{thread.eventName}</span>
@@ -149,57 +152,51 @@ const ForumTable: React.FC<ForumTableProps> = ({
 
     /** Row-level moderation actions for each forum. */
     const getActions = (thread: ForumThread): ActionItem[] => {
-        return [
+        const actions: ActionItem[] = [
             {
-                label: 'Browse Messages',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>,
-                onClick: () => onBrowseMessages?.(thread),
+                label: 'View Forum',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+                onClick: () => window.open(`https://app.lynk-x.app/f/${thread.id}`, '_blank'),
             },
             {
-                label: 'View Media Gallery',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
-                onClick: () => onBrowseMedia?.(thread),
+                label: 'Edit Forum',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
+                onClick: () => onEditForum?.(thread),
+            },
+            {
+                label: 'View Reports',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>,
+                onClick: () => onViewReports?.(thread),
+                disabled: thread.reportsCount === 0,
             },
             { divider: true },
-            {
-                label: 'Call Moderator',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>,
-                onClick: () => showToast(`Paging moderator for ${thread.title}`, 'info'),
-            },
-            {
-                label: 'Set Read-only',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
-                onClick: () => {
-                    if (onStatusChange) onStatusChange(thread.id, 'Read_only');
-                    else showToast(`${thread.title} is now read-only.`, 'warning');
-                },
-            },
-            {
-                label: 'Archive Forum',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>,
-                onClick: () => {
-                    if (onStatusChange) onStatusChange(thread.id, 'Archived');
-                    else showToast(`${thread.title} archived.`, 'info');
-                },
-            },
-            {
-                label: 'View Logs',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>,
-                onClick: () => {
-                    showToast(`Opening logs for ${thread.title}...`, 'info');
-                    router.push(`/dashboard/admin/audit-logs?search=${encodeURIComponent(thread.title)}`);
-                },
-            },
-            {
-                label: 'Export as CSV',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-                onClick: () => {
-                    showToast(`Exporting data for ${thread.title}`, 'info');
-                    exportToCSV([thread], `forum_export_${thread.id}`);
-                    showToast('Export successful.', 'success');
-                },
-            },
         ];
+
+        // Status Transitions
+        if (thread.status !== 'open') {
+            actions.push({
+                label: 'Open Forum',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>,
+                onClick: () => onStatusChange?.(thread.id, 'open'),
+            });
+        }
+        if (thread.status !== 'read_only') {
+            actions.push({
+                label: 'Make Read-only',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+                onClick: () => onStatusChange?.(thread.id, 'read_only'),
+            });
+        }
+        if (thread.status !== 'archived') {
+            actions.push({
+                label: 'Archive Forum',
+                variant: 'danger',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>,
+                onClick: () => onStatusChange?.(thread.id, 'archived'),
+            });
+        }
+
+        return actions;
     };
 
     return (
