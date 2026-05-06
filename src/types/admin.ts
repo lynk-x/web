@@ -39,6 +39,7 @@ export interface Campaign {
     targetEventId?: string;
     startDate: string;
     endDate: string;
+    moderationId?: string;
     isFlagged?: boolean;
 }
 
@@ -194,7 +195,8 @@ export interface User {
 export interface TaxRate {
     id: string;
     country_code: string;
-    name: string;
+    applicable_reason: string;
+    display_name: string;
     rate_percent: number;
     is_inclusive: boolean;
     is_active: boolean;

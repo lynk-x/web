@@ -72,8 +72,9 @@ function FinanceContent() {
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
     const [editingTaxRate, setEditingTaxRate] = useState<TaxRate | null>(null);
     const [taxForm, setTaxForm] = useState({
-        name: '',
+        display_name: '',
         country_code: 'KE',
+        applicable_reason: 'ticket_sale',
         rate_percent: 0,
         is_inclusive: true
     });
@@ -191,7 +192,7 @@ function FinanceContent() {
                 const { data, error } = await supabase.from('tax_rates').select(`
                     *,
                     country:countries(display_name)
-                `).order('name');
+                `).order('display_name');
                 if (error) throw error;
                 setTaxRates((data || []).map(t => ({
                     ...t,
@@ -503,21 +504,22 @@ function FinanceContent() {
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                         <button className={adminStyles.btnPrimary} onClick={() => {
                             setEditingTaxRate(null);
-                            setTaxForm({ name: '', country_code: 'KE', rate_percent: 0, is_inclusive: true });
+                            setTaxForm({ display_name: '', country_code: 'KE', applicable_reason: 'ticket_sale', rate_percent: 0, is_inclusive: true });
                             setIsTaxModalOpen(true);
                         }}>
                             + Add Tax Rate
                         </button>
                     </div>
                     <TaxRateTable
-                        data={taxRates.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))}
+                        data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
                         isLoading={isLoading}
                         onUpdate={fetchData}
                         onEdit={(rate) => {
                             setEditingTaxRate(rate);
                             setTaxForm({
-                                name: rate.name,
+                                display_name: rate.display_name,
                                 country_code: rate.country_code,
+                                applicable_reason: rate.applicable_reason,
                                 rate_percent: rate.rate_percent,
                                 is_inclusive: rate.is_inclusive
                             });
@@ -696,9 +698,24 @@ function FinanceContent() {
                         <input
                             className={adminStyles.input}
                             placeholder="e.g. VAT, Sales Tax"
-                            value={taxForm.name}
-                            onChange={e => setTaxForm({ ...taxForm, name: e.target.value })}
+                            value={taxForm.display_name}
+                            onChange={e => setTaxForm({ ...taxForm, display_name: e.target.value })}
                         />
+                    </div>
+                    <div>
+                        <label className={adminStyles.label}>Applicable Reason</label>
+                        <select
+                            className={adminStyles.select}
+                            style={{ width: '100%' }}
+                            value={taxForm.applicable_reason}
+                            onChange={e => setTaxForm({ ...taxForm, applicable_reason: e.target.value })}
+                        >
+                            <option value="ticket_sale">Ticket Sale</option>
+                            <option value="ad_campaign_payment">Ad Campaign</option>
+                            <option value="subscription_payment">Subscription</option>
+                            <option value="wallet_top_up">Wallet Top-up</option>
+                            <option value="organizer_payout">Organizer Payout</option>
+                        </select>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div>

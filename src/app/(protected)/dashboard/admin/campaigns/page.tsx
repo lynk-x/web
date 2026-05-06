@@ -113,6 +113,7 @@ function CampaignsContent() {
                 status: c.status,
                 startDate: new Date(c.start_at).toLocaleDateString(),
                 endDate: new Date(c.end_at).toLocaleDateString(),
+                moderationId: c.moderation_id
             })));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load campaigns.', 'error');
@@ -138,12 +139,12 @@ function CampaignsContent() {
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
-    const [pendingModerationItem, setPendingModerationItem] = useState<{ id: string, title: string, status: string } | null>(null);
+    const [pendingModerationItem, setPendingModerationItem] = useState<{ id: string, moderationId?: string, title: string, status: string } | null>(null);
 
     const handleSingleStatusUpdate = async (campaign: Campaign, newStatus: string, reason?: string) => {
         // If it's a rejection, we need the modal first.
         if (newStatus === 'rejected' && !reason) {
-            setPendingModerationItem({ id: campaign.id, title: campaign.name, status: newStatus });
+            setPendingModerationItem({ id: campaign.id, moderationId: campaign.moderationId, title: campaign.name, status: newStatus });
             setIsRejectionModalOpen(true);
             return;
         }
@@ -152,8 +153,15 @@ function CampaignsContent() {
         try {
             const updatedAt = new Date().toISOString();
 
+            const moderationId = campaign.moderationId;
+            if (!moderationId) {
+                showToast(`No moderation record found for ${campaign.name}. Creating one...`, 'info');
+                // Fallback or automatic creation logic could go here, but for now we throw to be safe
+                throw new Error('Moderation record missing. Please contact system admin.');
+            }
+
             const { error } = await supabase.rpc('moderate_item', {
-                p_moderation_id: campaign.id,
+                p_moderation_id: moderationId,
                 p_status: newStatus === 'active' ? 'approved' : 'rejected',
                 p_reason: reason || 'Status updated via Admin Campaigns dashboard.'
             });
@@ -274,7 +282,7 @@ function CampaignsContent() {
                     <div className={adminStyles.statsGrid}>
                         <StatCard 
                             label="Total Campaigns" 
-                            value={summary?.total_events ? '—' : 0} // Using total_events is a bit hacky, normally should extend summary
+                            value={summary?.total_campaigns || 0} 
                             isLoading={!summary} 
                         />
                         <StatCard 

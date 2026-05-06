@@ -162,7 +162,7 @@ const UserTable: React.FC<UserTableProps> = ({
             onClick: () => setSelectedAccountForGovernance(user),
         },
         {
-            type: 'divider' as const,
+            divider: true,
         },
         {
             label: user.status === 'active' ? 'Suspend Account' : 'Activate Account',

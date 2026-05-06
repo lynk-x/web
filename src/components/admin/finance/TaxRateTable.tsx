@@ -29,7 +29,7 @@ const TaxRateTable: React.FC<TaxRateTableProps> = ({ data, isLoading, onUpdate, 
                 .eq('id', rate.id);
 
             if (error) throw error;
-            showToast(`${rate.name} updated`, 'success');
+            showToast(`${rate.display_name} updated`, 'success');
             onUpdate?.();
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
@@ -39,7 +39,11 @@ const TaxRateTable: React.FC<TaxRateTableProps> = ({ data, isLoading, onUpdate, 
     const columns: Column<TaxRate>[] = [
         {
             header: 'Rate Name',
-            render: (r) => <div style={{ fontWeight: 600 }}>{r.name}</div>
+            render: (r) => <div style={{ fontWeight: 600 }}>{r.display_name}</div>
+        },
+        {
+            header: 'Reason',
+            render: (r) => <Badge label={r.applicable_reason.replace(/_/g, ' ')} variant="subtle" />
         },
         {
             header: 'Country',
