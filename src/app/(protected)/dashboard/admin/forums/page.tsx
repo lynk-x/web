@@ -61,66 +61,28 @@ function ForumsContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    // Fetch platform-wide stats once (unaffected by filters/pagination)
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const { data } = await supabase
-                    .schema('analytics')
-                    .from('mv_forum_performance')
-                    .select('status, escalated_reports_count');
-                if (data) {
-                    setPlatformStats({
-                        total: data.length,
-                        open: data.filter((f: any) => f.status === 'open').length,
-                        readOnly: data.filter((f: any) => f.status === 'read_only').length,
-                        escalations: data.reduce((acc: number, f: any) => acc + (parseInt(f.escalated_reports_count) || 0), 0),
-                    });
-                }
-            } catch { /* non-critical */ }
-        };
-        fetchStats();
-    }, [supabase]);
+    // All forum data is loaded once via the secure RPC, then paginated/filtered client-side.
+    // Direct reads of analytics.mv_forum_performance are blocked by REVOKE to authenticated.
+    const [allForums, setAllForums] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchForums = async () => {
+        const fetchForumsData = async () => {
             setIsLoading(true);
             try {
-                const from = (currentPage - 1) * itemsPerPage;
-                const to = from + itemsPerPage - 1;
-
-                let query = supabase
-                    .schema('analytics')
-                    .from('mv_forum_performance')
-                    .select('*', { count: 'exact' })
-                    .order('last_activity_at', { ascending: false })
-                    .range(from, to);
-
-                if (searchTerm) query = query.ilike('event_title', `%${searchTerm}%`);
-                if (statusFilter !== 'all') query = query.eq('status', statusFilter);
-
-                const { data, error, count } = await query;
-
+                const { data, error } = await supabase.rpc('get_admin_analytics', { p_category: 'forums' });
                 if (error) throw error;
 
-                const mappedThreads: ForumThread[] = (data || []).map((f: any) => ({
-                    id: f.id,
-                    reference: f.reference,
-                    title: f.event_title + ' Forum',
-                    eventName: f.event_title,
-                    eventId: f.event_id,
-                    status: f.status,
-                    announcementsCount: parseInt(f.announcements_count) || 0,
-                    liveChatsCount: parseInt(f.live_chats_count) || 0,
-                    mediaCount: parseInt(f.media_count) || 0,
-                    reportsCount: parseInt(f.reports_count) || 0,
-                    escalatedCount: parseInt(f.escalated_reports_count) || 0,
-                    oldestReportAt: f.oldest_report_at,
-                    lastActivity: formatRelativeTime(f.last_activity_at),
-                }));
+                const rows: any[] = data || [];
 
-                setThreads(mappedThreads);
-                setTotalCount(count ?? 0);
+                // Compute stats from the full dataset
+                setPlatformStats({
+                    total: rows.length,
+                    open: rows.filter((f: any) => f.status === 'open').length,
+                    readOnly: rows.filter((f: any) => f.status === 'read_only').length,
+                    escalations: rows.reduce((acc: number, f: any) => acc + (parseInt(f.escalated_reports_count) || 0), 0),
+                });
+
+                setAllForums(rows);
             } catch (err) {
                 showToast('Failed to load forum management data.', 'error');
             } finally {
@@ -128,8 +90,41 @@ function ForumsContent() {
             }
         };
 
-        fetchForums();
-    }, [supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
+        fetchForumsData();
+    }, [supabase, showToast]);
+
+    // Client-side filter & paginate from the cached full list
+    useEffect(() => {
+        let filtered = allForums;
+        if (searchTerm) {
+            filtered = filtered.filter((f: any) =>
+                f.event_title?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter((f: any) => f.status === statusFilter);
+        }
+        setTotalCount(filtered.length);
+
+        const from = (currentPage - 1) * itemsPerPage;
+        const page = filtered.slice(from, from + itemsPerPage);
+
+        setThreads(page.map((f: any) => ({
+            id: f.id,
+            reference: f.reference,
+            title: f.event_title + ' Forum',
+            eventName: f.event_title,
+            eventId: f.event_id,
+            status: f.status,
+            announcementsCount: parseInt(f.announcements_count) || 0,
+            liveChatsCount: parseInt(f.live_chats_count) || 0,
+            mediaCount: parseInt(f.media_count) || 0,
+            reportsCount: parseInt(f.reports_count) || 0,
+            escalatedCount: parseInt(f.escalated_reports_count) || 0,
+            oldestReportAt: f.oldest_report_at,
+            lastActivity: formatRelativeTime(f.last_activity_at),
+        })));
+    }, [allForums, searchTerm, statusFilter, currentPage, itemsPerPage]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
     const paginatedThreads = threads;

@@ -89,7 +89,12 @@ function CommunicationsContent() {
                     .select('*', { count: 'exact' })
                     .order('effective_date', { ascending: false })
                     .range(legalFrom, legalFrom + legalDocsPerPage - 1),
-                supabase.from('notification_broadcast_logs').select('*').order('created_at', { ascending: false }),
+                // notification_broadcast_logs lives in its own schema
+                supabase
+                    .schema('notification_broadcast_logs')
+                    .from('notification_broadcast_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false }),
                 supabase.from('system_banners').select('*').order('starts_at', { ascending: false }),
                 supabase.from('spotlights').select('*').order('target', { ascending: true }).order('display_order', { ascending: true })
             ]);

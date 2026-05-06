@@ -83,7 +83,9 @@ function SupportContent() {
             const to = from + itemsPerPage - 1;
 
             if (activeTab === 'moderation') {
+                // reports live in their own schema — must use .schema() prefix
                 let query = supabase
+                    .schema('reports')
                     .from('reports')
                     .select('*, reporter:user_profile!reporter_id(user_name)', { count: 'exact' });
 
@@ -92,7 +94,9 @@ function SupportContent() {
                 }
 
                 if (debouncedSearch) {
-                    query = query.or(`description.ilike.%${debouncedSearch}%,id.ilike.%${debouncedSearch}%`);
+                    // reports.reports has no 'description' column; text lives in info->>'description'
+                    // Filter on reference (indexed) or escalation flag instead
+                    query = query.or(`reference.ilike.%${debouncedSearch}%,info->>description.ilike.%${debouncedSearch}%`);
                 }
 
                 const { data, error, count } = await query
@@ -107,7 +111,8 @@ function SupportContent() {
                     targetType: r.target_user_id ? 'user' : r.target_event_id ? 'event' : 'message',
                     targetId: r.target_user_id || r.target_event_id || r.target_message_id,
                     title: `Report #${r.id.slice(0, 8)}`,
-                    description: r.description,
+                    // text content lives in info->'description', not a top-level column
+                    description: (r as any).info?.description || `Report ${r.reference}`,
                     date: new Date(r.created_at).toLocaleDateString(),
                     reporter: r.reporter?.user_name || 'Anonymous',
                     status: r.status,

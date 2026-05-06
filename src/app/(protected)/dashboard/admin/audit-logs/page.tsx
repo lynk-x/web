@@ -27,9 +27,9 @@ export default function AdminAuditLogsPage() {
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Server-side pagination: only fetch the current page from the DB
-            // to avoid loading thousands of rows into the browser at once.
+            // audit_logs lives in its own schema; must use .schema() to route correctly
             let query = supabase
+                .schema('audit_logs')
                 .from('audit_logs')
                 .select('*, actor:user_profile!user_id(full_name, user_name, email)', { count: 'exact' })
                 .order('created_at', { ascending: false });
@@ -56,8 +56,8 @@ export default function AdminAuditLogsPage() {
                 target: l.target_id?.slice(0, 8) || 'N/A',
                 targetType: l.target_type || 'Unknown',
                 timestamp: new Date(l.created_at).toLocaleString(),
-                details: l.details ? JSON.stringify(l.details, null, 2) : undefined,
-                changes: l.changes
+                // details jsonb contains all context; 'changes' is not a separate column
+                details: l.details ? JSON.stringify(l.details, null, 2) : undefined
             })));
 
             setTotalCount(count || 0);
