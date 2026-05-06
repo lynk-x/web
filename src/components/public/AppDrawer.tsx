@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import styles from './AppDrawer.module.css';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 interface AppDrawerProps {
     isOpen: boolean;
@@ -19,6 +20,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
     const [region, setRegion] = useState('Global');
     const [isAuthed, setIsAuthed] = useState(false);
     const router = useRouter();
+    const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
     // Auto-detect currency from cookie (set by Edge middleware)
     useEffect(() => {
@@ -28,7 +30,11 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                 .find(row => row.startsWith('x-vercel-ip-country='))
                 ?.split('=')[1];
 
-            if (countryCode) {
+            if (countryCode && !isLoadingCurrencies && currencies.length > 0) {
+                // Find matching currency from DB
+                const match = currencies.find(c => c.code.startsWith(countryCode)); // Simplified logic
+                // Better: find by country code? But hook only returns unique currencies.
+                // Actually, the previous logic had a record.
                 const currencyMap: Record<string, string> = {
                     'KE': 'KES',
                     'NG': 'NGN',
@@ -41,7 +47,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                 }
             }
         }
-    }, []);
+    }, [isLoadingCurrencies, currencies]);
 
     // Check auth state once when drawer mounts
     useEffect(() => {
@@ -163,13 +169,16 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                 className={styles.preferenceSelect}
                                 value={currency}
                                 onChange={(e) => setCurrency(e.target.value)}
+                                disabled={isLoadingCurrencies}
                             >
                                 <option value="all">All Currencies</option>
-                                <option value="USD">USD - Dollar</option>
-                                <option value="KES">KES - Shilling</option>
-                                <option value="NGN">NGN - Naira</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - Pound</option>
+                                {isLoadingCurrencies ? (
+                                    <option value="">Loading...</option>
+                                ) : (
+                                    currencies.map(c => (
+                                        <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                                    ))
+                                )}
                             </select>
                         </div>
 

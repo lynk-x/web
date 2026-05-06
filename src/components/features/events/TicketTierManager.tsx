@@ -12,6 +12,7 @@ import React from 'react';
 import styles from './EventForm.module.css';
 import type { OrganizerEventTicket as Ticket } from '@/types/organize';
 import { useToast } from '@/components/ui/Toast';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 interface TicketTierManagerProps {
     tickets: Ticket[];
@@ -27,6 +28,7 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
     tickets, currency, onCurrencyChange, errors, onAdd, onRemove, onChange,
 }) => {
     const { showToast } = useToast();
+    const { currencies, isLoading } = useCurrencies();
 
     return (
         <section className={styles.section}>
@@ -39,13 +41,18 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                         className={styles.selectInput}
                         value={currency}
                         onChange={(e) => onCurrencyChange(e.target.value)}
+                        disabled={isLoading}
                     >
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="KES">KES - Kenyan Shilling</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="GBP">GBP - British Pound</option>
-                        <option value="UGX">UGX - Uganda Shilling</option>
-                        <option value="TZS">TZS - Tanzania Shilling</option>
+                        {isLoading ? (
+                            <option value="">Loading Currencies...</option>
+                        ) : (
+                            currencies.map(c => (
+                                <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                            ))
+                        )}
+                        {!isLoading && currencies.length === 0 && (
+                            <option value="KES">KES - Kenyan Shilling</option>
+                        )}
                     </select>
                 </div>
             </div>

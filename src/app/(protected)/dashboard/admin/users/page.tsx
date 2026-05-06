@@ -10,7 +10,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import FilterGroup from '@/components/dashboard/FilterGroup';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
@@ -189,7 +189,7 @@ function UsersContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <FilterGroup
+                <StatusFilterChips
                     options={[
                         { value: 'all', label: 'All Users' },
                         { value: 'admin', label: 'Admins' },
@@ -231,7 +231,7 @@ export default function AdminUsersPage() {
             <PageHeader
                 title="Identity Management"
                 subtitle="Monitor and manage platform identities, kyc verification levels, and roles."
-                actionLabel="Add New User"
+                actionLabel="Create Account"
                 actionHref="/dashboard/admin/users/create"
                 actionIcon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

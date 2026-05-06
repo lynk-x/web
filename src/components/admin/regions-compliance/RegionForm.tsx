@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './RegionForm.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { useToast } from '@/components/ui/Toast';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 interface RegionFormProps {
     initialData?: {
@@ -21,6 +22,7 @@ interface RegionFormProps {
 export default function RegionForm({ initialData, isEditMode = false }: RegionFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
+    const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
@@ -89,14 +91,16 @@ export default function RegionForm({ initialData, isEditMode = false }: RegionFo
                             value={formData.currency}
                             onChange={handleChange}
                             required
+                            disabled={isLoadingCurrencies}
                         >
                             <option value="">Select Currency</option>
-                            <option value="USD">USD ($)</option>
-                            <option value="GBP">GBP (£)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="CAD">CAD ($)</option>
-                            <option value="AUD">AUD ($)</option>
-                            <option value="NGN">NGN (₦)</option>
+                            {isLoadingCurrencies ? (
+                                <option value="">Loading...</option>
+                            ) : (
+                                currencies.map(c => (
+                                    <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+                                ))
+                            )}
                         </select>
                     </div>
 

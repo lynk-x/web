@@ -13,6 +13,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import StatCard from '@/components/dashboard/StatCard';
 import type { BadgeVariant } from '@/types/shared';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 interface AdCredit {
     id: string;
@@ -52,6 +53,7 @@ export default function AdCreditsTab() {
     const [accounts, setAccounts] = useState<AccountOption[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
     const [issueAccountId, setIssueAccountId] = useState('');
@@ -290,14 +292,22 @@ export default function AdCreditsTab() {
                                     onChange={e => setIssueAmount(e.target.value)}
                                 />
                             </label>
-                            <label className={adminStyles.fieldLabel}>
-                                Currency
-                                <select className={adminStyles.select} value={issueCurrency} onChange={e => setIssueCurrency(e.target.value)}>
-                                    <option value="USD">USD</option>
-                                    <option value="KES">KES</option>
-                                    <option value="NGN">NGN</option>
-                                    <option value="GBP">GBP</option>
-                                </select>
+                             <label className={adminStyles.fieldLabel}>
+                                 Currency
+                                 <select 
+                                     className={adminStyles.select} 
+                                     value={issueCurrency} 
+                                     onChange={e => setIssueCurrency(e.target.value)}
+                                     disabled={isLoadingCurrencies}
+                                 >
+                                     {isLoadingCurrencies ? (
+                                         <option value="">Loading...</option>
+                                     ) : (
+                                         currencies.map(c => (
+                                             <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                                         ))
+                                     )}
+                                 </select>
                             </label>
                         </div>
                         <label className={adminStyles.fieldLabel}>

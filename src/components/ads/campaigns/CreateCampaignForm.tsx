@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import { useCountries, Country } from '@/hooks/useCountries';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,10 +54,6 @@ interface CreateCampaignFormProps {
     onDirtyChange?: (isDirty: boolean) => void;
 }
 
-interface CountryOption {
-    code: string;
-    display_name: string;
-}
 
 interface MarketSuggestion {
     country_code: string;
@@ -95,13 +92,13 @@ export default function CreateCampaignForm({
 
 
     // ── Reference Data State (fetched from DB) ────────────────────────────────
-    const [countries, setCountries] = useState<CountryOption[]>([]);
+    const { countries, isLoading: isLoadingCountries } = useCountries();
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
 
     // ── Country/Tag Input State ───────────────────────────────────────────────────────
     const [tagInput, setTagInput] = useState('');
     const [countryInput, setCountryInput] = useState('');
-    const [countrySuggestions, setCountrySuggestions] = useState<CountryOption[]>([]);
+    const [countrySuggestions, setCountrySuggestions] = useState<Country[]>([]);
     const [marketSuggestions, setMarketSuggestions] = useState<MarketSuggestion[]>([]);
     
 
@@ -131,21 +128,15 @@ export default function CreateCampaignForm({
     };
     const [formData, setFormData] = useState<CampaignData>(defaultData);
 
-    // ── Fetch Reference Data (Countries & Tags) ─────────────────────────────
     useEffect(() => {
-        const fetchData = async () => {
-            // Fetch active countries
-            const { data: cData } = await supabase
-                .from('countries')
-                .select('code, display_name')
-                .eq('is_active', true)
-                .order('display_name');
-            if (cData) {
-                setCountries(cData);
-                // Simple suggestion: Top 4 (e.g. common ones)
-                setCountrySuggestions(cData.slice(0, 4));
-            }
+        if (!isLoadingCountries && countries.length > 0) {
+            setCountrySuggestions(countries.slice(0, 4));
+        }
+    }, [isLoadingCountries, countries]);
 
+    // ── Fetch Reference Data (Tags) ─────────────────────────────
+    useEffect(() => {
+        const fetchTags = async () => {
             // Fetch official/popular tags for suggestions
             const { data: tData } = await supabase
                 .from('tags')
@@ -155,7 +146,7 @@ export default function CreateCampaignForm({
                 .limit(12);
             if (tData) setTagSuggestions(tData.map(t => t.name));
         };
-        fetchData();
+        fetchTags();
     }, [supabase]);
 
     // ── Fetch Market Competition Suggestions ───────────────────────────

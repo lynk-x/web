@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { sanitizeInput } from '@/utils/sanitization';
 import styles from './onboarding.module.css';
+import { useCountries } from '@/hooks/useCountries';
 
 type OnboardingStep = 'DETAILS' | 'VERIFICATION';
 type AccountType = 'organizer' | 'advertiser';
@@ -16,6 +17,7 @@ function OnboardingFlow() {
     const searchParams = useSearchParams();
     const supabase = createClient();
     const { refreshAccounts } = useOrganization();
+    const { countries, isLoading: isLoadingCountries } = useCountries();
 
     // ?type=organizer|advertiser  ?create=true (adding a new workspace)
     const typeParam = searchParams.get('type') as AccountType | null;
@@ -28,7 +30,6 @@ function OnboardingFlow() {
     const [orgName, setOrgName] = useState('');
     const [orgDesc, setOrgDesc] = useState('');
     const [country, setCountry] = useState('KE');
-    const [countries, setCountries] = useState<{ code: string; display_name: string }[]>([]);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -48,16 +49,6 @@ function OnboardingFlow() {
         // Onboarding is now publicly accessible; users who aren't logged in will hit the
         // auth check inside handleCreateOrganization.
     }, [isCreatingNew]);
-
-    // Fetch active countries
-    useEffect(() => {
-        supabase
-            .from('countries')
-            .select('code, display_name')
-            .eq('is_active', true)
-            .order('display_name')
-            .then(({ data }) => { if (data) setCountries(data); });
-    }, []);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -249,11 +240,18 @@ function OnboardingFlow() {
                                     value={country}
                                     onChange={(e) => setCountry(e.target.value)}
                                     style={{ background: 'rgba(0, 0, 0, 0.4)' }}
+                                    disabled={isLoadingCountries}
                                 >
-                                    {countries.map(c => (
-                                        <option key={c.code} value={c.code}>{c.display_name}</option>
-                                    ))}
-                                    {countries.length === 0 && <option value="KE">Kenya</option>}
+                                    {isLoadingCountries ? (
+                                        <option value="">Loading Countries...</option>
+                                    ) : (
+                                        countries.map(c => (
+                                            <option key={c.code} value={c.code}>{c.display_name}</option>
+                                        ))
+                                    )}
+                                    {!isLoadingCountries && countries.length === 0 && (
+                                        <option value="KE">Kenya</option>
+                                    )}
                                 </select>
                             </div>
 

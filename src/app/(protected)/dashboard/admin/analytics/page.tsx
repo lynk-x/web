@@ -13,6 +13,7 @@ import Tabs from '@/components/dashboard/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { useCountries } from '@/hooks/useCountries';
 
 type Tab = 'demographics' | 'performance' | 'revenue' | 'insights' | 'intelligence';
 
@@ -94,6 +95,11 @@ function DemographicTab() {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [countryFilter, setCountryFilter] = useState('all');
+    const { countries } = useCountries();
+
+    const getCountryName = useCallback((code: string) => {
+        return countries.find(c => c.code === code)?.display_name || code;
+    }, [countries]);
 
     useEffect(() => {
         const load = async () => {
@@ -121,7 +127,7 @@ function DemographicTab() {
                 <select className={styles.select} value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
                     <option value="all">Global (All Countries)</option>
                     {Array.from(new Set((data?.geo || []).map((r: any) => r.country))).sort().map((c: any) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c as string} value={c as string}>{getCountryName(c as string)}</option>
                     ))}
                 </select>
             </div>
@@ -130,7 +136,12 @@ function DemographicTab() {
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Location Heatmap</h3>
                     {(data?.geo || []).slice(0, 8).map((r: any) => (
-                        <BarRow key={`${r.country}-${r.account_role}`} label={`${r.country} (${r.account_role})`} count={r.user_count} pct={(r.user_count / Math.max(...data.geo.map((g: any) => g.user_count))) * 100} />
+                        <BarRow 
+                            key={`${r.country}-${r.account_role}`} 
+                            label={`${getCountryName(r.country)} (${r.account_role})`} 
+                            count={r.user_count} 
+                            pct={(r.user_count / Math.max(...data.geo.map((g: any) => g.user_count))) * 100} 
+                        />
                     ))}
                 </div>
                 <div className={styles.card}>

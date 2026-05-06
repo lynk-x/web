@@ -14,6 +14,7 @@ import Modal from '@/components/shared/Modal';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 interface SponsorshipInvitation {
     id: string;
@@ -77,6 +78,7 @@ export default function EventSponsorshipsPage() {
     const [invitations, setInvitations] = useState<SponsorshipInvitation[]>([]);
     const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
     // Invite modal
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -594,11 +596,19 @@ export default function EventSponsorshipsPage() {
                                     </label>
                                     <label className={adminStyles.fieldLabel}>
                                         Currency
-                                        <select className={adminStyles.select} value={tierForm.currency} onChange={e => setTierForm(f => ({ ...f, currency: e.target.value }))}>
-                                            <option>KES</option>
-                                            <option>NGN</option>
-                                            <option>USD</option>
-                                            <option>GBP</option>
+                                        <select 
+                                            className={adminStyles.select} 
+                                            value={tierForm.currency} 
+                                            onChange={e => setTierForm(f => ({ ...f, currency: e.target.value }))}
+                                            disabled={isLoadingCurrencies}
+                                        >
+                                            {isLoadingCurrencies ? (
+                                                <option value="">Loading...</option>
+                                            ) : (
+                                                currencies.map(c => (
+                                                    <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                                                ))
+                                            )}
                                         </select>
                                     </label>
                                     <label className={adminStyles.fieldLabel}>
@@ -738,11 +748,19 @@ export default function EventSponsorshipsPage() {
                                 </label>
                                 <label className={adminStyles.fieldLabel}>
                                     Currency
-                                    <select className={adminStyles.select} value={currency} onChange={e => setCurrency(e.target.value)}>
-                                        <option value="KES">KES</option>
-                                        <option value="NGN">NGN</option>
-                                        <option value="USD">USD</option>
-                                        <option value="GBP">GBP</option>
+                                    <select 
+                                        className={adminStyles.select} 
+                                        value={currency} 
+                                        onChange={e => setCurrency(e.target.value)}
+                                        disabled={isLoadingCurrencies}
+                                    >
+                                        {isLoadingCurrencies ? (
+                                            <option value="">Loading...</option>
+                                        ) : (
+                                            currencies.map(c => (
+                                                <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                                            ))
+                                        )}
                                     </select>
                                 </label>
                             </div>

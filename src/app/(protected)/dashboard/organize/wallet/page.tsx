@@ -11,6 +11,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import type { BadgeVariant } from '@/types/shared';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 interface WalletBalance {
     id: string;
@@ -62,6 +63,7 @@ export default function WalletPage() {
     const [adCredits, setAdCredits] = useState<AdCredit[]>([]);
     const [creditTxns, setCreditTxns] = useState<CreditTransaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
     // Top-up modal
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -310,11 +312,19 @@ export default function WalletPage() {
                         </label>
                         <label className={adminStyles.fieldLabel}>
                             Currency
-                            <select className={adminStyles.select} value={currency} onChange={e => setCurrency(e.target.value)}>
-                                <option value="KES">KES</option>
-                                <option value="NGN">NGN</option>
-                                <option value="USD">USD</option>
-                                <option value="GBP">GBP</option>
+                            <select 
+                                className={adminStyles.select} 
+                                value={currency} 
+                                onChange={e => setCurrency(e.target.value)}
+                                disabled={isLoadingCurrencies}
+                            >
+                                {isLoadingCurrencies ? (
+                                    <option value="">Loading...</option>
+                                ) : (
+                                    currencies.map(c => (
+                                        <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                                    ))
+                                )}
                             </select>
                         </label>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>

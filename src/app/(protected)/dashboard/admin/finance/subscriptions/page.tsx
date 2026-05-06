@@ -11,6 +11,8 @@ import Modal from '@/components/shared/Modal';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useCurrencies } from '@/hooks/useCurrencies';
+import { useCountries } from '@/hooks/useCountries';
 
 interface SubscriptionPlan {
     id: string;
@@ -50,6 +52,8 @@ export default function SubscriptionPlansPage() {
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [allFeatures, setAllFeatures] = useState<SubscriptionFeature[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
+    const { countries, isLoading: isLoadingCountries } = useCountries();
 
     // Plan modal
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -489,12 +493,19 @@ export default function SubscriptionPlansPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                             <label className={adminStyles.fieldLabel}>
                                 Currency *
-                                <select className={adminStyles.select} value={priceCurrency} onChange={e => setPriceCurrency(e.target.value)}>
-                                    <option value="KES">KES</option>
-                                    <option value="NGN">NGN</option>
-                                    <option value="USD">USD</option>
-                                    <option value="GBP">GBP</option>
-                                    <option value="ZAR">ZAR</option>
+                                <select 
+                                    className={adminStyles.select} 
+                                    value={priceCurrency} 
+                                    onChange={e => setPriceCurrency(e.target.value)}
+                                    disabled={isLoadingCurrencies}
+                                >
+                                    {isLoadingCurrencies ? (
+                                        <option value="">Loading...</option>
+                                    ) : (
+                                        currencies.map(c => (
+                                            <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
+                                        ))
+                                    )}
                                 </select>
                             </label>
                             <label className={adminStyles.fieldLabel}>
@@ -512,13 +523,21 @@ export default function SubscriptionPlansPage() {
                         </div>
                         <label className={adminStyles.fieldLabel}>
                             Country Code (optional)
-                            <input
-                                className={adminStyles.input}
-                                value={priceCountryCode}
+                            <select 
+                                className={adminStyles.select} 
+                                value={priceCountryCode} 
                                 onChange={e => setPriceCountryCode(e.target.value)}
-                                placeholder="e.g. KE, NG (leave blank for global)"
-                                maxLength={2}
-                            />
+                                disabled={isLoadingCountries}
+                            >
+                                <option value="">Global (All Regions)</option>
+                                {isLoadingCountries ? (
+                                    <option value="">Loading...</option>
+                                ) : (
+                                    countries.map(c => (
+                                        <option key={c.code} value={c.code}>{c.display_name} ({c.code})</option>
+                                    ))
+                                )}
+                            </select>
                         </label>
                         <label className={adminStyles.fieldLabel}>
                             External Gateway ID (optional)

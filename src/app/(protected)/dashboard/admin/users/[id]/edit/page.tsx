@@ -59,9 +59,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     return (
         <div className={adminStyles.container}>
             <SubPageHeader
-                title="Edit User"
+                title="Edit Account"
                 subtitle={`Updating account details for ${user.name}.`}
-                backLabel="Back to Users"
+                backLabel="Back to Identity"
                 isDirty={isDirty}
                 primaryAction={{
                     label: 'Save Changes',

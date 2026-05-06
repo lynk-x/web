@@ -8,14 +8,16 @@ import { sanitizeInput } from '@/utils/sanitization';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import { useCountries } from '@/hooks/useCountries';
 
 export interface UserFormData {
     id?: string;
     name: string;
-    userName: string;
     email: string;
-    role: 'admin' | 'organizer' | 'advertiser' | 'user';
-    status: 'active' | 'suspended' | 'partially_active';
+    role: 'attendee' | 'organizer' | 'advertiser' | 'platform';
+    status: 'active' | 'temporarily_suspended' | 'permanently_suspended';
+    countryCode: string;
+    kycTier: 'tier_1_basic' | 'tier_2_verified' | 'tier_3_advanced';
     bio?: string;
 }
 
@@ -39,13 +41,15 @@ export default function UserForm({
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
+    const { countries, isLoading: isLoadingCountries } = useCountries();
 
     const defaultData: UserFormData = {
         name: '',
-        userName: '',
         email: '',
-        role: 'user',
+        role: 'attendee',
         status: 'active',
+        countryCode: 'KE',
+        kycTier: 'tier_1_basic',
         bio: ''
     };
 
@@ -61,7 +65,6 @@ export default function UserForm({
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        // Optimization: Don't sanitize on every keystroke if it causes jumpy UI
         setFormData(prev => ({ ...prev, [name]: value }));
         
         if (!touched[name]) {
@@ -111,7 +114,9 @@ export default function UserForm({
                         full_name: sanitizedName,
                         email: sanitizedEmail,
                         role: formData.role,
-                        status: formData.status === 'suspended' ? 'permanently_suspended' : (formData.status as any)
+                        status: formData.status,
+                        country_code: formData.countryCode,
+                        kyc_tier: formData.kycTier
                     })
                     .eq('id', formData.id);
                 if (error) throw error;
@@ -120,11 +125,21 @@ export default function UserForm({
                 const { data, error } = await supabase.rpc('admin_create_user', {
                     p_email: sanitizedEmail,
                     p_full_name: sanitizedName,
-                    p_user_name: formData.userName || sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),
-                    p_role: formData.role
+                    p_user_name: sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),
+                    p_account_type: formData.role,
+                    p_country_code: formData.countryCode
                 });
                 if (error) throw error;
-                showToast('User account created!', 'success');
+
+                // Set KYC tier separately if it's not tier_1_basic
+                if (formData.kycTier !== 'tier_1_basic') {
+                    await supabase
+                        .from('user_profile')
+                        .update({ kyc_tier: formData.kycTier })
+                        .eq('id', data);
+                }
+
+                showToast('Account created successfully!', 'success');
             }
             
             onDirtyChange?.(false);
@@ -156,18 +171,6 @@ export default function UserForm({
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Username (Optional)</label>
-                        <input
-                            type="text"
-                            name="userName"
-                            className={styles.input}
-                            placeholder="jdoe24"
-                            value={formData.userName}
-                            onChange={handleInputChange}
-                        />
-                    </div>
-
-                    <div className={styles.inputGroup}>
                         <label className={styles.label}>Email Address</label>
                         <input
                             type="email"
@@ -182,7 +185,45 @@ export default function UserForm({
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Admin: Assigned Role</label>
+                        <label className={styles.label}>Primary Country</label>
+                        <select
+                            name="countryCode"
+                            className={styles.select}
+                            value={formData.countryCode}
+                            onChange={handleInputChange}
+                            required
+                            disabled={isLoadingCountries}
+                        >
+                            {isLoadingCountries ? (
+                                <option value="">Loading Countries...</option>
+                            ) : (
+                                countries.map(c => (
+                                    <option key={c.code} value={c.code}>{c.display_name} ({c.code})</option>
+                                ))
+                            )}
+                            {!isLoadingCountries && countries.length === 0 && (
+                                <option value="KE">Kenya (KE)</option>
+                            )}
+                        </select>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Verification (KYC) Tier</label>
+                        <select
+                            name="kycTier"
+                            className={styles.select}
+                            value={formData.kycTier}
+                            onChange={handleInputChange}
+                            required
+                        >
+                            <option value="tier_1_basic">Tier 1: Basic (Identity)</option>
+                            <option value="tier_2_verified">Tier 2: Verified (Docs)</option>
+                            <option value="tier_3_advanced">Tier 3: Advanced (AML)</option>
+                        </select>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Assigned Account Role</label>
                         <select
                             name="role"
                             className={styles.select}
@@ -190,17 +231,32 @@ export default function UserForm({
                             onChange={handleInputChange}
                             required
                         >
-                            <option value="user">Platform Attendee</option>
+                            <option value="attendee">Platform Attendee</option>
                             <option value="organizer">Verified Organizer</option>
                             <option value="advertiser">Ad Partner</option>
-                            <option value="admin">Platform Admin</option>
+                            <option value="platform">Platform Admin</option>
+                        </select>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Account Status</label>
+                        <select
+                            name="status"
+                            className={styles.select}
+                            value={formData.status}
+                            onChange={handleInputChange}
+                            required
+                        >
+                            <option value="active">Active / Healthy</option>
+                            <option value="temporarily_suspended">Temporarily Suspended</option>
+                            <option value="permanently_suspended">Permanently Suspended</option>
                         </select>
                     </div>
 
                     {!isEditing && (
                         <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                             <div className="validation-hint info" style={{ padding: '8px', border: '1px solid currentColor', borderRadius: '8px', opacity: 0.8 }}>
-                                Note: This user will be invited to set their password via the platform's authentication gateway.
+                                Note: The account owner will be invited to set their password via the platform's authentication gateway.
                             </div>
                         </div>
                     )}
@@ -213,7 +269,7 @@ export default function UserForm({
                             disabled={isSubmitting}
                             className={adminStyles.btnPrimary}
                         >
-                            {isSubmitting ? 'Processing...' : (isEditing ? 'Save Changes' : 'Create User')}
+                            {isSubmitting ? 'Processing...' : (isEditing ? 'Save Changes' : 'Create Account')}
                         </button>
                     </div>
                 )}

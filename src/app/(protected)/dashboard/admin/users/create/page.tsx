@@ -12,12 +12,12 @@ export default function CreateUserPage() {
     return (
         <div className={adminStyles.container}>
             <SubPageHeader
-                title="Create New User"
+                title="Create New Account"
                 subtitle="Add a new member to the platform."
-                backLabel="Back to Users"
+                backLabel="Back to Identity"
                 isDirty={isDirty}
                 primaryAction={{
-                    label: 'Create User',
+                    label: 'Create Account',
                     formId: 'user-form',
                     type: 'submit',
                     isLoading: isSubmitting
