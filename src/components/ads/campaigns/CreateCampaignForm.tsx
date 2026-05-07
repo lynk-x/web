@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useCountries, Country } from '@/hooks/useCountries';
 import ProductTour from '@/components/dashboard/ProductTour';
-import { formatDate } from '@/utils/format';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -706,19 +706,11 @@ export default function CreateCampaignForm({
                                         <label className={styles.label} htmlFor="start_at">
                                             Start Date <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input 
-                                            id="start_at" 
-                                            name="start_at" 
-                                            type={focusedField === 'start_at' || !formData.start_at ? 'date' : 'text'} 
-                                            className={`${styles.input} ${errors.start_at ? styles.inputError : ''}`}
-                                            value={focusedField !== 'start_at' && formData.start_at ? formatDate(formData.start_at) : formData.start_at} 
-                                            onChange={handleInputChange} 
-                                            onFocus={(e) => {
-                                                setFocusedField('start_at');
-                                                try { (e.target as any).showPicker(); } catch {}
-                                            }}
-                                            onBlur={() => setFocusedField(null)}
-                                            required 
+                                        <DatePicker
+                                            value={formData.start_at}
+                                            onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
+                                            placeholder="dd/mm/yyyy"
+                                            className={errors.start_at ? styles.inputError : ''}
                                         />
                                         {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
                                     </div>
@@ -726,19 +718,11 @@ export default function CreateCampaignForm({
                                         <label className={styles.label} htmlFor="end_at">
                                             End Date <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input 
-                                            id="end_at" 
-                                            name="end_at" 
-                                            type={focusedField === 'end_at' || !formData.end_at ? 'date' : 'text'} 
-                                            className={`${styles.input} ${errors.end_at ? styles.inputError : ''}`}
-                                            value={focusedField !== 'end_at' && formData.end_at ? formatDate(formData.end_at) : formData.end_at} 
-                                            onChange={handleInputChange} 
-                                            onFocus={(e) => {
-                                                setFocusedField('end_at');
-                                                try { (e.target as any).showPicker(); } catch {}
-                                            }}
-                                            onBlur={() => setFocusedField(null)}
-                                            required 
+                                        <DatePicker
+                                            value={formData.end_at}
+                                            onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
+                                            placeholder="dd/mm/yyyy"
+                                            className={errors.end_at ? styles.inputError : ''}
                                         />
                                         {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
                                     </div>

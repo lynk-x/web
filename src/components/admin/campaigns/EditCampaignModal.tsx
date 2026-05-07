@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Modal from '@/components/shared/Modal';
 import { Campaign } from './CampaignTable';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
-import { formatDate } from '@/utils/format';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface EditCampaignModalProps {
     isOpen: boolean;
@@ -79,30 +79,18 @@ export default function EditCampaignModal({ isOpen, onClose, onSave, campaign }:
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <label className={adminStyles.fieldLabel}>
                         Start Date
-                        <input 
-                            type={focusedField === 'startDate' || !startDate ? 'date' : 'text'} 
-                            className={adminStyles.input} 
-                            value={focusedField !== 'startDate' && startDate ? formatDate(startDate) : startDate} 
-                            onChange={(e) => setStartDate(e.target.value)} 
-                            onFocus={(e) => {
-                                setFocusedField('startDate');
-                                try { (e.target as any).showPicker(); } catch {}
-                            }}
-                            onBlur={() => setFocusedField(null)}
+                        <DatePicker 
+                            value={startDate} 
+                            onChange={setStartDate} 
+                            placeholder="dd/mm/yyyy"
                         />
                     </label>
                     <label className={adminStyles.fieldLabel}>
                         End Date
-                        <input 
-                            type={focusedField === 'endDate' || !endDate ? 'date' : 'text'} 
-                            className={adminStyles.input} 
-                            value={focusedField !== 'endDate' && endDate ? formatDate(endDate) : endDate} 
-                            onChange={(e) => setEndDate(e.target.value)} 
-                            onFocus={(e) => {
-                                setFocusedField('endDate');
-                                try { (e.target as any).showPicker(); } catch {}
-                            }}
-                            onBlur={() => setFocusedField(null)}
+                        <DatePicker 
+                            value={endDate} 
+                            onChange={setEndDate} 
+                            placeholder="dd/mm/yyyy"
                         />
                     </label>
                 </div>

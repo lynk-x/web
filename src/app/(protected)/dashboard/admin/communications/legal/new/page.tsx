@@ -12,6 +12,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import Badge from '@/components/shared/Badge';
 import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
 import { formatDate } from '@/utils/format';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 export default function NewLegalVersionPage() {
     const router = useRouter();
@@ -149,22 +150,10 @@ export default function NewLegalVersionPage() {
 
                             <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Effective Date</label>
-                                <input
-                                    type={focusedField === 'effective' || !effective_date ? "date" : "text"}
-                                    className={adminStyles.input}
-                                    value={focusedField !== 'effective' && effective_date ? formatDate(effective_date) : effective_date}
-                                    onChange={(e) => handleChange(setEffectiveDate, e.target.value)}
+                                <DatePicker
+                                    value={effective_date}
+                                    onChange={(val) => handleChange(setEffectiveDate, val)}
                                     placeholder="dd/mm/yyyy"
-                                    onFocus={(e) => {
-                                        setFocusedField('effective');
-                                        e.target.type = "date";
-                                        try { (e.target as any).showPicker(); } catch {}
-                                    }}
-                                    onBlur={(e) => {
-                                        setFocusedField(null);
-                                        if (!e.target.value) e.target.type = "text";
-                                    }}
-                                    required
                                 />
                             </div>
                         </div>

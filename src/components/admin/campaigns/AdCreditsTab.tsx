@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { createClient } from '@/utils/supabase/client';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { DatePicker } from '@/components/ui/DatePicker';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import StatCard from '@/components/dashboard/StatCard';
 import type { BadgeVariant } from '@/types/shared';
@@ -313,17 +314,10 @@ export default function AdCreditsTab() {
                         </div>
                         <label className={adminStyles.fieldLabel}>
                             Expiry Date <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span>
-                            <input
-                                className={adminStyles.input}
-                                type={focusedField === 'expiry' || !issueExpiry ? 'date' : 'text'}
-                                value={focusedField !== 'expiry' && issueExpiry ? formatDate(issueExpiry) : issueExpiry}
-                                onChange={e => setIssueExpiry(e.target.value)}
-                                onFocus={(e) => {
-                                    setFocusedField('expiry');
-                                    try { (e.target as any).showPicker(); } catch {}
-                                }}
-                                onBlur={() => setFocusedField(null)}
-                                min={new Date().toISOString().split('T')[0]}
+                            <DatePicker
+                                value={issueExpiry}
+                                onChange={setIssueExpiry}
+                                placeholder="dd/mm/yyyy"
                             />
                         </label>
                         <label className={adminStyles.fieldLabel}>

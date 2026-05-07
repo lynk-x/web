@@ -20,7 +20,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
-import { formatDate } from '@/utils/format';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { TimePicker } from '@/components/ui/TimePicker';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -388,28 +389,21 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                             {field === 'startDate' ? 'Start Date' : field === 'startTime' ? 'Start Time' : field === 'endDate' ? 'End Date' : 'End Time'}
                                             {' '}<span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input
-                                            type={isDateField ? (focusedField === field || !formData[field] ? 'date' : 'text') : 'time'}
-                                            name={field}
-                                            lang="en-GB"
-                                            className={`${styles.input} ${errors[field] ? styles.inputError : ''}`}
-                                            value={isDateField && focusedField !== field && formData[field] ? formatDate(formData[field]) : formData[field]}
-                                            onChange={handleInputChange}
-                                            placeholder={isDateField ? 'dd/mm/yyyy' : undefined}
-                                            onFocus={(e) => {
-                                                setFocusedField(field);
-                                                if (isDateField) {
-                                                    e.target.type = 'date';
-                                                    try { (e.target as any).showPicker(); } catch {}
-                                                }
-                                            }}
-                                            onBlur={(e) => {
-                                                setFocusedField(null);
-                                                if (isDateField && !e.target.value) {
-                                                    e.target.type = 'text';
-                                                }
-                                            }}
-                                        />
+                                        {isDateField ? (
+                                            <DatePicker
+                                                value={formData[field]}
+                                                onChange={(val) => handleInputChange({ target: { name: field, value: val } } as any)}
+                                                placeholder="dd/mm/yyyy"
+                                                className={errors[field] ? styles.inputError : ''}
+                                            />
+                                        ) : (
+                                            <TimePicker
+                                                value={formData[field]}
+                                                onChange={(val) => handleInputChange({ target: { name: field, value: val } } as any)}
+                                                placeholder="hh:mm"
+                                                className={errors[field] ? styles.inputError : ''}
+                                            />
+                                        )}
                                         <p className={styles.errorMessage}>{errors[field]}</p>
                                     </div>
                                 );

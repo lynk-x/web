@@ -3,8 +3,7 @@
 import React from 'react';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import styles from './DateRangeRow.module.css';
-
-import { formatDate } from '@/utils/format';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface DateRangeRowProps {
     startDate: string;
@@ -29,44 +28,22 @@ const DateRangeRow: React.FC<DateRangeRowProps> = ({
                 <div className={styles.inputWrapper}>
                     <label className={styles.label}>From</label>
                     <div className={styles.relative}>
-
-                        <input
-                            type={focusedField === 'start' || !startDate ? "date" : "text"}
-                            lang="en-GB"
-                            className={`${adminStyles.input} ${styles.dateInput}`}
-                            value={focusedField !== 'start' && startDate ? formatDate(startDate) : startDate}
-                            onChange={(e) => onStartDateChange(e.target.value)}
+                        <DatePicker
+                            value={startDate}
+                            onChange={onStartDateChange}
                             placeholder="dd/mm/yyyy"
-                            onFocus={(e) => {
-                                setFocusedField('start');
-                                e.target.type = "date";
-                            }}
-                            onBlur={(e) => {
-                                setFocusedField(null);
-                                if (!e.target.value) e.target.type = "text";
-                            }}
+                            className={styles.dateInput}
                         />
                     </div>
                 </div>
                 <div className={styles.inputWrapper}>
                     <label className={styles.label}>To</label>
                     <div className={styles.relative}>
-
-                        <input
-                            type={focusedField === 'end' || !endDate ? "date" : "text"}
-                            lang="en-GB"
-                            className={`${adminStyles.input} ${styles.dateInput}`}
-                            value={focusedField !== 'end' && endDate ? formatDate(endDate) : endDate}
-                            onChange={(e) => onEndDateChange(e.target.value)}
+                        <DatePicker
+                            value={endDate}
+                            onChange={onEndDateChange}
                             placeholder="dd/mm/yyyy"
-                            onFocus={(e) => {
-                                setFocusedField('end');
-                                e.target.type = "date";
-                            }}
-                            onBlur={(e) => {
-                                setFocusedField(null);
-                                if (!e.target.value) e.target.type = "text";
-                            }}
+                            className={styles.dateInput}
                         />
                     </div>
                 </div>
