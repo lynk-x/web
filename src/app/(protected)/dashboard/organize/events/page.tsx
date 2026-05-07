@@ -57,7 +57,7 @@ export default function OrganizerEventsPage() {
                 .from('events')
                 .select(`
                     id, title, status, starts_at, media, location,
-                    reference, is_private,
+                    reference, is_private, currency,
                     ticket_tiers(tickets_sold, capacity)
                 `, { count: 'exact' })
                 .eq('account_id', activeAccount.id)
@@ -90,7 +90,8 @@ export default function OrganizerEventsPage() {
                     attendees: ticketsSold,
                     thumbnailUrl: (e.media as any)?.thumbnail,
                     eventReference: e.reference,
-                    isPrivate: e.is_private
+                    isPrivate: e.is_private,
+                    currency: e.currency
                 };
             });
 

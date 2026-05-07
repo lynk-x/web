@@ -30,6 +30,18 @@ const CreateEventForm = () => {
 
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const formatPrice = (price: number) => {
+        const currency = activeAccount?.wallet_currency || 'KES';
+        try {
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: currency,
+            }).format(price);
+        } catch (e) {
+            return `${currency} ${price.toFixed(2)}`;
+        }
+    };
     const [realCategories, setRealCategories] = useState<{id: string, display_name: string}[]>([]);
 
     // Tag Suggestions State
@@ -372,7 +384,7 @@ const CreateEventForm = () => {
                                         <div key={idx} className={styles.ticketItem}>
                                             <div className={styles.ticketInfo}>
                                                 <span className={styles.ticketName}>{ticket.name}</span>
-                                                <span className={styles.ticketPrice}>${ticket.price}</span>
+                                                <span className={styles.ticketPrice}>{formatPrice(ticket.price)}</span>
                                             </div>
                                             <button type="button" onClick={() => setTicketTypes(ticketTypes.filter((_, i) => i !== idx))} className={styles.deleteBtn}>×</button>
                                         </div>
@@ -395,7 +407,7 @@ const CreateEventForm = () => {
             {showTicketModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal}>
-                        <h3>Add Ticket Tier</h3>
+                        <h3>Add Ticket Tier ({activeAccount?.wallet_currency || 'KES'})</h3>
                         <input
                             className={styles.input}
                             placeholder="Name (e.g. VIP)"

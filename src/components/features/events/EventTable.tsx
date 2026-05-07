@@ -325,7 +325,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             header: 'Revenue',
             render: (event) => (
                 <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {formatCurrency(event.revenue)}
+                    {formatCurrency(event.revenue, event.currency)}
                 </div>
             ),
         },

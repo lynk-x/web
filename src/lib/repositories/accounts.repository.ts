@@ -21,6 +21,7 @@ export interface AccountMembership {
     wallet_balance?: number;
     wallet_currency?: string;
     payout_routing?: Record<string, unknown>;
+    country_code?: string;
     isPrimary: boolean;
 }
 
@@ -126,6 +127,7 @@ export function createAccountsRepository(client: DbClient) {
                         wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
                         wallet_currency: primaryWallet?.currency ?? accountCurrency ?? 'USD',
                         payout_routing: member.accounts.payout_routing ?? {},
+                        country_code: member.accounts.country_code,
                         isPrimary: member.is_primary,
                     };
                 })

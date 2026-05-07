@@ -35,6 +35,7 @@ export interface Account {
     payout_routing?: {
         [key: string]: any;
     };
+    country_code?: string;
     isPrimary: boolean;
 }
 

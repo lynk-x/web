@@ -32,6 +32,7 @@ export interface OrganizerEvent {
     isPrivate?: boolean;
     thumbnailUrl?: string;
     reportsCount?: number;
+    currency?: string;
 }
 
 /** A row in the organizer events (overview) table. */
@@ -51,6 +52,7 @@ export interface EventRow {
     endTime?: string;
     /** Unique share/lookup code — from `events.reference` column */
     reference?: string;
+    currency?: string;
 }
 
 /** A financial transaction — aligned to the `transactions` DB table.

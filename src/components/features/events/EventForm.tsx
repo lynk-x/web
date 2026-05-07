@@ -22,7 +22,6 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
-import { CurrencySelector } from '@/components/ui/CurrencySelector';
 import { LocationInput } from '@/components/ui/LocationInput';
 import { VenueMap } from '@/components/features/events/VenueMap';
 
@@ -537,13 +536,12 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
 
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                                 <label className={styles.label}>Event Currency</label>
-                                <p style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px' }}>
-                                    This is the currency used for all ticket sales.
-                                </p>
-                                <CurrencySelector 
-                                    value={formData.currency} 
-                                    onChange={(val) => setFormData(prev => ({ ...prev, currency: val }))} 
-                                />
+                                <div className={styles.currencyDisplay}>
+                                    <span className={styles.currencyCode}>{formData.currency}</span>
+                                    <span className={styles.currencyHint}>
+                                        Locked to your account&#39;s billing region ({activeAccount?.country_code || 'US'}).
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </section>

@@ -24,6 +24,7 @@ import type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticke
 import { useEventFormData, EventFormTab } from './useEventFormData';
 import { useEventFormReference } from './useEventFormReference';
 import { useEventFormMedia } from './useEventFormMedia';
+import { useOrganization } from '@/context/OrganizationContext';
 
 export type { EventFormTab };
 
@@ -34,6 +35,7 @@ interface UseEventFormOptions {
 }
 
 export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseEventFormOptions) {
+    const { activeAccount } = useOrganization();
     // ── Sub-hook 1: form state, dirty check, draft ─────────────────────────────
     const {
         formData, setFormData,
@@ -72,6 +74,13 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         initialUrl: initialData?.thumbnailUrl,
         onUrlChange: (url) => setFormData((prev) => ({ ...prev, thumbnailUrl: url })),
     });
+
+    // ── Sync Currency with Account ───────────────────────────────────────────
+    useEffect(() => {
+        if (activeAccount?.wallet_currency && !isEditMode && !isDirty) {
+            setFormData(prev => ({ ...prev, currency: activeAccount.wallet_currency || 'USD' }));
+        }
+    }, [activeAccount, isEditMode, isDirty, setFormData]);
 
     // ── Validation ────────────────────────────────────────────────────────────
     const validate = (): boolean => {
