@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import { formatDate } from '@/utils/format';
 
 export default function EditDisclaimerPage() {
     const router = useRouter();
@@ -19,6 +20,7 @@ export default function EditDisclaimerPage() {
     const [isFetching, setIsFetching] = useState(true);
     const [isDirty, setIsDirty] = useState(false);
     const [tags, setTags] = useState<{ id: string, name: string }[]>([]);
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -121,13 +123,20 @@ export default function EditDisclaimerPage() {
                     <div className={adminStyles.formGroup}>
                         <label className={adminStyles.label}>Effective Date</label>
                         <input
-                            type={formData.effective_date ? "date" : "text"}
+                            type={focusedField === 'effective' || !formData.effective_date ? "date" : "text"}
                             className={adminStyles.input}
-                            value={formData.effective_date}
+                            value={focusedField !== 'effective' && formData.effective_date ? formatDate(formData.effective_date) : formData.effective_date}
                             onChange={(e) => updateField('effective_date', e.target.value)}
                             placeholder="dd/mm/yyyy"
-                            onFocus={(e) => (e.target.type = "date")}
-                            onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                            onFocus={(e) => {
+                                setFocusedField('effective');
+                                e.target.type = "date";
+                                try { (e.target as any).showPicker(); } catch {}
+                            }}
+                            onBlur={(e) => {
+                                setFocusedField(null);
+                                if (!e.target.value) e.target.type = "text";
+                            }}
                         />
                     </div>
 

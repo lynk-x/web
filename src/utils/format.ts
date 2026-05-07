@@ -64,7 +64,7 @@ export function formatDate(date: string | Date | number): string {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-';
     
-    return d.toLocaleDateString('en-US', {
+    return d.toLocaleDateString('en-GB', {
         dateStyle: 'medium'
     });
 }
@@ -77,7 +77,7 @@ export function formatDateTime(date: string | Date | number): string {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-';
     
-    return d.toLocaleString('en-US', {
+    return d.toLocaleString('en-GB', {
         dateStyle: 'medium',
         timeStyle: 'short'
     });
@@ -91,7 +91,7 @@ export function formatTime(date: string | Date | number): string {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-';
     
-    return d.toLocaleTimeString('en-US', {
+    return d.toLocaleTimeString('en-GB', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
@@ -159,7 +159,7 @@ export function formatDateInTimezone(date: string | Date | number, tz?: string |
     if (!tz) return formatDate(d);
 
     try {
-        return new Intl.DateTimeFormat('en-US', {
+        return new Intl.DateTimeFormat('en-GB', {
             dateStyle: 'medium',
             timeZone: tz,
         }).format(d);
@@ -207,7 +207,7 @@ export function formatDateTimeInTimezone(
             timeZone: tz,
             ...(showTz ? { timeZoneName: 'short' } : {}),
         };
-        return new Intl.DateTimeFormat('en-US', opts).format(d);
+        return new Intl.DateTimeFormat('en-GB', opts).format(d);
     } catch {
         return formatDateTime(d);
     }
@@ -226,7 +226,7 @@ export function formatTimeInTimezone(date: string | Date | number, tz?: string |
     if (!tz) return formatTime(d);
 
     try {
-        return new Intl.DateTimeFormat('en-US', {
+        return new Intl.DateTimeFormat('en-GB', {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,

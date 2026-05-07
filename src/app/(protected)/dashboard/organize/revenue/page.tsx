@@ -158,7 +158,7 @@ function RevenueContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, wallets, supabase, showToast]);
+    }, [activeAccount, supabase, showToast]);
 
     // Filtering Logic
     const filteredPayouts = useMemo(() => {

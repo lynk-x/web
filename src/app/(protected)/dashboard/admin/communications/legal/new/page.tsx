@@ -28,6 +28,7 @@ export default function NewLegalVersionPage() {
     const [type, setType] = useState<any>('terms_of_service');
     const [is_active, setIsActive] = useState(false);
     const [effective_date, setEffectiveDate] = useState('');
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const handleChange = (setter: any, value: any) => {
         setter(value);
@@ -149,13 +150,20 @@ export default function NewLegalVersionPage() {
                             <div className={adminStyles.inputGroup}>
                                 <label className={adminStyles.label}>Effective Date</label>
                                 <input
-                                    type={effective_date ? "date" : "text"}
+                                    type={focusedField === 'effective' || !effective_date ? "date" : "text"}
                                     className={adminStyles.input}
-                                    value={effective_date}
+                                    value={focusedField !== 'effective' && effective_date ? formatDate(effective_date) : effective_date}
                                     onChange={(e) => handleChange(setEffectiveDate, e.target.value)}
                                     placeholder="dd/mm/yyyy"
-                                    onFocus={(e) => (e.target.type = "date")}
-                                    onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                                    onFocus={(e) => {
+                                        setFocusedField('effective');
+                                        e.target.type = "date";
+                                        try { (e.target as any).showPicker(); } catch {}
+                                    }}
+                                    onBlur={(e) => {
+                                        setFocusedField(null);
+                                        if (!e.target.value) e.target.type = "text";
+                                    }}
                                     required
                                 />
                             </div>

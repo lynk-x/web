@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Modal from '@/components/shared/Modal';
 import { Campaign } from './CampaignTable';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import { formatDate } from '@/utils/format';
 
 interface EditCampaignModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ export default function EditCampaignModal({ isOpen, onClose, onSave, campaign }:
     const [budget, setBudget] = useState(0);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     useEffect(() => {
         if (campaign) {
@@ -78,19 +80,29 @@ export default function EditCampaignModal({ isOpen, onClose, onSave, campaign }:
                     <label className={adminStyles.fieldLabel}>
                         Start Date
                         <input 
-                            type="date" 
+                            type={focusedField === 'startDate' || !startDate ? 'date' : 'text'} 
                             className={adminStyles.input} 
-                            value={startDate} 
+                            value={focusedField !== 'startDate' && startDate ? formatDate(startDate) : startDate} 
                             onChange={(e) => setStartDate(e.target.value)} 
+                            onFocus={(e) => {
+                                setFocusedField('startDate');
+                                try { (e.target as any).showPicker(); } catch {}
+                            }}
+                            onBlur={() => setFocusedField(null)}
                         />
                     </label>
                     <label className={adminStyles.fieldLabel}>
                         End Date
                         <input 
-                            type="date" 
+                            type={focusedField === 'endDate' || !endDate ? 'date' : 'text'} 
                             className={adminStyles.input} 
-                            value={endDate} 
+                            value={focusedField !== 'endDate' && endDate ? formatDate(endDate) : endDate} 
                             onChange={(e) => setEndDate(e.target.value)} 
+                            onFocus={(e) => {
+                                setFocusedField('endDate');
+                                try { (e.target as any).showPicker(); } catch {}
+                            }}
+                            onBlur={() => setFocusedField(null)}
                         />
                     </label>
                 </div>

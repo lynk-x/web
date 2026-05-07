@@ -4,6 +4,8 @@ import React from 'react';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import styles from './DateRangeRow.module.css';
 
+import { formatDate } from '@/utils/format';
+
 interface DateRangeRowProps {
     startDate: string;
     endDate: string;
@@ -19,6 +21,8 @@ const DateRangeRow: React.FC<DateRangeRowProps> = ({
     onEndDateChange,
     onClear
 }) => {
+    const [focusedField, setFocusedField] = React.useState<string | null>(null);
+
     return (
         <div className={styles.container}>
             <div className={styles.group}>
@@ -27,14 +31,20 @@ const DateRangeRow: React.FC<DateRangeRowProps> = ({
                     <div className={styles.relative}>
 
                         <input
-                            type={startDate ? "date" : "text"}
+                            type={focusedField === 'start' || !startDate ? "date" : "text"}
                             lang="en-GB"
                             className={`${adminStyles.input} ${styles.dateInput}`}
-                            value={startDate}
+                            value={focusedField !== 'start' && startDate ? formatDate(startDate) : startDate}
                             onChange={(e) => onStartDateChange(e.target.value)}
                             placeholder="dd/mm/yyyy"
-                            onFocus={(e) => (e.target.type = "date")}
-                            onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                            onFocus={(e) => {
+                                setFocusedField('start');
+                                e.target.type = "date";
+                            }}
+                            onBlur={(e) => {
+                                setFocusedField(null);
+                                if (!e.target.value) e.target.type = "text";
+                            }}
                         />
                     </div>
                 </div>
@@ -43,14 +53,20 @@ const DateRangeRow: React.FC<DateRangeRowProps> = ({
                     <div className={styles.relative}>
 
                         <input
-                            type={endDate ? "date" : "text"}
+                            type={focusedField === 'end' || !endDate ? "date" : "text"}
                             lang="en-GB"
                             className={`${adminStyles.input} ${styles.dateInput}`}
-                            value={endDate}
+                            value={focusedField !== 'end' && endDate ? formatDate(endDate) : endDate}
                             onChange={(e) => onEndDateChange(e.target.value)}
                             placeholder="dd/mm/yyyy"
-                            onFocus={(e) => (e.target.type = "date")}
-                            onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                            onFocus={(e) => {
+                                setFocusedField('end');
+                                e.target.type = "date";
+                            }}
+                            onBlur={(e) => {
+                                setFocusedField(null);
+                                if (!e.target.value) e.target.type = "text";
+                            }}
                         />
                     </div>
                 </div>

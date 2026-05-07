@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
+import { formatDate } from '@/utils/format';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         setFormData,
     } = useEventForm({ initialData, isEditMode, onSubmit });
 
+    const [focusedField, setFocusedField] = React.useState<string | null>(null);
     const formRef = useRef<HTMLDivElement>(null);
 
     // ── Autofocus Logic ───────────────────────────────────────────────────────
@@ -378,26 +380,40 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Date &amp; Time</h2>
                         <div className={styles.formGrid}>
-                            {(['startDate', 'startTime', 'endDate', 'endTime'] as const).map((field) => (
-                                <div key={field} className={styles.inputGroup}>
-                                    <label className={styles.label}>
-                                        {field === 'startDate' ? 'Start Date' : field === 'startTime' ? 'Start Time' : field === 'endDate' ? 'End Date' : 'End Time'}
-                                        {' '}<span className={styles.requiredIndicator}>*Required</span>
-                                    </label>
-                                    <input
-                                        type={field.includes('Date') ? (formData[field] ? 'date' : 'text') : 'time'}
-                                        name={field}
-                                        lang={field.includes('Date') ? "en-GB" : undefined}
-                                        className={`${styles.input} ${errors[field] ? styles.inputError : ''}`}
-                                        value={formData[field]}
-                                        onChange={handleInputChange}
-                                        placeholder={field.includes('Date') ? 'dd/mm/yyyy' : undefined}
-                                        onFocus={field.includes('Date') ? (e) => (e.target.type = 'date') : undefined}
-                                        onBlur={field.includes('Date') ? (e) => { if (!e.target.value) e.target.type = 'text'; } : undefined}
-                                    />
-                                    <p className={styles.errorMessage}>{errors[field]}</p>
-                                </div>
-                            ))}
+                            {(['startDate', 'startTime', 'endDate', 'endTime'] as const).map((field) => {
+                                const isDateField = field.includes('Date');
+                                return (
+                                    <div key={field} className={styles.inputGroup}>
+                                        <label className={styles.label}>
+                                            {field === 'startDate' ? 'Start Date' : field === 'startTime' ? 'Start Time' : field === 'endDate' ? 'End Date' : 'End Time'}
+                                            {' '}<span className={styles.requiredIndicator}>*Required</span>
+                                        </label>
+                                        <input
+                                            type={isDateField ? (focusedField === field || !formData[field] ? 'date' : 'text') : 'time'}
+                                            name={field}
+                                            lang="en-GB"
+                                            className={`${styles.input} ${errors[field] ? styles.inputError : ''}`}
+                                            value={isDateField && focusedField !== field && formData[field] ? formatDate(formData[field]) : formData[field]}
+                                            onChange={handleInputChange}
+                                            placeholder={isDateField ? 'dd/mm/yyyy' : undefined}
+                                            onFocus={(e) => {
+                                                setFocusedField(field);
+                                                if (isDateField) {
+                                                    e.target.type = 'date';
+                                                    try { (e.target as any).showPicker(); } catch {}
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                setFocusedField(null);
+                                                if (isDateField && !e.target.value) {
+                                                    e.target.type = 'text';
+                                                }
+                                            }}
+                                        />
+                                        <p className={styles.errorMessage}>{errors[field]}</p>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Timezone Selection */}

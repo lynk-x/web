@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useCountries, Country } from '@/hooks/useCountries';
 import ProductTour from '@/components/dashboard/ProductTour';
+import { formatDate } from '@/utils/format';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ export default function CreateCampaignForm({
 
     // ── UI State ──────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'review'>('details');
+    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -704,16 +706,40 @@ export default function CreateCampaignForm({
                                         <label className={styles.label} htmlFor="start_at">
                                             Start Date <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input id="start_at" name="start_at" type="date" className={`${styles.input} ${errors.start_at ? styles.inputError : ''}`}
-                                            value={formData.start_at} onChange={handleInputChange} required />
+                                        <input 
+                                            id="start_at" 
+                                            name="start_at" 
+                                            type={focusedField === 'start_at' || !formData.start_at ? 'date' : 'text'} 
+                                            className={`${styles.input} ${errors.start_at ? styles.inputError : ''}`}
+                                            value={focusedField !== 'start_at' && formData.start_at ? formatDate(formData.start_at) : formData.start_at} 
+                                            onChange={handleInputChange} 
+                                            onFocus={(e) => {
+                                                setFocusedField('start_at');
+                                                try { (e.target as any).showPicker(); } catch {}
+                                            }}
+                                            onBlur={() => setFocusedField(null)}
+                                            required 
+                                        />
                                         {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="end_at">
                                             End Date <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
-                                        <input id="end_at" name="end_at" type="date" className={`${styles.input} ${errors.end_at ? styles.inputError : ''}`}
-                                            value={formData.end_at} onChange={handleInputChange} required />
+                                        <input 
+                                            id="end_at" 
+                                            name="end_at" 
+                                            type={focusedField === 'end_at' || !formData.end_at ? 'date' : 'text'} 
+                                            className={`${styles.input} ${errors.end_at ? styles.inputError : ''}`}
+                                            value={focusedField !== 'end_at' && formData.end_at ? formatDate(formData.end_at) : formData.end_at} 
+                                            onChange={handleInputChange} 
+                                            onFocus={(e) => {
+                                                setFocusedField('end_at');
+                                                try { (e.target as any).showPicker(); } catch {}
+                                            }}
+                                            onBlur={() => setFocusedField(null)}
+                                            required 
+                                        />
                                         {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
                                     </div>
                                 </div>

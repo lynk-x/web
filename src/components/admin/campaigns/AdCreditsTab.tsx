@@ -61,6 +61,7 @@ export default function AdCreditsTab() {
     const [issueAmount, setIssueAmount] = useState('');
     const [issueExpiry, setIssueExpiry] = useState('');
     const [issueNote, setIssueNote] = useState('');
+    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchCredits = useCallback(async () => {
@@ -314,9 +315,14 @@ export default function AdCreditsTab() {
                             Expiry Date <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span>
                             <input
                                 className={adminStyles.input}
-                                type="date"
-                                value={issueExpiry}
+                                type={focusedField === 'expiry' || !issueExpiry ? 'date' : 'text'}
+                                value={focusedField !== 'expiry' && issueExpiry ? formatDate(issueExpiry) : issueExpiry}
                                 onChange={e => setIssueExpiry(e.target.value)}
+                                onFocus={(e) => {
+                                    setFocusedField('expiry');
+                                    try { (e.target as any).showPicker(); } catch {}
+                                }}
+                                onBlur={() => setFocusedField(null)}
                                 min={new Date().toISOString().split('T')[0]}
                             />
                         </label>
