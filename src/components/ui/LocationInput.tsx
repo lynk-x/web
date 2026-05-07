@@ -34,8 +34,34 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [proximity, setProximity] = useState<[number, number] | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
+
+    // ── PROXIMITY BIASING ───────────────────────────────────────────────────
+    /**
+     * Try to get coordinates for proximity biasing without "nudging" the user.
+     * We check if permission is already granted. If not, we fallback to 
+     * IP-based or regional defaults.
+     */
+    useEffect(() => {
+        if (!("geolocation" in navigator)) return;
+
+        // Check permission state first to avoid the intrusive browser prompt
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+            if (result.state === 'granted') {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => setProximity([pos.coords.longitude, pos.coords.latitude]),
+                    () => {}, // Silent fail
+                    { timeout: 5000 }
+                );
+            }
+        });
+
+        // Optional: Add IP-based lookup here if a service is available
+        // For now, we use a regional default (e.g. Nairobi) if no other info exists
+        // as a secondary weighting hint in the Edge Function.
+    }, []);
 
     // Sync external value
     useEffect(() => {
@@ -63,7 +89,11 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         setIsLoading(true);
         try {
             const { data, error } = await supabase.functions.invoke('address-autocomplete', {
-                body: { query }
+                body: { 
+                    query,
+                    proximity_lng: proximity?.[0],
+                    proximity_lat: proximity?.[1]
+                }
             });
 
             if (error) throw error;
@@ -74,7 +104,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [supabase]);
+    }, [supabase, proximity]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
