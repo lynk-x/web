@@ -8,18 +8,22 @@ import { getCroppedImg } from '@/utils/crop';
 
 interface ImageCropperModalProps {
     isOpen: boolean;
-    image: string | null;
+    image?: string | null;
+    video?: string | null;
+    mediaType?: 'image' | 'video';
     aspectRatio?: number;
     title?: string;
     onClose: () => void;
-    onCropComplete: (croppedBlob: Blob) => void;
+    onCropComplete: (croppedBlob: Blob, cropData?: any) => void;
 }
 
 const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     isOpen,
     image,
+    video,
+    mediaType = 'image',
     aspectRatio = 16 / 9,
-    title = 'Crop Image',
+    title = 'Crop Media',
     onClose,
     onCropComplete,
 }) => {
@@ -41,17 +45,27 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     }, []);
 
     const handleSave = async () => {
-        if (!image || !croppedAreaPixels) return;
+        if ((!image && !video) || !croppedAreaPixels) return;
 
         try {
             setIsProcessing(true);
-            const croppedBlob = await getCroppedImg(image, croppedAreaPixels);
-            if (croppedBlob) {
-                onCropComplete(croppedBlob);
+            
+            if (mediaType === 'image' && image) {
+                const croppedBlob = await getCroppedImg(image, croppedAreaPixels);
+                if (croppedBlob) {
+                    onCropComplete(croppedBlob, croppedAreaPixels);
+                    onClose();
+                }
+            } else if (mediaType === 'video' && video) {
+                // For video, we can't easily crop the file on the client without FFmpeg.wasm
+                // We'll return the original blob but with the crop metadata.
+                const response = await fetch(video);
+                const blob = await response.blob();
+                onCropComplete(blob, croppedAreaPixels);
                 onClose();
             }
         } catch (e) {
-            console.error('Failed to crop image', e);
+            console.error('Failed to process media', e);
         } finally {
             setIsProcessing(false);
         }
@@ -59,7 +73,7 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
     return (
         <AnimatePresence>
-            {isOpen && image && (
+            {isOpen && (image || video) && (
                 <div className={styles.overlay}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -74,7 +88,8 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
                         <div className={styles.cropperContainer}>
                             <Cropper
-                                image={image}
+                                image={mediaType === 'image' ? (image || undefined) : undefined}
+                                video={mediaType === 'video' ? (video || undefined) : undefined}
                                 crop={crop}
                                 zoom={zoom}
                                 aspect={aspectRatio}

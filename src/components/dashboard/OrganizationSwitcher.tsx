@@ -74,6 +74,15 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                 onClick={() => {
                                     setActiveAccountId(account.id);
                                     setIsOpen(false);
+                                    
+                                    // Redirect to the appropriate dashboard root for the selected account type
+                                    const path = account.type === 'platform'
+                                        ? '/dashboard/admin'
+                                        : account.type === 'advertiser'
+                                            ? '/dashboard/ads'
+                                            : '/dashboard/organize';
+                                    
+                                    router.push(path);
                                 }}
                             >
                                 <div className={styles.avatarSmall}>

@@ -88,6 +88,7 @@ export default function CreateCampaignForm({
     const [isCropperOpen, setIsCropperOpen] = useState(false);
     const [pendingImage, setPendingImage] = useState<string | null>(null);
     const [pendingCreativeIdx, setPendingCreativeIdx] = useState<number | null>(null);
+    const [pendingMediaType, setPendingMediaType] = useState<'image' | 'video'>('image');
     const [formError, setFormError] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -178,9 +179,11 @@ export default function CreateCampaignForm({
     }, [fxRates, activeAccount]);
 
     const formatLocal = (usdAmount: string) => {
-        if (!localRate || !usdAmount || isNaN(Number(usdAmount))) return null;
+        if (!localRate) return null;
+        const amount = usdAmount === '' ? 0 : Number(usdAmount);
+        if (isNaN(amount)) return null;
         try {
-            const local = Number(usdAmount) / localRate;
+            const local = amount / localRate;
             return new Intl.NumberFormat(undefined, {
                 style: 'currency',
                 currency: activeAccount?.wallet_currency || 'USD',
@@ -404,29 +407,33 @@ export default function CreateCampaignForm({
         if (!file) return;
         const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
-        if (mediaType === 'video') {
-            const videoUrl = URL.createObjectURL(file);
-            updateCreative(idx, { file, preview: videoUrl, mediaType });
-        } else {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPendingImage(reader.result as string);
-                setPendingCreativeIdx(idx);
-                setIsCropperOpen(true);
-            };
-            reader.readAsDataURL(file);
-        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPendingImage(reader.result as string);
+            setPendingCreativeIdx(idx);
+            setPendingMediaType(mediaType);
+            setIsCropperOpen(true);
+        };
+        reader.readAsDataURL(file);
         
         e.target.value = '';
     };
 
-    const handleCropComplete = (croppedBlob: Blob) => {
+    const handleCropComplete = (croppedBlob: Blob, cropData?: any) => {
         if (pendingCreativeIdx === null) return;
         
-        const file = new File([croppedBlob], `creative_${pendingCreativeIdx}.jpg`, { type: 'image/jpeg' });
+        const fileName = pendingMediaType === 'video' ? `creative_${pendingCreativeIdx}.mp4` : `creative_${pendingCreativeIdx}.jpg`;
+        const type = pendingMediaType === 'video' ? 'video/mp4' : 'image/jpeg';
+        
+        const file = new File([croppedBlob], fileName, { type });
         const url = URL.createObjectURL(croppedBlob);
         
-        updateCreative(pendingCreativeIdx, { file, preview: url, mediaType: 'image' });
+        updateCreative(pendingCreativeIdx, { 
+            file, 
+            preview: url, 
+            mediaType: pendingMediaType,
+            // If we wanted to store crop data in metadata, we could do it here
+        });
         
         setIsCropperOpen(false);
         setPendingImage(null);
@@ -854,7 +861,7 @@ export default function CreateCampaignForm({
                                                 </label>
                                                 <input id="total_budget" name="total_budget" type="number" className={styles.input}
                                                     placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
-                                                {formatLocal(formData.total_budget) && (
+                                                {localRate && (
                                                     <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.total_budget)}</strong></p>
                                                 )}
                                             </div>
@@ -869,7 +876,7 @@ export default function CreateCampaignForm({
                                                 </label>
                                                 <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
                                                     placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
-                                                {formatLocal(formData.daily_limit) && (
+                                                {localRate && (
                                                     <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.daily_limit)}</strong></p>
                                                 )}
                                                 {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
@@ -881,7 +888,7 @@ export default function CreateCampaignForm({
                                                 </label>
                                                 <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
                                                     placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
-                                                {formatLocal(formData.max_bid_amount) && (
+                                                {localRate && (
                                                     <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.max_bid_amount)}</strong></p>
                                                 )}
                                                 {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
@@ -1140,28 +1147,6 @@ export default function CreateCampaignForm({
                                             </div>
                                         </div>
 
-                                        {/* ── Performance Forecast (Visualized) ── */}
-                                        {forecast && (
-                                            <div className={styles.forecastPanel}>
-                                                <div className={styles.forecastHeader}>
-                                                    <div className={styles.forecastTitle}>Estimated Performance</div>
-                                                    <div className={styles.forecastBadge}>PROJECTION</div>
-                                                </div>
-
-                                                <div className={styles.forecastBody}>
-                                                    <div className={styles.forecastGrid}>
-                                                        <div className={styles.forecastItem}>
-                                                            <span className={styles.forecastLabel}>Impressions Est.</span>
-                                                            <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
-                                                        </div>
-                                                        <div className={styles.forecastItem}>
-                                                            <span className={styles.forecastLabel}>Clicks Est.</span>
-                                                            <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
 
                                         <div className={styles.launchNote}>
                                             By launching, your campaign will be submitted for admin approval before going live.
@@ -1358,7 +1343,9 @@ export default function CreateCampaignForm({
             )}
             <ImageCropperModal
                 isOpen={isCropperOpen}
-                image={pendingImage}
+                image={pendingMediaType === 'image' ? pendingImage : null}
+                video={pendingMediaType === 'video' ? pendingImage : null}
+                mediaType={pendingMediaType}
                 onClose={handleCloseCropper}
                 onCropComplete={handleCropComplete}
                 aspectRatio={formData.type === 'banner' ? 16 / 9 : 9 / 16}

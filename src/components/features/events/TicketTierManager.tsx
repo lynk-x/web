@@ -86,27 +86,22 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                                     value={ticket.price}
                                                     onChange={(e) => onChange(index, 'price', e.target.value)}
                                                 />
-                                                {ticket.price && parseFloat(ticket.price) > 0 && (
-                                                    <p style={{ fontSize: '11px', color: 'var(--color-brand-primary)', marginTop: '6px', fontWeight: 500 }}>
-                                                        You receive {currency} {(parseFloat(ticket.price) * 0.95).toFixed(2)} net
-                                                    </p>
-                                                )}
+                                                <p style={{ fontSize: '11px', color: 'var(--color-brand-primary)', marginTop: '6px', fontWeight: 500 }}>
+                                                    You receive {currency} {((parseFloat(ticket.price) || 0) * 0.95).toFixed(2)} net
+                                                </p>
                                             </>
                                         ) : (
-                                            <input
-                                                type="text"
-                                                className={styles.input}
-                                                value="FREE"
-                                                disabled
-                                                style={{ 
-                                                    backgroundColor: 'rgba(32, 249, 40, 0.05)', 
-                                                    color: 'var(--color-brand-primary)',
-                                                    fontWeight: 700,
-                                                    textAlign: 'center',
-                                                    border: '1px solid rgba(32, 249, 40, 0.2)',
-                                                    cursor: 'not-allowed'
-                                                }}
-                                            />
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    className={styles.input}
+                                                    value="FREE"
+                                                    disabled
+                                                    style={{ textAlign: 'center', fontWeight: 700 }}
+                                                />
+                                                {/* Placeholder to maintain vertical alignment with other columns that have sub-text */}
+                                                <p style={{ fontSize: '11px', marginTop: '6px', opacity: 0 }}>&nbsp;</p>
+                                            </>
                                         )}
                                         {isPaid && errors[`tickets.${index}.price`] && (
                                             <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>

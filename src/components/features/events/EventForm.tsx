@@ -525,6 +525,16 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                         <h2 className={styles.sectionTitle}>Event Settings</h2>
                         <div className={styles.formGrid}>
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                                <label className={styles.label}>Event Currency</label>
+                                <div className={styles.currencyDisplay}>
+                                    <span className={styles.currencyCode}>{formData.currency}</span>
+                                    <span className={styles.currencyHint}>
+                                        Locked to your account&#39;s billing region ({activeAccount?.country_code || 'US'}).
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                                 <div className={styles.toggleRow} style={{ marginBottom: '16px' }}>
                                     <label className={styles.checkboxLabel}>
                                         <input type="checkbox" className={styles.checkbox} checked={formData.isPrivate} onChange={() => handleToggle('isPrivate')} />
@@ -534,16 +544,6 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 <p style={{ fontSize: '13px', opacity: 0.6, marginLeft: '32px' }}>
                                     Private events are not listed in the public directory.
                                 </p>
-                            </div>
-
-                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Event Currency</label>
-                                <div className={styles.currencyDisplay}>
-                                    <span className={styles.currencyCode}>{formData.currency}</span>
-                                    <span className={styles.currencyHint}>
-                                        Locked to your account&#39;s billing region ({activeAccount?.country_code || 'US'}).
-                                    </span>
-                                </div>
                             </div>
                         </div>
                     </section>
