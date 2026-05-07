@@ -59,7 +59,7 @@ interface CreateCampaignFormProps {
 
 interface MarketSuggestion {
     country_code: string;
-    suggested_modifier: number;
+    suggested_bid: number;
     competition_level: 'low' | 'normal' | 'medium' | 'high';
 }
 
@@ -681,579 +681,598 @@ export default function CreateCampaignForm({
         }
     };
 
-    // ─── UI Helpers ───────────────────────────────────────────────────────────
+        // ─── UI Helpers ───────────────────────────────────────────────────────────
 
-    const activeCreative = formData.creatives[activeCreativeIdx] || formData.creatives[0];
+        const activeCreative = formData.creatives[activeCreativeIdx] || formData.creatives[0];
 
-    const fmtNum = (n: number) =>
-        n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : `${n}`;
+        const fmtNum = (n: number) =>
+            n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : `${n}`;
 
-    // ─── JSX ──────────────────────────────────────────────────────────────────
+        // ─── JSX ──────────────────────────────────────────────────────────────────
 
-    return (
-        <div className={adminStyles.subPageGrid}>
+        return (
+            <>
+                <div className={adminStyles.subPageGrid}>
 
-            {/* ── Left: Form ─────────────────────────────────────────── */}
-            <div className={adminStyles.formColumn}>
-                <div className={`${adminStyles.pageCard} tour-ads-form-container`} style={{ padding: '0' }}>
+                    {/* ── Left: Form ─────────────────────────────────────────── */}
+                    <div className={adminStyles.formColumn}>
+                        <div className={`${adminStyles.pageCard} tour-ads-form-container`} style={{ padding: '0' }}>
 
-                    {/* Tab Nav */}
-                    <div className={`${styles.tabs} tour-ads-form-tabs`} style={{ padding: '0 24px' }}>
-                        {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
-                            <div
-                                key={tab}
-                                className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-ads-tab-${tab}`}
-                                onClick={() => handleTabSwitch(tab)}
-                            >
-                                {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
+                            {/* Tab Nav */}
+                            <div className={`${styles.tabs} tour-ads-form-tabs`} style={{ padding: '0 24px' }}>
+                                {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
+                                    <div
+                                        key={tab}
+                                        className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-ads-tab-${tab}`}
+                                        onClick={() => handleTabSwitch(tab)}
+                                    >
+                                        {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+                            <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
 
-                        {/* ── Tab: Campaign Details ── */}
-                        {activeTab === 'details' && (
-                            <div className={styles.formSection}>
+                                {/* ── Tab: Campaign Details ── */}
+                                {activeTab === 'details' && (
+                                    <div className={styles.formSection}>
 
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="title">
-                                        Title <span className={styles.requiredIndicator}>*Required</span>
-                                    </label>
-                                    <input id="title" name="title" type="text" className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
-                                        placeholder="e.g. Festival Promo" value={formData.title}
-                                        onChange={handleInputChange} required />
-                                    {errors.title && <p className={styles.errorMessage}>{errors.title}</p>}
-                                </div>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="title">
+                                                Title <span className={styles.requiredIndicator}>*Required</span>
+                                            </label>
+                                            <input id="title" name="title" type="text" className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
+                                                placeholder="e.g. Festival Promo" value={formData.title}
+                                                onChange={handleInputChange} required />
+                                            {errors.title && <p className={styles.errorMessage}>{errors.title}</p>}
+                                        </div>
 
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="description">
-                                        Description
-                                    </label>
-                                    <textarea id="description" name="description" className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
-                                        placeholder="Internal description or overview..." value={formData.description}
-                                        onChange={handleInputChange} />
-                                    {errors.description && <p className={styles.errorMessage}>{errors.description}</p>}
-                                </div>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="description">
+                                                Description
+                                            </label>
+                                            <textarea id="description" name="description" className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
+                                                placeholder="Internal description or overview..." value={formData.description}
+                                                onChange={handleInputChange} />
+                                            {errors.description && <p className={styles.errorMessage}>{errors.description}</p>}
+                                        </div>
 
-                                {/* Dates - Moved up below Description */}
-                                <div className={styles.row}>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="start_at">
-                                            Start Date <span className={styles.requiredIndicator}>*Required</span>
-                                        </label>
-                                        <DatePicker
-                                            value={formData.start_at}
-                                            onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
-                                            placeholder="dd/mm/yyyy"
-                                            className={errors.start_at ? styles.inputError : ''}
-                                        />
-                                        {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="end_at">
-                                            End Date <span className={styles.requiredIndicator}>*Required</span>
-                                        </label>
-                                        <DatePicker
-                                            value={formData.end_at}
-                                            onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
-                                            placeholder="dd/mm/yyyy"
-                                            className={errors.end_at ? styles.inputError : ''}
-                                        />
-                                        {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
-                                    </div>
-                                </div>
-
-                                <div className={styles.row}>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="type">
-                                            Ad Type <span className={styles.requiredIndicator}>*Required</span>
-                                        </label>
-                                        <select id="type" name="type" className={styles.input}
-                                            value={formData.type} onChange={handleInputChange} required>
-                                            <option value="banner">Banner Ad (16:9)</option>
-                                            <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
-                                            <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
-                                        </select>
-                                        {/* #3 CPM/CPC Estimator */}
-                                        {pricing.impression > 0 && (
-                                            <div className={styles.pricingHint}>
-                                                <span>Starting at</span>
-                                                <strong>${pricing.impression.toFixed(3)}</strong> / impression
-                                                &nbsp;·&nbsp;
-                                                <strong>${pricing.click.toFixed(2)}</strong> / click
+                                        {/* Dates - Moved up below Description */}
+                                        <div className={styles.row}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="start_at">
+                                                    Start Date <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <DatePicker
+                                                    value={formData.start_at}
+                                                    onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
+                                                    placeholder="dd/mm/yyyy"
+                                                    className={errors.start_at ? styles.inputError : ''}
+                                                />
+                                                {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="total_budget">
-                                            Total Budget ($) <span className={styles.requiredIndicator}>*Required</span>
-                                            <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire advertising campaign over its lifetime">ⓘ</span>
-                                        </label>
-                                        <input id="total_budget" name="total_budget" type="number" className={styles.input}
-                                            placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
-                                    </div>
-                                </div>
-
-                                {/* Budget & Bidding */}
-                                <div className={styles.row}>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="daily_limit">
-                                            Daily Limit ($)
-                                            <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
-                                        </label>
-                                        <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
-                                            placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
-                                        {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="max_bid_amount">
-                                            Max Bid ($) <span className={styles.requiredIndicator}>*Required</span>
-                                            <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
-                                        </label>
-                                        <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
-                                            placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
-                                        {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ── Tab: Targeting ── */}
-                        {activeTab === 'targeting' && (
-                            <div className={styles.formSection}>
-
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="target_url">
-                                        Destination URL <span className={styles.requiredIndicator}>*Required</span>
-                                    </label>
-                                    <input id="target_url" name="target_url" type="url" className={`${styles.input} ${errors.target_url ? styles.inputError : ''}`}
-                                        placeholder="https://lynk-x.com/event/..." value={formData.target_url}
-                                        onChange={handleInputChange} required />
-                                    {errors.target_url && <p className={styles.errorMessage}>{errors.target_url}</p>}
-                                </div>
-
-                                {/* Multi-Country Targeting */}
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Leave empty for worldwide)</span></label>
-                                    <div className={styles.tagInput}>
-                                        {formData.target_countries?.map(code => {
-                                            const country = countries.find(c => c.code === code);
-                                            return (
-                                                <span key={code} className={styles.tag}>
-                                                    {country?.display_name || code}
-                                                    <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
-                                                </span>
-                                            );
-                                        })}
-                                        <input
-                                            className={styles.tagInputField}
-                                            placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Leave empty for worldwide'}
-                                            value={countryInput}
-                                            onChange={e => setCountryInput(e.target.value)}
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    // Add the first matching country if any
-                                                    const match = countries.find(c =>
-                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
-                                                        !formData.target_countries?.includes(c.code)
-                                                    );
-                                                    if (match) addCountry(match.code);
-                                                }
-                                            }}
-                                            disabled={(formData.target_countries?.length || 0) >= 5}
-                                        />
-                                        {/* Dropdown for search results */}
-                                        {countryInput && (
-                                            <div className={styles.countryDropdown}>
-                                                {countries
-                                                    .filter(c =>
-                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
-                                                        !formData.target_countries?.includes(c.code)
-                                                    )
-                                                    .slice(0, 5)
-                                                    .map(c => (
-                                                        <div key={c.code} className={styles.countryDropdownItem} onClick={() => addCountry(c.code)}>
-                                                            {c.display_name}
-                                                        </div>
-                                                    ))
-                                                }
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="end_at">
+                                                    End Date <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <DatePicker
+                                                    value={formData.end_at}
+                                                    onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
+                                                    placeholder="dd/mm/yyyy"
+                                                    className={errors.end_at ? styles.inputError : ''}
+                                                />
+                                                {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
+                                        </div>
 
-                                {/* Market Competition Insights */}
-                                {marketSuggestions.length > 0 && (
-                                    <div className={styles.marketInsights}>
-                                        <div className={styles.marketInsightsTitle}>Regional Market Density</div>
-                                        <div className={styles.marketGrid}>
-                                            {marketSuggestions.map(s => {
-                                                const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
-                                                return (
-                                                    <div key={s.country_code} className={styles.marketItem}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <span className={styles.marketCountry}>{name}</span>
-                                                            <span className={`${styles.badge} ${styles['badge' + s.competition_level.charAt(0).toUpperCase() + s.competition_level.slice(1)]}`}>
-                                                                {s.competition_level.toUpperCase()}
-                                                            </span>
-                                                        </div>
-                                                        <div className={styles.marketNote}>
-                                                            {s.suggested_modifier > 1.0
-                                                                ? `High volume. Recommend ${s.suggested_modifier}x bid modifier.`
-                                                                : 'Healthy inventory. Base bids are sufficient.'
-                                                            }
-                                                        </div>
+                                        <div className={styles.row}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="type">
+                                                    Ad Type <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <select id="type" name="type" className={styles.input}
+                                                    value={formData.type} onChange={handleInputChange} required>
+                                                    <option value="banner">Banner Ad (16:9)</option>
+                                                    <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
+                                                    <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
+                                                </select>
+                                                {/* #3 CPM/CPC Estimator */}
+                                                {pricing.impression > 0 && (
+                                                    <div className={`${styles.pricingHint} tour-ads-pricing-hint`}>
+                                                        <span>Starting at</span>
+                                                        <strong>${pricing.impression.toFixed(3)}</strong> / impression
+                                                        &nbsp;·&nbsp;
+                                                        <strong>${pricing.click.toFixed(2)}</strong> / click
                                                     </div>
-                                                );
-                                            })}
+                                                )}
+                                            </div>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="total_budget">
+                                                    Total Budget ($) <span className={styles.requiredIndicator}>*Required</span>
+                                                    <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire advertising campaign over its lifetime">ⓘ</span>
+                                                </label>
+                                                <input id="total_budget" name="total_budget" type="number" className={styles.input}
+                                                    placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
+                                            </div>
+                                        </div>
+
+                                        {/* Budget & Bidding */}
+                                        <div className={styles.row}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="daily_limit">
+                                                    Daily Limit ($)
+                                                    <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
+                                                </label>
+                                                <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
+                                                    placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
+                                                {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
+                                            </div>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="max_bid_amount">
+                                                    Max Bid ($) <span className={styles.requiredIndicator}>*Required</span>
+                                                    <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
+                                                </label>
+                                                <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
+                                                    placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
+                                                {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Interest Tag Targeting */}
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label}>Interest Tags <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(max 10 — used for audience matching)</span></label>
-                                    <div className={styles.tagInput}>
-                                        {formData.target_tags.map(tag => (
-                                            <span key={tag} className={styles.tag}>
-                                                {tag}
-                                                <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
-                                            </span>
-                                        ))}
-                                        <input
-                                            className={styles.tagInputField}
-                                            placeholder={formData.target_tags.length < 10 ? 'Add a tag...' : 'Max 10 tags'}
-                                            value={tagInput}
-                                            onChange={e => setTagInput(e.target.value)}
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
-                                                if (e.key === 'Backspace' && !tagInput && formData.target_tags.length > 0) {
-                                                    removeTag(formData.target_tags[formData.target_tags.length - 1]);
-                                                }
-                                            }}
-                                            disabled={formData.target_tags.length >= 10}
-                                        />
-                                    </div>
-                                    <div className={styles.tagSuggestions}>
-                                        {tagSuggestions.filter(t => !formData.target_tags.includes(t)).map(t => (
-                                            <button key={t} type="button" className={styles.tagSuggestion} onClick={() => addTag(t)}>
-                                                + {t}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                                {/* ── Tab: Targeting ── */}
+                                {activeTab === 'targeting' && (
+                                    <div className={styles.formSection}>
 
-                        {/* ── Tab: Creatives (A/B) ── */}
-                        {activeTab === 'creative' && (
-                            <div className={styles.formSection}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <label className={styles.label}>Ad Creatives <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(up to 3 for A/B rotation)</span></label>
-                                    {formData.creatives.length < 3 && (
-                                        <button type="button" className={styles.addCreativeBtn} onClick={addCreative}>
-                                            + Add Variant
-                                        </button>
-                                    )}
-                                </div>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="target_url">
+                                                Destination URL <span className={styles.requiredIndicator}>*Required</span>
+                                            </label>
+                                            <input id="target_url" name="target_url" type="url" className={`${styles.input} ${errors.target_url ? styles.inputError : ''}`}
+                                                placeholder="https://lynk-x.com/event/..." value={formData.target_url}
+                                                onChange={handleInputChange} required />
+                                            {errors.target_url && <p className={styles.errorMessage}>{errors.target_url}</p>}
+                                        </div>
 
-                                {/* Creative Tabs */}
-                                <div className={styles.creativeTabs}>
-                                    {formData.creatives.map((c, i) => (
-                                        <div key={i} className={`${styles.creativeTab} ${activeCreativeIdx === i ? styles.creativeTabActive : ''}`}>
-                                            <span onClick={() => setActiveCreativeIdx(i)}>
-                                                {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + i)}`}
-                                                {c.preview ? ' ✓' : ''}
-                                            </span>
-                                            {i > 0 && (
-                                                <button type="button" className={styles.removeCreativeBtn} onClick={() => removeCreative(i)}>×</button>
+                                        {/* Multi-Country Targeting */}
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Leave empty for worldwide)</span></label>
+                                            <div className={styles.tagInput}>
+                                                {formData.target_countries?.map(code => {
+                                                    const country = countries.find(c => c.code === code);
+                                                    return (
+                                                        <span key={code} className={styles.tag}>
+                                                            {country?.display_name || code}
+                                                            <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
+                                                        </span>
+                                                    );
+                                                })}
+                                                <input
+                                                    className={styles.tagInputField}
+                                                    placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Leave empty for worldwide'}
+                                                    value={countryInput}
+                                                    onChange={e => setCountryInput(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            // Add the first matching country if any
+                                                            const match = countries.find(c =>
+                                                                c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
+                                                                !formData.target_countries?.includes(c.code)
+                                                            );
+                                                            if (match) addCountry(match.code);
+                                                        }
+                                                    }}
+                                                    disabled={(formData.target_countries?.length || 0) >= 5}
+                                                />
+                                                {/* Dropdown for search results */}
+                                                {countryInput && (
+                                                    <div className={styles.countryDropdown}>
+                                                        {countries
+                                                            .filter(c =>
+                                                                c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
+                                                                !formData.target_countries?.includes(c.code)
+                                                            )
+                                                            .slice(0, 5)
+                                                            .map(c => (
+                                                                <div key={c.code} className={styles.countryDropdownItem} onClick={() => addCountry(c.code)}>
+                                                                    {c.display_name}
+                                                                </div>
+                                                            ))
+                                                        }
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Market Competition Insights */}
+                                        {marketSuggestions.length > 0 && (
+                                            <div className={styles.marketInsights}>
+                                                <div className={styles.marketInsightsTitle}>Regional Market Density</div>
+                                                <div className={styles.marketGrid}>
+                                                    {marketSuggestions.map(s => {
+                                                        const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
+                                                        return (
+                                                            <div key={s.country_code} className={styles.marketItem}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <span className={styles.marketCountry}>{name}</span>
+                                                                    <span className={`${styles.badge} ${styles['badge' + s.competition_level.charAt(0).toUpperCase() + s.competition_level.slice(1)]}`}>
+                                                                        {s.competition_level.toUpperCase()}
+                                                                    </span>
+                                                                </div>
+                                                                <div className={styles.marketMeta}>
+                                                                    Suggested Bid: ${s.suggested_bid.toFixed(2)}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Targeting Tags */}
+                                        <div className={styles.inputGroup} style={{ marginTop: '24px' }}>
+                                            <label className={styles.label}>Interest-Based Targeting <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(e.g. Music, Tech)</span></label>
+                                            <div className={styles.tagInput}>
+                                                {formData.target_tags.map(tag => (
+                                                    <span key={tag} className={styles.tag}>
+                                                        {tag}
+                                                        <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
+                                                    </span>
+                                                ))}
+                                                <input
+                                                    className={styles.tagInputField}
+                                                    placeholder="Type interest and press enter..."
+                                                    value={tagInput}
+                                                    onChange={e => setTagInput(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            addTag(tagInput);
+                                                        }
+                                                    }}
+                                                />
+                                                {tagInput && tagSuggestions.length > 0 && (
+                                                    <div className={styles.countryDropdown}>
+                                                        {tagSuggestions
+                                                            .filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !formData.target_tags.includes(t))
+                                                            .slice(0, 5)
+                                                            .map(t => (
+                                                                <div key={t} className={styles.countryDropdownItem} onClick={() => addTag(t)}>
+                                                                    {t}
+                                                                </div>
+                                                            ))
+                                                        }
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── Tab: Creative ── */}
+                                {activeTab === 'creative' && (
+                                    <div className={styles.formSection}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                            <div>
+                                                <h3 style={{ margin: 0, fontSize: '16px' }}>Ad Creatives</h3>
+                                                <p style={{ margin: '4px 0 0', fontSize: '13px', opacity: 0.6 }}>Add up to 3 variants for A/B rotation</p>
+                                            </div>
+                                            {formData.creatives.length < 3 && (
+                                                <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={addCreative} style={{ padding: '6px 12px', fontSize: '12px' }}>
+                                                    + Add Variant
+                                                </button>
                                             )}
                                         </div>
-                                    ))}
-                                </div>
 
-                                {/* Active Creative Editor */}
-                                {formData.creatives.map((c, i) => i !== activeCreativeIdx ? null : (
-                                    <div key={i} className={styles.creativeEditor}>
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label}>
-                                                Headline / Call to Action
-                                                {i === 0 && <span className={styles.requiredIndicator}>*Required</span>}
-                                            </label>
-                                            <input type="text" className={`${styles.input} ${errors[`creative.${i}.headline`] ? styles.inputError : ''}`}
-                                                placeholder="e.g. Get 20% Off Tickets Today!"
-                                                value={c.headline}
-                                                onChange={e => updateCreative(i, { headline: e.target.value })} />
-                                            {errors[`creative.${i}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${i}.headline`]}</p>}
+                                        {/* Variant Tabs */}
+                                        <div className={styles.creativeTabs}>
+                                            {formData.creatives.map((_, i) => (
+                                                <div key={i} className={`${styles.creativeTab} ${activeCreativeIdx === i ? styles.activeCreativeTab : ''}`} onClick={() => setActiveCreativeIdx(i)}>
+                                                    {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(64 + i + 1)}`}
+                                                    {i > 0 && (
+                                                        <span className={styles.removeCreative} onClick={(e) => { e.stopPropagation(); removeCreative(i); }}>×</span>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
 
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label}>
-                                                Creative Image
-                                                <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px', marginLeft: '6px' }}>
-                                                    ({formData.type === 'banner' ? '16:9 recommended' : '9:16 recommended'})
-                                                </span>
-                                                {i === 0 && <span className={styles.requiredIndicator}>*Required</span>}
-                                            </label>
+                                        <div className={styles.creativeWorkspace}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label}>
+                                                    Headline <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className={`${styles.input} ${errors[`creative.${activeCreativeIdx}.headline`] ? styles.inputError : ''}`}
+                                                    placeholder="e.g. Join the biggest music festival!"
+                                                    value={activeCreative.headline}
+                                                    onChange={(e) => updateCreative(activeCreativeIdx, { headline: e.target.value })}
+                                                />
+                                                {errors[`creative.${activeCreativeIdx}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.headline`]}</p>}
+                                            </div>
 
-                                            {c.preview || c.imageUrl ? (
-                                                <div className={`${styles.assetPreviewBox} ${errors[`creative.${i}.asset`] ? styles.inputError : ''}`}>
-                                                    {c.mediaType === 'video' ? (
-                                                        <video
-                                                            src={c.preview || c.imageUrl}
-                                                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
-                                                            controls
-                                                        />
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label}>
+                                                    Creative Asset <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <div
+                                                    className={`${styles.assetUpload} ${errors[`creative.${activeCreativeIdx}.asset`] ? styles.assetUploadError : ''}`}
+                                                    onClick={() => fileInputRefs.current[activeCreativeIdx]?.click()}
+                                                    style={{ height: formData.type.includes('interstitial') ? '240px' : '140px' }}
+                                                >
+                                                    {activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl ? (
+                                                        <div className={styles.assetPreview}>
+                                                            {activeCreative.mediaType === 'video' ? (
+                                                                <video src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            ) : (
+                                                                <img src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            )}
+                                                            <div className={styles.assetOverlay}>
+                                                                <button type="button" className={styles.assetRemove} onClick={(e) => { e.stopPropagation(); handleRemoveAsset(activeCreativeIdx); }}>Remove</button>
+                                                            </div>
+                                                        </div>
                                                     ) : (
-                                                        <img
-                                                            src={c.preview || c.imageUrl}
-                                                            alt="Creative preview"
-                                                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
-                                                        />
+                                                        <div className={styles.uploadPlaceholder}>
+                                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                                                            </svg>
+                                                            <span>{formData.type === 'interstitial_video' ? 'Upload Video (9:16)' : formData.type === 'banner' ? 'Upload Image (16:9)' : 'Upload Image (9:16)'}</span>
+                                                        </div>
                                                     )}
-                                                    <div className={styles.assetPreviewActions}>
-                                                        <button type="button" className={styles.btnSecondary}
-                                                            style={{ fontSize: '12px', padding: '6px 12px' }}
-                                                            onClick={() => fileInputRefs.current[i]?.click()}>
-                                                            Change
-                                                        </button>
-                                                        <button type="button" className={styles.btnSecondary}
-                                                            style={{ fontSize: '12px', padding: '6px 12px', color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.3)' }}
-                                                            onClick={() => handleRemoveAsset(i)}>
-                                                            Remove
+                                                    <input
+                                                        type="file"
+                                                        ref={el => { fileInputRefs.current[activeCreativeIdx] = el; }}
+                                                        style={{ display: 'none' }}
+                                                        accept={formData.type === 'interstitial_video' ? 'video/*' : 'image/*'}
+                                                        onChange={(e) => handleAssetChange(e, activeCreativeIdx)}
+                                                    />
+                                                </div>
+                                                {errors[`creative.${activeCreativeIdx}.asset`] && <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.asset`]}</p>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── Tab: Review ── */}
+                                {activeTab === 'review' && (
+                                    <div className={styles.formSection}>
+                                        <div className={styles.reviewGrid}>
+                                            <div className={styles.reviewItem}>
+                                                <label>Title</label>
+                                                <div>{formData.title}</div>
+                                            </div>
+                                            <div className={styles.reviewItem}>
+                                                <label>Budget</label>
+                                                <div>${formData.total_budget} Total (${formData.max_bid_amount} Max Bid)</div>
+                                            </div>
+                                            <div className={styles.reviewItem}>
+                                                <label>Timeline</label>
+                                                <div>{formData.start_at} – {formData.end_at}</div>
+                                            </div>
+                                            <div className={styles.reviewItem}>
+                                                <label>Targeting</label>
+                                                <div>
+                                                    {formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Worldwide'}
+                                                    {formData.target_tags.length > 0 && ` • ${formData.target_tags.join(', ')}`}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* ── Performance Forecast (Visualized) ── */}
+                                        {forecast && (
+                                            <div className={styles.forecastPanel}>
+                                                <div className={styles.forecastHeader}>
+                                                    <div className={styles.forecastTitle}>Estimated Performance</div>
+                                                    <div className={styles.forecastBadge}>PROJECTION</div>
+                                                </div>
+
+                                                <div className={styles.forecastBody}>
+                                                    <div className={styles.forecastGrid}>
+                                                        <div className={styles.forecastItem}>
+                                                            <span className={styles.forecastLabel}>Impressions Est.</span>
+                                                            <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
+                                                        </div>
+                                                        <div className={styles.forecastItem}>
+                                                            <span className={styles.forecastLabel}>Clicks Est.</span>
+                                                            <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className={styles.launchNote}>
+                                            By launching, your campaign will be submitted for admin approval before going live.
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className={`${styles.actions} tour-ads-form-actions`}>
+                                    {formError && (
+                                        <div style={{ color: 'var(--color-interface-error)', width: '100%', marginBottom: '16px', fontSize: '13px', textAlign: 'center' }}>
+                                            {formError}
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'space-between' }}>
+                                        <div>
+                                            {activeTab !== 'details' && (
+                                                <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => {
+                                                    const flow = ['details', 'targeting', 'creative', 'review'];
+                                                    const idx = flow.indexOf(activeTab);
+                                                    if (idx > 0) handleTabSwitch(flow[idx - 1] as any);
+                                                }}>Back</button>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {activeTab !== 'review' ? (
+                                                <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
+                                                    const flow = ['details', 'targeting', 'creative', 'review'];
+                                                    const idx = flow.indexOf(activeTab);
+                                                    if (idx < flow.length - 1) handleTabSwitch(flow[idx + 1] as any);
+                                                }}>
+                                                    Next →
+                                                </button>
+                                            ) : (
+                                                <button type="submit" disabled={isSubmitting} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                                    {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Launch Campaign')}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* ── Right: Live Preview ─────────────────────────────────── */}
+                    <div className={`${adminStyles.formSection} tour-ads-preview-panel`} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div>
+                            <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
+                            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                                <div className={styles.mockDevice}>
+                                    <div className={styles.deviceContent}>
+                                        <div className={styles.adPreviewWrapper}>
+                                            {formData.type === 'interstitial' || formData.type === 'interstitial_video' ? (
+                                                <div className={styles.mockAdInterstitial}>
+                                                    <div className={styles.mockAdHeader}>
+                                                        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>AD</div>
+                                                        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Download in progress</div>
+                                                        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
+                                                    </div>
+                                                    <div className={styles.mockAdMedia}>
+                                                        {(activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl) ? (
+                                                            formData.type === 'interstitial_video' ? (
+                                                                <video src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay muted loop />
+                                                            ) : (
+                                                                <img src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            )
+                                                        ) : (
+                                                            formData.type === 'interstitial_video' ? (
+                                                                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5">
+                                                                    <polygon points="5 3 19 12 5 21 5 3" />
+                                                                </svg>
+                                                            ) : (
+                                                                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
+                                                                    <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                                                                </svg>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <div className={styles.mockAdInfo}>
+                                                        <span className={styles.mockAdBadge}>Ad • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
+                                                        <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{activeCreative.headline || formData.adHeadline || 'Your Catchy Headline'}</div>
+                                                        <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
+                                                        {/* #7 Interactive Preview Button */}
+                                                        <button
+                                                            onClick={() => { setPreviewClicked(true); setTimeout(() => setPreviewClicked(false), 2000); }}
+                                                            style={{
+                                                                marginTop: '16px', width: '100%', padding: '10px',
+                                                                background: previewClicked ? '#fff' : 'var(--color-brand-primary)',
+                                                                border: 'none', borderRadius: '6px', color: '#000', fontWeight: 600, fontSize: '13px',
+                                                                cursor: 'pointer', transition: 'background 0.3s',
+                                                            }}>
+                                                            {previewClicked ? '✓ Would redirect to your URL' : 'Learn More'}
                                                         </button>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className={`${styles.uploadArea} ${errors[`creative.${i}.asset`] ? styles.inputError : ''}`} onClick={() => fileInputRefs.current[i]?.click()}>
-                                                    <svg className={styles.uploadIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                                                        <circle cx="8.5" cy="8.5" r="1.5" />
-                                                        <polyline points="21 15 16 10 5 21" />
-                                                    </svg>
-                                                    <p style={{ marginTop: '12px', fontSize: '14px', opacity: 0.7 }}>
-                                                        Click to upload {formData.type === 'interstitial_video' ? 'a video' : 'an image'}
-                                                    </p>
-                                                    <p style={{ fontSize: '12px', opacity: 0.4 }}>
-                                                        {formData.type === 'banner' ? '16:9' : '9:16'} · {formData.type === 'interstitial_video' ? 'MP4, MOV' : 'PNG, JPG, WEBP'}
-                                                    </p>
-                                                    {errors[`creative.${i}.asset`] && <p className={styles.errorMessage}>{errors[`creative.${i}.asset`]}</p>}
-                                                </div>
+                                                <>
+                                                    {formData.type === 'banner' && (
+                                                        <div className={styles.mockAdBanner}>
+                                                            {(activeCreative.preview || activeCreative.imageUrl) ? (
+                                                                <img src={activeCreative.preview || activeCreative.imageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
+                                                            ) : null}
+                                                            <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
+                                                                {activeCreative.headline || formData.adHeadline || 'AD'}
+                                                            </div>
+                                                            {/* #7 Interactive CTA */}
+                                                            <div
+                                                                className={styles.mockAdCTA}
+                                                                onClick={() => { setPreviewClicked(true); setTimeout(() => setPreviewClicked(false), 2000); }}
+                                                                style={{ cursor: 'pointer', zIndex: 1, position: 'relative', color: previewClicked ? 'var(--color-brand-primary)' : '#fff' }}
+                                                            >
+                                                                {previewClicked ? '✓ Redirected!' : 'Learn More'}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className={styles.mockAppContent}>
+                                                        <div className={styles.mockAppLine} style={{ width: '40%' }}></div>
+                                                        <div className={styles.mockAppLine} style={{ width: '80%' }}></div>
+                                                        <div className={styles.mockAppLine} style={{ width: '90%', marginTop: 'auto' }}></div>
+                                                        <div className={styles.mockAppLine} style={{ width: '100%' }}></div>
+                                                        <div className={styles.mockAppLine} style={{ width: '70%' }}></div>
+                                                    </div>
+                                                </>
                                             )}
-                                            <input type="file" ref={el => { fileInputRefs.current[i] = el; }} style={{ display: 'none' }}
-                                                accept={formData.type === 'interstitial_video' ? 'video/*' : 'image/*'} onChange={e => handleAssetChange(e, i)} />
                                         </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
-                        )}
 
-                        {/* ── Tab: Review ── */}
-                        {activeTab === 'review' && (
-                            <div className={styles.formSection}>
-                                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Review & Launch</h3>
-                                <div className={styles.previewCard}>
-                                    {[
-                                        ['Campaign Title', formData.title],
-                                        ['Ad Type', formData.type === 'banner' ? 'Banner (16:9)' : formData.type === 'interstitial' ? 'Interstitial (Full Screen)' : 'Interstitial Video'],
-                                        ['Budget', `$${formData.total_budget}${formData.daily_limit ? ` (Daily cap: $${formData.daily_limit})` : ''} · Max Bid: $${formData.max_bid_amount}`],
-                                        ['Duration', formData.start_at && formData.end_at ? `${formData.start_at} → ${formData.end_at}` : '—'],
-                                        ['Region', formData.target_countries?.length ? formData.target_countries.map(code => countries.find(c => c.code === code)?.display_name || code).join(', ') : 'Global'],
-                                        ['Interest Tags', formData.target_tags.length > 0 ? formData.target_tags.map(t => t).join(', ') : 'None'],
-
-                                        ['Destination URL', formData.target_url],
-                                        ['Ad Creatives', `${formData.creatives.filter(c => c.headline || c.preview).length} ${formData.creatives.length > 1 ? `variant${formData.creatives.length > 1 ? 's' : ''} (A/B)` : 'creative'}`],
-                                    ].map(([label, value]) => (
-                                        <div key={label} className={styles.reviewItem}>
-                                            <span className={styles.reviewLabel}>{label}</span>
-                                            <span className={styles.reviewValue}>{value || '—'}</span>
-                                        </div>
+                            {/* A/B Variant selector in preview panel */}
+                            {formData.creatives.length > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
+                                    {formData.creatives.map((_, i) => (
+                                        <button key={i} type="button"
+                                            style={{
+                                                padding: '4px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', cursor: 'pointer', border: '1px solid',
+                                                background: activeCreativeIdx === i ? 'var(--color-brand-primary)' : 'transparent',
+                                                color: activeCreativeIdx === i ? '#000' : 'var(--color-utility-primaryText)',
+                                                borderColor: activeCreativeIdx === i ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.2)',
+                                            }}
+                                            onClick={() => setActiveCreativeIdx(i)}>
+                                            {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + i)}`}
+                                        </button>
                                     ))}
                                 </div>
-
-                                {/* Schedule repeat in review (Disabled for now)
-                                 {scheduleTimeline.length > 0 && (
-                                     <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
-                                         <label className={styles.label}>Campaign Window</label>
-                                         <div className={styles.timeline}>
-                                             {scheduleTimeline.map((w: { label: string; active: boolean }, i: number) => (
-                                                 <div key={i} className={`${styles.timelineWeek} ${w.active ? styles.timelineWeekActive : ''}`}>
-                                                     <span className={styles.timelineLabel}>{w.label}</span>
-                                                 </div>
-                                             ))}
-                                         </div>
-                                     </div>
-                                 )}
-                                 */}
-
-                                {/* Forecast in review (Disabled for now)
-                                {forecast && (
-                                    <div className={styles.forecastCard} style={{ marginTop: '12px' }}>
-                                        <div className={styles.forecastTitle}>📈 Estimated Reach</div>
-                                        <div className={styles.forecastGrid}>
-                                            <div className={styles.forecastItem}>
-                                                <span className={styles.forecastLabel}>Impressions</span>
-                                                <span className={styles.forecastValue}>{fmtNum(forecast.minImpressions)} – {fmtNum(forecast.maxImpressions)}</span>
-                                            </div>
-                                            <div className={styles.forecastItem}>
-                                                <span className={styles.forecastLabel}>Clicks Est.</span>
-                                                <span className={styles.forecastValue}>{fmtNum(forecast.minClicks)} – {fmtNum(forecast.maxClicks)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                */}
-
-                                <div className={styles.launchNote}>
-                                    By launching, your campaign will be submitted for admin approval before going live.
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className={styles.actions}>
-                            {formError && (
-                                <div style={{ color: 'var(--color-interface-error)', width: '100%', marginBottom: '16px', fontSize: '13px', textAlign: 'center' }}>
-                                    {formError}
-                                </div>
                             )}
-                            <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'space-between' }}>
-                                <div>
-                                    {activeTab !== 'details' && (
-                                        <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => {
-                                            const flow = ['details', 'targeting', 'creative', 'review'];
-                                            const idx = flow.indexOf(activeTab);
-                                            if (idx > 0) handleTabSwitch(flow[idx - 1] as any);
-                                        }}>Back</button>
-                                    )}
-                                </div>
-                                <div>
-                                    {activeTab !== 'review' ? (
-                                        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
-                                            const flow = ['details', 'targeting', 'creative', 'review'];
-                                            const idx = flow.indexOf(activeTab);
-                                            if (idx < flow.length - 1) handleTabSwitch(flow[idx + 1] as any);
-                                        }}>
-                                            Next →
-                                        </button>
-                                    ) : (
-                                        <button type="submit" disabled={isSubmitting} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                            {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Launch Campaign')}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {/* ── Right: Live Preview ─────────────────────────────────── */}
-            <div className={adminStyles.formSection} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div>
-                    <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
-                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                        <div className={styles.mockDevice}>
-                            <div className={styles.deviceContent}>
-                                <div className={styles.adPreviewWrapper}>
-                                    {formData.type === 'interstitial' || formData.type === 'interstitial_video' ? (
-                                        <div className={styles.mockAdInterstitial}>
-                                            <div className={styles.mockAdHeader}>
-                                                <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>AD</div>
-                                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Download in progress</div>
-                                                <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
-                                            </div>
-                                            <div className={styles.mockAdMedia}>
-                                                {(activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl) ? (
-                                                    formData.type === 'interstitial_video' ? (
-                                                        <video src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay muted loop />
-                                                    ) : (
-                                                        <img src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    )
-                                                ) : (
-                                                    formData.type === 'interstitial_video' ? (
-                                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5">
-                                                            <polygon points="5 3 19 12 5 21 5 3" />
-                                                        </svg>
-                                                    ) : (
-                                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1">
-                                                            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                                                        </svg>
-                                                    )
-                                                )}
-                                            </div>
-                                            <div className={styles.mockAdInfo}>
-                                                <span className={styles.mockAdBadge}>Ad • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
-                                                <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{activeCreative.headline || formData.adHeadline || 'Your Catchy Headline'}</div>
-                                                <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
-                                                {/* #7 Interactive Preview Button */}
-                                                <button
-                                                    onClick={() => { setPreviewClicked(true); setTimeout(() => setPreviewClicked(false), 2000); }}
-                                                    style={{
-                                                        marginTop: '16px', width: '100%', padding: '10px',
-                                                        background: previewClicked ? '#fff' : 'var(--color-brand-primary)',
-                                                        border: 'none', borderRadius: '6px', color: '#000', fontWeight: 600, fontSize: '13px',
-                                                        cursor: 'pointer', transition: 'background 0.3s',
-                                                    }}>
-                                                    {previewClicked ? '✓ Would redirect to your URL' : 'Learn More'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {formData.type === 'banner' && (
-                                                <div className={styles.mockAdBanner}>
-                                                    {(activeCreative.preview || activeCreative.imageUrl) ? (
-                                                        <img src={activeCreative.preview || activeCreative.imageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
-                                                    ) : null}
-                                                    <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
-                                                        {activeCreative.headline || formData.adHeadline || 'AD'}
-                                                    </div>
-                                                    {/* #7 Interactive CTA */}
-                                                    <div
-                                                        className={styles.mockAdCTA}
-                                                        onClick={() => { setPreviewClicked(true); setTimeout(() => setPreviewClicked(false), 2000); }}
-                                                        style={{ cursor: 'pointer', zIndex: 1, position: 'relative', color: previewClicked ? 'var(--color-brand-primary)' : '#fff' }}
-                                                    >
-                                                        {previewClicked ? '✓ Redirected!' : 'Learn More'}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className={styles.mockAppContent}>
-                                                <div className={styles.mockAppLine} style={{ width: '40%' }}></div>
-                                                <div className={styles.mockAppLine} style={{ width: '80%' }}></div>
-                                                <div className={styles.mockAppLine} style={{ width: '90%', marginTop: 'auto' }}></div>
-                                                <div className={styles.mockAppLine} style={{ width: '100%' }}></div>
-                                                <div className={styles.mockAppLine} style={{ width: '70%' }}></div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     </div>
-
-                    {/* A/B Variant selector in preview panel */}
-                    {formData.creatives.length > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
-                            {formData.creatives.map((_, i) => (
-                                <button key={i} type="button"
-                                    style={{
-                                        padding: '4px 12px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', cursor: 'pointer', border: '1px solid',
-                                        background: activeCreativeIdx === i ? 'var(--color-brand-primary)' : 'transparent',
-                                        color: activeCreativeIdx === i ? '#000' : 'var(--color-utility-primaryText)',
-                                        borderColor: activeCreativeIdx === i ? 'var(--color-brand-primary)' : 'rgba(255,255,255,0.2)',
-                                    }}
-                                    onClick={() => setActiveCreativeIdx(i)}>
-                                    {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + i)}`}
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
-            </div>
-        </div>
+            <ProductTour
+                storageKey={activeAccount?.id ? `hasSeenAdsFormJoyride_${activeAccount.id}` : 'hasSeenAdsFormJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: isEditing ? 'Edit Your Campaign' : 'Create an Ad Campaign',
+                        content: 'Welcome to the Ads Dashboard! Let\'s walk through creating a high-performing campaign to boost your event\'s visibility.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-ads-form-tabs',
+                        title: 'Campaign Sections',
+                        content: 'We\'ve broken down the process into 4 easy steps: Basic Details, Targeting, Creatives (A/B testing), and Final Review.',
+                    },
+                    {
+                        target: '.tour-ads-pricing-hint',
+                        title: 'Transparent Pricing',
+                        content: 'See real-time estimates for impressions and clicks based on your selected ad type. We optimize for the best ROI.',
+                    },
+                    {
+                        target: '.tour-ads-tab-targeting',
+                        title: 'Precision Targeting',
+                        content: 'Reach the right audience by selecting specific regions and interests. Leave regions empty to go global!',
+                    },
+                    {
+                        target: '.tour-ads-tab-creative',
+                        title: 'A/B Testing',
+                        content: 'Add up to 3 different creative variants. Our system automatically rotates them to find the highest performing version for your audience.',
+                    },
+                    {
+                        target: '.tour-ads-preview-panel',
+                        title: 'Real-time Preview',
+                        content: 'See exactly how your ad will appear to users in the Lynk-X mobile app. Interact with the "Learn More" button to test your destination URL.',
+                    },
+                    {
+                        target: '.tour-ads-form-actions',
+                        title: 'Launch When Ready',
+                        content: 'Once you\'re happy with your targeting and visuals, click "Launch Campaign". Our team will review it within 24 hours.',
+                    }
+                ]}
+            />
+        </>
     );
 }
