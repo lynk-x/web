@@ -199,10 +199,6 @@ export default function QuizzesPage() {
 
             {isLoading ? (
                 <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
-            ) : quizzes.length === 0 ? (
-                <div className={adminStyles.emptyState}>
-                    <p>No quizzes yet. Create one to engage your event audience.</p>
-                </div>
             ) : (
                 <table className={adminStyles.table}>
                     <thead>
@@ -223,80 +219,88 @@ export default function QuizzesPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {quizzes.map(quiz => {
-                            const badge = STATUS_MAP[quiz.status] ?? { label: quiz.status, variant: 'neutral' as BadgeVariant };
-                            return (
-                                <tr key={quiz.id}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.has(quiz.id)}
-                                            onChange={() => handleSelect(quiz.id)}
-                                        />
-                                    </td>
-                                    <td style={{ fontWeight: 600 }}>{quiz.title}</td>
-                                    <td style={{ color: 'var(--color-text-secondary)' }}>{quiz.event_title}</td>
-                                    <td>
-                                        {quiz.forum_channels?.display_name ? (
-                                            <span style={{
-                                                background: 'rgba(255,255,255,0.06)',
-                                                padding: '2px 8px',
-                                                borderRadius: 6,
-                                                fontSize: 13,
-                                                fontWeight: 600
-                                            }}>
-                                                #{quiz.forum_channels.display_name}
-                                            </span>
-                                        ) : '—'}
-                                    </td>
-                                    <td><Badge variant={badge.variant} label={badge.label} /></td>
-                                    <td style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>
-                                        {formatDate(quiz.created_at)}
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                            <Link
-                                                href={`/dashboard/organize/quizzes/${quiz.id}/host`}
-                                                className={adminStyles.btnPrimary}
-                                                style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
-                                            >
-                                                Host Live
-                                            </Link>
-                                            <button
-                                                className={adminStyles.btnSecondary}
-                                                onClick={() => handleDuplicate(quiz.id)}
-                                                style={{ fontSize: 13, padding: '4px 12px' }}
-                                            >
-                                                Duplicate
-                                            </button>
-                                            <Link
-                                                href={`/dashboard/organize/quizzes/${quiz.id}/edit`}
-                                                className={adminStyles.btnSecondary}
-                                                style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
-                                            >
-                                                Edit
-                                            </Link>
-                                            <Link
-                                                href={`/dashboard/organize/quizzes/${quiz.id}/results`}
-                                                className={adminStyles.btnSecondary}
-                                                style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
-                                            >
-                                                Results
-                                            </Link>
-                                            {quiz.status === 'draft' && (
-                                                <button
-                                                    className={adminStyles.btnDanger}
-                                                    onClick={() => handleDelete(quiz)}
-                                                    style={{ fontSize: 13, padding: '4px 10px' }}
+                        {quizzes.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} style={{ textAlign: 'center', padding: '48px', opacity: 0.5 }}>
+                                    No quizzes found.
+                                </td>
+                            </tr>
+                        ) : (
+                            quizzes.map(quiz => {
+                                const badge = STATUS_MAP[quiz.status] ?? { label: quiz.status, variant: 'neutral' as BadgeVariant };
+                                return (
+                                    <tr key={quiz.id}>
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(quiz.id)}
+                                                onChange={() => handleSelect(quiz.id)}
+                                            />
+                                        </td>
+                                        <td style={{ fontWeight: 600 }}>{quiz.title}</td>
+                                        <td style={{ color: 'var(--color-text-secondary)' }}>{quiz.event_title}</td>
+                                        <td>
+                                            {quiz.forum_channels?.display_name ? (
+                                                <span style={{
+                                                    background: 'rgba(255,255,255,0.06)',
+                                                    padding: '2px 8px',
+                                                    borderRadius: 6,
+                                                    fontSize: 13,
+                                                    fontWeight: 600
+                                                }}>
+                                                    #{quiz.forum_channels.display_name}
+                                                </span>
+                                            ) : '—'}
+                                        </td>
+                                        <td><Badge variant={badge.variant} label={badge.label} /></td>
+                                        <td style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>
+                                            {formatDate(quiz.created_at)}
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                                <Link
+                                                    href={`/dashboard/organize/quizzes/${quiz.id}/host`}
+                                                    className={adminStyles.btnPrimary}
+                                                    style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
                                                 >
-                                                    Delete
+                                                    Host Live
+                                                </Link>
+                                                <button
+                                                    className={adminStyles.btnSecondary}
+                                                    onClick={() => handleDuplicate(quiz.id)}
+                                                    style={{ fontSize: 13, padding: '4px 12px' }}
+                                                >
+                                                    Duplicate
                                                 </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                                <Link
+                                                    href={`/dashboard/organize/quizzes/${quiz.id}/edit`}
+                                                    className={adminStyles.btnSecondary}
+                                                    style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
+                                                >
+                                                    Edit
+                                                </Link>
+                                                <Link
+                                                    href={`/dashboard/organize/quizzes/${quiz.id}/results`}
+                                                    className={adminStyles.btnSecondary}
+                                                    style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
+                                                >
+                                                    Results
+                                                </Link>
+                                                {quiz.status === 'draft' && (
+                                                    <button
+                                                        className={adminStyles.btnDanger}
+                                                        onClick={() => handleDelete(quiz)}
+                                                        style={{ fontSize: 13, padding: '4px 10px' }}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        )}
                     </tbody>
                 </table>
             )}

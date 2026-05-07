@@ -376,38 +376,21 @@ export default function OrganizerEventsPage() {
             </div>
 
             {/* Table */}
-            {!isLoadingEvents && events.length === 0 && !searchTerm ? (
-                <div style={{ textAlign: 'center', padding: '64px 24px' }}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: '0 auto 16px', display: 'block', opacity: 0.35 }}>
-                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: 8 }}>No events yet</p>
-                    <p style={{ fontSize: '14px', opacity: 0.55, marginBottom: 24 }}>Create your first event and start selling tickets.</p>
-                    <button
-                        onClick={() => router.push('/dashboard/organize/events/create')}
-                        className={sharedStyles.btnPrimary}
-                    >
-                        Create Event
-                    </button>
-                </div>
-            ) : (
-                <EventTable
-                    events={paginatedEvents}
-                    selectedIds={selectedIds}
-                    onSelect={handleSelect}
-                    onSelectAll={handleSelectAll}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteSingle}
-                    onDuplicate={handleDuplicate}
-                    onStatusChange={handleStatusChange}
-                    isLoading={isLoadingEvents}
-                    className="tour-events-table"
-                />
-            )}
+            <EventTable
+                events={paginatedEvents}
+                selectedIds={selectedIds}
+                onSelect={handleSelect}
+                onSelectAll={handleSelectAll}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onEdit={handleEdit}
+                onDelete={handleDeleteSingle}
+                onDuplicate={handleDuplicate}
+                onStatusChange={handleStatusChange}
+                isLoading={isLoadingEvents}
+                className="tour-events-table"
+            />
 
             {/* Modals */}
             <ConfirmationModal
