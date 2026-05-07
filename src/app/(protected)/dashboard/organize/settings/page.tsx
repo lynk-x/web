@@ -9,6 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import { sanitizeInput } from '@/utils/sanitization';
 import MemberTable from '@/components/features/members/MemberTable';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
+import WalletsTable from '@/components/features/finance/WalletsTable';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Tabs from '@/components/dashboard/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -67,6 +68,8 @@ function SettingsContent() {
         registration_number: '',
         billing_address: ''
     });
+    const [wallets, setWallets] = useState<any[]>([]);
+    const [isLoadingWallets, setIsLoadingWallets] = useState(false);
 
     const [initialFormData, setInitialFormData] = useState(formData);
 
@@ -99,7 +102,27 @@ function SettingsContent() {
                 setFormData(newValues);
                 setInitialFormData(newValues);
             };
+
+            const fetchWallets = async () => {
+                setIsLoadingWallets(true);
+                try {
+                    const { data, error } = await supabase
+                        .from('account_wallets')
+                        .select('*')
+                        .eq('account_id', activeAccount.id)
+                        .order('currency');
+
+                    if (error) throw error;
+                    setWallets((data || []).map((w: any) => ({ ...w, id: w.reference || w.currency })));
+                } catch (err) {
+                    console.error('Failed to fetch wallets:', err);
+                } finally {
+                    setIsLoadingWallets(false);
+                }
+            };
+
             fetchBusinessData();
+            fetchWallets();
         }
     }, [activeAccount, supabase]);
 
@@ -271,12 +294,20 @@ function SettingsContent() {
                 )}
 
                 {activeTab === 'billing' && (
-                    <div className={adminStyles.pageCard}>
-                        {activeAccount ? (
-                            <PaymentMethodsManager accountId={activeAccount.id} />
-                        ) : (
-                            <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
-                        )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div className={adminStyles.pageCard}>
+                            <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
+                            <WalletsTable data={wallets} isLoading={isLoadingWallets} />
+                        </div>
+
+                        <div className={adminStyles.pageCard}>
+                            <h2 className={adminStyles.sectionTitle}>Payment Methods</h2>
+                            {activeAccount ? (
+                                <PaymentMethodsManager accountId={activeAccount.id} />
+                            ) : (
+                                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                            )}
+                        </div>
                     </div>
                 )}
 

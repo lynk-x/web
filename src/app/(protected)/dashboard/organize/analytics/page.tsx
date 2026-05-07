@@ -91,10 +91,13 @@ export default function AnalyticsPage() {
                         ? insights.reduce((prev, curr) => (curr.ticketsSold > prev.ticketsSold ? curr : prev), insights[0]).event 
                         : '—'}
                     isLoading={isLoading}
+                    trend="positive"
                 />
                 <StatCard
-                    label="Check-in Rate"
-                    value="N/A"
+                    label="Avg. Conversion"
+                    value={insights.length > 0
+                        ? (insights.reduce((sum, e) => sum + parseFloat(e.conversionRate), 0) / insights.length).toFixed(1) + '%'
+                        : '0%'}
                     isLoading={isLoading}
                     trend="neutral"
                 />
@@ -102,6 +105,7 @@ export default function AnalyticsPage() {
                     label="Tickets Sold"
                     value={insights.reduce((sum, e) => sum + e.ticketsSold, 0).toLocaleString()}
                     isLoading={isLoading}
+                    trend="positive"
                 />
             </div>
 

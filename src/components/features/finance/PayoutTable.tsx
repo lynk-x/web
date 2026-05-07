@@ -44,25 +44,32 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
 
     const columns: Column<Payout>[] = [
         {
-            header: 'Recipient Name',
+            header: 'Reference',
             render: (payout) => (
-                <div>
-                    <div style={{ fontWeight: 500 }}>{payout.recipient}</div>
-                    {payout.reference && (
-                        <div style={{ fontSize: '12px', opacity: 0.5 }}>Ref: {payout.reference}</div>
-                    )}
+                <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)', fontSize: '13px' }}>
+                    {payout.reference || '—'}
                 </div>
             ),
         },
         {
-            header: 'Requested At',
-            render: (payout) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{payout.requestedAt}</div>,
+            header: 'Event Name',
+            render: (payout) => (
+                <div style={{ fontWeight: 500 }}>{(payout as any).eventName || payout.recipient}</div>
+            ),
+        },
+        {
+            header: 'Payable Wallet',
+            render: (payout) => (
+                <div style={{ fontSize: '13px', opacity: 0.8, fontFamily: 'var(--font-mono, monospace)' }}>
+                    {(payout as any).payableWallet || '—'}
+                </div>
+            ),
         },
         {
             header: 'Amount',
             render: (payout) => (
                 <div style={{ fontWeight: 600, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {formatCurrency(payout.amount)}
+                    {formatCurrency(payout.amount, (payout as any).currency || 'KES')}
                 </div>
             ),
         },

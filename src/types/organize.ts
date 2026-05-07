@@ -115,6 +115,12 @@ export interface Payout {
     metadata?: Record<string, unknown>;
     /** Reference code (from payout_ref_seq e.g. PO-1001) */
     reference?: string;
+    /** Display name of the event or account associated with the payout */
+    eventName?: string;
+    /** The reference of the wallet from which funds are being paid */
+    payableWallet?: string;
+    /** The currency of the payout */
+    currency?: string;
     /** Internal admin notes */
     notes?: string;
 }

@@ -6,12 +6,12 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import styles from './page.module.css';
 import PayoutTable from '@/components/features/finance/PayoutTable';
-import WalletsTable from '@/components/features/finance/WalletsTable';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import Tabs from '@/components/dashboard/Tabs';
 import { formatDate, formatCurrency } from '@/utils/format';
+import { exportToCSV } from '@/utils/export';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -25,11 +25,11 @@ function RevenueContent() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const VALID_TABS = ['wallets', 'payouts', 'refunds'] as const;
+    const VALID_TABS = ['payouts', 'refunds'] as const;
     type TabId = typeof VALID_TABS[number];
-    const initialTab = (searchParams.get('tab') as string) || 'wallets';
+    const initialTab = (searchParams.get('tab') as string) || 'payouts';
     const [activeTab, setActiveTab] = useState<TabId>(
-        (VALID_TABS as readonly string[]).includes(initialTab) ? initialTab as TabId : 'wallets'
+        (VALID_TABS as readonly string[]).includes(initialTab) ? initialTab as TabId : 'payouts'
     );
 
     useEffect(() => {
@@ -56,22 +56,23 @@ function RevenueContent() {
     const refundItemsPerPage = 8;
     const [isLoading, setIsLoading] = useState(true);
 
-    // Payout request modal state
-    const [payoutAmount, setPayoutAmount] = useState('');
-    const [payoutCurrency, setPayoutCurrency] = useState('KES');
-
-    useEffect(() => {
-        if (activeAccount?.wallet_currency) {
-            setPayoutCurrency(activeAccount.wallet_currency);
-        }
-    }, [activeAccount?.wallet_currency]);
-
     // ── fetchFinancialData ────────────────────────────────────────────────
     const fetchFinancialData = useCallback(async () => {
         if (!activeAccount) return;
         setIsLoading(true);
 
         try {
+            // Wallets for this account
+            const { data: walletData, error: walletError } = await supabase
+                .from('account_wallets')
+                .select('*')
+                .eq('account_id', activeAccount.id)
+                .order('currency');
+
+            if (walletError) throw walletError;
+            const fetchedWallets = (walletData || []).map((w: any) => ({ ...w, id: w.reference || w.currency }));
+            setWallets(fetchedWallets);
+
             // Payouts for this account
             const { data: payoutData, error: payoutError } = await supabase
                 .schema('payouts')
@@ -82,26 +83,22 @@ function RevenueContent() {
 
             if (payoutError) throw payoutError;
 
-            setPayouts((payoutData || []).map(p => ({
-                id: p.id,
-                recipient: activeAccount.name,
-                amount: p.amount,
-                status: p.status,
-                requestedAt: formatDate(p.created_at),
-                reference: p.payout_ref || `PO-${p.id.split('-')[0].toUpperCase()}`,
-                processedAt: p.processed_at ? formatDate(p.processed_at) : undefined,
-                notes: p.admin_notes
-            })));
-
-            // Wallets for this account
-            const { data: walletData, error: walletError } = await supabase
-                .from('account_wallets')
-                .select('*')
-                .eq('account_id', activeAccount.id)
-                .order('currency');
-
-            if (walletError) throw walletError;
-            setWallets((walletData || []).map((w: any) => ({ ...w, id: w.reference || w.currency })));
+            setPayouts((payoutData || []).map((p: any) => {
+                const matchingWallet = fetchedWallets.find(w => w.currency === p.currency);
+                return {
+                    id: p.id,
+                    recipient: activeAccount.name,
+                    eventName: activeAccount.name,
+                    amount: p.amount,
+                    currency: p.currency,
+                    status: p.status,
+                    requestedAt: formatDate(p.created_at),
+                    processedAt: p.processed_at ? formatDate(p.processed_at) : undefined,
+                    reference: p.reference,
+                    payableWallet: matchingWallet?.reference || '—',
+                    notes: p.admin_notes
+                };
+            }));
 
             // Refund transactions for this account's events
             const { data: refundData, error: refundError } = await supabase
@@ -115,15 +112,28 @@ function RevenueContent() {
 
             if (refundError) throw refundError;
 
-            // Fetch event titles for display
+            // Fetch event titles and ticket codes for display
             const eventIds = [...new Set((refundData || []).map((r: any) => r.event_id).filter(Boolean))];
+            const ticketIds = [...new Set((refundData || []).map((r: any) => r.ticket_id).filter(Boolean))];
+            
             let eventMap: Record<string, string> = {};
+            let ticketMap: Record<string, string> = {};
+
             if (eventIds.length > 0) {
                 const { data: eventData } = await supabase
                     .from('events')
                     .select('id, title')
                     .in('id', eventIds);
                 eventMap = (eventData || []).reduce((m: Record<string, string>, e: any) => { m[e.id] = e.title; return m; }, {});
+            }
+
+            if (ticketIds.length > 0) {
+                const { data: ticketData } = await supabase
+                    .schema('tickets')
+                    .from('tickets')
+                    .select('id, ticket_code')
+                    .in('id', ticketIds);
+                ticketMap = (ticketData || []).reduce((m: Record<string, string>, t: any) => { m[t.id] = t.ticket_code; return m; }, {});
             }
 
             setRefunds((refundData || []).map((r: any) => ({
@@ -134,6 +144,7 @@ function RevenueContent() {
                 eventTitle: eventMap[r.event_id] || 'Unknown Event',
                 eventId: r.event_id,
                 ticketId: r.ticket_id,
+                ticketCode: ticketMap[r.ticket_id] || '—',
                 refundPercent: r.metadata?.refund_percent,
                 reason: r.metadata?.msg || r.metadata?.cancel_reason || '-',
                 date: formatDate(r.created_at),
@@ -146,15 +157,7 @@ function RevenueContent() {
         }
     }, [activeAccount, supabase, showToast]);
 
-    // Update default payout currency when wallets load
-    useEffect(() => {
-        if (wallets.length > 0) {
-            const hasCurrent = wallets.some(w => w.currency === payoutCurrency);
-            if (!hasCurrent) {
-                setPayoutCurrency(wallets[0].currency);
-            }
-        }
-    }, [wallets, payoutCurrency]);
+
 
     // ── Effect ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -169,44 +172,43 @@ function RevenueContent() {
     }, [isOrgLoading, activeAccount, fetchFinancialData]);
 
     // ── Request Payout ────────────────────────────────────────────────────
-    const handleRequestPayout = async () => {
-        if (!activeAccount) return;
-        const parsed = parseFloat(payoutAmount);
-        if (!payoutAmount || isNaN(parsed) || parsed <= 0) {
-            showToast('Please enter a valid payout amount.', 'error');
+    const handleExport = () => {
+        const dataToExport = activeTab === 'payouts' ? payouts : refunds;
+        if (dataToExport.length === 0) {
+            showToast(`No ${activeTab} data to export.`, 'warning');
             return;
         }
 
-        showToast('Submitting payout request…', 'info');
-        try {
-            // First find the primary payout method
-            const { data: methodData, error: methodError } = await supabase
-                .schema('public')
-                .from('account_payment_methods')
-                .select('id')
-                .eq('account_id', activeAccount.id)
-                .limit(1)
-                .single();
-
-            if (methodError || !methodData) {
-                showToast('Please set up a payment method before requesting a payout.', 'error');
-                return;
-            }
-
-            const { error } = await supabase.rpc('request_account_payout', {
-                p_account_id: activeAccount.id,
-                p_amount: parsed,
-                p_payout_method_id: methodData.id,
-                p_currency: payoutCurrency
-            });
-
-            if (error) throw error;
-            showToast('Payout request submitted. Our team will review it shortly.', 'success');
-            setPayoutAmount('');
-            fetchFinancialData(); // Refresh payout list
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to submit payout request.', 'error');
+        showToast(`Preparing ${activeTab} report...`, 'info');
+        
+        if (activeTab === 'payouts') {
+            exportToCSV(
+                payouts.map(p => ({
+                    reference: p.reference,
+                    amount: p.amount,
+                    currency: p.currency,
+                    payableWallet: p.payableWallet,
+                    status: p.status,
+                    requested_at: p.requestedAt,
+                    processed_at: p.processedAt || '-',
+                    notes: p.notes || ''
+                })),
+                `payout_report_${activeAccount?.name || 'org'}`
+            );
+        } else {
+            exportToCSV(
+                refunds.map(r => ({
+                    date: r.date,
+                    event: r.eventTitle,
+                    amount: r.amount,
+                    currency: r.currency,
+                    status: r.status,
+                    reason: r.reason
+                })),
+                `refund_report_${activeAccount?.name || 'org'}`
+            );
         }
+        showToast('Report downloaded.', 'success');
     };
 
     // Selection Logic
@@ -234,46 +236,16 @@ function RevenueContent() {
             <PageHeader
                 title="Revenue & Payouts"
                 subtitle="Track your earnings and transaction history."
-                actionClassName="tour-revenue-payout"
-                actionLabel={!activeAccount?.payout_routing?.method ? "Connect Payout Method" : undefined}
-                onActionClick={!activeAccount?.payout_routing?.method ? () => router.push('/dashboard/organize/settings?tab=payout') : undefined}
-                customAction={activeAccount?.payout_routing?.method ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <select
-                            value={payoutCurrency}
-                            onChange={(e) => setPayoutCurrency(e.target.value)}
-                            className={styles.currencySelect}
-                        >
-                            {wallets.length > 0 ? (
-                                wallets.map(w => (
-                                    <option key={w.currency} value={w.currency}>{w.currency}</option>
-                                ))
-                            ) : (
-                                <option value={activeAccount?.wallet_currency || 'KES'}>
-                                    {activeAccount?.wallet_currency || 'KES'}
-                                </option>
-                            )}
-                        </select>
-                        <input
-                            type="number"
-                            min="1"
-                            placeholder="Amount"
-                            value={payoutAmount}
-                            onChange={(e) => setPayoutAmount(e.target.value)}
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '120px', fontSize: '14px' }}
-                        />
-                        <button className={styles.primaryBtn} onClick={handleRequestPayout}>
-                            Request Payout
-                        </button>
-                    </div>
-                ) : undefined}
+                actionLabel="Generate Report"
+                onActionClick={handleExport}
+                actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>}
+                actionClassName="tour-revenue-report"
             />
 
             {/* Tabs */}
             <div className="tour-revenue-tabs">
                 <Tabs
                     options={[
-                    { id: 'wallets', label: 'Wallets' },
                     { id: 'payouts', label: 'Payouts' },
                     { id: 'refunds', label: `Refunds${refunds.length > 0 ? ` (${refunds.length})` : ''}` }
                 ]}
@@ -294,17 +266,12 @@ function RevenueContent() {
                         onPageChange={setPayoutCurrentPage}
                         isLoading={isLoading}
                     />
-                ) : activeTab === 'refunds' ? (
+                ) : (
                     <RefundsTable
                         refunds={refunds}
                         currentPage={refundCurrentPage}
                         itemsPerPage={refundItemsPerPage}
                         onPageChange={setRefundCurrentPage}
-                        isLoading={isLoading}
-                    />
-                ) : (
-                    <WalletsTable
-                        data={wallets}
                         isLoading={isLoading}
                     />
                 )}
@@ -321,14 +288,14 @@ function RevenueContent() {
                         skipBeacon: true,
                     },
                     {
-                        target: '.tour-revenue-payout',
-                        title: 'Request a Payout',
-                        content: 'When you\'re ready to receive your funds, enter the amount here and click Request. Our team will process it to your connected bank or mobile wallet.',
+                        target: '.tour-revenue-report',
+                        title: 'Generate Reports',
+                        content: 'Need to reconcile your accounts? Click here to download a CSV report of your payouts or refunds for the current view.',
                     },
                     {
                         target: '.tour-revenue-tabs',
                         title: 'Account Ledger',
-                        content: 'Switch between "Wallets" to see current balances, "Payouts" to track requests and "Refunds" to view customer cancellations.',
+                        content: 'Switch between "Payouts" to track requests and "Refunds" to view customer cancellations.',
                     },
                     {
                         target: 'a[href*="settings?tab=payout"]',
@@ -369,14 +336,7 @@ function RefundsTable({
         return <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading refunds...</div>;
     }
 
-    if (refunds.length === 0) {
-        return (
-            <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                <p style={{ fontSize: '15px', marginBottom: '4px' }}>No refunds yet</p>
-                <p style={{ fontSize: '13px' }}>Refund transactions will appear here when ticket holders cancel their tickets.</p>
-            </div>
-        );
-    }
+
 
     const totalRefunded = refunds
         .filter(r => r.status === 'completed')
@@ -392,10 +352,10 @@ function RefundsTable({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                 <thead>
                     <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                        <th style={refTh}>Event</th>
-                        <th style={refTh}>Amount</th>
-                        <th style={refTh}>Status</th>
+                        <th style={refTh}>Event Name</th>
+                        <th style={refTh}>Ticket Reference</th>
                         <th style={refTh}>Reason</th>
+                        <th style={refTh}>Status</th>
                         <th style={refTh}>Date</th>
                     </tr>
                 </thead>
@@ -416,9 +376,13 @@ function RefundsTable({
                                         <span style={{ opacity: 0.5 }}>{r.eventTitle}</span>
                                     )}
                                 </td>
-                                <td style={refTd}>{formatCurrency(r.amount, r.currency)}</td>
-                                <td style={refTd}><Badge label={badge.label} variant={badge.variant} /></td>
+                                <td style={refTd}>
+                                    <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)', fontSize: '13px', opacity: 0.8 }}>
+                                        {r.ticketCode}
+                                    </div>
+                                </td>
                                 <td style={{ ...refTd, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.7 }}>{r.reason}</td>
+                                <td style={refTd}><Badge label={badge.label} variant={badge.variant} /></td>
                                 <td style={{ ...refTd, opacity: 0.6 }}>{r.date}</td>
                             </tr>
                         );
