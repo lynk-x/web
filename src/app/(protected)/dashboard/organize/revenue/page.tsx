@@ -16,7 +16,7 @@ import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
-import TableToolbar from '@/components/dashboard/TableToolbar';
+import TableToolbar from '@/components/shared/TableToolbar';
 
 function RevenueContent() {
     const { showToast } = useToast();
@@ -274,12 +274,28 @@ function RevenueContent() {
             </div>
 
             <TableToolbar
-                searchTerm={searchTerm}
+                searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
-                placeholder={`Search ${activeTab}...`}
-            />
+                searchPlaceholder={`Search ${activeTab}...`}
+            >
+                <select 
+                    value={timeRange} 
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-interface-outline)',
+                        background: 'transparent',
+                        color: 'var(--color-utility-primaryText)',
+                        fontSize: '13px'
+                    }}
+                >
+                    <option value="all">All Time</option>
+                    <option value="24h">Last 24h</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                </select>
+            </TableToolbar>
 
             <div className={styles.tableWrapper}>
                 {activeTab === 'payouts' ? (
