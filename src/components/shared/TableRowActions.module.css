@@ -27,23 +27,23 @@
 .dropdown {
     position: absolute;
     right: 0;
-    bottom: calc(100% + 8px);
+    top: calc(100% + 8px);
     background-color: #1a1a1a;
     /* Darker background for depth */
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-md);
     min-width: 180px;
     z-index: 100;
-    box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
     padding: 6px;
     overflow: hidden;
-    animation: slideUp 0.2s ease-out;
+    animation: slideDown 0.2s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes slideDown {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(-10px);
     }
 
     to {

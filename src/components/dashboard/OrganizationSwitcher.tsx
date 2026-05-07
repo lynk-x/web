@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
 import styles from './OrganizationSwitcher.module.css';
+import type { DashboardMode } from '@/types/shared';
 
 const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
     const { accounts, activeAccount, setActiveAccountId, isLoading } = useOrganization();
@@ -12,7 +13,24 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const pathname = usePathname();
     const displayEmail = profile?.email || user?.email || '';
+
+    // Derive the current dashboard mode from the URL
+    const [currentMode, setCurrentMode] = useState<DashboardMode>('events');
+    useEffect(() => {
+        if (pathname.startsWith('/dashboard/admin')) setCurrentMode('admin');
+        else if (pathname.startsWith('/dashboard/ads')) setCurrentMode('ads');
+        else setCurrentMode('events');
+    }, [pathname]);
+
+    // Derived filtering for the dropdown
+    const [filterMode, setFilterMode] = useState<DashboardMode>(currentMode);
+    
+    // Reset filter mode when current mode changes (e.g. via direct navigation)
+    useEffect(() => {
+        setFilterMode(currentMode);
+    }, [currentMode]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -66,14 +84,24 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                 >
                     <div className={styles.dropdownHeader}>Switch Organization</div>
                     <div className={styles.accountList}>
-                        {/* Business Accounts Section */}
-                        {accounts.filter(a => a.type !== 'attendee').map((account) => (
+                        {/* Business Accounts Section - Filtered by current mode */}
+                        {accounts
+                            .filter(a => a.type !== 'attendee')
+                            .filter(a => {
+                                if (filterMode === 'ads') return a.type === 'advertiser';
+                                if (filterMode === 'events') return a.type === 'organizer' || a.type === 'platform';
+                                return true; // Show all for admin or others
+                            })
+                            .map((account) => (
                             <button
                                 key={account.id}
                                 className={`${styles.accountItem} ${account.id === activeAccount.id ? styles.selected : ''}`}
                                 onClick={() => {
                                     setActiveAccountId(account.id);
                                     setIsOpen(false);
+                                    // Ensure we go to the correct root if switching types
+                                    if (account.type === 'advertiser') router.push('/dashboard/ads');
+                                    else if (account.type === 'organizer' || account.type === 'platform') router.push('/dashboard/organize');
                                 }}
                             >
                                 <div className={styles.avatarSmall}>

@@ -199,13 +199,13 @@ export default function EditEventPage() {
             }
 
             // Upsert remaining/new tickets
-            if (data.isPaid && data.tickets.length > 0) {
+            if (data.tickets.length > 0) {
                 const ticketsToUpsert = data.tickets.map((t) => ({
                     ...(t.id ? { id: t.id } : {}), // only spread ID if it exists
                     event_id: eventId,
                     display_name: t.display_name,
-                    price: parseFloat(t.price),
-                    capacity: parseInt(t.capacity),
+                    price: data.isPaid ? parseFloat(t.price || '0') : 0,
+                    capacity: parseInt(t.capacity || '0'),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
                     sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,

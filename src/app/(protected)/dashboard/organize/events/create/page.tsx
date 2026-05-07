@@ -96,13 +96,13 @@ export default function CreateEventPage() {
 
             if (eventError) throw eventError;
 
-            // 4. Insert Tickets (if Paid)
-            if (data.isPaid && data.tickets.length > 0 && newEvent) {
+            // 4. Insert Tickets
+            if (data.tickets.length > 0 && newEvent) {
                 const ticketsToInsert = data.tickets.map((t) => ({
                     event_id: newEvent.id,
                     display_name: t.display_name,
-                    price: parseFloat(t.price),
-                    capacity: parseInt(t.capacity),
+                    price: data.isPaid ? parseFloat(t.price || '0') : 0,
+                    capacity: parseInt(t.capacity || '0'),
                     max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
                     sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
