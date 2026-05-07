@@ -99,7 +99,7 @@ export function createAccountsRepository(client: DbClient) {
                         payout_routing,
                         country_code,
                         countries:country_code (currency),
-                        account_wallets (currency, balance, reference)
+                        account_wallets (currency, balance)
                     )
                 `)
                 .eq('user_id', userId);

@@ -53,7 +53,10 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         if (isOrgLoading || isAuthLoading) return;
 
         // 1. Check whether the user owns any account of the required type at all.
-        const matchingAccounts = accounts.filter(a => allowedTypes.includes(a.type as AccountType));
+        // Platform accounts are "wildcards" that can access any section.
+        const matchingAccounts = accounts.filter(a => 
+            allowedTypes.includes(a.type as AccountType) || a.type === 'platform'
+        );
         const hasMatchingAccount = matchingAccounts.length > 0;
 
         if (!hasMatchingAccount) {
@@ -82,8 +85,8 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
             return;
         }
 
-        // 3. Case: active account is the correct type
-        if (activeAccount && allowedTypes.includes(activeAccount.type as AccountType)) {
+        // 3. Case: active account is the correct type (including platform wildcard)
+        if (activeAccount && (allowedTypes.includes(activeAccount.type as AccountType) || activeAccount.type === 'platform')) {
             setIsAuthorized(true);
             setIsChecking(false);
             return;

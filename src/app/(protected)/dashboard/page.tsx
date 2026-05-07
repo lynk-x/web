@@ -151,7 +151,42 @@ function DashboardRoot() {
         );
     }
 
-    return null;
+    return (
+        <div className={styles.container}>
+            <div className={styles.onboardingWrapper}>
+                <div className={styles.header}>
+                    <h1 className={styles.title}>
+                        {typeLabel ? `No ${typeLabel} Workspaces` : 'No Workspaces Found'}
+                    </h1>
+                    <p className={styles.subtitle}>
+                        {typeLabel
+                            ? `You don't have any ${typeLabel} accounts yet.`
+                            : "You haven't joined or created any workspaces."}
+                    </p>
+                </div>
+
+                <div className={styles.workspaceGrid} style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div
+                        className={`${styles.workspaceCard} ${styles.addNewCard}`}
+                        onClick={() => router.push(createUrl)}
+                        style={{ cursor: 'pointer', maxWidth: '300px', width: '100%' }}
+                    >
+                        <div className={styles.plusIcon}>+</div>
+                        <span>Create Your First Workspace</span>
+                    </div>
+                </div>
+            </div>
+
+            <button className={styles.logoutBtn} onClick={logout} title="Sign Out">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    );
 }
 
 export default function DashboardRootPage() {
