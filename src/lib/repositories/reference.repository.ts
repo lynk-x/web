@@ -230,5 +230,15 @@ export function createReferenceRepository(client: DbClient) {
             if (error) return { data: null, error: toError(error) };
             return { data: data as Spotlight[], error: null };
         },
+
+        /** Fetch all FX rates. Used for localized pricing previews. */
+        async getFxRates(): Promise<RepoResult<{ currency: string; rate_to_usd: number }[]>> {
+            const { data, error } = await client
+                .from('fx_rates')
+                .select('currency, rate_to_usd');
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as { currency: string; rate_to_usd: number }[], error: null };
+        },
     };
 }

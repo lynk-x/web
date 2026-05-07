@@ -518,6 +518,8 @@
     transition: all 0.2s;
     background-color: rgba(255, 255, 255, 0.02);
     text-align: center;
+    position: relative;
+    overflow: hidden;
 }
 
 .uploadArea:hover {
@@ -525,27 +527,65 @@
     background-color: rgba(32, 249, 40, 0.04);
 }
 
-.uploadIcon {
-    opacity: 0.35;
-    color: var(--color-utility-primaryText);
+.assetUploadError {
+    border-color: #ff4d4d !important;
+    background-color: rgba(255, 77, 77, 0.05) !important;
+}
+
+.uploadPlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.uploadArea:hover .uploadPlaceholder {
+    opacity: 1;
 }
 
 .assetPreviewBox {
     position: relative;
     width: 100%;
-    aspect-ratio: 16/9;
+    height: 100%;
     background: #000;
-    border-radius: 8px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.assetPreviewActions {
+.assetOverlay {
     position: absolute;
-    bottom: 8px;
-    right: 8px;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
-    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.assetPreviewBox:hover .assetOverlay {
+    opacity: 1;
+}
+
+.assetRemove {
+    background: rgba(255, 77, 77, 0.9);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.assetRemove:hover {
+    background: #ff4d4d;
+    transform: scale(1.05);
 }
 
 /* ── Mock Device & Preview ───────────────────────────────────────────────── */

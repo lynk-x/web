@@ -11,6 +11,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useCountries, Country } from '@/hooks/useCountries';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { createReferenceRepository } from '@/lib/repositories';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -104,6 +105,7 @@ export default function CreateCampaignForm({
     const [countryInput, setCountryInput] = useState('');
     const [countrySuggestions, setCountrySuggestions] = useState<Country[]>([]);
     const [marketSuggestions, setMarketSuggestions] = useState<MarketSuggestion[]>([]);
+    const [fxRates, setFxRates] = useState<{ currency: string; rate_to_usd: number }[]>([]);
 
 
 
@@ -152,6 +154,34 @@ export default function CreateCampaignForm({
         };
         fetchTags();
     }, [supabase]);
+
+    // ── Fetch FX Rates ──────────────────────────────────────────
+    useEffect(() => {
+        const fetchFx = async () => {
+            const refRepo = createReferenceRepository(supabase);
+            const { data } = await refRepo.getFxRates();
+            if (data) setFxRates(data);
+        };
+        fetchFx();
+    }, [supabase]);
+
+    const localRate = useMemo(() => {
+        if (!activeAccount?.wallet_currency || activeAccount.wallet_currency === 'USD') return null;
+        return fxRates.find(r => r.currency === activeAccount.wallet_currency)?.rate_to_usd || null;
+    }, [fxRates, activeAccount]);
+
+    const formatLocal = (usdAmount: string) => {
+        if (!localRate || !usdAmount || isNaN(Number(usdAmount))) return null;
+        try {
+            const local = Number(usdAmount) / localRate;
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: activeAccount?.wallet_currency || 'USD',
+            }).format(local);
+        } catch (e) {
+            return null;
+        }
+    };
 
     // ── Fetch Market Competition Suggestions ───────────────────────────
     useEffect(() => {
@@ -788,11 +818,14 @@ export default function CreateCampaignForm({
                                             </div>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="total_budget">
-                                                    Total Budget ($) <span className={styles.requiredIndicator}>*Required</span>
+                                                    Total Budget (USD) <span className={styles.requiredIndicator}>*Required</span>
                                                     <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire advertising campaign over its lifetime">ⓘ</span>
                                                 </label>
                                                 <input id="total_budget" name="total_budget" type="number" className={styles.input}
                                                     placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
+                                                {formatLocal(formData.total_budget) && (
+                                                    <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.total_budget)}</strong></p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -800,20 +833,26 @@ export default function CreateCampaignForm({
                                         <div className={styles.row}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="daily_limit">
-                                                    Daily Limit ($)
+                                                    Daily Limit (USD)
                                                     <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
                                                 </label>
                                                 <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
                                                     placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
+                                                {formatLocal(formData.daily_limit) && (
+                                                    <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.daily_limit)}</strong></p>
+                                                )}
                                                 {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
                                             </div>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="max_bid_amount">
-                                                    Max Bid ($) <span className={styles.requiredIndicator}>*Required</span>
+                                                    Max Bid (USD) <span className={styles.requiredIndicator}>*Required</span>
                                                     <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
                                                 </label>
                                                 <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
                                                     placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
+                                                {formatLocal(formData.max_bid_amount) && (
+                                                    <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.max_bid_amount)}</strong></p>
+                                                )}
                                                 {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
                                             </div>
                                         </div>
@@ -997,12 +1036,12 @@ export default function CreateCampaignForm({
                                                     Creative Asset <span className={styles.requiredIndicator}>*Required</span>
                                                 </label>
                                                 <div
-                                                    className={`${styles.assetUpload} ${errors[`creative.${activeCreativeIdx}.asset`] ? styles.assetUploadError : ''}`}
+                                                    className={`${styles.uploadArea} ${errors[`creative.${activeCreativeIdx}.asset`] ? styles.assetUploadError : ''}`}
                                                     onClick={() => fileInputRefs.current[activeCreativeIdx]?.click()}
                                                     style={{ height: formData.type.includes('interstitial') ? '240px' : '140px' }}
                                                 >
                                                     {activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl ? (
-                                                        <div className={styles.assetPreview}>
+                                                        <div className={styles.assetPreviewBox}>
                                                             {activeCreative.mediaType === 'video' ? (
                                                                 <video src={activeCreative.preview || activeCreative.imageUrl || formData.adImageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             ) : (
@@ -1014,9 +1053,15 @@ export default function CreateCampaignForm({
                                                         </div>
                                                     ) : (
                                                         <div className={styles.uploadPlaceholder}>
-                                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                                                            </svg>
+                                                            {formData.type === 'interstitial_video' ? (
+                                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polygon points="5 3 19 12 5 21 5 3" />
+                                                                </svg>
+                                                            ) : (
+                                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                                                                </svg>
+                                                            )}
                                                             <span>{formData.type === 'interstitial_video' ? 'Upload Video (9:16)' : formData.type === 'banner' ? 'Upload Image (16:9)' : 'Upload Image (9:16)'}</span>
                                                         </div>
                                                     )}
@@ -1044,7 +1089,12 @@ export default function CreateCampaignForm({
                                             </div>
                                             <div className={styles.reviewItem}>
                                                 <label>Budget</label>
-                                                <div>${formData.total_budget} Total (${formData.max_bid_amount} Max Bid)</div>
+                                                <div>
+                                                    USD {formData.total_budget} Total (USD {formData.max_bid_amount} Max Bid)
+                                                    {formatLocal(formData.total_budget) && (
+                                                        <div style={{ fontSize: '11px', opacity: 0.6 }}>Approx. {formatLocal(formData.total_budget)}</div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className={styles.reviewItem}>
                                                 <label>Timeline</label>
