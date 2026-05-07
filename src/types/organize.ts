@@ -211,6 +211,7 @@ export interface AccountPaymentMethod {
 /** Account Wallet for multi-currency balances */
 export interface AccountWallet {
     id: string; // usually used as the currency/key in some UI contexts
+    reference: string;
     account_id: string;
     currency: string;
     balance: number;

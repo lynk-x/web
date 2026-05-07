@@ -137,19 +137,11 @@ export default function DashboardOverview() {
                     <button className={`${styles.actionCard} tour-view-analytics`} onClick={() => router.push('/dashboard/organize/analytics')}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </button>
-                    <button className={`${styles.actionBtn} tour-revenue`} onClick={() => router.push('/dashboard/organize/revenue')}>
-                        <div className={styles.actionIcon}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
-                        <div className={styles.actionText}>
-                            <span className={styles.actionTitle}>Revenue</span>
-                            <span className={styles.actionDesc}>Payouts & history</span>
-                        </div>
+                    <button className={`${styles.actionCard} tour-revenue`} onClick={() => router.push('/dashboard/organize/revenue')}>
+                        <span className={styles.actionLabel}>Revenue</span>
                     </button>
-                    <button className={`${styles.actionBtn} tour-team`} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
-                        <div className={styles.actionIcon}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
-                        <div className={styles.actionText}>
-                            <span className={styles.actionTitle}>Team</span>
-                            <span className={styles.actionDesc}>Manage members</span>
-                        </div>
+                    <button className={`${styles.actionCard} tour-team`} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
+                        <span className={styles.actionLabel}>Team Management</span>
                     </button>
                 </div>
             </section>
@@ -174,11 +166,11 @@ export default function DashboardOverview() {
                     {
                         target: '.tour-stats',
                         title: 'Performance Overview',
-                        content: 'Track your total events, upcoming scheduled events and active public listings at a glance. You can also see your current team size.',
+                        content: 'Track your total events, upcoming scheduled events and active public listings at a glance.',
                     },
                     {
                         target: '.tour-create-event',
-                        title: 'Launch a new event',
+                        title: 'Create an event',
                         content: 'Ready to start? Click here to create your next event, set up ticket tiers and add your marketing materials.',
                     },
                     {

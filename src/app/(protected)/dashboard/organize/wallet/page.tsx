@@ -16,6 +16,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 
 interface WalletBalance {
     id: string;
+    reference: string;
     currency: string;
     balance: number;
     pending_balance: number;
@@ -79,7 +80,7 @@ export default function WalletPage() {
             const [walletsRes, topUpsRes, creditsRes, creditTxnsRes] = await Promise.all([
                 supabase
                     .from('account_wallets')
-                    .select('id, currency, balance, pending_balance')
+                    .select('reference, currency, balance, pending_balance')
                     .eq('account_id', activeAccount.id)
                     .order('currency'),
                 supabase
@@ -105,8 +106,14 @@ export default function WalletPage() {
 
             if (walletsRes.error) throw walletsRes.error;
             if (topUpsRes.error) throw topUpsRes.error;
+            
+            // Map reference to id for UI stability
+            const mappedBalances = (walletsRes.data || []).map((b: any) => ({
+                ...b,
+                id: b.reference
+            }));
 
-            setBalances(walletsRes.data || []);
+            setBalances(mappedBalances);
             setTopUps(topUpsRes.data || []);
             setAdCredits((creditsRes.data || []).map((r: any) => ({
                 id: r.id,
@@ -189,7 +196,10 @@ export default function WalletPage() {
                             </div>
                         ) : balances.map(b => (
                             <div key={b.id} className={adminStyles.card} style={{ padding: 20 }}>
-                                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-tertiary)', fontWeight: 600 }}>{b.currency}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-tertiary)', fontWeight: 600 }}>{b.currency}</p>
+                                    <p style={{ margin: 0, fontSize: 10, fontFamily: 'var(--font-mono)', opacity: 0.5 }}>{b.reference}</p>
+                                </div>
                                 <p style={{ margin: '8px 0 0', fontSize: 24, fontWeight: 700 }}>
                                     {formatCurrency(b.balance, b.currency)}
                                 </p>

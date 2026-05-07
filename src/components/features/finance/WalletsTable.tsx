@@ -12,6 +12,14 @@ interface WalletsTableProps {
 export default function WalletsTable({ data, isLoading }: WalletsTableProps) {
     const columns = [
         {
+            header: 'Reference',
+            render: (wallet: AccountWallet) => (
+                <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '13px', opacity: 0.8 }}>
+                    {wallet.reference}
+                </div>
+            )
+        },
+        {
             header: 'Currency',
             render: (wallet: AccountWallet) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>

@@ -261,6 +261,10 @@ export interface PlatformPaymentProvider {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+    metadata?: {
+        environment: 'sandbox' | 'live';
+        config: Record<string, any>;
+    };
 }
 
 /** A promotional discount code. */

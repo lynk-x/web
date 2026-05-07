@@ -386,7 +386,7 @@ export default function OrganizerEventsPage() {
                     <p style={{ fontSize: '14px', opacity: 0.55, marginBottom: 24 }}>Create your first event and start selling tickets.</p>
                     <button
                         onClick={() => router.push('/dashboard/organize/events/create')}
-                        style={{ padding: '10px 24px', borderRadius: '8px', background: 'var(--color-brand-primary)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                        className={sharedStyles.btnPrimary}
                     >
                         Create Event
                     </button>

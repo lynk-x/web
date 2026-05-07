@@ -27,6 +27,7 @@ export interface AccountMembership {
 export interface AccountWallet {
     id: string;
     account_id: string;
+    reference: string;
     currency: string;
     balance: number;
     escrow_balance: number;
@@ -98,7 +99,7 @@ export function createAccountsRepository(client: DbClient) {
                         payout_routing,
                         country_code,
                         countries:country_code (currency),
-                        account_wallets (currency, balance)
+                        account_wallets (currency, balance, reference)
                     )
                 `)
                 .eq('user_id', userId);
@@ -137,11 +138,18 @@ export function createAccountsRepository(client: DbClient) {
         async getWallets(accountId: string): Promise<RepoResult<AccountWallet[]>> {
             const { data, error } = await client
                 .from('account_wallets')
-                .select('id, account_id, currency, balance, escrow_balance, updated_at')
+                .select('reference, account_id, currency, balance, escrow_balance, updated_at')
                 .eq('account_id', accountId);
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as AccountWallet[], error: null };
+            
+            // Map reference to id for DataTable compatibility
+            const mappedData = (data ?? []).map((row: any) => ({
+                ...row,
+                id: row.reference
+            }));
+
+            return { data: mappedData as AccountWallet[], error: null };
         },
 
         /** Fetch all stored payment methods for an account, with provider names joined. */

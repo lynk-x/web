@@ -101,7 +101,7 @@ function RevenueContent() {
                 .order('currency');
 
             if (walletError) throw walletError;
-            setWallets((walletData || []).map((w: any) => ({ ...w, id: w.currency })));
+            setWallets((walletData || []).map((w: any) => ({ ...w, id: w.reference || w.currency })));
 
             // Refund transactions for this account's events
             const { data: refundData, error: refundError } = await supabase

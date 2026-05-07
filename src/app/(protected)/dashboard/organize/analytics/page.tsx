@@ -103,7 +103,18 @@ export default function AnalyticsPage() {
                 />
             </div>
 
-            <div className="tour-analytics-range">
+            <div style={{ marginTop: '24px' }}>
+                <Tabs
+                    options={[
+                        { id: 'summary', label: 'Summary' },
+                        { id: 'breakdown', label: 'Breakdown' },
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                />
+            </div>
+
+            <div className="tour-analytics-range" style={{ marginTop: '16px' }}>
                 <TableToolbar searchPlaceholder="Filter events..." searchValue="" onSearchChange={() => {}}>
                     <div className={adminStyles.filterGroup}>
                         {['all', 'active', 'past', 'draft'].map((status) => (
@@ -128,17 +139,6 @@ export default function AnalyticsPage() {
                         <option value="365">Last Year</option>
                     </select>
                 </TableToolbar>
-            </div>
-
-            <div style={{ marginTop: '24px' }}>
-                <Tabs
-                    options={[
-                        { id: 'summary', label: 'Summary' },
-                        { id: 'breakdown', label: 'Breakdown' },
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                />
             </div>
 
             {activeTab === 'summary' ? (

@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import Modal from '@/components/shared/Modal';
+import Toggle from '@/components/shared/Toggle';
 import type { PlatformPaymentProvider } from '@/types/admin';
 
 export default function PaymentProvidersTab() {
@@ -22,7 +23,9 @@ export default function PaymentProvidersTab() {
     const [isEditing, setIsEditing] = useState<PlatformPaymentProvider | null>(null);
     const [editForm, setEditForm] = useState({
         processing_fee_percent: 0,
-        is_active: true
+        is_active: true,
+        environment: 'sandbox',
+        config: {} as any
     });
     const [isSaving, setIsSaving] = useState(false);
 
@@ -62,6 +65,10 @@ export default function PaymentProvidersTab() {
                 .update({
                     processing_fee_percent: Number(editForm.processing_fee_percent),
                     is_active: editForm.is_active,
+                    metadata: {
+                        environment: editForm.environment,
+                        config: editForm.config
+                    },
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', isEditing.id);
@@ -138,9 +145,9 @@ export default function PaymentProvidersTab() {
         {
             header: 'Status',
             render: (provider: PlatformPaymentProvider) => (
-                <Badge
-                    label={provider.is_active ? 'Active' : 'Inactive'}
-                    variant={provider.is_active ? 'success' : 'neutral'}
+                <Toggle
+                    enabled={provider.is_active}
+                    onChange={() => toggleActiveStatus(provider)}
                 />
             )
         }
@@ -149,18 +156,16 @@ export default function PaymentProvidersTab() {
     const getActions = (provider: PlatformPaymentProvider) => [
         {
             label: 'Edit Configuration',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
             onClick: () => {
                 setIsEditing(provider);
                 setEditForm({
                     processing_fee_percent: provider.processing_fee_percent,
-                    is_active: provider.is_active
+                    is_active: provider.is_active,
+                    environment: provider.metadata?.environment || 'sandbox',
+                    config: provider.metadata?.config || {}
                 });
             }
-        },
-        {
-            label: provider.is_active ? 'Deactivate' : 'Activate',
-            variant: (provider.is_active ? 'danger' : 'success') as 'danger' | 'success',
-            onClick: () => toggleActiveStatus(provider)
         }
     ];
 
@@ -196,9 +201,22 @@ export default function PaymentProvidersTab() {
                 >
                     {isEditing && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div>
-                                <label className={adminStyles.label}>Provider Name</label>
-                                <input className={adminStyles.input} value={isEditing.display_name} disabled style={{ opacity: 0.6 }} />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <label className={adminStyles.label}>Provider Name</label>
+                                    <input className={adminStyles.input} value={isEditing.display_name} disabled style={{ opacity: 0.6 }} />
+                                </div>
+                                <div>
+                                    <label className={adminStyles.label}>Environment</label>
+                                    <select
+                                        className={adminStyles.input}
+                                        value={editForm.environment}
+                                        onChange={e => setEditForm({ ...editForm, environment: e.target.value })}
+                                    >
+                                        <option value="sandbox">Sandbox (Testing)</option>
+                                        <option value="live">Live (Production)</option>
+                                    </select>
+                                </div>
                             </div>
                             <div>
                                 <label className={adminStyles.label}>Processing Fee (%)</label>
@@ -210,13 +228,22 @@ export default function PaymentProvidersTab() {
                                     onChange={e => setEditForm(prev => ({ ...prev, processing_fee_percent: Number(e.target.value) }))}
                                 />
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={editForm.is_active}
-                                    onChange={e => setEditForm({ ...editForm, is_active: e.target.checked })}
+                            <div>
+                                <label className={adminStyles.label}>Configuration JSON</label>
+                                <textarea
+                                    className={adminStyles.input}
+                                    style={{ height: '100px', fontFamily: 'monospace', fontSize: '12px' }}
+                                    value={JSON.stringify(editForm.config, null, 2)}
+                                    onChange={e => {
+                                        try {
+                                            const parsed = JSON.parse(e.target.value);
+                                            setEditForm({ ...editForm, config: parsed });
+                                        } catch (err) {
+                                            // Handle invalid JSON silently or with local error state
+                                        }
+                                    }}
+                                    placeholder='{ "apiKey": "..." }'
                                 />
-                                <span style={{ fontSize: '14px', opacity: 0.8 }}>Enable this provider for checkouts</span>
                             </div>
                         </div>
                     )}
