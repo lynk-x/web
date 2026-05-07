@@ -23,6 +23,10 @@ export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFo
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialUrl);
     const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
+    // Cropper State
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
+    const [pendingImage, setPendingImage] = useState<string | null>(null);
+
     /**
      * Reads the selected file into a data URL and exposes it as a preview.
      * The raw File is retained so the upload step in handleSubmit can PUT it
@@ -32,20 +36,37 @@ export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFo
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setIsLoadingMedia(true);
-        setThumbnailFile(file);
-
         const reader = new FileReader();
         reader.onloadend = () => {
-            const url = reader.result as string;
-            setThumbnailPreview(url);
-            onUrlChange(url);
-            setIsLoadingMedia(false);
-        };
-        reader.onerror = () => {
-            setIsLoadingMedia(false);
+            setPendingImage(reader.result as string);
+            setIsCropperOpen(true);
         };
         reader.readAsDataURL(file);
+        
+        // Reset input so the same file can be selected again
+        e.target.value = '';
+    };
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        setIsLoadingMedia(true);
+        
+        // Convert Blob to File
+        const file = new File([croppedBlob], 'event-cover.jpg', { type: 'image/jpeg' });
+        setThumbnailFile(file);
+
+        // Create preview URL
+        const url = URL.createObjectURL(croppedBlob);
+        setThumbnailPreview(url);
+        onUrlChange(url);
+        
+        setIsCropperOpen(false);
+        setPendingImage(null);
+        setIsLoadingMedia(false);
+    };
+
+    const handleCloseCropper = () => {
+        setIsCropperOpen(false);
+        setPendingImage(null);
     };
 
     const handleRemoveImage = () => {
@@ -61,5 +82,9 @@ export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFo
         setIsLoadingMedia,
         handleImageSelect,
         handleRemoveImage,
+        isCropperOpen,
+        pendingImage,
+        handleCropComplete,
+        handleCloseCropper,
     };
 }

@@ -24,6 +24,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { LocationInput } from '@/components/ui/LocationInput';
 import { VenueMap } from '@/components/features/events/VenueMap';
+import ImageCropperModal from '@/components/shared/ImageCropperModal';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         handleSubmit, discardDraft,
         validateTab,
         setFormData,
+        isCropperOpen, pendingImage, handleCropComplete, handleCloseCropper,
     } = useEventForm({ initialData, isEditMode, onSubmit });
 
     const [focusedField, setFocusedField] = React.useState<string | null>(null);
@@ -568,6 +570,16 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                         content: 'You can save your event as a draft at any time and return to it later. Once you\'re ready, click Publish to go live.',
                     }
                 ]}
+            />
+            {ConfirmDialog}
+
+            <ImageCropperModal
+                isOpen={isCropperOpen}
+                image={pendingImage}
+                onClose={handleCloseCropper}
+                onCropComplete={handleCropComplete}
+                aspectRatio={16 / 9}
+                title="Crop Event Cover"
             />
         </div>
     );

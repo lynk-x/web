@@ -1,5 +1,6 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
+import ImageCropperModal from '@/components/shared/ImageCropperModal';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styles from './CreateCampaignForm.module.css';
@@ -74,13 +75,19 @@ export default function CreateCampaignForm({
 }: CreateCampaignFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
-    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
     // ── UI State ──────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'review'>('details');
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const [isOrgLoading, setIsOrgLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Cropper State
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
+    const [pendingImage, setPendingImage] = useState<string | null>(null);
+    const [pendingCreativeIdx, setPendingCreativeIdx] = useState<number | null>(null);
     const [formError, setFormError] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -397,15 +404,39 @@ export default function CreateCampaignForm({
         if (!file) return;
         const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
-        // For previews, we still use FileReader for images, but for video we use a blob URL
         if (mediaType === 'video') {
             const videoUrl = URL.createObjectURL(file);
             updateCreative(idx, { file, preview: videoUrl, mediaType });
         } else {
             const reader = new FileReader();
-            reader.onloadend = () => updateCreative(idx, { file, preview: reader.result as string, mediaType });
+            reader.onloadend = () => {
+                setPendingImage(reader.result as string);
+                setPendingCreativeIdx(idx);
+                setIsCropperOpen(true);
+            };
             reader.readAsDataURL(file);
         }
+        
+        e.target.value = '';
+    };
+
+    const handleCropComplete = (croppedBlob: Blob) => {
+        if (pendingCreativeIdx === null) return;
+        
+        const file = new File([croppedBlob], `creative_${pendingCreativeIdx}.jpg`, { type: 'image/jpeg' });
+        const url = URL.createObjectURL(croppedBlob);
+        
+        updateCreative(pendingCreativeIdx, { file, preview: url, mediaType: 'image' });
+        
+        setIsCropperOpen(false);
+        setPendingImage(null);
+        setPendingCreativeIdx(null);
+    };
+
+    const handleCloseCropper = () => {
+        setIsCropperOpen(false);
+        setPendingImage(null);
+        setPendingCreativeIdx(null);
     };
 
     const handleRemoveAsset = (idx: number) => {
@@ -1325,6 +1356,14 @@ export default function CreateCampaignForm({
                     ]}
                 />
             )}
+            <ImageCropperModal
+                isOpen={isCropperOpen}
+                image={pendingImage}
+                onClose={handleCloseCropper}
+                onCropComplete={handleCropComplete}
+                aspectRatio={formData.type === 'banner' ? 16 / 9 : 9 / 16}
+                title={`Crop ${formData.type === 'banner' ? 'Banner' : 'Interstitial'}`}
+            />
         </>
     );
 }
