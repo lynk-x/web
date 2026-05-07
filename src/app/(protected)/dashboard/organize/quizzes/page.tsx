@@ -3,7 +3,6 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -16,6 +15,8 @@ import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
+import DataTable, { Column } from '@/components/shared/DataTable';
+import type { ActionItem } from '@/types/shared';
 
 interface Quiz {
     id: string;
@@ -197,113 +198,82 @@ export default function QuizzesPage() {
                 />
             </div>
 
-            {isLoading ? (
-                <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
-            ) : (
-                <table className={adminStyles.table}>
-                    <thead>
-                        <tr>
-                            <th style={{ width: 40 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={selectedIds.size > 0 && selectedIds.size === quizzes.length}
-                                    onChange={handleSelectAll}
-                                />
-                            </th>
-                            <th>Title</th>
-                            <th>Event</th>
-                            <th>Channel</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {quizzes.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} style={{ textAlign: 'center', padding: '48px', opacity: 0.5 }}>
-                                    No quizzes found.
-                                </td>
-                            </tr>
-                        ) : (
-                            quizzes.map(quiz => {
-                                const badge = STATUS_MAP[quiz.status] ?? { label: quiz.status, variant: 'neutral' as BadgeVariant };
-                                return (
-                                    <tr key={quiz.id}>
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.has(quiz.id)}
-                                                onChange={() => handleSelect(quiz.id)}
-                                            />
-                                        </td>
-                                        <td style={{ fontWeight: 600 }}>{quiz.title}</td>
-                                        <td style={{ color: 'var(--color-text-secondary)' }}>{quiz.event_title}</td>
-                                        <td>
-                                            {quiz.forum_channels?.display_name ? (
-                                                <span style={{
-                                                    background: 'rgba(255,255,255,0.06)',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 6,
-                                                    fontSize: 13,
-                                                    fontWeight: 600
-                                                }}>
-                                                    #{quiz.forum_channels.display_name}
-                                                </span>
-                                            ) : '—'}
-                                        </td>
-                                        <td><Badge variant={badge.variant} label={badge.label} /></td>
-                                        <td style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>
-                                            {formatDate(quiz.created_at)}
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                                <Link
-                                                    href={`/dashboard/organize/quizzes/${quiz.id}/host`}
-                                                    className={adminStyles.btnPrimary}
-                                                    style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
-                                                >
-                                                    Host Live
-                                                </Link>
-                                                <button
-                                                    className={adminStyles.btnSecondary}
-                                                    onClick={() => handleDuplicate(quiz.id)}
-                                                    style={{ fontSize: 13, padding: '4px 12px' }}
-                                                >
-                                                    Duplicate
-                                                </button>
-                                                <Link
-                                                    href={`/dashboard/organize/quizzes/${quiz.id}/edit`}
-                                                    className={adminStyles.btnSecondary}
-                                                    style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
-                                                >
-                                                    Edit
-                                                </Link>
-                                                <Link
-                                                    href={`/dashboard/organize/quizzes/${quiz.id}/results`}
-                                                    className={adminStyles.btnSecondary}
-                                                    style={{ fontSize: 13, padding: '4px 12px', textDecoration: 'none' }}
-                                                >
-                                                    Results
-                                                </Link>
-                                                {quiz.status === 'draft' && (
-                                                    <button
-                                                        className={adminStyles.btnDanger}
-                                                        onClick={() => handleDelete(quiz)}
-                                                        style={{ fontSize: 13, padding: '4px 10px' }}
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
-            )}
+            <DataTable<Quiz>
+                data={quizzes}
+                isLoading={isLoading}
+                selectedIds={selectedIds}
+                onSelect={handleSelect}
+                onSelectAll={handleSelectAll}
+                emptyMessage="No quizzes found."
+                columns={[
+                    {
+                        header: 'Title',
+                        render: (quiz) => <div style={{ fontWeight: 600 }}>{quiz.title}</div>
+                    },
+                    {
+                        header: 'Event',
+                        render: (quiz) => <div style={{ color: 'var(--color-text-secondary)' }}>{quiz.event_title}</div>
+                    },
+                    {
+                        header: 'Channel',
+                        render: (quiz) => quiz.forum_channels?.display_name ? (
+                            <span style={{
+                                background: 'rgba(255,255,255,0.06)',
+                                padding: '2px 8px',
+                                borderRadius: 6,
+                                fontSize: 13,
+                                fontWeight: 600
+                            }}>
+                                #{quiz.forum_channels.display_name}
+                            </span>
+                        ) : '—'
+                    },
+                    {
+                        header: 'Status',
+                        render: (quiz) => {
+                            const badge = STATUS_MAP[quiz.status] ?? { label: quiz.status, variant: 'neutral' as BadgeVariant };
+                            return <Badge variant={badge.variant} label={badge.label} />;
+                        }
+                    },
+                    {
+                        header: 'Created',
+                        render: (quiz) => (
+                            <div style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>
+                                {formatDate(quiz.created_at)}
+                            </div>
+                        )
+                    }
+                ]}
+                getActions={(quiz) => {
+                    const actions: ActionItem[] = [
+                        {
+                            label: 'Host Live',
+                            variant: 'success',
+                            onClick: () => router.push(`/dashboard/organize/quizzes/${quiz.id}/host`)
+                        },
+                        {
+                            label: 'Duplicate',
+                            onClick: () => handleDuplicate(quiz.id)
+                        },
+                        {
+                            label: 'Edit',
+                            onClick: () => router.push(`/dashboard/organize/quizzes/${quiz.id}/edit`)
+                        },
+                        {
+                            label: 'Results',
+                            onClick: () => router.push(`/dashboard/organize/quizzes/${quiz.id}/results`)
+                        }
+                    ];
+                    if (quiz.status === 'draft') {
+                        actions.push({
+                            label: 'Delete',
+                            variant: 'danger',
+                            onClick: () => handleDelete(quiz)
+                        });
+                    }
+                    return actions;
+                }}
+            />
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgQuizzesJoyride_${activeAccount.id}` : 'hasSeenOrgQuizzesJoyride_guest'}

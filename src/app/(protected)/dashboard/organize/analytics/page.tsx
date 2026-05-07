@@ -86,19 +86,21 @@ export default function AnalyticsPage() {
 
             <div className={adminStyles.statsGrid} style={{ marginBottom: '24px' }}>
                 <StatCard
-                    label="Gross Revenue"
-                    value={formatCurrency(insights.reduce((sum, e) => sum + e.totalRevenue, 0), activeAccount?.wallet_currency)}
+                    label="Popularity Peak"
+                    value={insights.length > 0 
+                        ? insights.reduce((prev, curr) => (curr.ticketsSold > prev.ticketsSold ? curr : prev), insights[0]).event 
+                        : '—'}
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Estimated Net"
-                    value={formatCurrency(insights.reduce((sum, e) => sum + e.netRevenue, 0), activeAccount?.wallet_currency)}
-                    trend="positive"
+                    label="Check-in Rate"
+                    value="N/A"
                     isLoading={isLoading}
+                    trend="neutral"
                 />
                 <StatCard
                     label="Tickets Sold"
-                    value={insights.reduce((sum, e) => sum + e.ticketsSold, 0)}
+                    value={insights.reduce((sum, e) => sum + e.ticketsSold, 0).toLocaleString()}
                     isLoading={isLoading}
                 />
             </div>

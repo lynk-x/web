@@ -60,17 +60,9 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
         const hasMatchingAccount = matchingAccounts.length > 0;
 
         if (!hasMatchingAccount) {
-            // Check if they have ANY other business account first.
-            const hasOtherBusinessAccount = accounts.some(a => a.type !== 'attendee');
-            
-            if (hasOtherBusinessAccount) {
-                // They have accounts, just not of this type. Send to picker to switch or create.
-                router.replace('/dashboard');
-            } else {
-                // User has NO business accounts at all — send to onboarding to create one.
-                const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
-                router.replace(`/onboarding?type=${defaultType}`);
-            }
+            // User has NO matching account — send to dashboard picker
+            // where they can see the 'No Workspaces Found' state and choose to onboard.
+            router.replace('/dashboard');
             setIsAuthorized(false);
             setIsChecking(false);
             return;
