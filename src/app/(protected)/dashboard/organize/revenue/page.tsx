@@ -16,6 +16,7 @@ import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
+import TableToolbar from '@/components/dashboard/TableToolbar';
 
 function RevenueContent() {
     const { showToast } = useToast();
@@ -49,12 +50,14 @@ function RevenueContent() {
     const [payoutCurrentPage, setPayoutCurrentPage] = useState(1);
     const payoutItemsPerPage = 8;
 
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [timeRange, setTimeRange] = useState('all');
     const [payouts, setPayouts] = useState<any[]>([]);
     const [wallets, setWallets] = useState<any[]>([]);
     const [refunds, setRefunds] = useState<any[]>([]);
     const [refundCurrentPage, setRefundCurrentPage] = useState(1);
     const refundItemsPerPage = 8;
-    const [isLoading, setIsLoading] = useState(true);
 
     // ── fetchFinancialData ────────────────────────────────────────────────
     const fetchFinancialData = useCallback(async () => {
@@ -155,9 +158,25 @@ function RevenueContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, wallets, supabase, showToast]);
 
+    // Filtering Logic
+    const filteredPayouts = useMemo(() => {
+        return payouts.filter(p => {
+            const matchesSearch = (p.reference?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 p.eventName?.toLowerCase().includes(searchTerm.toLowerCase()));
+            return matchesSearch;
+        });
+    }, [payouts, searchTerm]);
 
+    const filteredRefunds = useMemo(() => {
+        return refunds.filter(r => {
+            const matchesSearch = (r.eventTitle?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 r.ticketCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                 r.reason?.toLowerCase().includes(searchTerm.toLowerCase()));
+            return matchesSearch;
+        });
+    }, [refunds, searchTerm]);
 
     // ── Effect ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -254,21 +273,31 @@ function RevenueContent() {
             />
             </div>
 
+            <TableToolbar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
+                placeholder={`Search ${activeTab}...`}
+            />
+
             <div className={styles.tableWrapper}>
                 {activeTab === 'payouts' ? (
-                    <PayoutTable
-                        payouts={payouts.slice((payoutCurrentPage - 1) * payoutItemsPerPage, payoutCurrentPage * payoutItemsPerPage)}
-                        selectedIds={selectedIds}
-                        onSelect={handleSelect}
-                        onSelectAll={handleSelectAll}
-                        currentPage={payoutCurrentPage}
-                        totalPages={Math.ceil(payouts.length / payoutItemsPerPage)}
-                        onPageChange={setPayoutCurrentPage}
-                        isLoading={isLoading}
-                    />
+                    <div className="tour-revenue-table">
+                        <PayoutTable
+                            payouts={filteredPayouts.slice((payoutCurrentPage - 1) * payoutItemsPerPage, payoutCurrentPage * payoutItemsPerPage)}
+                            selectedIds={selectedIds}
+                            onSelect={handleSelect}
+                            onSelectAll={handleSelectAll}
+                            currentPage={payoutCurrentPage}
+                            totalPages={Math.ceil(filteredPayouts.length / payoutItemsPerPage)}
+                            onPageChange={setPayoutCurrentPage}
+                            isLoading={isLoading}
+                        />
+                    </div>
                 ) : (
                     <RefundsTable
-                        refunds={refunds}
+                        refunds={filteredRefunds}
                         currentPage={refundCurrentPage}
                         itemsPerPage={refundItemsPerPage}
                         onPageChange={setRefundCurrentPage}

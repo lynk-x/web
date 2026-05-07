@@ -231,7 +231,7 @@ function SettingsContent() {
                     options={[
                         { id: 'account', label: 'Account' },
                         { id: 'team', label: 'Team Members' },
-                        { id: 'billing', label: 'Billing' },
+                        { id: 'billing', label: 'Billing & Wallet' },
                         { id: 'danger-zone', label: 'Danger Zone' }
                     ]}
                     activeTab={activeTab}
@@ -296,17 +296,17 @@ function SettingsContent() {
                 {activeTab === 'billing' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div className={adminStyles.pageCard}>
-                            <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
-                            <WalletsTable data={wallets} isLoading={isLoadingWallets} />
-                        </div>
-
-                        <div className={adminStyles.pageCard}>
                             <h2 className={adminStyles.sectionTitle}>Payment Methods</h2>
                             {activeAccount ? (
                                 <PaymentMethodsManager accountId={activeAccount.id} />
                             ) : (
                                 <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
                             )}
+                        </div>
+
+                        <div className={adminStyles.pageCard}>
+                            <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
+                            <WalletsTable data={wallets} isLoading={isLoadingWallets} />
                         </div>
                     </div>
                 )}
