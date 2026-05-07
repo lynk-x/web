@@ -34,6 +34,7 @@ export const DEFAULT_FORM_DATA: EventData = {
     endTime: '',
     timezone: 'UTC',
     isPrivate: false,
+    isPaid: true,
     tickets: [{ display_name: 'General Admission', price: '0', capacity: '100' }],
     currency: 'USD',
 };

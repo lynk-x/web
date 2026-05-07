@@ -22,6 +22,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
+import { CurrencySelector } from '@/components/ui/CurrencySelector';
 import { LocationInput } from '@/components/ui/LocationInput';
 import { VenueMap } from '@/components/features/events/VenueMap';
 
@@ -410,6 +411,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 onChange={(val) => handleInputChange({ target: { name: field, value: val } } as any)}
                                                 placeholder="hh:mm"
                                                 className={errors[field] ? styles.inputError : ''}
+                                                defaultOpenValue={field === 'startTime' ? '08:00' : '16:00'}
                                             />
                                         )}
                                         <p className={styles.errorMessage}>{errors[field]}</p>
@@ -507,7 +509,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     <TicketTierManager
                         tickets={formData.tickets}
                         currency={formData.currency}
-                        onCurrencyChange={(val) => setFormData((prev) => ({ ...prev, currency: val }))}
+                        isPaid={formData.isPaid ?? true}
+                        onPaidChange={(val) => setFormData((prev) => ({ ...prev, isPaid: val }))}
                         errors={errors}
                         onAdd={addTicket}
                         onRemove={removeTicket}
@@ -530,6 +533,17 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                 <p style={{ fontSize: '13px', opacity: 0.6, marginLeft: '32px' }}>
                                     Private events are not listed in the public directory.
                                 </p>
+                            </div>
+
+                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                                <label className={styles.label}>Event Currency</label>
+                                <p style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px' }}>
+                                    This is the currency used for all ticket sales.
+                                </p>
+                                <CurrencySelector 
+                                    value={formData.currency} 
+                                    onChange={(val) => setFormData(prev => ({ ...prev, currency: val }))} 
+                                />
                             </div>
                         </div>
                     </section>

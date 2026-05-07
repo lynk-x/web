@@ -9,6 +9,7 @@ interface TimePickerProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    defaultOpenValue?: string; // HH:mm format
 }
 
 /**
@@ -19,7 +20,8 @@ export const TimePicker: React.FC<TimePickerProps> = ({
     onChange,
     placeholder = "HH:MM AM",
     className,
-    disabled = false
+    disabled = false,
+    defaultOpenValue = "12:00"
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -28,7 +30,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
     const periodScrollRef = useRef<HTMLDivElement>(null);
     
     // Parse current value (always in 24h format HH:mm)
-    const [hStr, mStr] = (value || "12:00").split(':');
+    const [hStr, mStr] = (value || defaultOpenValue).split(':');
     const h = parseInt(hStr, 10);
     const m = parseInt(mStr, 10);
 
@@ -85,7 +87,6 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                 value={displayValue}
                 readOnly
                 placeholder={placeholder}
-                onClick={() => setIsOpen(!isOpen)}
                 onFocus={() => setIsOpen(true)}
                 disabled={disabled}
                 autoComplete="off"
