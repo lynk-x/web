@@ -159,6 +159,7 @@ export interface OrganizerEventFormData {
     thumbnailUrl?: string;
     isOnline: boolean;
     location: string;
+    coordinates?: [number, number];
     startDate: string;
     startTime: string;
     endDate: string;

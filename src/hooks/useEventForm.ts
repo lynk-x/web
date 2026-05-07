@@ -214,9 +214,13 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
     };
 
     // ── Field Helpers ─────────────────────────────────────────────────────────
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, coordinates?: [number, number]) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: sanitizeInput(value) }));
+        setFormData((prev) => ({ 
+            ...prev, 
+            [name]: sanitizeInput(value),
+            ...(name === 'location' ? { coordinates } : {})
+        }));
         if (errors[name]) setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
     };
 

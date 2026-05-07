@@ -100,7 +100,7 @@
 
 .selected {
     background: var(--color-brand-primary) !important;
-    color: white !important;
+    color: black !important;
     font-weight: 600;
 }
 

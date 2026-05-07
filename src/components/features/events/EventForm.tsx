@@ -22,6 +22,8 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
+import { LocationInput } from '@/components/ui/LocationInput';
+import { VenueMap } from '@/components/features/events/VenueMap';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -463,14 +465,31 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                         : <span>Venue Location <span className={styles.requiredIndicator}>*Required</span></span>
                                     }
                                 </label>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    className={`${styles.input} ${errors.location ? styles.inputError : ''}`}
-                                    placeholder={formData.isOnline ? 'e.g. Zoom or Google Meet Link' : 'e.g. 123 Event St, Nairobi'}
-                                    value={formData.location}
-                                    onChange={handleInputChange}
-                                />
+                                {formData.isOnline ? (
+                                    <input
+                                        type="text"
+                                        name="location"
+                                        className={`${styles.input} ${errors.location ? styles.inputError : ''}`}
+                                        placeholder="e.g. Zoom or Google Meet Link"
+                                        value={formData.location}
+                                        onChange={handleInputChange}
+                                    />
+                                ) : (
+                                    <>
+                                        <LocationInput
+                                            value={formData.location}
+                                            onChange={(val, coords) => handleInputChange({ target: { name: 'location', value: val } } as any, coords)}
+                                            placeholder="e.g. 123 Event St, Nairobi"
+                                            className={errors.location ? styles.inputError : ''}
+                                        />
+                                        {!formData.isOnline && formData.coordinates && (
+                                            <VenueMap 
+                                                lat={formData.coordinates[1]} 
+                                                lng={formData.coordinates[0]} 
+                                            />
+                                        )}
+                                    </>
+                                )}
                                 <p className={styles.errorMessage}>{errors.location}</p>
                             </div>
                         </div>
