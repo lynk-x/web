@@ -108,13 +108,13 @@ export default function AdsDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <section className={styles.quickActions}>
+            <section className={`${styles.quickActions} tour-ads-quick-actions`}>
                 <h2 className={sharedStyles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
                     <Link href="/dashboard/ads/campaigns/create" className={`${styles.actionCard} tour-create-campaign`}>
                         <span className={styles.actionLabel}>Create Campaign</span>
                     </Link>
-                    <Link href="/dashboard/ads/campaigns" className={styles.actionCard}>
+                    <Link href="/dashboard/ads/campaigns" className={`${styles.actionCard} tour-manage-campaigns`}>
                         <span className={styles.actionLabel}>Manage Campaigns</span>
                     </Link>
                     <Link href="/dashboard/ads/analytics" className={`${styles.actionCard} tour-ads-analytics`}>
@@ -123,7 +123,7 @@ export default function AdsDashboard() {
                     <Link href="/dashboard/ads/assets" className={`${styles.actionCard} tour-library`}>
                         <span className={styles.actionLabel}>Creative Library</span>
                     </Link>
-                    <Link href="/dashboard/ads/billing" className={styles.actionCard}>
+                    <Link href="/dashboard/ads/billing" className={`${styles.actionCard} tour-ads-billing`}>
                         <span className={styles.actionLabel}>Billing & Payments</span>
                     </Link>
                 </div>
@@ -136,38 +136,55 @@ export default function AdsDashboard() {
                 </section>
             )}
 
-            <ProductTour
-                storageKey={activeAccount ? `hasSeenAdsJoyride_${activeAccount.id}` : 'hasSeenAdsJoyride_guest'}
-                steps={[
-                    {
-                        target: 'body',
-                        placement: 'center',
-                        title: 'Ads Command Center',
-                        content: 'Welcome to your Advertising Dashboard. From here, you can launch campaigns that reach thousands of Lynk-X attendees across our mobile and web platforms.',
-                        skipBeacon: true,
-                    },
-                    {
-                        target: '.tour-ads-stats',
-                        title: 'Campaign Performance',
-                        content: 'Monitor your active reach, total impressions and ad engagement (clicks) in real-time.',
-                    },
-                    {
-                        target: '.tour-create-campaign',
-                        title: 'Start Advertising',
-                        content: 'Ready to grow your event? Create a new ad campaign, set your budget and choose your target audience here.',
-                    },
-                    {
-                        target: '.tour-ads-analytics',
-                        title: 'Deep Insights',
-                        content: 'Analyze your ad spend and conversion rates to optimize your marketing strategy.',
-                    },
-                    {
-                        target: '.tour-library',
-                        title: 'Creative Library',
-                        content: 'Manage your banners, videos and other creative assets for your ads.',
-                    }
-                ]}
-            />
+            {!isOrgLoading && (
+                <ProductTour
+                    storageKey={activeAccount ? `hasSeenAdsJoyride_${activeAccount.id}` : 'hasSeenAdsJoyride_guest'}
+                    steps={[
+                        {
+                            target: 'body',
+                            placement: 'center',
+                            title: 'Ads Command Center',
+                            content: 'Welcome to your Advertising Dashboard. From here, you can launch campaigns that reach thousands of Lynk-X attendees across our mobile and web platforms.',
+                            skipBeacon: true,
+                        },
+                        {
+                            target: '.tour-ads-stats',
+                            title: 'Campaign Performance',
+                            content: 'Monitor your active reach, total impressions and ad engagement (clicks) in real-time.',
+                        },
+                        {
+                            target: '.tour-ads-quick-actions',
+                            title: 'Quick Access',
+                            content: 'Jump straight into creating campaigns, managing assets or viewing detailed analytics from this panel.',
+                        },
+                        {
+                            target: '.tour-create-campaign',
+                            title: 'Start Advertising',
+                            content: 'Ready to grow your event? Create a new ad campaign, set your budget and choose your target audience here.',
+                        },
+                        {
+                            target: '.tour-manage-campaigns',
+                            title: 'Manage Campaigns',
+                            content: 'Monitor your existing campaigns, pause them or duplicate high-performing ones.',
+                        },
+                        {
+                            target: '.tour-ads-analytics',
+                            title: 'Deep Insights',
+                            content: 'Analyze your ad spend and conversion rates to optimize your marketing strategy.',
+                        },
+                        {
+                            target: '.tour-library',
+                            title: 'Creative Library',
+                            content: 'Manage your banners, videos and other creative assets for your ads.',
+                        },
+                        {
+                            target: '.tour-ads-billing',
+                            title: 'Billing & Funds',
+                            content: 'Add funds to your account, manage payment methods and view invoices.',
+                        }
+                    ]}
+                />
+            )}
 
         </div>
     );

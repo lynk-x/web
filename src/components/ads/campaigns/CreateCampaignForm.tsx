@@ -73,7 +73,7 @@ export default function CreateCampaignForm({
 }: CreateCampaignFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
-    const { activeAccount } = useOrganization();
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
     // ── UI State ──────────────────────────────────────────────────────────────
@@ -1231,48 +1231,50 @@ export default function CreateCampaignForm({
                         </div>
                     </div>
                 </div>
-            <ProductTour
-                storageKey={activeAccount?.id ? `hasSeenAdsFormJoyride_${activeAccount.id}` : 'hasSeenAdsFormJoyride_guest'}
-                steps={[
-                    {
-                        target: 'body',
-                        placement: 'center',
-                        title: isEditing ? 'Edit Your Campaign' : 'Create an Ad Campaign',
-                        content: 'Welcome to the Ads Dashboard! Let\'s walk through creating a high-performing campaign to boost your event\'s visibility.',
-                        skipBeacon: true,
-                    },
-                    {
-                        target: '.tour-ads-form-tabs',
-                        title: 'Campaign Sections',
-                        content: 'We\'ve broken down the process into 4 easy steps: Basic Details, Targeting, Creatives (A/B testing), and Final Review.',
-                    },
-                    {
-                        target: '.tour-ads-pricing-hint',
-                        title: 'Transparent Pricing',
-                        content: 'See real-time estimates for impressions and clicks based on your selected ad type. We optimize for the best ROI.',
-                    },
-                    {
-                        target: '.tour-ads-tab-targeting',
-                        title: 'Precision Targeting',
-                        content: 'Reach the right audience by selecting specific regions and interests. Leave regions empty to go global!',
-                    },
-                    {
-                        target: '.tour-ads-tab-creative',
-                        title: 'A/B Testing',
-                        content: 'Add up to 3 different creative variants. Our system automatically rotates them to find the highest performing version for your audience.',
-                    },
-                    {
-                        target: '.tour-ads-preview-panel',
-                        title: 'Real-time Preview',
-                        content: 'See exactly how your ad will appear to users in the Lynk-X mobile app. Interact with the "Learn More" button to test your destination URL.',
-                    },
-                    {
-                        target: '.tour-ads-form-actions',
-                        title: 'Launch When Ready',
-                        content: 'Once you\'re happy with your targeting and visuals, click "Launch Campaign". Our team will review it within 24 hours.',
-                    }
-                ]}
-            />
+            {!isOrgLoading && (
+                <ProductTour
+                    storageKey={activeAccount?.id ? `hasSeenAdsFormJoyride_${activeAccount.id}` : 'hasSeenAdsFormJoyride_guest'}
+                    steps={[
+                        {
+                            target: 'body',
+                            placement: 'center',
+                            title: isEditing ? 'Edit Your Campaign' : 'Create an Ad Campaign',
+                            content: 'Welcome to the Ads Dashboard! Let\'s walk through creating a high-performing campaign to boost your event\'s visibility.',
+                            skipBeacon: true,
+                        },
+                        {
+                            target: '.tour-ads-form-tabs',
+                            title: 'Campaign Sections',
+                            content: 'We\'ve broken down the process into 4 easy steps: Basic Details, Targeting, Creatives (A/B testing), and Final Review.',
+                        },
+                        {
+                            target: '.tour-ads-pricing-hint',
+                            title: 'Transparent Pricing',
+                            content: 'See real-time estimates for impressions and clicks based on your selected ad type. We optimize for the best ROI.',
+                        },
+                        {
+                            target: '.tour-ads-tab-targeting',
+                            title: 'Precision Targeting',
+                            content: 'Reach the right audience by selecting specific regions and interests. Leave regions empty to go global!',
+                        },
+                        {
+                            target: '.tour-ads-tab-creative',
+                            title: 'A/B Testing',
+                            content: 'Add up to 3 different creative variants. Our system automatically rotates them to find the highest performing version for your audience.',
+                        },
+                        {
+                            target: '.tour-ads-preview-panel',
+                            title: 'Real-time Preview',
+                            content: 'See exactly how your ad will appear to users in the Lynk-X mobile app. Interact with the "Learn More" button to test your destination URL.',
+                        },
+                        {
+                            target: '.tour-ads-form-actions',
+                            title: 'Launch When Ready',
+                            content: 'Once you\'re happy with your targeting and visuals, click "Launch Campaign". Our team will review it within 24 hours.',
+                        }
+                    ]}
+                />
+            )}
         </>
     );
 }
