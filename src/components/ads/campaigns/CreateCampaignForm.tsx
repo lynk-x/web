@@ -147,7 +147,7 @@ export default function CreateCampaignForm({
                 .select('name')
                 .eq('is_active', true)
                 .order('use_count', { ascending: false })
-                .limit(12);
+                .limit(30);
             if (tData) setTagSuggestions(tData.map(t => t.name));
         };
         fetchTags();
@@ -254,6 +254,49 @@ export default function CreateCampaignForm({
             return () => window.removeEventListener('beforeunload', handleBeforeUnload);
         }
     }, [formData, onDirtyChange, isEditing, defaultData]);
+
+    /**
+     * Live validation for campaign dates.
+     */
+    useEffect(() => {
+        const nextErrors = { ...errors };
+        let hasChanges = false;
+
+        if (formData.start_at) {
+            const start = new Date(formData.start_at);
+            const now = new Date();
+            
+            // Check 1: Start date in the past
+            if (start < now && !isEditing) {
+                if (nextErrors.start_at !== 'Start date cannot be in the past') {
+                    nextErrors.start_at = 'Start date cannot be in the past';
+                    hasChanges = true;
+                }
+            } else if (nextErrors.start_at === 'Start date cannot be in the past') {
+                delete nextErrors.start_at;
+                hasChanges = true;
+            }
+
+            // Check 2: End date vs Start date
+            if (formData.end_at) {
+                const end = new Date(formData.end_at);
+                
+                if (end <= start) {
+                    if (nextErrors.end_at !== 'End date must be after start date') {
+                        nextErrors.end_at = 'End date must be after start date';
+                        hasChanges = true;
+                    }
+                } else if (nextErrors.end_at === 'End date must be after start date') {
+                    delete nextErrors.end_at;
+                    hasChanges = true;
+                }
+            }
+        }
+
+        if (hasChanges) {
+            setErrors(nextErrors);
+        }
+    }, [formData.start_at, formData.end_at, isEditing]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -414,10 +457,6 @@ export default function CreateCampaignForm({
 
             if (!formData.start_at) newErrors.start_at = 'Start date is required.';
             if (!formData.end_at) newErrors.end_at = 'End date is required.';
-            
-            if (formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at)) {
-                newErrors.end_at = 'End date must be after start date.';
-            }
         }
 
         if (tab === 'targeting') {
@@ -475,9 +514,6 @@ export default function CreateCampaignForm({
 
         if (!formData.start_at) newErrors.start_at = 'Start date is required.';
         if (!formData.end_at) newErrors.end_at = 'End date is required.';
-        if (formData.start_at && formData.end_at && new Date(formData.end_at) <= new Date(formData.start_at)) {
-            newErrors.end_at = 'End date must be after start date.';
-        }
 
         const primaryCreative = formData.creatives[0];
         if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Ad headline is required.';

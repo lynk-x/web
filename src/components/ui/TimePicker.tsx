@@ -23,6 +23,9 @@ export const TimePicker: React.FC<TimePickerProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const hourScrollRef = useRef<HTMLDivElement>(null);
+    const minuteScrollRef = useRef<HTMLDivElement>(null);
+    const periodScrollRef = useRef<HTMLDivElement>(null);
     
     // Parse current value (always in 24h format HH:mm)
     const [hStr, mStr] = (value || "12:00").split(':');
@@ -43,6 +46,23 @@ export const TimePicker: React.FC<TimePickerProps> = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Scroll to selected values when opened
+    useEffect(() => {
+        if (isOpen) {
+            // Short delay to ensure DOM is rendered
+            const timer = setTimeout(() => {
+                const hourEl = hourScrollRef.current?.querySelector(`.${styles.selected}`);
+                const minuteEl = minuteScrollRef.current?.querySelector(`.${styles.selected}`);
+                const periodEl = periodScrollRef.current?.querySelector(`.${styles.selected}`);
+
+                hourEl?.scrollIntoView({ block: 'center', behavior: 'auto' });
+                minuteEl?.scrollIntoView({ block: 'center', behavior: 'auto' });
+                periodEl?.scrollIntoView({ block: 'center', behavior: 'auto' });
+            }, 10);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
 
     const hours = Array.from({ length: 12 }, (_, i) => i + 1);
     const minutes = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
@@ -79,9 +99,10 @@ export const TimePicker: React.FC<TimePickerProps> = ({
 
             {isOpen && (
                 <div className={styles.dropdown}>
+                    <div className={styles.selectionHighlight} />
+                    
                     <div className={styles.column}>
-                        <div className={styles.columnLabel}>Hour</div>
-                        <div className={styles.scrollArea}>
+                        <div className={styles.scrollArea} ref={hourScrollRef}>
                             {hours.map(hour => (
                                 <div 
                                     key={hour} 
@@ -97,8 +118,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                     <div className={styles.separator}>:</div>
 
                     <div className={styles.column}>
-                        <div className={styles.columnLabel}>Min</div>
-                        <div className={styles.scrollArea}>
+                        <div className={styles.scrollArea} ref={minuteScrollRef}>
                             {minutes.map(minute => (
                                 <div 
                                     key={minute} 
@@ -112,16 +132,12 @@ export const TimePicker: React.FC<TimePickerProps> = ({
                     </div>
 
                     <div className={styles.column}>
-                        <div className={styles.columnLabel}>Period</div>
-                        <div className={styles.scrollArea}>
+                        <div className={styles.scrollArea} ref={periodScrollRef}>
                             {periods.map(period => (
                                 <div 
                                     key={period} 
                                     className={`${styles.option} ${(period === 'PM' && isPm) || (period === 'AM' && !isPm) ? styles.selected : ''}`}
-                                    onClick={() => {
-                                        updateTime(h, m, period === 'PM');
-                                        setIsOpen(false);
-                                    }}
+                                    onClick={() => updateTime(h, m, period === 'PM')}
                                 >
                                     {period}
                                 </div>

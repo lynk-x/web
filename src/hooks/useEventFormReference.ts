@@ -100,7 +100,7 @@ export function useEventFormReference({
         return combined
             .filter(name => !selectedTags.includes(name))         // hide already-selected
             .filter(name => !tagInput || name.toLowerCase().includes(tagInput.toLowerCase()))
-            .slice(0, 15);
+            .slice(0, 30);
     }, [tagSuggestions, categoryTags, selectedCategory, tagInput, selectedTags]);
 
     return {

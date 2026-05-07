@@ -215,6 +215,25 @@
     border-color: var(--color-brand-primary);
 }
 
+.inputIconRight {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-utility-primaryText);
+    opacity: 0.4;
+    pointer-events: none;
+    transition: all 0.2s;
+}
+
+.tagInputWrapper:focus-within .inputIconRight {
+    opacity: 0.8;
+    color: var(--color-brand-primary);
+}
+
 .textarea {
     min-height: 100px;
     resize: vertical;

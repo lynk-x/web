@@ -8,7 +8,7 @@ interface Suggestion {
     id: string;
     text: string;
     place_name: string;
-    center: [number, number];
+    place_id: string;
 }
 
 interface LocationInputProps {
@@ -20,8 +20,8 @@ interface LocationInputProps {
 }
 
 /**
- * LocationInput — A premium address autocomplete component that securely proxies 
- * Mapbox Geocoding requests through a Supabase Edge Function.
+ * LocationInput — A premium address autocomplete component using Google Places API
+ * proxied through Supabase Edge Functions.
  */
 export const LocationInput: React.FC<LocationInputProps> = ({
     value,
@@ -39,28 +39,17 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     const supabase = createClient();
 
     // ── PROXIMITY BIASING ───────────────────────────────────────────────────
-    /**
-     * Try to get coordinates for proximity biasing without "nudging" the user.
-     * We check if permission is already granted. If not, we fallback to 
-     * IP-based or regional defaults.
-     */
     useEffect(() => {
         if (!("geolocation" in navigator)) return;
-
-        // Check permission state first to avoid the intrusive browser prompt
         navigator.permissions.query({ name: 'geolocation' }).then((result) => {
             if (result.state === 'granted') {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => setProximity([pos.coords.longitude, pos.coords.latitude]),
-                    () => {}, // Silent fail
+                    () => {},
                     { timeout: 5000 }
                 );
             }
         });
-
-        // Optional: Add IP-based lookup here if a service is available
-        // For now, we use a regional default (e.g. Nairobi) if no other info exists
-        // as a secondary weighting hint in the Edge Function.
     }, []);
 
     // Sync external value
@@ -79,7 +68,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Debounced search logic
+    // Debounced search logic (Google Autocomplete Predictions)
     const fetchSuggestions = useCallback(async (query: string) => {
         if (query.length < 3) {
             setSuggestions([]);
@@ -116,10 +105,27 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         return () => clearTimeout(timer);
     }, [inputValue, value, isOpen, fetchSuggestions]);
 
-    const handleSelect = (suggestion: Suggestion) => {
+    const handleSelect = async (suggestion: Suggestion) => {
         setInputValue(suggestion.place_name);
-        onChange(suggestion.place_name, suggestion.center);
-        setIsOpen(false);
+        setIsLoading(true);
+        
+        try {
+            // Fetch Place Details to get coordinates (lng, lat)
+            const { data, error } = await supabase.functions.invoke('address-autocomplete', {
+                body: { place_id: suggestion.place_id }
+            });
+
+            if (error) throw error;
+
+            onChange(data.place_name || suggestion.place_name, data.center);
+        } catch (err) {
+            console.error('Details fetch error:', err);
+            // Fallback: just use the name without coordinates
+            onChange(suggestion.place_name);
+        } finally {
+            setIsLoading(false);
+            setIsOpen(false);
+        }
     };
 
     return (
@@ -129,11 +135,20 @@ export const LocationInput: React.FC<LocationInputProps> = ({
                 className={styles.input}
                 value={inputValue}
                 onChange={(e) => {
-                    setInputValue(e.target.value);
+                    const newValue = e.target.value;
+                    setInputValue(newValue);
                     setIsOpen(true);
-                    if (!e.target.value) {
-                        onChange('', undefined);
+                    
+                    // Allow raw text input to be accepted by the parent form immediately
+                    onChange(newValue, undefined);
+                    
+                    if (!newValue) {
                         setSuggestions([]);
+                    }
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        setIsOpen(false);
                     }
                 }}
                 placeholder={placeholder}
@@ -170,3 +185,4 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         </div>
     );
 };
+

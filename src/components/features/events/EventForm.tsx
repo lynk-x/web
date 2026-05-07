@@ -324,8 +324,14 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 value={tagInput}
                                                 onChange={(e) => setTagInput(e.target.value)}
                                                 onKeyDown={handleTagKeyDown}
-                                                style={{ width: '100%' }}
+                                                style={{ width: '100%', paddingRight: '40px' }}
                                             />
+                                            <div className={styles.inputIconRight}>
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="11" cy="11" r="8"></circle>
+                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                                </svg>
+                                            </div>
                                         </div>
                                     </div>
 

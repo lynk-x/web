@@ -87,12 +87,6 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
         if (!formData.endDate) next.endDate = 'End date is required';
         if (!formData.endTime) next.endTime = 'End time is required';
 
-        if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
-            const start = new Date(`${formData.startDate}T${formData.startTime}`);
-            const end = new Date(`${formData.endDate}T${formData.endTime}`);
-            if (end < start) next.endDate = 'End date/time cannot be before start date/time';
-        }
-
         if (!formData.isOnline && !formData.location.trim()) {
             next.location = 'Location is required for in-person events';
         }
@@ -109,26 +103,47 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
 
     /**
      * Live validation for date/time consistency.
+     * Detects "abnormal" datetime configurations during the input phase.
      */
     useEffect(() => {
-        if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
+        const nextErrors = { ...errors };
+        let hasChanges = false;
+
+        if (formData.startDate && formData.startTime) {
             const start = new Date(`${formData.startDate}T${formData.startTime}`);
-            const end = new Date(`${formData.endDate}T${formData.endTime}`);
+            const now = new Date();
             
-            if (end < start) {
-                setErrors(prev => ({ 
-                    ...prev, 
-                    endDate: 'End date/time cannot be before start date/time' 
-                }));
-            } else if (errors.endDate === 'End date/time cannot be before start date/time') {
-                setErrors(prev => {
-                    const next = { ...prev };
-                    delete next.endDate;
-                    return next;
-                });
+            // Check 1: Start date in the past
+            if (start < now && !isEditMode) {
+                if (nextErrors.startDate !== 'Start date cannot be in the past') {
+                    nextErrors.startDate = 'Start date cannot be in the past';
+                    hasChanges = true;
+                }
+            } else if (nextErrors.startDate === 'Start date cannot be in the past') {
+                delete nextErrors.startDate;
+                hasChanges = true;
+            }
+
+            // Check 2: End date vs Start date
+            if (formData.endDate && formData.endTime) {
+                const end = new Date(`${formData.endDate}T${formData.endTime}`);
+                
+                if (end < start) {
+                    if (nextErrors.endDate !== 'End date/time cannot be before start date/time') {
+                        nextErrors.endDate = 'End date/time cannot be before start date/time';
+                        hasChanges = true;
+                    }
+                } else if (nextErrors.endDate === 'End date/time cannot be before start date/time') {
+                    delete nextErrors.endDate;
+                    hasChanges = true;
+                }
             }
         }
-    }, [formData.startDate, formData.endDate, formData.startTime, formData.endTime, errors.endDate]);
+
+        if (hasChanges) {
+            setErrors(nextErrors);
+        }
+    }, [formData.startDate, formData.endDate, formData.startTime, formData.endTime, isEditMode, setErrors]);
 
     /**
      * validateTab — validates only the fields on the current tab.
@@ -165,12 +180,6 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
             if (!formData.startTime) setError('startTime', 'Start time is required'); else clearError('startTime');
             if (!formData.endDate) setError('endDate', 'End date is required'); else clearError('endDate');
             if (!formData.endTime) setError('endTime', 'End time is required'); else clearError('endTime');
-
-            if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
-                const start = new Date(`${formData.startDate}T${formData.startTime}`);
-                const end = new Date(`${formData.endDate}T${formData.endTime}`);
-                if (end < start) setError('endDate', 'End date/time cannot be before start date/time');
-            }
         }
 
         if (tab === 'place') {
