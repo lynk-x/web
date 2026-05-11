@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -16,6 +16,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
 import ProductTour from '@/components/dashboard/ProductTour';
+import type { AccountWallet } from '@/types/organize';
 
 function SettingsContent() {
     const { showToast } = useToast();
@@ -69,7 +70,7 @@ function SettingsContent() {
         registration_number: '',
         billing_address: ''
     });
-    const [wallets, setWallets] = useState<any[]>([]);
+    const [wallets, setWallets] = useState<AccountWallet[]>([]);
     const [initialFormData, setInitialFormData] = useState(formData);
 
     const fetchData = useCallback(async () => {
@@ -97,7 +98,7 @@ function SettingsContent() {
 
             setFormData(newValues);
             setInitialFormData(newValues);
-            setWallets((settings?.wallets || []).map((w: any) => ({ ...w, id: w.currency })));
+            setWallets((settings?.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
         } catch (err) {
             showToast(getErrorMessage(err) || 'Failed to sync organization settings.', 'error');
         } finally {
@@ -290,7 +291,7 @@ function SettingsContent() {
 
                         <div className={adminStyles.pageCard}>
                             <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
-                            <WalletsTable data={wallets} isLoading={isLoadingWallets} />
+                            <WalletsTable data={wallets} isLoading={isLoading} />
                         </div>
                     </div>
                 )}

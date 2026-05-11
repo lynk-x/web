@@ -54,6 +54,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     .from('wallet_top_ups')
                     .select('id, amount, status, created_at, currency, provider_ref, metadata')
                     .eq('id', id)
+                    .eq('account_id', activeAccount?.id)
                     .maybeSingle();
 
                 if (topUp) {
@@ -84,11 +85,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     return;
                 }
 
-                // Fallback: try transactions table
+                // Fallback: try transactions table (filter by recipient_account_id)
                 const { data, error } = await supabase
                     .from('transactions')
                     .select('id, amount, status, created_at, currency, reason, metadata')
                     .eq('id', id)
+                    .eq('recipient_account_id', activeAccount?.id)
                     .maybeSingle();
 
                 if (error || !data) {

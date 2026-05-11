@@ -89,7 +89,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
         },
         {
             header: 'Date',
-            render: (report) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{new Date(report.date).toLocaleDateString()}</div>,
+            render: (report) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{new Date(report.createdAt).toLocaleDateString()}</div>,
         },
         {
             header: 'Status',

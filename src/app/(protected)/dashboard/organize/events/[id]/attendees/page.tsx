@@ -128,7 +128,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 onSearchChange={setSearchTerm}
             >
                 <div className={adminStyles.filterGroup}>
-                    {['all', 'valid', 'used', 'cancelled', 'transferred'].map(status => (
+                    {['all', 'valid', 'used', 'cancelled', 'transferred', 'expired'].map(status => (
                         <button
                             key={status}
                             className={`${adminStyles.chip} ${statusFilter === status ? adminStyles.chipActive : ''}`}

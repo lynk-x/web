@@ -234,17 +234,20 @@ export default function CampaignsPage() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <FilterGroup
-                    options={[
-                        { value: 'all', label: 'All' },
-                        { value: 'active', label: 'Active' },
-                        { value: 'pending_approval', label: 'Pending' },
-                        { value: 'paused', label: 'Paused' },
-                        { value: 'draft', label: 'Draft' },
-                    ]}
-                    currentValue={statusFilter}
-                    onChange={setStatusFilter}
-                />
+<FilterGroup
+                     options={[
+                         { value: 'all', label: 'All' },
+                         { value: 'active', label: 'Active' },
+                         { value: 'pending_approval', label: 'Pending' },
+                         { value: 'paused', label: 'Paused' },
+                         { value: 'draft', label: 'Draft' },
+                         { value: 'completed', label: 'Completed' },
+                         { value: 'rejected', label: 'Rejected' },
+                         { value: 'scheduled', label: 'Scheduled' },
+                     ]}
+                     currentValue={statusFilter}
+                     onChange={setStatusFilter}
+                 />
                 </TableToolbar>
             </div>
 

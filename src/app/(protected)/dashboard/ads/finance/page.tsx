@@ -150,28 +150,23 @@ export default function AdsBillingPage() {
                 </div>
             </div>
 
-            <ProductTour
-                storageKey={activeAccount ? `hasSeenAdsBillingJoyride_${activeAccount.id}` : 'hasSeenAdsBillingJoyride_guest'}
-                steps={[
-                    {
-                        target: 'body',
-                        placement: 'center',
-                        title: 'Billing & Payments',
-                        content: 'Manage your organization\'s payment methods and track your advertising spend history.',
-                        skipBeacon: true,
-                    },
-                    {
-                        target: '.tour-ads-billing-methods',
-                        title: 'Funding Your Campaigns',
-                        content: 'Securely add or update your credit cards and mobile money accounts to ensure uninterrupted ad delivery.',
-                    },
-                    {
-                        target: '.tour-ads-billing-history',
-                        title: 'Invoicing & Receipts',
-                        content: 'Download historical invoices and track every transaction related to your ad campaigns.',
-                    }
-                ]}
-            />
+<ProductTour
+                 storageKey={activeAccount ? `hasSeenAdsBillingJoyride_${activeAccount.id}` : 'hasSeenAdsBillingJoyride_guest'}
+                 steps={[
+                     {
+                         target: 'body',
+                         placement: 'center',
+                         title: 'Billing & Payments',
+                         content: 'Manage your organization\'s payment methods and track your advertising spend history.',
+                         skipBeacon: true,
+                     },
+                     {
+                         target: '.tour-billing-history',
+                         title: 'Invoicing & Receipts',
+                         content: 'Download historical invoices and track every transaction related to your ad campaigns.',
+                     }
+                 ]}
+             />
         </div>
     );
 }

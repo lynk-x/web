@@ -107,7 +107,7 @@ export default function OrganizerEventsPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedIds(new Set());
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, statusFilter, categoryFilter]);
 
     // Selection Logic
     const handleSelect = (id: string) => {

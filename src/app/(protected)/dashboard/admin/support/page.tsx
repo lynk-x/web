@@ -258,12 +258,12 @@ function SupportContent() {
 
             {activeTab === 'moderation' && (
                 <ReportTable
-                    reports={reports.filter(r =>
-                        (moderationFilter === 'all' || r.status === moderationFilter) &&
-                        (r.title.toLowerCase().includes(searchTerm.toLowerCase()) || r.reporter.toLowerCase().includes(searchTerm.toLowerCase()))
-                    )}
+                    reports={reports}
                     isLoading={isLoading}
                     getActions={getModerationActions}
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(totalCount / itemsPerPage)}
+                    onPageChange={setCurrentPage}
                 />
             )}
 

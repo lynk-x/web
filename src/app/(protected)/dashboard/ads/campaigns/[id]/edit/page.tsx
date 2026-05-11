@@ -5,24 +5,26 @@ import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/Cre
 import BackButton from '@/components/shared/BackButton';
 import styles from '../../page.module.css';
 import { createClient } from '@/utils/supabase/client';
+import { useOrganization } from '@/context/OrganizationContext';
 
 export default function EditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const supabase = useMemo(() => createClient(), []);
+    const { activeAccount } = useOrganization();
 
     const [campaign, setCampaign] = useState<CampaignData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
-        /**
-         * Fetches the campaign and its primary ad asset from Supabase.
-         * Maps DB columns to the CampaignData shape expected by CreateCampaignForm.
-         */
         const fetchCampaign = async () => {
+            if (!activeAccount) {
+                setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             const { data, error } = await supabase
-                .from('ad_campaign_campaigns_with_assets') // or just ad_campaigns
+                .from('ad_campaign_campaigns_with_assets')
                 .select(`
                     *,
                     ad_media (call_to_action, url, is_primary, media_type),
@@ -30,10 +32,10 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                     campaign_tags (tags (name))
                 `)
                 .eq('id', id)
+                .eq('account_id', activeAccount.id)
                 .single();
 
             if (error || !data) {
-                // Try fallback if view doesn't exist yet, but using raw ad_campaigns for now
                 const { data: rawData, error: rawError } = await supabase
                     .from('ad_campaigns')
                     .select(`
@@ -43,6 +45,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                         campaign_tags (tags (name))
                     `)
                     .eq('id', id)
+                    .eq('account_id', activeAccount.id)
                     .single();
 
                 if (rawError || !rawData) {
@@ -50,8 +53,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                     setIsLoading(false);
                     return;
                 }
-                
-                // Process rawData
+
                 const assets = (rawData.ad_media as any[]) || [];
                 const regions = (rawData.ad_campaign_regions as any[]) || [];
                 const tags = (rawData.campaign_tags as any[]) || [];
@@ -114,7 +116,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
         };
 
         fetchCampaign();
-    }, [id, supabase]);
+    }, [id, supabase, activeAccount]);
 
     if (isLoading) {
         return (

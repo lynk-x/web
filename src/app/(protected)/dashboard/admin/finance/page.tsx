@@ -599,6 +599,9 @@ function FinanceContent() {
                     setSelectedTxIds(next);
                 }}
                 onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
             />
         );
     };

@@ -67,15 +67,16 @@ export default function CheckInLogsPage() {
                 timestamp: row.redeemed_at
                     ? new Date(row.redeemed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                     : '—'
-            }));
+            });
 
             setLogs(mappedLogs);
 
             const scanned = mappedLogs.filter(l => l.status === 'used').length;
             const rejected = mappedLogs.filter(l => l.status === 'rejected').length;
+            const valid = mappedLogs.filter(l => l.status === 'valid').length;
             setStats({
                 scanned,
-                remaining: mappedLogs.length - scanned,
+                remaining: valid,
                 rejected,
             });
 

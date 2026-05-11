@@ -135,14 +135,17 @@ function DemographicTab() {
             <div className={styles.statsGrid}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Location Heatmap</h3>
-                    {(data?.geo || []).slice(0, 8).map((r: any) => (
-                        <BarRow 
-                            key={`${r.country}-${r.account_role}`} 
-                            label={`${getCountryName(r.country)} (${r.account_role})`} 
-                            count={r.user_count} 
-                            pct={(r.user_count / Math.max(...data.geo.map((g: any) => g.user_count))) * 100} 
-                        />
-                    ))}
+                    {(() => {
+                        const geoMax = Math.max(...(data?.geo || []).map((g: any) => g.user_count), 1);
+                        return (data?.geo || []).slice(0, 8).map((r: any) => (
+                            <BarRow 
+                                key={`${r.country}-${r.account_role}`} 
+                                label={`${getCountryName(r.country)} (${r.account_role})`} 
+                                count={r.user_count} 
+                                pct={(r.user_count / geoMax) * 100} 
+                            />
+                        ));
+                    })()}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Age Buckets</h3>

@@ -59,16 +59,23 @@ export default function EditEventPage() {
 
                 const isPaid = event.ticket_tiers && event.ticket_tiers.length > 0;
 
-                const mappedTickets: OrganizerEventTicket[] = (event.ticket_tiers || []).map((t: any) => ({
-                    id: t.id,
-                    display_name: t.display_name,
-                    price: t.price.toString(),
-                    capacity: t.capacity.toString(),
-                    description: t.description || '',
-                    saleStart: t.sales_start_at ? formatDate(new Date(t.sales_start_at)) : '',
-                    saleEnd: t.sales_end_at ? formatDate(new Date(t.sales_end_at)) : '',
-                    maxPerOrder: t.max_per_user?.toString() || ''
-                }));
+                const mappedTickets: OrganizerEventTicket[] = (event.ticket_tiers || []).map((t: any) => {
+                    const tz = event.timezone || 'UTC';
+                    const formatDateLocal = (d: Date) => {
+                        const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d).split('-');
+                        return `${parts[0]}-${parts[1]}-${parts[2]}`;
+                    };
+                    return {
+                        id: t.id,
+                        display_name: t.display_name,
+                        price: t.price.toString(),
+                        capacity: t.capacity.toString(),
+                        description: t.description || '',
+                        saleStart: t.sales_start_at ? formatDateLocal(new Date(t.sales_start_at)) : '',
+                        saleEnd: t.sales_end_at ? formatDateLocal(new Date(t.sales_end_at)) : '',
+                        maxPerOrder: t.max_per_user?.toString() || ''
+                    };
+                });
 
                 const mappedTags = (event.event_tags || []).map((et: any) => et.tags?.name).filter(Boolean);
 
@@ -201,14 +208,14 @@ export default function EditEventPage() {
             // Upsert remaining/new tickets
             if (data.tickets.length > 0) {
                 const ticketsToUpsert = data.tickets.map((t) => ({
-                    ...(t.id ? { id: t.id } : {}), // only spread ID if it exists
+                    ...(t.id ? { id: t.id } : {}),
                     event_id: eventId,
                     display_name: t.display_name,
                     price: data.isPaid ? parseFloat(t.price || '0') : 0,
                     capacity: parseInt(t.capacity || '0'),
                     max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                    sales_start_at: t.saleStart ? toUtcIso(t.saleStart, '00:00', data.timezone) : startDateTime,
+                    sales_end_at: t.saleEnd ? toUtcIso(t.saleEnd, '23:59', data.timezone) : endDateTime,
                     description: t.description || null
                 }));
 

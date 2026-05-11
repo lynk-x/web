@@ -77,7 +77,9 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
         }
     }, [supabase, showToast, searchQuery]);
 
-    useEffect(() => { fetchBlocks(); }, [fetchBlocks]);
+    useEffect(() => { fetchBlocks(); }, [fetchBlocks, searchQuery]);
+
+    useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
     /** Removes a block — only for admin moderation use (e.g. confirmed block-evasion). */
     const handleRemoveBlock = async (block: UserBlock) => {

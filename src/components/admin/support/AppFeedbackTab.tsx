@@ -77,6 +77,7 @@ export default function AppFeedbackTab({
                 p_params: {
                     search: searchQuery,
                     status: statusFilter,
+                    category: categoryFilter,
                     limit: itemsPerPage,
                     offset: offset
                 }

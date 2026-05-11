@@ -281,8 +281,17 @@ function CampaignsContent() {
         showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
 
         try {
+            const moderationIds = campaigns
+                .filter(c => selectedCampaignIds.has(c.id) && c.moderationId)
+                .map(c => c.moderationId);
+
+            if (moderationIds.length === 0) {
+                showToast('No campaigns with moderation records found.', 'error');
+                return;
+            }
+
             const { error } = await supabase.rpc('bulk_moderate_items', {
-                p_moderation_ids: Array.from(selectedCampaignIds),
+                p_moderation_ids: moderationIds,
                 p_status: newStatus === 'active' ? 'approved' : 'rejected',
                 p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
             });
@@ -397,15 +406,16 @@ function CampaignsContent() {
                         onSearchChange={setSearchTerm}
                     >
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <StatusFilterChips
-                                options={[
-                                    { value: 'all', label: 'All Status' },
-                                    { value: 'active', label: 'Active' },
-                                    { value: 'pending_approval', label: 'Pending' },
-                                    { value: 'paused', label: 'Paused' },
-                                    { value: 'rejected', label: 'Rejected' },
-                                    { value: 'completed', label: 'Completed' },
-                                ]}
+<StatusFilterChips
+                                 options={[
+                                     { value: 'all', label: 'All Status' },
+                                     { value: 'active', label: 'Active' },
+                                     { value: 'pending_approval', label: 'Pending' },
+                                     { value: 'paused', label: 'Paused' },
+                                     { value: 'rejected', label: 'Rejected' },
+                                     { value: 'completed', label: 'Completed' },
+                                     { value: 'scheduled', label: 'Scheduled' },
+                                 ]}
                                 currentValue={statusFilter}
                                 onChange={setStatusFilter}
                             />
