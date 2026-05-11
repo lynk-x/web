@@ -75,7 +75,7 @@ function AdminInvoiceContent() {
                     return;
                 }
 
-                const d = data as {
+                interface SupabaseTx {
                     id: string;
                     amount: number;
                     status: string;
@@ -83,22 +83,32 @@ function AdminInvoiceContent() {
                     currency: string;
                     reason: string;
                     reference: string;
-                    event: { title: string } | null;
-                    initiator: { full_name: string; user_name: string } | null;
-                    recipient_account: { display_name: string } | null;
-                };
+                    event: { title: string }[] | { title: string } | null;
+                    initiator: { full_name: string; user_name: string }[] | { full_name: string; user_name: string } | null;
+                    recipient_account: { display_name: string }[] | { display_name: string } | null;
+                }
+                const d = data as unknown as SupabaseTx;
+                
+                // Helper to get first item if array, or the object itself
+                const getFirst = <T,>(val: T | T[] | null | undefined): T | null | undefined => 
+                    Array.isArray(val) ? val[0] : (val as T | null | undefined);
+                
+                const event = getFirst(d.event);
+                const initiator = getFirst(d.initiator);
+                const recipientAccount = getFirst(d.recipient_account);
+
                 setTx({
                     id: d.id,
                     date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                    description: d.description || d.reason?.replace(/_/g, ' ') || 'Platform Transaction',
+                    description: d.reason?.replace(/_/g, ' ') || 'Platform Transaction',
                     amount: Number(d.amount),
                     currency: d.currency || 'USD',
                     type: d.reason || 'transaction',
                     status: d.status,
                     referenceId: d.reference || `TXN-${d.id.slice(0, 8).toUpperCase()}`,
-                    senderName: d.initiator?.full_name || d.initiator?.user_name || 'Platform',
-                    recipientName: d.recipient_account?.display_name || 'Platform',
-                    eventTitle: d.event?.title || '',
+                    senderName: initiator?.full_name || initiator?.user_name || 'Platform',
+                    recipientName: recipientAccount?.display_name || 'Platform',
+                    eventTitle: event?.title || '',
                 });
             } catch (err: unknown) {
                 showToast(getErrorMessage(err) || 'Failed to load invoice', 'error');
