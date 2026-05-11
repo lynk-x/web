@@ -112,7 +112,7 @@ const CheckoutView: React.FC = () => {
                 if (providers && providers.length > 0) {
                     setAvailableProviders(providers);
                     // Default to first available, but prefer mpesa if it exists
-                    const hasMpesa = providers.some(p => p.provider_name === 'mpesa');
+                    const hasMpesa = (providers as any[]).some(p => p.provider_name === 'mpesa');
                     setPaymentMethod(hasMpesa ? 'mpesa' : providers[0].provider_name);
                 }
             } catch (err) {
