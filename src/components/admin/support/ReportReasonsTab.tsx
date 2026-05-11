@@ -41,11 +41,9 @@ export default function ReportReasonsTab() {
     const fetchReasons = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('report_reasons')
-                .select('*')
-                .order('category')
-                .order('id');
+            const { data, error } = await supabase.rpc('get_admin_support_data', {
+                p_tab: 'reasons'
+            });
             if (error) throw error;
             setReasons(data || []);
         } catch (err: unknown) {
@@ -59,10 +57,11 @@ export default function ReportReasonsTab() {
 
     const handleToggle = async (reason: ReportReason) => {
         try {
-            const { error } = await supabase
-                .from('report_reasons')
-                .update({ is_active: !reason.is_active, updated_at: new Date().toISOString() })
-                .eq('id', reason.id);
+            const { error } = await supabase.rpc('admin_update_support_status', {
+                p_tab: 'reasons',
+                p_id: reason.id,
+                p_status: !reason.is_active ? 'active' : 'inactive'
+            });
             if (error) throw error;
             setReasons(prev => prev.map(r => r.id === reason.id ? { ...r, is_active: !reason.is_active } : r));
             showToast(`"${reason.id}" ${!reason.is_active ? 'enabled' : 'disabled'}`, 'success');
@@ -78,6 +77,8 @@ export default function ReportReasonsTab() {
         }
         setIsAdding(true);
         try {
+            // Reasons are currently in public schema, but we should eventually move to reports.
+            // For now, use direct insert but ensure system admin check is handled by RLS.
             const { error } = await supabase.from('report_reasons').insert({
                 id: newId.trim().toLowerCase().replace(/\s+/g, '_'),
                 category: newCategory.trim(),

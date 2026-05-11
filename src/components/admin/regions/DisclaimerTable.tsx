@@ -41,13 +41,9 @@ export default function DisclaimerTable() {
     const fetchDisclaimers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('disclaimers')
-                .select(`
-                    *,
-                    tags(name)
-                `)
-                .order('updated_at', { ascending: false });
+            const { data, error } = await supabase.rpc('get_admin_registry_data', {
+                p_tab: 'disclaimers'
+            });
 
             if (error) throw error;
             setDisclaimers(data || []);
@@ -64,10 +60,12 @@ export default function DisclaimerTable() {
 
     const handleToggle = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase
-                .from('disclaimers')
-                .update({ is_active: !currentValue, updated_at: new Date().toISOString() })
-                .eq('id', id);
+            const { error } = await supabase.rpc('admin_manage_registry_item', {
+                p_tab: 'disclaimers',
+                p_action: 'toggle',
+                p_id: id,
+                p_params: { is_active: !currentValue }
+            });
 
             if (error) throw error;
             setDisclaimers(prev => prev.map(d => d.id === id ? { ...d, is_active: !currentValue } : d));

@@ -77,67 +77,28 @@ export default function WalletPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const [walletsRes, topUpsRes, creditsRes, creditTxnsRes] = await Promise.all([
-                supabase
-                    .from('account_wallets')
-                    .select('reference, currency, balance, pending_balance')
-                    .eq('account_id', activeAccount.id)
-                    .order('currency'),
-                supabase
-                    .from('wallet_top_ups')
-                    .select('id, amount, currency, status, provider, created_at')
-                    .eq('account_id', activeAccount.id)
-                    .order('created_at', { ascending: false })
-                    .limit(50),
-                supabase
-                    .from('ad_credits')
-                    .select('id, currency, amount, remaining, expires_at, created_at')
-                    .eq('account_id', activeAccount.id)
-                    .is('revoked_at', null)
-                    .gt('remaining', 0)
-                    .order('expires_at', { ascending: true, nullsFirst: false }),
-                supabase
-                    .from('ad_credit_transactions')
-                    .select('id, amount, created_at, ad_credits!inner(currency, account_id), ad_campaigns(title)')
-                    .eq('ad_credits.account_id', activeAccount.id)
-                    .order('created_at', { ascending: false })
-                    .limit(30),
-            ]);
+            const { data, error } = await supabase.rpc('get_organizer_wallet_data', {
+                p_account_id: activeAccount.id
+            });
 
-            if (walletsRes.error) throw walletsRes.error;
-            if (topUpsRes.error) throw topUpsRes.error;
-            
-            // Map reference to id for UI stability
-            const mappedBalances = (walletsRes.data || []).map((b: any) => ({
-                ...b,
-                id: b.reference
-            }));
+            if (error) throw error;
 
-            setBalances(mappedBalances);
-            setTopUps(topUpsRes.data || []);
-            setAdCredits((creditsRes.data || []).map((r: any) => ({
-                id: r.id,
-                currency: r.currency,
-                amount: parseFloat(r.amount),
-                remaining: parseFloat(r.remaining),
-                expires_at: r.expires_at,
-                created_at: r.created_at,
-            })));
-            setCreditTxns((creditTxnsRes.data || []).map((r: any) => ({
-                id: r.id,
-                amount: parseFloat(r.amount),
-                created_at: r.created_at,
-                campaign_title: r.ad_campaigns?.title ?? 'Unknown Campaign',
-                currency: r.ad_credits?.currency ?? '',
-            })));
+            setBalances(data.wallets || []);
+            setTopUps(data.top_ups || []);
+            setAdCredits(data.ad_credits || []);
+            setCreditTxns(data.credit_transactions || []);
         } catch (e: unknown) {
-            showToast('Failed to load wallet data', 'error');
+            showToast(getErrorMessage(e) || 'Failed to sync wallet records.', 'error');
         } finally {
             setIsLoading(false);
         }
     }, [activeAccount, supabase, showToast]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        if (activeAccount) {
+            fetchData();
+        }
+    }, [activeAccount, fetchData]);
 
     const handleTopUp = async () => {
         const numAmount = parseFloat(amount);

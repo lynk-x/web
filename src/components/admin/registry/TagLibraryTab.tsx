@@ -53,9 +53,12 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
         setIsLoading(true);
         try {
             const [typesRes, tagsRes] = await Promise.all([
-                supabase.from('tag_types').select('*').order('id'),
-                supabase.from('tags').select('*').order('use_count', { ascending: false })
+                supabase.rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
+                supabase.rpc('get_admin_registry_data', { p_tab: 'tags' })
             ]);
+
+            if (typesRes.error) throw typesRes.error;
+            if (tagsRes.error) throw tagsRes.error;
 
             setTagTypes(typesRes.data || []);
             setTags(tagsRes.data || []);
@@ -72,10 +75,12 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
 
     const handleToggleTag = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase
-                .from('tags')
-                .update({ is_active: !currentValue, updated_at: new Date().toISOString() })
-                .eq('id', id);
+            const { error } = await supabase.rpc('admin_manage_registry_item', {
+                p_tab: 'tags',
+                p_action: 'toggle',
+                p_id: id,
+                p_params: { is_active: !currentValue }
+            });
 
             if (error) throw error;
             setTags(prev => prev.map(t => t.id === id ? { ...t, is_active: !currentValue } : t));
@@ -87,10 +92,12 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
 
     const handleToggleType = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase
-                .from('tag_types')
-                .update({ is_active: !currentValue, updated_at: new Date().toISOString() })
-                .eq('id', id);
+            const { error } = await supabase.rpc('admin_manage_registry_item', {
+                p_tab: 'tag_types',
+                p_action: 'toggle',
+                p_id: id,
+                p_params: { is_active: !currentValue }
+            });
 
             if (error) throw error;
             setTagTypes(prev => prev.map(t => t.id === id ? { ...t, is_active: !currentValue } : t));

@@ -39,7 +39,9 @@ export default function AdminInvoicePage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
+    const searchParams = useSearchParams();
     const id = params.id as string;
+    const createdAt = searchParams.get('createdAt');
 
     const [tx, setTx] = useState<TxDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -48,8 +50,8 @@ export default function AdminInvoicePage() {
         const fetchTransaction = async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase
-                    .schema('transactions')
+                const query = supabase
+                    .schema('finance')
                     .from('transactions')
                     .select(`
                         id, amount, status, created_at, currency, reason, reference,
@@ -57,8 +59,13 @@ export default function AdminInvoicePage() {
                         initiator:user_profile!initiated_by(full_name, user_name),
                         recipient_account:accounts!recipient_account_id(display_name)
                     `)
-                    .eq('id', id)
-                    .maybeSingle();
+                    .eq('id', id);
+
+                if (createdAt) {
+                    query.eq('created_at', createdAt);
+                }
+
+                const { data, error } = await query.maybeSingle();
 
                 if (error || !data) {
                     setTx(null);

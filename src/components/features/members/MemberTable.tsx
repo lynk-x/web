@@ -172,18 +172,47 @@ export default function MemberTable() {
 
     const handleRemoveMember = async (userId: string) => {
         if (!activeAccount) return;
+        if (!await confirm("Are you sure you want to remove this member's access? This action cannot be undone.")) return;
+        
         try {
-            const { error } = await supabase
-                .from('account_members')
-                .delete()
-                .eq('account_id', activeAccount.id)
-                .eq('user_id', userId);
+            const { error } = await supabase.rpc('bulk_remove_account_members', {
+                p_account_id: activeAccount.id,
+                p_user_ids: [userId]
+            });
 
             if (error) throw error;
             showToast("Member access has been permanently removed.", "success", "Member Removed");
             fetchMembers();
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || "Failed to remove member.", "error", "Error");
+        }
+    };
+
+    const handleRoleChange = async (userId: string, currentRole: string) => {
+        if (!activeAccount) return;
+        
+        const roles = ['admin', 'accountant', 'editor', 'staff', 'analyst', 'viewer'];
+        const roleLabel = roles.join(', ');
+        const newRole = window.prompt(`Enter new role for this member (${roleLabel}):`, currentRole);
+        
+        if (!newRole || newRole === currentRole) return;
+        if (!roles.includes(newRole.toLowerCase())) {
+            showToast(`Invalid role. Please choose from: ${roleLabel}`, 'error');
+            return;
+        }
+
+        try {
+            const { error } = await supabase.rpc('update_organizer_member_role', {
+                p_account_id: activeAccount.id,
+                p_user_id: userId,
+                p_new_role: newRole.toLowerCase()
+            });
+
+            if (error) throw error;
+            showToast("Member role updated successfully.", "success", "Role Updated");
+            fetchMembers();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to update role.", "error", "Error");
         }
     };
 
@@ -276,7 +305,7 @@ export default function MemberTable() {
             actions.push({
                 label: 'Change Role',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>,
-                onClick: () => showToast(`Opening role editor for ${member.name}...`, 'info') // Simple stub for future
+                onClick: () => handleRoleChange(member.userId!, member.role)
             });
             actions.push({
                 label: 'Remove Member',

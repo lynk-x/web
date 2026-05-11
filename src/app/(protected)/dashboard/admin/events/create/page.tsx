@@ -31,16 +31,16 @@ export default function AdminCreateEventPage() {
             if (file) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `${activeAccount.id}/${fileName}`; // Organize by account in bucket
+                const filePath = `events/${activeAccount.id}/${fileName}`; // Organize by account in bucket
 
                 const { error: uploadError } = await supabase.storage
-                    .from('events')
+                    .from('media')
                     .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('events')
+                    .from('media')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -60,13 +60,17 @@ export default function AdminCreateEventPage() {
                     category_id: data.category,
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
-                    location: data.location ? { name: data.location } : null,
+                    location: { name: data.location },
+                    coordinates: data.coordinates ? `POINT(${data.coordinates[0]} ${data.coordinates[1]})` : null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
+                    currency: data.currency || 'KES',
+                    media: { 
+                        thumbnail: uploadedThumbnailUrl
+                    },
                     status: 'published'
                 })
-                .select('id')
+                .select('id, created_at')
                 .single();
 
             if (eventError) throw eventError;
@@ -75,12 +79,13 @@ export default function AdminCreateEventPage() {
             if (data.isPaid && data.tickets.length > 0 && newEvent) {
                 const ticketsToInsert = data.tickets.map((t) => ({
                     event_id: newEvent.id,
+                    event_created_at: newEvent.created_at,
                     display_name: t.display_name,
                     price: parseFloat(t.price),
                     capacity: parseInt(t.capacity),
-                    max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : null,
+                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
+                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
                 }));
 
                 const { error: ticketError } = await supabase
@@ -108,6 +113,7 @@ export default function AdminCreateEventPage() {
                 if (resolvedTags) {
                     const eventTagsToInsert = resolvedTags.map(tag => ({
                         event_id: newEvent.id,
+                        event_created_at: newEvent.created_at,
                         tag_id: tag.id
                     }));
 

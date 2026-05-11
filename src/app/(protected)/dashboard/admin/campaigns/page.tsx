@@ -116,6 +116,7 @@ function CampaignsContent() {
 
             setCampaigns((data || []).map((c: any) => ({
                 id: c.id,
+                createdAt: c.created_at,
                 campaignRef: c.reference || `CAM-${c.id.slice(0, 8).toUpperCase()}`,
                 name: c.title,
                 client: c.account_name,
@@ -193,10 +194,11 @@ function CampaignsContent() {
                 const moderationId = campaign.moderationId;
                 if (!moderationId) throw new Error('Moderation record missing.');
 
-                return supabase
-                    .from('moderation')
-                    .update({ status: isFlagging ? 'flagged' : 'pending_review' })
-                    .eq('id', moderationId);
+                return supabase.rpc('moderate_item', {
+                    p_moderation_id: moderationId,
+                    p_status: isFlagging ? 'flagged' : 'pending_review',
+                    p_reason: `${isFlagging ? 'Flagged' : 'Unflagged'} via Admin Campaigns dashboard.`
+                });
             },
             {
                 loadingMessage: `${isFlagging ? 'Flagging' : 'Unflagging'} ${campaign.name}...`,
@@ -242,7 +244,8 @@ function CampaignsContent() {
                     end_at: updates.endDate,
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', campaignId);
+                .eq('id', campaignId)
+                .eq('created_at', editingCampaign?.createdAt);
 
             if (error) throw error;
 
@@ -260,8 +263,9 @@ function CampaignsContent() {
         try {
             const { error } = await supabase
                 .from('ad_campaigns')
-                .delete()
-                .eq('id', campaign.id);
+                .update({ deleted_at: new Date().toISOString() })
+                .eq('id', campaign.id)
+                .eq('created_at', campaign.createdAt);
 
             if (error) throw error;
 
@@ -299,10 +303,12 @@ function CampaignsContent() {
         showToast(`Deleting ${selectedCampaignIds.size} campaigns...`, 'info');
 
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .delete()
-                .in('id', Array.from(selectedCampaignIds));
+            const { error } = await supabase.rpc('bulk_delete_campaigns', {
+                p_ids: Array.from(selectedCampaignIds),
+                p_created_ats: campaigns
+                    .filter(c => selectedCampaignIds.has(c.id))
+                    .map(c => c.createdAt)
+            });
 
             if (error) throw error;
 
@@ -356,14 +362,16 @@ function CampaignsContent() {
                 <>
                     <div className={adminStyles.statsGrid}>
                         <StatCard 
-                            label="Total Campaigns" 
-                            value={summary?.total_campaigns || 0} 
+                            label="Active Campaigns" 
+                            value={summary?.advertising?.active_campaigns || 0} 
+                            change="Generating revenue"
+                            trend="positive"
                             isLoading={!summary} 
                         />
                         <StatCard 
-                            label="Active Campaigns" 
-                            value={summary?.active_campaigns || 0} 
-                            change="Generating revenue"
+                            label="Ad Spend (30d)" 
+                            value={summary?.advertising?.spend_30d !== undefined ? formatCurrency(summary.advertising.spend_30d) : '—'} 
+                            change="Net ad revenue"
                             trend="positive"
                             isLoading={!summary} 
                         />

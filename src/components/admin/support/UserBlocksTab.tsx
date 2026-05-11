@@ -51,23 +51,23 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
     const fetchBlocks = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('user_blocks')
-                .select(`
-                    *,
-                    blocker:user_profile!blocker_id(full_name, user_name),
-                    blocked:user_profile!blocked_id(full_name, user_name)
-                `)
-                .order('created_at', { ascending: false });
+            const { data, error } = await supabase.rpc('get_admin_support_data', {
+                p_tab: 'blocks',
+                p_params: {
+                    search: searchQuery,
+                    limit: 1000, // Large limit for client-side search/paging if preferred, or implement server-side
+                    offset: 0
+                }
+            });
             if (error) throw error;
-            setBlocks((data || []).map((b: any) => ({
+            setBlocks((data.items || []).map((b: any) => ({
                 id: `${b.blocker_id}:${b.blocked_id}`,
                 blocker_id: b.blocker_id,
-                blocker_name: b.blocker?.full_name || 'Unknown',
-                blocker_username: b.blocker?.user_name || '',
+                blocker_name: b.blocker_name || 'Unknown',
+                blocker_username: b.blocker_username || '',
                 blocked_id: b.blocked_id,
-                blocked_name: b.blocked?.full_name || 'Unknown',
-                blocked_username: b.blocked?.user_name || '',
+                blocked_name: b.blocked_name || 'Unknown',
+                blocked_username: b.blocked_username || '',
                 created_at: b.created_at,
             })));
         } catch (err: unknown) {
@@ -75,7 +75,7 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, searchQuery]);
 
     useEffect(() => { fetchBlocks(); }, [fetchBlocks]);
 
@@ -83,11 +83,10 @@ export default function UserBlocksTab({ searchQuery = '' }: UserBlocksTabProps) 
     const handleRemoveBlock = async (block: UserBlock) => {
         if (!await confirm(`Remove block: ${block.blocker_name} → ${block.blocked_name}?`)) return;
         try {
-            const { error } = await supabase
-                .from('user_blocks')
-                .delete()
-                .eq('blocker_id', block.blocker_id)
-                .eq('blocked_id', block.blocked_id);
+            const { error } = await supabase.rpc('admin_remove_user_block', {
+                p_blocker_id: block.blocker_id,
+                p_blocked_id: block.blocked_id
+            });
             if (error) throw error;
             setBlocks(prev => prev.filter(b => b.id !== block.id));
             showToast('Block removed.', 'success');

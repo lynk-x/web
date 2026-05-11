@@ -50,53 +50,37 @@ export default function OrganizerEventsPage() {
         if (!activeAccount) return;
         setIsLoadingEvents(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            let query = supabase
-                .from('events')
-                .select(`
-                    id, title, status, starts_at, media, location,
-                    reference, is_private, currency,
-                    ticket_tiers(tickets_sold, capacity)
-                `, { count: 'exact' })
-                .eq('account_id', activeAccount.id)
-                .order('starts_at', { ascending: false })
-                .range(from, to);
-
-            if (searchTerm) {
-                query = query.or(`title.ilike.%${searchTerm}%`);
-            }
-            if (statusFilter !== 'all') query = query.eq('status', statusFilter);
-
-            const { data, error, count } = await query;
+            const { data, error } = await supabase.rpc('get_organizer_events', {
+                p_account_id: activeAccount.id,
+                p_params: {
+                    search: searchTerm,
+                    status: statusFilter,
+                    limit: itemsPerPage,
+                    offset: (currentPage - 1) * itemsPerPage
+                }
+            });
 
             if (error) throw error;
 
-            const formattedEvents: OrganizerEvent[] = (data || []).map((e: any) => {
-                const uiStatus = e.status as OrganizerEvent['status'];
-                const ticketsSold = (e.ticket_tiers || []).reduce((acc: number, t: any) => acc + (t.tickets_sold || 0), 0);
-
-                return {
-                    id: e.id,
-                    title: e.title,
-                    organizer: activeAccount.name,
-                    date: formatDate(e.starts_at),
-                    endDate: e.ends_at ? formatDate(e.ends_at) : undefined,
-                    time: formatTime(e.starts_at),
-                    endTime: e.ends_at ? formatTime(e.ends_at) : undefined,
-                    location: (e.location as any)?.name || 'TBD',
-                    status: uiStatus,
-                    attendees: ticketsSold,
-                    thumbnailUrl: (e.media as any)?.thumbnail,
-                    eventReference: e.reference,
-                    isPrivate: e.is_private,
-                    currency: e.currency
-                };
-            });
+            const formattedEvents: OrganizerEvent[] = (data.items || []).map((e: any) => ({
+                id: e.id,
+                title: e.title,
+                organizer: activeAccount.name,
+                date: formatDate(e.starts_at),
+                endDate: e.ends_at ? formatDate(e.ends_at) : undefined,
+                time: formatTime(e.starts_at),
+                endTime: e.ends_at ? formatTime(e.ends_at) : undefined,
+                location: e.location_name || 'TBD',
+                status: e.status,
+                attendees: e.attendees,
+                thumbnailUrl: e.thumbnail_url,
+                eventReference: e.event_reference,
+                isPrivate: e.is_private,
+                currency: e.currency
+            }));
 
             setEvents(formattedEvents);
-            setTotalCount(count ?? 0);
+            setTotalCount(data.total || 0);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load events.', 'error');
         } finally {
@@ -187,11 +171,13 @@ export default function OrganizerEventsPage() {
     };
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
+        if (!activeAccount) return;
         showToast(`Updating ${selectedIds.size} events...`, 'info');
         try {
-            const { error } = await supabase.rpc('bulk_update_event_status', {
-                event_ids: Array.from(selectedIds),
-                new_status: newStatus
+            const { error } = await supabase.rpc('bulk_update_events_status', {
+                p_account_id: activeAccount.id,
+                p_event_ids: Array.from(selectedIds),
+                p_status: newStatus
             });
             if (error) throw error;
             showToast(`Successfully updated ${selectedIds.size} events to ${newStatus}.`, 'success');
@@ -207,7 +193,7 @@ export default function OrganizerEventsPage() {
         try {
             // Fetch tickets for selected events with user profiles
             const { data, error } = await supabase
-                .schema('tickets')
+                .schema('ticketing') // Changed from 'tickets' to 'ticketing' to match schema name
                 .from('tickets')
                 .select(`
                     id,
@@ -245,13 +231,13 @@ export default function OrganizerEventsPage() {
     };
 
     const confirmDelete = async () => {
+        if (!activeAccount) return;
         showToast('Processing deletion...', 'info');
         try {
-            // Delete from events table — DB constraints will reject if tickets have been sold
-            const { error } = await supabase
-                .from('events')
-                .delete()
-                .in('id', Array.from(selectedIds));
+            const { error } = await supabase.rpc('bulk_delete_events', {
+                p_account_id: activeAccount.id,
+                p_event_ids: Array.from(selectedIds)
+            });
 
             if (error) throw error;
 
@@ -259,7 +245,7 @@ export default function OrganizerEventsPage() {
             setSelectedIds(new Set());
             fetchEvents();
         } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to delete events. Events with sold tickets cannot be deleted.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to delete events.', 'error');
         } finally {
             setIsDeleteModalOpen(false);
         }
@@ -267,33 +253,22 @@ export default function OrganizerEventsPage() {
 
     // ── Cancellation ───────────────────────────────────────────────────────────
     const handleCancelEvent = async (reason: string) => {
-        if (!cancelTarget) return;
+        if (!cancelTarget || !activeAccount) return;
 
         try {
-            const { error: rpcError } = await supabase.rpc('bulk_refund_event_tickets', {
+            const { error } = await supabase.rpc('cancel_event_full', {
+                p_account_id: activeAccount.id,
                 p_event_id: cancelTarget.event.id,
                 p_reason: reason
             });
 
-            if (rpcError) throw rpcError;
-
-            // Flip the event status
-            const { error: updateError } = await supabase
-                .from('events')
-                .update({
-                    status: 'cancelled',
-                    cancellation_reason: reason,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', cancelTarget.event.id);
-
-            if (updateError) throw updateError;
+            if (error) throw error;
 
             showToast(`"${cancelTarget.event.title}" has been cancelled and tickets were refunded.`, 'success');
             setCancelTarget(null);
             fetchEvents();
         } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to cancel event and process refunds.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to cancel event.', 'error');
         }
     };
 
@@ -302,16 +277,18 @@ export default function OrganizerEventsPage() {
     };
 
     const handleStatusChange = async (event: OrganizerEvent, newStatus: string) => {
+        if (!activeAccount) return;
         // Route cancellations through the modal so a reason is always captured
         if (newStatus === 'cancelled') {
             setCancelTarget({ event, ticketsSold: event.attendees || 0 });
             return;
         }
         try {
-            const { error } = await supabase
-                .from('events')
-                .update({ status: newStatus })
-                .eq('id', event.id);
+            const { error } = await supabase.rpc('bulk_update_events_status', {
+                p_account_id: activeAccount.id,
+                p_event_ids: [event.id],
+                p_status: newStatus
+            });
 
             if (error) throw error;
             showToast(`Event status updated to ${newStatus}.`, 'success');

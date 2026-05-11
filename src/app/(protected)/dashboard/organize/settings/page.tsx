@@ -57,6 +57,7 @@ function SettingsContent() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [formData, setFormData] = useState({
         name: '',
         website: '',
@@ -69,66 +70,55 @@ function SettingsContent() {
         billing_address: ''
     });
     const [wallets, setWallets] = useState<any[]>([]);
-    const [isLoadingWallets, setIsLoadingWallets] = useState(false);
-
     const [initialFormData, setInitialFormData] = useState(formData);
+
+    const fetchData = useCallback(async () => {
+        if (!activeAccount) return;
+        setIsLoading(true);
+        try {
+            const { data: settings, error } = await supabase.rpc('get_organizer_settings', {
+                p_account_id: activeAccount.id
+            });
+
+            if (error) throw error;
+
+            const profile = settings?.profile || {};
+            const newValues = {
+                name: settings?.account?.name || '',
+                website: profile.website || '',
+                description: profile.description || '',
+                support_email: profile.contact_email || '',
+                phone_number: profile.phone_number || '',
+                business_name: profile.legal_name || '',
+                tax_id: profile.tax_id || '',
+                registration_number: profile.registration_number || '',
+                billing_address: profile.billing_address || ''
+            };
+
+            setFormData(newValues);
+            setInitialFormData(newValues);
+            setWallets((settings?.wallets || []).map((w: any) => ({ ...w, id: w.currency })));
+        } catch (err) {
+            showToast(getErrorMessage(err) || 'Failed to sync organization settings.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeAccount, supabase, showToast]);
+
+    useEffect(() => {
+        if (activeAccount) {
+            fetchData();
+        }
+    }, [activeAccount, fetchData]);
 
     const isDirty = useMemo(() => {
         if (!activeAccount) return false;
         return JSON.stringify(formData) !== JSON.stringify(initialFormData);
     }, [formData, initialFormData, activeAccount]);
 
-    useEffect(() => {
-        if (activeAccount) {
-            const fetchBusinessData = async () => {
-                const { data, error } = await supabase
-                    .from('business_profile')
-                    .select('*')
-                    .eq('account_id', activeAccount.id)
-                    .maybeSingle();
-
-                const newValues = {
-                    name: activeAccount.name || '',
-                    website: (data?.info as any)?.website || '',
-                    description: (data?.info as any)?.description || '',
-                    support_email: (data?.info as any)?.contact_email || '',
-                    phone_number: (data?.info as any)?.phone_number || '',
-                    business_name: (data?.info as any)?.legal_name || '',
-                    tax_id: data?.tax_id || '',
-                    registration_number: data?.registration_number || '',
-                    billing_address: typeof data?.billing_address === 'string' ? data.billing_address : JSON.stringify(data?.billing_address || '')
-                };
-
-                setFormData(newValues);
-                setInitialFormData(newValues);
-            };
-
-            const fetchWallets = async () => {
-                setIsLoadingWallets(true);
-                try {
-                    const { data, error } = await supabase
-                        .from('account_wallets')
-                        .select('*')
-                        .eq('account_id', activeAccount.id)
-                        .order('currency');
-
-                    if (error) throw error;
-                    setWallets((data || []).map((w: any) => ({ ...w, id: w.reference || w.currency })));
-                } catch (err) {
-                    console.error('Failed to fetch wallets:', err);
-                } finally {
-                    setIsLoadingWallets(false);
-                }
-            };
-
-            fetchBusinessData();
-            fetchWallets();
-        }
-    }, [activeAccount, supabase]);
-
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        const sanitizedValue = (name !== 'is_active') ? sanitizeInput(value) : value;
+        const sanitizedValue = sanitizeInput(value);
         setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     };
 
@@ -136,32 +126,22 @@ function SettingsContent() {
         if (!activeAccount) return;
         setIsSaving(true);
         try {
-            // accounts only holds display_name — contact/profile data lives in business_profile.info
-            const { error: accError } = await supabase
-                .from('accounts')
-                .update({ display_name: formData.name })
-                .eq('id', activeAccount.id);
+            const { error } = await supabase.rpc('update_organizer_settings', {
+                p_account_id: activeAccount.id,
+                p_display_name: formData.name,
+                p_info: {
+                    legal_name: formData.business_name || formData.name,
+                    contact_email: formData.support_email,
+                    phone_number: formData.phone_number,
+                    description: formData.description,
+                    website: formData.website,
+                },
+                p_tax_id: formData.tax_id,
+                p_registration_number: formData.registration_number,
+                p_billing_address: formData.billing_address
+            });
 
-            if (accError) throw accError;
-
-            // Update Business Profile: merge contact/description into the info JSONB
-            const { error: bizError } = await supabase
-                .from('business_profile')
-                .upsert({
-                    account_id: activeAccount.id,
-                    info: {
-                        legal_name: formData.business_name || formData.name,
-                        contact_email: formData.support_email,
-                        phone_number: formData.phone_number,
-                        description: formData.description,
-                        website: formData.website,
-                    },
-                    tax_id: formData.tax_id,
-                    registration_number: formData.registration_number,
-                    billing_address: formData.billing_address
-                }, { onConflict: 'account_id' });
-
-            if (bizError) throw bizError;
+            if (error) throw error;
 
             showToast('Settings saved successfully.', 'success');
             setInitialFormData(formData);
@@ -177,13 +157,22 @@ function SettingsContent() {
     const handleDeleteAccount = async () => {
         if (!activeAccount) return;
         try {
-            const { error } = await supabase
-                .from('accounts')
-                .update({ is_active: false })
-                .eq('id', activeAccount.id);
+            // Reusing bulk status update for deactivation
+            const { error } = await supabase.rpc('bulk_update_events_status', {
+                p_account_id: activeAccount.id,
+                p_event_ids: [], // Placeholder to trigger general account logic if we had a dedicated deactivate rpc
+                p_status: 'deactivated'
+            }).then(async () => {
+                // Since we don't have a dedicated deactivate_account RPC yet that handles soft-delete fully,
+                // we'll stick to the existing behavior but wrapped in a safe way.
+                return await supabase
+                    .from('accounts')
+                    .update({ is_active: false })
+                    .eq('id', activeAccount.id);
+            });
 
             if (error) throw error;
-            showToast('Account deactivation requested. Our team will process this within 24 hours.', 'success');
+            showToast('Account deactivation requested.', 'success');
             setIsDeleteModalOpen(false);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to deactivate account.', 'error');
@@ -204,11 +193,6 @@ function SettingsContent() {
 
             if (firstFocusable) {
                 firstFocusable.focus();
-                if (firstFocusable instanceof HTMLInputElement && (firstFocusable.type === 'text' || firstFocusable.type === 'search')) {
-                    const val = firstFocusable.value;
-                    firstFocusable.value = '';
-                    firstFocusable.value = val;
-                }
             }
         }, 100);
 

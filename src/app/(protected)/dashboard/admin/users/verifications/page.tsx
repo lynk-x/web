@@ -83,14 +83,10 @@ function KycVerificationsContent() {
     const handleApprove = async (v: KycVerification) => {
         showToast(`Approving identity for ${v.account_name}...`, 'info');
         try {
-            const { error } = await supabase
-                .from('identity_verifications')
-                .update({ 
-                    status: 'approved', 
-                    verified_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', v.id);
+            const { error } = await supabase.rpc('moderate_kyc_verification', {
+                p_verification_id: v.id,
+                p_status: 'approved'
+            });
 
             if (error) throw error;
             showToast('Verification approved successfully.', 'success');
@@ -104,14 +100,11 @@ function KycVerificationsContent() {
     const handleReject = async (v: KycVerification, reason: string) => {
         showToast(`Rejecting identity request...`, 'info');
         try {
-            const { error } = await supabase
-                .from('identity_verifications')
-                .update({ 
-                    status: 'rejected', 
-                    rejection_reason: reason,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', v.id);
+            const { error } = await supabase.rpc('moderate_kyc_verification', {
+                p_verification_id: v.id,
+                p_status: 'rejected',
+                p_reason: reason
+            });
 
             if (error) throw error;
             showToast('Verification rejected with feedback.', 'success');

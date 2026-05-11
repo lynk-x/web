@@ -35,17 +35,15 @@ export default function CreateFeatureFlagPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('feature_flags')
-                .insert([{
-                    key: formData.key,
-                    description: formData.description,
-                    is_enabled: formData.is_enabled,
-                    rollout_percent: formData.rollout_percent,
-                    platforms: formData.platforms,
-                    allowed_regions: formData.allowed_regions,
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'feature_flags',
+                p_action: 'upsert',
+                p_id: formData.key,
+                p_params: {
+                    ...formData,
                     updated_at: new Date().toISOString()
-                }]);
+                }
+            });
 
             if (error) throw error;
 

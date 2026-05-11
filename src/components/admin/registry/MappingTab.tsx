@@ -51,45 +51,28 @@ export default function MappingTab({ forceView }: MappingTabProps) {
     const fetchMappings = useCallback(async () => {
         setIsLoading(true);
         try {
+            const { data, error } = await supabase.rpc('get_admin_registry_data', {
+                p_tab: activeSubTab === 'category' ? 'mappings_category' : 'mappings_event'
+            });
+
+            if (error) throw error;
+            
             if (activeSubTab === 'category') {
-                const { data, error } = await supabase
-                    .from('category_tags')
-                    .select(`
-                        category_id,
-                        tag_id,
-                        event_categories(display_name),
-                        tags(name)
-                    `);
-
-                if (error) throw error;
-
                 const mapped = (data || []).map((m: any) => ({
                     id: `${m.category_id}-${m.tag_id}`,
                     category_id: m.category_id,
                     tag_id: m.tag_id,
-                    category_name: m.event_categories?.display_name || m.category_id,
-                    tag_name: m.tags?.name || 'Unknown Tag'
+                    category_name: m.category_name || m.category_id,
+                    tag_name: m.tag_name || 'Unknown Tag'
                 }));
                 setCategoryMappings(mapped);
             } else {
-                const { data, error } = await supabase
-                    .from('event_tags')
-                    .select(`
-                        event_id,
-                        tag_id,
-                        events(title),
-                        tags(name)
-                    `)
-                    .limit(50);
-
-                if (error) throw error;
-
                 const mapped = (data || []).map((m: any) => ({
                     id: `${m.event_id}-${m.tag_id}`,
                     event_id: m.event_id,
                     tag_id: m.tag_id,
-                    event_title: m.events?.title || 'Unknown Event',
-                    tag_name: m.tags?.name || 'Unknown Tag'
+                    event_title: m.event_title || 'Unknown Event',
+                    tag_name: m.tag_name || 'Unknown Tag'
                 }));
                 setEventMappings(mapped);
             }

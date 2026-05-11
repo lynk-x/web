@@ -71,17 +71,10 @@ export default function EventDetailPage() {
         if (!id || !activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('events')
-                .select(`
-                    id, title, description, status, starts_at, ends_at, timezone,
-                    location, media, is_private, currency, reference, created_at,
-                    cancellation_reason,
-                    ticket_tiers(id, name, price, capacity, tickets_sold, sale_starts_at, sale_ends_at, max_per_order)
-                `)
-                .eq('id', id)
-                .eq('account_id', activeAccount.id)
-                .maybeSingle();
+            const { data, error } = await supabase.rpc('get_organizer_event_details', {
+                p_account_id: activeAccount.id,
+                p_event_id: id
+            });
 
             if (error) throw error;
             if (!data) {
@@ -90,21 +83,14 @@ export default function EventDetailPage() {
                 return;
             }
 
-            setEvent(data as EventDetail);
+            setEvent(data.event as EventDetail);
+            setRevenueTotal(data.stats.revenue || 0);
+            setScanCount(data.stats.scans || 0);
+            setForumMemberCount(data.stats.community || 0);
+            
+            // Override ticket tiers from the RPC response
+            setEvent(prev => prev ? { ...prev, ticket_tiers: data.tiers } : null);
 
-            // Fetch consolidated summary metrics via RPC
-            const { data: summary, error: summaryErr } = await supabase.rpc('get_event_summary_stats', {
-                p_event_id: id,
-                p_account_id: activeAccount.id
-            });
-
-            if (summaryErr) throw summaryErr;
-
-            if (summary) {
-                setRevenueTotal(summary.revenue || 0);
-                setScanCount(summary.scans || 0);
-                setForumMemberCount(summary.community || 0);
-            }
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load event details.', 'error');
         } finally {

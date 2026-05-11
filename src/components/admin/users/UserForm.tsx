@@ -108,35 +108,64 @@ export default function UserForm({
             const sanitizedEmail = sanitizeInput(formData.email);
             
             if (isEditing) {
-                const { error } = await supabase
+                const { error: profileError } = await supabase
                     .from('user_profile')
                     .update({
                         full_name: sanitizedName,
                         email: sanitizedEmail,
                         role: formData.role,
                         status: formData.status,
-                        country_code: formData.countryCode,
-                        kyc_tier: formData.kycTier
+                        country_code: formData.countryCode
                     })
                     .eq('id', formData.id);
-                if (error) throw error;
+                
+                if (profileError) throw profileError;
+
+                // Update KYC Tier via identity_verifications
+                // We need to find the primary account first
+                const { data: memberData } = await supabase
+                    .from('account_members')
+                    .select('account_id')
+                    .eq('user_id', formData.id)
+                    .eq('is_primary', true)
+                    .maybeSingle();
+
+                if (memberData?.account_id) {
+                    await supabase.from('identity_verifications').upsert({
+                        account_id: memberData.account_id,
+                        kyc_tier: formData.kycTier,
+                        status: 'approved',
+                        verified_at: new Date().toISOString()
+                    }, { onConflict: 'account_id, kyc_tier' });
+                }
+
                 showToast('Account updated successfully!', 'success');
             } else {
-                const { data, error } = await supabase.rpc('admin_create_user', {
+                const { data: userId, error: createError } = await supabase.rpc('admin_create_user', {
                     p_email: sanitizedEmail,
                     p_full_name: sanitizedName,
                     p_user_name: sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),
                     p_account_type: formData.role,
                     p_country_code: formData.countryCode
                 });
-                if (error) throw error;
+                
+                if (createError) throw createError;
 
-                // Set KYC tier separately if it's not tier_1_basic
-                if (formData.kycTier !== 'tier_1_basic') {
-                    await supabase
-                        .from('user_profile')
-                        .update({ kyc_tier: formData.kycTier })
-                        .eq('id', data);
+                // Set initial KYC tier via identity_verifications
+                const { data: memberData } = await supabase
+                    .from('account_members')
+                    .select('account_id')
+                    .eq('user_id', userId)
+                    .eq('is_primary', true)
+                    .maybeSingle();
+
+                if (memberData?.account_id) {
+                    await supabase.from('identity_verifications').insert({
+                        account_id: memberData.account_id,
+                        kyc_tier: formData.kycTier,
+                        status: 'approved',
+                        verified_at: new Date().toISOString()
+                    });
                 }
 
                 showToast('Account created successfully!', 'success');

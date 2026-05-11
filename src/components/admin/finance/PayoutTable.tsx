@@ -99,6 +99,12 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
                             label={(payout.kyc_status || 'pending').toUpperCase()}
                             variant={payout.kyc_status === 'approved' ? 'success' : 'neutral'}
                         />
+                        {payout.kyc_tier && (
+                            <Badge
+                                label={payout.kyc_tier.replace(/_/g, ' ').toUpperCase()}
+                                variant="subtle"
+                            />
+                        )}
                         {payout.notes && (
                             <div style={{ fontSize: '11px', opacity: 0.5 }}>{payout.notes}</div>
                         )}
@@ -128,13 +134,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
 
     /** Row-level actions for each payout request. */
     const getActions = (payout: Payout): ActionItem[] => {
-        const actions: ActionItem[] = [
-            {
-                label: 'View Details',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => router.push(`/dashboard/admin/finance/payout/${payout.id}`),
-            },
-        ];
+        const actions: ActionItem[] = [];
 
         // Only `requested` payouts can be approved or rejected
         if (payout.status === 'requested') {
@@ -153,6 +153,12 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
                 }
             );
         }
+
+        actions.push({
+            label: 'View Details',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+            onClick: () => router.push(`/dashboard/admin/finance/payout/${payout.id}?createdAt=${payout.createdAt}`),
+        });
 
         // Failed payouts can be retried
         if (payout.status === 'failed') {

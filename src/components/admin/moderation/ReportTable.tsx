@@ -27,24 +27,15 @@ interface ReportTableProps {
 
 // ─── Variant Helpers ─────────────────────────────────────────────────────────
 
-/**
- * Maps the derived `targetType` field to a badge colour.
- * In the DB, this comes from whichever of the three target FK columns is non-null:
- *   target_user_id → 'user', target_event_id → 'event', target_message_id → 'message'
- */
 const getTargetTypeVariant = (targetType: string): BadgeVariant => {
     switch (targetType) {
-        case 'user': return 'error';   // User reports are high-sensitivity
-        case 'event': return 'warning'; // Event reports need review
-        case 'message': return 'info';    // Message/chat reports
+        case 'user': return 'error';
+        case 'event': return 'warning';
+        case 'message': return 'info';
         default: return 'neutral';
     }
 };
 
-/**
- * Maps `report_status` enum values to badge colours.
- * Schema enum: pending | investigating | resolved | dismissed
- */
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'pending': return 'warning';
@@ -57,10 +48,6 @@ const getStatusVariant = (status: string): BadgeVariant => {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-/**
- * Admin report/moderation table.
- * Displays reports with type, details, status, and resolution actions.
- */
 const ReportTable: React.FC<ReportTableProps> = ({
     reports,
     selectedIds,
@@ -74,10 +61,8 @@ const ReportTable: React.FC<ReportTableProps> = ({
 }) => {
     const { showToast } = useToast();
 
-    /** Column definitions for the report table. */
     const columns: Column<Report>[] = [
         {
-            // Derived from whichever target FK column is non-null in `reports` table
             header: 'Target Type',
             render: (report) => (
                 <Badge
@@ -93,7 +78,6 @@ const ReportTable: React.FC<ReportTableProps> = ({
                     <div className={styles.title}>{report.title}</div>
                     <div className={styles.description}>{report.description}</div>
                     {report.reasonId && (
-                        // reason_id FK references report_reasons table
                         <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>Reason: {report.reasonId}</div>
                     )}
                 </div>
@@ -109,74 +93,26 @@ const ReportTable: React.FC<ReportTableProps> = ({
         },
         {
             header: 'Status',
-            // report_status enum: pending | investigating | resolved | dismissed
             render: (report) => (
                 <Badge label={formatString(report.status)} variant={getStatusVariant(report.status)} showDot />
             ),
         },
     ];
 
-    /** Row-level moderation actions for each report. */
-    const getActions = (report: Report): ActionItem[] => {
-        const actions: ActionItem[] = [
-            {
-                label: 'View Details',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => showToast('Opening report details...', 'info'),
+    const getActions = (report: Report): ActionItem[] => [
+        {
+            label: 'View Report',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+            onClick: () => showToast('Opening report details...', 'info'),
+        },
+        {
+            label: `Manage ${report.targetType.charAt(0).toUpperCase() + report.targetType.slice(1)}`,
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>,
+            onClick: () => {
+                showToast(`Navigating to manage ${report.targetType}...`, 'info');
             },
-        ];
-
-        // Promote report to 'investigating' if it's still pending
-        if (report.status === 'pending') {
-            actions.push({
-                label: 'Begin Investigation',
-                variant: 'default',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-                onClick: () => {
-                    showToast('Marking as investigating...', 'info');
-                    setTimeout(() => showToast('Report status set to investigating.', 'info'), 1000);
-                },
-            });
-        }
-
-        if (report.status !== 'resolved') {
-            actions.push({
-                label: 'Mark Resolved',
-                variant: 'success' as const,
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                onClick: () => {
-                    showToast('Resolving report...', 'info');
-                    setTimeout(() => showToast('Report marked as resolved.', 'success'), 1000);
-                },
-            });
-        }
-
-        if (report.status !== 'dismissed') {
-            actions.push({
-                label: 'Dismiss',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                onClick: () => {
-                    showToast('Dismissing report...', 'info');
-                    setTimeout(() => showToast('Report dismissed.', 'warning'), 1000);
-                },
-            });
-        }
-
-        // Ban User only available on reports targeting a user (targetType === 'user')
-        if (report.targetType === 'user') {
-            actions.push({
-                label: 'Ban User',
-                variant: 'danger' as const,
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
-                onClick: () => {
-                    showToast(`Banning user reported in ${report.id}...`, 'info');
-                    setTimeout(() => showToast('User banned.', 'error'), 1500);
-                },
-            });
-        }
-
-        return actions;
-    };
+        },
+    ];
 
     return (
         <DataTable<Report>

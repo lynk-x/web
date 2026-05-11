@@ -20,6 +20,20 @@ import StatCard from '@/components/dashboard/StatCard';
 import RejectionModal from '@/components/shared/RejectionModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import ForumTable from '@/components/admin/forums/ForumTable';
+import type { ForumThread } from '@/types/admin';
+import Modal from '@/components/shared/Modal';
+import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
+import ReportTable from '@/components/admin/moderation/ReportTable';
+import TicketingTab from '@/components/admin/events/ticketing/TicketingTab';
+import { formatRelativeTime } from '@/utils/format';
+
+// --- Local Components ---
+
+const EventReportsSection = ({ eventId }: { eventId: string }) => {
+    return <ReportTable eventId={eventId} />;
+};
 
 export default function AdminEventsPage() {
     const supabase = useMemo(() => createClient(), []);
@@ -29,6 +43,7 @@ export default function AdminEventsPage() {
     const router = useRouter();
 
     const [events, setEvents] = useState<Event[]>([]);
+    const [threads, setThreads] = useState<ForumThread[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -39,6 +54,9 @@ export default function AdminEventsPage() {
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 10;
+
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const fetchDashboardSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
@@ -60,7 +78,8 @@ export default function AdminEventsPage() {
             if (error) throw error;
 
             setTotalCount(data?.[0]?.total_count || 0);
-            setEvents((data || []).map((e: any) => ({
+            
+            const mappedEvents: Event[] = (data || []).map((e: any) => ({
                 id: e.id,
                 title: e.event_title,
                 organizer: e.account_name || 'Unknown',
@@ -74,8 +93,33 @@ export default function AdminEventsPage() {
                 eventReference: e.reference,
                 isPrivate: e.is_private,
                 thumbnailUrl: e.thumbnail,
-                reportsCount: e.reports_count || 0
-            })));
+                reportsCount: e.reports_count || 0,
+                forum_id: e.forum_id,
+                forum_status: e.forum_status,
+                message_count: e.message_count,
+                media_count: e.media_count,
+                escalated_reports_count: e.escalated_reports_count
+            }));
+
+            const mappedThreads: ForumThread[] = (data || [])
+                .filter((e: any) => !!e.forum_id)
+                .map((e: any) => ({
+                    id: e.forum_id,
+                    reference: e.reference,
+                    title: `${e.event_title} Community`,
+                    eventName: e.event_title,
+                    messageCount: Number(e.message_count || 0),
+                    mediaCount: Number(e.media_count || 0),
+                    reportsCount: Number(e.reports_count || 0),
+                    escalatedCount: Number(e.escalated_reports_count || 0),
+                    oldestReportAt: undefined, // Would need joining in RPC for exact date
+                    status: (e.forum_status || 'open') as any,
+                    lastActivity: 'Recent',
+                    createdAt: e.starts_at // Approximation
+                }));
+
+            setEvents(mappedEvents);
+            setThreads(mappedThreads);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load events.', 'error');
         } finally {
@@ -125,6 +169,9 @@ export default function AdminEventsPage() {
     // --- Global Actions ---
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
+        const confirmMsg = newStatus === 'rejected' ? 'Are you sure you want to REJECT the selected events?' : `Update ${selectedEventIds.size} events to ${newStatus}?`;
+        if (!await confirm(confirmMsg, { title: 'Bulk Update' })) return;
+
         await executeAction(
             () => supabase.rpc('bulk_moderate_events', {
                 p_event_ids: Array.from(selectedEventIds),
@@ -145,11 +192,18 @@ export default function AdminEventsPage() {
 
     const handleBulkDelete = async () => {
         if (!await confirm(`Are you sure you want to delete ${selectedEventIds.size} events?`, { title: 'Delete Events', confirmLabel: 'Delete' })) return;
+        
         await executeAction(
-            () => supabase
-                .from('events')
-                .delete()
-                .in('id', Array.from(selectedEventIds)),
+            async () => {
+                const ids = Array.from(selectedEventIds);
+                const results = await Promise.all(ids.map(id => 
+                    supabase.rpc('admin_manage_event', {
+                        p_action: 'delete',
+                        p_id: id
+                    })
+                ));
+                return { error: results.find(r => r.error)?.error || null };
+            },
             {
                 loadingMessage: `Deleting ${selectedEventIds.size} events...`,
                 successMessage: `Deleted ${selectedEventIds.size} events`,
@@ -179,36 +233,11 @@ export default function AdminEventsPage() {
         }
 
         await executeAction(
-            async () => {
-                if (newStatus === 'active' || newStatus === 'rejected') {
-                    const { data: modRow } = await supabase
-                        .from('moderation')
-                        .select('id')
-                        .eq('item_id', event.id)
-                        .eq('item_type', 'event')
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .maybeSingle();
-
-                    if (!modRow) {
-                        return supabase
-                            .from('events')
-                            .update({ status: newStatus as any, updated_at: new Date().toISOString() })
-                            .eq('id', event.id);
-                    } else {
-                        return supabase.rpc('moderate_item', {
-                            p_moderation_id: modRow.id,
-                            p_status: newStatus === 'active' ? 'approved' : 'rejected',
-                            p_reason: reason || 'Status updated via Admin Events dashboard.'
-                        });
-                    }
-                } else {
-                    return supabase
-                        .from('events')
-                        .update({ status: newStatus as any, updated_at: new Date().toISOString() })
-                        .eq('id', event.id);
-                }
-            },
+            () => supabase.rpc('bulk_moderate_events', {
+                p_event_ids: [event.id],
+                p_status: newStatus,
+                p_reason: reason || `Status updated to ${newStatus} via Admin Events dashboard.`
+            }),
             {
                 loadingMessage: `Updating ${event.title}...`,
                 successMessage: `Status updated`,
@@ -224,10 +253,10 @@ export default function AdminEventsPage() {
     const handleSingleDelete = async (event: Event) => {
         if (!await confirm(`Delete "${event.title}"?`, { title: 'Delete Event', confirmLabel: 'Delete' })) return;
         await executeAction(
-            () => supabase
-                .from('events')
-                .delete()
-                .eq('id', event.id),
+            () => supabase.rpc('admin_manage_event', {
+                p_action: 'delete',
+                p_id: event.id
+            }),
             {
                 loadingMessage: `Deleting ${event.title}...`,
                 successMessage: `${event.title} deleted`,
@@ -269,30 +298,31 @@ export default function AdminEventsPage() {
             
             <div className={adminStyles.statsGrid}>
                 <StatCard 
-                    label="Total Events" 
-                    value={summary?.total_events || 0} 
-                    change="Platform wide"
-                    isLoading={!summary} 
-                />
-                <StatCard 
                     label="Active Events" 
-                    value={summary?.active_events || 0} 
+                    value={summary?.events?.active || 0} 
                     change="Live now"
                     trend="positive"
                     isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Pending Review" 
-                    value={summary?.pending_moderation || 0} 
-                    change="Requires attention"
-                    trend={summary?.pending_moderation > 0 ? "negative" : "positive"}
+                    label="Upcoming Events" 
+                    value={summary?.events?.upcoming || 0} 
+                    change="Next 30 days"
+                    trend="neutral"
                     isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Total Organizers" 
-                    value={summary?.total_organizers || 0} 
-                    change="Verified partners"
-                    trend="neutral"
+                    label="Pending Review" 
+                    value={summary?.events?.pending || 0} 
+                    change="Requires attention"
+                    trend={(summary?.events?.pending || 0) > 0 ? "negative" : "positive"}
+                    isLoading={!summary} 
+                />
+                <StatCard 
+                    label="Flagged Events" 
+                    value={summary?.events?.flagged || 0} 
+                    change="Safety suspensions"
+                    trend="negative"
                     isLoading={!summary} 
                 />
             </div>
@@ -325,21 +355,110 @@ export default function AdminEventsPage() {
                 itemTypeLabel="events"
             />
 
-            {isLoading ? (
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading events...</div>
-            ) : (
-                <EventTable
-                    events={events}
-                    selectedIds={selectedEventIds}
-                    onSelect={handleSelectEvent}
-                    onSelectAll={handleSelectAll}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    onEdit={(event) => router.push(`/dashboard/admin/events/${event.id}/edit`)}
-                    onStatusChange={handleSingleStatusUpdate}
-                    onDelete={handleSingleDelete}
-                />
+            <Tabs defaultValue="events" className={styles.mainTabs}>
+                <TabsList>
+                    <TabsTrigger value="events">Events</TabsTrigger>
+                    <TabsTrigger value="forums">Communities</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="events">
+                    <EventTable
+                        mode="admin"
+                        events={events}
+                        isLoading={isLoading}
+                        selectedIds={selectedEventIds}
+                        onSelect={handleSelectEvent}
+                        onSelectAll={handleSelectAll}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onEdit={(event) => {
+                            setSelectedEvent(event as Event);
+                            setIsDetailModalOpen(true);
+                        }}
+                        onStatusChange={handleSingleStatusUpdate}
+                        onDelete={handleSingleDelete}
+                    />
+                </TabsContent>
+
+                <TabsContent value="forums">
+                    <ForumTable
+                        threads={threads}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onEditForum={(thread) => {
+                            const event = events.find(e => e.forum_id === thread.id);
+                            if (event) {
+                                setSelectedEvent(event);
+                                setIsDetailModalOpen(true);
+                            }
+                        }}
+                        onStatusChange={async (id, status) => {
+                            const { error } = await supabase.rpc('admin_manage_forum', {
+                                p_forum_id: id,
+                                p_action: 'update_status',
+                                p_payload: { status }
+                            });
+                            if (error) showToast(error.message, 'error');
+                            else {
+                                showToast('Forum status updated.', 'success');
+                                fetchEvents();
+                            }
+                        }}
+                    />
+                </TabsContent>
+            </Tabs>
+
+            {selectedEvent && (
+                <Modal
+                    isOpen={isDetailModalOpen}
+                    onClose={() => setIsDetailModalOpen(false)}
+                    title={`Event Management: ${selectedEvent.title}`}
+                    size="large"
+                >
+                    <Tabs defaultValue="overview" className={styles.detailTabs}>
+                        <TabsList>
+                            <TabsTrigger value="overview">Overview</TabsTrigger>
+                            <TabsTrigger value="ticketing">Ticketing & Resale</TabsTrigger>
+                            <TabsTrigger value="community">Community & Chat</TabsTrigger>
+                            <TabsTrigger value="moderation">Moderation Queue</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="overview">
+                            <div className={styles.detailGrid}>
+                                <div className={styles.detailSection}>
+                                    <h3>Basic Information</h3>
+                                    <p><strong>Reference:</strong> {selectedEvent.eventReference}</p>
+                                    <p><strong>Organizer:</strong> {selectedEvent.organizer}</p>
+                                    <p><strong>Date:</strong> {selectedEvent.date} {selectedEvent.time}</p>
+                                    <p><strong>Location:</strong> {selectedEvent.location}</p>
+                                </div>
+                                <div className={styles.detailSection}>
+                                    <h3>Performance</h3>
+                                    <p><strong>Attendees:</strong> {selectedEvent.attendees}</p>
+                                    <p><strong>Total Reports:</strong> {selectedEvent.reportsCount}</p>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="ticketing">
+                            <TicketingTab eventId={selectedEvent.id} />
+                        </TabsContent>
+
+                        <TabsContent value="community">
+                            {selectedEvent.forum_id ? (
+                                <ForumMessagesTab forumId={selectedEvent.forum_id} />
+                            ) : (
+                                <div className={styles.emptyState}>No forum exists for this event.</div>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="moderation">
+                            <EventReportsSection eventId={selectedEvent.id} />
+                        </TabsContent>
+                    </Tabs>
+                </Modal>
             )}
 
             <RejectionModal

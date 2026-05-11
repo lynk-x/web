@@ -79,47 +79,35 @@ function SupportContent() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
+            const offset = (currentPage - 1) * itemsPerPage;
 
             if (activeTab === 'moderation') {
-                // reports live in their own schema — must use .schema() prefix
-                let query = supabase
-                    .schema('reports')
-                    .from('reports')
-                    .select('*, reporter:user_profile!reporter_id(user_name)', { count: 'exact' });
-
-                if (moderationFilter !== 'all') {
-                    query = query.eq('status', moderationFilter);
-                }
-
-                if (debouncedSearch) {
-                    // reports.reports has no 'description' column; text lives in info->>'description'
-                    // Filter on reference (indexed) or escalation flag instead
-                    query = query.or(`reference.ilike.%${debouncedSearch}%,info->>description.ilike.%${debouncedSearch}%`);
-                }
-
-                const { data, error, count } = await query
-                    .order('created_at', { ascending: false })
-                    .range(from, to);
+                const { data, error } = await supabase.rpc('get_admin_support_data', {
+                    p_tab: 'moderation',
+                    p_params: {
+                        search: debouncedSearch,
+                        status: moderationFilter,
+                        limit: itemsPerPage,
+                        offset: offset
+                    }
+                });
 
                 if (error) throw error;
-                setTotalCount(count || 0);
-
-                setReports((data || []).map(r => ({
+                
+                setTotalCount(data.total || 0);
+                setReports((data.items || []).map((r: any) => ({
                     id: r.id,
                     targetType: r.target_user_id ? 'user' : r.target_event_id ? 'event' : 'message',
                     targetId: r.target_user_id || r.target_event_id || r.target_message_id,
                     title: `Report #${r.id.slice(0, 8)}`,
-                    // text content lives in info->'description', not a top-level column
-                    description: (r as any).info?.description || `Report ${r.reference}`,
+                    description: r.info?.description || `Report ${r.reference}`,
                     date: new Date(r.created_at).toLocaleDateString(),
-                    reporter: r.reporter?.user_name || 'Anonymous',
+                    reporter: r.reporter_username || 'Anonymous',
                     status: r.status,
+                    createdAt: r.created_at,
                     reasonId: r.reason_id
                 })));
             }
-
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || "Failed to load reports", "error");
         } finally {
@@ -149,7 +137,11 @@ function SupportContent() {
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
                 onClick: async () => {
                     showToast('Starting investigation...', 'info');
-                    const { error } = await supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'investigating' });
+                    const { error } = await supabase.rpc('moderate_report', { 
+                        p_report_id: report.id, 
+                        p_report_created_at: report.createdAt,
+                        p_status: 'investigating' 
+                    });
                     if (error) showToast(error.message, 'error');
                     else {
                         showToast('Started investigation', 'info');
@@ -166,7 +158,11 @@ function SupportContent() {
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                 onClick: async () => {
                     showToast('Resolving report...', 'info');
-                    const { error } = await supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'resolved' });
+                    const { error } = await supabase.rpc('moderate_report', { 
+                        p_report_id: report.id, 
+                        p_report_created_at: report.createdAt,
+                        p_status: 'resolved' 
+                    });
                     if (error) showToast(error.message, 'error');
                     else {
                         showToast('Report resolved', 'success');
@@ -190,30 +186,30 @@ function SupportContent() {
             <div className={sharedStyles.statsGrid}>
                 <StatCard
                     label="Pending Reports"
-                    value={summary?.total_reports_count || 0}
+                    value={summary?.moderation?.total_reports || 0}
                     change="Requires Attention"
                     trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Unresolved Moderation"
-                    value={summary?.pending_moderation || 0}
+                    value={summary?.moderation?.pending || 0}
                     change="Content flagged"
                     trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="App Health"
-                    value="Stable"
-                    change="99.9% Uptime"
+                    label="Resolved (30d)"
+                    value={summary?.moderation?.resolved_30d || 0}
+                    change="Closed tickets"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Registry Items"
-                    value={summary?.total_events || 0}
-                    change="Active platform assets"
-                    trend="neutral"
+                    label="Max Toxicity"
+                    value={summary?.moderation?.max_toxicity !== undefined ? `${summary.moderation.max_toxicity.toFixed(1)}%` : '—'}
+                    change="Community health"
+                    trend={(summary?.moderation?.max_toxicity || 0) < 5 ? "positive" : "negative"}
                     isLoading={isLoading}
                 />
             </div>

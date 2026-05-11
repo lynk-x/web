@@ -70,41 +70,30 @@ export default function AppFeedbackTab({
     const fetchFeedback = useCallback(async () => {
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
+            const offset = (currentPage - 1) * itemsPerPage;
 
-            let query = supabase
-                .from('app_feedback')
-                .select('*, submitter:user_profile!user_id(full_name, user_name)', { count: 'exact' });
-
-            if (statusFilter !== 'all') {
-                query = query.eq('status', statusFilter);
-            }
-
-            if (categoryFilter !== 'all') {
-                query = query.eq('category', categoryFilter);
-            }
-
-            if (searchQuery) {
-                query = query.ilike('content', `%${searchQuery}%`);
-            }
-
-            const { data, error, count } = await query
-                .order('created_at', { ascending: false })
-                .range(from, to);
+            const { data, error } = await supabase.rpc('get_admin_support_data', {
+                p_tab: 'feedback',
+                p_params: {
+                    search: searchQuery,
+                    status: statusFilter,
+                    limit: itemsPerPage,
+                    offset: offset
+                }
+            });
 
             if (error) throw error;
 
-            setTotalCount(count || 0);
-            setItems((data || []).map((f: any) => ({
+            setTotalCount(data.total || 0);
+            setItems((data.items || []).map((f: any) => ({
                 id: f.id,
-                submitter: f.submitter?.full_name || f.submitter?.user_name || null,
-                category: f.category,
-                rating: f.rating,
-                content: f.content,
-                app_version: f.app_version,
+                submitter: f.full_name || f.submitter_username || null,
+                category: f.subject,
+                rating: f.metadata?.rating,
+                content: f.message,
+                app_version: f.metadata?.app_version,
                 status: f.status,
-                admin_notes: f.admin_notes,
+                admin_notes: f.metadata?.admin_notes,
                 created_at: f.created_at,
             })));
         } catch (err: unknown) {
@@ -121,7 +110,11 @@ export default function AppFeedbackTab({
     /** Update feedback status (e.g. mark as reviewed, resolve, dismiss). */
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
-            const { error } = await supabase.from('app_feedback').update({ status: newStatus }).eq('id', id);
+            const { error } = await supabase.rpc('admin_update_support_status', {
+                p_tab: 'feedback',
+                p_id: id,
+                p_status: newStatus
+            });
             if (error) throw error;
             setItems(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
             showToast(`Feedback marked as ${newStatus}`, 'success');

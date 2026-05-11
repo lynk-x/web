@@ -41,6 +41,8 @@ export interface Campaign {
     endDate: string;
     moderationId?: string;
     isFlagged?: boolean;
+    /** Partition key for advertising.campaigns */
+    createdAt: string;
 }
 
 /** A log entry for a sent broadcast notification. */
@@ -53,6 +55,30 @@ export interface BroadcastLog {
     fcm_tokens_count: number;
     targeting_type: 'global' | 'segmented' | 'direct';
     created_at: string;
+}
+
+/** An event item in the platform. */
+export interface Event {
+    id: string;
+    title: string;
+    organizer: string;
+    date: string;
+    endDate?: string;
+    time: string;
+    endTime?: string;
+    location: string;
+    status: 'draft' | 'published' | 'cancelled' | 'completed' | 'flagged' | 'archived';
+    attendees: number;
+    eventReference: string;
+    isPrivate?: boolean;
+    thumbnailUrl?: string;
+    reportsCount: number;
+    // Forum integration
+    forum_id?: string;
+    forum_status?: string;
+    message_count?: number;
+    media_count?: number;
+    escalated_reports_count?: number;
 }
 
 /** A content item in the CMS. */
@@ -89,6 +115,8 @@ export interface ForumThread {
     escalatedCount: number;
     oldestReportAt?: string;
     lastActivity: string;
+    /** The actual created_at timestamp from the DB, required for partition pruning. */
+    createdAt: string;
 }
 
 /** A media item uploaded to a forum. */
@@ -147,6 +175,8 @@ export interface Report {
     reporter: string;
     /** Aligned to `report_status` schema enum */
     status: 'pending' | 'investigating' | 'resolved' | 'dismissed';
+    /** The actual created_at timestamp from the DB, required for partition pruning. */
+    createdAt: string;
     /** From `report_reasons.category` via reason_id FK */
     reasonId?: string;
     /** Admin notes added during investigation or resolution */
@@ -189,7 +219,26 @@ export interface User {
     registrationNumber?: string;
 }
 
-/** A tax rate configuration. */
+/** An organizational account managed by admin. */
+export interface AdminAccount {
+    id: string;
+    reference: string;
+    display_name: string;
+    type: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'pulse_user';
+    status: 'active' | 'pending_activation' | 'suspended' | 'temporarily_suspended' | 'permanently_suspended' | 'frozen' | 'deleted';
+    country_code: string;
+    member_count: number;
+    event_count: number;
+    total_revenue: number;
+    is_verified: boolean;
+    kyc_tier?: string;
+    primary_owner_name?: string;
+    primary_owner_email?: string;
+    created_at: string;
+}
+ 
+ /** A tax rate configuration. */
+
 export interface TaxRate {
     id: string;
     country_code: string;
@@ -296,4 +345,18 @@ export interface KycVerification {
     verified_at?: string;
     expires_at?: string;
     created_at: string;
+}
+
+export interface SystemJob {
+    id: string;
+    queue_name: string;
+    status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+    payload: Record<string, any>;
+    result?: Record<string, any>;
+    error?: string;
+    retry_count: number;
+    max_retries: number;
+    scheduled_at?: string;
+    created_at: string;
+    updated_at: string;
 }

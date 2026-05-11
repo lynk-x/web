@@ -40,60 +40,20 @@ export default function CreateBroadcastPage() {
         setIsLoading(true);
         try {
             const providedTokens = fcmTokens.trim().split('\n').map(t => t.trim()).filter(Boolean);
-            const isSegmented = providedTokens.length > 0;
-            const targetingType = isSegmented ? 'segmented' : 'global';
+            
+            const { data, error } = await supabase.rpc('admin_send_broadcast', {
+                p_subject: subject,
+                p_message: message,
+                p_type: notificationType,
+                p_tokens: providedTokens.length > 0 ? providedTokens : null,
+                p_image_url: imageUrl || null
+            });
 
-            // 1. Resolve FCM token list
-            let targetTokens: string[];
-            if (isSegmented) {
-                targetTokens = providedTokens;
-            } else {
-                // Global broadcast: fetch all registered device tokens
-                const { data: devices, error: devErr } = await supabase
-                    .from('user_devices')
-                    .select('fcm_token');
-                if (devErr) throw devErr;
-                targetTokens = (devices || []).map((d: any) => d.fcm_token);
-            }
+            if (error) throw error;
 
-            // 2. Log the broadcast intent
-            const { error: logError } = await supabase
-                .from('notification_broadcast_logs')
-                .insert([{
-                    type: notificationType,
-                    subject,
-                    message,
-                    image_url: imageUrl || null,
-                    fcm_tokens_count: targetTokens.length,
-                    targeting_type: targetingType,
-                }]);
-            if (logError) throw logError;
-
-            // 3. Enqueue push notifications in batches of 100
-            const BATCH_SIZE = 100;
-            const queueEntries = targetTokens.map(token => ({
-                channel: 'push',
-                recipient: token,
-                priority: notificationType === 'system' ? 'high' : 'medium',
-                info: {
-                    subject,
-                    body: message,
-                    data: {
-                        type: notificationType,
-                        ...(imageUrl ? { image_url: imageUrl } : {}),
-                    },
-                },
-            }));
-
-            for (let i = 0; i < queueEntries.length; i += BATCH_SIZE) {
-                const { error: qErr } = await supabase
-                    .from('delivery_queue')
-                    .insert(queueEntries.slice(i, i + BATCH_SIZE));
-                if (qErr) throw qErr;
-            }
-
+            const count = data?.count || 0;
             showToast(
-                `Broadcast dispatched to ${targetTokens.length} device${targetTokens.length !== 1 ? 's' : ''}`,
+                `Broadcast dispatched to ${count} device${count !== 1 ? 's' : ''}`,
                 'success',
             );
             setIsDirty(false);

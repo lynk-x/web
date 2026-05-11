@@ -109,15 +109,17 @@ function FinanceContent() {
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_financial_summary');
+            const { data, error } = await supabase.rpc('admin_stat_summary');
             if (error) throw error;
     
             setGlobalStats({
-                platformRevenue: data.platform_revenue,
-                pendingPayouts: data.pending_payouts,
-                ticketCommission: data.ticket_commission,
-                payoutRequestCount: data.payout_count,
-                adRevenue: data.ad_revenue
+                platformRevenue: data.finance.commission,
+                pendingPayouts: data.finance.pending_payouts,
+                ticketCommission: data.finance.commission, // Using commission as proxy for now
+                payoutRequestCount: data.finance.payout_count,
+                adRevenue: data.advertising.spend_30d,
+                failureRate: data.finance.failure_rate,
+                failedVolume: data.finance.failed_volume
             });
         } catch (error: unknown) {
             showToast('Failed to load financial aggregates.', 'error');
@@ -160,7 +162,8 @@ function FinanceContent() {
                     reference: tx.reference,
                     event: tx.event_title,
                     sender: tx.sender_name,
-                    recipient: tx.recipient_name
+                    recipient: tx.recipient_name,
+                    createdAt: tx.created_at
                 })));
             } else if (activeTab === 'payouts') {
                 const { data, error } = await supabase.rpc('get_admin_payouts', {
@@ -184,8 +187,10 @@ function FinanceContent() {
                     reference: p.reference,
                     bankName: p.bank_name,
                     type: p.method,
-                    kyc_status: p.kyc_status,
-                    is_verified: p.is_verified
+                    kyc_status: p.approval_status,
+                    kyc_tier: p.kyc_tier,
+                    is_verified: p.is_verified,
+                    createdAt: p.created_at
                 })));
             } else if (activeTab === 'tax-rates') {
                 // ... Tax rates, fx rates, etc. usually stay small and don't require server-side scaling
@@ -357,7 +362,7 @@ function FinanceContent() {
 
         showToast(`Triggering disbursement for ${payout.reference}...`, 'info');
         try {
-            const { data, error } = await supabase.functions.invoke('payout-gateway-v1', {
+            const { data, error } = await supabase.functions.invoke('payout-fulfillment', {
                 body: { payout_id: payout.id }
             });
             
@@ -384,15 +389,18 @@ function FinanceContent() {
         showToast(`Rejecting ${count} payout(s)...`, 'info');
         try {
             if (isBulk) {
+                const selectedPayoutsList = payouts.filter(p => selectedPayoutIds.has(p.id));
                 const { error } = await supabase.rpc('bulk_reject_payouts', {
                     p_payout_ids: Array.from(selectedPayoutIds),
+                    p_created_at_list: selectedPayoutsList.map(p => p.createdAt),
                     p_reason: reason
                 });
                 if (error) throw error;
                 setSelectedPayoutIds(new Set());
-            } else {
+            } else if (pendingRejectPayout) {
                 const { error } = await supabase.rpc('reject_payout', {
                     p_payout_id: pendingRejectPayout.id,
+                    p_created_at: pendingRejectPayout.createdAt,
                     p_reason: reason
                 });
                 if (error) throw error;
@@ -600,22 +608,8 @@ function FinanceContent() {
                 <StatCard 
                     label="Platform Revenue" 
                     value={globalStats.platformRevenue !== null ? formatCurrency(globalStats.platformRevenue) : null} 
-                    change="Combined platform income"
+                    change="Net commission & fees"
                     trend="positive"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Ticket Commission" 
-                    value={globalStats.ticketCommission !== null ? formatCurrency(globalStats.ticketCommission) : null} 
-                    change="5% of gross ticket sales"
-                    trend="positive"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Ad Revenue" 
-                    value={globalStats.adRevenue !== null ? formatCurrency(globalStats.adRevenue) : null} 
-                    change="Advertising spend"
-                    trend="neutral"
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 
@@ -624,6 +618,20 @@ function FinanceContent() {
                     change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
                     trend="neutral"
                     isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Transaction Health" 
+                    value={globalStats.failureRate !== null ? `${(100 - globalStats.failureRate).toFixed(1)}%` : '—'} 
+                    change={`${globalStats.failureRate}% failure rate`}
+                    trend={(globalStats.failureRate || 0) < 5 ? "positive" : "negative"}
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Escrow Total" 
+                    value={summary?.finance?.escrow_total !== null ? formatCurrency(summary?.finance?.escrow_total) : null} 
+                    change="Funds in transit"
+                    trend="neutral"
+                    isLoading={!summary} 
                 />
             </div>
 

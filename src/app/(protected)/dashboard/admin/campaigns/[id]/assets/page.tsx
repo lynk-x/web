@@ -2,7 +2,7 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../../../page.module.css';
 import Link from 'next/link';
@@ -32,6 +32,8 @@ const isVideoType = (t: string) => t.toLowerCase().includes('video');
 
 export default function CampaignAssetsPage() {
     const { id: campaignId } = useParams<{ id: string }>();
+    const searchParams = useSearchParams();
+    const campaignCreatedAt = searchParams.get('createdAt');
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
@@ -43,8 +45,13 @@ export default function CampaignAssetsPage() {
         if (!campaignId) return;
         setIsLoading(true);
         try {
+            const campaignQuery = supabase.from('ad_campaigns').select('title, created_at').eq('id', campaignId);
+            if (campaignCreatedAt) {
+                campaignQuery.eq('created_at', campaignCreatedAt);
+            }
+
             const [campaignRes, assetsRes] = await Promise.all([
-                supabase.from('ad_campaigns').select('title').eq('id', campaignId).single(),
+                campaignQuery.single(),
                 supabase.from('ad_media').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
             ]);
             if (campaignRes.data) setCampaignTitle(campaignRes.data.title);
@@ -59,13 +66,13 @@ export default function CampaignAssetsPage() {
 
     useEffect(() => { fetchAssets(); }, [fetchAssets]);
 
-    const updateVisibility = async (id: string, isHidden: boolean) => {
+    const updateVisibility = async (id: string, assetCreatedAt: string, isHidden: boolean) => {
         try {
             const { error } = await supabase
                 .from('ad_media')
                 .update({ is_hidden: isHidden })
                 .eq('id', id)
-                .eq('campaign_id', campaignId);
+                .eq('created_at', assetCreatedAt);
             if (error) throw error;
             setAssets(prev => prev.map(a => a.id === id ? { ...a, is_hidden: isHidden } : a));
             showToast(isHidden ? 'Asset hidden' : 'Asset is now visible', 'success');
@@ -78,11 +85,17 @@ export default function CampaignAssetsPage() {
         const hidden = assets.filter(a => a.is_hidden);
         if (hidden.length === 0) { showToast('No hidden assets', 'info'); return; }
         try {
-            const { error } = await supabase
+            const query = supabase
                 .from('ad_media')
                 .update({ is_hidden: false })
                 .eq('campaign_id', campaignId)
                 .eq('is_hidden', true);
+
+            if (campaignCreatedAt) {
+                query.eq('campaign_created_at', campaignCreatedAt);
+            }
+
+            const { error } = await query;
             if (error) throw error;
             setAssets(prev => prev.map(a => ({ ...a, is_hidden: false })));
             showToast(`${hidden.length} asset${hidden.length > 1 ? 's' : ''} made visible`, 'success');
@@ -194,7 +207,7 @@ export default function CampaignAssetsPage() {
                             <div className={styles.actionContainer}>
                                 <button
                                     className={`${styles.actionBtn} ${styles.rejectBtn}`}
-                                    onClick={() => updateVisibility(asset.id, true)}
+                                    onClick={() => updateVisibility(asset.id, asset.created_at, true)}
                                     disabled={asset.is_hidden}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
@@ -202,7 +215,7 @@ export default function CampaignAssetsPage() {
                                 </button>
                                 <button
                                     className={`${styles.actionBtn} ${styles.approveBtn}`}
-                                    onClick={() => updateVisibility(asset.id, false)}
+                                    onClick={() => updateVisibility(asset.id, asset.created_at, false)}
                                     disabled={!asset.is_hidden}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>

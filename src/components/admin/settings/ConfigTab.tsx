@@ -52,10 +52,9 @@ export default function ConfigTab() {
     const fetchConfigs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('system_config')
-                .select('*')
-                .order('key', { ascending: true });
+            const { data, error } = await supabase.rpc('get_admin_settings_data', {
+                p_tab: 'config'
+            });
 
             if (error) throw error;
             setConfigs(data || []);
@@ -72,10 +71,12 @@ export default function ConfigTab() {
 
     const handleToggleConfig = async (key: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase
-                .from('system_config')
-                .update({ is_active: !currentValue, updated_at: new Date().toISOString() })
-                .eq('key', key);
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'config',
+                p_action: 'toggle',
+                p_id: key,
+                p_params: { is_active: !currentValue }
+            });
 
             if (error) throw error;
 
@@ -117,14 +118,12 @@ export default function ConfigTab() {
 
         setIsSaving(true);
         try {
-            const payload = {
-                ...formValues,
-                updated_at: new Date().toISOString()
-            };
-
-            const { error } = await supabase
-                .from('system_config')
-                .upsert(payload, { onConflict: 'key' });
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'config',
+                p_action: 'upsert',
+                p_id: formValues.key,
+                p_params: formValues
+            });
 
             if (error) throw error;
 
@@ -180,11 +179,22 @@ export default function ConfigTab() {
             label: 'Enable Selected',
             onClick: async () => {
                 const keys = Array.from(selectedConfigKeys);
-                const { error } = await supabase.from('system_config').update({ is_active: true }).in('key', keys);
-                if (!error) {
+                const results = await Promise.all(keys.map(key => 
+                    supabase.rpc('admin_manage_settings_item', {
+                        p_tab: 'config',
+                        p_action: 'toggle',
+                        p_id: key,
+                        p_params: { is_active: true }
+                    })
+                ));
+                
+                const errors = results.filter(r => r.error);
+                if (errors.length === 0) {
                     showToast('Enabled selection', 'success');
                     fetchConfigs();
                     setSelectedConfigKeys(new Set());
+                } else {
+                    showToast('Some updates failed', 'error');
                 }
             },
             variant: 'success'
@@ -193,11 +203,22 @@ export default function ConfigTab() {
             label: 'Disable Selected',
             onClick: async () => {
                 const keys = Array.from(selectedConfigKeys);
-                const { error } = await supabase.from('system_config').update({ is_active: false }).in('key', keys);
-                if (!error) {
+                const results = await Promise.all(keys.map(key => 
+                    supabase.rpc('admin_manage_settings_item', {
+                        p_tab: 'config',
+                        p_action: 'toggle',
+                        p_id: key,
+                        p_params: { is_active: false }
+                    })
+                ));
+                
+                const errors = results.filter(r => r.error);
+                if (errors.length === 0) {
                     showToast('Disabled selection', 'warning');
                     fetchConfigs();
                     setSelectedConfigKeys(new Set());
+                } else {
+                    showToast('Some updates failed', 'error');
                 }
             },
             variant: 'danger'

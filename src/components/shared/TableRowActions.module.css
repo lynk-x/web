@@ -33,7 +33,7 @@
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-md);
     min-width: 180px;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
     padding: 6px;
     overflow: hidden;

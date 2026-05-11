@@ -32,22 +32,24 @@ export default function EditFeatureFlagPage() {
         if (!params.id) return;
         setIsFetching(true);
         try {
-            const { data, error } = await supabase
-                .from('feature_flags')
-                .select('*')
-                .eq('key', decodeURIComponent(params.id as string))
-                .single();
+            const { data, error } = await supabase.rpc('get_admin_settings_data', {
+                p_tab: 'feature_flags'
+            });
 
             if (error) throw error;
-            if (data) {
+            
+            const flag = (data || []).find((f: any) => f.key === decodeURIComponent(params.id as string));
+            if (flag) {
                 setFormData({
-                    key: data.key,
-                    description: data.description || '',
-                    is_enabled: data.is_enabled,
-                    rollout_percent: data.rollout_percent,
-                    platforms: data.platforms || [],
-                    allowed_regions: data.allowed_regions || [],
+                    key: flag.key,
+                    description: flag.description || '',
+                    is_enabled: flag.is_enabled,
+                    rollout_percent: flag.rollout_percent,
+                    platforms: flag.platforms || [],
+                    allowed_regions: flag.allowed_regions || [],
                 });
+            } else {
+                throw new Error('Feature flag not found');
             }
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to fetch feature flag', 'error');
@@ -65,16 +67,15 @@ export default function EditFeatureFlagPage() {
         setIsLoading(true);
 
         try {
-            const { error } = await supabase
-                .from('feature_flags')
-                .update({
-                    description: formData.description,
-                    rollout_percent: formData.rollout_percent,
-                    platforms: formData.platforms,
-                    allowed_regions: formData.allowed_regions,
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'feature_flags',
+                p_action: 'upsert',
+                p_id: formData.key,
+                p_params: {
+                    ...formData,
                     updated_at: new Date().toISOString()
-                })
-                .eq('key', formData.key);
+                }
+            });
 
             if (error) throw error;
 

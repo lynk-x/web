@@ -175,7 +175,7 @@ function PerformanceTab() {
     return (
         <div className={styles.tabContent}>
             <div className={styles.statsGrid}>
-                <StatCard label="Search Engine" value="Healthy" change="124ms Latency" trend="positive" />
+                <StatCard label="Search Volume" value={data?.search_count_24h?.toLocaleString() || '0'} change="Last 24 hours" trend="positive" />
                 <StatCard label="Conversion Rate" value="3.2%" change="Optimized" trend="positive" />
                 <StatCard label="Ad Fill Rate" value="88%" change="Stable" trend="neutral" />
                 <StatCard label="Yield Analysis" value={`${Math.round((data?.yield?.[0]?.sell_through_rate || 0))}%`} change="Live" trend="positive" />
@@ -268,7 +268,7 @@ function InsightsTab() {
         <div className={styles.tabContent}>
              <div className={styles.statsGrid}>
                 <StatCard label="Avg Toxicity" value={`${Math.round((data?.community_health || []).reduce((acc: any, h: any) => acc + h.toxicity_index, 0) / Math.max(data?.community_health?.length || 1, 1))}%`} change="Report density" trend="neutral" />
-                <StatCard label="Search Gaps" value={data?.search_gaps?.length || 0} change="High demand keywords" trend="positive" />
+                <StatCard label="Search Gaps" value={data?.search_gaps_total || 0} change="High demand keywords" trend="positive" />
                 <StatCard label="Hot Trends" value={(data?.trends || []).join(', ')} change="Top Categories" trend="positive" />
                 <StatCard label="Avg Engagement" value={`${(data?.avg_engagement || 0).toFixed(1)} msg/user`} change="Community Velocity" trend="positive" />
             </div>

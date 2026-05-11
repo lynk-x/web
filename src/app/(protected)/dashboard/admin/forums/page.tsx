@@ -110,6 +110,7 @@ function ForumsContent() {
 
         setThreads(page.map((f: any) => ({
             id: f.id,
+            createdAt: f.created_at,
             reference: f.reference,
             title: f.event_title + ' Forum',
             eventName: f.event_title,
@@ -158,8 +159,11 @@ function ForumsContent() {
         const count = selectedThreadIds.size;
         await executeAction(
             () => supabase.rpc('bulk_update_forum_status', {
-                forum_ids: Array.from(selectedThreadIds),
-                new_status: newStatus
+                p_forum_ids: Array.from(selectedThreadIds),
+                p_forum_created_ats: allForums
+                    .filter(f => selectedThreadIds.has(f.id))
+                    .map(f => f.created_at),
+                p_status: newStatus
             }),
             {
                 loadingMessage: `Updating ${count} forums to ${newStatus}...`,
@@ -178,8 +182,11 @@ function ForumsContent() {
         if (!await confirm(`Are you sure? This will delete ${selectedThreadIds.size} forums. This action cannot be undone.`)) return;
         await executeAction(
             () => supabase.rpc('bulk_update_forum_status', {
-                forum_ids: Array.from(selectedThreadIds),
-                new_status: 'archived'
+                p_forum_ids: Array.from(selectedThreadIds),
+                p_forum_created_ats: allForums
+                    .filter(f => selectedThreadIds.has(f.id))
+                    .map(f => f.created_at),
+                p_status: 'archived'
             }),
             {
                 loadingMessage: `Deleting ${selectedThreadIds.size} forums...`,
@@ -197,8 +204,9 @@ function ForumsContent() {
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
         await executeAction(
             () => supabase.rpc('bulk_update_forum_status', {
-                forum_ids: [id],
-                new_status: newStatus
+                p_forum_ids: [id],
+                p_forum_created_ats: [threads.find(t => t.id === id)?.createdAt],
+                p_status: newStatus
             }),
             {
                 loadingMessage: 'Updating status...',
@@ -350,6 +358,7 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
                 title: `Report #${r.reference}`,
                 description: (r as any).info?.description || 'No description provided.',
                 date: new Date(r.created_at).toLocaleDateString(),
+                createdAt: r.created_at,
                 reporter: r.reporter?.user_name || 'Anonymous',
                 status: r.status,
                 reasonId: r.reason_id
@@ -371,7 +380,11 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
             variant: 'success',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>,
             onClick: () => executeAction(
-                () => supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'resolved' }),
+                () => supabase.rpc('moderate_report', { 
+                    p_report_id: report.id, 
+                    p_report_created_at: report.createdAt,
+                    p_status: 'resolved' 
+                }),
                 {
                     loadingMessage: 'Resolving report...',
                     successMessage: 'Report resolved',
@@ -384,7 +397,11 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
             variant: 'danger',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
             onClick: () => executeAction(
-                () => supabase.rpc('moderate_report', { p_report_id: report.id, p_status: 'dismissed' }),
+                () => supabase.rpc('moderate_report', { 
+                    p_report_id: report.id, 
+                    p_report_created_at: report.createdAt,
+                    p_status: 'dismissed' 
+                }),
                 {
                     loadingMessage: 'Dismissing report...',
                     successMessage: 'Report dismissed',

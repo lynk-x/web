@@ -41,17 +41,18 @@ export default function CreateBannerPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('system_banners')
-                .insert([{
+            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+                p_tab: 'banners',
+                p_data: {
                     title,
-                    content,
+                    body: content,
                     type,
-                    is_active: isActive,
+                    status: isActive ? 'approved' : 'draft',
                     starts_at: new Date(startsAt).toISOString(),
                     ends_at: endsAt ? new Date(endsAt).toISOString() : null,
                     action_url: actionUrl || null
-                }]);
+                }
+            });
 
             if (error) throw error;
 

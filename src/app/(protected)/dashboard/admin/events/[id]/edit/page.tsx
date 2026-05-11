@@ -17,7 +17,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     const { showToast } = useToast();
 
     const [initialData, setInitialData] = useState<OrganizerEventFormData | null>(null);
+    const [eventCreatedAt, setEventCreatedAt] = useState<string | null>(null);
     const [accountId, setAccountId] = useState<string | null>(null);
+    const [eventCurrency, setEventCurrency] = useState<string>('KES');
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -30,10 +32,10 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     .from('events')
                     .select(`
                         id, title, description, category_id, is_online, is_private, 
-                        location, starts_at, ends_at, media,
-                        account_id, currency,
+                        location, coordinates, starts_at, ends_at, media,
+                        account_id, currency, created_at,
                         ticket_tiers (
-                            id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
+                            id, display_name, price, capacity, description, sales_start, sales_end, max_per_order
                         )
                     `)
                     .eq('id', eventId)
@@ -42,6 +44,18 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 if (eventError) throw eventError;
 
                 setAccountId(event.account_id);
+                setEventCreatedAt(event.created_at);
+                setEventCurrency(event.currency || 'KES');
+
+                // Parse coordinates if they exist
+                let coords: [number, number] | undefined;
+                if (event.coordinates && typeof event.coordinates === 'string') {
+                    // Expecting "POINT(lng lat)"
+                    const match = event.coordinates.match(/POINT\((.+) (.+)\)/);
+                    if (match) {
+                        coords = [parseFloat(match[1]), parseFloat(match[2])];
+                    }
+                }
 
                 // Parse dates
                 const startDt = new Date(event.starts_at);
@@ -58,9 +72,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     price: t.price.toString(),
                     capacity: t.capacity.toString(),
                     description: t.description || '',
-                    saleStart: t.sales_start_at ? formatDate(new Date(t.sales_start_at)) : '',
-                    saleEnd: t.sales_end_at ? formatDate(new Date(t.sales_end_at)) : '',
-                    maxPerOrder: t.max_per_user?.toString() || ''
+                    saleStart: t.sales_start ? formatDate(new Date(t.sales_start)) : '',
+                    saleEnd: t.sales_end ? formatDate(new Date(t.sales_end)) : '',
+                    maxPerOrder: t.max_per_order?.toString() || ''
                 }));
 
                 setInitialData({
@@ -71,6 +85,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     thumbnailUrl: (event.media as any)?.thumbnail || '',
                     isOnline: event.is_online,
                     location: (event.location as any)?.name || '',
+                    coordinates: coords,
                     startDate: formatDate(startDt),
                     startTime: formatTime(startDt),
                     endDate: formatDate(endDt),
@@ -93,7 +108,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     }, [eventId, router, showToast]);
 
     const handleEdit = async (data: OrganizerEventFormData, file?: File | null) => {
-        if (!accountId) return;
+        if (!accountId || !eventCreatedAt) return;
 
         try {
             let uploadedThumbnailUrl = data.thumbnailUrl || null;
@@ -102,16 +117,16 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             if (file) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `${accountId}/${fileName}`;
+                const filePath = `events/${accountId}/${fileName}`;
 
                 const { error: uploadError } = await supabase.storage
-                    .from('events')
+                    .from('media')
                     .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadError) throw uploadError;
 
                 const { data: publicUrlData } = supabase.storage
-                    .from('events')
+                    .from('media')
                     .getPublicUrl(filePath);
 
                 uploadedThumbnailUrl = publicUrlData.publicUrl;
@@ -130,12 +145,18 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     category_id: data.category,
                     is_online: data.isOnline,
                     is_private: data.isPrivate,
-                    location: data.location ? { name: data.location } : null,
+                    location: { name: data.location },
+                    coordinates: data.coordinates ? `POINT(${data.coordinates[0]} ${data.coordinates[1]})` : null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
+                    currency: data.currency,
+                    media: { 
+                        thumbnail: uploadedThumbnailUrl || (initialData?.thumbnailUrl)
+                    },
+                    updated_at: new Date().toISOString()
                 })
-                .eq('id', eventId);
+                .eq('id', eventId)
+                .eq('created_at', eventCreatedAt);
 
             if (eventError) throw eventError;
 
@@ -165,14 +186,15 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 const ticketsToUpsert = data.tickets.map((t) => ({
                     ...(t.id ? { id: t.id } : {}),
                     event_id: eventId,
+                    event_created_at: eventCreatedAt,
                     display_name: t.display_name,
                     price: parseFloat(t.price),
                     capacity: parseInt(t.capacity),
-                    max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    currency: 'USD',
-                    sales_start_at: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end_at: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
-                    description: t.description || null
+                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : null,
+                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
+                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                    description: t.description || null,
+                    updated_at: new Date().toISOString()
                 }));
 
                 const { error: upsertError } = await supabase

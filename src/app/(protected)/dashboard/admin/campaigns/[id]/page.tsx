@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import CampaignDetail from '@/components/admin/campaigns/Detail/CampaignDetail';
 import BackButton from '@/components/shared/BackButton';
 import styles from '../page.module.css';
@@ -12,10 +12,12 @@ import { Campaign } from '@/types/admin';
 
 export default function AdminCampaignDetailPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const router = useRouter();
     const supabase = createClient();
     const { showToast } = useToast();
     const id = params.id as string;
+    const createdAt = searchParams.get('createdAt');
 
     const [campaign, setCampaign] = useState<Campaign | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +27,7 @@ export default function AdminCampaignDetailPage() {
             setIsLoading(true);
             try {
                 // Fetch campaign data
-                const { data, error } = await supabase
+                const query = supabase
                     .from('ad_campaigns')
                     .select(`
                         id,
@@ -38,10 +40,16 @@ export default function AdminCampaignDetailPage() {
                         start_at,
                         end_at,
                         account_id,
-                        accounts: account_id (name)
+                        created_at,
+                        accounts: account_id (display_name)
                     `)
-                    .eq('id', id)
-                    .single();
+                    .eq('id', id);
+
+                if (createdAt) {
+                    query.eq('created_at', createdAt);
+                }
+
+                const { data, error } = await query.single();
 
                 if (error) throw error;
 
@@ -56,9 +64,10 @@ export default function AdminCampaignDetailPage() {
 
                 setCampaign({
                     id: data.id,
+                    createdAt: data.created_at,
                     campaignRef: data.reference,
                     name: data.title,
-                    client: (data.accounts as { name?: string })?.name || 'Unknown Client',
+                    client: (data.accounts as any)?.display_name || 'Unknown Client',
                     adType: data.type,
                     budget: parseFloat(data.total_budget),
                     spend: parseFloat(data.spent_amount) || parseFloat(perf.total_spend) || 0,
@@ -84,7 +93,8 @@ export default function AdminCampaignDetailPage() {
             const { error } = await supabase
                 .from('ad_campaigns')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq('id', campaignId);
+                .eq('id', campaignId)
+                .eq('created_at', campaign?.createdAt);
 
             if (error) throw error;
 

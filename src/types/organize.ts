@@ -24,7 +24,7 @@ export interface OrganizerEvent {
      * Exhaustive alignment with `event_status` schema enum.
      * draft → published → active → completed/cancelled/archived/postponed/suspended
      */
-    status: 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'cancelled' | 'postponed' | 'suspended';
+    status: 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'cancelled' | 'postponed' | 'suspended' | 'rejected' | 'flagged';
     attendees: number;
     /** Unique share/lookup code — from `events.reference` column */
     eventReference?: string;
@@ -33,6 +33,12 @@ export interface OrganizerEvent {
     thumbnailUrl?: string;
     reportsCount?: number;
     currency?: string;
+    // Forum integration
+    forum_id?: string;
+    forum_status?: string;
+    message_count?: number;
+    media_count?: number;
+    escalated_reports_count?: number;
 }
 
 /** A row in the organizer events (overview) table. */
@@ -90,6 +96,8 @@ export interface FinanceTransaction {
      * Distinct from sender_id/recipient_id which are legacy financial direction markers.
      */
     initiatedBy?: string;
+    /** Partition key for finance.transactions */
+    createdAt: string;
 }
 
 /** A payout request — aligned to the `payouts` DB table.
@@ -111,6 +119,8 @@ export interface Payout {
     processedAt?: string;
     /** From accounts.kyc_status - pending | submitted | approved | rejected | suspended */
     kyc_status?: 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended';
+    /** The verification tier of the account: tier_1_basic | tier_2_verified | tier_3_advanced */
+    kyc_tier?: 'tier_1_basic' | 'tier_2_verified' | 'tier_3_advanced';
     /** Aligned to kyc_status logic: approved accounts are verified */
     is_verified?: boolean;
     /** JSON metadata for provider or audit details */
@@ -125,6 +135,8 @@ export interface Payout {
     currency?: string;
     /** Internal admin notes */
     notes?: string;
+    /** Partition key for finance.payouts */
+    createdAt: string;
 }
 
 /** A notification item in the organizer notifications table. */

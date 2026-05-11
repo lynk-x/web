@@ -32,19 +32,12 @@ export default function PaymentProvidersTab() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data: res, error } = await supabase
-                .from('platform_payment_providers')
-                .select('*, currencies:platform_payment_provider_currencies(currency)')
-                .order('provider_name');
+            const { data: res, error } = await supabase.rpc('get_admin_settings_data', {
+                p_tab: 'payment_providers'
+            });
             if (error) throw error;
 
-            // Map the joined data to match PlatformPaymentProvider interface
-            const mappedData = (res || []).map(p => ({
-                ...p,
-                supported_currencies: p.currencies?.map((c: { currency: string }) => c.currency) || []
-            }));
-
-            setData(mappedData);
+            setData(res || []);
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to load payment providers', 'error');
         } finally {
@@ -60,18 +53,19 @@ export default function PaymentProvidersTab() {
         if (!isEditing) return;
         setIsSaving(true);
         try {
-            const { error } = await supabase
-                .from('platform_payment_providers')
-                .update({
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'payment_providers',
+                p_action: 'update',
+                p_id: isEditing.id,
+                p_params: {
                     processing_fee_percent: Number(editForm.processing_fee_percent),
                     is_active: editForm.is_active,
                     metadata: {
                         environment: editForm.environment,
                         config: editForm.config
-                    },
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', isEditing.id);
+                    }
+                }
+            });
 
             if (error) throw error;
             showToast('Payment provider updated successfully.', 'success');
@@ -87,13 +81,12 @@ export default function PaymentProvidersTab() {
     const toggleActiveStatus = async (provider: PlatformPaymentProvider) => {
         const newStatus = !provider.is_active;
         try {
-            const { error } = await supabase
-                .from('platform_payment_providers')
-                .update({
-                    is_active: newStatus,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', provider.id);
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'payment_providers',
+                p_action: 'toggle',
+                p_id: provider.id,
+                p_params: { is_active: newStatus }
+            });
 
             if (error) throw error;
             showToast(`Provider ${newStatus ? 'activated' : 'deactivated'} successfully.`, 'success');

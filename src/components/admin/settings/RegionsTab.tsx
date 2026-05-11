@@ -51,10 +51,9 @@ export default function RegionsTab() {
     const fetchCountries = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('countries')
-                .select('*, tax_rates(display_name, rate_percent, is_inclusive)')
-                .order('display_name');
+            const { data, error } = await supabase.rpc('get_admin_settings_data', {
+                p_tab: 'regions'
+            });
             if (error) throw error;
             setCountries((data || []).map((c: any) => ({
                 id: c.code,
@@ -84,10 +83,12 @@ export default function RegionsTab() {
 
     const handleToggleCountry = async (code: string, current: boolean) => {
         try {
-            const { error } = await supabase
-                .from('countries')
-                .update({ is_active: !current, updated_at: new Date().toISOString() })
-                .eq('code', code);
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'regions',
+                p_action: 'toggle',
+                p_id: code,
+                p_params: { is_active: !current }
+            });
             if (error) throw error;
             setCountries(prev => prev.map(c => c.code === code ? { ...c, is_active: !current } : c));
             showToast(`${code} ${!current ? 'activated' : 'deactivated'}`, 'success');
@@ -111,16 +112,17 @@ export default function RegionsTab() {
                 }
             };
 
-            const { error } = await supabase
-                .from('countries')
-                .update({
+            const { error } = await supabase.rpc('admin_manage_settings_item', {
+                p_tab: 'regions',
+                p_action: 'update',
+                p_id: isEditing.code,
+                p_params: {
                     currency: editForm.currency,
                     region: editForm.region,
                     timezone: editForm.timezone,
-                    info: updatedInfo,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('code', isEditing.code);
+                    info: updatedInfo
+                }
+            });
 
             if (error) throw error;
 

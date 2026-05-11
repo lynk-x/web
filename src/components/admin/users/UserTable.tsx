@@ -10,6 +10,8 @@ import { formatString, getInitials } from '@/utils/format';
 import type { ActionItem } from '../../shared/TableRowActions';
 import AccountMembersDrawer from './AccountMembersDrawer';
 import AccountGovernanceDrawer from './AccountGovernanceDrawer';
+import { createClient } from '@/utils/supabase/client';
+import { getErrorMessage } from '@/utils/error';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -72,8 +74,9 @@ const UserTable: React.FC<UserTableProps> = ({
 }) => {
     const { showToast } = useToast();
     const router = useRouter();
-    const [selectedAccountForMembers, setSelectedAccountForMembers] = React.useState<User | null>(null);
-    const [selectedAccountForGovernance, setSelectedAccountForGovernance] = React.useState<User | null>(null);
+    const supabase = React.useMemo(() => createClient(), []);
+    const [selectedAccountForMembers, setSelectedAccountForMembers] = React.useState<any | null>(null);
+    const [selectedAccountForGovernance, setSelectedAccountForGovernance] = React.useState<any | null>(null);
 
     /** Column definitions for the user table. */
     const columns: Column<User>[] = [
@@ -136,8 +139,12 @@ const UserTable: React.FC<UserTableProps> = ({
             header: 'KYC Tier',
             render: (user) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600 }}>{user.kycTier || 'Tier 0'}</span>
-                    <span style={{ fontSize: '10px', opacity: 0.5 }}>{user.isVerified ? 'Verified' : 'Pending'}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>
+                        {user.kycTier ? user.kycTier.replace(/_/g, ' ').toUpperCase() : 'PENDING'}
+                    </span>
+                    <span style={{ fontSize: '10px', opacity: 0.5 }}>
+                        {user.isVerified ? 'VERIFIED' : 'UNVERIFIED'}
+                    </span>
                 </div>
             ),
         },
@@ -152,14 +159,14 @@ const UserTable: React.FC<UserTableProps> = ({
     /** Row-level actions for the user action menu. */
     const getActions = (user: User): ActionItem[] => [
         {
+            label: 'Quick Verify',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+            onClick: () => setSelectedAccountForGovernance(user),
+        },
+        {
             label: 'View Members',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
             onClick: () => setSelectedAccountForMembers(user),
-        },
-        {
-            label: 'KYC & Wallets',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>,
-            onClick: () => setSelectedAccountForGovernance(user),
         },
         {
             divider: true,
@@ -167,13 +174,38 @@ const UserTable: React.FC<UserTableProps> = ({
         {
             label: user.status === 'active' ? 'Suspend Account' : 'Activate Account',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
-            onClick: () => showToast(`Toggling suspension for ${user.name}`, 'info'),
+            onClick: async () => {
+                const newStatus = user.status === 'active' ? 'temporarily_suspended' : 'active';
+                showToast(`Updating ${user.name} status...`, 'info');
+                try {
+                    const { error } = await supabase.rpc('bulk_update_user_status', {
+                        p_user_ids: [user.id],
+                        p_status: newStatus
+                    });
+                    if (error) throw error;
+                    showToast(`${user.name} is now ${newStatus.replace('_', ' ')}.`, 'success');
+                } catch (err) {
+                    showToast(getErrorMessage(err), 'error');
+                }
+            },
         },
         {
             label: 'Lock Account',
             variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
-            onClick: () => showToast(`CRITICAL: Locking account ${user.id.slice(0, 8)}`, 'error'),
+            onClick: async () => {
+                if (!confirm('Are you sure you want to PERMANENTLY lock this account?')) return;
+                try {
+                    const { error } = await supabase.rpc('bulk_update_user_status', {
+                        p_user_ids: [user.id],
+                        p_status: 'permanently_suspended'
+                    });
+                    if (error) throw error;
+                    showToast(`CRITICAL: Account ${user.id.slice(0, 8)} has been locked.`, 'success');
+                } catch (err) {
+                    showToast(getErrorMessage(err), 'error');
+                }
+            },
         },
     ];
 

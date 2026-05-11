@@ -3,32 +3,32 @@
 import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import Link from 'next/link';
 import adminStyles from '../page.module.css';
-import UserTable, { User } from '@/components/admin/users/UserTable';
+import AccountTable from '@/components/admin/users/AccountTable';
 import TableToolbar from '@/components/shared/TableToolbar';
-import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
-import { formatRelativeTime } from '@/utils/format';
 import { useDebounce } from '@/hooks/useDebounce';
+import KYCTab from '@/components/admin/users/KYCTab';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import type { AdminAccount } from '@/types/admin';
 
-function UsersContent() {
+function AccountsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
-    const [users, setUsers] = useState<User[]>([]);
+    const [accounts, setAccounts] = useState<AdminAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-    const [roleFilter, setRoleFilter] = useState('all');
-    const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [summary, setSummary] = useState<any>(null);
@@ -36,216 +36,151 @@ function UsersContent() {
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
 
-
-
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
         if (!error && data) setSummary(data);
     }, [supabase]);
 
-    const fetchUsers = useCallback(async () => {
+    const fetchAccounts = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_user_performance', {
+            const { data, error } = await supabase.rpc('get_admin_accounts', {
                 p_search: debouncedSearch.trim(),
-                p_role: roleFilter,
+                p_type: typeFilter,
+                p_status: statusFilter,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
 
             if (error) throw error;
 
-            const mappedUsers: User[] = (data || []).map((u: any) => ({
-                id: u.id,
-                name: u.full_name || u.user_name || 'Unknown User',
-                email: u.email || 'no-email@lynk-x.com',
-                role: u.role,
-                status: u.status,
-                lastActive: formatRelativeTime(u.last_active_at),
-                isVerified: u.is_verified,
-                kycTier: u.kyc_tier,
-                reportsCount: u.reports_count || 0,
-                userName: u.user_name,
-                countryCode: u.country_code,
-                businessEmail: undefined,
-                taxId: undefined,
-                registrationNumber: undefined
-            }));
-
-            setUsers(mappedUsers);
+            setAccounts(data || []);
             setTotalCount(data?.[0]?.total_count || 0);
-        } catch (err: unknown) {
-            showToast('Failed to load user database.', 'error');
+        } catch (err: any) {
+            showToast('Failed to load accounts database.', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, debouncedSearch, roleFilter, currentPage]);
+    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, currentPage]);
 
     useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+        fetchAccounts();
+    }, [fetchAccounts]);
 
     useEffect(() => {
         fetchSummary();
     }, [fetchSummary]);
 
-    // Update searchTerm if URL changes
-    useEffect(() => {
-        const search = searchParams.get('search');
-        if (search !== null && search !== searchTerm) {
-            setSearchTerm(search);
-        }
-    }, [searchParams]);
-
-
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
-
-    const handleSelectUser = (id: string) => {
-        const newSelected = new Set(selectedUserIds);
-        if (newSelected.has(id)) newSelected.delete(id);
-        else newSelected.add(id);
-        setSelectedUserIds(newSelected);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedUserIds.size === users.length) {
-            setSelectedUserIds(new Set());
-        } else {
-            const newSelected = new Set(selectedUserIds);
-            users.forEach(user => newSelected.add(user.id));
-            setSelectedUserIds(newSelected);
-        }
-    };
-
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
-        setSelectedUserIds(new Set());
-    }, [debouncedSearch, roleFilter]);
+    }, [debouncedSearch, typeFilter, statusFilter]);
 
-    const handleBulkStatusUpdate = async (newStatus: string) => {
-        showToast(`Updating ${selectedUserIds.size} users...`, 'info');
-        try {
-            const isActive = newStatus === 'active';
-            const { error } = await supabase.rpc('bulk_update_user_status', {
-                user_ids: Array.from(selectedUserIds),
-                new_status: newStatus
-            });
-
-            if (error) throw error;
-
-            showToast(`Users ${newStatus} successfully.`, 'success');
-            setUsers(prev => prev.map(u =>
-                selectedUserIds.has(u.id) ? { ...u, status: newStatus as any } : u
-            ));
-            setSelectedUserIds(new Set());
-        } catch (err) {
-            showToast('Failed to update accounts.', 'error');
-        }
-    };
-
-    const bulkActions: BulkAction[] = [
-        { label: 'Activate Selection', onClick: () => handleBulkStatusUpdate('active'), variant: 'success' },
-        { label: 'Suspend Selection', onClick: () => handleBulkStatusUpdate('temporarily_suspended'), variant: 'danger' }
-    ];
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     return (
-        <>
-            <div className={adminStyles.statsGrid}>
-                <StatCard 
-                    label="Total Registered" 
-                    value={summary?.total_users || 0} 
-                    change="All platform accounts"
-                    isLoading={isLoading} 
+        <div className={sharedStyles.container}>
+            <PageHeader 
+                title="Identity & Compliance" 
+                subtitle="Manage organizational accounts, KYC status, and system access." 
+            />
+
+            <div className={sharedStyles.statsGrid}>
+                <StatCard
+                    label="Total Accounts"
+                    value={summary?.users?.total || 0}
+                    change="Platform entities"
+                    isLoading={isLoading}
                 />
-                <StatCard 
-                    label="Verified Users" 
-                    value={summary?.total_verified_users || 0} 
-                    change="Identity verified"
+                <StatCard
+                    label="Pending KYC"
+                    value={summary?.users?.kyc_pending || 0}
+                    change="Verifications needed"
+                    trend="negative"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Growth (30d)"
+                    value={summary?.users?.growth_30d || 0}
+                    change="New accounts"
                     trend="positive"
-                    isLoading={isLoading} 
+                    isLoading={isLoading}
                 />
-                <StatCard 
-                    label="Active Organizers" 
-                    value={summary?.total_organizers || 0} 
-                    change="Verified event makers"
-                    trend="neutral"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Pending Reports" 
-                    value={summary?.total_reports_count || 0} 
-                    change="Requires moderation"
-                    trend={(summary?.total_reports_count || 0) > 0 ? "negative" : "positive"}
-                    isLoading={isLoading} 
+                <StatCard
+                    label="Churn (30d)"
+                    value={summary?.users?.churn_30d || 0}
+                    change="Deleted accounts"
+                    trend="negative"
+                    isLoading={isLoading}
                 />
             </div>
 
+            <Tabs defaultValue="accounts" className={styles.tabs}>
+                <TabsList>
+                    <TabsTrigger value="accounts">Accounts Database</TabsTrigger>
+                    <TabsTrigger value="kyc">KYC Workspace</TabsTrigger>
+                </TabsList>
 
+                <TabsContent value="accounts">
+                    <TableToolbar 
+                        searchPlaceholder="Search by name, reference or owner email..." 
+                        searchValue={searchTerm} 
+                        onSearchChange={setSearchTerm}
+                    >
+                        <select 
+                            className={adminStyles.select}
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                        >
+                            <option value="all">All Types</option>
+                            <option value="organizer">Organizers</option>
+                            <option value="advertiser">Advertisers</option>
+                            <option value="attendee">Attendees</option>
+                            <option value="pulse_user">Pulse Users</option>
+                            <option value="platform">Platform</option>
+                        </select>
 
-            <TableToolbar
-                searchPlaceholder="Search by name or email..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <StatusFilterChips
-                    options={[
-                        { value: 'all', label: 'All Users' },
-                        { value: 'admin', label: 'Admins' },
-                        { value: 'organizer', label: 'Organizers' },
-                        { value: 'advertiser', label: 'Advertisers' },
-                        { value: 'attendee', label: 'Attendees' },
-                        { value: 'platform', label: 'Platform' },
-                    ]}
-                    currentValue={roleFilter}
-                    onChange={setRoleFilter}
-                />
-            </TableToolbar>
+                        <select 
+                            className={adminStyles.select}
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="frozen">Frozen</option>
+                        </select>
+                    </TableToolbar>
 
-            <BulkActionsBar
-                selectedCount={selectedUserIds.size}
-                actions={bulkActions}
-                onCancel={() => setSelectedUserIds(new Set())}
-                itemTypeLabel="users"
-            />
+                    <AccountTable 
+                        accounts={accounts}
+                        isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onRefresh={fetchAccounts}
+                        selectedIds={selectedIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedIds);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
+                            setSelectedIds(next);
+                        }}
+                    />
+                </TabsContent>
 
-            <UserTable
-                users={users}
-                isLoading={isLoading}
-                selectedIds={selectedUserIds}
-                onSelect={handleSelectUser}
-                onSelectAll={handleSelectAll}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                view="accounts"
-            />
-        </>
+                <TabsContent value="kyc">
+                    <KYCTab />
+                </TabsContent>
+            </Tabs>
+        </div>
     );
 }
 
-export default function AdminUsersPage() {
+export default function AdminIdentityPage() {
     return (
-        <div className={sharedStyles.container}>
-            <PageHeader
-                title="Identity Management"
-                subtitle="Monitor and manage platform identities, kyc verification levels and roles."
-                actionLabel="Create Account"
-                actionHref="/dashboard/admin/users/create"
-                actionIcon={
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1="19" y1="8" x2="19" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1="22" y1="11" x2="16" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                }
-            />
-
-            <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading Users...</div>}>
-                <UsersContent />
-            </Suspense>
-        </div>
+        <Suspense fallback={<div className={adminStyles.loading}>Loading Identity...</div>}>
+            <AccountsContent />
+        </Suspense>
     );
 }

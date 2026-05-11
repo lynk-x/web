@@ -187,14 +187,40 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                     <Badge label={formatString(event.status)} variant={getStatusVariant(event.status)} showDot />
                 ),
             },
+            {
+                header: 'Community',
+                render: (event) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {event.forum_id ? (
+                            <>
+                                <Badge 
+                                    label={formatString(event.forum_status || 'Open')} 
+                                    variant={event.forum_status === 'read_only' ? 'warning' : 'primary'} 
+                                    showDot 
+                                />
+                                <div style={{ fontSize: '11px', opacity: 0.6, display: 'flex', gap: '8px' }}>
+                                    <span>{event.message_count || 0} msgs</span>
+                                    {event.escalated_reports_count && event.escalated_reports_count > 0 ? (
+                                        <span style={{ color: 'var(--color-interface-error)', fontWeight: 600 }}>
+                                            {event.escalated_reports_count} reports
+                                        </span>
+                                    ) : null}
+                                </div>
+                            </>
+                        ) : (
+                            <span style={{ fontSize: '11px', opacity: 0.3 }}>No Forum</span>
+                        )}
+                    </div>
+                ),
+            },
         ];
 
         const getAdminActions = (event: OrganizerEvent): ActionItem[] => {
             const actions: ActionItem[] = [
                 {
-                    label: 'View Details',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                    onClick: () => router.push(`/event/${event.eventReference || event.id}`)
+                    label: 'Event Dashboard',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>,
+                    onClick: () => router.push(`/dashboard/organize/events/${event.id}`)
                 },
                 {
                     label: 'Attendee List',
@@ -202,14 +228,6 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                     onClick: () => router.push(`/dashboard/organize/events/${event.id}/attendees`)
                 },
             ];
-
-            if (onDuplicate) {
-                actions.push({
-                    label: 'Duplicate',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-                    onClick: () => onDuplicate(event.id)
-                });
-            }
 
             if (adminProps.onEdit) {
                 actions.push({
@@ -219,28 +237,30 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                 });
             }
 
+            if (onDuplicate) {
+                actions.push({
+                    label: 'Duplicate',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+                    onClick: () => onDuplicate(event.id)
+                });
+            }
+
+            actions.push({
+                label: 'Public View',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+                onClick: () => router.push(`/event/${event.eventReference || event.id}`)
+            });
+
             if (adminProps.onStatusChange) {
                 if (event.status === 'draft' || event.status === 'published' || (event as any).status === 'pending_approval') {
                     actions.push({
-                        label: 'Publish / Approve',
+                        label: 'Publish Event',
                         variant: 'success' as const,
                         icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                         onClick: () => adminProps.onStatusChange!(event, 'active')
                     });
-                    actions.push({
-                        label: 'Reject',
-                        variant: 'danger' as const,
-                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                        onClick: () => adminProps.onStatusChange!(event, 'rejected')
-                    });
                 }
                 if (event.status === 'active') {
-                    actions.push({
-                        label: 'Suspend Event',
-                        variant: 'default',
-                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>,
-                        onClick: () => adminProps.onStatusChange!(event, 'suspended')
-                    });
                     actions.push({
                         label: 'Cancel Event',
                         variant: 'danger' as const,
@@ -250,9 +270,15 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                 }
             }
 
+            actions.push({
+                label: 'Check-in Logs',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>,
+                onClick: () => router.push(`/dashboard/organize/events/${event.id}/check-ins`)
+            });
+
             if (adminProps.onDelete) {
                 actions.push({
-                    label: 'Delete Event',
+                    label: 'Delete',
                     variant: 'danger' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
                     onClick: () => adminProps.onDelete!(event)
@@ -260,12 +286,7 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             }
 
             actions.push({
-                label: 'Check-in Logs',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>,
-                onClick: () => router.push(`/dashboard/organize/events/${event.id}/check-ins`)
-            });
-            actions.push({
-                label: 'Export as CSV',
+                label: 'Export CSV',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
                 onClick: () => {
                     showToast(`Exporting data for ${event.title}`, 'info');

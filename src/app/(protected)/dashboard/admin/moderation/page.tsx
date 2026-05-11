@@ -232,31 +232,31 @@ export default function AdminModerationPage() {
             <div className={sharedStyles.statsGrid}>
                 <StatCard 
                     label="Global Pending" 
-                    value={summary?.pending_moderation || 0} 
-                    change="Items awaiting action" 
-                    trend={summary?.pending_moderation > 0 ? "negative" : "positive"} 
+                    value={summary?.moderation?.pending || 0} 
+                    change="Items awaiting review" 
+                    trend={(summary?.moderation?.pending || 0) > 0 ? "negative" : "positive"} 
                     isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Active Events" 
-                    value={summary?.active_events || 0} 
-                    change="Cleared content" 
+                    label="Open Reports" 
+                    value={summary?.moderation?.total_reports || 0} 
+                    change="User complaints" 
+                    trend={(summary?.moderation?.total_reports || 0) > 0 ? "negative" : "positive"} 
+                    isLoading={!summary} 
+                />
+                <StatCard 
+                    label="Resolved (30d)" 
+                    value={summary?.moderation?.resolved_30d || 0} 
+                    change="Closed tickets" 
                     trend="positive" 
                     isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Active Campaigns" 
-                    value={summary?.active_campaigns || 0} 
-                    change="Monetized content" 
-                    trend="positive" 
+                    label="Max Toxicity" 
+                    value={summary?.moderation?.max_toxicity !== undefined ? `${summary.moderation.max_toxicity.toFixed(1)}%` : '—'} 
+                    change="Community alert" 
+                    trend={(summary?.moderation?.max_toxicity || 0) < 5 ? "positive" : "negative"} 
                     isLoading={!summary} 
-                />
-                <StatCard 
-                    label="Flagged History" 
-                    value={totalCount} 
-                    change="Items in current view" 
-                    trend="neutral" 
-                    isLoading={isLoading} 
                 />
             </div>
 
