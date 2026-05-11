@@ -1,19 +1,16 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import styles from './InvoicePage.module.css';
 import { useToast } from '@/components/ui/Toast';
 import BackButton from '@/components/shared/BackButton';
-import { formatCurrency } from '@/utils/format';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
-// Lazy-load the PDF renderer — it's large and only needed on click
-const InvoicePDF = dynamic(() => import('./InvoicePDF'), { ssr: false });
+// PDF renderer is lazy-loaded in handleDownloadPDF
 
 interface TxDetail {
     id: string;
@@ -35,8 +32,15 @@ interface TxDetail {
  * Falls back to a "not found" state if the transaction doesn't exist.
  */
 export default function AdminInvoicePage() {
+    return (
+        <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading invoice...</div>}>
+            <AdminInvoiceContent />
+        </Suspense>
+    );
+}
+
+function AdminInvoiceContent() {
     const params = useParams();
-    const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
     const searchParams = useSearchParams();
@@ -71,7 +75,18 @@ export default function AdminInvoicePage() {
                     return;
                 }
 
-                const d = data as any; // Using any for joined Supabase data to avoid verbose interface duplication
+                const d = data as {
+                    id: string;
+                    amount: number;
+                    status: string;
+                    created_at: string;
+                    currency: string;
+                    reason: string;
+                    reference: string;
+                    event: { title: string } | null;
+                    initiator: { full_name: string; user_name: string } | null;
+                    recipient_account: { display_name: string } | null;
+                };
                 setTx({
                     id: d.id,
                     date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
@@ -93,7 +108,7 @@ export default function AdminInvoicePage() {
         };
 
         fetchTransaction();
-    }, [id, supabase, showToast]);
+    }, [id, supabase, showToast, createdAt]);
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
     const { enabled: isPdfExportEnabled } = useFeatureFlag('enable_invoice_pdf_export');
