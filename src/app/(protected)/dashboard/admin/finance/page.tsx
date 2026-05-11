@@ -84,12 +84,26 @@ function FinanceContent() {
     const [isSyncingFX, setIsSyncingFX] = useState(false);
 
     // Global Stats state
-    const [globalStats, setGlobalStats] = useState<any>({
+    interface GlobalFinanceStats {
+        platformRevenue: number | null;
+        pendingPayouts: number | null;
+        ticketCommission: number | null;
+        adRevenue: number | null;
+        payoutRequestCount: number | null;
+        escrowTotal: number | null;
+        failureRate: number | null;
+        failedVolume: number | null;
+    }
+
+    const [globalStats, setGlobalStats] = useState<GlobalFinanceStats>({
         platformRevenue: null,
         pendingPayouts: null,
         ticketCommission: null,
         adRevenue: null,
-        payoutRequestCount: null
+        payoutRequestCount: null,
+        escrowTotal: null,
+        failureRate: null,
+        failedVolume: null
     });
 
     useEffect(() => {
@@ -119,7 +133,8 @@ function FinanceContent() {
                 payoutRequestCount: data.finance.payout_count,
                 adRevenue: data.advertising.spend_30d,
                 failureRate: data.finance.failure_rate,
-                failedVolume: data.finance.failed_volume
+                failedVolume: data.finance.failed_volume,
+                escrowTotal: data.finance.escrow_total
             });
         } catch (error: unknown) {
             showToast('Failed to load financial aggregates.', 'error');
@@ -244,7 +259,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate]);
+    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -628,10 +643,10 @@ function FinanceContent() {
                 />
                 <StatCard 
                     label="Escrow Total" 
-                    value={summary?.finance?.escrow_total !== null ? formatCurrency(summary?.finance?.escrow_total) : null} 
+                    value={globalStats.escrowTotal !== null ? formatCurrency(globalStats.escrowTotal) : null} 
                     change="Funds in transit"
                     trend="neutral"
-                    isLoading={!summary} 
+                    isLoading={isStatsLoading} 
                 />
             </div>
 
