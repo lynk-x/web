@@ -35,6 +35,8 @@ const Sidebar = () => {
             setMode('admin');
         } else if (pathname.startsWith('/dashboard/ads')) {
             setMode('ads');
+        } else if (pathname.startsWith('/dashboard/pulse')) {
+            setMode('pulse');
         } else {
             setMode('events');
         }
@@ -73,6 +75,7 @@ const Sidebar = () => {
                 <span className={styles.modeContextLabel}>
                     {mode === 'admin' ? 'Admin Dashboard' : 
                      mode === 'ads' ? 'Ads Dashboard' : 
+                     mode === 'pulse' ? 'Pulse Dashboard' :
                      'Events Dashboard'}
                 </span>
                 <div className={styles.modeContextDivider} />

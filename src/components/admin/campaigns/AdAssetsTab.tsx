@@ -49,7 +49,6 @@ export default function AdAssetsTab() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .schema('ad_analytics')
                 .from('ad_media')
                 .select('*, campaign:ad_campaigns!campaign_id(title, type, status)')
                 .order('created_at', { ascending: false });
@@ -79,7 +78,6 @@ export default function AdAssetsTab() {
         if (!await confirm(`Delete asset for campaign "${asset.campaign_title}"? This cannot be undone.`)) return;
         try {
             const { error } = await supabase
-                .schema('ad_analytics')
                 .from('ad_media')
                 .delete()
                 .eq('id', asset.id);

@@ -70,7 +70,7 @@ export function createNotificationsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('notifications').from('notifications')
+                .from('notifications')
                 .select('id, user_id, type, title, body, action_url, data, metadata, is_read, created_at')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
@@ -83,7 +83,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Count unread notifications for a user. */
         async countUnread(userId: string): Promise<RepoResult<number>> {
             const { count, error } = await client
-                .schema('notifications').from('notifications')
+                .from('notifications')
                 .select('id', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('is_read', false);
@@ -98,7 +98,7 @@ export function createNotificationsRepository(client: DbClient) {
          */
         async markRead(notificationId: string, createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .schema('notifications').from('notifications')
+                .from('notifications')
                 .update({ is_read: true })
                 .eq('id', notificationId)
                 .eq('created_at', createdAt);
@@ -110,7 +110,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Mark all notifications for a user as read. */
         async markAllRead(userId: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .schema('notifications').from('notifications')
+                .from('notifications')
                 .update({ is_read: true })
                 .eq('user_id', userId)
                 .eq('is_read', false);
@@ -122,7 +122,7 @@ export function createNotificationsRepository(client: DbClient) {
         /** Delete a notification. Requires `created_at` for the partitioned PK. */
         async delete(notificationId: string, createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .schema('notifications').from('notifications')
+                .from('notifications')
                 .delete()
                 .eq('id', notificationId)
                 .eq('created_at', createdAt);
@@ -182,7 +182,7 @@ export function createNotificationsRepository(client: DbClient) {
                     'postgres_changes' as never,
                     {
                         event: 'INSERT',
-                        schema: 'notifications',
+                        schema: 'public',
                         table: 'notifications',
                         filter: `user_id=eq.${userId}`,
                     } as never,

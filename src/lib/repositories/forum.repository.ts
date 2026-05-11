@@ -135,7 +135,7 @@ export function createForumRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('forum_messages').from('forum_messages')
+                .from('forum_messages')
                 .select(`
                     id, forum_id, channel_id, author_id, content, title, message_type,
                     is_pinned, is_hidden, edit_count, created_at, updated_at,
@@ -178,7 +178,7 @@ export function createForumRepository(client: DbClient) {
             messageType?: MessageType;
         }): Promise<RepoResult<ForumMessage>> {
             const { data, error } = await client
-                .schema('forum_messages').from('forum_messages')
+                .from('forum_messages')
                 .insert({
                     forum_id: params.forumId,
                     channel_id: params.channelId,
@@ -199,7 +199,7 @@ export function createForumRepository(client: DbClient) {
          */
         async deleteMessage(messageId: string, createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .schema('forum_messages').from('forum_messages')
+                .from('forum_messages')
                 .update({ deleted_at: new Date().toISOString() })
                 .eq('id', messageId)
                 .eq('created_at', createdAt);
@@ -215,7 +215,7 @@ export function createForumRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('forum_media').from('forum_media')
+                .from('forum_media')
                 .select('id, forum_id, uploader_id, media_type, media_url, metadata, caption, is_approved, created_at')
                 .eq('forum_id', forumId)
                 .eq('is_approved', true)
@@ -236,7 +236,7 @@ export function createForumRepository(client: DbClient) {
             emojiCode: string;
         }): Promise<RepoResult<null>> {
             const { error } = await client
-                .schema('message_reactions').from('message_reactions')
+                .from('message_reactions')
                 .insert({
                     message_id: params.messageId,
                     message_created_at: params.messageCreatedAt,
@@ -250,7 +250,7 @@ export function createForumRepository(client: DbClient) {
         /** Remove a reaction by id (author of the reaction only — enforced by RLS). */
         async removeReaction(reactionId: string, createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .schema('message_reactions').from('message_reactions')
+                .from('message_reactions')
                 .delete()
                 .eq('id', reactionId)
                 .eq('created_at', createdAt);
@@ -277,7 +277,7 @@ export function createForumRepository(client: DbClient) {
                     'postgres_changes' as never,
                     {
                         event: 'INSERT',
-                        schema: 'forum_messages',
+                        schema: 'public',
                         table: 'forum_messages',
                         filter: `channel_id=eq.${channelId}`,
                     } as never,

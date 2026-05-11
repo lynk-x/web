@@ -53,7 +53,6 @@ export default function AdminModerationPage() {
             const to = from + itemsPerPage - 1;
 
             let query = supabase
-                .schema('api')
                 .from('v1_moderation_queue')
                 .select('*', { count: 'exact' })
                 .in('status', ['pending_review', 'flagged', 'appealed']);

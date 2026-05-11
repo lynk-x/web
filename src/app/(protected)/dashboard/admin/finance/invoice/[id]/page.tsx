@@ -51,7 +51,6 @@ export default function AdminInvoicePage() {
             setIsLoading(true);
             try {
                 const query = supabase
-                    .schema('finance')
                     .from('transactions')
                     .select(`
                         id, amount, status, created_at, currency, reason, reference,

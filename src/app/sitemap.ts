@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // 2. Fetch public events for the sitemap
     const { data: events } = await supabase
-        .from('vw_public_events')
+        .from('vw_events')
         .select('reference, starts_at')
         .limit(100);
 

@@ -45,7 +45,6 @@ export default function CheckInLogsPage() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .schema('tickets')
                 .from('tickets')
                 .select(`
                     id, ticket_code, status, redeemed_at,
@@ -95,7 +94,7 @@ export default function CheckInLogsPage() {
             .channel(`event-scans-${eventId}`)
             .on('postgres_changes', {
                 event: '*',
-                schema: 'tickets',
+                schema: 'public',
                 table: 'tickets',
                 filter: `event_id=eq.${eventId}`
             }, () => {

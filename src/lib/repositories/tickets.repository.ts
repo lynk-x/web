@@ -75,7 +75,7 @@ export function createTicketsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('tickets').from('tickets')
+                .from('tickets')
                 .select(`
                     id, event_id, ticket_tier_id, user_id, status, ticket_code,
                     purchased_price, purchased_currency, created_at, updated_at,
@@ -114,7 +114,7 @@ export function createTicketsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('tickets').from('tickets')
+                .from('tickets')
                 .select(`
                     id, event_id, ticket_tier_id, user_id, status, ticket_code,
                     purchased_price, purchased_currency, created_at, updated_at,
@@ -173,7 +173,7 @@ export function createTicketsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('ticket_scan_logs').from('ticket_scan_logs')
+                .from('ticket_scan_logs')
                 .select(`
                     id, ticket_id, ticket_created_at, scanned_by, status, scanned_at,
                     tickets:ticket_id!inner (event_id)
@@ -199,7 +199,7 @@ export function createTicketsRepository(client: DbClient) {
         /** Fetch ticket transfers for a user (sent or received). */
         async getTransfersByUser(userId: string): Promise<RepoResult<TicketTransfer[]>> {
             const { data, error } = await client
-                .schema('ticket_transfers').from('ticket_transfers')
+                .from('ticket_transfers')
                 .select('id, ticket_id, sender_id, recipient_id, status, expires_at, transferred_at')
                 .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
                 .order('transferred_at', { ascending: false });

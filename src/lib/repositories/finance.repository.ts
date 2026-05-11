@@ -127,7 +127,7 @@ export function createFinanceRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .schema('transactions').from('transactions')
+                .from('transactions')
                 .select(
                     'id, sender_id, recipient_id, initiated_by, recipient_account_id, amount, currency, platform_fee, platform_tax, net_amount, status, reason, category, reference, event_id, ticket_id, provider_id, provider_ref, created_at',
                     selectOpts
@@ -155,7 +155,7 @@ export function createFinanceRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .schema('payouts').from('payouts')
+                .from('payouts')
                 .select(
                     'id, account_id, payout_method_id, reference, amount, fee, currency, net_disbursement, status, failure_reason, processed_at, created_at, updated_at',
                     selectOpts
@@ -196,7 +196,7 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('wallet_top_ups').from('wallet_top_ups')
+                .from('wallet_top_ups')
                 .select('id, account_id, provider_id, provider_ref, amount, currency, status, metadata, created_at, updated_at')
                 .eq('account_id', accountId)
                 .order('created_at', { ascending: false })
@@ -233,7 +233,7 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('refund_requests').from('refund_requests')
+                .from('refund_requests')
                 .select('id, user_id, event_id, ticket_id, reason, amount, currency, status, processed_at, created_at')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })

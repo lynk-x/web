@@ -344,7 +344,6 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .schema('reports')
                 .from('reports')
                 .select('*, reporter:user_profile!reporter_id(user_name)')
                 .eq('target_event_id', eventId)

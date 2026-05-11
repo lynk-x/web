@@ -94,6 +94,13 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                         </svg>
                     )
                 },
+                {
+                    name: 'Market Pulse', href: '/dashboard/pulse', icon: (
+                        <svg {...svgProps}>
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
             ]
         },
         {
@@ -247,6 +254,13 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                         </svg>
                     )
                 },
+                {
+                    name: 'Market Pulse', href: '/dashboard/pulse', icon: (
+                        <svg {...svgProps}>
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
             ]
         },
         {
@@ -304,4 +318,71 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             ]
         },
     ],
-};
+: 
+:     // ── Pulse (Market Intelligence) ────────────────────────────────────
+:     pulse: [
+:         {
+:             items: [
+:                 {
+:                     name: 'Overview', href: '/dashboard/pulse', icon: (
+:                         <svg {...svgProps}>
+:                             <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                         </svg>
+:                     )
+:                 },
+:             ]
+:         },
+:         {
+:             title: 'Discovery',
+:             items: [
+:                 {
+:                     name: 'Explorer', href: '/dashboard/pulse/explorer', icon: (
+:                         <svg {...svgProps}>
+:                             <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                         </svg>
+:                     )
+:                 },
+:                 {
+:                     name: 'Audience', href: '/dashboard/pulse/audience', icon: (
+:                         <svg {...svgProps}>
+:                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                         </svg>
+:                     )
+:                 },
+:             ]
+:         },
+:         {
+:             title: 'Data & Exports',
+:             items: [
+:                 {
+:                     name: 'Reports', href: '/dashboard/pulse/reports', icon: (
+:                         <svg {...svgProps}>
+:                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <polyline points="10 9 9 9 8 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                         </svg>
+:                     )
+:                 },
+:             ]
+:         },
+:         {
+:             title: 'Configuration',
+:             items: [
+:                 {
+:                     name: 'Settings', href: '/dashboard/pulse/settings', icon: (
+:                         <svg {...svgProps}>
+:                             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+:                         </svg>
+:                     )
+:                 },
+:             ]
+:         },
+:     ],
+: };

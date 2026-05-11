@@ -12,7 +12,7 @@ export async function generateMetadata(
     const { reference } = await params;
 
     const { data: event } = await supabase
-        .from('vw_public_events')
+        .from('vw_events')
         .select('title, description, media, cover_image_url')
         .eq('reference', reference)
         .single();
@@ -44,7 +44,7 @@ export default async function EventPage({ params }: { params: { reference: strin
     const { reference } = await params;
 
     const { data: rawEvent, error } = await supabase
-        .from('vw_public_events')
+        .from('vw_events')
         .select('*')
         .eq('reference', reference)
         .single();

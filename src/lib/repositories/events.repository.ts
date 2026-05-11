@@ -85,7 +85,7 @@ export function createEventsRepository(client: DbClient) {
         /** Fetch a single event by ID. */
         async findById(eventId: string): Promise<RepoResult<EventRow>> {
             const { data, error } = await client
-                .schema('api').from('v1_events')
+                .from('v1_events')
                 .select('*')
                 .eq('id', eventId)
                 .maybeSingle();
@@ -102,7 +102,7 @@ export function createEventsRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             const { data, error, count } = await client
-                .schema('api').from('v1_events')
+                .from('v1_events')
                 .select(
                     'id, account_id, title, status, start_datetime, end_datetime, timezone, location, media, category_id, category_name, is_private, is_featured, is_online, currency, total_capacity, reference, created_at, updated_at',
                     selectOpts
@@ -123,7 +123,7 @@ export function createEventsRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .schema('api').from('v1_events')
+                .from('v1_events')
                 .select(
                     'id, account_id, title, description, start_datetime, end_datetime, timezone, location, media, category_id, category_name, currency, is_featured, is_online',
                     selectOpts

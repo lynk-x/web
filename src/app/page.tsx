@@ -12,14 +12,14 @@ export default async function Home() {
     { data: tags, error: tagsError },
     { data: categoryTags, error: categoryTagsError }
   ] = await Promise.all([
-    // Use vw_public_events instead of the raw `events` table:
+    // Use vw_events instead of the raw `events` table:
     //  - already filters deleted_at IS NULL, status='published', is_private=false
     //  - already excludes events older than 1 day (ends_at >= now() - 1 day)
     //  - aggregates low_price in SQL (no N+1 ticket_tiers sub-query on the client)
     //  - includes timezone for correct client-side display
     //  - is correctly indexed via idx_events_status_active
     supabase
-      .from('vw_public_events')
+      .from('vw_events')
       .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, is_featured, reference, low_price, currency, tags, cover_image_url')
       .order('starts_at', { ascending: true })
       .limit(50),
@@ -37,7 +37,7 @@ export default async function Home() {
     });
   }
 
-  // vw_public_events already computes low_price.
+  // vw_events already computes low_price.
   const processedEvents = (rawEvents || []).map(event => ({
     ...event,
     start_datetime: event.starts_at,

@@ -21,6 +21,7 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
     useEffect(() => {
         if (pathname.startsWith('/dashboard/admin')) setCurrentMode('admin');
         else if (pathname.startsWith('/dashboard/ads')) setCurrentMode('ads');
+        else if (pathname.startsWith('/dashboard/pulse')) setCurrentMode('pulse');
         else setCurrentMode('events');
     }, [pathname]);
 

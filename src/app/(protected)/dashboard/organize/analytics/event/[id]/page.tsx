@@ -82,7 +82,6 @@ export default function EventInsightsPage() {
             since.setDate(since.getDate() - days);
 
             const { data: txData, error: txErr } = await supabase
-                .schema('transactions')
                 .from('transactions')
                 .select('amount, created_at')
                 .eq('event_id', id)

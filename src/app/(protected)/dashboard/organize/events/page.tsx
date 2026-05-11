@@ -193,7 +193,6 @@ export default function OrganizerEventsPage() {
         try {
             // Fetch tickets for selected events with user profiles
             const { data, error } = await supabase
-                .schema('ticketing') // Changed from 'tickets' to 'ticketing' to match schema name
                 .from('tickets')
                 .select(`
                     id,

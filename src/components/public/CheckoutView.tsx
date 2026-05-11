@@ -26,7 +26,14 @@ const CheckoutView: React.FC = () => {
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'waiting' | 'completed' | 'failed'>('idle');
     const [paymentError, setPaymentError] = useState('');
     const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'mpesa'>('mpesa');
+    const [paymentMethod, setPaymentMethod] = useState<string>('mpesa');
+    const [availableProviders, setAvailableProviders] = useState<Array<{
+        provider_name: string;
+        display_name: string;
+        logo_url?: string;
+        fee_percent: number;
+        base_fee_usd: number;
+    }>>([]);
 
     // Reservation state — set once tickets are locked, before payment is initiated
     const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
@@ -98,6 +105,16 @@ const CheckoutView: React.FC = () => {
                         }));
                     }
                 }
+                // 3. Fetch available payment providers based on event currency
+                const { data: providers } = await supabase.rpc('get_available_payment_providers', {
+                    p_currency: currency
+                });
+                if (providers && providers.length > 0) {
+                    setAvailableProviders(providers);
+                    // Default to first available, but prefer mpesa if it exists
+                    const hasMpesa = providers.some(p => p.provider_name === 'mpesa');
+                    setPaymentMethod(hasMpesa ? 'mpesa' : providers[0].provider_name);
+                }
             } catch (err) {
                 console.error('Checkout init error:', err);
             } finally {
@@ -105,7 +122,7 @@ const CheckoutView: React.FC = () => {
             }
         };
         init();
-    }, [supabase]);
+    }, [supabase, currency]);
 
     // ── Realtime Listener for M-Pesa Completion ──────────────────────────────
     useEffect(() => {
@@ -127,7 +144,7 @@ const CheckoutView: React.FC = () => {
                 'postgres_changes',
                 {
                     event: 'UPDATE',
-                    schema: 'transactions',
+                    schema: 'public',
                     table: 'transactions',
                     filter: `provider_ref=eq.${currentCheckoutId}`
                 },
@@ -261,7 +278,7 @@ const CheckoutView: React.FC = () => {
             errs.email = 'Please enter a valid email address'; ok = false;
         }
 
-        if (paymentMethod === 'mpesa' && !validateKenyanPhone(formData.mpesaNumber)) {
+        if (total > 0 && paymentMethod === 'mpesa' && !validateKenyanPhone(formData.mpesaNumber)) {
             errs.mpesaNumber = 'Valid M-Pesa number required (e.g. 0712345678)'; ok = false;
         }
 
@@ -311,39 +328,65 @@ const CheckoutView: React.FC = () => {
             // Show the 15-minute countdown from this point forward.
             setReservationExpiresAt(new Date(Date.now() + 15 * 60 * 1000));
 
-            // Step 2: Initiate real STK Push via Edge Function
-            const { data, error: funcError } = await supabase.functions.invoke('mpesa-stk-push', {
-                body: {
-                    phone: formData.mpesaNumber,
-                    amount: total,
-                    currency: currency,
-                    metadata: {
-                        user_id: user.id,
-                        email: formData.email.trim() || null,
-                        phone: formData.phone.trim(),
-                        // Each item carries its own reservation_id so the webhook's
-                        // purchase_tickets() call can honour the locked inventory.
-                        items: items.map(i => ({
-                            event_id: i.eventId,
-                            tier_id: i.tierId,
-                            quantity: i.quantity,
-                            reservation_id: reservations.find(r => r.tierId === i.tierId)?.reservationId ?? null,
-                            promo_code: appliedPromo?.code || null,
-                        })),
-                    }
-                }
-            });
+            // Step 2: Handle zero-cost checkout vs STK Push
+            if (total === 0) {
+                const { data: result, error: purchaseError } = await supabase.rpc('bulk_purchase_tickets', {
+                    p_items: items.map(i => ({
+                        event_id: i.eventId,
+                        tier_id: i.tierId,
+                        quantity: i.quantity,
+                        reservation_id: reservations.find(r => r.tierId === i.tierId)?.reservationId ?? null,
+                        promo_code: appliedPromo?.code || null,
+                    })),
+                    p_provider: 'in-app',
+                    p_provider_ref: 'FREE-' + Date.now()
+                });
 
-            if (funcError || !data?.success) {
-                throw new Error(funcError?.message || data?.error || 'Failed to initiate STK push');
+                if (purchaseError) {
+                    throw new Error(purchaseError.message || 'Failed to complete free checkout');
+                }
+
+                // Success!
+                clearCart();
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(result.ticket_ids?.[0] || 'FREE')}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}`);
+                return;
             }
 
-            // Step 3: Enter waiting state (persist so it survives page refresh)
-            setCurrentCheckoutId(data.checkoutRequestId);
-            setPaymentStatus('waiting');
-            sessionStorage.setItem('lynk-x-payment', JSON.stringify({
-                checkoutId: data.checkoutRequestId,
-            }));
+            // Step 3: Initiate real STK Push via Edge Function (or other provider logic)
+            if (paymentMethod === 'mpesa') {
+                const { data, error: funcError } = await supabase.functions.invoke('mpesa-stk-push', {
+                    body: {
+                        phone: formData.mpesaNumber,
+                        amount: total,
+                        currency: currency,
+                        metadata: {
+                            user_id: user.id,
+                            email: formData.email.trim() || null,
+                            phone: formData.phone.trim(),
+                            items: items.map(i => ({
+                                event_id: i.eventId,
+                                tier_id: i.tierId,
+                                quantity: i.quantity,
+                                reservation_id: reservations.find(r => r.tierId === i.tierId)?.reservationId ?? null,
+                                promo_code: appliedPromo?.code || null,
+                            })),
+                        }
+                    }
+                });
+
+                if (funcError || !data?.success) {
+                    throw new Error(funcError?.message || data?.error || 'Failed to initiate STK push');
+                }
+
+                setCurrentCheckoutId(data.checkoutRequestId);
+                setPaymentStatus('waiting');
+                sessionStorage.setItem('lynk-x-payment', JSON.stringify({
+                    checkoutId: data.checkoutRequestId,
+                }));
+            } else {
+                // Fallback for other providers (e.g. Flutterwave redirect)
+                throw new Error(`Payment method "${paymentMethod}" is not yet fully integrated for direct checkout. Please use M-Pesa.`);
+            }
 
         } catch (err: unknown) {
             console.error('Payment error:', err);
@@ -508,46 +551,62 @@ const CheckoutView: React.FC = () => {
                             )}
                         </section>
 
-                        <section className={styles.section}>
-                            <h2 className={styles.sectionTitle}>Payment</h2>
-                            {isLoading ? (
-                                <Skeleton width="100%" height="56px" style={{ marginBottom: 16 }} />
-                            ) : (
-                                <>
-                                    <div className={styles.formGroup}>
-                                        <label className={styles.label}>Payment Method</label>
-                                        <select 
-                                            className={styles.select}
-                                            value={paymentMethod}
-                                            onChange={(e) => setPaymentMethod(e.target.value as 'mpesa')}
-                                        >
-                                            <option value="mpesa">M-Pesa</option>
-                                        </select>
-                                    </div>
+                        {total > 0 && (
+                            <section className={styles.section}>
+                                <h2 className={styles.sectionTitle}>Payment</h2>
+                                {isLoading ? (
+                                    <Skeleton width="100%" height="56px" style={{ marginBottom: 16 }} />
+                                ) : (
+                                    <>
+                                        <div className={styles.formGroup}>
+                                            <label className={styles.label}>Payment Method</label>
+                                            <select 
+                                                className={styles.select}
+                                                value={paymentMethod}
+                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                            >
+                                                {availableProviders.length > 0 ? (
+                                                    availableProviders.map(p => (
+                                                        <option key={p.provider_name} value={p.provider_name}>
+                                                            {p.display_name}
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <option value="mpesa">M-Pesa</option>
+                                                )}
+                                            </select>
+                                        </div>
 
-                                    <div className={styles.formGroup}>
-                                        <label className={styles.label}>M-Pesa Number</label>
-                                        <input
-                                            type="tel"
-                                            name="mpesaNumber"
-                                            value={formData.mpesaNumber}
-                                            onChange={handleInputChange}
-                                            onBlur={() => {
-                                                if (formData.mpesaNumber && !validateKenyanPhone(formData.mpesaNumber)) {
-                                                    setFormErrors(prev => ({ ...prev, mpesaNumber: 'Valid M-Pesa number required (e.g. 0712345678)' }));
-                                                } else {
-                                                    setFormErrors(prev => ({ ...prev, mpesaNumber: '' }));
-                                                }
-                                            }}
-                                            className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`}
-                                            placeholder="+254 7..."
-                                        />
-                                        {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
-                                    </div>
-                                    <p className={styles.helperText}>* An STK push will be sent to your phone</p>
-                                </>
-                            )}
-                        </section>
+                                        {paymentMethod === 'mpesa' && (
+                                            <div className={styles.formGroup}>
+                                                <label className={styles.label}>M-Pesa Number</label>
+                                                <input
+                                                    type="tel"
+                                                    name="mpesaNumber"
+                                                    value={formData.mpesaNumber}
+                                                    onChange={handleInputChange}
+                                                    onBlur={() => {
+                                                        if (formData.mpesaNumber && !validateKenyanPhone(formData.mpesaNumber)) {
+                                                            setFormErrors(prev => ({ ...prev, mpesaNumber: 'Valid M-Pesa number required (e.g. 0712345678)' }));
+                                                        } else {
+                                                            setFormErrors(prev => ({ ...prev, mpesaNumber: '' }));
+                                                        }
+                                                    }}
+                                                    className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`}
+                                                    placeholder="+254 7..."
+                                                />
+                                                {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
+                                                <p className={styles.helperText}>* An STK push will be sent to your phone</p>
+                                            </div>
+                                        )}
+                                        
+                                        {paymentMethod !== 'mpesa' && paymentMethod !== 'in-app' && (
+                                            <p className={styles.helperText}>* You will be redirected to complete your payment via {paymentMethod}</p>
+                                        )}
+                                    </>
+                                )}
+                            </section>
+                        )}
 
                         <div className={styles.footerActions}>
                             {paymentError && (
