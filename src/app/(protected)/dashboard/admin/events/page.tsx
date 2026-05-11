@@ -22,7 +22,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import ForumTable from '@/components/admin/forums/ForumTable';
-import type { ForumThread } from '@/types/admin';
+import type { ForumThread, Report } from '@/types/admin';
 import Modal from '@/components/shared/Modal';
 import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
 import ReportTable from '@/components/admin/moderation/ReportTable';
@@ -32,7 +32,44 @@ import { formatRelativeTime } from '@/utils/format';
 // --- Local Components ---
 
 const EventReportsSection = ({ eventId }: { eventId: string }) => {
-    return <ReportTable eventId={eventId} />;
+    const supabase = useMemo(() => createClient(), []);
+    const [reports, setReports] = useState<Report[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchReports = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('reports')
+                .select('*, reporter:user_profile!reporter_id(user_name), reason:report_reasons(display_name)')
+                .eq('target_event_id', eventId);
+
+            if (error) throw error;
+
+            setReports((data || []).map((r: any) => ({
+                id: r.id,
+                targetType: 'event',
+                targetId: r.target_event_id,
+                title: r.reason?.display_name || `Report #${r.id.slice(0, 8)}`,
+                description: r.info?.description || 'No description provided.',
+                date: new Date(r.created_at).toLocaleDateString(),
+                reporter: r.reporter?.user_name || 'Anonymous', 
+                status: (r.status === 'under_investigation' ? 'investigating' : r.status) as Report['status'],
+                createdAt: r.created_at,
+                reasonId: r.reason_id
+            })));
+        } catch (err) {
+            console.error('Failed to fetch event reports:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, eventId]);
+
+    useEffect(() => {
+        fetchReports();
+    }, [fetchReports]);
+
+    return <ReportTable reports={reports} isLoading={isLoading} />;
 };
 
 export default function AdminEventsPage() {
