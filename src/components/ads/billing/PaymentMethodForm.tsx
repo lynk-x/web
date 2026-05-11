@@ -126,7 +126,7 @@ export default function PaymentMethodForm({ accountId, supabase, onSuccess, onCa
 
             showToast('Payment method saved successfully.', 'success');
             if (onSuccess) onSuccess();
-            else router.push('/dashboard/ads/billing');
+            else router.push('/dashboard/ads/finance');
         } catch (err: unknown) {
             setFormError(getErrorMessage(err) || 'Failed to save payment method.');
         } finally {

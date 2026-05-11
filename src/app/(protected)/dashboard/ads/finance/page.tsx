@@ -12,6 +12,7 @@ import { formatCurrency } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
+import StatCard from '@/components/dashboard/StatCard';
 
 export default function AdsBillingPage() {
     const { showToast } = useToast();
@@ -23,6 +24,7 @@ export default function AdsBillingPage() {
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [walletBalance, setWalletBalance] = useState(0);
+    const [adCredits, setAdCredits] = useState(0);
     const [rawTotalSpend, setRawTotalSpend] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const itemsPerPage = 10;
@@ -31,32 +33,18 @@ export default function AdsBillingPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
+            const { data, error } = await supabase.rpc('get_advertiser_billing_data', {
+                p_account_id: activeAccount.id,
+                p_limit: itemsPerPage,
+                p_offset: (currentPage - 1) * itemsPerPage
+            });
 
-            const [topupsRes, walletRes, campaignsRes] = await Promise.all([
-                supabase
-                    .from('wallet_top_ups')
-                    .select('id, amount, status, created_at, currency', { count: 'exact' })
-                    .eq('account_id', activeAccount.id)
-                    .order('created_at', { ascending: false })
-                    .range(from, to),
-                supabase
-                    .from('account_wallets')
-                    .select('balance')
-                    .eq('account_id', activeAccount.id)
-                    .eq('currency', 'USD')
-                    .maybeSingle(),
-                supabase
-                    .from('ad_campaigns')
-                    .select('spent_amount')
-                    .eq('account_id', activeAccount.id)
-            ]);
+            if (error) throw error;
 
             const currency = 'USD';
-            const totalSpend = (campaignsRes.data || []).reduce((acc: number, c: any) => acc + Number(c.spent_amount || 0), 0);
-
-            const mapped: Invoice[] = (topupsRes.data || []).map((tx: any) => ({
+            const primaryWallet = (data.wallets || []).find((w: any) => w.currency === currency) || data.wallets?.[0];
+            
+            const mapped: Invoice[] = (data.top_ups || []).map((tx: any) => ({
                 id: tx.id,
                 date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                 amount: formatCurrency(Number(tx.amount), tx.currency || currency),
@@ -64,11 +52,12 @@ export default function AdsBillingPage() {
             }));
 
             setAllInvoices(mapped);
-            setTotalCount(topupsRes.count ?? 0);
-            setRawTotalSpend(totalSpend);
-            setWalletBalance(Number(walletRes.data?.balance ?? 0));
+            setTotalCount(Number(data.top_up_count || 0));
+            setRawTotalSpend(Number(data.total_spend || 0));
+            setAdCredits(Number(data.total_credits || 0));
+            setWalletBalance(Number(primaryWallet?.balance ?? 0));
         } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to load billing data.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to sync billing data.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -108,43 +97,40 @@ export default function AdsBillingPage() {
 
     return (
         <div className={adminStyles.container}>
-            <PageHeader
-                title="Finance & Ad Spend"
-                subtitle="Track your ad spend, manage your wallet balance and view transaction history."
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <PageHeader
+                    title="Finance & Ad Spend"
+                    subtitle="Track your ad spend, manage your wallet balance and view transaction history."
+                />
+                <Link href="/dashboard/ads/settings?tab=billing" className={adminStyles.btnPrimary} style={{ fontSize: '13px', padding: '10px 20px' }}>
+                    Top Up Wallet
+                </Link>
+            </div>
 
-            <div className={adminStyles.subPageGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-                <div className={`${adminStyles.pageCard} tour-billing-balance`}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <h2 className={adminStyles.sectionTitle} style={{ fontSize: '14px', marginBottom: '8px' }}>Available Balance</h2>
-                            <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--color-brand-primary)' }}>
-                                {isLoading ? '...' : formatCurrency(walletBalance, currency)}
-                            </div>
-                            <p style={{ fontSize: '12px', opacity: 0.5, marginTop: '8px' }}>Funds available for active campaigns</p>
-                        </div>
-                        <Link href="/dashboard/ads/settings?tab=billing" className={adminStyles.btnPrimary} style={{ fontSize: '12px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {!activeAccount?.payout_routing?.method && (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#000' }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                            )}
-                            Top Up Wallet
-                        </Link>
-                    </div>
-                </div>
-
-                <div className={adminStyles.pageCard}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <h2 className={adminStyles.sectionTitle} style={{ fontSize: '14px', marginBottom: '8px' }}>Total Spend</h2>
-                            <div style={{ fontSize: '32px', fontWeight: 700 }}>
-                                {isLoading ? '...' : formatCurrency(rawTotalSpend, currency)}
-                            </div>
-                        </div>
-                        <Link href="/dashboard/ads/settings?tab=billing" className={adminStyles.btnSecondary} style={{ fontSize: '12px', padding: '8px 16px', opacity: 0.8 }}>
-                            Manage Methods
-                        </Link>
-                    </div>
-                </div>
+            <div className={adminStyles.statGrid}>
+                <StatCard
+                    label="Available Balance"
+                    value={formatCurrency(walletBalance, currency)}
+                    isLoading={isLoading}
+                    color="var(--color-brand-primary)"
+                />
+                <StatCard
+                    label="Ad Credits"
+                    value={formatCurrency(adCredits, currency)}
+                    isLoading={isLoading}
+                    color="var(--color-success)"
+                />
+                <StatCard
+                    label="Total Ad Spend"
+                    value={formatCurrency(rawTotalSpend, currency)}
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Total Transactions"
+                    value={totalCount}
+                    isLoading={isLoading}
+                    trend="neutral"
+                />
             </div>
 
             <div style={{ marginTop: '32px' }} className="tour-billing-history">

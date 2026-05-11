@@ -45,10 +45,10 @@ function AnalyticsContent() {
 
             if (error) throw error;
 
-            const results = data || [];
-            const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions), 0);
-            const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks), 0);
-            const totalCost = results.reduce((acc: number, r: any) => acc + Number(r.total_cost), 0);
+            const results = Array.isArray(data) ? data : [];
+            const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions || 0), 0);
+            const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks || 0), 0);
+            const totalCost = results.reduce((acc: number, r: any) => acc + Number(r.total_cost || 0), 0);
 
             const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
             const cpc = clicks > 0 ? totalCost / clicks : 0;
@@ -57,7 +57,7 @@ function AnalyticsContent() {
                 impressions: impressions.toLocaleString(),
                 clicks: clicks.toLocaleString(),
                 ctr: `${ctr.toFixed(2)}%`,
-                cpc: formatCurrency(cpc)
+                cpc: formatCurrency(cpc, 'USD')
             });
 
             const formatted = results.map((r: any) => {
@@ -67,15 +67,15 @@ function AnalyticsContent() {
                     : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 return {
                     name: label,
-                    impressions: Number(r.impressions),
-                    clicks: Number(r.clicks),
+                    impressions: Number(r.impressions || 0),
+                    clicks: Number(r.clicks || 0),
                     sortKey: date.getTime()
                 };
             });
 
             setPerformanceData(formatted);
         } catch (error: unknown) {
-            showToast(getErrorMessage(error) || 'Failed to fetch analytics', 'error');
+            showToast(getErrorMessage(error) || 'Failed to sync your performance data.', 'error');
         } finally {
             setIsLoading(false);
         }

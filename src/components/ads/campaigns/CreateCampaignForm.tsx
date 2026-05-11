@@ -629,31 +629,34 @@ export default function CreateCampaignForm({
 
         setIsSubmitting(true);
         try {
-            // Upload all creative assets
+            // 1. Upload all creative assets (if any new files)
             const uploadedCreatives = await Promise.all(formData.creatives.map(async (c, idx) => {
-                if (!c.file) return c;
+                if (!c.file) return {
+                    media_type: c.mediaType || 'image',
+                    call_to_action: c.headline,
+                    url: c.imageUrl || formData.adImageUrl,
+                    is_primary: idx === 0
+                };
+                
                 const ext = c.file.name.split('.').pop();
                 const path = `${activeAccount.id}/ads/${Date.now()}_creative_${idx}.${ext}`;
                 const { error } = await supabase.storage.from('ad_media').upload(path, c.file);
                 if (error) throw error;
                 const { data } = supabase.storage.from('ad_media').getPublicUrl(path);
-                return { ...c, imageUrl: data.publicUrl };
+                
+                return {
+                    media_type: c.mediaType || 'image',
+                    call_to_action: c.headline,
+                    url: data.publicUrl,
+                    is_primary: idx === 0
+                };
             }));
 
-            const primaryCreative = uploadedCreatives[0];
-
-            // Resolve tag slugs → UUIDs from the tags table so we can insert into campaign_tags.
-            let resolvedTagIds: string[] = [];
-            if (formData.target_tags.length > 0) {
-                const { data: tagRows } = await supabase
-                    .from('tags')
-                    .select('id, name')
-                    .in('name', formData.target_tags);
-                resolvedTagIds = (tagRows || []).map(t => t.id);
-            }
-
-            if (isEditing && formData.id) {
-                const { error } = await supabase.from('ad_campaigns').update({
+            // 2. Submit to RPC for atomic persistence
+            const { data, error } = await supabase.rpc('upsert_advertiser_campaign', {
+                p_account_id: activeAccount.id,
+                p_campaign_id: isEditing ? formData.id : null,
+                p_data: {
                     title: formData.title,
                     description: formData.description,
                     type: formData.type,
@@ -662,83 +665,18 @@ export default function CreateCampaignForm({
                     max_bid_amount: parseFloat(formData.max_bid_amount),
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
-                    target_url: formData.target_url,
-                    updated_at: new Date().toISOString(),
-                }).eq('id', formData.id);
-                if (error) throw error;
+                    target_url: formData.target_url
+                },
+                p_regions: formData.target_countries,
+                p_tags: formData.target_tags,
+                p_creatives: uploadedCreatives
+            });
 
-                // Re-sync regions
-                await supabase.from('ad_campaign_regions').delete().eq('campaign_id', formData.id);
-                if (formData.target_countries.length > 0) {
-                    await supabase.from('ad_campaign_regions').insert(
-                        formData.target_countries.map(code => ({ campaign_id: formData.id, country_code: code }))
-                    );
-                }
+            if (error) throw error;
 
-                // Re-sync campaign_tags: wipe then re-insert
-                await supabase.from('campaign_tags').delete().eq('campaign_id', formData.id);
-                if (resolvedTagIds.length > 0) {
-                    await supabase.from('campaign_tags').insert(
-                        resolvedTagIds.map(tag_id => ({ campaign_id: formData.id, tag_id }))
-                    );
-                }
-
-                // Re-insert all assets: delete old ones, re-insert all
-                await supabase.from('ad_media').delete().eq('campaign_id', formData.id);
-                await supabase.from('ad_media').insert(
-                    uploadedCreatives.map((c, idx) => ({
-                        campaign_id: formData.id,
-                        media_type: c.mediaType || 'image',
-                        call_to_action: c.headline,
-                        url: c.imageUrl || formData.adImageUrl,
-                        is_primary: idx === 0,
-                    }))
-                );
-                showToast('Campaign updated successfully!', 'success');
-            } else {
-                const { data: campaign, error } = await supabase.from('ad_campaigns').insert({
-                    account_id: activeAccount.id,
-                    title: formData.title,
-                    description: formData.description,
-                    type: formData.type,
-                    total_budget: parseFloat(formData.total_budget),
-                    daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
-                    max_bid_amount: parseFloat(formData.max_bid_amount),
-                    start_at: new Date(formData.start_at).toISOString(),
-                    end_at: new Date(formData.end_at).toISOString(),
-                    target_url: formData.target_url,
-                    status: 'pending_approval',
-                }).select().single();
-                if (error) throw error;
-
-                if (campaign) {
-                    // Regions
-                    if (formData.target_countries.length > 0) {
-                        await supabase.from('ad_campaign_regions').insert(
-                            formData.target_countries.map(code => ({ campaign_id: campaign.id, country_code: code }))
-                        );
-                    }
-                    // Insert campaign_tags rows for each resolved tag UUID
-                    if (resolvedTagIds.length > 0) {
-                        await supabase.from('campaign_tags').insert(
-                            resolvedTagIds.map(tag_id => ({ campaign_id: campaign.id, tag_id }))
-                        );
-                    }
-
-                    await supabase.from('ad_media').insert(
-                        uploadedCreatives.map((c, idx) => ({
-                            campaign_id: campaign.id,
-                            media_type: c.mediaType || 'image',
-                            call_to_action: c.headline || formData.adHeadline,
-                            url: c.imageUrl || primaryCreative.imageUrl || formData.adImageUrl,
-                            is_primary: idx === 0,
-                        }))
-                    );
-                }
-                showToast('Campaign submitted for approval!', 'success');
-            }
-
+            showToast(isEditing ? 'Campaign updated successfully!' : 'Campaign submitted for approval!', 'success');
             onDirtyChange?.(false);
+            localStorage.removeItem('campaign_draft');
             router.push(redirectPath);
             router.refresh();
         } catch (err: unknown) {

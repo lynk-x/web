@@ -28,45 +28,27 @@ export default function AdsDashboard() {
     ]);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchDashboardData = async () => {
             if (!activeAccount) return;
             setIsLoading(true);
             try {
-                // Fetch stats and spotlights
-                const [statsRes, spotlightsRes] = await Promise.all([
-                    supabase.rpc('get_ads_dashboard_stats', { p_account_id: activeAccount.id }),
-                    supabase
-                        .from('spotlights')
-                        .select('*')
-                        .in('target', ['all', 'ads_dashboard'])
-                        .eq('is_active', true)
-                        .order('display_order', { ascending: true })
-                ]);
+                const { data, error } = await supabase.rpc('get_ads_dashboard_stats', { 
+                    p_account_id: activeAccount.id 
+                });
 
-                if (statsRes.error) throw statsRes.error;
+                if (error) throw error;
 
-                const dashboardStats = statsRes.data || {};
-                const currency = 'USD';
-
+                const ds = data.stats || {};
                 setStats([
-                    { label: 'Total Campaigns', value: (dashboardStats.total_campaigns || 0).toLocaleString(), change: 'Lifetime count' },
-                    { label: 'Active Campaigns', value: (dashboardStats.active_campaigns || 0).toLocaleString(), change: 'Running now' },
-                    { label: 'Pending Approval', value: (dashboardStats.pending_approval || 0).toLocaleString(), change: 'Under review' },
-                    { label: 'Remaining Budget', value: formatCurrency(dashboardStats.remaining_budget || 0, currency), change: 'Available funds' },
+                    { label: 'Total Campaigns', value: (ds.total_campaigns || 0).toLocaleString(), change: 'Lifetime count' },
+                    { label: 'Active Campaigns', value: (ds.active_campaigns || 0).toLocaleString(), change: 'Running now' },
+                    { label: 'Pending Approval', value: (ds.pending_approval || 0).toLocaleString(), change: 'Under review' },
+                    { label: 'Remaining Budget', value: formatCurrency(ds.remaining_budget || 0, 'USD'), change: 'Available funds' },
                 ]);
 
-                if (spotlightsRes.data) {
-                    setSpotlights(spotlightsRes.data.map((s: any) => ({
-                        id: s.id,
-                        title: s.title,
-                        subtitle: s.subtitle,
-                        backgroundImage: s.background_url,
-                        ctaLabel: s.cta_text,
-                        ctaHref: s.redirect_to
-                    })));
-                }
+                setSpotlights(data.spotlights || []);
             } catch (error: unknown) {
-                showToast(getErrorMessage(error) || 'Failed to load dashboard data.', 'error');
+                showToast(getErrorMessage(error) || 'Failed to sync dashboard performance.', 'error');
             } finally {
                 setIsLoading(false);
             }
@@ -74,7 +56,7 @@ export default function AdsDashboard() {
 
         if (!isOrgLoading) {
             if (activeAccount) {
-                fetchStats();
+                fetchDashboardData();
             } else {
                 setStats([
                     { label: 'Total Campaigns', value: '0', change: 'Lifetime count' },
@@ -85,7 +67,7 @@ export default function AdsDashboard() {
                 setIsLoading(false);
             }
         }
-    }, [activeAccount, isOrgLoading, supabase]);
+    }, [activeAccount, isOrgLoading, supabase, showToast]);
     return (
         <div className={sharedStyles.container}>
             <PageHeader
@@ -120,10 +102,7 @@ export default function AdsDashboard() {
                     <Link href="/dashboard/ads/analytics" className={`${styles.actionCard} tour-ads-analytics`}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </Link>
-                    <Link href="/dashboard/ads/assets" className={`${styles.actionCard} tour-library`}>
-                        <span className={styles.actionLabel}>Creative Library</span>
-                    </Link>
-                    <Link href="/dashboard/ads/billing" className={`${styles.actionCard} tour-ads-billing`}>
+                    <Link href="/dashboard/ads/finance" className={`${styles.actionCard} tour-ads-billing`}>
                         <span className={styles.actionLabel}>Billing & Payments</span>
                     </Link>
                 </div>
@@ -171,11 +150,6 @@ export default function AdsDashboard() {
                             target: '.tour-ads-analytics',
                             title: 'Deep Insights',
                             content: 'Analyze your ad spend and conversion rates to optimize your marketing strategy.',
-                        },
-                        {
-                            target: '.tour-library',
-                            title: 'Creative Library',
-                            content: 'Manage your banners, videos and other creative assets for your ads.',
                         },
                         {
                             target: '.tour-ads-billing',

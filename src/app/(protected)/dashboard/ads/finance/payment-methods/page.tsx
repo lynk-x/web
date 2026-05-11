@@ -45,7 +45,7 @@ export default function AddPaymentMethodPage() {
                 <PaymentMethodForm
                     accountId={activeAccount.id}
                     supabase={supabase}
-                    onSuccess={() => router.push('/dashboard/ads/billing')}
+                    onSuccess={() => router.push('/dashboard/ads/finance')}
                     onCancel={() => router.back()}
                 />
             </div>

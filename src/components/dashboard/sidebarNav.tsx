@@ -148,7 +148,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Finance',
             items: [
                 {
-                    name: 'Wallet', href: '/dashboard/ads/billing', icon: (
+                    name: 'Finance', href: '/dashboard/ads/finance', icon: (
                         <svg {...svgProps}>
                             <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

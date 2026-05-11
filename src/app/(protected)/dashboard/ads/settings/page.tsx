@@ -63,30 +63,35 @@ function AdsSettingsContent() {
         if (isOrgLoading || !activeAccount) return;
 
         const fetchAllData = async () => {
-            const { data: bizData } = await supabase
-                .from('business_profile')
-                .select('info, tax_id, registration_number, billing_address')
-                .eq('account_id', activeAccount.id)
-                .maybeSingle();
+            try {
+                const { data, error } = await supabase.rpc('get_advertiser_account_settings', {
+                    p_account_id: activeAccount.id
+                });
 
-            const newValues = {
-                name: activeAccount.name || '',
-                website: (bizData?.info as any)?.website || '',
-                description: (bizData?.info as any)?.description || '',
-                support_email: (bizData?.info as any)?.contact_email || '',
-                phone_number: (bizData?.info as any)?.phone_number || '',
-                business_name: (bizData?.info as any)?.legal_name || '',
-                tax_id: bizData?.tax_id || '',
-                registration_number: bizData?.registration_number || '',
-                billing_address: typeof bizData?.billing_address === 'string' ? bizData.billing_address : JSON.stringify(bizData?.billing_address || '')
-            };
+                if (error) throw error;
 
-            setFormData(newValues);
-            setInitialFormData(newValues);
+                const profile = data.profile || {};
+                const newValues = {
+                    name: data.account?.name || '',
+                    website: profile.website || '',
+                    description: profile.description || '',
+                    support_email: profile.contact_email || '',
+                    phone_number: profile.phone_number || '',
+                    business_name: profile.legal_name || '',
+                    tax_id: profile.tax_id || '',
+                    registration_number: profile.registration_number || '',
+                    billing_address: typeof profile.billing_address === 'string' ? profile.billing_address : JSON.stringify(profile.billing_address || '')
+                };
+
+                setFormData(newValues);
+                setInitialFormData(newValues);
+            } catch (err) {
+                showToast(getErrorMessage(err) || 'Failed to sync your account settings.', 'error');
+            }
         };
 
         fetchAllData();
-    }, [isOrgLoading, activeAccount, supabase]);
+    }, [isOrgLoading, activeAccount, supabase, showToast]);
 
     const handleTabChange = (newTab: string) => {
         if (isDirty && activeTab !== newTab) {
@@ -113,32 +118,22 @@ function AdsSettingsContent() {
         if (!activeAccount) return;
         setIsSaving(true);
         try {
-            // accounts only holds display_name — all contact/profile data lives in business_profile.info
-            const { error: accError } = await supabase
-                .from('accounts')
-                .update({ display_name: formData.name })
-                .eq('id', activeAccount.id);
+            const { error } = await supabase.rpc('update_advertiser_account_settings', {
+                p_account_id: activeAccount.id,
+                p_display_name: formData.name,
+                p_info: {
+                    legal_name: formData.business_name || formData.name,
+                    contact_email: formData.support_email,
+                    phone_number: formData.phone_number,
+                    description: formData.description,
+                    website: formData.website,
+                },
+                p_tax_id: formData.tax_id,
+                p_registration_number: formData.registration_number,
+                p_billing_address: formData.billing_address
+            });
 
-            if (accError) throw accError;
-
-            // Upsert contacts and legal info into business_profile.info JSONB
-            const { error: bizError } = await supabase
-                .from('business_profile')
-                .upsert({
-                    account_id: activeAccount.id,
-                    info: {
-                        legal_name: formData.business_name || formData.name,
-                        contact_email: formData.support_email,
-                        phone_number: formData.phone_number,
-                        description: formData.description,
-                        website: formData.website,
-                    },
-                    tax_id: formData.tax_id,
-                    registration_number: formData.registration_number,
-                    billing_address: formData.billing_address
-                }, { onConflict: 'account_id' });
-
-            if (bizError) throw bizError;
+            if (error) throw error;
 
             showToast('Settings saved successfully.', 'success');
             setInitialFormData(formData);
@@ -155,22 +150,11 @@ function AdsSettingsContent() {
         if (!activeAccount) return;
         setIsDeactivating(true);
         try {
-            // Pause all active campaigns
-            const { error: campaignError } = await supabase
-                .from('ad_campaigns')
-                .update({ status: 'paused', updated_at: new Date().toISOString() })
-                .eq('account_id', activeAccount.id)
-                .eq('status', 'active');
+            const { error } = await supabase.rpc('deactivate_ads_account', {
+                p_account_id: activeAccount.id
+            });
 
-            if (campaignError) throw campaignError;
-
-            // Set account to temporarily_suspended
-            const { error: accountError } = await supabase
-                .from('accounts')
-                .update({ status: 'temporarily_suspended' })
-                .eq('id', activeAccount.id);
-
-            if (accountError) throw accountError;
+            if (error) throw error;
 
             showToast('Ads account deactivated. All active campaigns have been paused.', 'success');
             setIsDeactivateModalOpen(false);
@@ -182,6 +166,7 @@ function AdsSettingsContent() {
             setIsDeactivating(false);
         }
     };
+;
 
     return (
         <div className={adminStyles.container}>

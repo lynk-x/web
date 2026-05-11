@@ -34,70 +34,52 @@ export default function CampaignsPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            let query = supabase
-                .from('ad_campaigns')
-                .select(`
-                    id, title, type, start_at, end_at, status, total_budget, spent_amount, target_url,
-                    total_impressions, total_clicks
-                `, { count: 'exact' })
-                .eq('account_id', activeAccount.id)
-                .order('created_at', { ascending: false })
-                .range(from, to);
-
-            if (searchTerm) query = query.ilike('title', `%${searchTerm}%`);
-            if (statusFilter !== 'all') query = query.eq('status', statusFilter);
-
-            const { data, error, count } = await query;
+            const { data, error } = await supabase.rpc('get_advertiser_campaigns', {
+                p_account_id: activeAccount.id,
+                p_params: {
+                    search: searchTerm || null,
+                    status: statusFilter === 'all' ? null : statusFilter,
+                    limit: itemsPerPage,
+                    offset: (currentPage - 1) * itemsPerPage
+                }
+            });
 
             if (error) throw error;
 
-            const formatted: AdsCampaign[] = (data || []).map(c => {
-                const impressions = Number(c.total_impressions || 0);
-                const clicks = Number(c.total_clicks || 0);
-
-                return {
-                    id: c.id,
-                    title: c.title,
-                    type: c.type,
-                    start_at: c.start_at,
-                    end_at: c.end_at,
-                    status: c.status,
-                    total_budget: Number(c.total_budget),
-                    spent_amount: Number(c.spent_amount),
-                    target_url: c.target_url || '',
-                    total_impressions: impressions,
-                    total_clicks: clicks,
-                    metrics: {
-                        impressions,
-                        clicks,
-                        ctr: impressions > 0 ? (clicks / impressions) * 100 : 0
-                    }
-                };
-            });
+            const formatted: AdsCampaign[] = (data.items || []).map((c: any) => ({
+                id: c.id,
+                title: c.title,
+                type: c.type,
+                start_at: c.start_at,
+                end_at: c.end_at,
+                status: c.status,
+                total_budget: Number(c.total_budget),
+                spent_amount: Number(c.spent_amount),
+                target_url: c.target_url || '',
+                total_impressions: Number(c.total_impressions),
+                total_clicks: Number(c.total_clicks),
+                metrics: {
+                    impressions: Number(c.total_impressions),
+                    clicks: Number(c.total_clicks),
+                    ctr: Number(c.total_impressions) > 0 ? (Number(c.total_clicks) / Number(c.total_impressions)) * 100 : 0
+                }
+            }));
             setCampaigns(formatted);
-            setTotalCount(count ?? 0);
+            setTotalCount(data.total || 0);
         } catch (error: unknown) {
-            showToast(getErrorMessage(error) || 'Failed to fetch campaigns', 'error');
+            showToast(getErrorMessage(error) || 'Failed to sync your campaigns.', 'error');
         } finally {
             setIsLoading(false);
         }
     }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
 
     useEffect(() => {
-        if (!isOrgLoading) {
-            if (activeAccount) {
-                fetchCampaigns();
-            } else {
-                setIsLoading(false);
-            }
+        if (!isOrgLoading && activeAccount) {
+            fetchCampaigns();
         }
     }, [isOrgLoading, activeAccount, fetchCampaigns]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
-    const paginatedCampaigns = campaigns;
 
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -114,25 +96,27 @@ export default function CampaignsPage() {
     };
 
     const handleSelectAll = () => {
-        if (selectedIds.size === paginatedCampaigns.length) {
+        if (selectedIds.size === campaigns.length) {
             setSelectedIds(new Set());
         } else {
             const newSelected = new Set(selectedIds);
-            paginatedCampaigns.forEach(c => newSelected.add(c.id));
+            campaigns.forEach(c => newSelected.add(c.id));
             setSelectedIds(newSelected);
         }
     };
 
     const handleBulkPause = async () => {
+        if (!activeAccount || selectedIds.size === 0) return;
         showToast(`Pausing ${selectedIds.size} campaigns...`, 'info');
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .update({ status: 'paused' })
-                .in('id', Array.from(selectedIds));
+            const { error } = await supabase.rpc('bulk_toggle_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaign_ids: Array.from(selectedIds),
+                p_status: 'paused'
+            });
 
             if (error) throw error;
-            showToast('Campaigns paused.', 'success');
+            showToast('Selected campaigns paused.', 'success');
             setSelectedIds(new Set());
             fetchCampaigns();
         } catch (error: unknown) {
@@ -141,15 +125,16 @@ export default function CampaignsPage() {
     };
 
     const handleBulkDelete = async () => {
+        if (!activeAccount || selectedIds.size === 0) return;
         showToast(`Deleting ${selectedIds.size} campaigns...`, 'info');
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .delete()
-                .in('id', Array.from(selectedIds));
+            const { error } = await supabase.rpc('bulk_delete_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaign_ids: Array.from(selectedIds)
+            });
 
             if (error) throw error;
-            showToast(`Successfully deleted ${selectedIds.size} campaigns.`, 'success');
+            showToast(`Successfully archived ${selectedIds.size} campaigns.`, 'success');
             setSelectedIds(new Set());
             fetchCampaigns();
         } catch (error: unknown) {
@@ -160,7 +145,7 @@ export default function CampaignsPage() {
     const handleDuplicate = async (id: string) => {
         showToast('Cloning campaign...', 'info');
         try {
-            const { data, error } = await supabase.rpc('duplicate_ad_campaign', {
+            const { error } = await supabase.rpc('duplicate_ad_campaign', {
                 p_campaign_id: id
             });
             if (error) throw error;
@@ -195,13 +180,15 @@ export default function CampaignsPage() {
 
     /** Single-row status change (pause or resume/launch). */
     const handleStatusChange = async (id: string, newStatus: 'active' | 'paused') => {
+        if (!activeAccount) return;
         const label = newStatus === 'paused' ? 'Pausing' : 'Activating';
         showToast(`${label} campaign...`, 'info');
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .update({ status: newStatus })
-                .eq('id', id);
+            const { error } = await supabase.rpc('bulk_toggle_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaign_ids: [id],
+                p_status: newStatus
+            });
             if (error) throw error;
             showToast(`Campaign ${newStatus === 'paused' ? 'paused' : 'is now active'}.`, newStatus === 'paused' ? 'warning' : 'success');
             fetchCampaigns();
@@ -212,14 +199,15 @@ export default function CampaignsPage() {
 
     /** Single-row delete. */
     const handleSingleDelete = async (id: string, title: string) => {
-        showToast(`Deleting "${title}"...`, 'info');
+        if (!activeAccount) return;
+        showToast(`Archiving "${title}"...`, 'info');
         try {
-            const { error } = await supabase
-                .from('ad_campaigns')
-                .delete()
-                .eq('id', id);
+            const { error } = await supabase.rpc('bulk_delete_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaign_ids: [id]
+            });
             if (error) throw error;
-            showToast(`"${title}" deleted.`, 'success');
+            showToast(`"${title}" archived.`, 'success');
             fetchCampaigns();
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to delete campaign.', 'error');
@@ -270,7 +258,7 @@ export default function CampaignsPage() {
 
                 <div className="tour-campaigns-list">
                     <AdsCampaignTable
-                        campaigns={paginatedCampaigns}
+                        campaigns={campaigns}
                         selectedIds={selectedIds}
                         onSelect={handleSelect}
                         onSelectAll={handleSelectAll}

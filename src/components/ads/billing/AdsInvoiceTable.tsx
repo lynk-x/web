@@ -75,13 +75,13 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>,
             onClick: () => {
                 // Navigate to invoice detail page which has a native print button
-                router.push(`/dashboard/ads/billing/invoices/${invoice.id}`);
+                router.push(`/dashboard/ads/finance/invoices/${invoice.id}`);
             }
         },
         {
             label: 'View Details',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-            onClick: () => router.push(`/dashboard/ads/billing/invoices/${invoice.id}`)
+            onClick: () => router.push(`/dashboard/ads/finance/invoices/${invoice.id}`)
         }
     ];
 
