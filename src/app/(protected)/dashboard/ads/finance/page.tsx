@@ -118,7 +118,7 @@ export default function AdsBillingPage() {
                 </Link>
             </div>
 
-            <div className={adminStyles.statGrid}>
+            <div className={adminStyles.statsGrid}>
                 <StatCard
                     label="Available Balance"
                     value={formatCurrency(walletBalance, currency)}
