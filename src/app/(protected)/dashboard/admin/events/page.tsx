@@ -92,6 +92,7 @@ export default function AdminEventsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
+    const [selectedForumIds, setSelectedForumIds] = useState<Set<string>>(new Set());
     const [summary, setSummary] = useState<any>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
@@ -261,6 +262,28 @@ export default function AdminEventsPage() {
         );
     };
 
+    const handleBulkForumStatusUpdate = async (newStatus: string) => {
+        if (selectedForumIds.size === 0) return;
+
+        if (!await confirm(`Update status of ${selectedForumIds.size} forums to ${newStatus}?`, { title: 'Bulk Forum Update' })) return;
+
+        showToast(`Updating ${selectedForumIds.size} forums...`, 'info');
+        try {
+            const { error } = await supabase.rpc('bulk_update_forum_status', {
+                p_forum_ids: Array.from(selectedForumIds),
+                p_status: newStatus
+            });
+
+            if (error) throw error;
+
+            showToast(`Successfully updated ${selectedForumIds.size} forums.`, 'success');
+            fetchEvents();
+            setSelectedForumIds(new Set());
+        } catch (err) {
+            showToast('Failed to perform bulk forum update.', 'error');
+        }
+    };
+
     const handleExportEventData = () => {
         const selectedEvents = events.filter(e => selectedEventIds.has(e.id));
         showToast(`Preparing data export for ${selectedEventIds.size} events...`, 'info');
@@ -399,8 +422,8 @@ export default function AdminEventsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="events">Events</TabsTrigger>
-                        <TabsTrigger value="forums">Forums</TabsTrigger>
+                        <TabsTrigger value="events">Events & Tickets</TabsTrigger>
+                        <TabsTrigger value="forums">Forums & Chat Rooms</TabsTrigger>
                     </TabsList>
                     
                     <div className={adminStyles.chipsWrapper}>
@@ -455,11 +478,48 @@ export default function AdminEventsPage() {
                 </TabsContent>
 
                 <TabsContent value="forums">
+                    <BulkActionsBar
+                        selectedCount={selectedForumIds.size}
+                        actions={[
+                            { 
+                                label: 'Open Selected', 
+                                onClick: () => handleBulkForumStatusUpdate('open'),
+                                variant: 'success'
+                            },
+                            { 
+                                label: 'Make Read-only', 
+                                onClick: () => handleBulkForumStatusUpdate('read_only'),
+                                variant: 'default'
+                            },
+                            { 
+                                label: 'Archive Selected', 
+                                onClick: () => handleBulkForumStatusUpdate('archived'),
+                                variant: 'danger'
+                            }
+                        ]}
+                        onCancel={() => setSelectedForumIds(new Set())}
+                        itemTypeLabel="forums"
+                    />
+
                     <ForumTable
                         threads={threads}
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
+                        selectedIds={selectedForumIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedForumIds);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
+                            setSelectedForumIds(next);
+                        }}
+                        onSelectAll={() => {
+                            if (selectedForumIds.size === threads.length) {
+                                setSelectedForumIds(new Set());
+                            } else {
+                                setSelectedForumIds(new Set(threads.map(t => t.id)));
+                            }
+                        }}
                         onEditForum={(thread) => {
                             const event = events.find(e => e.forum_id === thread.id);
                             if (event) {

@@ -15,6 +15,7 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import StatCard from '@/components/dashboard/StatCard';
 import type { BadgeVariant } from '@/types/shared';
 import { useCurrencies } from '@/hooks/useCurrencies';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 
 interface AdCredit {
     id: string;
@@ -83,6 +84,9 @@ export default function AdCreditsTab({
     const [issueExpiry, setIssueExpiry] = useState('');
     const [issueNote, setIssueNote] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkLoading, setIsBulkLoading] = useState(false);
 
     const fetchCredits = useCallback(async () => {
         setIsLoading(true);
@@ -168,6 +172,41 @@ export default function AdCreditsTab({
             fetchCredits();
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to revoke credit', 'error');
+        }
+    };
+
+    const handleBulkCreditAction = async (action: 'revoke' | 'extend') => {
+        if (selectedIds.size === 0) return;
+
+        let params = {};
+        if (action === 'extend') {
+            const days = window.prompt('How many days to extend from current expiry (or from now)?', '30');
+            if (!days) return;
+            params = { days: parseInt(days) };
+        }
+
+        if (!await confirm(`Are you sure you want to bulk ${action} ${selectedIds.size} credits?`, {
+            title: `Bulk ${action.charAt(0).toUpperCase() + action.slice(1)} Credits`,
+            confirmLabel: action.charAt(0).toUpperCase() + action.slice(1)
+        })) return;
+
+        setIsBulkLoading(true);
+        try {
+            const { error } = await supabase.rpc('bulk_manage_ad_credits', {
+                p_credit_ids: Array.from(selectedIds),
+                p_action: action,
+                p_params: params
+            });
+
+            if (error) throw error;
+
+            showToast(`Bulk ${action} completed successfully`, 'success');
+            fetchCredits();
+            setSelectedIds(new Set());
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Bulk action failed', 'error');
+        } finally {
+            setIsBulkLoading(false);
         }
     };
 
@@ -258,11 +297,43 @@ export default function AdCreditsTab({
                 </TableToolbar>
             )}
 
+            <BulkActionsBar
+                selectedCount={selectedIds.size}
+                actions={[
+                    { 
+                        label: 'Extend Expiry', 
+                        onClick: () => handleBulkCreditAction('extend'),
+                        variant: 'success'
+                    },
+                    { 
+                        label: 'Revoke Selected', 
+                        onClick: () => handleBulkCreditAction('revoke'),
+                        variant: 'danger'
+                    }
+                ]}
+                onCancel={() => setSelectedIds(new Set())}
+                itemTypeLabel="credits"
+            />
+
             <DataTable<AdCredit>
                 data={filtered}
                 columns={columns}
                 getActions={getActions}
-                isLoading={isLoading}
+                isLoading={isLoading || isBulkLoading}
+                selectedIds={selectedIds}
+                onSelect={(id) => {
+                    const next = new Set(selectedIds);
+                    if (next.has(id)) next.delete(id);
+                    else next.add(id);
+                    setSelectedIds(next);
+                }}
+                onSelectAll={() => {
+                    if (selectedIds.size === filtered.length) {
+                        setSelectedIds(new Set());
+                    } else {
+                        setSelectedIds(new Set(filtered.map(c => c.id)));
+                    }
+                }}
                 emptyMessage="No credit grants found."
             />
 

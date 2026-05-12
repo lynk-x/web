@@ -91,14 +91,6 @@ const AccountTable: React.FC<AccountTableProps> = ({
             ),
         },
         {
-            header: 'Revenue',
-            render: (acc) => (
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-brand-primary)' }}>
-                    {formatCurrency(acc.total_revenue)}
-                </span>
-            ),
-        },
-        {
             header: 'Identity',
             render: (acc) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>

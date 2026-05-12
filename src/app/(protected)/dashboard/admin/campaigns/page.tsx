@@ -423,7 +423,7 @@ function CampaignsContent() {
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="campaigns">Campaign List</TabsTrigger>
+                        <TabsTrigger value="campaigns">Ad Campaigns</TabsTrigger>
                         <TabsTrigger value="credits">Ad Credits</TabsTrigger>
                     </TabsList>
 

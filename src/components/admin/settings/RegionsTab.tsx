@@ -25,12 +25,11 @@ interface Country {
     info: any;
 }
 
-export default function RegionsTab() {
+export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string }) {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
     const [countries, setCountries] = useState<Country[]>([]);
-    const [countrySearch, setCountrySearch] = useState('');
     const [countryStatusFilter, setCountryStatusFilter] = useState('all');
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -138,8 +137,8 @@ export default function RegionsTab() {
 
     const filtered = countries.filter(c => {
         const matchSearch =
-            c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-            c.code.toLowerCase().includes(countrySearch.toLowerCase());
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.code.toLowerCase().includes(searchTerm.toLowerCase());
         const matchStatus =
             countryStatusFilter === 'all' ||
             (countryStatusFilter === 'active' && c.is_active) ||
@@ -155,7 +154,7 @@ export default function RegionsTab() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [countrySearch, countryStatusFilter]);
+    }, [searchTerm, countryStatusFilter]);
 
     const columns: Column<Country>[] = [
         {
@@ -208,11 +207,7 @@ export default function RegionsTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar
-                searchPlaceholder="Search country name or code..."
-                searchValue={countrySearch}
-                onSearchChange={setCountrySearch}
-            >
+            <TableToolbar>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }].map(({ value, label }) => (
                         <button

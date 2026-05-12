@@ -17,6 +17,7 @@ import CreateAccountDrawer from '@/components/admin/users/CreateAccountDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import StatusFilterChips from '@/components/shared/StatusFilterChips';
 import DateRangeRow from '@/components/shared/DateRangeRow';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import type { AdminAccount } from '@/types/admin';
 
 function AccountsContent() {
@@ -92,6 +93,31 @@ function AccountsContent() {
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
+    const handleBulkAccountStatusUpdate = async (newStatus: string) => {
+        if (selectedIds.size === 0) return;
+
+        const actionLabel = newStatus.replace(/_/g, ' ');
+        if (!window.confirm(`Are you sure you want to ${actionLabel} ${selectedIds.size} accounts?`)) return;
+
+        showToast(`Updating ${selectedIds.size} accounts...`, 'info');
+        try {
+            const { error } = await supabase.rpc('bulk_update_account_status', {
+                p_account_ids: Array.from(selectedIds),
+                p_status: newStatus,
+                p_reason: `Bulk ${actionLabel} via Admin Identity Dashboard.`
+            });
+
+            if (error) throw error;
+
+            showToast(`Successfully updated ${selectedIds.size} accounts.`, 'success');
+            fetchAccounts();
+            fetchSummary();
+            setSelectedIds(new Set());
+        } catch (err) {
+            showToast('Failed to perform bulk update.', 'error');
+        }
+    };
+
     return (
         <div className={sharedStyles.container}>
             <PageHeader 
@@ -142,6 +168,20 @@ function AccountsContent() {
                 searchValue={searchTerm} 
                 onSearchChange={setSearchTerm}
             >
+                {activeTab === 'accounts' && (
+                    <select 
+                        className={adminStyles.filterSelect}
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        style={{ height: '36px', padding: '0 12px' }}
+                    >
+                        <option value="all">All Types</option>
+                        <option value="organizer">Organizers</option>
+                        <option value="advertiser">Advertisers</option>
+                        <option value="pulse_user">Pulse Users</option>
+                        <option value="attendee">Attendees</option>
+                    </select>
+                )}
                 <DateRangeRow 
                     startDate={startDate}
                     endDate={endDate}
@@ -163,31 +203,16 @@ function AccountsContent() {
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'accounts' ? (
-                            <>
-                                <select 
-                                    className={adminStyles.filterSelect}
-                                    value={typeFilter}
-                                    onChange={(e) => setTypeFilter(e.target.value)}
-                                    style={{ height: '36px', padding: '0 12px' }}
-                                >
-                                    <option value="all">All Types</option>
-                                    <option value="organizer">Organizers</option>
-                                    <option value="advertiser">Advertisers</option>
-                                    <option value="attendee">Attendees</option>
-                                    <option value="pulse_user">Pulse Users</option>
-                                    <option value="platform">Platform</option>
-                                </select>
-                                <StatusFilterChips 
-                                    options={[
-                                        { value: 'all', label: 'All Statuses' },
-                                        { value: 'active', label: 'Active' },
-                                        { value: 'suspended', label: 'Suspended' },
-                                        { value: 'frozen', label: 'Frozen' },
-                                    ]}
-                                    currentValue={statusFilter}
-                                    onChange={setStatusFilter}
-                                />
-                            </>
+                            <StatusFilterChips 
+                                options={[
+                                    { value: 'all', label: 'All Statuses' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'suspended', label: 'Suspended' },
+                                    { value: 'frozen', label: 'Frozen' },
+                                ]}
+                                currentValue={statusFilter}
+                                onChange={setStatusFilter}
+                            />
                         ) : (
                             <StatusFilterChips 
                                 options={[
@@ -204,8 +229,35 @@ function AccountsContent() {
                 </div>
 
                 <TabsContent value="accounts">
-                    <div className={adminStyles.container}>
+                    <BulkActionsBar
+                        selectedCount={selectedIds.size}
+                        actions={[
+                            { 
+                                label: 'Activate Selected', 
+                                onClick: () => handleBulkAccountStatusUpdate('active'),
+                                variant: 'success'
+                            },
+                            { 
+                                label: 'Freeze Selected', 
+                                onClick: () => handleBulkAccountStatusUpdate('frozen'),
+                                variant: 'danger'
+                            },
+                            { 
+                                label: 'Suspend Selected', 
+                                onClick: () => handleBulkAccountStatusUpdate('temporarily_suspended'),
+                                variant: 'danger'
+                            },
+                            { 
+                                label: 'Permanently Suspend Selected', 
+                                onClick: () => handleBulkAccountStatusUpdate('permanently_suspended'),
+                                variant: 'danger'
+                            }
+                        ]}
+                        onCancel={() => setSelectedIds(new Set())}
+                        itemTypeLabel="accounts"
+                    />
 
+                    <div className={adminStyles.container}>
                         <AccountTable 
                             accounts={accounts}
                             isLoading={isLoading}
@@ -219,6 +271,13 @@ function AccountsContent() {
                                 if (next.has(id)) next.delete(id);
                                 else next.add(id);
                                 setSelectedIds(next);
+                            }}
+                            onSelectAll={() => {
+                                if (selectedIds.size === accounts.length) {
+                                    setSelectedIds(new Set());
+                                } else {
+                                    setSelectedIds(new Set(accounts.map(a => a.id)));
+                                }
                             }}
                         />
                     </div>

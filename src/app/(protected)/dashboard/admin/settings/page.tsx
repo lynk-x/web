@@ -8,6 +8,7 @@ import FeatureFlagTab from '@/components/admin/settings/FeatureFlagTab';
 import PaymentProvidersTab from '@/components/admin/settings/PaymentProvidersTab';
 import RegionsTab from '@/components/admin/settings/RegionsTab';
 import Tabs from '@/components/dashboard/Tabs';
+import TableToolbar from '@/components/shared/TableToolbar';
 
 type Tab = 'config' | 'feature-flags' | 'payment-providers' | 'regions';
 
@@ -37,6 +38,18 @@ function SettingsContent() {
         router.replace(`${pathname}?${params.toString()}`);
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const getSearchPlaceholder = () => {
+        switch (activeTab) {
+            case 'config': return 'Search configurations...';
+            case 'feature-flags': return 'Search feature flags...';
+            case 'payment-providers': return 'Search providers...';
+            case 'regions': return 'Search regions...';
+            default: return 'Search...';
+        }
+    };
+
     return (
         <div className={adminStyles.container}>
             <header className={adminStyles.header}>
@@ -45,6 +58,12 @@ function SettingsContent() {
                     <p className={adminStyles.subtitle}>Manage global configurations and feature rollouts.</p>
                 </div>
             </header>
+
+            <TableToolbar
+                searchPlaceholder={getSearchPlaceholder()}
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            />
 
             <Tabs
                 options={[
@@ -57,10 +76,10 @@ function SettingsContent() {
                 onTabChange={handleTabChange}
             />
 
-            {activeTab === 'config' && <ConfigTab />}
-            {activeTab === 'feature-flags' && <FeatureFlagTab />}
-            {activeTab === 'payment-providers' && <PaymentProvidersTab />}
-            {activeTab === 'regions' && <RegionsTab />}
+            {activeTab === 'config' && <ConfigTab searchTerm={searchTerm} />}
+            {activeTab === 'feature-flags' && <FeatureFlagTab searchTerm={searchTerm} />}
+            {activeTab === 'payment-providers' && <PaymentProvidersTab searchTerm={searchTerm} />}
+            {activeTab === 'regions' && <RegionsTab searchTerm={searchTerm} />}
         </div>
     );
 }

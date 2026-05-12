@@ -24,14 +24,13 @@ export interface SystemConfig {
     updated_at: string;
 }
 
-export default function ConfigTab() {
+export default function ConfigTab({ searchTerm = '' }: { searchTerm?: string }) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
 
     const [configs, setConfigs] = useState<SystemConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedConfigKeys, setSelectedConfigKeys] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
@@ -262,11 +261,7 @@ export default function ConfigTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar
-                searchPlaceholder="Search configs..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
+            <TableToolbar>
                 <button className={adminStyles.btnPrimary} onClick={handleOpenCreate}>
                     Add Config
                 </button>

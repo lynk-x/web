@@ -12,13 +12,12 @@ import Modal from '@/components/shared/Modal';
 import Toggle from '@/components/shared/Toggle';
 import type { PlatformPaymentProvider } from '@/types/admin';
 
-export default function PaymentProvidersTab() {
+export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: string }) {
     const { showToast } = useToast();
     const supabase = createClient();
 
     const [data, setData] = useState<PlatformPaymentProvider[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
 
     const [isEditing, setIsEditing] = useState<PlatformPaymentProvider | null>(null);
     const [editForm, setEditForm] = useState({
@@ -164,11 +163,7 @@ export default function PaymentProvidersTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar
-                searchPlaceholder="Search providers..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            />
+            <TableToolbar />
             
             <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                 <DataTable

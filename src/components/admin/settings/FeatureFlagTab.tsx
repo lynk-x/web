@@ -21,14 +21,13 @@ export interface FeatureFlag {
     updated_at: string;
 }
 
-export default function FeatureFlagTab() {
+export default function FeatureFlagTab({ searchTerm = '' }: { searchTerm?: string }) {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
@@ -162,11 +161,7 @@ export default function FeatureFlagTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar
-                searchPlaceholder="Search feature flags..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
+            <TableToolbar>
                 <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/settings/feature-flags/create')}>
                     Create Flag
                 </button>
