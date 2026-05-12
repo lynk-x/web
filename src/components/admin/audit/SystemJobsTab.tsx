@@ -11,13 +11,16 @@ import type { SystemJob } from '@/types/admin';
 import TableToolbar from '@/components/shared/TableToolbar';
 import StatusFilterChips from '@/components/shared/StatusFilterChips';
 
-const SystemJobsTab: React.FC = () => {
+interface SystemJobsTabProps {
+    statusFilter: string;
+}
+
+const SystemJobsTab: React.FC<SystemJobsTabProps> = ({ statusFilter }) => {
     const supabase = createClient();
     const { showToast } = useToast();
     
     const [jobs, setJobs] = useState<SystemJob[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
 
@@ -109,22 +112,6 @@ const SystemJobsTab: React.FC = () => {
 
     return (
         <div>
-            <TableToolbar searchPlaceholder="Search jobs...">
-                <StatusFilterChips
-                    options={[
-                        { value: 'all', label: 'All Jobs' },
-                        { value: 'queued', label: 'Queued' },
-                        { value: 'running', label: 'Running' },
-                        { value: 'completed', label: 'Completed' },
-                        { value: 'failed', label: 'Failed' },
-                    ]}
-                    currentValue={statusFilter}
-                    onChange={(val) => {
-                        setStatusFilter(val);
-                        setCurrentPage(1);
-                    }}
-                />
-            </TableToolbar>
 
             <DataTable<SystemJob>
                 data={jobs}

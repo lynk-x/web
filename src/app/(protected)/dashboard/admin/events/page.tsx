@@ -151,7 +151,7 @@ export default function AdminEventsPage() {
                 .map((e: any) => ({
                     id: e.forum_id,
                     reference: e.reference,
-                    title: `${e.event_title} Community`,
+                    title: `${e.event_title} Forum`,
                     eventName: e.event_title,
                     messageCount: Number(e.message_count || 0),
                     mediaCount: Number(e.media_count || 0),
@@ -400,7 +400,7 @@ export default function AdminEventsPage() {
                 <TabsList className={styles.tabsHeaderRow}>
                     <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="events">Events</TabsTrigger>
-                        <TabsTrigger value="forums">Communities</TabsTrigger>
+                        <TabsTrigger value="forums">Forums</TabsTrigger>
                     </div>
                     
                     <div className={styles.chipsWrapper}>
@@ -491,10 +491,10 @@ export default function AdminEventsPage() {
                     size="large"
                 >
                     <Tabs defaultValue="overview" className={styles.detailTabs}>
-                        <TabsList>
+                        <TabsList style={{ width: 'fit-content' }}>
                             <TabsTrigger value="overview">Overview</TabsTrigger>
                             <TabsTrigger value="ticketing">Ticketing & Resale</TabsTrigger>
-                            <TabsTrigger value="community">Community & Chat</TabsTrigger>
+                            <TabsTrigger value="community">Forum & Chat</TabsTrigger>
                             <TabsTrigger value="moderation">Moderation Queue</TabsTrigger>
                         </TabsList>
 

@@ -19,7 +19,7 @@ import Modal from '@/components/shared/Modal';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import type { FinanceTransaction } from '@/types/organize';
@@ -703,20 +703,19 @@ function FinanceContent() {
                     searchValue={searchTerm}
                     onSearchChange={setSearchTerm}
                 >
-                    {activeTab === 'transactions' && (
-                        <select 
-                            className={adminStyles.filterSelect}
-                            value={categoryFilter}
-                            onChange={(e) => setCategoryFilter(e.target.value)}
-                        >
-                            <option value="all">All Transactions</option>
-                            <option value="incoming">Revenue (Incoming)</option>
-                            <option value="outgoing">Refunds (Outgoing)</option>
-                            <option value="hold">Escrow (Hold)</option>
-                            <option value="internal">Internal Transfers</option>
-                        </select>
+                    {activeTab === 'payouts' && (
+                        <DateRangeRow 
+                            startDate={startDate}
+                            endDate={endDate}
+                            onStartDateChange={setStartDate}
+                            onEndDateChange={setEndDate}
+                            onClear={() => {
+                                setStartDate('');
+                                setEndDate('');
+                            }}
+                        />
                     )}
-                    {(activeTab === 'transactions' || activeTab === 'payouts') && (
+                    {activeTab === 'transactions' && (
                         <DateRangeRow 
                             startDate={startDate}
                             endDate={endDate}
@@ -731,20 +730,134 @@ function FinanceContent() {
                 </TableToolbar>
             </div>
 
-            <Tabs
-                options={[
-                    { id: 'transactions', label: 'Transactions' },
-                    { id: 'payouts', label: 'Payout Requests' },
-                    { id: 'promo-codes', label: 'Promo Codes' },
-                    { id: 'tax-rates', label: 'Tax Rates' },
-                    { id: 'fx-rates', label: 'FX Rates' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                className={styles.tabsReset}
-            />
+            <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: 'var(--spacing-lg)',
+                    paddingBottom: '2px'
+                }}>
+                    <TabsList style={{ marginBottom: 0 }}>
+                        <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                        <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
+                        <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
+                        <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
+                        <TabsTrigger value="fx-rates">FX Rates</TabsTrigger>
+                    </TabsList>
 
-            {renderActiveTab()}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'transactions' && (
+                            <select 
+                                className={adminStyles.filterSelect}
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                            >
+                                <option value="all">All Transactions</option>
+                                <option value="incoming">Revenue (Incoming)</option>
+                                <option value="outgoing">Refunds (Outgoing)</option>
+                                <option value="hold">Escrow (Hold)</option>
+                                <option value="internal">Internal Transfers</option>
+                            </select>
+                        )}
+                        
+                        {activeTab === 'tax-rates' && (
+                            <button className={adminStyles.btnPrimary} onClick={() => {
+                                setEditingTaxRate(null);
+                                setTaxForm({ display_name: '', country_code: 'KE', applicable_reason: 'ticket_sale', rate_percent: 0, is_inclusive: true });
+                                setIsTaxModalOpen(true);
+                            }}>
+                                + Add Tax Rate
+                            </button>
+                        )}
+
+                        {activeTab === 'fx-rates' && (
+                            <button
+                                className={adminStyles.btnSecondary}
+                                onClick={handleSyncFX}
+                                disabled={isSyncingFX}
+                            >
+                                <svg className={isSyncingFX ? adminStyles.spinner : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                                    <path d="M23 4v6h-6M1 20v-6h6"></path>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                                {isSyncingFX ? 'Syncing...' : 'Sync Live Rates'}
+                            </button>
+                        )}
+
+                        {activeTab === 'promo-codes' && (
+                            <Link href="/dashboard/admin/finance/promo-codes/create">
+                                <button className={adminStyles.btnPrimary}>
+                                    + Create Promo Code
+                                </button>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                <TabsContent value="transactions">
+                    <FinanceTable
+                        transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
+                        selectedIds={selectedTxIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedTxIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedTxIds(next);
+                        }}
+                        onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </TabsContent>
+
+                <TabsContent value="payouts">
+                    <PayoutTable
+                        payouts={payouts}
+                        selectedIds={selectedPayoutIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedPayoutIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedPayoutIds(next);
+                        }}
+                        onSelectAll={() => setSelectedPayoutIds(selectedPayoutIds.size === payouts.length ? new Set() : new Set(payouts.map(p => p.id)))}
+                        onApprove={isPayoutMgmtEnabled ? handleApprovePayout : undefined}
+                        onReject={isPayoutMgmtEnabled ? handleRejectPayout : undefined}
+                        onRetry={isPayoutMgmtEnabled ? handleRetryPayout : undefined}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        isLoading={isLoading}
+                    />
+                </TabsContent>
+
+                <TabsContent value="tax-rates">
+                    <TaxRateTable
+                        data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
+                        isLoading={isLoading}
+                        onUpdate={fetchData}
+                        onEdit={(rate) => {
+                            setEditingTaxRate(rate);
+                            setTaxForm({
+                                display_name: rate.display_name,
+                                country_code: rate.country_code,
+                                applicable_reason: rate.applicable_reason,
+                                rate_percent: rate.rate_percent,
+                                is_inclusive: rate.is_inclusive
+                            });
+                            setIsTaxModalOpen(true);
+                        }}
+                    />
+                </TabsContent>
+
+                <TabsContent value="fx-rates">
+                    <FXRateTable data={fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} onUpdate={fetchData} />
+                </TabsContent>
+
+                <TabsContent value="promo-codes">
+                    <PromoCodeTable data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} />
+                </TabsContent>
+            </Tabs>
 
             <BulkActionsBar
                 actions={getBulkActions()}

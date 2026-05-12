@@ -14,17 +14,18 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import FilterGroup from '@/components/dashboard/FilterGroup';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
 import { createClient } from '@/utils/supabase/client';
 import ReportTable from '@/components/admin/moderation/ReportTable';
-import AppFeedbackTab from '@/components/admin/support/AppFeedbackTab';
-import UserBlocksTab from '@/components/admin/support/UserBlocksTab';
-import ReportReasonsTab from '@/components/admin/support/ReportReasonsTab';
-import type { Report } from '@/types/admin';
+type SupportTab = 'queue' | 'tickets' | 'feedback' | 'reports';
 
-type SupportTab = 'moderation' | 'app-feedback' | 'blocks' | 'report-reasons';
+import ReviewQueueTab from '@/components/admin/support/ReviewQueueTab';
+import SupportTicketsTab from '@/components/admin/support/SupportTicketsTab';
+import AppFeedbackTab from '@/components/admin/support/AppFeedbackTab';
+import type { Report } from '@/types/admin';
 
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -35,11 +36,11 @@ function SupportContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = (searchParams.get('tab') as SupportTab) || 'moderation';
+    const initialTab = (searchParams.get('tab') as SupportTab) || 'queue';
     const [activeTab, setActiveTab] = useState<SupportTab>(
-        (initialTab && ['moderation', 'app-feedback', 'blocks', 'report-reasons'].includes(initialTab))
+        (initialTab && ['queue', 'tickets', 'feedback', 'reports'].includes(initialTab))
             ? initialTab
-            : 'moderation'
+            : 'queue'
     );
     const [isLoading, setIsLoading] = useState(true);
 
@@ -81,7 +82,7 @@ function SupportContent() {
         try {
             const offset = (currentPage - 1) * itemsPerPage;
 
-            if (activeTab === 'moderation') {
+            if (activeTab === 'reports') {
                 const { data, error } = await supabase.rpc('get_admin_support_data', {
                     p_tab: 'moderation',
                     p_params: {
@@ -214,75 +215,93 @@ function SupportContent() {
                 />
             </div>
 
-            <Tabs
-                options={[
-                    { id: 'moderation', label: 'Moderation' },
-                    { id: 'app-feedback', label: 'App Feedback' },
-                    { id: 'blocks', label: 'User Blocks' },
-                    { id: 'report-reasons', label: 'Report Reasons' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={(id) => handleTabChange(id as SupportTab)}
-                className={styles.tabsReset}
-            />
+            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
+                <TableToolbar 
+                    searchPlaceholder="Search reports, feedback, or blocks..." 
+                    searchValue={searchTerm} 
+                    onSearchChange={setSearchTerm} 
+                />
+            </div>
 
-            <TableToolbar searchPlaceholder="Search..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
-                {activeTab === 'moderation' && (
-                    <FilterGroup
-                        options={['all', 'pending', 'investigating', 'resolved', 'dismissed'].map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))}
-                        currentValue={moderationFilter}
-                        onChange={setModerationFilter}
-                    />
-                )}
-                {activeTab === 'app-feedback' && (
-                    <>
-                        <FilterGroup
-                            options={['all', 'new', 'reviewed', 'resolved', 'dismissed'].map(s => ({ value: s, label: s === 'all' ? 'All Statuses' : s.charAt(0).toUpperCase() + s.slice(1) }))}
-                            currentValue={feedbackStatusFilter}
-                            onChange={setFeedbackStatusFilter}
-                        />
-                        {feedbackCategories.length > 0 && (
-                            <select
-                                value={feedbackCategoryFilter}
-                                onChange={e => setFeedbackCategoryFilter(e.target.value)}
-                                className={adminStyles.select}
-                                style={{ width: 'auto', padding: '6px 12px', height: '36px', fontSize: '13px' }}
-                            >
-                                <option value="all">All Categories</option>
-                                {feedbackCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
+            <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: 'var(--spacing-lg)',
+                    paddingBottom: '2px'
+                }}>
+                    <TabsList style={{ marginBottom: 0 }}>
+                        <TabsTrigger value="queue">Review Queue</TabsTrigger>
+                        <TabsTrigger value="tickets">Support Tickets</TabsTrigger>
+                        <TabsTrigger value="feedback">User Feedback</TabsTrigger>
+                        <TabsTrigger value="reports">Report History</TabsTrigger>
+                    </TabsList>
+
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'reports' && (
+                            <StatusFilterChips
+                                options={['all', 'pending', 'investigating', 'resolved', 'dismissed'].map(f => ({ 
+                                    value: f, 
+                                    label: f.charAt(0).toUpperCase() + f.slice(1) 
+                                }))}
+                                currentValue={moderationFilter}
+                                onChange={setModerationFilter}
+                            />
                         )}
-                    </>
-                )}
-            </TableToolbar>
+                        {activeTab === 'tickets' && (
+                            <StatusFilterChips
+                                options={['all', 'new', 'investigating', 'resolved', 'dismissed'].map(s => ({ 
+                                    value: s, 
+                                    label: s.charAt(0).toUpperCase() + s.slice(1) 
+                                }))}
+                                currentValue={feedbackStatusFilter}
+                                onChange={setFeedbackStatusFilter}
+                            />
+                        )}
+                        {activeTab === 'feedback' && (
+                            <StatusFilterChips
+                                options={['all', 'new', 'reviewed', 'resolved', 'dismissed'].map(s => ({ 
+                                    value: s, 
+                                    label: s === 'all' ? 'All Statuses' : s.charAt(0).toUpperCase() + s.slice(1) 
+                                }))}
+                                currentValue={feedbackStatusFilter}
+                                onChange={setFeedbackStatusFilter}
+                            />
+                        )}
+                    </div>
+                </div>
 
-            {activeTab === 'moderation' && (
-                <ReportTable
-                    reports={reports}
-                    isLoading={isLoading}
-                    getActions={getModerationActions}
-                    currentPage={currentPage}
-                    totalPages={Math.ceil(totalCount / itemsPerPage)}
-                    onPageChange={setCurrentPage}
-                />
-            )}
+                <TabsContent value="queue">
+                    <ReviewQueueTab searchQuery={searchTerm} />
+                </TabsContent>
 
+                <TabsContent value="tickets">
+                    <SupportTicketsTab 
+                        searchQuery={searchTerm}
+                        statusFilter={feedbackStatusFilter}
+                    />
+                </TabsContent>
 
-            {activeTab === 'app-feedback' && (
-                <AppFeedbackTab
-                    searchQuery={searchTerm}
-                    statusFilter={feedbackStatusFilter}
-                    categoryFilter={feedbackCategoryFilter}
-                />
-            )}
+                <TabsContent value="feedback">
+                    <AppFeedbackTab
+                        searchQuery={searchTerm}
+                        statusFilter={feedbackStatusFilter}
+                    />
+                </TabsContent>
 
-            {activeTab === 'blocks' && (
-                <UserBlocksTab searchQuery={searchTerm} />
-            )}
+                <TabsContent value="reports">
+                    <ReportTable
+                        reports={reports}
+                        isLoading={isLoading}
+                        getActions={getModerationActions}
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(totalCount / itemsPerPage)}
+                        onPageChange={setCurrentPage}
+                    />
+                </TabsContent>
+            </Tabs>
 
-            {activeTab === 'report-reasons' && (
-                <ReportReasonsTab />
-            )}
         </div>
     );
 }

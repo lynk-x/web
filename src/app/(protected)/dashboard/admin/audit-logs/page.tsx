@@ -8,7 +8,8 @@ import AuditTable, { AuditLog } from '@/components/admin/audit/AuditTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
 import SystemJobsTab from '@/components/admin/audit/SystemJobsTab';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
@@ -26,6 +27,7 @@ export default function AdminAuditLogsPage() {
     const [isStatsLoading, setIsStatsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
+    const [jobStatusFilter, setJobStatusFilter] = useState('all');
     const [activeTab, setActiveTab] = useState('audit');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -161,7 +163,7 @@ export default function AdminAuditLogsPage() {
                 />
             </div>
 
-            <div style={{ width: '100%' }}>
+            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
                 <TableToolbar
                     searchPlaceholder="Search by action, actor or target..."
                     searchValue={searchTerm}
@@ -174,42 +176,64 @@ export default function AdminAuditLogsPage() {
                         onEndDateChange={setEndDate}
                         onClear={() => { setStartDate(''); setEndDate(''); }}
                     />
-                    <div className={adminStyles.filterGroup}>
-                        <select
-                            className={adminStyles.filterSelect}
-                            value={actionFilter}
-                            onChange={(e) => setActionFilter(e.target.value)}
-                        >
-                            <option value="all">All Actions</option>
-                            {actionTypes.map(type => (
-                                <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
-                            ))}
-                        </select>
-                    </div>
                 </TableToolbar>
             </div>
 
-            <Tabs 
-                options={[
-                    { id: 'audit', label: 'System Audit Logs' },
-                    { id: 'jobs', label: 'Queue Monitoring' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-            />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: 'var(--spacing-lg)',
+                    paddingBottom: '2px'
+                }}>
+                    <TabsList style={{ marginBottom: 0 }}>
+                        <TabsTrigger value="audit">System Audit Logs</TabsTrigger>
+                        <TabsTrigger value="jobs">Queue Monitoring</TabsTrigger>
+                    </TabsList>
 
-            {activeTab === 'audit' && (
-                <AuditTable
-                    logs={filteredLogs}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                />
-            )}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'audit' ? (
+                            <StatusFilterChips 
+                                options={[
+                                    { value: 'all', label: 'All Actions' },
+                                    ...actionTypes.slice(0, 6).map(type => ({
+                                        value: type,
+                                        label: type.replace(/_/g, ' ')
+                                    }))
+                                ]}
+                                currentValue={actionFilter}
+                                onChange={setActionFilter}
+                            />
+                        ) : (
+                            <StatusFilterChips 
+                                options={[
+                                    { value: 'all', label: 'All Jobs' },
+                                    { value: 'queued', label: 'Queued' },
+                                    { value: 'running', label: 'Running' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'failed', label: 'Failed' },
+                                ]}
+                                currentValue={jobStatusFilter}
+                                onChange={setJobStatusFilter}
+                            />
+                        )}
+                    </div>
+                </div>
 
-            {activeTab === 'jobs' && (
-                <SystemJobsTab />
-            )}
+                <TabsContent value="audit">
+                    <AuditTable
+                        logs={filteredLogs}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </TabsContent>
+
+                <TabsContent value="jobs">
+                    <SystemJobsTab statusFilter={jobStatusFilter} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
