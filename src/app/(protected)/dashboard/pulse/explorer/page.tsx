@@ -9,7 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import FilterGroup from '@/components/dashboard/FilterGroup';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 import type { PulseExplorerMapProps } from '../../../../../components/pulse/PulseExplorerMap';
@@ -22,7 +22,6 @@ const PulseExplorerMap = dynamic<PulseExplorerMapProps>(() => import('../../../.
 
 export default function PulseExplorer() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
@@ -109,14 +108,18 @@ export default function PulseExplorer() {
                     <div className={styles.chartPlaceholder}>
                         {/* We will implement a proper chart component next */}
                         <div className={styles.mockChart}>
-                            {data?.time_series?.map((point: any, i: number) => (
-                                <div 
-                                    key={i} 
-                                    className={styles.chartBar} 
-                                    style={{ height: `${(point.volume / 1000) * 100}%` }}
-                                    title={`${point.date}: ${point.volume} interactions`}
-                                />
-                            ))}
+                            {(() => {
+                                const timeSeries = data?.time_series || [];
+                                const maxVolume = Math.max(1, ...timeSeries.map((p: any) => p.volume || 0));
+                                return timeSeries.map((point: any, i: number) => (
+                                    <div 
+                                        key={i} 
+                                        className={styles.chartBar} 
+                                        style={{ height: `${Math.max(5, (point.volume / maxVolume) * 100)}%` }}
+                                        title={`${point.date}: ${point.volume} interactions`}
+                                    />
+                                ));
+                            })()}
                         </div>
                     </div>
                 </div>

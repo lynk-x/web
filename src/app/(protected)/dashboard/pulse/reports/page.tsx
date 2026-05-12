@@ -3,7 +3,6 @@
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import { useState } from 'react';
 
 export default function PulseReports() {
     // Mock data for reports - In a real app, this would be fetched from a 'pulse.reports' table

@@ -18,14 +18,14 @@ interface TrendingTopicCardProps {
 }
 
 export default function TrendingTopicCard({ topic }: TrendingTopicCardProps) {
-    const isRising = topic.velocity > 0;
+    const isRising = (topic.velocity ?? 0) > 0;
 
     return (
         <div className={styles.card}>
             <div className={styles.header}>
                 <span className={styles.category}>{topic.category_id.toUpperCase()}</span>
                 <span className={`${styles.velocity} ${isRising ? styles.rising : styles.falling}`}>
-                    {isRising ? '↑' : '↓'} {Math.abs(topic.velocity).toFixed(1)}%
+                    {isRising ? '↑' : '↓'} {Math.abs(topic.velocity ?? 0).toFixed(1)}%
                 </span>
             </div>
             
@@ -34,12 +34,12 @@ export default function TrendingTopicCard({ topic }: TrendingTopicCardProps) {
             <div className={styles.metrics}>
                 <div className={styles.metric}>
                     <span className={styles.metricLabel}>Volume</span>
-                    <span className={styles.metricValue}>{topic.volume_count.toLocaleString()}</span>
+                    <span className={styles.metricValue}>{topic.volume_count?.toLocaleString() ?? '0'}</span>
                 </div>
                 <div className={styles.metric}>
                     <span className={styles.metricLabel}>Sentiment</span>
                     <span className={styles.metricValue}>
-                        {(topic.sentiment_score * 100).toFixed(0)}%
+                        {(topic.sentiment_score != null ? (topic.sentiment_score * 100).toFixed(0) : '0')}%
                     </span>
                 </div>
             </div>

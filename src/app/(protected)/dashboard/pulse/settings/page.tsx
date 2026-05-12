@@ -14,13 +14,11 @@ export default function PulseSettings() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
-    const [isLoading, setIsLoading] = useState(true);
     const [settings, setSettings] = useState<any>(null);
 
     useEffect(() => {
         const fetchSettings = async () => {
             if (!activeAccount) return;
-            setIsLoading(true);
             try {
                 const { data, error } = await supabase.rpc('get_pulse_account_settings', {
                     p_account_id: activeAccount.id
@@ -30,8 +28,6 @@ export default function PulseSettings() {
                 setSettings(data);
             } catch (error: unknown) {
                 showToast(getErrorMessage(error) || 'Failed to sync settings.', 'error');
-            } finally {
-                setIsLoading(false);
             }
         };
 

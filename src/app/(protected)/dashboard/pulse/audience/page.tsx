@@ -71,8 +71,8 @@ export default function AudienceInsights() {
                         <div key={cluster.id} className={styles.clusterCard}>
                             <div className={styles.clusterHeader}>
                                 <h3 className={styles.clusterName}>{cluster.display_name}</h3>
-                                <span className={`${styles.sentiment} ${cluster.sentiment >= 0 ? styles.positive : styles.negative}`}>
-                                    {(cluster.sentiment * 100).toFixed(0)}% Positivity
+                                <span className={`${styles.sentiment} ${cluster.sentiment != null && cluster.sentiment >= 0 ? styles.positive : styles.negative}`}>
+                                    {(cluster.sentiment != null ? (cluster.sentiment * 100).toFixed(0) : '0')}% Positivity
                                 </span>
                             </div>
                             <p className={styles.description}>{cluster.description}</p>
