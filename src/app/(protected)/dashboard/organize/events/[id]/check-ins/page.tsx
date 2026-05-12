@@ -64,7 +64,7 @@ export default function CheckInLogsPage() {
                 ticketTier: row.tier?.display_name || 'Unknown Tier',
                 status: row.status,
                 scannedBy: row.scanner?.full_name || row.scanner?.user_name || 'System',
-                timestamp: row.redeemed_at ? new Date(row.redeemed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—',
+                timestamp: row.redeemed_at ? new Date(row.redeemed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-',
             });
 
             setLogs(mappedLogs);
