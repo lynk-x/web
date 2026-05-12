@@ -143,11 +143,11 @@ function AccountsContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
-                <TabsList className={adminStyles.tabsHeaderRow}>
-                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
                         <TabsTrigger value="accounts">Accounts & Users</TabsTrigger>
                         <TabsTrigger value="kyc">KYC Workspace</TabsTrigger>
-                    </div>
+                    </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'accounts' ? (
@@ -189,7 +189,7 @@ function AccountsContent() {
                             />
                         )}
                     </div>
-                </TabsList>
+                </div>
 
                 <TabsContent value="accounts">
                     <div className={adminStyles.container}>

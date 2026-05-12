@@ -400,10 +400,11 @@
 /* Tabs */
 .tabs {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: var(--spacing-md);
     border-bottom: 1px solid var(--color-interface-outline);
     margin-bottom: var(--spacing-lg);
+    width: fit-content;
 }
 
 .tab {
@@ -417,6 +418,7 @@
     font-weight: 500;
     position: relative;
     transition: all 0.2s;
+    outline: none;
 }
 
 .tab:hover {
@@ -528,6 +530,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-lg);
+    width: 100%;
 }
 
 .chipsWrapper {

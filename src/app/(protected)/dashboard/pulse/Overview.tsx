@@ -152,14 +152,14 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
 
             {!hideTabs && (
                 <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabs}>
-                    <TabsList className={adminStyles.tabsHeaderRow}>
-                        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <div className={adminStyles.tabsHeaderRow}>
+                        <TabsList>
                             <TabsTrigger value="overview">Overview</TabsTrigger>
                             <TabsTrigger value="explorer">Market Explorer</TabsTrigger>
                             <TabsTrigger value="audience">Audience Insights</TabsTrigger>
                             <TabsTrigger value="trends">Trend Analysis</TabsTrigger>
                             <TabsTrigger value="reports">Data Reports</TabsTrigger>
-                        </div>
+                        </TabsList>
 
                         <div className={adminStyles.chipsWrapper}>
                             <TableToolbar 
@@ -168,7 +168,7 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
                                 onSearchChange={setSearchTerm}
                             />
                         </div>
-                    </TabsList>
+                    </div>
                 </Tabs>
             )}
 

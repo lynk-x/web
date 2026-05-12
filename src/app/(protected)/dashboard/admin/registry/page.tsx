@@ -55,13 +55,13 @@ function RegistryContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className={adminStyles.tabsReset}>
-                <TabsList className={adminStyles.tabsHeaderRow}>
-                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
                         <TabsTrigger value="tags">Tags Registry</TabsTrigger>
                         <TabsTrigger value="types">Tag Types</TabsTrigger>
                         <TabsTrigger value="logic">Category Logic</TabsTrigger>
                         <TabsTrigger value="disclaimer">Disclaimers</TabsTrigger>
-                    </div>
+                    </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'tags' && (
@@ -85,7 +85,7 @@ function RegistryContent() {
                             </button>
                         )}
                     </div>
-                </TabsList>
+                </div>
 
                 <TabsContent value="tags">
                     <TagLibraryTab forceView="tags" hideToolbar searchTerm={searchTerm} />

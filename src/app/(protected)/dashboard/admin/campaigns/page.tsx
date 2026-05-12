@@ -410,14 +410,8 @@ function CampaignsContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: 'var(--spacing-lg)',
-                    paddingBottom: '2px'
-                }}>
-                    <TabsList style={{ marginBottom: 0 }}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
                         <TabsTrigger value="campaigns">Campaign List</TabsTrigger>
                         <TabsTrigger value="pricing">Ad Pricing Tiers</TabsTrigger>
                         <TabsTrigger value="credits">Ad Credits</TabsTrigger>

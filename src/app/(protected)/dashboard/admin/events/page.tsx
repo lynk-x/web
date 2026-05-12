@@ -397,11 +397,11 @@ export default function AdminEventsPage() {
             />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
-                <TabsList className={adminStyles.tabsHeaderRow}>
-                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
                         <TabsTrigger value="events">Events</TabsTrigger>
                         <TabsTrigger value="forums">Forums</TabsTrigger>
-                    </div>
+                    </TabsList>
                     
                     <div className={adminStyles.chipsWrapper}>
                         {activeTab === 'events' ? (
@@ -432,7 +432,7 @@ export default function AdminEventsPage() {
                             />
                         )}
                     </div>
-                </TabsList>
+                </div>
 
                 <TabsContent value="events">
                     <EventTable
