@@ -51,8 +51,8 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    opacity: 0.5;
     white-space: nowrap;
+    color: var(--color-utility-primaryText);
 }
 
 .info {

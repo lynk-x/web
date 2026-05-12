@@ -25,6 +25,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { formatCurrency } from '@/utils/format';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 
 function CampaignsContent() {
     const supabase = useMemo(() => createClient(), []);
@@ -46,7 +47,8 @@ function CampaignsContent() {
     const [internalSearchTerm, setInternalSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
-    const [timeFilter, setTimeFilter] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -153,7 +155,7 @@ function CampaignsContent() {
     // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, adTypeFilter, timeFilter]);
+    }, [debouncedSearch, statusFilter, adTypeFilter, startDate, endDate]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -406,20 +408,16 @@ function CampaignsContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 500 }}>Timeframe:</div>
-                    <select 
-                        className={adminStyles.filterSelect}
-                        value={timeFilter}
-                        onChange={(e) => setTimeFilter(e.target.value)}
-                        style={{ height: '36px', padding: '0 12px', minWidth: '130px' }}
-                    >
-                        <option value="all">All Time</option>
-                        <option value="24h">Last 24 Hours</option>
-                        <option value="7d">Last 7 Days</option>
-                        <option value="30d">Last 30 Days</option>
-                    </select>
-                </div>
+                <DateRangeRow 
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                />
             </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>

@@ -16,6 +16,7 @@ import KYCTab from '@/components/admin/users/KYCTab';
 import CreateAccountDrawer from '@/components/admin/users/CreateAccountDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import type { AdminAccount } from '@/types/admin';
 
 function AccountsContent() {
@@ -33,6 +34,8 @@ function AccountsContent() {
     const [totalCount, setTotalCount] = useState(0);
     const [activeTab, setActiveTab] = useState('accounts');
     const [kycStatusFilter, setKycStatusFilter] = useState('pending');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     interface AdminSummary {
         users?: {
             total: number;
@@ -85,7 +88,7 @@ function AccountsContent() {
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, typeFilter, statusFilter]);
+    }, [debouncedSearch, typeFilter, statusFilter, startDate, endDate]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -133,6 +136,23 @@ function AccountsContent() {
                     isLoading={isLoading}
                 />
             </div>
+
+            <TableToolbar 
+                searchPlaceholder="Search accounts, names or emails..." 
+                searchValue={searchTerm} 
+                onSearchChange={setSearchTerm}
+            >
+                <DateRangeRow 
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                />
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
                 <div className={adminStyles.tabsHeaderRow}>
