@@ -163,21 +163,19 @@ export default function AdminAuditLogsPage() {
                 />
             </div>
 
-            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
-                <TableToolbar
-                    searchPlaceholder="Search by action, actor or target..."
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                >
-                    <DateRangeRow 
-                        startDate={startDate}
-                        endDate={endDate}
-                        onStartDateChange={setStartDate}
-                        onEndDateChange={setEndDate}
-                        onClear={() => { setStartDate(''); setEndDate(''); }}
-                    />
-                </TableToolbar>
-            </div>
+            <TableToolbar
+                searchPlaceholder="Search by action, actor or target..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+                <DateRangeRow 
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => { setStartDate(''); setEndDate(''); }}
+                />
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
                 <div className={adminStyles.tabsHeaderRow}>

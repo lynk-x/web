@@ -46,13 +46,11 @@ function RegistryContent() {
                 subtitle="Manage platform taxonomy, tag hierarchies and event disclaimers." 
             />
 
-            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
-                <TableToolbar 
-                    searchPlaceholder="Search tags, types, or disclaimers..." 
-                    searchValue={searchTerm} 
-                    onSearchChange={setSearchTerm} 
-                />
-            </div>
+            <TableToolbar 
+                searchPlaceholder="Search tags, types, or disclaimers..." 
+                searchValue={searchTerm} 
+                onSearchChange={setSearchTerm} 
+            />
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className={adminStyles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>

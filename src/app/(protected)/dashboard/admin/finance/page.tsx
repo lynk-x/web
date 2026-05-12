@@ -566,15 +566,6 @@ function FinanceContent() {
         if (activeTab === 'tax-rates') {
             return (
                 <>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                        <button className={adminStyles.btnPrimary} onClick={() => {
-                            setEditingTaxRate(null);
-                            setTaxForm({ display_name: '', country_code: 'KE', applicable_reason: 'ticket_sale', rate_percent: 0, is_inclusive: true });
-                            setIsTaxModalOpen(true);
-                        }}>
-                            + Add Tax Rate
-                        </button>
-                    </div>
                     <TaxRateTable
                         data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
                         isLoading={isLoading}
@@ -598,19 +589,6 @@ function FinanceContent() {
         if (activeTab === 'fx-rates') {
             return (
                 <>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                        <button
-                            className={adminStyles.btnSecondary}
-                            onClick={handleSyncFX}
-                            disabled={isSyncingFX}
-                        >
-                            <svg className={isSyncingFX ? adminStyles.spinner : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
-                                <path d="M23 4v6h-6M1 20v-6h6"></path>
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                            </svg>
-                            {isSyncingFX ? 'Syncing...' : 'Sync Live Rates'}
-                        </button>
-                    </div>
                     <FXRateTable data={fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} onUpdate={fetchData} />
                 </>
             );
@@ -619,13 +597,6 @@ function FinanceContent() {
         if (activeTab === 'promo-codes') {
             return (
                 <>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                        <Link href="/dashboard/admin/finance/promo-codes/create">
-                            <button className={adminStyles.btnPrimary}>
-                                + Create Promo Code
-                            </button>
-                        </Link>
-                    </div>
                     <PromoCodeTable data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} />
                 </>
             );
@@ -697,38 +668,36 @@ function FinanceContent() {
 
 
 
-            <div style={{ width: '100%' }}>
-                <TableToolbar
-                    searchPlaceholder="Search..."
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                >
-                    {activeTab === 'payouts' && (
-                        <DateRangeRow 
-                            startDate={startDate}
-                            endDate={endDate}
-                            onStartDateChange={setStartDate}
-                            onEndDateChange={setEndDate}
-                            onClear={() => {
-                                setStartDate('');
-                                setEndDate('');
-                            }}
-                        />
-                    )}
-                    {activeTab === 'transactions' && (
-                        <DateRangeRow 
-                            startDate={startDate}
-                            endDate={endDate}
-                            onStartDateChange={setStartDate}
-                            onEndDateChange={setEndDate}
-                            onClear={() => {
-                                setStartDate('');
-                                setEndDate('');
-                            }}
-                        />
-                    )}
-                </TableToolbar>
-            </div>
+            <TableToolbar
+                searchPlaceholder="Search..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+                {activeTab === 'payouts' && (
+                    <DateRangeRow 
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                    />
+                )}
+                {activeTab === 'transactions' && (
+                    <DateRangeRow 
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                    />
+                )}
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>

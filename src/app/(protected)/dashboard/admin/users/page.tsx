@@ -134,14 +134,6 @@ function AccountsContent() {
                 />
             </div>
 
-            <div style={{ margin: 'var(--spacing-lg) 0' }}>
-                <TableToolbar 
-                    searchPlaceholder="Search accounts, names or emails..." 
-                    searchValue={searchTerm} 
-                    onSearchChange={setSearchTerm}
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>

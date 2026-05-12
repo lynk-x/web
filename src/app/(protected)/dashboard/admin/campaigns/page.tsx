@@ -9,7 +9,6 @@ import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
 import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
-import AdPricingTab from '@/components/admin/campaigns/AdPricingTab';
 import AdCreditsTab from '@/components/admin/campaigns/AdCreditsTab';
 import Link from 'next/link';
 import CreateCampaignDrawer from '@/components/admin/campaigns/CreateCampaignDrawer';
@@ -37,8 +36,8 @@ function CampaignsContent() {
     const searchParams = useSearchParams();
 
     const initialTab = (searchParams.get('tab') as string) || 'campaigns';
-    const [activeTab, setActiveTab] = useState<'campaigns' | 'pricing' | 'credits'>(
-        ['campaigns', 'pricing', 'credits'].includes(initialTab) ? initialTab as 'campaigns' | 'pricing' | 'credits' : 'campaigns'
+    const [activeTab, setActiveTab] = useState<'campaigns' | 'credits'>(
+        ['campaigns', 'credits'].includes(initialTab) ? initialTab as 'campaigns' | 'credits' : 'campaigns'
     );
     
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -47,6 +46,7 @@ function CampaignsContent() {
     const [internalSearchTerm, setInternalSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
+    const [timeFilter, setTimeFilter] = useState('all');
     const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -88,7 +88,7 @@ function CampaignsContent() {
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
-        if (tab && ['campaigns', 'pricing', 'credits'].includes(tab)) {
+        if (tab && ['campaigns', 'credits'].includes(tab)) {
             setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
@@ -153,7 +153,7 @@ function CampaignsContent() {
     // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, adTypeFilter]);
+    }, [debouncedSearch, statusFilter, adTypeFilter, timeFilter]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -368,7 +368,7 @@ function CampaignsContent() {
                 onActionClick={() => setIsCreateDrawerOpen(true)}
             />
             
-            <div className={adminStyles.statsGrid} style={{ marginBottom: 'var(--spacing-xl)' }}>
+            <div className={adminStyles.statsGrid} style={{ marginBottom: 'var(--spacing-xs)' }}>
                 <StatCard 
                     label="Active Campaigns" 
                     value={summary?.advertising?.active_campaigns || 0} 
@@ -399,21 +399,33 @@ function CampaignsContent() {
                 />
             </div>
 
-            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
-                <TableToolbar
-                    searchPlaceholder={
-                        activeTab === 'credits' ? "Search by advertiser..." : "Search campaigns or clients..."
-                    }
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                />
-            </div>
+            <TableToolbar
+                searchPlaceholder={
+                    activeTab === 'credits' ? "Search by advertiser..." : "Search campaigns or clients..."
+                }
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontWeight: 500 }}>Timeframe:</div>
+                    <select 
+                        className={adminStyles.filterSelect}
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value)}
+                        style={{ height: '36px', padding: '0 12px', minWidth: '130px' }}
+                    >
+                        <option value="all">All Time</option>
+                        <option value="24h">Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                    </select>
+                </div>
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="campaigns">Campaign List</TabsTrigger>
-                        <TabsTrigger value="pricing">Ad Pricing Tiers</TabsTrigger>
                         <TabsTrigger value="credits">Ad Credits</TabsTrigger>
                     </TabsList>
 
@@ -483,9 +495,6 @@ function CampaignsContent() {
                     />
                 </TabsContent>
 
-                <TabsContent value="pricing">
-                    <AdPricingTab />
-                </TabsContent>
 
                 <TabsContent value="credits">
                     <AdCreditsTab 

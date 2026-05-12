@@ -215,13 +215,11 @@ function SupportContent() {
                 />
             </div>
 
-            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
-                <TableToolbar 
-                    searchPlaceholder="Search reports, feedback, or blocks..." 
-                    searchValue={searchTerm} 
-                    onSearchChange={setSearchTerm} 
-                />
-            </div>
+            <TableToolbar 
+                searchPlaceholder="Search reports, feedback, or blocks..." 
+                searchValue={searchTerm} 
+                onSearchChange={setSearchTerm} 
+            />
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>

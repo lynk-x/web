@@ -242,28 +242,6 @@ export default function AdCreditsTab({
 
             {ConfirmDialog}
             
-            {!hideStats && (
-                <div className={adminStyles.statsGrid}>
-                    <StatCard 
-                        label="Outstanding Credits" 
-                        value={formatCurrency(totalOutstanding, 'USD')} 
-                        change="Platform liability"
-                        trend="neutral"
-                    />
-                    <StatCard 
-                        label="Active Grants" 
-                        value={activeCount} 
-                        change="Currently usable"
-                        trend="positive"
-                    />
-                    <StatCard 
-                        label="Issued (30d)" 
-                        value={issuedThisMonth} 
-                        change="Promotion volume"
-                        trend="neutral"
-                    />
-                </div>
-            )}
 
             {!hideToolbar && (
                 <TableToolbar
