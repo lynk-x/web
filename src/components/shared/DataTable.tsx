@@ -76,7 +76,7 @@ function DataTable<T extends { id: string | number }>({
 
                         {/* Column headers */}
                         {columns.map((col, idx) => (
-                            <th key={idx} style={col.headerStyle}>
+                            <th key={idx} style={{ ...col.headerStyle, width: col.width }}>
                                 {col.header}
                             </th>
                         ))}

@@ -15,6 +15,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import KYCTab from '@/components/admin/users/KYCTab';
 import CreateAccountDrawer from '@/components/admin/users/CreateAccountDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import StatusFilterChips from '@/components/shared/StatusFilterChips';
 import type { AdminAccount } from '@/types/admin';
 
 function AccountsContent() {
@@ -30,6 +31,8 @@ function AccountsContent() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [activeTab, setActiveTab] = useState('accounts');
+    const [kycStatusFilter, setKycStatusFilter] = useState('pending');
     interface AdminSummary {
         users?: {
             total: number;
@@ -131,47 +134,71 @@ function AccountsContent() {
                 />
             </div>
 
-            <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+            <div style={{ margin: 'var(--spacing-lg) 0' }}>
                 <TableToolbar 
                     searchPlaceholder="Search accounts, names or emails..." 
                     searchValue={searchTerm} 
                     onSearchChange={setSearchTerm}
-                >
-                    <select 
-                        className={adminStyles.filterSelect}
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                    >
-                        <option value="all">All Types</option>
-                        <option value="organizer">Organizers</option>
-                        <option value="advertiser">Advertisers</option>
-                        <option value="attendee">Attendees</option>
-                        <option value="pulse_user">Pulse Users</option>
-                        <option value="platform">Platform</option>
-                    </select>
-                </TableToolbar>
+                />
             </div>
 
-            <Tabs defaultValue="accounts" className={styles.tabs}>
-                <TabsList>
-                    <TabsTrigger value="accounts">Accounts & Users</TabsTrigger>
-                    <TabsTrigger value="kyc">KYC Workspace</TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: 'var(--spacing-lg)',
+                    paddingBottom: '2px'
+                }}>
+                    <TabsList style={{ marginBottom: 0 }}>
+                        <TabsTrigger value="accounts">Accounts & Users</TabsTrigger>
+                        <TabsTrigger value="kyc">KYC Workspace</TabsTrigger>
+                    </TabsList>
+
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'accounts' ? (
+                            <>
+                                <select 
+                                    className={adminStyles.filterSelect}
+                                    value={typeFilter}
+                                    onChange={(e) => setTypeFilter(e.target.value)}
+                                    style={{ marginRight: '8px' }}
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="organizer">Organizers</option>
+                                    <option value="advertiser">Advertisers</option>
+                                    <option value="attendee">Attendees</option>
+                                    <option value="pulse_user">Pulse Users</option>
+                                    <option value="platform">Platform</option>
+                                </select>
+                                <StatusFilterChips 
+                                    options={[
+                                        { value: 'all', label: 'All Statuses' },
+                                        { value: 'active', label: 'Active' },
+                                        { value: 'suspended', label: 'Suspended' },
+                                        { value: 'frozen', label: 'Frozen' },
+                                    ]}
+                                    currentValue={statusFilter}
+                                    onChange={setStatusFilter}
+                                />
+                            </>
+                        ) : (
+                            <StatusFilterChips 
+                                options={[
+                                    { value: 'pending', label: 'Pending' },
+                                    { value: 'under_review', label: 'Under Review' },
+                                    { value: 'approved', label: 'Approved' },
+                                    { value: 'rejected', label: 'Rejected' },
+                                ]}
+                                currentValue={kycStatusFilter}
+                                onChange={setKycStatusFilter}
+                            />
+                        )}
+                    </div>
+                </div>
 
                 <TabsContent value="accounts">
                     <div className={adminStyles.container}>
-                        <TableToolbar>
-                            <select 
-                                className={adminStyles.filterSelect}
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="suspended">Suspended</option>
-                                <option value="frozen">Frozen</option>
-                            </select>
-                        </TableToolbar>
 
                         <AccountTable 
                             accounts={accounts}
@@ -192,7 +219,7 @@ function AccountsContent() {
                 </TabsContent>
 
                 <TabsContent value="kyc">
-                    <KYCTab searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+                    <KYCTab searchTerm={searchTerm} onSearchChange={setSearchTerm} statusFilter={kycStatusFilter} />
                 </TabsContent>
             </Tabs>
 

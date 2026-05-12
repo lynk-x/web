@@ -50,6 +50,8 @@ export interface Column<T> {
     headerStyle?: React.CSSProperties;
     /** Optional inline styles applied to the `<td>` element. */
     cellStyle?: React.CSSProperties;
+    /** Optional explicit width for the column (e.g. '200px' or '15%'). */
+    width?: string;
 }
 
 /** Props for the generic `DataTable` component. */

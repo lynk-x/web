@@ -15,15 +15,15 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 interface KYCTabProps {
     searchTerm: string;
     onSearchChange: (val: string) => void;
+    statusFilter: string;
 }
 
-const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange }) => {
+const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilter }) => {
     const supabase = createClient();
     const { showToast } = useToast();
     
     const [queue, setQueue] = useState<KycVerification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('pending');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const debouncedSearch = useDebounce(searchTerm, 500);
@@ -84,21 +84,6 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange }) => {
 
     return (
         <div className={adminStyles.container}>
-            <TableToolbar>
-                <StatusFilterChips
-                    options={[
-                        { value: 'pending', label: 'Pending' },
-                        { value: 'under_review', label: 'Under Review' },
-                        { value: 'approved', label: 'Approved' },
-                        { value: 'rejected', label: 'Rejected' },
-                    ]}
-                    currentValue={statusFilter}
-                    onChange={(val) => {
-                        setStatusFilter(val);
-                        setCurrentPage(1);
-                    }}
-                />
-            </TableToolbar>
 
             <KycVerificationTable
                 data={queue}

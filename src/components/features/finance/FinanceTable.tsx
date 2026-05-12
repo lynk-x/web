@@ -78,6 +78,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
     const columns: Column<FinanceTransaction>[] = [
         {
             header: 'Reference',
+            width: '240px',
             render: (tx) => (
                 <div>
                     <div style={{ fontWeight: 500 }}>{tx.description || formatString(tx.type)}</div>
@@ -91,7 +92,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
             ),
         },
         {
-            header: 'Type',
+            header: 'Reason',
             render: (tx) => <Badge label={formatString(tx.type)} variant={getTypeVariant(tx.type)} />,
         },
         {

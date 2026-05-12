@@ -14,6 +14,7 @@ interface TabsProps {
 interface TabsListProps {
     children: React.ReactNode;
     className?: string;
+    style?: React.CSSProperties;
 }
 
 interface TabsTriggerProps {
@@ -53,8 +54,8 @@ export const Tabs: React.FC<TabsProps> = ({ defaultValue, value: controlledValue
     );
 };
 
-export const TabsList: React.FC<TabsListProps> = ({ children, className }) => {
-    return <div className={className || styles.tabsList}>{children}</div>;
+export const TabsList: React.FC<TabsListProps> = ({ children, className, style }) => {
+    return <div className={className || styles.tabsList} style={style}>{children}</div>;
 };
 
 export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, children, className, onClick }) => {

@@ -38,8 +38,8 @@ function FinanceContent() {
     const supabase = useMemo(() => createClient(), []);
 
     const { enabled: isPayoutMgmtEnabled } = useFeatureFlag('enable_payout_management');
-    const initialTab = searchParams.get('tab') || 'transactions';
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'transactions');
+    const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isStatsLoading, setIsStatsLoading] = useState(true);
@@ -146,16 +146,14 @@ function FinanceContent() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const from = (currentPage - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
-
-            if (['transactions', 'refunds', 'revenue', 'escrow'].includes(activeTab)) {
-                let categoryFilter = 'all';
-                if (activeTab === 'escrow') categoryFilter = 'hold';
+            
+            // Merged transaction tabs: transactions, revenue, refunds, escrow
+            if (activeTab === 'transactions') {
+                let p_category = categoryFilter;
 
                 const { data, error } = await supabase.rpc('get_admin_transactions', {
                     p_search: debouncedSearch,
-                    p_category: categoryFilter,
+                    p_category: p_category,
                     p_start_date: startDate ? new Date(startDate).toISOString() : null,
                     p_end_date: endDate ? new Date(endDate).toISOString() : null,
                     p_offset: (currentPage - 1) * itemsPerPage,
@@ -302,7 +300,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch]);
+    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -321,7 +319,7 @@ function FinanceContent() {
                 { event: '*', schema: 'transactions', table: 'transactions' },
                 () => {
                     fetchGlobalStatsRef.current();
-                    if (['transactions', 'revenue', 'refunds', 'escrow'].includes(activeTabRef.current)) {
+                    if (activeTabRef.current === 'transactions') {
                         fetchDataRef.current();
                     }
                 }
@@ -345,10 +343,11 @@ function FinanceContent() {
         fetchGlobalStats();
     }, [fetchGlobalStats]);
 
-    // Pagination Reset Logic: Resolves Part 2 audit item #2
+    // Pagination    // Reset pagination and refresh when tab or filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab, debouncedSearch, startDate, endDate]);
+        fetchData();
+    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter]);
 
     useEffect(() => {
         fetchData();
@@ -704,8 +703,21 @@ function FinanceContent() {
                     searchValue={searchTerm}
                     onSearchChange={setSearchTerm}
                 >
-                    {['transactions', 'revenue', 'refunds', 'payouts', 'escrow'].includes(activeTab) && (
-                        <DateRangeRow
+                    {activeTab === 'transactions' && (
+                        <select 
+                            className={adminStyles.filterSelect}
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                        >
+                            <option value="all">All Transactions</option>
+                            <option value="incoming">Revenue (Incoming)</option>
+                            <option value="outgoing">Refunds (Outgoing)</option>
+                            <option value="hold">Escrow (Hold)</option>
+                            <option value="internal">Internal Transfers</option>
+                        </select>
+                    )}
+                    {(activeTab === 'transactions' || activeTab === 'payouts') && (
+                        <DateRangeRow 
                             startDate={startDate}
                             endDate={endDate}
                             onStartDateChange={setStartDate}
@@ -721,10 +733,7 @@ function FinanceContent() {
 
             <Tabs
                 options={[
-                    { id: 'transactions', label: 'All Transactions' },
-                    { id: 'revenue', label: 'Revenue' },
-                    { id: 'refunds', label: 'Refunds' },
-                    { id: 'escrow', label: 'Escrow' },
+                    { id: 'transactions', label: 'Transactions' },
                     { id: 'payouts', label: 'Payout Requests' },
                     { id: 'promo-codes', label: 'Promo Codes' },
                     { id: 'tax-rates', label: 'Tax Rates' },
