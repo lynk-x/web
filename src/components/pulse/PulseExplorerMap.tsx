@@ -77,10 +77,11 @@ export default function PulseExplorerMap({ data, isLoading }: PulseExplorerMapPr
                     const coords = countryCoords[reg.country_code];
                     if (!coords) return null;
 
-                    // Calculate radius based on volume
-                    const radius = Math.max(10, Math.min(50, Math.sqrt(reg.volume) / 2));
-                    // Color based on sentiment (Red to Green)
-                    const hue = ((reg.sentiment + 1) / 2) * 120; // -1 -> 0 (Red), 0 -> 60 (Yellow), 1 -> 120 (Green)
+// Calculate radius based on volume
+                     const radius = Math.max(10, Math.min(50, Math.sqrt(reg.volume) / 2));
+                     // Color based on sentiment (Red to Green)
+                     const sentiment = reg.sentiment ?? 0;
+                     const hue = ((sentiment + 1) / 2) * 120; // -1 -> 0 (Red), 0 -> 60 (Yellow), 1 -> 120 (Green)
                     const color = `hsl(${hue}, 80%, 50%)`;
 
                     return (
@@ -100,7 +101,7 @@ export default function PulseExplorerMap({ data, isLoading }: PulseExplorerMapPr
                                 <div style={{ minWidth: '120px' }}>
                                     <div style={{ fontWeight: 700, marginBottom: '4px' }}>{reg.country_code} Market</div>
                                     <div style={{ fontSize: '13px' }}>Volume: {reg.volume.toLocaleString()}</div>
-                                    <div style={{ fontSize: '13px' }}>Sentiment: {(reg.sentiment * 100).toFixed(1)}%</div>
+                                    <div style={{ fontSize: '13px' }}>Sentiment: {(sentiment * 100).toFixed(1)}%</div>
                                 </div>
                             </Popup>
                         </CircleMarker>

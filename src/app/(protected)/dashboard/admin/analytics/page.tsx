@@ -239,7 +239,7 @@ function RevenueTab() {
             <div className={styles.card} style={{ marginTop: '24px' }}>
                 <h3 className={styles.cardTitle}>Daily Volume Ledger</h3>
                 {(data?.ledger || []).slice(0, 10).map((r: any) => (
-                    <BarRow key={r.day} label={new Date(r.day).toLocaleDateString()} count={`$${r.volume.toLocaleString()}`} pct={(r.volume / Math.max(...data.ledger.map((l: any) => l.volume))) * 100} />
+                    <BarRow key={r.day} label={new Date(r.day).toLocaleDateString()} count={`$${r.volume.toLocaleString()}`} pct={(r.volume / Math.max(...(data?.ledger?.map((l: any) => l.volume) ?? [1]))) * 100} />
                 ))}
             </div>
         </div>
@@ -265,7 +265,7 @@ function InsightsTab() {
 
     if (isLoading) return <div className={styles.loading}>Loading Insights...</div>;
 
-    const maxToxicity = Math.max(...(data?.community_health || []).map((h: any) => h.toxicity_index), 1);
+    const maxToxicity = Math.max(...(data?.community_health || []).map((h: any) => h.toxicity_index ?? 0), 1);
 
     return (
         <div className={styles.tabContent}>
@@ -279,7 +279,7 @@ function InsightsTab() {
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Search Gaps (Top queries with 0 results)</h3>
                     {(data?.search_gaps || []).map((r: any) => (
-                        <BarRow key={r.query} label={r.query} count={r.search_count} pct={(r.search_count / Math.max(...data.search_gaps.map((g: any) => g.search_count))) * 100} color="#ff9800" />
+                        <BarRow key={r.query} label={r.query} count={r.search_count} pct={(r.search_count / Math.max(...(data?.search_gaps?.map((g: any) => g.search_count) ?? [1]))) * 100} color="#ff9800" />
                     ))}
                 </div>
                 <div className={styles.card}>
@@ -326,9 +326,9 @@ function IntelligenceTab() {
             <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Category Affinity (Shared Users)</h3>
-                    {(data?.affinity || []).map((r: any) => (
-                        <BarRow key={`${r.category_a}-${r.category_b}`} label={`${r.category_a} + ${r.category_b}`} count={r.shared_users} pct={(r.shared_users / Math.max(...data.affinity.map((a: any) => a.shared_users))) * 100} color="#6c63ff" />
-                    ))}
+{(data?.affinity || []).map((r: any) => (
+                         <BarRow key={`${r.category_a}-${r.category_b}`} label={`${r.category_a} + ${r.category_b}`} count={r.shared_users} pct={(r.shared_users / Math.max(...(data?.affinity?.map((a: any) => a.shared_users) ?? [1]))) * 100} color="#6c63ff" />
+                     ))}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Churn Risk Segmentation</h3>
