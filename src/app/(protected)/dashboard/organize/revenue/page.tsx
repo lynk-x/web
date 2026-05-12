@@ -32,7 +32,7 @@ function RevenueContent() {
     const [activeTab, setActiveTab] = useState<TabId>(
         (VALID_TABS as readonly string[]).includes(initialTab) ? initialTab as TabId : 'all'
     );
-
+    
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
@@ -76,13 +76,24 @@ function RevenueContent() {
 
             if (error) throw error;
 
-            setTransactions((data.transactions || []).map((t: any) => ({
+            interface TransactionRow {
+                id: string;
+                reason: string;
+                ticket_code: string | null;
+                amount: number;
+                created_at: string;
+                status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
+                category: 'incoming' | 'outgoing' | 'internal' | 'hold';
+                event_title: string | null;
+            }
+
+            setTransactions((data.transactions || []).map((t: TransactionRow) => ({
                 id: t.id,
                 description: t.reason === 'ticket_sale' ? `Ticket Sale: ${t.ticket_code || '—'}` : null,
                 amount: t.amount,
                 date: t.created_at,
                 status: t.status,
-                type: t.reason,
+                type: t.reason as FinanceTransaction['type'],
                 category: t.category,
                 reference: t.id.split('-')[0].toUpperCase(),
                 event: t.event_title,

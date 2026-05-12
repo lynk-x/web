@@ -166,13 +166,26 @@ function FinanceContent() {
                 const total = data?.[0]?.total_count || 0;
                 setTotalCount(total);
 
-                setTransactions((data || []).map((tx: any) => ({
+                interface TransactionRow {
+                    id: string;
+                    reason: string;
+                    event_title: string | null;
+                    amount: number;
+                    created_at: string;
+                    status: string;
+                    category: string;
+                    reference: string;
+                    sender_name: string | null;
+                    recipient_name: string | null;
+                }
+
+                setTransactions((data || []).map((tx: TransactionRow) => ({
                     id: tx.id,
                     description: `${tx.reason.replace(/_/g, ' ')} for ${tx.event_title || 'System'}`,
                     amount: tx.amount,
                     date: tx.created_at,
                     status: tx.status,
-                    type: tx.reason,
+                    type: tx.reason as any,
                     category: tx.category,
                     reference: tx.reference,
                     event: tx.event_title,
@@ -193,7 +206,21 @@ function FinanceContent() {
                 const total = data?.[0]?.total_count || 0;
                 setTotalCount(total);
 
-                setPayouts((data || []).map((p: any) => ({
+                interface PayoutRow {
+                    id: string;
+                    recipient_name: string;
+                    amount: number;
+                    status: string;
+                    created_at: string;
+                    reference: string;
+                    bank_name: string | null;
+                    method: string;
+                    approval_status: string;
+                    kyc_tier: string;
+                    is_verified: boolean;
+                }
+
+                setPayouts((data || []).map((p: PayoutRow) => ({
                     id: p.id,
                     recipient: p.recipient_name,
                     amount: p.amount,
@@ -234,15 +261,31 @@ function FinanceContent() {
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-                setPromoCodes((data || []).map((p: any) => {
+                interface PromoRow {
+                    id: string;
+                    code: string;
+                    type: string;
+                    value: number;
+                    uses_count: number;
+                    max_uses: number;
+                    is_active: boolean;
+                    created_at: string;
+                    event_promos?: {
+                        event?: {
+                            title: string;
+                        };
+                    }[];
+                }
+
+                setPromoCodes((data || []).map((p: PromoRow) => {
                     const eventTitles = (p.event_promos || [])
-                        .map((ep: any) => ep.event?.title)
+                        .map((ep) => ep.event?.title)
                         .filter(Boolean);
                     
                     return {
                         id: p.id,
                         code: p.code,
-                        type: p.type,
+                        type: p.type as any,
                         value: p.value,
                         uses_count: p.uses_count,
                         max_uses: p.max_uses,

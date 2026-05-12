@@ -18,8 +18,6 @@ import type { AdminAccount } from '@/types/admin';
 
 function AccountsContent() {
     const searchParams = useSearchParams();
-    const router = useRouter();
-    const pathname = usePathname();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
@@ -31,7 +29,15 @@ function AccountsContent() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const [summary, setSummary] = useState<any>(null);
+    interface AdminSummary {
+        users?: {
+            total: number;
+            kyc_pending: number;
+            growth_30d: number;
+            churn_30d: number;
+        };
+    }
+    const [summary, setSummary] = useState<AdminSummary | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
@@ -56,7 +62,7 @@ function AccountsContent() {
 
             setAccounts(data || []);
             setTotalCount(data?.[0]?.total_count || 0);
-        } catch (err: any) {
+        } catch (err: unknown) {
             showToast('Failed to load accounts database.', 'error');
         } finally {
             setIsLoading(false);

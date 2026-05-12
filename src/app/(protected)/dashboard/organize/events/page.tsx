@@ -62,7 +62,21 @@ export default function OrganizerEventsPage() {
 
             if (error) throw error;
 
-            const formattedEvents: OrganizerEvent[] = (data.items || []).map((e: any) => ({
+            interface EventItem {
+                id: string;
+                title: string;
+                starts_at: string;
+                ends_at: string | null;
+                location_name: string | null;
+                status: OrganizerEvent['status'];
+                attendees: number;
+                thumbnail_url: string | null;
+                event_reference: string;
+                is_private: boolean;
+                currency: string;
+            }
+
+            const formattedEvents: OrganizerEvent[] = (data.items || []).map((e: EventItem) => ({
                 id: e.id,
                 title: e.title,
                 organizer: activeAccount.name,
@@ -212,15 +226,34 @@ export default function OrganizerEventsPage() {
                 return;
             }
 
-            const exportData = (data || []).map((t: any) => ({
-                'Event': t.event?.title,
-                'Attendee Name': t.user?.full_name || t.user?.user_name || 'Anonymous',
-                'Email': t.user?.email,
-                'Ticket Code': t.ticket_code,
-                'Tier': t.tier?.display_name,
-                'Status': t.status,
-                'Purchased At': formatDateTime(t.created_at)
-            }));
+            const getFirst = <T,>(val: T | T[] | null | undefined): T | null | undefined => 
+                Array.isArray(val) ? val[0] : (val as T | null | undefined);
+
+            interface TicketExportRow {
+                id: string;
+                ticket_code: string;
+                status: string;
+                created_at: string;
+                event: { title: string }[] | { title: string } | null;
+                tier: { display_name: string }[] | { display_name: string } | null;
+                user: { full_name: string; email: string; user_name: string }[] | { full_name: string; email: string; user_name: string } | null;
+            }
+
+            const exportData = (data || []).map((t: TicketExportRow) => {
+                const event = getFirst(t.event);
+                const user = getFirst(t.user);
+                const tier = getFirst(t.tier);
+                
+                return {
+                    'Event': event?.title,
+                    'Attendee Name': user?.full_name || user?.user_name || 'Anonymous',
+                    'Email': user?.email,
+                    'Ticket Code': t.ticket_code,
+                    'Tier': tier?.display_name,
+                    'Status': t.status,
+                    'Purchased At': formatDateTime(t.created_at)
+                };
+            });
 
             exportToCSV(exportData, `attendee_list_${new Date().toISOString().split('T')[0]}`);
             showToast('Attendee list exported successfully.', 'success');
@@ -334,7 +367,7 @@ export default function OrganizerEventsPage() {
                         { value: 'suspended', label: 'Suspended' }
                     ]}
                     currentValue={statusFilter}
-                    onChange={(val) => setStatusFilter(val as any)}
+                     onChange={(val) => setStatusFilter(val as OrganizerEvent['status'] | 'all')}
                 />
                 </TableToolbar>
             </div>

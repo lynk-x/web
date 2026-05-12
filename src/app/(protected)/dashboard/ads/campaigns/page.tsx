@@ -2,16 +2,15 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import styles from './page.module.css';
-import Link from 'next/link';
-import AdsCampaignTable, { AdsCampaign } from '@/components/ads/campaigns/AdsCampaignTable';
-import TableToolbar from '@/components/shared/TableToolbar';
-import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
-import { useToast } from '@/components/ui/Toast';
-import { useOrganization } from '@/context/OrganizationContext';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import FilterGroup from '@/components/dashboard/FilterGroup';
+import AdsCampaignTable, { AdsCampaign } from '@/components/ads/campaigns/AdsCampaignTable';
+import TableToolbar from '@/components/shared/TableToolbar';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
+import type { BulkAction } from '@/components/shared/BulkActionsBar';
+import { useToast } from '@/components/ui/Toast';
+import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import ProductTour from '@/components/dashboard/ProductTour';
 
@@ -46,7 +45,21 @@ export default function CampaignsPage() {
 
             if (error) throw error;
 
-            const formatted: AdsCampaign[] = (data.items || []).map((c: any) => ({
+            interface CampaignItem {
+                id: string;
+                title: string;
+                type: string;
+                start_at: string;
+                end_at: string | null;
+                status: AdsCampaign['status'];
+                total_budget: number;
+                spent_amount: number;
+                target_url: string | null;
+                total_impressions: number;
+                total_clicks: number;
+            }
+
+            const formatted: AdsCampaign[] = (data.items || []).map((c: CampaignItem) => ({
                 id: c.id,
                 title: c.title,
                 type: c.type,

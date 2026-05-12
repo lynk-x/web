@@ -6,30 +6,17 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import adminStyles from './page.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import WorldClock from '@/components/admin/overview/WorldClock';
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useEffect } from 'react';
 
 const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), { ssr: false });
 
 export default function AdminDashboard() {
     const [isMounted, setIsMounted] = useState(false);
-    const [summary, setSummary] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const supabase = useMemo(() => createClient(), []);
-
-    const fetchSummary = useCallback(async () => {
-        setIsLoading(true);
-        const { data, error } = await supabase.rpc('admin_stat_summary');
-        if (!error && data) setSummary(data);
-        setIsLoading(false);
-    }, [supabase]);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
-        fetchSummary();
-    }, [fetchSummary]);
-
-    const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }, []);
 
     return (
         <div className={sharedStyles.container}>

@@ -7,10 +7,8 @@ import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
-import Link from 'next/link';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
-import { formatCurrency } from '@/utils/format';
 import { useToast } from '@/components/ui/Toast';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 import ProductTour from '@/components/dashboard/ProductTour';
@@ -21,13 +19,27 @@ export default function DashboardOverview() {
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
 
-    const [stats, setStats] = useState<any>({
+    interface DashboardStats {
+        totalEvents: number | null;
+        upcomingEvents: number | null;
+        activeEvents: number | null;
+        teamSize: number | null;
+    }
+    const [stats, setStats] = useState<DashboardStats>({
         totalEvents: null,
         upcomingEvents: null,
         activeEvents: null,
         teamSize: null,
     });
-    const [spotlights, setSpotlights] = useState<any[]>([]);
+    interface Spotlight {
+        id: string;
+        title: string;
+        subtitle: string;
+        backgroundImage: string;
+        ctaLabel: string;
+        ctaHref: string;
+    }
+    const [spotlights, setSpotlights] = useState<Spotlight[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {

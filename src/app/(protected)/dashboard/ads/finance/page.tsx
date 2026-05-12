@@ -42,9 +42,20 @@ export default function AdsBillingPage() {
             if (error) throw error;
 
             const currency = 'USD';
-            const primaryWallet = (data.wallets || []).find((w: any) => w.currency === currency) || data.wallets?.[0];
+            interface WalletItem {
+                currency: string;
+                balance: number;
+            }
+            const primaryWallet = (data.wallets || []).find((w: WalletItem) => w.currency === currency) || data.wallets?.[0];
             
-            const mapped: Invoice[] = (data.top_ups || []).map((tx: any) => ({
+            interface TopUpItem {
+                id: string;
+                created_at: string;
+                amount: number;
+                currency: string;
+                status: string;
+            }
+            const mapped: Invoice[] = (data.top_ups || []).map((tx: TopUpItem) => ({
                 id: tx.id,
                 date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                 amount: formatCurrency(Number(tx.amount), tx.currency || currency),

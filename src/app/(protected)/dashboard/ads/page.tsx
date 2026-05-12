@@ -19,8 +19,21 @@ export default function AdsDashboard() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
-    const [spotlights, setSpotlights] = useState<any[]>([]);
-    const [stats, setStats] = useState<any[]>([
+    interface Spotlight {
+        id: string;
+        title: string;
+        subtitle: string;
+        backgroundImage: string;
+        ctaLabel: string;
+        ctaHref: string;
+    }
+    const [spotlights, setSpotlights] = useState<Spotlight[]>([]);
+    interface DashboardStat {
+        label: string;
+        value: string | null;
+        change: string;
+    }
+    const [stats, setStats] = useState<DashboardStat[]>([
         { label: 'Total Campaigns', value: null, change: 'Lifetime count' },
         { label: 'Active Campaigns', value: null, change: 'Running now' },
         { label: 'Pending Approval', value: null, change: 'Under review' },

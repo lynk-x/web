@@ -108,8 +108,8 @@ const KYCTab: React.FC = () => {
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
                     verification={selectedVerification}
-                    onApprove={() => handleManageRequest(selectedVerification.id, 'approve')}
-                    onReject={(reason) => handleManageRequest(selectedVerification.id, 'reject', reason)}
+                    onApprove={(v) => handleManageRequest(v.id, 'approve')}
+                    onReject={(v, reason) => handleManageRequest(v.id, 'reject', reason)}
                 />
             )}
         </div>
