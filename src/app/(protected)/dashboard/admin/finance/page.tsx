@@ -731,7 +731,7 @@ function FinanceContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
-                <TabsList className={adminStyles.tabsHeaderRow} style={{ paddingBottom: '2px' }}>
+                <TabsList className={adminStyles.tabsHeaderRow}>
                     <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="transactions">Transactions</TabsTrigger>
                         <TabsTrigger value="payouts">Payout Requests</TabsTrigger>

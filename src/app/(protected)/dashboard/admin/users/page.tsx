@@ -143,17 +143,11 @@ function AccountsContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: 'var(--spacing-lg)',
-                    paddingBottom: '2px'
-                }}>
-                    <TabsList style={{ marginBottom: 0 }}>
+                <TabsList className={adminStyles.tabsHeaderRow}>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="accounts">Accounts & Users</TabsTrigger>
                         <TabsTrigger value="kyc">KYC Workspace</TabsTrigger>
-                    </TabsList>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'accounts' ? (
@@ -162,7 +156,7 @@ function AccountsContent() {
                                     className={adminStyles.filterSelect}
                                     value={typeFilter}
                                     onChange={(e) => setTypeFilter(e.target.value)}
-                                    style={{ marginRight: '8px' }}
+                                    style={{ height: '36px', padding: '0 12px' }}
                                 >
                                     <option value="all">All Types</option>
                                     <option value="organizer">Organizers</option>
@@ -195,7 +189,7 @@ function AccountsContent() {
                             />
                         )}
                     </div>
-                </div>
+                </TabsList>
 
                 <TabsContent value="accounts">
                     <div className={adminStyles.container}>

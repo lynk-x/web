@@ -224,7 +224,7 @@ function SupportContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
-                <TabsList className={adminStyles.tabsHeaderRow} style={{ paddingBottom: '2px' }}>
+                <TabsList className={adminStyles.tabsHeaderRow}>
                     <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="queue">Review Queue</TabsTrigger>
                         <TabsTrigger value="tickets">Support Tickets</TabsTrigger>

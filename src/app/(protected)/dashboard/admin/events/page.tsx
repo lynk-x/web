@@ -397,13 +397,13 @@ export default function AdminEventsPage() {
             />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
-                <TabsList className={styles.tabsHeaderRow}>
+                <TabsList className={adminStyles.tabsHeaderRow}>
                     <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="events">Events</TabsTrigger>
                         <TabsTrigger value="forums">Forums</TabsTrigger>
                     </div>
                     
-                    <div className={styles.chipsWrapper}>
+                    <div className={adminStyles.chipsWrapper}>
                         {activeTab === 'events' ? (
                             <StatusFilterChips
                                 options={[

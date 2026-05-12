@@ -522,3 +522,16 @@
     opacity: 0.5;
     font-size: 14px;
 }
+
+.tabsHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.chipsWrapper {
+    display: flex;
+    align-items: center;
+    padding-bottom: 8px;
+}
