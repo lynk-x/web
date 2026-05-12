@@ -36,7 +36,7 @@ export default function CheckInLogsPage() {
     const [logs, setLogs] = useState<CheckInLog[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState<any>({ scanned: null, remaining: null, rejected: null });
+    const [stats, setStats] = useState<{ scanned: number | null; remaining: number | null; rejected: number | null }>({ scanned: null, remaining: null, rejected: null });
     const [showManualModal, setShowManualModal] = useState(false);
     const [manualCode, setManualCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
@@ -57,14 +57,34 @@ export default function CheckInLogsPage() {
 
             if (error) throw error;
 
-            const mappedLogs: CheckInLog[] = (data || []).map((row: any) => ({
-                id: row.id,
-                attendeeName: row.buyer?.full_name || row.buyer?.user_name || 'Anonymous',
-                attendeeAvatar: null,
-                ticketTier: row.tier?.display_name || 'Unknown Tier',
-                status: row.status,
-                scannedBy: row.scanner?.full_name || row.scanner?.user_name || 'System',
-                timestamp: row.redeemed_at ? new Date(row.redeemed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-',
+            interface TicketRow {
+                id: string;
+                status: CheckInLog['status'];
+                redeemed_at: string | null;
+                tier: { display_name: string }[] | { display_name: string } | null;
+                buyer: { full_name: string; user_name: string }[] | { full_name: string; user_name: string } | null;
+                scanner: { full_name: string; user_name: string }[] | { full_name: string; user_name: string } | null;
+            }
+
+            const getFirst = <T,>(val: T | T[] | null | undefined): T | null | undefined => 
+                Array.isArray(val) ? val[0] : (val as T | null | undefined);
+
+            const mappedLogs: CheckInLog[] = (data || []).map((row: TicketRow) => {
+                const tier = getFirst(row.tier);
+                const buyer = getFirst(row.buyer);
+                const scanner = getFirst(row.scanner);
+
+                return {
+                    id: row.id,
+                    attendeeName: buyer?.full_name || buyer?.user_name || 'Anonymous',
+                    attendeeAvatar: null,
+                    ticketTier: tier?.display_name || 'Unknown Tier',
+                    status: row.status,
+                    scannedBy: scanner?.full_name || scanner?.user_name || 'System',
+                    timestamp: row.redeemed_at 
+                        ? new Date(row.redeemed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+                        : '-',
+                };
             });
 
             setLogs(mappedLogs);
@@ -242,7 +262,11 @@ export default function CheckInLogsPage() {
                     selectedIds={selectedIds}
                     onSelect={(id) => {
                         const next = new Set(selectedIds);
-                        next.has(id) ? next.delete(id) : next.add(id);
+                        if (next.has(id)) {
+                            next.delete(id);
+                        } else {
+                            next.add(id);
+                        }
                         setSelectedIds(next);
                     }}
                     onSelectAll={() => {
