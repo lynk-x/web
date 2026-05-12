@@ -4,7 +4,9 @@ import React from 'react';
 import styles from './Tabs.module.css';
 
 interface TabsProps {
-    defaultValue: string;
+    defaultValue?: string;
+    value?: string;
+    onValueChange?: (val: string) => void;
     children: React.ReactNode;
     className?: string;
 }
@@ -18,6 +20,7 @@ interface TabsTriggerProps {
     value: string;
     children: React.ReactNode;
     className?: string;
+    onClick?: () => void;
 }
 
 interface TabsContentProps {
@@ -31,8 +34,18 @@ const TabsContext = React.createContext<{
     setValue: (val: string) => void;
 } | null>(null);
 
-export const Tabs: React.FC<TabsProps> = ({ defaultValue, children, className }) => {
-    const [value, setValue] = React.useState(defaultValue);
+export const Tabs: React.FC<TabsProps> = ({ defaultValue, value: controlledValue, onValueChange, children, className }) => {
+    const [internalValue, setInternalValue] = React.useState(defaultValue || '');
+    
+    const value = controlledValue !== undefined ? controlledValue : internalValue;
+    
+    const setValue = (val: string) => {
+        if (controlledValue === undefined) {
+            setInternalValue(val);
+        }
+        onValueChange?.(val);
+    };
+
     return (
         <TabsContext.Provider value={{ value, setValue }}>
             <div className={className}>{children}</div>
@@ -44,7 +57,7 @@ export const TabsList: React.FC<TabsListProps> = ({ children, className }) => {
     return <div className={className || styles.tabsList}>{children}</div>;
 };
 
-export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, children, className }) => {
+export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, children, className, onClick }) => {
     const context = React.useContext(TabsContext);
     if (!context) return null;
 
@@ -53,7 +66,10 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, children, class
         <button
             type="button"
             className={`${className || styles.tab} ${isActive ? styles.tabActive : ''}`}
-            onClick={() => context.setValue(value)}
+            onClick={() => {
+                context.setValue(value);
+                onClick?.();
+            }}
         >
             {children}
         </button>

@@ -4,13 +4,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/utils/error';
+import { useDebounce } from '@/hooks/useDebounce';
 import KycVerificationTable from './KycVerificationTable';
 import KycDetailModal from './KycDetailModal';
 import type { KycVerification } from '@/types/admin';
 import TableToolbar from '@/components/shared/TableToolbar';
 import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 
-const KYCTab: React.FC = () => {
+interface KYCTabProps {
+    searchTerm: string;
+    onSearchChange: (val: string) => void;
+}
+
+const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange }) => {
     const supabase = createClient();
     const { showToast } = useToast();
     
@@ -19,6 +26,7 @@ const KYCTab: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState('pending');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const debouncedSearch = useDebounce(searchTerm, 500);
     const [selectedVerification, setSelectedVerification] = useState<KycVerification | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
@@ -30,6 +38,7 @@ const KYCTab: React.FC = () => {
             const { data, error } = await supabase.rpc('get_admin_kyc_queue', {
                 p_params: {
                     status: statusFilter,
+                    search: debouncedSearch,
                     limit: itemsPerPage,
                     offset: (currentPage - 1) * itemsPerPage
                 }
@@ -50,6 +59,11 @@ const KYCTab: React.FC = () => {
         fetchQueue();
     }, [fetchQueue]);
 
+    // Reset pagination on filter or search change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, debouncedSearch]);
+
     const handleManageRequest = async (id: string, action: string, reason?: string) => {
         try {
             const { error } = await supabase.rpc('admin_manage_kyc_request', {
@@ -69,8 +83,8 @@ const KYCTab: React.FC = () => {
     };
 
     return (
-        <div>
-            <TableToolbar searchPlaceholder="Search queue...">
+        <div className={adminStyles.container}>
+            <TableToolbar>
                 <StatusFilterChips
                     options={[
                         { value: 'pending', label: 'Pending' },

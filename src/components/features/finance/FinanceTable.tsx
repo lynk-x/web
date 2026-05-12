@@ -77,7 +77,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
     /** Column definitions for the finance table. */
     const columns: Column<FinanceTransaction>[] = [
         {
-            header: 'Transaction',
+            header: 'Reference',
             render: (tx) => (
                 <div>
                     <div style={{ fontWeight: 500 }}>{tx.description || formatString(tx.type)}</div>

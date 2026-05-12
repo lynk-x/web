@@ -8,8 +8,11 @@ import AuditTable, { AuditLog } from '@/components/admin/audit/AuditTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import Tabs from '@/components/dashboard/Tabs';
 import SystemJobsTab from '@/components/admin/audit/SystemJobsTab';
+import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 
 
 
@@ -20,10 +23,15 @@ export default function AdminAuditLogsPage() {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [actionTypes, setActionTypes] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isStatsLoading, setIsStatsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
+    const [activeTab, setActiveTab] = useState('audit');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [stats, setStats] = useState<any>(null);
     const itemsPerPage = 20;
 
     const fetchLogs = useCallback(async () => {
@@ -34,8 +42,8 @@ export default function AdminAuditLogsPage() {
                     action: actionFilter,
                     limit: itemsPerPage,
                     offset: (currentPage - 1) * itemsPerPage,
-                    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    to: new Date().toISOString()
+                    from: startDate ? new Date(startDate).toISOString() : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    to: endDate ? new Date(endDate).toISOString() : new Date().toISOString()
                 }
             });
 
@@ -74,7 +82,24 @@ export default function AdminAuditLogsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, actionFilter, currentPage]);
+    }, [supabase, showToast, actionFilter, currentPage, startDate, endDate]);
+
+    const fetchStats = useCallback(async () => {
+        setIsStatsLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('get_admin_audit_stats');
+            if (error) throw error;
+            setStats(data);
+        } catch (err: any) {
+            console.error('Failed to fetch audit stats', err);
+        } finally {
+            setIsStatsLoading(false);
+        }
+    }, [supabase]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
 
     useEffect(() => {
         fetchLogs();
@@ -83,7 +108,7 @@ export default function AdminAuditLogsPage() {
     // Reset to page 1 when filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, actionFilter]);
+    }, [searchTerm, actionFilter, startDate, endDate]);
 
     // Client-side search is applied only to the current page of results
     const filteredLogs = logs.filter(log => {
@@ -100,51 +125,91 @@ export default function AdminAuditLogsPage() {
 
     return (
         <div className={adminStyles.container}>
-            <header className={adminStyles.header}>
-                <div>
-                    <h1 className={adminStyles.title}>Traceability & Operations</h1>
-                    <p className={adminStyles.subtitle}>Monitor system events, user actions, and background task health.</p>
-                </div>
-            </header>
+            <PageHeader 
+                title="Traceability & Operations"
+                subtitle="Monitor system events, user actions, and background task health."
+            />
 
-            <Tabs defaultValue="audit" className={adminStyles.tabs}>
-                <TabsList className={adminStyles.tabsList}>
-                    <TabsTrigger value="audit">System Audit Logs</TabsTrigger>
-                    <TabsTrigger value="jobs">Queue Monitoring</TabsTrigger>
-                </TabsList>
+            <div className={adminStyles.statsGrid}>
+                <StatCard 
+                    label="Actions (24h)" 
+                    value={stats?.total_logs_24h} 
+                    change="System events"
+                    trend="neutral"
+                    isLoading={isStatsLoading}
+                />
+                <StatCard 
+                    label="Unique Actors" 
+                    value={stats?.unique_actors_24h} 
+                    change="Active admins"
+                    trend="neutral"
+                    isLoading={isStatsLoading}
+                />
+                <StatCard 
+                    label="Critical Events" 
+                    value={stats?.critical_events_24h} 
+                    change="Deletions & config"
+                    trend={stats?.critical_events_24h > 10 ? "negative" : "positive"}
+                    isLoading={isStatsLoading}
+                />
+                <StatCard 
+                    label="Failed Jobs" 
+                    value={stats?.failed_jobs} 
+                    change="Requires attention"
+                    trend={stats?.failed_jobs > 0 ? "negative" : "positive"}
+                    isLoading={isStatsLoading}
+                />
+            </div>
 
-                <TabsContent value="audit">
-                    <TableToolbar
-                        searchPlaceholder="Search by action, actor or target..."
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        <div className={adminStyles.filterGroup}>
-                            <select
-                                className={adminStyles.filterSelect}
-                                value={actionFilter}
-                                onChange={(e) => setActionFilter(e.target.value)}
-                            >
-                                <option value="all">All Actions</option>
-                                {actionTypes.map(type => (
-                                    <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </TableToolbar>
-
-                    <AuditTable
-                        logs={filteredLogs}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
+            <div style={{ width: '100%' }}>
+                <TableToolbar
+                    searchPlaceholder="Search by action, actor or target..."
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                >
+                    <DateRangeRow 
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => { setStartDate(''); setEndDate(''); }}
                     />
-                </TabsContent>
+                    <div className={adminStyles.filterGroup}>
+                        <select
+                            className={adminStyles.filterSelect}
+                            value={actionFilter}
+                            onChange={(e) => setActionFilter(e.target.value)}
+                        >
+                            <option value="all">All Actions</option>
+                            {actionTypes.map(type => (
+                                <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                            ))}
+                        </select>
+                    </div>
+                </TableToolbar>
+            </div>
 
-                <TabsContent value="jobs">
-                    <SystemJobsTab />
-                </TabsContent>
-            </Tabs>
+            <Tabs 
+                options={[
+                    { id: 'audit', label: 'System Audit Logs' },
+                    { id: 'jobs', label: 'Queue Monitoring' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
+
+            {activeTab === 'audit' && (
+                <AuditTable
+                    logs={filteredLogs}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            )}
+
+            {activeTab === 'jobs' && (
+                <SystemJobsTab />
+            )}
         </div>
     );
 }

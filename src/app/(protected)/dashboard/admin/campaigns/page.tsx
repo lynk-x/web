@@ -12,6 +12,7 @@ import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
 import AdPricingTab from '@/components/admin/campaigns/AdPricingTab';
 import AdCreditsTab from '@/components/admin/campaigns/AdCreditsTab';
 import Link from 'next/link';
+import CreateCampaignDrawer from '@/components/admin/campaigns/CreateCampaignDrawer';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
@@ -59,6 +60,7 @@ function CampaignsContent() {
     }>({ isOpen: false, type: 'none', campaign: null });
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
@@ -357,6 +359,44 @@ function CampaignsContent() {
     return (
         <>
             {ConfirmDialog}
+            <PageHeader
+                title="Ad Campaign Moderation" 
+                subtitle="Manage brand visibility and ad revenue distribution."
+                actionLabel="+ Create Campaign"
+                onActionClick={() => setIsCreateDrawerOpen(true)}
+            />
+            
+            <div className={adminStyles.statsGrid} style={{ marginBottom: 'var(--spacing-xl)' }}>
+                <StatCard 
+                    label="Active Campaigns" 
+                    value={summary?.advertising?.active_campaigns || 0} 
+                    change="Platform reach"
+                    trend="positive"
+                    isLoading={!summary} 
+                />
+                <StatCard 
+                    label="Ad Revenue (30d)" 
+                    value={summary?.advertising?.spend_30d !== undefined ? formatCurrency(summary.advertising.spend_30d) : '—'} 
+                    change="Net proceeds"
+                    trend="positive"
+                    isLoading={!summary} 
+                />
+                <StatCard
+                    label="Credit Liability"
+                    value={summary?.advertising?.outstanding_credits !== undefined ? formatCurrency(summary.advertising.outstanding_credits) : '—'}
+                    change="Outstanding grants"
+                    trend="neutral"
+                    isLoading={!summary}
+                />
+                <StatCard
+                    label="Avg CTR"
+                    value={campaignPerf?.avgCtr ?? '—'}
+                    change="Engagement rate"
+                    trend="positive"
+                    isLoading={!campaignPerf}
+                />
+            </div>
+
             <Tabs
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -369,36 +409,6 @@ function CampaignsContent() {
 
             {activeTab === 'campaigns' && (
                 <>
-                    <div className={adminStyles.statsGrid}>
-                        <StatCard 
-                            label="Active Campaigns" 
-                            value={summary?.advertising?.active_campaigns || 0} 
-                            change="Generating revenue"
-                            trend="positive"
-                            isLoading={!summary} 
-                        />
-                        <StatCard 
-                            label="Ad Spend (30d)" 
-                            value={summary?.advertising?.spend_30d !== undefined ? formatCurrency(summary.advertising.spend_30d) : '—'} 
-                            change="Net ad revenue"
-                            trend="positive"
-                            isLoading={!summary} 
-                        />
-                        <StatCard
-                            label="Avg CTR"
-                            value={campaignPerf?.avgCtr ?? '—'}
-                            change="Across all banners"
-                            trend="positive"
-                            isLoading={!campaignPerf}
-                        />
-                        <StatCard
-                            label="Avg CPC"
-                            value={campaignPerf?.avgCpc ?? '—'}
-                            change="Global baseline"
-                            trend="neutral"
-                            isLoading={!campaignPerf}
-                        />
-                    </div>
 
                     <TableToolbar
                         searchPlaceholder="Search campaigns or clients..."
@@ -534,6 +544,15 @@ function CampaignsContent() {
 
             {activeTab === 'pricing' && <AdPricingTab />}
             {activeTab === 'credits' && <AdCreditsTab />}
+
+            <CreateCampaignDrawer 
+                isOpen={isCreateDrawerOpen}
+                onClose={() => setIsCreateDrawerOpen(false)}
+                onSuccess={() => {
+                    fetchCampaigns();
+                    fetchDashboardSummary();
+                }}
+            />
         </>
     );
 }
@@ -541,10 +560,6 @@ function CampaignsContent() {
 export default function AdminCampaignsPage() {
     return (
         <div className={styles.container}>
-            <PageHeader
-                title="Ad Campaign Moderation" 
-                subtitle="Manage brand visibility and ad revenue distribution."
-            />
             <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading dashboard...</div>}>
                 <CampaignsContent />
             </Suspense>

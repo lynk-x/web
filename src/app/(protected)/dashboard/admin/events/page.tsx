@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast';
 import { exportToCSV } from '@/utils/export';
 import { createClient } from '@/utils/supabase/client';
 import { formatDate, formatTime } from '@/utils/format';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import RejectionModal from '@/components/shared/RejectionModal';
@@ -84,6 +85,10 @@ export default function AdminEventsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [forumStatusFilter, setForumStatusFilter] = useState('all');
+    const [activeTab, setActiveTab] = useState('events');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
@@ -108,6 +113,9 @@ export default function AdminEventsPage() {
             const { data, error } = await supabase.rpc('get_admin_events', {
                 p_search: debouncedSearch,
                 p_status: statusFilter,
+                p_forum_status: forumStatusFilter,
+                p_start_date: startDate || null,
+                p_end_date: endDate || null,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -175,7 +183,7 @@ export default function AdminEventsPage() {
     // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter]);
+    }, [debouncedSearch, statusFilter, forumStatusFilter, activeTab, startDate, endDate]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -369,19 +377,15 @@ export default function AdminEventsPage() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <StatusFilterChips
-                    options={[
-                        { value: 'all', label: 'All' },
-                        { value: 'draft', label: 'Draft' },
-                        { value: 'published', label: 'Published' },
-                        { value: 'active', label: 'Active' },
-                        { value: 'rejected', label: 'Rejected' },
-                        { value: 'completed', label: 'Completed' },
-                        { value: 'cancelled', label: 'Cancelled' },
-                        { value: 'suspended', label: 'Suspended' },
-                    ]}
-                    currentValue={statusFilter}
-                    onChange={setStatusFilter}
+                <DateRangeRow
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
                 />
             </TableToolbar>
 
@@ -392,10 +396,42 @@ export default function AdminEventsPage() {
                 itemTypeLabel="events"
             />
 
-            <Tabs defaultValue="events" className={styles.mainTabs}>
-                <TabsList>
-                    <TabsTrigger value="events">Events</TabsTrigger>
-                    <TabsTrigger value="forums">Communities</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
+                <TabsList className={styles.tabsHeaderRow}>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                        <TabsTrigger value="events">Events</TabsTrigger>
+                        <TabsTrigger value="forums">Communities</TabsTrigger>
+                    </div>
+                    
+                    <div className={styles.chipsWrapper}>
+                        {activeTab === 'events' ? (
+                            <StatusFilterChips
+                                options={[
+                                    { value: 'all', label: 'All' },
+                                    { value: 'draft', label: 'Draft' },
+                                    { value: 'published', label: 'Published' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'rejected', label: 'Rejected' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'cancelled', label: 'Cancelled' },
+                                    { value: 'suspended', label: 'Suspended' },
+                                ]}
+                                currentValue={statusFilter}
+                                onChange={setStatusFilter}
+                            />
+                        ) : (
+                            <StatusFilterChips
+                                options={[
+                                    { value: 'all', label: 'All' },
+                                    { value: 'open', label: 'Open' },
+                                    { value: 'read_only', label: 'Read Only' },
+                                    { value: 'archived', label: 'Archived' },
+                                ]}
+                                currentValue={forumStatusFilter}
+                                onChange={setForumStatusFilter}
+                            />
+                        )}
+                    </div>
                 </TabsList>
 
                 <TabsContent value="events">

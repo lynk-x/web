@@ -17,6 +17,7 @@ interface AdAsset {
     id: string;
     campaign_id: string;
     campaign_title: string;
+    campaign_ref: string;
     campaign_type: string;
     campaign_status: string;
     /** asset MIME/media type (e.g. 'image', 'video') */
@@ -50,13 +51,14 @@ export default function AdAssetsTab() {
         try {
             const { data, error } = await supabase
                 .from('ad_media')
-                .select('*, campaign:ad_campaigns!campaign_id(title, type, status)')
+                .select('*, campaign:ad_campaigns!campaign_id(title, type, status, reference)')
                 .order('created_at', { ascending: false });
             if (error) throw error;
             setAssets((data || []).map((a: any) => ({
                 id: a.id,
                 campaign_id: a.campaign_id,
                 campaign_title: a.campaign?.title ?? 'Unknown Campaign',
+                campaign_ref: a.campaign?.reference ?? 'N/A',
                 campaign_type: a.campaign?.type ?? '—',
                 campaign_status: a.campaign?.status ?? '—',
                 media_type: a.media_type,
@@ -106,9 +108,10 @@ export default function AdAssetsTab() {
 
     const columns: Column<AdAsset>[] = [
         {
-            header: 'Campaign',
+            header: 'Reference',
             render: (a) => (
                 <div>
+                    <div style={{ fontSize: '11px', fontFamily: 'monospace', opacity: 0.6, letterSpacing: '0.5px' }}>{a.campaign_ref}</div>
                     <div style={{ fontWeight: 600, fontSize: '13px' }}>{a.campaign_title}</div>
                     <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                         <Badge label={a.campaign_type} variant="info" />

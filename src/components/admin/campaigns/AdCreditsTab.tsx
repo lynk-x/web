@@ -219,27 +219,28 @@ export default function AdCreditsTab() {
     ] : [];
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+        <div className={adminStyles.container} style={{ gap: 'var(--spacing-xl)' }}>
+
             {ConfirmDialog}
             
             <div className={adminStyles.statsGrid}>
                 <StatCard 
                     label="Outstanding Credits" 
-                    value={`$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                    value={formatCurrency(totalOutstanding, 'USD')} 
                     change="Platform liability"
-                    isLoading={isLoading}
+                    trend="neutral"
                 />
                 <StatCard 
                     label="Active Grants" 
                     value={activeCount} 
-                    change="Across all advertisers"
-                    isLoading={isLoading}
+                    change="Currently usable"
+                    trend="positive"
                 />
                 <StatCard 
-                    label="Issued This Month" 
+                    label="Issued (30d)" 
                     value={issuedThisMonth} 
-                    change="New grants"
-                    isLoading={isLoading}
+                    change="Promotion volume"
+                    trend="neutral"
                 />
             </div>
 

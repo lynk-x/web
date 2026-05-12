@@ -13,6 +13,7 @@ import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import { useDebounce } from '@/hooks/useDebounce';
 import KYCTab from '@/components/admin/users/KYCTab';
+import CreateAccountDrawer from '@/components/admin/users/CreateAccountDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import type { AdminAccount } from '@/types/admin';
 
@@ -38,6 +39,7 @@ function AccountsContent() {
         };
     }
     const [summary, setSummary] = useState<AdminSummary | null>(null);
+    const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
@@ -88,7 +90,15 @@ function AccountsContent() {
         <div className={sharedStyles.container}>
             <PageHeader 
                 title="Identity & Compliance" 
-                subtitle="Manage organizational accounts, KYC status, and system access." 
+                subtitle="Manage organizational accounts, KYC status and system access." 
+                actionLabel="Create Account"
+                onActionClick={() => setIsCreateDrawerOpen(true)}
+                actionIcon={
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '8px' }}>
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                }
             />
 
             <div className={sharedStyles.statsGrid}>
@@ -121,64 +131,79 @@ function AccountsContent() {
                 />
             </div>
 
+            <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+                <TableToolbar 
+                    searchPlaceholder="Search accounts, names or emails..." 
+                    searchValue={searchTerm} 
+                    onSearchChange={setSearchTerm}
+                >
+                    <select 
+                        className={adminStyles.filterSelect}
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                    >
+                        <option value="all">All Types</option>
+                        <option value="organizer">Organizers</option>
+                        <option value="advertiser">Advertisers</option>
+                        <option value="attendee">Attendees</option>
+                        <option value="pulse_user">Pulse Users</option>
+                        <option value="platform">Platform</option>
+                    </select>
+                </TableToolbar>
+            </div>
+
             <Tabs defaultValue="accounts" className={styles.tabs}>
                 <TabsList>
-                    <TabsTrigger value="accounts">Accounts Database</TabsTrigger>
+                    <TabsTrigger value="accounts">Accounts & Users</TabsTrigger>
                     <TabsTrigger value="kyc">KYC Workspace</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="accounts">
-                    <TableToolbar 
-                        searchPlaceholder="Search by name, reference or owner email..." 
-                        searchValue={searchTerm} 
-                        onSearchChange={setSearchTerm}
-                    >
-                        <select 
-                            className={adminStyles.select}
-                            value={typeFilter}
-                            onChange={(e) => setTypeFilter(e.target.value)}
-                        >
-                            <option value="all">All Types</option>
-                            <option value="organizer">Organizers</option>
-                            <option value="advertiser">Advertisers</option>
-                            <option value="attendee">Attendees</option>
-                            <option value="pulse_user">Pulse Users</option>
-                            <option value="platform">Platform</option>
-                        </select>
+                    <div className={adminStyles.container}>
+                        <TableToolbar>
+                            <select 
+                                className={adminStyles.filterSelect}
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="frozen">Frozen</option>
+                            </select>
+                        </TableToolbar>
 
-                        <select 
-                            className={adminStyles.select}
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="all">All Statuses</option>
-                            <option value="active">Active</option>
-                            <option value="suspended">Suspended</option>
-                            <option value="frozen">Frozen</option>
-                        </select>
-                    </TableToolbar>
-
-                    <AccountTable 
-                        accounts={accounts}
-                        isLoading={isLoading}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        onRefresh={fetchAccounts}
-                        selectedIds={selectedIds}
-                        onSelect={(id) => {
-                            const next = new Set(selectedIds);
-                            if (next.has(id)) next.delete(id);
-                            else next.add(id);
-                            setSelectedIds(next);
-                        }}
-                    />
+                        <AccountTable 
+                            accounts={accounts}
+                            isLoading={isLoading}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            onRefresh={fetchAccounts}
+                            selectedIds={selectedIds}
+                            onSelect={(id) => {
+                                const next = new Set(selectedIds);
+                                if (next.has(id)) next.delete(id);
+                                else next.add(id);
+                                setSelectedIds(next);
+                            }}
+                        />
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="kyc">
-                    <KYCTab />
+                    <KYCTab searchTerm={searchTerm} onSearchChange={setSearchTerm} />
                 </TabsContent>
             </Tabs>
+
+            <CreateAccountDrawer 
+                isOpen={isCreateDrawerOpen}
+                onClose={() => setIsCreateDrawerOpen(false)}
+                onSuccess={() => {
+                    fetchAccounts();
+                    fetchSummary();
+                }}
+            />
         </div>
     );
 }

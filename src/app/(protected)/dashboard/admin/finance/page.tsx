@@ -698,40 +698,42 @@ function FinanceContent() {
 
 
 
-            <TableToolbar
-                searchPlaceholder="Search..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <Tabs
-                    options={[
-                        { id: 'transactions', label: 'All Transactions' },
-                        { id: 'revenue', label: 'Revenue' },
-                        { id: 'refunds', label: 'Refunds' },
-                        { id: 'escrow', label: 'Escrow' },
-                        { id: 'payouts', label: 'Payout Requests' },
-                        { id: 'promo-codes', label: 'Promo Codes' },
-                        { id: 'tax-rates', label: 'Tax Rates' },
-                        { id: 'fx-rates', label: 'FX Rates' }
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    className={styles.tabsReset}
-                />
-            </TableToolbar>
+            <div style={{ width: '100%' }}>
+                <TableToolbar
+                    searchPlaceholder="Search..."
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                >
+                    {['transactions', 'revenue', 'refunds', 'payouts', 'escrow'].includes(activeTab) && (
+                        <DateRangeRow
+                            startDate={startDate}
+                            endDate={endDate}
+                            onStartDateChange={setStartDate}
+                            onEndDateChange={setEndDate}
+                            onClear={() => {
+                                setStartDate('');
+                                setEndDate('');
+                            }}
+                        />
+                    )}
+                </TableToolbar>
+            </div>
 
-            {['transactions', 'revenue', 'refunds', 'payouts', 'escrow'].includes(activeTab) && (
-                <DateRangeRow
-                    startDate={startDate}
-                    endDate={endDate}
-                    onStartDateChange={setStartDate}
-                    onEndDateChange={setEndDate}
-                    onClear={() => {
-                        setStartDate('');
-                        setEndDate('');
-                    }}
-                />
-            )}
+            <Tabs
+                options={[
+                    { id: 'transactions', label: 'All Transactions' },
+                    { id: 'revenue', label: 'Revenue' },
+                    { id: 'refunds', label: 'Refunds' },
+                    { id: 'escrow', label: 'Escrow' },
+                    { id: 'payouts', label: 'Payout Requests' },
+                    { id: 'promo-codes', label: 'Promo Codes' },
+                    { id: 'tax-rates', label: 'Tax Rates' },
+                    { id: 'fx-rates', label: 'FX Rates' }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                className={styles.tabsReset}
+            />
 
             {renderActiveTab()}
 

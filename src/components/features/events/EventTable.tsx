@@ -95,7 +95,7 @@ const getStatusVariant = (status: string): BadgeVariant => {
  * In `admin` mode: full OrganizerEvent rows, organizer name, report count, moderation actions.
  * In `organizer` mode: lightweight EventRow rows, revenue, capacity, quick edit shortcuts.
  */
-const EventTable: React.FC<EventTableProps> = (props) => {
+export default function EventTable(props: EventTableProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const {
@@ -185,32 +185,6 @@ const EventTable: React.FC<EventTableProps> = (props) => {
                 header: 'Status',
                 render: (event) => (
                     <Badge label={formatString(event.status)} variant={getStatusVariant(event.status)} showDot />
-                ),
-            },
-            {
-                header: 'Community',
-                render: (event) => (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {event.forum_id ? (
-                            <>
-                                <Badge 
-                                    label={formatString(event.forum_status || 'Open')} 
-                                    variant={event.forum_status === 'read_only' ? 'warning' : 'primary'} 
-                                    showDot 
-                                />
-                                <div style={{ fontSize: '11px', opacity: 0.6, display: 'flex', gap: '8px' }}>
-                                    <span>{event.message_count || 0} msgs</span>
-                                    {event.escalated_reports_count && event.escalated_reports_count > 0 ? (
-                                        <span style={{ color: 'var(--color-interface-error)', fontWeight: 600 }}>
-                                            {event.escalated_reports_count} reports
-                                        </span>
-                                    ) : null}
-                                </div>
-                            </>
-                        ) : (
-                            <span style={{ fontSize: '11px', opacity: 0.3 }}>No Forum</span>
-                        )}
-                    </div>
                 ),
             },
         ];
@@ -427,6 +401,4 @@ const EventTable: React.FC<EventTableProps> = (props) => {
             emptyMessage="No events found matching criteria."
         />
     );
-};
-
-export default EventTable;
+}

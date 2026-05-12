@@ -16,6 +16,7 @@ interface AnalyticsRow {
     id: string;
     campaign_id: string;
     campaign_title: string;
+    campaign_ref: string;
     campaign_type: string;
     interaction_type: string;
     event_count: number;
@@ -55,7 +56,7 @@ export default function AdAnalyticsTab() {
 
             const { data, error } = await supabase
                 .from('ad_analytics')
-                .select('campaign_id, interaction_type, cost_charged, created_at, campaign:ad_campaigns!campaign_id(title, type)')
+                .select('campaign_id, interaction_type, cost_charged, created_at, campaign:ad_campaigns!campaign_id(title, type, reference)')
                 .gte('created_at', since.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(5000);
@@ -75,6 +76,7 @@ export default function AdAnalyticsTab() {
                         id: key,
                         campaign_id: r.campaign_id,
                         campaign_title: r.campaign?.title ?? 'Unknown',
+                        campaign_ref: r.campaign?.reference ?? 'N/A',
                         campaign_type: r.campaign?.type ?? '—',
                         interaction_type: r.interaction_type,
                         event_count: 1,
@@ -107,9 +109,10 @@ export default function AdAnalyticsTab() {
             render: (r) => <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 600 }}>{r.date}</div>,
         },
         {
-            header: 'Campaign',
+            header: 'Reference',
             render: (r) => (
                 <div>
+                    <div style={{ fontSize: '11px', fontFamily: 'monospace', opacity: 0.6, letterSpacing: '0.5px' }}>{r.campaign_ref}</div>
                     <div style={{ fontSize: '13px', fontWeight: 600 }}>{r.campaign_title}</div>
                     <Badge label={r.campaign_type} variant="info" />
                 </div>
