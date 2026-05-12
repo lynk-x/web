@@ -21,7 +21,7 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import RejectionModal from '@/components/shared/RejectionModal';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -44,6 +44,7 @@ function CampaignsContent() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [internalSearchTerm, setInternalSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
     const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
@@ -61,6 +62,7 @@ function CampaignsContent() {
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
+    const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
@@ -397,53 +399,72 @@ function CampaignsContent() {
                 />
             </div>
 
-            <Tabs
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                options={[
-                    { id: 'campaigns', label: 'Campaign List' },
-                    { id: 'pricing', label: 'Ad Pricing Tiers' },
-                    { id: 'credits', label: 'Ad Credits' }
-                ]}
-            />
+            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
+                <TableToolbar
+                    searchPlaceholder={
+                        activeTab === 'credits' ? "Search by advertiser..." : "Search campaigns or clients..."
+                    }
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                />
+            </div>
 
-            {activeTab === 'campaigns' && (
-                <>
+            <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: 'var(--spacing-lg)',
+                    paddingBottom: '2px'
+                }}>
+                    <TabsList style={{ marginBottom: 0 }}>
+                        <TabsTrigger value="campaigns">Campaign List</TabsTrigger>
+                        <TabsTrigger value="pricing">Ad Pricing Tiers</TabsTrigger>
+                        <TabsTrigger value="credits">Ad Credits</TabsTrigger>
+                    </TabsList>
 
-                    <TableToolbar
-                        searchPlaceholder="Search campaigns or clients..."
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-<StatusFilterChips
-                                 options={[
-                                     { value: 'all', label: 'All Status' },
-                                     { value: 'active', label: 'Active' },
-                                     { value: 'pending_approval', label: 'Pending' },
-                                     { value: 'paused', label: 'Paused' },
-                                     { value: 'rejected', label: 'Rejected' },
-                                     { value: 'completed', label: 'Completed' },
-                                     { value: 'scheduled', label: 'Scheduled' },
-                                 ]}
-                                currentValue={statusFilter}
-                                onChange={setStatusFilter}
-                            />
-                            
-                            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-interface-outline)', opacity: 0.3, margin: '0 4px' }} />
-
-                            <select 
-                                className={adminStyles.filterSelect}
-                                value={adTypeFilter}
-                                onChange={(e) => setAdTypeFilter(e.target.value)}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'campaigns' && (
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <StatusFilterChips
+                                    options={[
+                                        { value: 'all', label: 'All Status' },
+                                        { value: 'active', label: 'Active' },
+                                        { value: 'pending_approval', label: 'Pending' },
+                                        { value: 'paused', label: 'Paused' },
+                                        { value: 'rejected', label: 'Rejected' },
+                                        { value: 'completed', label: 'Completed' },
+                                        { value: 'scheduled', label: 'Scheduled' },
+                                    ]}
+                                    currentValue={statusFilter}
+                                    onChange={setStatusFilter}
+                                />
+                                <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-interface-outline)', opacity: 0.3, margin: '0 4px' }} />
+                                <select 
+                                    className={adminStyles.filterSelect}
+                                    value={adTypeFilter}
+                                    onChange={(e) => setAdTypeFilter(e.target.value)}
+                                    style={{ height: '36px', padding: '0 12px' }}
+                                >
+                                    <option value="all">All Types</option>
+                                    <option value="banner">Banner</option>
+                                    <option value="interstitial">Interstitial</option>
+                                </select>
+                            </div>
+                        )}
+                        {activeTab === 'credits' && (
+                            <button
+                                className={adminStyles.btnPrimary}
+                                onClick={() => setIsIssueModalOpen(true)}
+                                style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}
                             >
-                                <option value="all">All Types</option>
-                                <option value="banner">Banner</option>
-                                <option value="interstitial">Interstitial</option>
-                            </select>
-                        </div>
-                    </TableToolbar>
+                                + Issue Credit
+                            </button>
+                        )}
+                    </div>
+                </div>
 
+                <TabsContent value="campaigns">
                     <BulkActionsBar
                         selectedCount={selectedCampaignIds.size}
                         actions={bulkActions}
@@ -466,84 +487,21 @@ function CampaignsContent() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                     />
+                </TabsContent>
 
-                    <RejectionModal
-                        isOpen={isRejectionModalOpen}
-                        onClose={() => setIsRejectionModalOpen(false)}
-                        onConfirm={(reason) => {
-                            const campaign = campaigns.find(c => c.id === pendingModerationItem?.id);
-                            if (campaign) {
-                                handleSingleStatusUpdate(campaign, pendingModerationItem?.status || 'rejected', reason);
-                            }
-                        }}
-                        title={`Reject Campaign: ${pendingModerationItem?.title}`}
+                <TabsContent value="pricing">
+                    <AdPricingTab />
+                </TabsContent>
+
+                <TabsContent value="credits">
+                    <AdCreditsTab 
+                        hideToolbar 
+                        isIssueModalOpen={isIssueModalOpen}
+                        setIsIssueModalOpen={setIsIssueModalOpen}
+                        searchTerm={searchTerm}
                     />
-
-                    {/* ── Admin Moderation Modal ── */}
-                    <Modal
-                        isOpen={viewerConfig.isOpen}
-                        onClose={() => setViewerConfig(prev => ({ ...prev, isOpen: false }))}
-                        title={
-                            viewerConfig.type === 'preview' ? `Preview Ad: ${viewerConfig.campaign?.name}` :
-                            `Campaign Performance: ${viewerConfig.campaign?.name}`
-                        }
-                        size="medium"
-                    >
-                        {viewerConfig.type === 'preview' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '20px' }}>
-                                <div style={{ 
-                                    width: '100%', 
-                                    aspectRatio: viewerConfig.campaign?.adType === 'banner' ? '320/50' : '9/16',
-                                    maxHeight: '400px',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    overflow: 'hidden'
-                                }}>
-                                    {viewerConfig.mediaUrl ? (
-                                        <img 
-                                            src={viewerConfig.mediaUrl} 
-                                            alt="Ad Creative" 
-                                            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                                        />
-                                    ) : (
-                                        <div style={{ opacity: 0.5 }}>Loading creative...</div>
-                                    )}
-                                </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '14px', fontWeight: 500 }}>{viewerConfig.campaign?.adType?.toUpperCase()} Ad</div>
-                                    <div style={{ fontSize: '12px', opacity: 0.6 }}>Targeting: {viewerConfig.campaign?.client}</div>
-                                </div>
-                            </div>
-                        )}
-
-                        {viewerConfig.type === 'stats' && viewerConfig.campaign && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', padding: '20px' }}>
-                                <StatCard label="Impressions" value={viewerConfig.campaign.impressions} trend="neutral" />
-                                <StatCard label="Clicks" value={viewerConfig.campaign.clicks} trend="positive" />
-                                <StatCard 
-                                    label="CTR" 
-                                    value={`${((viewerConfig.campaign.clicks / (viewerConfig.campaign.impressions || 1)) * 100).toFixed(2)}%`} 
-                                    trend="positive" 
-                                />
-                                <StatCard label="Total Spend" value={formatCurrency(viewerConfig.campaign.spend)} trend="neutral" />
-                            </div>
-                        )}
-                    </Modal>
-
-                    <EditCampaignModal 
-                        isOpen={isEditModalOpen}
-                        onClose={() => setIsEditModalOpen(false)}
-                        onSave={handleSaveCampaign}
-                        campaign={editingCampaign}
-                    />
-                </>
-            )}
-
-            {activeTab === 'pricing' && <AdPricingTab />}
-            {activeTab === 'credits' && <AdCreditsTab />}
+                </TabsContent>
+            </Tabs>
 
             <CreateCampaignDrawer 
                 isOpen={isCreateDrawerOpen}

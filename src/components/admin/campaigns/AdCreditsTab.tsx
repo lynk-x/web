@@ -45,7 +45,21 @@ function isActive(c: AdCredit) {
     return !c.revoked_at && c.remaining > 0 && (!c.expires_at || new Date(c.expires_at) > new Date());
 }
 
-export default function AdCreditsTab() {
+interface AdCreditsTabProps {
+    hideToolbar?: boolean;
+    hideStats?: boolean;
+    isIssueModalOpen?: boolean;
+    setIsIssueModalOpen?: (open: boolean) => void;
+    searchTerm?: string;
+}
+
+export default function AdCreditsTab({
+    hideToolbar = false,
+    hideStats = false,
+    isIssueModalOpen: propsIsIssueModalOpen,
+    setIsIssueModalOpen: propsSetIsIssueModalOpen,
+    searchTerm: propsSearchTerm = ''
+}: AdCreditsTabProps) {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
@@ -53,16 +67,21 @@ export default function AdCreditsTab() {
     const [credits, setCredits] = useState<AdCredit[]>([]);
     const [accounts, setAccounts] = useState<AccountOption[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
-    const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+    const [internalIsIssueModalOpen, setInternalIsIssueModalOpen] = useState(false);
+    const isIssueModalOpen = propsIsIssueModalOpen ?? internalIsIssueModalOpen;
+    const setIsIssueModalOpen = propsSetIsIssueModalOpen ?? setInternalIsIssueModalOpen;
+
+    const [internalSearchTerm, setInternalSearchTerm] = useState('');
+    const searchTerm = propsSearchTerm || internalSearchTerm;
+
+    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [issueAccountId, setIssueAccountId] = useState('');
     const [issueCurrency, setIssueCurrency] = useState('USD');
     const [issueAmount, setIssueAmount] = useState('');
     const [issueExpiry, setIssueExpiry] = useState('');
     const [issueNote, setIssueNote] = useState('');
-    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchCredits = useCallback(async () => {
@@ -223,39 +242,43 @@ export default function AdCreditsTab() {
 
             {ConfirmDialog}
             
-            <div className={adminStyles.statsGrid}>
-                <StatCard 
-                    label="Outstanding Credits" 
-                    value={formatCurrency(totalOutstanding, 'USD')} 
-                    change="Platform liability"
-                    trend="neutral"
-                />
-                <StatCard 
-                    label="Active Grants" 
-                    value={activeCount} 
-                    change="Currently usable"
-                    trend="positive"
-                />
-                <StatCard 
-                    label="Issued (30d)" 
-                    value={issuedThisMonth} 
-                    change="Promotion volume"
-                    trend="neutral"
-                />
-            </div>
+            {!hideStats && (
+                <div className={adminStyles.statsGrid}>
+                    <StatCard 
+                        label="Outstanding Credits" 
+                        value={formatCurrency(totalOutstanding, 'USD')} 
+                        change="Platform liability"
+                        trend="neutral"
+                    />
+                    <StatCard 
+                        label="Active Grants" 
+                        value={activeCount} 
+                        change="Currently usable"
+                        trend="positive"
+                    />
+                    <StatCard 
+                        label="Issued (30d)" 
+                        value={issuedThisMonth} 
+                        change="Promotion volume"
+                        trend="neutral"
+                    />
+                </div>
+            )}
 
-            <TableToolbar
-                searchPlaceholder="Search by advertiser..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <button
-                    className={adminStyles.btnPrimary}
-                    onClick={() => setIsIssueModalOpen(true)}
+            {!hideToolbar && (
+                <TableToolbar
+                    searchPlaceholder="Search by advertiser..."
+                    searchValue={searchTerm}
+                    onSearchChange={setInternalSearchTerm}
                 >
-                    + Issue Credit
-                </button>
-            </TableToolbar>
+                    <button
+                        className={adminStyles.btnPrimary}
+                        onClick={() => setIsIssueModalOpen(true)}
+                    >
+                        + Issue Credit
+                    </button>
+                </TableToolbar>
+            )}
 
             <DataTable<AdCredit>
                 data={filtered}

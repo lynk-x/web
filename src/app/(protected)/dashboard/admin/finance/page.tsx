@@ -731,20 +731,14 @@ function FinanceContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: 'var(--spacing-lg)',
-                    paddingBottom: '2px'
-                }}>
-                    <TabsList style={{ marginBottom: 0 }}>
+                <TabsList className={adminStyles.tabsHeaderRow} style={{ paddingBottom: '2px' }}>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="transactions">Transactions</TabsTrigger>
                         <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
                         <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
                         <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
                         <TabsTrigger value="fx-rates">FX Rates</TabsTrigger>
-                    </TabsList>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'transactions' && (
@@ -793,7 +787,7 @@ function FinanceContent() {
                             </Link>
                         )}
                     </div>
-                </div>
+                </TabsList>
 
                 <TabsContent value="transactions">
                     <FinanceTable

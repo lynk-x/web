@@ -21,6 +21,8 @@ interface CategoryMapping {
 
 interface MappingTabProps {
     forceView?: 'category' | 'event';
+    hideToolbar?: boolean;
+    searchTerm?: string;
 }
 
 interface EventMapping {
@@ -31,7 +33,7 @@ interface EventMapping {
     tag_name: string;
 }
 
-export default function MappingTab({ forceView }: MappingTabProps) {
+export default function MappingTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: MappingTabProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = createClient();
@@ -40,7 +42,9 @@ export default function MappingTab({ forceView }: MappingTabProps) {
     const [eventMappings, setEventMappings] = useState<EventMapping[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const activeSubTab = forceView || 'category';
-    const [searchTerm, setSearchTerm] = useState('');
+    const [internalSearchTerm, setInternalSearchTerm] = useState('');
+    const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+    const setSearchTerm = externalSearchTerm !== undefined ? () => {} : setInternalSearchTerm;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -148,15 +152,17 @@ export default function MappingTab({ forceView }: MappingTabProps) {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-            <TableToolbar
-                searchPlaceholder={`Search ${activeSubTab === 'category' ? 'categories' : 'events'}...`}
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/mappings/create')}>
-                    Create Mapping
-                </button>
-            </TableToolbar>
+            {!hideToolbar && (
+                <TableToolbar
+                    searchPlaceholder={`Search ${activeSubTab === 'category' ? 'categories' : 'events'}...`}
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                >
+                    <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/mappings/create')}>
+                        Create Mapping
+                    </button>
+                </TableToolbar>
+            )}
 
             {activeSubTab === 'category' ? (
                 <DataTable<any>

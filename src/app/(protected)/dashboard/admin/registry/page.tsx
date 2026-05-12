@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import adminStyles from '../page.module.css';
 import TagLibraryTab from '@/components/admin/registry/TagLibraryTab';
 import MappingTab from '@/components/admin/registry/MappingTab';
 import DisclaimerTable from '@/components/admin/regions/DisclaimerTable';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
+import TableToolbar from '@/components/shared/TableToolbar';
 
-type Tab = 'tags' | 'types' | 'logic' | 'disclaimer';
+type RegistryTab = 'tags' | 'types' | 'logic' | 'disclaimer';
 
 function RegistryContent() {
     const router = useRouter();
@@ -17,20 +18,22 @@ function RegistryContent() {
     const searchParams = useSearchParams();
 
     const initialTab = (searchParams.get('tab') as string) || 'tags';
-    const validTabs: Tab[] = ['tags', 'types', 'logic', 'disclaimer'];
-    const [activeTab, setActiveTab] = useState<Tab>(
-        (validTabs as string[]).includes(initialTab) ? initialTab as Tab : 'tags'
+    const validTabs: RegistryTab[] = ['tags', 'types', 'logic', 'disclaimer'];
+    const [activeTab, setActiveTab] = useState<RegistryTab>(
+        validTabs.includes(initialTab as RegistryTab) ? initialTab as RegistryTab : 'tags'
     );
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
-        if (tab && (validTabs as string[]).includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
+        if (tab && validTabs.includes(tab as RegistryTab)) {
+            setActiveTab(tab as RegistryTab);
         }
     }, [searchParams]);
 
     const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Tab);
+        const tab = newTab as RegistryTab;
+        setActiveTab(tab);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -39,28 +42,67 @@ function RegistryContent() {
     return (
         <div className={adminStyles.container}>
             <PageHeader 
-                title="Registry &amp; Disclaimers" 
+                title="Registry & Disclaimers" 
                 subtitle="Manage platform taxonomy, tag hierarchies and event disclaimers." 
             />
 
-            <Tabs
-                options={[
-                    { id: 'tags', label: 'Tags Registry' },
-                    { id: 'types', label: 'Tag Types' },
-                    { id: 'logic', label: 'Category Logic' },
-                    { id: 'disclaimer', label: 'Disclaimers' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                {activeTab === 'tags' && <TagLibraryTab forceView="tags" />}
-                {activeTab === 'types' && <TagLibraryTab forceView="types" />}
-                {activeTab === 'logic' && <MappingTab forceView="category" />}
-                {activeTab === 'disclaimer' && <DisclaimerTable />}
+            <div style={{ width: '100%', margin: 'var(--spacing-lg) 0' }}>
+                <TableToolbar 
+                    searchPlaceholder="Search tags, types, or disclaimers..." 
+                    searchValue={searchTerm} 
+                    onSearchChange={setSearchTerm} 
+                />
             </div>
 
+            <Tabs value={activeTab} onValueChange={handleTabChange} className={adminStyles.tabsReset}>
+                <TabsList className={adminStyles.tabsHeaderRow}>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                        <TabsTrigger value="tags">Tags Registry</TabsTrigger>
+                        <TabsTrigger value="types">Tag Types</TabsTrigger>
+                        <TabsTrigger value="logic">Category Logic</TabsTrigger>
+                        <TabsTrigger value="disclaimer">Disclaimers</TabsTrigger>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'tags' && (
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/tags/create')}>
+                                + Add Tag
+                            </button>
+                        )}
+                        {activeTab === 'types' && (
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/types/create')}>
+                                + New Type
+                            </button>
+                        )}
+                        {activeTab === 'logic' && (
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/mappings/create')}>
+                                + Create Mapping
+                            </button>
+                        )}
+                        {activeTab === 'disclaimer' && (
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/disclaimers/create')}>
+                                + New Disclaimer
+                            </button>
+                        )}
+                    </div>
+                </TabsList>
+
+                <TabsContent value="tags">
+                    <TagLibraryTab forceView="tags" hideToolbar searchTerm={searchTerm} />
+                </TabsContent>
+
+                <TabsContent value="types">
+                    <TagLibraryTab forceView="types" hideToolbar searchTerm={searchTerm} />
+                </TabsContent>
+
+                <TabsContent value="logic">
+                    <MappingTab forceView="category" hideToolbar searchTerm={searchTerm} />
+                </TabsContent>
+
+                <TabsContent value="disclaimer">
+                    <DisclaimerTable hideToolbar searchTerm={searchTerm} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

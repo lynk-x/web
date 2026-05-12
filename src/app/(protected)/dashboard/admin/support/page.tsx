@@ -224,19 +224,13 @@ function SupportContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: 'var(--spacing-lg)',
-                    paddingBottom: '2px'
-                }}>
-                    <TabsList style={{ marginBottom: 0 }}>
+                <TabsList className={adminStyles.tabsHeaderRow} style={{ paddingBottom: '2px' }}>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="queue">Review Queue</TabsTrigger>
                         <TabsTrigger value="tickets">Support Tickets</TabsTrigger>
                         <TabsTrigger value="feedback">User Feedback</TabsTrigger>
                         <TabsTrigger value="reports">Report History</TabsTrigger>
-                    </TabsList>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'reports' && (
@@ -270,7 +264,7 @@ function SupportContent() {
                             />
                         )}
                     </div>
-                </div>
+                </TabsList>
 
                 <TabsContent value="queue">
                     <ReviewQueueTab searchQuery={searchTerm} />

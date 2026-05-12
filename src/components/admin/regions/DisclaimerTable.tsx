@@ -22,14 +22,21 @@ interface Disclaimer {
     tags?: { name: string };
 }
 
-export default function DisclaimerTable() {
+interface DisclaimerTableProps {
+    hideToolbar?: boolean;
+    searchTerm?: string;
+}
+
+export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearchTerm }: DisclaimerTableProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = createClient();
 
     const [disclaimers, setDisclaimers] = useState<Disclaimer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [internalSearchTerm, setInternalSearchTerm] = useState('');
+    const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+    const setSearchTerm = externalSearchTerm !== undefined ? () => {} : setInternalSearchTerm;
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
@@ -153,14 +160,16 @@ export default function DisclaimerTable() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-            <TableToolbar searchPlaceholder="Search disclaimers..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
-                <button
-                    className={adminStyles.btnPrimary}
-                    onClick={() => router.push('/dashboard/admin/registry/disclaimers/create')}
-                >
-                    + New Disclaimer
-                </button>
-            </TableToolbar>
+            {!hideToolbar && (
+                <TableToolbar searchPlaceholder="Search disclaimers..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
+                    <button
+                        className={adminStyles.btnPrimary}
+                        onClick={() => router.push('/dashboard/admin/registry/disclaimers/create')}
+                    >
+                        + New Disclaimer
+                    </button>
+                </TableToolbar>
+            )}
 
             <BulkActionsBar selectedCount={selectedIds.size} actions={bulkActions} onCancel={() => setSelectedIds(new Set())} itemTypeLabel="disclaimers" />
 

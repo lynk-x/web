@@ -55,7 +55,7 @@ export const Tabs: React.FC<TabsProps> = ({ defaultValue, value: controlledValue
 };
 
 export const TabsList: React.FC<TabsListProps> = ({ children, className, style }) => {
-    return <div className={className || styles.tabsList} style={style}>{children}</div>;
+    return <div className={`${styles.tabsList} ${className || ''}`} style={style}>{children}</div>;
 };
 
 export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, children, className, onClick }) => {
@@ -66,7 +66,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, children, class
     return (
         <button
             type="button"
-            className={`${className || styles.tab} ${isActive ? styles.tabActive : ''}`}
+            className={`${styles.tab} ${className || ''} ${isActive ? styles.tabActive : ''}`}
             onClick={() => {
                 context.setValue(value);
                 onClick?.();

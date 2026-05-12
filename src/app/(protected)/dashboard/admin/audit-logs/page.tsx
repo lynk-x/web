@@ -180,17 +180,11 @@ export default function AdminAuditLogsPage() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: 'var(--spacing-lg)',
-                    paddingBottom: '2px'
-                }}>
-                    <TabsList style={{ marginBottom: 0 }}>
+                <TabsList className={adminStyles.tabsHeaderRow}>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
                         <TabsTrigger value="audit">System Audit Logs</TabsTrigger>
                         <TabsTrigger value="jobs">Queue Monitoring</TabsTrigger>
-                    </TabsList>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'audit' ? (
@@ -219,7 +213,7 @@ export default function AdminAuditLogsPage() {
                             />
                         )}
                     </div>
-                </div>
+                </TabsList>
 
                 <TabsContent value="audit">
                     <AuditTable

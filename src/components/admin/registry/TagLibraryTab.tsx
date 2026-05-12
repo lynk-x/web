@@ -20,6 +20,8 @@ interface TagType {
 
 interface TagLibraryTabProps {
     forceView?: 'tags' | 'types';
+    hideToolbar?: boolean;
+    searchTerm?: string;
 }
 
 interface Tag {
@@ -32,7 +34,7 @@ interface Tag {
     is_active: boolean;
 }
 
-export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
+export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: TagLibraryTabProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = createClient();
@@ -40,7 +42,9 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
     const [tagTypes, setTagTypes] = useState<TagType[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [internalSearchTerm, setInternalSearchTerm] = useState('');
+    const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+    const setSearchTerm = externalSearchTerm !== undefined ? () => {} : setInternalSearchTerm;
     const activeSubTab = forceView || 'tags';
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -213,15 +217,17 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             {activeSubTab === 'tags' ? (
                 <>
-                    <TableToolbar
-                        searchPlaceholder="Search tags..."
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/tags/create')}>
-                            Add Tag
-                        </button>
-                    </TableToolbar>
+                    {!hideToolbar && (
+                        <TableToolbar
+                            searchPlaceholder="Search tags..."
+                            searchValue={searchTerm}
+                            onSearchChange={setSearchTerm}
+                        >
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/tags/create')}>
+                                Add Tag
+                            </button>
+                        </TableToolbar>
+                    )}
                     <DataTable<any>
                         data={paginatedTags}
                         columns={tagColumns}
@@ -235,15 +241,17 @@ export default function TagLibraryTab({ forceView }: TagLibraryTabProps) {
                 </>
             ) : (
                 <>
-                    <TableToolbar
-                        searchPlaceholder="Search types..."
-                        searchValue={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/types/create')}>
-                            New Type
-                        </button>
-                    </TableToolbar>
+                    {!hideToolbar && (
+                        <TableToolbar
+                            searchPlaceholder="Search types..."
+                            searchValue={searchTerm}
+                            onSearchChange={setSearchTerm}
+                        >
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/types/create')}>
+                                New Type
+                            </button>
+                        </TableToolbar>
+                    )}
                     <DataTable<any>
                         data={paginatedTypes}
                         columns={typeColumns}
