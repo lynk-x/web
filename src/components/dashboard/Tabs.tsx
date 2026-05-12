@@ -12,26 +12,31 @@ interface TabsProps {
     options: TabOption[];
     activeTab: string;
     onTabChange: (id: string) => void;
-    className?: string; // Optional for layout adjustments
+    className?: string;
+    actions?: React.ReactNode;
 }
 
 export default function Tabs({
     options,
     activeTab,
     onTabChange,
-    className
+    className,
+    actions
 }: TabsProps) {
     return (
         <div className={`${styles.tabs} ${className || ''}`}>
-            {options.map((tab) => (
-                <button
-                    key={tab.id}
-                    className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
-                    onClick={() => onTabChange(tab.id)}
-                >
-                    {tab.label}
-                </button>
-            ))}
+            <div className={styles.tabList}>
+                {options.map((tab) => (
+                    <button
+                        key={tab.id}
+                        className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
+                        onClick={() => onTabChange(tab.id)}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+            {actions && <div className={styles.tabActions}>{actions}</div>}
         </div>
     );
 }

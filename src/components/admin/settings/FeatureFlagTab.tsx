@@ -21,7 +21,13 @@ export interface FeatureFlag {
     updated_at: string;
 }
 
-export default function FeatureFlagTab({ searchTerm = '' }: { searchTerm?: string }) {
+export default function FeatureFlagTab({ 
+    searchTerm = '',
+    setActions
+}: { 
+    searchTerm?: string;
+    setActions: (actions: React.ReactNode) => void;
+}) {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
@@ -50,6 +56,15 @@ export default function FeatureFlagTab({ searchTerm = '' }: { searchTerm?: strin
     useEffect(() => {
         fetchFlags();
     }, [fetchFlags]);
+
+    useEffect(() => {
+        setActions(
+            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/settings/feature-flags/create')}>
+                Create Flag
+            </button>
+        );
+        return () => setActions(null);
+    }, [setActions, router]);
 
     const handleToggleFlag = async (key: string, currentValue: boolean) => {
         try {
@@ -161,12 +176,6 @@ export default function FeatureFlagTab({ searchTerm = '' }: { searchTerm?: strin
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar>
-                <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/settings/feature-flags/create')}>
-                    Create Flag
-                </button>
-            </TableToolbar>
-
             <DataTable<any>
                 data={paginatedFlags.map(f => ({ ...f, id: f.key }))}
                 columns={columns}

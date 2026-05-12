@@ -25,7 +25,13 @@ interface Country {
     info: any;
 }
 
-export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string }) {
+export default function RegionsTab({ 
+    searchTerm = '',
+    setActions
+}: { 
+    searchTerm?: string;
+    setActions: (actions: React.ReactNode) => void;
+}) {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
@@ -79,6 +85,23 @@ export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string })
     useEffect(() => {
         fetchCountries();
     }, [supabase]);
+
+    useEffect(() => {
+        setActions(
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }].map(({ value, label }) => (
+                    <button
+                        key={value}
+                        className={`${adminStyles.chip} ${countryStatusFilter === value ? adminStyles.chipActive : ''}`}
+                        onClick={() => setCountryStatusFilter(value)}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+        );
+        return () => setActions(null);
+    }, [setActions, countryStatusFilter]);
 
     const handleToggleCountry = async (code: string, current: boolean) => {
         try {
@@ -207,19 +230,6 @@ export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string })
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }].map(({ value, label }) => (
-                        <button
-                            key={value}
-                            className={`${adminStyles.chip} ${countryStatusFilter === value ? adminStyles.chipActive : ''}`}
-                            onClick={() => setCountryStatusFilter(value)}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </TableToolbar>
             <DataTable<Country>
                 data={paginated}
                 columns={columns}
