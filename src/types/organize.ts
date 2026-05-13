@@ -97,6 +97,8 @@ export interface FinanceTransaction {
      */
     initiatedBy?: string;
     /** Partition key for finance.transactions */
+    reporting_currency?: string;
+    reporting_amount?: number | string;
     createdAt: string;
 }
 
@@ -136,6 +138,8 @@ export interface Payout {
     /** Internal admin notes */
     notes?: string;
     /** Partition key for finance.payouts */
+    reporting_currency?: string;
+    reporting_amount?: number;
     createdAt: string;
 }
 

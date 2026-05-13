@@ -11,6 +11,9 @@ import type { ActionItem } from '../../shared/TableRowActions';
 interface PromoCodeTableProps {
     data: PromoCode[];
     isLoading?: boolean;
+    selectedIds?: Set<string>;
+    onSelect?: (id: string) => void;
+    onSelectAll?: () => void;
     currentPage?: number;
     totalPages?: number;
     onPageChange?: (page: number) => void;
@@ -34,6 +37,9 @@ const getTypeVariant = (type: PromoCode['type']): BadgeVariant => {
 const PromoCodeTable: React.FC<PromoCodeTableProps> = ({
     data,
     isLoading = false,
+    selectedIds,
+    onSelect,
+    onSelectAll,
     currentPage = 1,
     totalPages = 1,
     onPageChange,
@@ -126,6 +132,9 @@ const PromoCodeTable: React.FC<PromoCodeTableProps> = ({
             columns={columns}
             getActions={getActions}
             isLoading={isLoading}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}

@@ -18,7 +18,8 @@ interface WalletBalance {
     id: string;
     reference: string;
     currency: string;
-    balance: number;
+    cash_balance: number;
+    credit_balance: number;
     pending_balance: number;
 }
 
@@ -150,87 +151,67 @@ export default function WalletPage() {
             ) : (
                 <>
                     {/* Balance cards */}
-                    <div className="tour-wallet-balances" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
+                    <div className="tour-wallet-balances" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginBottom: 32 }}>
                         {balances.length === 0 ? (
                             <div className={adminStyles.card} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
                                 No wallets yet. Top up to get started.
                             </div>
                         ) : balances.map(b => (
                             <div key={b.id} className={adminStyles.card} style={{ padding: 20 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-tertiary)', fontWeight: 600 }}>{b.currency}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                    <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-primary)', fontWeight: 700 }}>{b.currency} Wallet</p>
                                     <p style={{ margin: 0, fontSize: 10, fontFamily: 'var(--font-mono)', opacity: 0.5 }}>{b.reference}</p>
                                 </div>
-                                <p style={{ margin: '8px 0 0', fontSize: 24, fontWeight: 700 }}>
-                                    {formatCurrency(b.balance, b.currency)}
-                                </p>
-                                {b.pending_balance > 0 && (
-                                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-text-tertiary)' }}>
-                                        + {formatCurrency(b.pending_balance, b.currency)} pending
-                                    </p>
-                                )}
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div>
+                                        <p style={{ margin: 0, fontSize: 11, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cash Balance</p>
+                                        <p style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
+                                            {formatCurrency(b.cash_balance, b.currency)}
+                                        </p>
+                                    </div>
+
+                                    {b.credit_balance > 0 && (
+                                        <div style={{ padding: '8px 12px', background: 'rgba(var(--brand-primary-rgb), 0.1)', borderRadius: 8, border: '1px solid rgba(var(--brand-primary-rgb), 0.2)' }}>
+                                            <p style={{ margin: 0, fontSize: 11, color: 'var(--brand-primary)', fontWeight: 600, textTransform: 'uppercase' }}>Promo Credits</p>
+                                            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--brand-primary)' }}>
+                                                {formatCurrency(b.credit_balance, b.currency)}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {b.pending_balance > 0 && (
+                                        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-tertiary)' }}>
+                                            + {formatCurrency(b.pending_balance, b.currency)} pending in escrow
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Ad Credits */}
-                    {adCredits.length > 0 && (
+                    {/* Credit Usage History */}
+                    {creditTxns.length > 0 && (
                         <div className="tour-wallet-credits">
-                            <h3 style={{ fontSize: 16, fontWeight: 600, margin: '32px 0 4px' }}>Ad Credits</h3>
-                            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-tertiary)' }}>
-                                Platform-issued credits applied to your ad spend. Non-withdrawable.
-                            </p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
-                                {adCredits.map(c => {
-                                    const pct = c.amount > 0 ? (c.remaining / c.amount) * 100 : 0;
-                                    const isExpiringSoon = c.expires_at && (new Date(c.expires_at).getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
-                                    return (
-                                        <div key={c.id} className={adminStyles.card} style={{ padding: 20 }}>
-                                            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-tertiary)', fontWeight: 600 }}>
-                                                {c.currency} Credit
-                                            </p>
-                                            <p style={{ margin: '8px 0 0', fontSize: 24, fontWeight: 700 }}>
-                                                {formatCurrency(c.remaining, c.currency)}
-                                            </p>
-                                            <div style={{ margin: '8px 0 4px', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.1)' }}>
-                                                <div style={{ height: '100%', width: `${pct}%`, borderRadius: 2, background: 'var(--color-brand-primary)', transition: 'width 0.3s' }} />
-                                            </div>
-                                            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-tertiary)' }}>
-                                                of {formatCurrency(c.amount, c.currency)} granted
-                                                {c.expires_at && (
-                                                    <span style={{ marginLeft: 6, color: isExpiringSoon ? 'var(--color-warning)' : undefined }}>
-                                                        · expires {formatDate(c.expires_at)}
-                                                    </span>
-                                                )}
-                                            </p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {creditTxns.length > 0 && (
-                                <>
-                                    <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Credit Usage History</h3>
-                                    <table className={adminStyles.table} style={{ marginBottom: 32 }}>
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Campaign</th>
-                                                <th>Credits Used</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {creditTxns.map(t => (
-                                                <tr key={t.id}>
-                                                    <td>{formatDate(t.created_at)}</td>
-                                                    <td>{t.campaign_title}</td>
-                                                    <td style={{ fontWeight: 600 }}>{formatCurrency(t.amount, t.currency)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </>
-                            )}
+                            <h3 style={{ fontSize: 16, fontWeight: 600, margin: '32px 0 12px' }}>Promo Credit History</h3>
+                            <table className={adminStyles.table} style={{ marginBottom: 32 }}>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Usage Reason</th>
+                                        <th>Credits Used</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {creditTxns.map(t => (
+                                        <tr key={t.id}>
+                                            <td>{formatDate(t.created_at)}</td>
+                                            <td>{t.campaign_title.replace(/_/g, ' ').toUpperCase()}</td>
+                                            <td style={{ fontWeight: 600, color: 'var(--brand-primary)' }}>-{formatCurrency(t.amount, t.currency)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
 

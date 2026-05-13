@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { AdminAccount } from '@/types/admin';
+import BalanceAdjustmentModal from './BalanceAdjustmentModal';
 
 interface AccountTableProps {
     accounts: AdminAccount[];
@@ -62,6 +63,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
     const router = useRouter();
     const [selectedAccountForMembers, setSelectedAccountForMembers] = React.useState<AdminAccount | null>(null);
     const [selectedAccountForGovernance, setSelectedAccountForGovernance] = React.useState<AdminAccount | null>(null);
+    const [selectedAccountForBalance, setSelectedAccountForBalance] = React.useState<AdminAccount | null>(null);
 
     const columns: Column<AdminAccount>[] = [
         {
@@ -105,6 +107,21 @@ const AccountTable: React.FC<AccountTableProps> = ({
             ),
         },
         {
+            header: 'Balances',
+            render: (acc) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '11px', opacity: 0.5, width: '35px' }}>CASH:</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{formatCurrency(acc.cash_balance)}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '11px', opacity: 0.5, width: '35px' }}>PROMO:</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--brand-primary)' }}>{formatCurrency(acc.credit_balance)}</span>
+                    </div>
+                </div>
+            ),
+        },
+        {
             header: 'Status',
             render: (acc) => (
                 <Badge label={formatString(acc.status)} variant={getStatusVariant(acc.status)} showDot />
@@ -127,6 +144,11 @@ const AccountTable: React.FC<AccountTableProps> = ({
             label: 'See Reports',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
             onClick: () => router.push(`/dashboard/admin/moderation?accountId=${acc.id}`),
+        },
+        {
+            label: 'Adjust Balance',
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>,
+            onClick: () => setSelectedAccountForBalance(acc),
         },
         {
             divider: true,
@@ -212,6 +234,14 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 <AccountGovernanceDrawer
                     account={selectedAccountForGovernance}
                     onClose={() => setSelectedAccountForGovernance(null)}
+                />
+            )}
+
+            {selectedAccountForBalance && (
+                <BalanceAdjustmentModal
+                    account={selectedAccountForBalance}
+                    onClose={() => setSelectedAccountForBalance(null)}
+                    onSuccess={() => onRefresh?.()}
                 />
             )}
         </>

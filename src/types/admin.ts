@@ -235,6 +235,8 @@ export interface AdminAccount {
     kyc_tier?: string;
     primary_owner_name?: string;
     primary_owner_email?: string;
+    cash_balance: number;
+    credit_balance: number;
     created_at: string;
 }
  

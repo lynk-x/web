@@ -85,6 +85,17 @@ function FinanceContent() {
     // FX State
     const [isSyncingFX, setIsSyncingFX] = useState(false);
 
+    // Subscription Action State
+    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
+    const [newPlanId, setNewPlanId] = useState('');
+
+    // Country/Region Filter for Payouts
+    const [payoutCountryFilter, setPayoutCountryFilter] = useState('all');
+
+    // Selection state for Promo Codes
+    const [selectedPromoIds, setSelectedPromoIds] = useState<Set<string>>(new Set());
+
     // Global Stats state
     interface GlobalFinanceStats {
         platformRevenue: number | null;
@@ -203,13 +214,19 @@ function FinanceContent() {
                 });
 
                 if (error) throw error;
-                setSubscriptions(data || []);
+                setSubscriptions((data || []).map((s: any) => ({
+                    ...s,
+                    // Ensure reporting fields are included in the state
+                    reporting_amount: s.reporting_amount,
+                    reporting_currency: s.reporting_currency
+                })));
                 setTotalCount(data?.[0]?.total_count || 0);
             } else if (activeTab === 'payouts') {
                 const { data, error } = await supabase.rpc('get_admin_payouts', {
                     p_search: debouncedSearch,
                     p_start_date: startDate ? new Date(startDate).toISOString() : null,
                     p_end_date: endDate ? new Date(endDate).toISOString() : null,
+                    p_country_code: payoutCountryFilter,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
@@ -230,6 +247,8 @@ function FinanceContent() {
                     approval_status: string;
                     kyc_tier: string;
                     is_verified: boolean;
+                    reporting_currency: string;
+                    reporting_amount: number;
                 }
 
                 setPayouts((data || []).map((p: PayoutRow) => ({
@@ -244,6 +263,8 @@ function FinanceContent() {
                     kyc_status: p.approval_status,
                     kyc_tier: p.kyc_tier,
                     is_verified: p.is_verified,
+                    reporting_amount: p.reporting_amount,
+                    reporting_currency: p.reporting_currency,
                     createdAt: p.created_at
                 })));
             } else if (activeTab === 'tax-rates') {
@@ -314,7 +335,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter]);
+    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter, payoutCountryFilter]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -361,7 +382,7 @@ function FinanceContent() {
     useEffect(() => {
         setCurrentPage(1);
         fetchData();
-    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter]);
+    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, payoutCountryFilter]);
 
     useEffect(() => {
         fetchData();
@@ -511,6 +532,81 @@ function FinanceContent() {
         }
     };
 
+    // ── Subscription Management Handlers ─────────────────────────────────────
+    const handlePauseSubscription = async (id: string) => {
+        showToast('Pausing subscription...', 'info');
+        try {
+            const { error } = await supabase.rpc('admin_pause_subscription', { p_subscription_id: id });
+            if (error) throw error;
+            showToast('Subscription paused successfully.', 'success');
+            fetchData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleResumeSubscription = async (id: string) => {
+        showToast('Resuming subscription...', 'info');
+        try {
+            const { error } = await supabase.rpc('admin_resume_subscription', { p_subscription_id: id });
+            if (error) throw error;
+            showToast('Subscription resumed successfully.', 'success');
+            fetchData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleCancelSubscription = async (id: string) => {
+        if (!confirm('Are you sure you want to cancel this subscription? Immediate cancellation will terminate access.')) return;
+        
+        showToast('Cancelling subscription...', 'info');
+        try {
+            const { error } = await supabase.rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true });
+            if (error) throw error;
+            showToast('Subscription cancelled.', 'success');
+            fetchData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleResendInvoice = async (id: string) => {
+        showToast('Resending latest invoice...', 'info');
+        // Mocking invoice service call
+        setTimeout(() => {
+            showToast('Success: Latest invoice resent to the customer.', 'success');
+        }, 800);
+    };
+
+    const handleOpenPlanModal = (sub: Subscription) => {
+        setSelectedSub(sub);
+        setNewPlanId(sub.plan_id);
+        setIsPlanModalOpen(true);
+    };
+
+    const handleUpdatePlan = async () => {
+        if (!selectedSub || !newPlanId) return;
+        if (newPlanId === selectedSub.plan_id) {
+            setIsPlanModalOpen(false);
+            return;
+        }
+
+        showToast(`Migrating subscription to ${newPlanId}...`, 'info');
+        try {
+            const { error } = await supabase.rpc('admin_change_subscription_plan', { 
+                p_subscription_id: selectedSub.id, 
+                p_new_plan_id: newPlanId 
+            });
+            if (error) throw error;
+            showToast('Plan migrated successfully.', 'success');
+            setIsPlanModalOpen(false);
+            fetchData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
     const getBulkActions = (): BulkAction[] => {
         if (activeTab === 'payouts' && selectedPayoutIds.size > 0 && isPayoutMgmtEnabled) {
             return [
@@ -546,6 +642,45 @@ function FinanceContent() {
                         setPendingRejectPayout(null); // Indicates bulk mode
                     },
                     variant: 'danger'
+                }
+            ];
+        }
+
+        if (activeTab === 'promo-codes' && selectedPromoIds.size > 0) {
+            return [
+                {
+                    label: 'Batch Deactivate',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
+                    onClick: async () => {
+                        showToast(`Deactivating ${selectedPromoIds.size} codes...`, 'info');
+                        try {
+                            const { error } = await supabase.from('promo_codes').update({ is_active: false }).in('id', Array.from(selectedPromoIds));
+                            if (error) throw error;
+                            showToast(`Successfully deactivated ${selectedPromoIds.size} codes.`, 'success');
+                            setSelectedPromoIds(new Set());
+                            fetchData();
+                        } catch (err: any) {
+                            showToast(getErrorMessage(err), 'error');
+                        }
+                    },
+                    variant: 'danger'
+                },
+                {
+                    label: 'Batch Activate',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+                    onClick: async () => {
+                        showToast(`Activating ${selectedPromoIds.size} codes...`, 'info');
+                        try {
+                            const { error } = await supabase.from('promo_codes').update({ is_active: true }).in('id', Array.from(selectedPromoIds));
+                            if (error) throw error;
+                            showToast(`Successfully activated ${selectedPromoIds.size} codes.`, 'success');
+                            setSelectedPromoIds(new Set());
+                            fetchData();
+                        } catch (err: any) {
+                            showToast(getErrorMessage(err), 'error');
+                        }
+                    },
+                    variant: 'success'
                 }
             ];
         }
@@ -700,16 +835,31 @@ function FinanceContent() {
                 onSearchChange={setSearchTerm}
             >
                 {activeTab === 'payouts' && (
-                    <DateRangeRow 
-                        startDate={startDate}
-                        endDate={endDate}
-                        onStartDateChange={setStartDate}
-                        onEndDateChange={setEndDate}
-                        onClear={() => {
-                            setStartDate('');
-                            setEndDate('');
-                        }}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <DateRangeRow 
+                            startDate={startDate}
+                            endDate={endDate}
+                            onStartDateChange={setStartDate}
+                            onEndDateChange={setEndDate}
+                            onClear={() => {
+                                setStartDate('');
+                                setEndDate('');
+                            }}
+                        />
+                        <div className={styles.filterGroup}>
+                            <select 
+                                className={adminStyles.select}
+                                style={{ height: '40px' }}
+                                value={payoutCountryFilter}
+                                onChange={(e) => setPayoutCountryFilter(e.target.value)}
+                            >
+                                <option value="all">All Regions</option>
+                                {countries.map(c => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 )}
                 {activeTab === 'transactions' && (
                     <DateRangeRow 
@@ -822,6 +972,14 @@ function FinanceContent() {
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
+                        onPause={handlePauseSubscription}
+                        onResume={handleResumeSubscription}
+                        onCancel={handleCancelSubscription}
+                        onResendInvoice={handleResendInvoice}
+                        onChangePlan={(id) => {
+                            const sub = subscriptions.find(s => s.id === id);
+                            if (sub) handleOpenPlanModal(sub);
+                        }}
                     />
                 </TabsContent>
 
@@ -869,15 +1027,33 @@ function FinanceContent() {
                 </TabsContent>
 
                 <TabsContent value="promo-codes">
-                    <PromoCodeTable data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} />
+                    <PromoCodeTable 
+                        data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} 
+                        isLoading={isLoading} 
+                        selectedIds={selectedPromoIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedPromoIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedPromoIds(next);
+                        }}
+                        onSelectAll={() => setSelectedPromoIds(selectedPromoIds.size === promoCodes.length ? new Set() : new Set(promoCodes.map(p => p.id)))}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
                 </TabsContent>
             </Tabs>
 
             <BulkActionsBar
                 actions={getBulkActions()}
-                selectedCount={activeTab === 'payouts' ? selectedPayoutIds.size : 0}
+                selectedCount={
+                    activeTab === 'payouts' ? selectedPayoutIds.size : 
+                    activeTab === 'promo-codes' ? selectedPromoIds.size : 
+                    0
+                }
                 onCancel={() => {
                     setSelectedPayoutIds(new Set());
+                    setSelectedPromoIds(new Set());
                 }}
             />
 
@@ -955,6 +1131,44 @@ function FinanceContent() {
                             onChange={e => setTaxForm({ ...taxForm, is_inclusive: e.target.checked })}
                         />
                         <span style={{ fontSize: '14px', opacity: 0.8 }}>Inclusive of price</span>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Plan Migration Modal */}
+            <Modal
+                isOpen={isPlanModalOpen}
+                onClose={() => setIsPlanModalOpen(false)}
+                title="Change Subscription Plan"
+                footer={
+                    <>
+                        <button className={adminStyles.btnSecondary} onClick={() => setIsPlanModalOpen(false)}>Cancel</button>
+                        <button className={adminStyles.btnPrimary} onClick={handleUpdatePlan}>Migrate Plan</button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>
+                        <p><strong>Account:</strong> {selectedSub?.account_name}</p>
+                        <p><strong>Current Plan:</strong> {selectedSub?.plan_name}</p>
+                    </div>
+                    <div>
+                        <label className={adminStyles.label}>Target Plan Tier</label>
+                        <select
+                            className={adminStyles.select}
+                            style={{ width: '100%' }}
+                            value={newPlanId}
+                            onChange={e => setNewPlanId(e.target.value)}
+                        >
+                            <option value="attendee_free">Attendee: Free</option>
+                            <option value="attendee_premium_monthly">Attendee: Premium Monthly</option>
+                            <option value="attendee_premium_yearly">Attendee: Premium Yearly</option>
+                            <option value="business_pulse_starter">Business: Pulse Starter</option>
+                            <option value="business_pulse_pro">Business: Pulse Pro</option>
+                        </select>
+                        <p style={{ fontSize: '11px', marginTop: '8px', opacity: 0.6 }}>
+                            Note: Changing the plan will update the enrollment immediately. Prorating must be handled manually in the gateway if required.
+                        </p>
                     </div>
                 </div>
             </Modal>

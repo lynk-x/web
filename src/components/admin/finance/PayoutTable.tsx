@@ -115,7 +115,14 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
         {
             header: 'Amount',
             render: (payout) => (
-                <span style={{ fontWeight: 600 }}>{formatCurrency(payout.amount)}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 600 }}>{formatCurrency(payout.amount, payout.currency)}</span>
+                    {payout.reporting_amount && payout.reporting_currency && payout.reporting_currency !== payout.currency && (
+                        <span style={{ fontSize: '11px', opacity: 0.5 }}>
+                            {formatCurrency(payout.reporting_amount, payout.reporting_currency)}
+                        </span>
+                    )}
+                </div>
             ),
         },
         {

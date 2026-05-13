@@ -44,7 +44,8 @@ export default function AdsBillingPage() {
             const currency = 'USD';
             interface WalletItem {
                 currency: string;
-                balance: number;
+                cash_balance: number;
+                credit_balance: number;
             }
             const primaryWallet = (data.wallets || []).find((w: WalletItem) => w.currency === currency) || data.wallets?.[0];
             
@@ -66,7 +67,7 @@ export default function AdsBillingPage() {
             setTotalCount(Number(data.top_up_count || 0));
             setRawTotalSpend(Number(data.total_spend || 0));
             setAdCredits(Number(data.total_credits || 0));
-            setWalletBalance(Number(primaryWallet?.balance ?? 0));
+            setWalletBalance(Number(primaryWallet?.cash_balance ?? 0));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to sync billing data.', 'error');
         } finally {
