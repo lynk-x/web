@@ -36,10 +36,10 @@ function AdsSettingsContent() {
     // Form state
     const [formData, setFormData] = useState({
         name: '',
-        website: '',
+        secondary_contact: '',
         description: '',
         support_email: '',
-        phone_number: '',
+        primary_contact: '',
         address_line: '',
         town: '',
         city: '',
@@ -75,10 +75,10 @@ function AdsSettingsContent() {
                 const ba = typeof profile.billing_address === 'string' ? {} : (profile.billing_address || {});
                 const newValues = {
                     name: data.account?.name || '',
-                    website: profile.website || '',
+                    secondary_contact: profile.secondary_contact || '',
                     description: profile.description || '',
                     support_email: profile.contact_email || '',
-                    phone_number: profile.phone_number || '',
+                    primary_contact: profile.phone_number || '',
                 address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
                 town: ba.town || '',
                 city: ba.city || '',
@@ -118,6 +118,10 @@ function AdsSettingsContent() {
 
     const handleSave = async () => {
         if (!activeAccount) return;
+        if (!formData.name || !formData.support_email || !formData.primary_contact || !formData.city || !formData.country) {
+            showToast('Please fill in all required fields.', 'error');
+            return;
+        }
         setIsSaving(true);
         try {
             const { error } = await supabase.rpc('update_advertiser_account_settings', {
@@ -126,9 +130,9 @@ function AdsSettingsContent() {
                 p_info: {
                     legal_name: formData.name,
                     contact_email: formData.support_email,
-                    phone_number: formData.phone_number,
+                    phone_number: formData.primary_contact,
                     description: formData.description,
-                    website: formData.website,
+                    secondary_contact: formData.secondary_contact,
                 },
                 p_billing_address: JSON.stringify({
                     line: formData.address_line,
@@ -210,18 +214,18 @@ function AdsSettingsContent() {
                                 <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
                                 <input type="email" name="support_email" className={adminStyles.input} value={formData.support_email} onChange={handleInputChange} placeholder="ads-support@organization.com" />
                             </div>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Support Phone</label>
-                                <input type="text" name="phone_number" className={adminStyles.input} value={formData.phone_number} onChange={handleInputChange} placeholder="+254..." />
+                             <div className={adminStyles.formGroup}>
+                                <label className={adminStyles.label}>Primary Contact <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="primary_contact" className={adminStyles.input} value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." />
                             </div>
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Website URL</label>
-                                <input type="text" name="website" className={adminStyles.input} value={formData.website} onChange={handleInputChange} placeholder="https://..." />
+                                <label className={adminStyles.label}>Secondary Contact</label>
+                                <input type="text" name="secondary_contact" className={adminStyles.input} value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" />
                             </div>
                             <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Address Line <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <label className={adminStyles.label}>Address Line</label>
                                 <input type="text" name="address_line" className={adminStyles.input} value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" />
                             </div>
                             <div className={adminStyles.formGroup}>
