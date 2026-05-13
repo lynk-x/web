@@ -124,18 +124,7 @@ export default function AnalyticsPage() {
                 />
             </div>
 
-            <div style={{ marginTop: 'var(--spacing-md)' }}>
-                <Tabs
-                    options={[
-                        { id: 'summary', label: 'Performance Summary' },
-                        { id: 'breakdown', label: 'Detailed Breakdown' },
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                />
-            </div>
-
-            <div className="tour-analytics-range">
+            <div className="tour-analytics-range" style={{ marginTop: 'var(--spacing-md)' }}>
                 <TableToolbar searchPlaceholder="Filter by name..." searchValue="" onSearchChange={() => {}}>
                     <div className={adminStyles.filterGroup}>
                         {['all', 'active', 'past', 'draft'].map((status) => (
@@ -160,6 +149,17 @@ export default function AnalyticsPage() {
                         <option value="365">Last Year</option>
                     </select>
                 </TableToolbar>
+            </div>
+
+            <div style={{ marginTop: 'var(--spacing-md)' }}>
+                <Tabs
+                    options={[
+                        { id: 'summary', label: 'Performance Summary' },
+                        { id: 'breakdown', label: 'Detailed Breakdown' },
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                />
             </div>
 
             {activeTab === 'summary' ? (

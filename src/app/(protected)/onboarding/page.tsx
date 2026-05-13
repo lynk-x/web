@@ -12,6 +12,14 @@ import { useCountries } from '@/hooks/useCountries';
 type OnboardingStep = 'DETAILS' | 'VERIFICATION';
 type AccountType = 'organizer' | 'advertiser';
 
+interface KycRequirement {
+    id: string;
+    type: 'file' | 'text';
+    label: string;
+    subtype?: string;
+    mandatory: boolean;
+}
+
 function OnboardingFlow() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -36,10 +44,10 @@ function OnboardingFlow() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // KYC state
-    const [kycDocumentType, setKycDocumentType] = useState('national_id');
-    const [kycFiles, setKycFiles] = useState<{ file: File; preview: string }[]>([]);
+    const [kycRequirements, setKycRequirements] = useState<KycRequirement[]>([]);
+    const [kycFiles, setKycFiles] = useState<Record<string, { file: File; preview: string }[]>>({});
     const [skipping, setSkipping] = useState(false);
-    const kycFileInputRef = useRef<HTMLInputElement>(null);
+    const kycFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     // Redirect logged-in users who already have an account of this type,
     // unless they are explicitly creating a new one.
@@ -70,6 +78,29 @@ function OnboardingFlow() {
             setLogoUrl(publicUrl);
         } catch {
             setError('Failed to upload logo.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleProceedToVerification = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const cleanName = sanitizeInput(orgName.trim());
+        if (!cleanName) { setError('Organization name is required.'); return; }
+
+        setLoading(true);
+        setError(null);
+        try {
+            const { data, error: fetchError } = await supabase.rpc('get_kyc_requirements', {
+                p_country_code: country,
+                p_account_type: accountType
+            });
+            if (fetchError) throw fetchError;
+            setKycRequirements(data || []);
+            setStep('VERIFICATION');
+        } catch (err) {
+            console.error('Error fetching KYC requirements:', err);
+            setError('Failed to fetch verification requirements for your country.');
         } finally {
             setLoading(false);
         }
@@ -112,27 +143,33 @@ function OnboardingFlow() {
                 if (updateError) console.error('Branding update failed (non-fatal):', updateError);
             }
 
-            if (kycFiles.length > 0) {
+            // Upload KYC documents for each requirement
+            for (const req of kycRequirements) {
+                const files = kycFiles[req.id];
+                if (!files || files.length === 0) continue;
+
                 const uploadedPaths: string[] = [];
-                for (const item of kycFiles) {
+                for (const item of files) {
                     const fileExt = item.file.name.split('.').pop();
                     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                     const { error: uploadError } = await supabase.storage
                         .from('accounts')
-                        .upload(`${accountId}/${fileName}`, item.file);
+                        .upload(`${accountId}/kyc/${req.id}/${fileName}`, item.file);
+                    
                     if (!uploadError) {
                         const { data: { publicUrl } } = supabase.storage
                             .from('accounts')
-                            .getPublicUrl(`${accountId}/${fileName}`);
+                            .getPublicUrl(`${accountId}/kyc/${req.id}/${fileName}`);
                         uploadedPaths.push(publicUrl);
                     }
                 }
+
                 if (uploadedPaths.length > 0) {
-                    await supabase.from('identity_verifications').insert({
-                        account_id: accountId,
-                        document_type: kycDocumentType,
-                        uploaded_documents: uploadedPaths,
-                        status: 'submitted',
+                    await supabase.rpc('submit_identity_verification', {
+                        p_account_id: accountId,
+                        p_document_type: (req.subtype || req.id) as any, // Cast to kyc_document_type
+                        p_uploaded_docs: uploadedPaths,
+                        p_pii_data: { requirement_id: req.id }
                     });
                 }
             }
@@ -159,21 +196,24 @@ function OnboardingFlow() {
         }
     };
 
-    const handleKycFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleKycFileChange = (reqId: string, e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
-        setKycFiles(prev => [
+        setKycFiles(prev => ({
             ...prev,
-            ...Array.from(files).map(file => ({ file, preview: URL.createObjectURL(file) })),
-        ]);
+            [reqId]: [
+                ...(prev[reqId] || []),
+                ...Array.from(files).map(file => ({ file, preview: URL.createObjectURL(file) })),
+            ]
+        }));
     };
 
-    const removeKycFile = (index: number) => {
+    const removeKycFile = (reqId: string, index: number) => {
         setKycFiles(prev => {
-            const next = [...prev];
-            URL.revokeObjectURL(next[index].preview);
-            next.splice(index, 1);
-            return next;
+            const nextFiles = [...(prev[reqId] || [])];
+            URL.revokeObjectURL(nextFiles[index].preview);
+            nextFiles.splice(index, 1);
+            return { ...prev, [reqId]: nextFiles };
         });
     };
 
@@ -222,7 +262,7 @@ function OnboardingFlow() {
 
                 {step === 'DETAILS' && (
                     <div className={styles.formCard}>
-                        <form onSubmit={(e) => { e.preventDefault(); setStep('VERIFICATION'); setError(null); }} className={styles.form}>
+                        <form onSubmit={handleProceedToVerification} className={styles.form}>
                             {/* Logo Upload */}
                             <div className={styles.logoSection}>
                                 <div className={styles.logoPreview} onClick={() => fileInputRef.current?.click()}>
@@ -285,7 +325,7 @@ function OnboardingFlow() {
                                     disabled={loading || !orgName.trim()}
                                     style={{ background: accentColor }}
                                 >
-                                    Continue to Verification
+                                    {loading ? 'Processing...' : 'Continue to Verification'}
                                 </button>
                             </div>
                         </form>
@@ -297,62 +337,67 @@ function OnboardingFlow() {
                         {error && <div className={styles.errorBox}>{error}</div>}
 
                         <form onSubmit={(e) => handleCreateOrganization(e)} className={styles.form}>
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Document Type</label>
-                                <select
-                                    className={styles.input}
-                                    value={kycDocumentType}
-                                    onChange={(e) => setKycDocumentType(e.target.value)}
-                                    style={{ background: 'rgba(0, 0, 0, 0.4)' }}
-                                >
-                                    <option value="national_id">National ID Card</option>
-                                    <option value="passport">Intl. Passport</option>
-                                    <option value="alien_card">Alien / Residence Card</option>
-                                    <option value="incorporation_cert">Certificate of Incorporation</option>
-                                </select>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>
-                                    Upload Documents{' '}
-                                    <span style={{ fontSize: '12px', opacity: 0.5 }}>Front & Back if applicable</span>
-                                </label>
-                                <div className={styles.kycUploadArea} onClick={() => kycFileInputRef.current?.click()}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '8px', opacity: 0.5 }}>
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                                        </svg>
-                                        <p style={{ fontSize: '14px', opacity: 0.8 }}>Click to upload files</p>
-                                        <p style={{ fontSize: '11px', opacity: 0.4, marginTop: '4px' }}>PNG, JPG or PDF up to 10MB</p>
-                                    </div>
+                            {kycRequirements.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '24px', opacity: 0.6 }}>
+                                    <p>No specific verification requirements for your country.</p>
+                                    <p style={{ fontSize: '12px' }}>You can proceed to launch your workspace.</p>
                                 </div>
-                                <input
-                                    type="file"
-                                    multiple
-                                    ref={kycFileInputRef}
-                                    onChange={handleKycFileChange}
-                                    style={{ display: 'none' }}
-                                    accept="image/*,application/pdf"
-                                />
-
-                                {kycFiles.length > 0 && (
-                                    <div className={styles.fileList}>
-                                        {kycFiles.map((item, idx) => (
-                                            <div key={idx} className={styles.fileItem}>
-                                                <div className={styles.filePreview}>
-                                                    {item.file.type.startsWith('image/') ? (
-                                                        <img src={item.preview} alt="preview" />
-                                                    ) : (
-                                                        <div className={styles.pdfIcon}>PDF</div>
-                                                    )}
+                            ) : (
+                                kycRequirements.map((req) => (
+                                    <div key={req.id} className={styles.inputGroup}>
+                                        <label className={styles.label}>
+                                            {req.label} {req.mandatory && <span className={styles.requiredIndicator}>*Required</span>}
+                                        </label>
+                                        
+                                        {req.type === 'file' ? (
+                                            <>
+                                                <div className={styles.kycUploadArea} onClick={() => kycFileInputRefs.current[req.id]?.click()}>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '8px', opacity: 0.5 }}>
+                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                                                        </svg>
+                                                        <p style={{ fontSize: '14px', opacity: 0.8 }}>Click to upload {req.label.toLowerCase()}</p>
+                                                        <p style={{ fontSize: '11px', opacity: 0.4, marginTop: '4px' }}>PNG, JPG or PDF up to 10MB</p>
+                                                    </div>
                                                 </div>
-                                                <span className={styles.fileName}>{item.file.name}</span>
-                                                <button type="button" className={styles.removeFile} onClick={() => removeKycFile(idx)}>×</button>
-                                            </div>
-                                        ))}
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    ref={el => { kycFileInputRefs.current[req.id] = el; }}
+                                                    onChange={(e) => handleKycFileChange(req.id, e)}
+                                                    style={{ display: 'none' }}
+                                                    accept="image/*,application/pdf"
+                                                />
+
+                                                {(kycFiles[req.id] || []).length > 0 && (
+                                                    <div className={styles.fileList}>
+                                                        {kycFiles[req.id].map((item, idx) => (
+                                                            <div key={idx} className={styles.fileItem}>
+                                                                <div className={styles.filePreview}>
+                                                                    {item.file.type.startsWith('image/') ? (
+                                                                        <img src={item.preview} alt="preview" />
+                                                                    ) : (
+                                                                        <div className={styles.pdfIcon}>PDF</div>
+                                                                    )}
+                                                                </div>
+                                                                <span className={styles.fileName}>{item.file.name}</span>
+                                                                <button type="button" className={styles.removeFile} onClick={() => removeKycFile(req.id, idx)}>×</button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <input 
+                                                type="text" 
+                                                className={styles.input} 
+                                                placeholder={`Enter ${req.label.toLowerCase()}...`}
+                                                required={req.mandatory}
+                                            />
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                ))
+                            )}
 
                             <div className={styles.actions}>
                                 <button type="button" className={styles.backBtn} onClick={() => { setStep('DETAILS'); setError(null); }} disabled={loading}>
@@ -361,7 +406,7 @@ function OnboardingFlow() {
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
-                                    disabled={loading || kycFiles.length === 0}
+                                    disabled={loading || (kycRequirements.some(r => r.mandatory && (!kycFiles[r.id] || kycFiles[r.id].length === 0)))}
                                     style={{ background: accentColor }}
                                 >
                                     {loading ? 'Processing...' : 'Complete & Launch'}

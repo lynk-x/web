@@ -175,7 +175,13 @@ function RevenueContent() {
                 />
             </div>
 
-            <div className="tour-revenue-tabs">
+            <TableToolbar
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder={`Search transactions...`}
+            />
+
+            <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)' }}>
                 <Tabs
                     options={[
                         { id: 'all', label: 'All Activity' },
@@ -187,12 +193,6 @@ function RevenueContent() {
                     onTabChange={handleTabChange}
                 />
             </div>
-
-            <TableToolbar
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-                searchPlaceholder={`Search transactions...`}
-            />
 
             <div className={styles.tableWrapper}>
                 <FinanceTable
