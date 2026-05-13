@@ -16,6 +16,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
 import ProductTour from '@/components/dashboard/ProductTour';
+import CountrySelect from '@/components/shared/CountrySelect';
 import type { AccountWallet } from '@/types/organize';
 
 function SettingsContent() {
@@ -65,10 +66,10 @@ function SettingsContent() {
         description: '',
         support_email: '',
         phone_number: '',
-        business_name: '',
-        tax_id: '',
-        registration_number: '',
-        billing_address: ''
+        address_line: '',
+        town: '',
+        city: '',
+        country: ''
     });
     const [wallets, setWallets] = useState<AccountWallet[]>([]);
     const [initialFormData, setInitialFormData] = useState(formData);
@@ -84,16 +85,17 @@ function SettingsContent() {
             if (error) throw error;
 
             const profile = settings?.profile || {};
+            const ba = typeof profile.billing_address === 'string' ? {} : (profile.billing_address || {});
             const newValues = {
                 name: settings?.account?.name || '',
                 website: profile.website || '',
                 description: profile.description || '',
                 support_email: profile.contact_email || '',
                 phone_number: profile.phone_number || '',
-                business_name: profile.legal_name || '',
-                tax_id: profile.tax_id || '',
-                registration_number: profile.registration_number || '',
-                billing_address: profile.billing_address || ''
+                address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
+                town: ba.town || '',
+                city: ba.city || '',
+                country: ba.country || settings?.account?.country_code || ''
             };
 
             setFormData(newValues);
@@ -131,15 +133,18 @@ function SettingsContent() {
                 p_account_id: activeAccount.id,
                 p_display_name: formData.name,
                 p_info: {
-                    legal_name: formData.business_name || formData.name,
+                    legal_name: formData.name, // Using display name as legal name for now since field was removed
                     contact_email: formData.support_email,
                     phone_number: formData.phone_number,
                     description: formData.description,
                     website: formData.website,
                 },
-                p_tax_id: formData.tax_id,
-                p_registration_number: formData.registration_number,
-                p_billing_address: formData.billing_address
+                p_billing_address: JSON.stringify({
+                    line: formData.address_line,
+                    town: formData.town,
+                    city: formData.city,
+                    country: formData.country
+                })
             });
 
             if (error) throw error;
@@ -252,21 +257,26 @@ function SettingsContent() {
                             </div>
                             <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
+                            <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
+
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Legal Name (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="business_name" className={adminStyles.input} value={formData.business_name} onChange={handleInputChange} placeholder="As registered with authorities" />
+                                <label className={adminStyles.label}>Address Line <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="address_line" className={adminStyles.input} value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" />
                             </div>
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Tax ID / PIN (Individual or Company) <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="tax_id" className={adminStyles.input} value={formData.tax_id} onChange={handleInputChange} placeholder="VAT / EIN / KRA PIN" />
+                                <label className={adminStyles.label}>Town</label>
+                                <input type="text" name="town" className={adminStyles.input} value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" />
                             </div>
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Registration Number (if business)</label>
-                                <input type="text" name="registration_number" className={adminStyles.input} value={formData.registration_number} onChange={handleInputChange} placeholder="Business License #" />
+                                <label className={adminStyles.label}>City <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <input type="text" name="city" className={adminStyles.input} value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" />
                             </div>
                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Legal Billing Address <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="billing_address" className={adminStyles.input} value={formData.billing_address} onChange={handleInputChange} placeholder="City, State, Country..." />
+                                <label className={adminStyles.label}>Country <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                <CountrySelect 
+                                    value={formData.country} 
+                                    onChange={(val) => setFormData(prev => ({ ...prev, country: val }))} 
+                                />
                             </div>
                         </div>
                     </div>

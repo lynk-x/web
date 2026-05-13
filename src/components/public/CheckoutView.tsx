@@ -68,6 +68,8 @@ const CheckoutView: React.FC = () => {
     // Total is subtotal + fee - discount. If free entry, ensure it hits zero.
     const total = Math.max(0, (subtotal + commissionAmount) - discountAmount);
 
+    const residualAmount = Math.max(0, total - (userBalances?.credit || 0) - (userBalances?.cash || 0));
+
     const currency = items[0]?.currency || 'KES';
 
     // ── Init: restore payment state + pre-fill from session + read service fee ─
@@ -560,7 +562,7 @@ const CheckoutView: React.FC = () => {
 
                                             <div className={styles.residualTotal}>
                                                 <span>Amount to Pay</span>
-                                                <span>{currency} {Math.max(0, total - userBalances.credit - userBalances.cash).toLocaleString()}</span>
+                                                <span>{currency} {residualAmount.toLocaleString()}</span>
                                             </div>
                                         </div>
                                     )}
@@ -684,7 +686,11 @@ const CheckoutView: React.FC = () => {
                                     className={styles.payBtn}
                                     disabled={isSubmitting || items.length === 0}
                                 >
-                                    {isSubmitting ? 'Processing…' : `Confirm & Pay ${currency} ${total.toLocaleString()}`}
+                                    {isSubmitting ? 'Processing…' : (
+                                        residualAmount === 0 
+                                            ? 'Confirm Reservation' 
+                                            : `Confirm & Pay ${currency} ${residualAmount.toLocaleString()}`
+                                    )}
                                 </button>
                             )}
                         </div>
