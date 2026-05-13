@@ -116,12 +116,12 @@ function ForumsContent() {
             eventName: f.event_title,
             eventId: f.event_id,
             status: f.status,
+            channelsCount: parseInt(f.channels_count) || 0,
             messageCount: parseInt(f.message_count) || 0,
             mediaCount: parseInt(f.media_count) || 0,
             reportsCount: parseInt(f.reports_count) || 0,
             escalatedCount: parseInt(f.escalated_reports_count) || 0,
             oldestReportAt: f.oldest_report_at,
-            lastActivity: formatRelativeTime(f.last_activity_at),
         })));
     }, [allForums, searchTerm, statusFilter, currentPage, itemsPerPage]);
 

@@ -12,6 +12,7 @@ import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import FXRateTable from '@/components/admin/finance/FXRateTable';
 import PromoCodeTable from '@/components/admin/finance/PromoCodeTable';
+import SubscriptionTable, { Subscription } from '@/components/admin/finance/SubscriptionTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
@@ -59,6 +60,7 @@ function FinanceContent() {
     const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
     const [fxRates, setFxRates] = useState<FXRate[]>([]);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
     // Selection state
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
@@ -115,6 +117,7 @@ function FinanceContent() {
 
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab);
+        setCategoryFilter('all');
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -191,6 +194,17 @@ function FinanceContent() {
                     recipient: tx.recipient_name,
                     createdAt: tx.created_at
                 })));
+            } else if (activeTab === 'subscriptions') {
+                const { data, error } = await supabase.rpc('get_admin_subscriptions', {
+                    p_search: debouncedSearch,
+                    p_status: categoryFilter, // Reuse categoryFilter for status
+                    p_offset: (currentPage - 1) * itemsPerPage,
+                    p_limit: itemsPerPage
+                });
+
+                if (error) throw error;
+                setSubscriptions(data || []);
+                setTotalCount(data?.[0]?.total_count || 0);
             } else if (activeTab === 'payouts') {
                 const { data, error } = await supabase.rpc('get_admin_payouts', {
                     p_search: debouncedSearch,
@@ -602,6 +616,18 @@ function FinanceContent() {
             );
         }
 
+        if (activeTab === 'subscriptions') {
+            return (
+                <SubscriptionTable
+                    data={subscriptions}
+                    isLoading={isLoading}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            );
+        }
+
         return (
             <FinanceTable
                 transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
@@ -703,6 +729,7 @@ function FinanceContent() {
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                        <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
                         <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
                         <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
                         <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
@@ -721,6 +748,20 @@ function FinanceContent() {
                                 <option value="outgoing">Refunds (Outgoing)</option>
                                 <option value="hold">Escrow (Hold)</option>
                                 <option value="internal">Internal Transfers</option>
+                            </select>
+                        )}
+
+                        {activeTab === 'subscriptions' && (
+                            <select 
+                                className={adminStyles.filterSelect}
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active Only</option>
+                                <option value="trialing">Trialing</option>
+                                <option value="past_due">Past Due</option>
+                                <option value="canceled">Canceled</option>
                             </select>
                         )}
                         
@@ -768,6 +809,16 @@ function FinanceContent() {
                             setSelectedTxIds(next);
                         }}
                         onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </TabsContent>
+
+                <TabsContent value="subscriptions">
+                    <SubscriptionTable
+                        data={subscriptions}
+                        isLoading={isLoading}
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}

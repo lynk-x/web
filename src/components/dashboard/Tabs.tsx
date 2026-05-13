@@ -13,16 +13,18 @@ interface TabsProps {
     activeTab: string;
     onTabChange: (id: string) => void;
     className?: string; // Optional for layout adjustments
+    style?: React.CSSProperties;
 }
 
 export default function Tabs({
     options,
     activeTab,
     onTabChange,
-    className
+    className,
+    style
 }: TabsProps) {
     return (
-        <div className={`${styles.tabs} ${className || ''}`}>
+        <div className={`${styles.tabs} ${className || ''}`} style={style}>
             {options.map((tab) => (
                 <button
                     key={tab.id}

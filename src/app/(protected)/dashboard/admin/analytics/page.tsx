@@ -89,12 +89,11 @@ interface TagRow {
 
 // ─── Refactored Tab Components ─────────────────────────────────────────────
 
-function DemographicTab() {
+function DemographicTab({ countryFilter }: { countryFilter: string }) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [countryFilter, setCountryFilter] = useState('all');
     const { countries } = useCountries();
 
     const getCountryName = useCallback((code: string) => {
@@ -123,14 +122,6 @@ function DemographicTab() {
 
     return (
         <div className={styles.tabContent}>
-            <div className={styles.toolbar}>
-                <select className={styles.select} value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
-                    <option value="all">Global (All Countries)</option>
-                    {Array.from(new Set((data?.geo || []).map((r: any) => r.country))).sort().map((c: any) => (
-                        <option key={c as string} value={c as string}>{getCountryName(c as string)}</option>
-                    ))}
-                </select>
-            </div>
 
             <div className={styles.statsGrid}>
                 <div className={styles.card}>
@@ -355,6 +346,8 @@ function AnalyticsContent() {
     const [activeTab, setActiveTab] = useState<Tab>(
         (['demographics', 'performance', 'revenue', 'insights', 'intelligence'].includes(initialTab) ? initialTab as Tab : 'demographics')
     );
+    const [countryFilter, setCountryFilter] = useState('all');
+    const { countries } = useCountries();
 
     useEffect(() => {
         const tab = searchParams.get('tab') as Tab;
@@ -372,19 +365,36 @@ function AnalyticsContent() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <Tabs
-                options={[
-                    { id: 'demographics', label: 'Demographics' },
-                    { id: 'performance', label: 'Performance' },
-                    { id: 'revenue', label: 'Revenue' },
-                    { id: 'insights', label: 'Insights' },
-                    { id: 'intelligence', label: 'Intelligence' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', marginBottom: 'var(--spacing-md)' }}>
+                <Tabs
+                    options={[
+                        { id: 'demographics', label: 'Demographics' },
+                        { id: 'performance', label: 'Performance' },
+                        { id: 'revenue', label: 'Revenue' },
+                        { id: 'insights', label: 'Insights' },
+                        { id: 'intelligence', label: 'Intelligence' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    style={{ borderBottom: 'none', marginBottom: 0 }}
+                />
 
-            {activeTab === 'demographics' && <DemographicTab />}
+                <div style={{ paddingBottom: '12px' }}>
+                    <select 
+                        className={styles.select} 
+                        value={countryFilter} 
+                        onChange={(e) => setCountryFilter(e.target.value)}
+                        style={{ height: '36px', minWidth: '200px' }}
+                    >
+                        <option value="all">Global (All Countries)</option>
+                        {countries.map((c: any) => (
+                            <option key={c.code} value={c.code}>{c.display_name} ({c.code})</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {activeTab === 'demographics' && <DemographicTab countryFilter={countryFilter} />}
             {activeTab === 'performance' && <PerformanceTab />}
             {activeTab === 'revenue' && <RevenueTab />}
             {activeTab === 'insights' && <InsightsTab />}

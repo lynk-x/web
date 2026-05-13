@@ -21,7 +21,7 @@ export function useCountries() {
                 const { data, error } = await supabase
                     .from('countries')
                     .select('code, display_name')
-                    .eq('is_active', true)
+                    .eq('status', 'approved')
                     .order('display_name');
 
                 if (error) throw error;
