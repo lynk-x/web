@@ -219,30 +219,7 @@ function SupportContent() {
                 searchPlaceholder="Search reports, feedback, or blocks..." 
                 searchValue={searchTerm} 
                 onSearchChange={setSearchTerm} 
-            >
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    {activeTab === 'reports' && (
-                        <StatusFilterChips
-                            options={['all', 'pending', 'investigating', 'resolved', 'dismissed'].map(f => ({ 
-                                value: f, 
-                                label: f.charAt(0).toUpperCase() + f.slice(1) 
-                            }))}
-                            currentValue={moderationFilter}
-                            onChange={setModerationFilter}
-                        />
-                    )}
-                    {activeTab === 'tickets' && (
-                        <StatusFilterChips
-                            options={['all', 'new', 'investigating', 'resolved', 'dismissed'].map(s => ({ 
-                                value: s, 
-                                label: s.charAt(0).toUpperCase() + s.slice(1) 
-                            }))}
-                            currentValue={feedbackStatusFilter}
-                            onChange={setFeedbackStatusFilter}
-                        />
-                    )}
-                </div>
-            </TableToolbar>
+            />
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>

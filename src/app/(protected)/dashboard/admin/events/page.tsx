@@ -156,11 +156,11 @@ export default function AdminEventsPage() {
                     eventName: e.event_title,
                     messageCount: Number(e.message_count || 0),
                     mediaCount: Number(e.media_count || 0),
+                    channelsCount: Number(e.channels_count || 0),
                     reportsCount: Number(e.reports_count || 0),
                     escalatedCount: Number(e.escalated_reports_count || 0),
                     oldestReportAt: undefined, // Would need joining in RPC for exact date
                     status: (e.forum_status || 'open') as any,
-                    lastActivity: 'Recent',
                     createdAt: e.starts_at // Approximation
                 }));
 

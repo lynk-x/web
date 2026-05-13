@@ -12,13 +12,7 @@ import Modal from '@/components/shared/Modal';
 import Toggle from '@/components/shared/Toggle';
 import type { PlatformPaymentProvider } from '@/types/admin';
 
-export default function PaymentProvidersTab({ 
-    searchTerm = '',
-    setActions
-}: { 
-    searchTerm?: string;
-    setActions: (actions: React.ReactNode) => void;
-}) {
+export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: string }) {
     const { showToast } = useToast();
     const supabase = createClient();
 
@@ -169,6 +163,8 @@ export default function PaymentProvidersTab({
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            <TableToolbar />
+            
             <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                 <DataTable
                     data={filteredData}

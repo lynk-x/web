@@ -111,10 +111,11 @@ export interface ForumThread {
     messageCount: number;
     /** Count of `forum_media` attachments for this forum's event */
     mediaCount: number;
+    /** Count of `forum_channels` associated with this forum */
+    channelsCount: number;
     reportsCount: number;
     escalatedCount: number;
     oldestReportAt?: string;
-    lastActivity: string;
     /** The actual created_at timestamp from the DB, required for partition pruning. */
     createdAt: string;
 }

@@ -98,6 +98,15 @@ const ForumTable: React.FC<ForumTableProps> = ({
             ),
         },
         {
+            header: 'Channels',
+            render: (thread) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{thread.channelsCount}</span>
+                    <span style={{ fontSize: '11px', opacity: 0.5 }}>Rooms</span>
+                </div>
+            ),
+        },
+        {
             header: 'Messages',
             render: (thread) => <div style={{ fontSize: '13px' }}>{thread.messageCount}</div>,
         },
@@ -140,12 +149,6 @@ const ForumTable: React.FC<ForumTableProps> = ({
             render: (thread) => (
                 // forum_status enum: Open | Read_only | Archived
                 <Badge label={formatForumStatus(thread.status)} variant={getStatusVariant(thread.status)} showDot />
-            ),
-        },
-        {
-            header: 'Last Activity',
-            render: (thread) => (
-                <div style={{ fontSize: '13px', opacity: 0.8 }}>{thread.lastActivity}</div>
             ),
         },
     ];

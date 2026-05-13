@@ -24,13 +24,7 @@ export interface SystemConfig {
     updated_at: string;
 }
 
-export default function ConfigTab({ 
-    searchTerm = '', 
-    setActions 
-}: { 
-    searchTerm?: string;
-    setActions: (actions: React.ReactNode) => void;
-}) {
+export default function ConfigTab({ searchTerm = '' }: { searchTerm?: string }) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
@@ -73,15 +67,6 @@ export default function ConfigTab({
     useEffect(() => {
         fetchConfigs();
     }, [fetchConfigs]);
-
-    useEffect(() => {
-        setActions(
-            <button className={adminStyles.btnPrimary} onClick={handleOpenCreate}>
-                Add Config
-            </button>
-        );
-        return () => setActions(null);
-    }, [setActions]);
 
     const handleToggleConfig = async (key: string, currentValue: boolean) => {
         try {
@@ -276,6 +261,12 @@ export default function ConfigTab({
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            <TableToolbar>
+                <button className={adminStyles.btnPrimary} onClick={handleOpenCreate}>
+                    Add Config
+                </button>
+            </TableToolbar>
+
             <BulkActionsBar
                 selectedCount={selectedConfigKeys.size}
                 actions={bulkActions}

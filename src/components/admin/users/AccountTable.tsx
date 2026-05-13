@@ -65,10 +65,6 @@ const AccountTable: React.FC<AccountTableProps> = ({
 
     const columns: Column<AdminAccount>[] = [
         {
-            header: 'Country',
-            render: (acc) => <span style={{ fontSize: '13px', fontWeight: 600 }}>{acc.country_code || 'KE'}</span>,
-        },
-        {
             header: 'Reference',
             render: (acc) => (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -76,6 +72,10 @@ const AccountTable: React.FC<AccountTableProps> = ({
                     <span style={{ fontFamily: 'monospace', fontSize: '11px', opacity: 0.6 }}>{acc.reference}</span>
                 </div>
             ),
+        },
+        {
+            header: 'Country',
+            render: (acc) => <span style={{ fontSize: '13px', fontWeight: 600 }}>{acc.country_code || 'KE'}</span>,
         },
         {
             header: 'Type',

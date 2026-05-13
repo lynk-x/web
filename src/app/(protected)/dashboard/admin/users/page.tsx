@@ -30,9 +30,11 @@ function AccountsContent() {
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [countryFilter, setCountryFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [countries, setCountries] = useState<{ code: string; display_name: string }[]>([]);
     const [activeTab, setActiveTab] = useState('accounts');
     const [kycStatusFilter, setKycStatusFilter] = useState('pending');
     const [startDate, setStartDate] = useState('');
@@ -63,6 +65,7 @@ function AccountsContent() {
                 p_search: debouncedSearch.trim(),
                 p_type: typeFilter,
                 p_status: statusFilter,
+                p_country_code: countryFilter,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -76,7 +79,18 @@ function AccountsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, currentPage]);
+    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, countryFilter, currentPage]);
+
+    const fetchCountries = useCallback(async () => {
+        const { data, error } = await supabase.rpc('get_countries');
+        if (!error && data) {
+            setCountries(data);
+        }
+    }, [supabase]);
+
+    useEffect(() => {
+        fetchCountries();
+    }, [fetchCountries]);
 
     useEffect(() => {
         fetchAccounts();
@@ -89,7 +103,7 @@ function AccountsContent() {
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, typeFilter, statusFilter, startDate, endDate]);
+    }, [debouncedSearch, typeFilter, statusFilter, countryFilter, startDate, endDate]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -169,18 +183,33 @@ function AccountsContent() {
                 onSearchChange={setSearchTerm}
             >
                 {activeTab === 'accounts' && (
-                    <select 
-                        className={adminStyles.filterSelect}
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        style={{ height: '36px', padding: '0 12px' }}
-                    >
-                        <option value="all">All Types</option>
-                        <option value="organizer">Organizers</option>
-                        <option value="advertiser">Advertisers</option>
-                        <option value="pulse_user">Pulse Users</option>
-                        <option value="attendee">Attendees</option>
-                    </select>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <select 
+                            className={adminStyles.filterSelect}
+                            value={countryFilter}
+                            onChange={(e) => setCountryFilter(e.target.value)}
+                            style={{ height: '36px', padding: '0 12px' }}
+                        >
+                            <option value="all">All Countries</option>
+                            {countries.map(c => (
+                                <option key={c.code} value={c.code}>
+                                    {c.display_name} ({c.code})
+                                </option>
+                            ))}
+                        </select>
+                        <select 
+                            className={adminStyles.filterSelect}
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                            style={{ height: '36px', padding: '0 12px' }}
+                        >
+                            <option value="all">All Types</option>
+                            <option value="organizer">Organizers</option>
+                            <option value="advertiser">Advertisers</option>
+                            <option value="pulse_user">Pulse Users</option>
+                            <option value="attendee">Attendees</option>
+                        </select>
+                    </div>
                 )}
                 <DateRangeRow 
                     startDate={startDate}

@@ -39,7 +39,6 @@ function SettingsContent() {
     };
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [tabActions, setTabActions] = useState<React.ReactNode>(null);
 
     const getSearchPlaceholder = () => {
         switch (activeTab) {
@@ -75,13 +74,12 @@ function SettingsContent() {
                 ]}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
-                actions={tabActions}
             />
 
-            {activeTab === 'config' && <ConfigTab searchTerm={searchTerm} setActions={setTabActions} />}
-            {activeTab === 'feature-flags' && <FeatureFlagTab searchTerm={searchTerm} setActions={setTabActions} />}
-            {activeTab === 'payment-providers' && <PaymentProvidersTab searchTerm={searchTerm} setActions={setTabActions} />}
-            {activeTab === 'regions' && <RegionsTab searchTerm={searchTerm} setActions={setTabActions} />}
+            {activeTab === 'config' && <ConfigTab searchTerm={searchTerm} />}
+            {activeTab === 'feature-flags' && <FeatureFlagTab searchTerm={searchTerm} />}
+            {activeTab === 'payment-providers' && <PaymentProvidersTab searchTerm={searchTerm} />}
+            {activeTab === 'regions' && <RegionsTab searchTerm={searchTerm} />}
         </div>
     );
 }
