@@ -1,7 +1,7 @@
 .container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xl);
 }
 
 .page {
@@ -13,7 +13,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
 }
 
 .title {
@@ -35,7 +34,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-xs);
 }
 
 /* Stat Card */
@@ -100,19 +98,98 @@
 
 /* Common Buttons - Prefer using <Button /> component */
 .btnPrimary {
-    composes: btn-primary from global;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    text-decoration: none;
+    outline: none;
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+}
+
+.btnPrimary:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+    box-shadow: 0 4px 12px rgba(32, 249, 40, 0.2);
 }
 
 .btnSecondary {
-    composes: btn-secondary from global;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-interface-outline);
+    color: var(--color-utility-primaryText);
+    text-decoration: none;
+    outline: none;
+}
+
+.btnSecondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-brand-primary);
 }
 
 .btnDanger {
-    composes: btn-danger from global;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: var(--color-interface-error);
+    color: #fff;
+    border: none;
+    text-decoration: none;
+    outline: none;
+}
+
+.btnDanger:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+    box-shadow: 0 4px 12px rgba(255, 77, 77, 0.2);
 }
 
 .btnGhost {
-    composes: btn-ghost from global;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    border: none;
+    text-decoration: none;
+    outline: none;
+}
+
+.btnGhost:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Tabs - Prefer using shared/Tabs component */
@@ -255,19 +332,65 @@
 }
 
 .input {
-    composes: input-base from global;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-interface-outline);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input:focus {
+    border-color: var(--color-brand-primary);
+    background-color: transparent;
+    box-shadow: 0 0 0 2px rgba(32, 249, 40, 0.1);
 }
 
 .label {
-    composes: label-base from global;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-utility-primaryText);
+    opacity: 0.7;
 }
 
 .select {
-    composes: select-base from global;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-interface-outline);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.select:focus {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 2px rgba(32, 249, 40, 0.1);
 }
 
 .textarea {
-    composes: textarea-base from global;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-interface-outline);
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    min-height: 100px;
+}
+
+.textarea:focus {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 2px rgba(32, 249, 40, 0.1);
 }
 
 .form {
@@ -318,7 +441,35 @@
 
 /* Table Styles */
 .table {
-    composes: table-base from global;
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-interface-surface);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--color-interface-outline);
+}
+
+.table th {
+    text-align: left;
+    padding: 16px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.5;
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-interface-outline);
+}
+
+.table td {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--color-utility-primaryText);
+    border-bottom: 1px solid var(--color-interface-outline);
+}
+
+.table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02);
 }
 
 

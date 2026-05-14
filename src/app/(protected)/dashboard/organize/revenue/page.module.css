@@ -31,7 +31,7 @@
 .headerActions {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-xl);
 }
 
 .primaryBtn {
