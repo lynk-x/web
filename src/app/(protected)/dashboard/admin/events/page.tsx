@@ -29,6 +29,8 @@ import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
 import ReportTable from '@/components/admin/moderation/ReportTable';
 import TicketingTab from '@/components/admin/events/ticketing/TicketingTab';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
+import TicketResaleTable from '@/components/admin/events/TicketResaleTable';
+import type { TicketResale } from '@/types/organize';
 import { formatRelativeTime, formatCurrency } from '@/utils/format';
 
 // --- Local Components ---
@@ -98,6 +100,7 @@ export default function AdminEventsPage() {
 
     // Payouts State
     const [payouts, setPayouts] = useState<Payout[]>([]);
+    const [resales, setResales] = useState<TicketResale[]>([]);
     const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
     const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
     const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
@@ -158,6 +161,26 @@ export default function AdminEventsPage() {
             setIsLoading(false);
         }
     }, [supabase, debouncedSearch, startDate, endDate, payoutCountryFilter, currentPage, showToast]);
+
+    const fetchResales = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('get_admin_ticket_resales', {
+                p_search: debouncedSearch,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
+            });
+
+            if (error) throw error;
+            
+            setTotalCount(data?.[0]?.total_count || 0);
+            setResales(data || []);
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, debouncedSearch, currentPage, showToast]);
 
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
@@ -238,7 +261,8 @@ export default function AdminEventsPage() {
     useEffect(() => {
         if (activeTab === 'events') fetchEvents();
         else if (activeTab === 'payouts') fetchPayouts();
-    }, [activeTab, fetchEvents, fetchPayouts]);
+        else if (activeTab === 'ticketing') fetchResales();
+    }, [activeTab, fetchEvents, fetchPayouts, fetchResales]);
 
     useEffect(() => {
         fetchDashboardSummary();
@@ -573,9 +597,9 @@ export default function AdminEventsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="events">Events </TabsTrigger>
+                        <TabsTrigger value="events">Events & Venues</TabsTrigger>
                         <TabsTrigger value="forums">Community Forums</TabsTrigger>
-                        <TabsTrigger value="ticketing">Ticketing Ops</TabsTrigger>
+                        <TabsTrigger value="ticketing">Ticket Resales</TabsTrigger>
                         <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
                     </TabsList>
                     
@@ -660,7 +684,7 @@ export default function AdminEventsPage() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                         selectedIds={selectedForumIds}
-                        onSelect={(id) => {
+                        onSelect={(id: string) => {
                             const next = new Set(selectedForumIds);
                             if (next.has(id)) next.delete(id);
                             else next.add(id);
@@ -695,6 +719,25 @@ export default function AdminEventsPage() {
                     />
                 </TabsContent>
 
+                <TabsContent value="ticketing">
+                    <TicketResaleTable
+                        resales={resales}
+                        isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onViewTicket={(r) => {
+                            showToast(`Viewing ticket ${r.ticket_reference}`, 'info');
+                        }}
+                        onFlagListing={async (r) => {
+                            if (await confirm(`Flag listing ${r.reference} for investigation?`)) {
+                                showToast('Listing flagged and hidden from marketplace.', 'success');
+                                fetchResales();
+                            }
+                        }}
+                    />
+                </TabsContent>
+
                 <TabsContent value="payouts">
                     <BulkActionsBar
                         selectedCount={selectedPayoutIds.size}
@@ -702,7 +745,7 @@ export default function AdminEventsPage() {
                             {
                                 label: 'Approve Selected',
                                 onClick: async () => {
-                                    if (!confirm(`Approve ${selectedPayoutIds.size} payouts?`)) return;
+                                    if (!await confirm(`Approve ${selectedPayoutIds.size} payouts?`)) return;
                                     try {
                                         const { error } = await supabase.rpc('bulk_approve_payouts', {
                                             p_payout_ids: Array.from(selectedPayoutIds)
@@ -737,14 +780,14 @@ export default function AdminEventsPage() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                         selectedIds={selectedPayoutIds}
-                        onSelect={(id) => {
+                        onSelect={(id: string) => {
                             const next = new Set(selectedPayoutIds);
                             if (next.has(id)) next.delete(id);
                             else next.add(id);
                             setSelectedPayoutIds(next);
                         }}
                         onApprove={handleApprovePayout}
-                        onReject={(payout) => {
+                        onReject={(payout: Payout) => {
                             setPendingRejectPayout(payout);
                             setIsPayoutRejectModalOpen(true);
                         }}

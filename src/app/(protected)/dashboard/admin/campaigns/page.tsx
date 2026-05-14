@@ -485,7 +485,7 @@ function CampaignsContent() {
                 </TabsContent>
 
                 <TabsContent value="analytics">
-                    <AdAnalyticsTab />
+                    <AdAnalyticsTab search={debouncedSearch} />
                 </TabsContent>
             </Tabs>
 

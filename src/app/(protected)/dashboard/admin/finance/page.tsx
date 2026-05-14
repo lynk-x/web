@@ -98,6 +98,7 @@ function FinanceContent() {
         escrowTotal: number | null;
         failureRate: number | null;
         failedVolume: number | null;
+        mrr: number | null;
     }
 
     const [globalStats, setGlobalStats] = useState<GlobalFinanceStats>({
@@ -108,7 +109,8 @@ function FinanceContent() {
         payoutRequestCount: null,
         escrowTotal: null,
         failureRate: null,
-        failedVolume: null
+        failedVolume: null,
+        mrr: null
     });
 
     useEffect(() => {
@@ -140,7 +142,8 @@ function FinanceContent() {
                 adRevenue: data.advertising.spend_30d,
                 failureRate: data.finance.failure_rate,
                 failedVolume: data.finance.failed_volume,
-                escrowTotal: data.finance.escrow_total
+                escrowTotal: data.finance.escrow_total,
+                mrr: data.finance.mrr
             });
         } catch (error: unknown) {
             showToast('Failed to load financial aggregates.', 'error');
@@ -549,6 +552,13 @@ function FinanceContent() {
 
             <div className={sharedStyles.statsGrid}>
                 <StatCard 
+                    label="Platform MRR" 
+                    value={globalStats.mrr !== null ? formatCurrency(globalStats.mrr) : null} 
+                    change="Monthly Recurring Revenue"
+                    trend="positive"
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
                     label="Platform Revenue" 
                     value={globalStats.platformRevenue !== null ? formatCurrency(globalStats.platformRevenue) : null} 
                     change="Net commission & fees"
@@ -560,13 +570,6 @@ function FinanceContent() {
                     value={globalStats.pendingPayouts !== null ? formatCurrency(globalStats.pendingPayouts) : null} 
                     change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
                     trend="neutral"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Transaction Health" 
-                    value={globalStats.failureRate !== null ? `${(100 - globalStats.failureRate).toFixed(1)}%` : '—'} 
-                    change={`${globalStats.failureRate}% failure rate`}
-                    trend={(globalStats.failureRate || 0) < 5 ? "positive" : "negative"}
                     isLoading={isStatsLoading} 
                 />
                 <StatCard 

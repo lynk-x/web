@@ -83,34 +83,33 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             ),
         },
         {
-            header: 'Recipient',
+            header: 'Event Name',
+            render: (payout) => (
+                <div style={{ fontWeight: 500, fontSize: '13px' }}>{payout.eventName || 'System Adjustment'}</div>
+            ),
+        },
+        {
+            header: 'Event_ref',
+            render: (payout) => (
+                <div style={{ fontSize: '11px', opacity: 0.5, fontFamily: 'monospace' }}>{payout.eventReference || 'N/A'}</div>
+            ),
+        },
+        {
+            header: 'Wallet_ref',
             render: (payout) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ fontWeight: 500 }}>{payout.recipient}</div>
-                        {payout.is_verified && (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-brand-primary)" style={{ flexShrink: 0 }}>
-                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
-                            </svg>
-                        )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Badge
-                            label={(payout.kyc_status || 'pending').toUpperCase()}
-                            variant={payout.kyc_status === 'approved' ? 'success' : 'neutral'}
-                        />
-                        {payout.kyc_tier && (
-                            <Badge
-                                label={payout.kyc_tier.replace(/_/g, ' ').toUpperCase()}
-                                variant="subtle"
-                            />
-                        )}
-                        {payout.notes && (
-                            <div style={{ fontSize: '11px', opacity: 0.5 }}>{payout.notes}</div>
-                        )}
-                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 500, opacity: 0.9 }}>{payout.wallet || '—'}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.5 }}>Internal Account Wallet</div>
                 </div>
             ),
+        },
+        {
+            header: 'Currency',
+            render: (payout) => (
+                <div style={{ fontWeight: 700, fontSize: '12px', opacity: 0.8 }}>
+                    {payout.currency}
+                </div>
+            )
         },
         {
             header: 'Amount',
@@ -126,28 +125,9 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             ),
         },
         {
-            header: 'Settlement Cause',
+            header: 'Settled At',
             render: (payout) => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ fontWeight: 500, fontSize: '13px' }}>{payout.eventName || 'System Adjustment'}</div>
-                    <div style={{ fontSize: '11px', opacity: 0.5, fontFamily: 'monospace' }}>{payout.eventReference || 'N/A'}</div>
-                    <div style={{ fontSize: '11px', opacity: 0.5, textTransform: 'capitalize' }}>{payout.type?.replace(/_/g, ' ')}</div>
-                </div>
-            ),
-        },
-        {
-            header: 'Destination',
-            render: (payout) => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, opacity: 0.9 }}>{payout.wallet || '—'}</div>
-                    <div style={{ fontSize: '11px', opacity: 0.5 }}>Internal Account Wallet</div>
-                </div>
-            ),
-        },
-        {
-            header: 'Requested',
-            render: (payout) => (
-                <span style={{ fontSize: '13px', opacity: 0.8 }}>{formatDate(payout.requestedAt)}</span>
+                <span style={{ fontSize: '13px', opacity: 0.8 }}>{formatDate(payout.processedAt || payout.requestedAt)}</span>
             ),
         },
         {
@@ -180,11 +160,35 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             );
         }
 
-        actions.push({
-            label: 'View Details',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-            onClick: () => router.push(`/dashboard/admin/finance/payout/${payout.id}?createdAt=${payout.createdAt}`),
-        });
+        actions.push(
+            {
+                label: 'View Event',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+                onClick: () => {
+                    if (payout.eventReference) {
+                        router.push(`/dashboard/admin/events?search=${payout.eventReference}`);
+                    } else {
+                        showToast('No event reference associated with this settlement.', 'warning');
+                    }
+                },
+            },
+            {
+                label: 'View Wallet',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg>,
+                onClick: () => {
+                    if (payout.wallet) {
+                        router.push(`/dashboard/admin/finance?tab=wallets&search=${payout.wallet}`);
+                    } else {
+                        showToast('No destination wallet reference found.', 'warning');
+                    }
+                },
+            },
+            {
+                label: 'View Details',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+                onClick: () => router.push(`/dashboard/admin/finance/payout/${payout.id}?createdAt=${payout.createdAt}`),
+            }
+        );
 
         // Failed payouts can be retried
         if (payout.status === 'failed') {

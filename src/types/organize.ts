@@ -248,3 +248,24 @@ export interface AccountWallet {
     escrow_balance: number;
     updated_at: string;
 }
+
+/** A ticket listed for resale in the marketplace. Aligned with ticketing.ticket_listings. */
+export interface TicketResale {
+    id: string;
+    /** The listing reference (e.g. LST-1001) */
+    reference: string;
+    /** The event reference code */
+    event_reference: string;
+    /** The seller's account reference */
+    seller_reference: string;
+    /** The original ticket reference */
+    ticket_reference: string;
+    /** Currency used for the resale listing */
+    currency: string;
+    /** The price requested by the seller */
+    asking_price: number;
+    /** Date the listing was created */
+    listed_at: string;
+    /** listing_status enum: pending | active | sold | cancelled | expired */
+    status: 'pending' | 'active' | 'sold' | 'cancelled' | 'expired';
+}

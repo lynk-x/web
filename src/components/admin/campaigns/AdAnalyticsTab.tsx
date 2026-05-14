@@ -20,16 +20,18 @@ interface AdvertiserAnalytics {
     avg_cpc: number;
 }
 
-export default function AdAnalyticsTab() {
+interface AdAnalyticsTabProps {
+    search: string;
+}
+
+export default function AdAnalyticsTab({ search }: AdAnalyticsTabProps) {
     const supabase = React.useMemo(() => createClient(), []);
     const { showToast } = useToast();
     
     const [data, setData] = useState<AdvertiserAnalytics[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const debouncedSearch = useDebounce(searchTerm, 500);
     
     const itemsPerPage = 20;
 
@@ -37,7 +39,7 @@ export default function AdAnalyticsTab() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase.rpc('get_admin_advertiser_analytics', {
-                p_search: debouncedSearch,
+                p_search: search,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -50,11 +52,15 @@ export default function AdAnalyticsTab() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, currentPage, showToast]);
+    }, [supabase, search, currentPage, showToast]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
 
     const columns: Column<AdvertiserAnalytics>[] = [
         {
@@ -124,11 +130,6 @@ export default function AdAnalyticsTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <TableToolbar
-                searchPlaceholder="Filter by advertiser..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            />
 
             <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                 <DataTable
