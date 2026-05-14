@@ -192,7 +192,6 @@ function AccountsContent() {
                                 { value: 'all', label: 'All Countries' },
                                 ...countries.map(c => ({ value: c.code, label: `${c.display_name} (${c.code})` }))
                             ]}
-                            style={{ height: '36px' }}
                         />
                         <Select 
                             value={typeFilter}
@@ -204,7 +203,6 @@ function AccountsContent() {
                                 { value: 'pulse_user', label: 'Pulse Users' },
                                 { value: 'attendee', label: 'Attendees' }
                             ]}
-                            style={{ height: '36px' }}
                         />
                     </div>
                 )}

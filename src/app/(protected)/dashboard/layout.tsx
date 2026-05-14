@@ -21,7 +21,7 @@ export default function DashboardLayout({
             <div className={styles.layout}>
                 <Sidebar />
                 <MobileNudge />
-                <main className={styles.main}>
+                <main className={`${styles.main} dashboard-scroll`}>
                     {children}
                 </main>
             </div>

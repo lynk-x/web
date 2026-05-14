@@ -169,10 +169,10 @@ function PerformanceTab() {
     return (
         <div className={styles.tabContent}>
             <div className={styles.statsGrid}>
-                <StatCard label="Search Volume" value={data?.search_count_24h?.toLocaleString() || '0'} change="Last 24 hours" trend="positive" />
+                <StatCard label="Search Volume" value={data?.search_count_24h?.toLocaleString()} change="Last 24 hours" trend="positive" />
                 <StatCard label="Conversion Rate" value="3.2%" change="Optimized" trend="positive" />
                 <StatCard label="Ad Fill Rate" value="88%" change="Stable" trend="neutral" />
-                <StatCard label="Yield Analysis" value={`${Math.round((data?.yield?.[0]?.sell_through_rate || 0))}%`} change="Live" trend="positive" />
+                <StatCard label="Yield Analysis" value={data?.yield?.[0] ? `${Math.round(data.yield[0].sell_through_rate)}%` : null} change="Live" trend="positive" />
             </div>
 
             <div className={styles.splitRow}>

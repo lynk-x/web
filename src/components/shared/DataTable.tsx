@@ -59,7 +59,7 @@ function DataTable<T extends { id: string | number }>({
 
     return (
         <div className={`${styles.tableContainer} ${className}`}>
-            <table className={styles.table}>
+            <table className={`${styles.table} table-sticky-header`}>
                 <thead>
                     <tr>
                         {/* Select-all checkbox */}

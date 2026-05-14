@@ -448,7 +448,6 @@ function CampaignsContent() {
                                     className={adminStyles.filterSelect}
                                     value={adTypeFilter}
                                     onChange={(e) => setAdTypeFilter(e.target.value)}
-                                    style={{ height: '36px', padding: '0 12px' }}
                                 >
                                     <option value="all">All Types</option>
                                     <option value="banner">Banner</option>

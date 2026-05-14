@@ -158,20 +158,24 @@ function RevenueContent() {
                     label="Gross Revenue" 
                     value={formatCurrency(stats.grossRevenue)} 
                     trend="positive"
+                    isLoading={isLoading}
                 />
                 <StatCard 
                     label="Available Balance" 
                     value={formatCurrency(stats.availableBalance)} 
                     change="Spendable"
+                    isLoading={isLoading}
                 />
                 <StatCard 
                     label="Pending Escrow" 
                     value={formatCurrency(stats.pendingEscrow)} 
                     change="Locked"
+                    isLoading={isLoading}
                 />
                 <StatCard 
                     label="Total Paid Out" 
                     value={formatCurrency(stats.totalPaidOut)} 
+                    isLoading={isLoading}
                 />
             </div>
 
