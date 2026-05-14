@@ -4,7 +4,7 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import FilterGroup from '@/components/shared/FilterChips';
+import FilterChips from '@/components/shared/FilterChips';
 import AdsCampaignTable, { AdsCampaign } from '@/components/ads/campaigns/AdsCampaignTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
