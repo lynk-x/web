@@ -602,9 +602,9 @@ function FinanceContent() {
             <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="transactions">Audit Ledger</TabsTrigger>
-                        <TabsTrigger value="wallets">Account Wallets</TabsTrigger>
-                        <TabsTrigger value="subscriptions">User Subscriptions</TabsTrigger>
+                        <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                        <TabsTrigger value="wallets">Wallets</TabsTrigger>
+                        <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
                         <TabsTrigger value="tax-rates">Tax Regions</TabsTrigger>
                         <TabsTrigger value="fx-rates">FX Markets</TabsTrigger>
                         <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
@@ -716,6 +716,16 @@ function FinanceContent() {
                             const sub = subscriptions.find(s => s.id === id);
                             if (sub) handleOpenPlanModal(sub);
                         }}
+                    />
+                </TabsContent>
+
+                <TabsContent value="wallets">
+                    <WalletTable
+                        data={wallets}
+                        isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
                     />
                 </TabsContent>
 

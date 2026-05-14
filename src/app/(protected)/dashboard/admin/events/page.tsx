@@ -140,13 +140,16 @@ export default function AdminEventsPage() {
                 status: p.status,
                 requestedAt: p.created_at,
                 reference: p.reference,
-                bankName: p.bank_name,
+                wallet: p.wallet_reference,
                 type: p.method,
                 kyc_status: p.approval_status,
                 kyc_tier: p.kyc_tier,
                 is_verified: p.is_verified,
                 reporting_amount: p.reporting_amount,
                 reporting_currency: p.reporting_currency,
+                eventName: p.event_title,
+                eventReference: p.event_reference,
+                payableWallet: p.wallet_reference,
                 createdAt: p.created_at
             })));
         } catch (err: unknown) {
@@ -524,6 +527,17 @@ export default function AdminEventsPage() {
             >
                 {activeTab === 'payouts' ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <select 
+                            className={adminStyles.select}
+                            style={{ height: '40px', width: 'fit-content', minWidth: '130px' }}
+                            value={payoutCountryFilter}
+                            onChange={(e) => setPayoutCountryFilter(e.target.value)}
+                        >
+                            <option value="all">All Regions</option>
+                            {countries.map(c => (
+                                <option key={c.code} value={c.code}>{c.name}</option>
+                            ))}
+                        </select>
                         <DateRangeRow 
                             startDate={startDate}
                             endDate={endDate}
@@ -534,17 +548,6 @@ export default function AdminEventsPage() {
                                 setEndDate('');
                             }}
                         />
-                        <select 
-                            className={adminStyles.select}
-                            style={{ height: '40px' }}
-                            value={payoutCountryFilter}
-                            onChange={(e) => setPayoutCountryFilter(e.target.value)}
-                        >
-                            <option value="all">All Regions</option>
-                            {countries.map(c => (
-                                <option key={c.code} value={c.code}>{c.name}</option>
-                            ))}
-                        </select>
                     </div>
                 ) : (
                     <DateRangeRow 
@@ -570,7 +573,7 @@ export default function AdminEventsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="events">Live Events</TabsTrigger>
+                        <TabsTrigger value="events">Events </TabsTrigger>
                         <TabsTrigger value="forums">Community Forums</TabsTrigger>
                         <TabsTrigger value="ticketing">Ticketing Ops</TabsTrigger>
                         <TabsTrigger value="payouts">Payout Requests</TabsTrigger>

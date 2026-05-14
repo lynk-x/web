@@ -126,6 +126,25 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             ),
         },
         {
+            header: 'Settlement Cause',
+            render: (payout) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ fontWeight: 500, fontSize: '13px' }}>{payout.eventName || 'System Adjustment'}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.5, fontFamily: 'monospace' }}>{payout.eventReference || 'N/A'}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.5, textTransform: 'capitalize' }}>{payout.type?.replace(/_/g, ' ')}</div>
+                </div>
+            ),
+        },
+        {
+            header: 'Destination',
+            render: (payout) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 500, opacity: 0.9 }}>{payout.wallet || '—'}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.5 }}>Internal Account Wallet</div>
+                </div>
+            ),
+        },
+        {
             header: 'Requested',
             render: (payout) => (
                 <span style={{ fontSize: '13px', opacity: 0.8 }}>{formatDate(payout.requestedAt)}</span>

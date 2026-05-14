@@ -62,7 +62,7 @@ export default function WalletTable({
             )
         },
         {
-            header: 'Account',
+            header: 'Account Name',
             render: (w) => (
                 <div>
                     <div style={{ fontWeight: 600 }}>{w.account_name}</div>
@@ -71,7 +71,7 @@ export default function WalletTable({
             )
         },
         {
-            header: 'Type',
+            header: 'Account Type',
             render: (w) => <Badge label={w.account_type.replace(/_/g, ' ')} variant={getAccountTypeVariant(w.account_type)} />
         },
         {
