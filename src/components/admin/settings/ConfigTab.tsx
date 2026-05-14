@@ -24,14 +24,21 @@ export interface SystemConfig {
     updated_at: string;
 }
 
-export default function ConfigTab({ searchTerm = '' }: { searchTerm?: string }) {
+export default function ConfigTab({
+    searchTerm = '',
+    statusFilter = 'all',
+    triggerCreate = 0
+}: {
+    searchTerm?: string;
+    statusFilter?: string;
+    triggerCreate?: number;
+}) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
 
     const [configs, setConfigs] = useState<SystemConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('all');
     const [selectedConfigKeys, setSelectedConfigKeys] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
@@ -90,7 +97,7 @@ export default function ConfigTab({ searchTerm = '' }: { searchTerm?: string }) 
         }
     };
 
-    const handleOpenCreate = () => {
+    const handleOpenCreate = useCallback(() => {
         setEditingConfig(null);
         setFormValues({
             key: '',
@@ -100,7 +107,11 @@ export default function ConfigTab({ searchTerm = '' }: { searchTerm?: string }) 
             is_active: true
         });
         setIsModalOpen(true);
-    };
+    }, []);
+
+    useEffect(() => {
+        if (triggerCreate > 0) handleOpenCreate();
+    }, [triggerCreate, handleOpenCreate]);
 
     const handleOpenEdit = (config: SystemConfig) => {
         setEditingConfig(config);
@@ -261,11 +272,6 @@ export default function ConfigTab({ searchTerm = '' }: { searchTerm?: string }) 
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar>
-                <button className={adminStyles.btnPrimary} onClick={handleOpenCreate}>
-                    Add Config
-                </button>
-            </TableToolbar>
 
             <BulkActionsBar
                 selectedCount={selectedConfigKeys.size}

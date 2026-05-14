@@ -39,6 +39,8 @@ function SettingsContent() {
     };
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [triggerCreate, setTriggerCreate] = useState(0);
 
     const getSearchPlaceholder = () => {
         switch (activeTab) {
@@ -47,6 +49,14 @@ function SettingsContent() {
             case 'payment-providers': return 'Search providers...';
             case 'regions': return 'Search regions...';
             default: return 'Search...';
+        }
+    };
+
+    const getTabActionLabel = () => {
+        switch (activeTab) {
+            case 'config': return 'Add Config';
+            case 'feature-flags': return 'Create Flag';
+            default: return null;
         }
     };
 
@@ -63,29 +73,52 @@ function SettingsContent() {
                 searchPlaceholder={getSearchPlaceholder()}
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            />
+            >
+                {getTabActionLabel() && (
+                    <button
+                        className={adminStyles.btnPrimary}
+                        onClick={() => setTriggerCreate(prev => prev + 1)}
+                    >
+                        {getTabActionLabel()}
+                    </button>
+                )}
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <div className={adminStyles.tabsHeaderRow}>
+                <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none' }}>
                     <TabsList>
                         <TabsTrigger value="config">System Config</TabsTrigger>
                         <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
                         <TabsTrigger value="payment-providers">Payment Providers</TabsTrigger>
                         <TabsTrigger value="regions">Supported Regions</TabsTrigger>
                     </TabsList>
+
+                    {['config', 'regions'].includes(activeTab) && (
+                        <div className={adminStyles.filterGroup} style={{ marginBottom: 0 }}>
+                            {[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }].map(({ value, label }) => (
+                                <button
+                                    key={value}
+                                    className={`${adminStyles.chip} ${statusFilter === value ? adminStyles.chipActive : ''}`}
+                                    onClick={() => setStatusFilter(value)}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <TabsContent value="config">
-                    <ConfigTab searchTerm={searchTerm} />
+                    <ConfigTab searchTerm={searchTerm} statusFilter={statusFilter} triggerCreate={triggerCreate} />
                 </TabsContent>
                 <TabsContent value="feature-flags">
-                    <FeatureFlagTab searchTerm={searchTerm} />
+                    <FeatureFlagTab searchTerm={searchTerm} triggerCreate={triggerCreate} />
                 </TabsContent>
                 <TabsContent value="payment-providers">
                     <PaymentProvidersTab searchTerm={searchTerm} />
                 </TabsContent>
                 <TabsContent value="regions">
-                    <RegionsTab searchTerm={searchTerm} />
+                    <RegionsTab searchTerm={searchTerm} statusFilter={statusFilter} />
                 </TabsContent>
             </Tabs>
         </div>

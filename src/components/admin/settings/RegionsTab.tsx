@@ -25,12 +25,17 @@ interface Country {
     info: any;
 }
 
-export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string }) {
+export default function RegionsTab({
+    searchTerm = '',
+    statusFilter = 'all'
+}: {
+    searchTerm?: string;
+    statusFilter?: string;
+}) {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
     const [countries, setCountries] = useState<Country[]>([]);
-    const [countryStatusFilter, setCountryStatusFilter] = useState('all');
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [isEditing, setIsEditing] = useState<Country | null>(null);
@@ -140,9 +145,9 @@ export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string })
             c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.code.toLowerCase().includes(searchTerm.toLowerCase());
         const matchStatus =
-            countryStatusFilter === 'all' ||
-            (countryStatusFilter === 'active' && c.is_active) ||
-            (countryStatusFilter === 'inactive' && !c.is_active);
+            statusFilter === 'all' ||
+            (statusFilter === 'active' && c.is_active) ||
+            (statusFilter === 'inactive' && !c.is_active);
         return matchSearch && matchStatus;
     });
 
@@ -154,7 +159,7 @@ export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string })
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, countryStatusFilter]);
+    }, [searchTerm, statusFilter]);
 
     const columns: Column<Country>[] = [
         {
@@ -207,19 +212,6 @@ export default function RegionsTab({ searchTerm = '' }: { searchTerm?: string })
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }].map(({ value, label }) => (
-                        <button
-                            key={value}
-                            className={`${adminStyles.chip} ${countryStatusFilter === value ? adminStyles.chipActive : ''}`}
-                            onClick={() => setCountryStatusFilter(value)}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </TableToolbar>
             <DataTable<Country>
                 data={paginated}
                 columns={columns}

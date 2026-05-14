@@ -28,9 +28,9 @@ function CommunicationsContent() {
     const { confirm, ConfirmDialog } = useConfirmModal();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = (searchParams.get('tab') as string) || 'spotlights';
+    const initialTab = (searchParams.get('tab') as string) || 'broadcast';
     const [activeTab, setActiveTab] = useState<'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights'>(
-        ['content', 'broadcast', 'legal', 'banners', 'spotlights'].includes(initialTab) ? initialTab as 'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights' : 'spotlights'
+        ['content', 'broadcast', 'legal', 'banners', 'spotlights'].includes(initialTab) ? initialTab as 'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights' : 'broadcast'
     );
 
     useEffect(() => {
@@ -63,7 +63,6 @@ function CommunicationsContent() {
 
     // ─── Content State & Search ──────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
-    const [broadcastSearch, setBroadcastSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
@@ -88,7 +87,7 @@ function CommunicationsContent() {
 
             const [spotlightsRes, broadcastRes, bannerRes, contentRes, legalRes] = await Promise.all([
                 supabase.rpc('get_admin_comms_data', { p_tab: 'spotlights' }),
-                supabase.rpc('get_admin_comms_data', { p_tab: 'broadcast', p_params: { search: broadcastSearch } }),
+                supabase.rpc('get_admin_comms_data', { p_tab: 'broadcast', p_params: { search: searchTerm } }),
                 supabase.rpc('get_admin_comms_data', { p_tab: 'banners' }),
                 supabase.rpc('get_admin_comms_data', { p_tab: 'content', p_params: cmsParams }),
                 supabase.rpc('get_admin_comms_data', { p_tab: 'legal', p_params: legalParams })
@@ -122,7 +121,7 @@ function CommunicationsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, currentPage, itemsPerPage, legalDocPage, legalDocsPerPage, searchTerm, typeFilter, statusFilter, broadcastSearch]);
+    }, [supabase, showToast, currentPage, itemsPerPage, legalDocPage, legalDocsPerPage, searchTerm, typeFilter, statusFilter]);
 
     useEffect(() => {
         fetchData();
@@ -229,9 +228,6 @@ function CommunicationsContent() {
         { label: 'Delete Selected', onClick: () => handleBulkAction('delete'), variant: 'danger' }
     ];
 
-    // ─── Broadcast Logs Handling ───────────────────────────────────────────
-    const filteredBroadcasts = broadcastLogs;
-
     const broadcastColumns: Column<BroadcastLog>[] = [
         {
             header: 'Subject',
@@ -255,11 +251,100 @@ function CommunicationsContent() {
             ),
         },
         {
-            header: 'Sent Date',
+            header: 'Date Sent',
             render: (log) => (
-                <div style={{ fontSize: '12px', opacity: 0.6 }}>{new Date(log.created_at).toLocaleString()}</div>
+                <div style={{ fontSize: '13px', opacity: 0.7 }}>
+                    {new Date(log.created_at).toLocaleDateString()}
+                </div>
             ),
-        }
+        },
+    ];
+
+    const spotlightColumns: Column<Spotlight>[] = [
+        {
+            header: 'Hero Content',
+            render: (s) => (
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    {s.background_url && (
+                        <div style={{ width: '60px', height: '36px', borderRadius: '4px', background: `url(${s.background_url}) no-repeat center`, backgroundSize: 'cover' }} />
+                    )}
+                    <div>
+                        <div style={{ fontWeight: 600 }}>{s.title}</div>
+                        <div style={{ fontSize: '12px', opacity: 0.6 }}>Order: {s.display_order}</div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            header: 'Target Segment',
+            render: (s) => <Badge label={(s.target || 'all').replace('_', ' ')} variant="neutral" />,
+        },
+        {
+            header: 'Status',
+            render: (s) => (
+                <Badge
+                    label={s.is_active ? 'Visible' : 'Hidden'}
+                    variant={s.is_active ? 'success' : 'neutral'}
+                    showDot={s.is_active}
+                />
+            ),
+        },
+        {
+            header: 'Actions',
+            render: (s) => (
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/spotlights/edit/${s.id}`)}>Edit</button>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleToggleSpotlight(s)}>
+                        {s.is_active ? 'Hide' : 'Show'}
+                    </button>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteSpotlight(s.id)}>
+                        Delete
+                    </button>
+                </div>
+            ),
+        },
+    ];
+
+    const bannerColumns: Column<SystemBanner>[] = [
+        {
+            header: 'Banner Info',
+            render: (banner) => (
+                <div>
+                    <div style={{ fontWeight: 600 }}>{banner.title}</div>
+                    <div style={{ fontSize: '12px', opacity: 0.6 }}>
+                        {new Date(banner.starts_at).toLocaleDateString()} {banner.ends_at ? `- ${new Date(banner.ends_at).toLocaleDateString()}` : '(Ongoing)'}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            header: 'Visual Type',
+            render: (banner) => <Badge label={banner.type.toUpperCase()} variant={banner.type as any} />,
+        },
+        {
+            header: 'Status',
+            render: (banner) => (
+                <Badge
+                    label={banner.is_active ? 'Live' : 'Inactive'}
+                    variant={banner.is_active ? 'success' : 'neutral'}
+                    showDot={banner.is_active}
+                />
+            ),
+        },
+        {
+            header: 'Actions',
+            render: (banner) => (
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/banners/edit/${banner.id}`)}>Edit</button>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleToggleBanner(banner)}>
+                        {banner.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteBanner(banner.id)}>
+                        Delete
+                    </button>
+                </div>
+            ),
+        },
     ];
 
     // ─── Banner Logic ───
@@ -333,30 +418,11 @@ function CommunicationsContent() {
     return (
         <div className={adminStyles.container}>
             {ConfirmDialog}
-            <header className={adminStyles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <header className={adminStyles.header}>
                 <div>
                     <h1 className={adminStyles.title}>Communications</h1>
                     <p className={adminStyles.subtitle}>Manage platform content, spotlights and notifications.</p>
                 </div>
-                <button
-                    className={adminStyles.btnPrimary}
-                    onClick={() => {
-                        if (activeTab === 'spotlights') router.push('/dashboard/admin/communications/spotlights/create');
-                        else if (activeTab === 'content') router.push('/dashboard/admin/communications/create');
-                        else if (activeTab === 'legal') router.push('/dashboard/admin/communications/legal/new');
-                        else if (activeTab === 'broadcast') router.push('/dashboard/admin/communications/broadcast/create');
-                        else router.push('/dashboard/admin/communications/banners/create');
-                    }}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    {activeTab === 'spotlights' ? 'New Spotlight' :
-                        activeTab === 'content' ? 'New Content' :
-                            activeTab === 'legal' ? 'New Version' :
-                                activeTab === 'broadcast' ? 'New Broadcast' : 'Create Banner'}
-                </button>
             </header>
 
             <div className={adminStyles.statsGrid}>
@@ -390,156 +456,105 @@ function CommunicationsContent() {
                 />
             </div>
 
+            <div style={{ marginBottom: '24px' }}>
+                <TableToolbar
+                    searchPlaceholder={
+                        activeTab === 'content' ? "Search by title or slug..." :
+                            activeTab === 'broadcast' ? "Search history..." :
+                                "Search content..."
+                    }
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                >
+                    <button
+                        className={adminStyles.btnPrimary}
+                        onClick={() => {
+                            if (activeTab === 'spotlights') router.push('/dashboard/admin/communications/spotlights/new');
+                            else if (activeTab === 'content') router.push('/dashboard/admin/communications/create');
+                            else if (activeTab === 'legal') router.push('/dashboard/admin/communications/legal/new');
+                            else if (activeTab === 'broadcast') router.push('/dashboard/admin/communications/broadcast/create');
+                            else router.push('/dashboard/admin/communications/banners/create');
+                        }}
+                        style={{ whiteSpace: 'nowrap' }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        {activeTab === 'spotlights' ? 'New Spotlight' :
+                            activeTab === 'content' ? 'New Content' :
+                                activeTab === 'legal' ? 'New Version' :
+                                    activeTab === 'broadcast' ? 'New Broadcast' : 'Create Banner'}
+                    </button>
+                </TableToolbar>
+            </div>
+
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <div className={adminStyles.tabsHeaderRow}>
+                <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none' }}>
                     <TabsList>
-                        <TabsTrigger value="spotlights">Hero Spotlights</TabsTrigger>
                         <TabsTrigger value="broadcast">Broadcasts</TabsTrigger>
+                        <TabsTrigger value="spotlights">Spotlights</TabsTrigger>
                         <TabsTrigger value="banners">Alert Banners</TabsTrigger>
                         <TabsTrigger value="content">Info Pages</TabsTrigger>
                         <TabsTrigger value="legal">Legals</TabsTrigger>
                     </TabsList>
-                </div>
-            </Tabs>
 
-            {/* ─── TAB: SPOTLIGHTS ─── */}
-            {activeTab === 'spotlights' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-                    <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Hero Spotlights</h2>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {spotlights.map(s => (
-                                <div key={s.id} className={adminStyles.statCard} style={{
-                                    cursor: 'default',
-                                    display: 'grid',
-                                    gridTemplateColumns: 'minmax(200px, 1fr) auto auto',
-                                    alignItems: 'center',
-                                    gap: '20px',
-                                    padding: '16px 24px',
-                                    background: 'var(--color-interface-surface)',
-                                    overflow: 'hidden'
-                                }}>
-                                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                        {s.background_url && (
-                                            <div style={{ width: '60px', height: '40px', borderRadius: '4px', background: `url(${s.background_url}) no-repeat center`, backgroundSize: 'cover' }} />
-                                        )}
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: '15px' }}>{s.title}</div>
-                                            <div style={{ fontSize: '12px', opacity: 0.6, textTransform: 'uppercase' }}>{(s.target || 'all').replace('_', ' ')} • Order: {s.display_order}</div>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <Badge
-                                            label={s.is_active ? 'Visible' : 'Hidden'}
-                                            variant={s.is_active ? 'success' : 'neutral'}
-                                            showDot={s.is_active}
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/spotlights/edit/${s.id}`)}>Edit</button>
-                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: s.is_active ? 'var(--color-interface-error)' : 'var(--color-interface-success)' }} onClick={() => handleToggleSpotlight(s)}>
-                                            {s.is_active ? 'Hide' : 'Show'}
-                                        </button>
-                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteSpotlight(s.id)}>
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            {spotlights.length === 0 && !isLoading && (
-                                <div style={{ textAlign: 'center', padding: '16px 0', opacity: 0.5 }}>No spotlights configured yet.</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── TAB: BROADCAST ─── */}
-            {activeTab === 'broadcast' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-                    <TableToolbar searchPlaceholder="Search history..." searchValue={broadcastSearch} onSearchChange={setBroadcastSearch} />
-                    <DataTable<BroadcastLog> data={filteredBroadcasts} columns={broadcastColumns} emptyMessage="No broadcast history found." isLoading={isLoading} />
-                </div>
-            )}
-
-            {/* ─── TAB: SYSTEM BANNERS ─── */}
-            {activeTab === 'banners' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-                    <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Active & Scheduled Banners</h2>
-
-                        {liveBanner && (
-                            <div style={{ marginBottom: '32px', padding: '16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-interface-outline)' }}>
-                                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.5, marginBottom: '12px', fontWeight: 600 }}>Live Banner Highlight</div>
-                                <div style={{
-                                    padding: '16px',
-                                    background: liveBanner.type === 'error' ? 'rgba(255, 77, 77, 0.08)' : liveBanner.type === 'warning' ? 'rgba(255, 193, 7, 0.08)' : 'rgba(32, 249, 40, 0.08)',
-                                    borderLeft: `4px solid var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})`,
-                                    borderRadius: '4px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px'
-                                }}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={`var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})`} strokeWidth="2">
-                                        {liveBanner.type === 'success' ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="10" />}
-                                    </svg>
-                                    <div style={{ fontSize: '14px' }}>
-                                        <strong style={{ color: `var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})` }}>{liveBanner.title}:</strong> {liveBanner.content}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {banners.map(banner => (
-                                <div key={banner.id} className={adminStyles.statCard} style={{ cursor: 'default', display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '20px', padding: '16px 24px' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 600, fontSize: '15px' }}>{banner.title}</div>
-                                        <div style={{ fontSize: '13px', opacity: 0.6 }}>
-                                            {new Date(banner.starts_at).toLocaleDateString()} {banner.ends_at ? `- ${new Date(banner.ends_at).toLocaleDateString()}` : '(Ongoing)'}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <Badge label={banner.type.toUpperCase()} variant={banner.type as 'info' | 'warning' | 'success' | 'error'} />
-                                        <Badge
-                                            label={banner.is_active ? 'Live' : 'Inactive'}
-                                            variant={banner.is_active ? 'success' : 'neutral'}
-                                            showDot={banner.is_active}
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/banners/edit/${banner.id}`)}>Edit</button>
-                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: banner.is_active ? '#ff4d4d' : 'inherit' }} onClick={() => handleToggleBanner(banner)}>
-                                            {banner.is_active ? 'Deactivate' : 'Activate'}
-                                        </button>
-                                        <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px', color: '#ff4d4d' }} onClick={() => handleDeleteBanner(banner.id)}>
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            {banners.length === 0 && !isLoading && (
-                                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5, border: '1px dashed var(--color-interface-outline)', borderRadius: '12px' }}>
-                                    No banners configured or scheduled yet.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── TAB: CONTENT ─── */}
-            {activeTab === 'content' && (
-                <>
-                    <TableToolbar searchPlaceholder="Search by title or slug..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
-                        <div className={adminStyles.filterGroup}>
+                    {activeTab === 'content' && (
+                        <div className={adminStyles.filterGroup} style={{ marginBottom: 0 }}>
                             {['all', 'page', 'post', 'announcement'].map(type => (
                                 <button key={type} className={`${adminStyles.chip} ${typeFilter === type ? adminStyles.chipActive : ''}`} onClick={() => setTypeFilter(type)}>
                                     {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1) + 's'}
                                 </button>
                             ))}
                         </div>
-                    </TableToolbar>
+                    )}
+                </div>
+
+                {/* ─── TAB: SPOTLIGHTS ─── */}
+                {activeTab === 'spotlights' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+                        <DataTable<Spotlight> data={spotlights} columns={spotlightColumns} emptyMessage="No spotlights configured yet." isLoading={isLoading} />
+                    </div>
+                )}
+
+                {/* ─── TAB: BROADCAST ─── */}
+                {activeTab === 'broadcast' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+                        <DataTable<BroadcastLog> data={broadcastLogs} columns={broadcastColumns} emptyMessage="No broadcast history found." isLoading={isLoading} />
+                    </div>
+                )}
+
+            {/* ─── TAB: SYSTEM BANNERS ─── */}
+            {activeTab === 'banners' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+                    {liveBanner && (
+                        <div className={adminStyles.pageCard} style={{ padding: '16px', border: '1px solid var(--color-interface-outline)', background: 'rgba(255, 255, 255, 0.02)' }}>
+                            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.5, marginBottom: '12px', fontWeight: 600 }}>Live Banner Highlight</div>
+                            <div style={{
+                                padding: '16px',
+                                background: liveBanner.type === 'error' ? 'rgba(255, 77, 77, 0.08)' : liveBanner.type === 'warning' ? 'rgba(255, 193, 7, 0.08)' : 'rgba(32, 249, 40, 0.08)',
+                                borderLeft: `4px solid var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})`,
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px'
+                            }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={`var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})`} strokeWidth="2">
+                                    {liveBanner.type === 'success' ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="10" />}
+                                </svg>
+                                <div style={{ fontSize: '14px' }}>
+                                    <strong style={{ color: `var(--color-brand-${liveBanner.type === 'info' ? 'primary' : liveBanner.type})` }}>{liveBanner.title}:</strong> {liveBanner.content}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DataTable<SystemBanner> data={banners} columns={bannerColumns} emptyMessage="No banners configured yet." isLoading={isLoading} />
+                </div>
+            )}
+
+
+            {activeTab === 'content' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
 
                     <BulkActionsBar selectedCount={selectedContentIds.size} actions={bulkActions} onCancel={() => setSelectedContentIds(new Set())} itemTypeLabel="items" />
 
@@ -553,20 +568,21 @@ function CommunicationsContent() {
                         onPageChange={setCurrentPage}
                         isLoading={isLoading}
                     />
-                </>
+                </div>
             )}
 
-            {/* ─── TAB: LEGAL DOCUMENTS ─── */}
-            {activeTab === 'legal' && (
-                <LegalDocTable
-                    documents={paginatedLegalDocs}
-                    currentPage={legalDocPage}
-                    totalPages={totalLegalPages}
-                    onPageChange={setLegalDocPage}
-                    onSetActive={handleToggleLegalActive}
-                    isLoading={isLoading}
-                />
-            )}
+                {/* ─── TAB: LEGAL DOCUMENTS ─── */}
+                {activeTab === 'legal' && (
+                    <LegalDocTable
+                        documents={paginatedLegalDocs}
+                        currentPage={legalDocPage}
+                        totalPages={totalLegalPages}
+                        onPageChange={setLegalDocPage}
+                        onSetActive={handleToggleLegalActive}
+                        isLoading={isLoading}
+                    />
+                )}
+            </Tabs>
         </div>
     );
 }

@@ -163,7 +163,6 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <TableToolbar />
             
             <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                 <DataTable
