@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
-import FilterGroup from '@/components/shared/FilterChips';
+import FilterChips from '@/components/shared/FilterChips';
 import KycVerificationTable from '@/components/admin/users/KycVerificationTable';
 import KycDetailModal from '@/components/admin/users/KycDetailModal';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';

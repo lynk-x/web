@@ -3,7 +3,7 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import StatusFilterChips from '@/components/shared/FilterChips';
+import FilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';

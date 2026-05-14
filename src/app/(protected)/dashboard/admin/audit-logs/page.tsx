@@ -9,7 +9,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
-import StatusFilterChips from '@/components/shared/FilterChips';
+import FilterChips from '@/components/shared/FilterChips';
 import SystemJobsTab from '@/components/admin/audit/SystemJobsTab';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';

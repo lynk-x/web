@@ -13,9 +13,9 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
-import FilterGroup from '@/components/shared/FilterChips';
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
-import StatusFilterChips from '@/components/shared/FilterChips';
+import FilterChips from '@/components/shared/FilterChips';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
 import { createClient } from '@/utils/supabase/client';
