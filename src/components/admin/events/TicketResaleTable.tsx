@@ -14,6 +14,9 @@ interface TicketResaleTableProps {
     onPageChange: (page: number) => void;
     onViewTicket?: (resale: TicketResale) => void;
     onFlagListing?: (resale: TicketResale) => void;
+    selectedIds?: Set<string>;
+    onSelect?: (id: string) => void;
+    onSelectAll?: () => void;
 }
 
 const TicketResaleTable: React.FC<TicketResaleTableProps> = ({
@@ -24,6 +27,9 @@ const TicketResaleTable: React.FC<TicketResaleTableProps> = ({
     onPageChange,
     onViewTicket,
     onFlagListing,
+    selectedIds,
+    onSelect,
+    onSelectAll,
 }) => {
     
     const getStatusVariant = (status: TicketResale['status']) => {
@@ -123,6 +129,9 @@ const TicketResaleTable: React.FC<TicketResaleTableProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={onPageChange}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
             emptyMessage="No ticket resales found."
         />
     );

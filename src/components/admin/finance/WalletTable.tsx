@@ -24,6 +24,9 @@ interface WalletTableProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    selectedIds?: Set<string>;
+    onSelect?: (id: string) => void;
+    onSelectAll?: () => void;
 }
 
 export default function WalletTable({
@@ -31,7 +34,10 @@ export default function WalletTable({
     isLoading,
     currentPage,
     totalPages,
-    onPageChange
+    onPageChange,
+    selectedIds,
+    onSelect,
+    onSelectAll
 }: WalletTableProps) {
 
     const getStatusVariant = (status: string): BadgeVariant => {
@@ -140,6 +146,9 @@ export default function WalletTable({
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={onPageChange}
+                selectedIds={selectedIds}
+                onSelect={onSelect}
+                onSelectAll={onSelectAll}
                 emptyMessage="No account wallets found."
             />
         </div>

@@ -21,6 +21,7 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import type { FinanceTransaction } from '@/types/organize';
@@ -33,13 +34,14 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 function FinanceContent() {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
     const { enabled: isPayoutMgmtEnabled } = useFeatureFlag('enable_payout_management');
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'transactions');
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'wallets');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -62,8 +64,8 @@ function FinanceContent() {
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [wallets, setWallets] = useState<AdminWallet[]>([]);
 
-    // Selection state
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
+    const [selectedWalletIds, setSelectedWalletIds] = useState<Set<string>>(new Set());
 
     // Tax Modal state
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
@@ -441,7 +443,7 @@ function FinanceContent() {
     };
 
     const handleCancelSubscription = async (id: string) => {
-        if (!confirm('Are you sure you want to cancel this subscription? Immediate cancellation will terminate access.')) return;
+        if (!await confirm('Are you sure you want to cancel this subscription? Immediate cancellation will terminate access.')) return;
         
         showToast('Cancelling subscription...', 'info');
         try {
@@ -529,6 +531,26 @@ function FinanceContent() {
                 }
             ];
         }
+
+        if (activeTab === 'wallets' && selectedWalletIds.size > 0) {
+            return [
+                {
+                    label: 'Freeze Selected',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+                    onClick: async () => {
+                        if (!await confirm(`Freeze ${selectedWalletIds.size} wallets?`)) return;
+                        showToast(`Freezing ${selectedWalletIds.size} wallets...`, 'info');
+                        // Simulation of bulk action
+                        setTimeout(() => {
+                            showToast(`Successfully frozen ${selectedWalletIds.size} wallets.`, 'success');
+                            setSelectedWalletIds(new Set());
+                            fetchData();
+                        }, 800);
+                    },
+                    variant: 'danger'
+                }
+            ];
+        }
         return [];
     };
     
@@ -605,9 +627,9 @@ function FinanceContent() {
             <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="transactions">Transactions</TabsTrigger>
                         <TabsTrigger value="wallets">Wallets</TabsTrigger>
                         <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+                        <TabsTrigger value="transactions">Transactions</TabsTrigger>
                         <TabsTrigger value="tax-rates">Tax Regions</TabsTrigger>
                         <TabsTrigger value="fx-rates">FX Markets</TabsTrigger>
                         <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
@@ -688,19 +710,20 @@ function FinanceContent() {
                     </div>
                 </div>
 
-                <TabsContent value="transactions">
-                    <FinanceTable
-                        transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
-                        selectedIds={selectedTxIds}
-                        onSelect={(id) => {
-                            const next = new Set(selectedTxIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
-                            setSelectedTxIds(next);
-                        }}
-                        onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
+                <TabsContent value="wallets">
+                    <WalletTable
+                        data={wallets}
+                        isLoading={isLoading}
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
+                        selectedIds={selectedWalletIds}
+                        onSelect={(id: string) => {
+                            const next = new Set(selectedWalletIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedWalletIds(next);
+                        }}
+                        onSelectAll={() => setSelectedWalletIds(selectedWalletIds.size === wallets.length ? new Set() : new Set(wallets.map(w => `${w.account_id}_${w.currency}`)))}
                     />
                 </TabsContent>
 
@@ -722,10 +745,16 @@ function FinanceContent() {
                     />
                 </TabsContent>
 
-                <TabsContent value="wallets">
-                    <WalletTable
-                        data={wallets}
-                        isLoading={isLoading}
+                <TabsContent value="transactions">
+                    <FinanceTable
+                        transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
+                        selectedIds={selectedTxIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedTxIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedTxIds(next);
+                        }}
+                        onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
@@ -777,10 +806,12 @@ function FinanceContent() {
                 actions={getBulkActions()}
                 selectedCount={
                     activeTab === 'promo-codes' ? selectedPromoIds.size : 
+                    activeTab === 'wallets' ? selectedWalletIds.size :
                     0
                 }
                 onCancel={() => {
                     setSelectedPromoIds(new Set());
+                    setSelectedWalletIds(new Set());
                 }}
             />
 
