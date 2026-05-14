@@ -13,10 +13,12 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import MemberTable from '@/components/features/members/MemberTable';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
+import WalletsTable from '@/components/features/finance/WalletsTable';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
 import Textarea from '@/components/shared/Textarea';
+import type { AccountWallet } from '@/types/organize';
 
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
@@ -35,6 +37,8 @@ function AdsSettingsContent() {
     const [isSaving, setIsSaving] = useState(false);
     const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
     const [isDeactivating, setIsDeactivating] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [wallets, setWallets] = useState<AccountWallet[]>([]);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -67,6 +71,7 @@ function AdsSettingsContent() {
         if (isOrgLoading || !activeAccount) return;
 
         const fetchAllData = async () => {
+            setIsLoading(true);
             try {
                 const { data, error } = await supabase.rpc('get_advertiser_account_settings', {
                     p_account_id: activeAccount.id
@@ -82,16 +87,19 @@ function AdsSettingsContent() {
                     description: profile.description || '',
                     support_email: profile.contact_email || '',
                     primary_contact: profile.phone_number || '',
-                address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
-                town: ba.town || '',
-                city: ba.city || '',
-                country: ba.country || data.account?.country_code || ''
-            };
+                    address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
+                    town: ba.town || '',
+                    city: ba.city || '',
+                    country: ba.country || data.account?.country_code || ''
+                };
 
                 setFormData(newValues);
                 setInitialFormData(newValues);
+                setWallets((data.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
             } catch (err) {
                 showToast(getErrorMessage(err) || 'Failed to sync your account settings.', 'error');
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -193,7 +201,7 @@ function AdsSettingsContent() {
                     <TabsList>
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="team">Team Members</TabsTrigger>
-                        <TabsTrigger value="billing">Billing</TabsTrigger>
+                        <TabsTrigger value="billing">Billing & Wallet</TabsTrigger>
                         <TabsTrigger value="danger-zone">Danger Zone</TabsTrigger>
                     </TabsList>
                 </div>
@@ -252,12 +260,20 @@ function AdsSettingsContent() {
                     </TabsContent>
 
                     <TabsContent value="billing">
-                        <div className={adminStyles.pageCard}>
-                            {activeAccount ? (
-                                <PaymentMethodsManager accountId={activeAccount.id} />
-                            ) : (
-                                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
-                            )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <div className={adminStyles.pageCard}>
+                                <h2 className={adminStyles.sectionTitle}>Payment Methods</h2>
+                                {activeAccount ? (
+                                    <PaymentMethodsManager accountId={activeAccount.id} />
+                                ) : (
+                                    <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                                )}
+                            </div>
+
+                            <div className={adminStyles.pageCard}>
+                                <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
+                                <WalletsTable data={wallets} isLoading={isLoading} />
+                            </div>
                         </div>
                     </TabsContent>
 

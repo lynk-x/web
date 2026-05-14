@@ -27,9 +27,11 @@ function DashboardRoot() {
         setActiveAccountId(account.id);
         const path = account.type === 'platform'
             ? '/dashboard/admin'
-            : account.type === 'advertiser'
-                ? '/dashboard/ads'
-                : '/dashboard/organize';
+            : account.type === 'pulse_user'
+                ? '/dashboard/pulse'
+                : account.type === 'advertiser'
+                    ? '/dashboard/ads'
+                    : '/dashboard/organize';
 
         if (!isProfileComplete) {
             router.push(`/setup-profile?next=${encodeURIComponent(path)}&accountRef=${account.id}`);
@@ -64,13 +66,13 @@ function DashboardRoot() {
                         borderRadius: '50%',
                         animation: 'spin 1s linear infinite'
                     }} />
+                    <style jsx>{`
+                        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                    `}</style>
                     <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '14px' }}>
                         {isRedirecting ? 'Launching workspace...' : 'Loading your workspaces...'}
                     </span>
                 </div>
-                <style jsx>{`
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
             </div>
         );
     }
@@ -114,10 +116,14 @@ function DashboardRoot() {
 
                                 <div className={styles.cardFooter}>
                                     <div className={styles.typeIcon} style={{
-                                        color: acc.type === 'advertiser' ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)',
-                                        background: acc.type === 'advertiser' ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)'
+                                        color: acc.type === 'platform' ? '#818cf8' : acc.type === 'pulse_user' ? '#22d3ee' : acc.type === 'advertiser' ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)',
+                                        background: acc.type === 'platform' ? 'rgba(129, 140, 248, 0.1)' : acc.type === 'pulse_user' ? 'rgba(34, 211, 238, 0.1)' : acc.type === 'advertiser' ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)'
                                     }}>
-                                        {acc.type === 'advertiser' ? (
+                                        {acc.type === 'platform' ? (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                        ) : acc.type === 'pulse_user' ? (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                                        ) : acc.type === 'advertiser' ? (
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
                                         ) : (
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
