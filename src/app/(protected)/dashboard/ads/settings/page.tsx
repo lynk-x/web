@@ -6,7 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -14,6 +14,9 @@ import MemberTable from '@/components/features/members/MemberTable';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
 import CountrySelect from '@/components/shared/CountrySelect';
+import Input from '@/components/shared/Input';
+import Button from '@/components/shared/Button';
+import Textarea from '@/components/shared/Textarea';
 
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
@@ -104,7 +107,7 @@ function AdsSettingsContent() {
     };
 
     const confirmTabChange = (newTab: string) => {
-        setActiveTab(newTab as Extract<typeof activeTab, string>);
+        setActiveTab(newTab as 'account' | 'team' | 'billing' | 'danger-zone');
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -154,7 +157,6 @@ function AdsSettingsContent() {
         }
     };
 
-
     const handleDeactivate = async () => {
         if (!activeAccount) return;
         setIsDeactivating(true);
@@ -175,7 +177,6 @@ function AdsSettingsContent() {
             setIsDeactivating(false);
         }
     };
-;
 
     return (
         <div className={adminStyles.container}>
@@ -187,102 +188,96 @@ function AdsSettingsContent() {
                 actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>}
             />
 
-            <div style={{ marginBottom: '24px' }}>
-                <Tabs
-                    options={[
-                        { id: 'account', label: 'Account' },
-                        { id: 'team', label: 'Team Members' },
-                        { id: 'billing', label: 'Billing' },
-                        { id: 'danger-zone', label: 'Danger Zone' }
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                />
-            </div>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
+                        <TabsTrigger value="account">Account</TabsTrigger>
+                        <TabsTrigger value="team">Team Members</TabsTrigger>
+                        <TabsTrigger value="billing">Billing</TabsTrigger>
+                        <TabsTrigger value="danger-zone">Danger Zone</TabsTrigger>
+                    </TabsList>
+                </div>
 
-            <div className={adminStyles.container}>
-                {activeTab === 'account' && (
-                    <div className={adminStyles.pageCard}>
-                        {activeAccount && <KycStatusCard accountId={activeAccount.id} />}
-                        <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
-                        <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Account Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="name" className={adminStyles.input} value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Ads" />
-                            </div>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="email" name="support_email" className={adminStyles.input} value={formData.support_email} onChange={handleInputChange} placeholder="ads-support@organization.com" />
-                            </div>
-                             <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Primary Contact <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="primary_contact" className={adminStyles.input} value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." />
-                            </div>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Secondary Contact</label>
-                                <input type="text" name="secondary_contact" className={adminStyles.input} value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" />
-                            </div>
-                            <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
+                <div style={{ marginTop: '24px' }}>
+                    <TabsContent value="account">
+                        <div className={adminStyles.pageCard}>
+                            {activeAccount && <KycStatusCard accountId={activeAccount.id} />}
+                            <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
+                            <div className={adminStyles.formGrid}>
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Account Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                    <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Ads" />
+                                </div>
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                    <Input type="email" name="support_email" value={formData.support_email} onChange={handleInputChange} placeholder="ads-support@organization.com" />
+                                </div>
+                                 <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Primary Contact <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                    <Input name="primary_contact" value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." />
+                                </div>
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Secondary Contact</label>
+                                    <Input name="secondary_contact" value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" />
+                                </div>
+                                <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Address Line</label>
-                                <input type="text" name="address_line" className={adminStyles.input} value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" />
-                            </div>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Town</label>
-                                <input type="text" name="town" className={adminStyles.input} value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" />
-                            </div>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>City <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <input type="text" name="city" className={adminStyles.input} value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" />
-                            </div>
-                            <div className={adminStyles.formGroup}>
-                                <label className={adminStyles.label}>Country <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                <CountrySelect 
-                                    value={formData.country} 
-                                    onChange={(val) => setFormData(prev => ({ ...prev, country: val }))} 
-                                />
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Address Line</label>
+                                    <Input name="address_line" value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" />
+                                </div>
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Town</label>
+                                    <Input name="town" value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" />
+                                </div>
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>City <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                    <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" />
+                                </div>
+                                <div className={adminStyles.inputGroup}>
+                                    <label className={adminStyles.label}>Country <span className={adminStyles.requiredIndicator}>*Required</span></label>
+                                    <CountrySelect 
+                                        value={formData.country} 
+                                        onChange={(val) => setFormData(prev => ({ ...prev, country: val }))} 
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    </TabsContent>
 
-                {activeTab === 'team' && (
-                    <div className={adminStyles.pageCard}>
-                        <MemberTable />
-                    </div>
-                )}
+                    <TabsContent value="team">
+                        <div className={adminStyles.pageCard}>
+                            <MemberTable />
+                        </div>
+                    </TabsContent>
 
-                {activeTab === 'billing' && (
-                    <div className={adminStyles.pageCard}>
-                        {activeAccount ? (
-                            <PaymentMethodsManager accountId={activeAccount.id} />
-                        ) : (
-                            <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
-                        )}
-                    </div>
-                )}
+                    <TabsContent value="billing">
+                        <div className={adminStyles.pageCard}>
+                            {activeAccount ? (
+                                <PaymentMethodsManager accountId={activeAccount.id} />
+                            ) : (
+                                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                            )}
+                        </div>
+                    </TabsContent>
 
-                {activeTab === 'danger-zone' && (
-                    <>
-
+                    <TabsContent value="danger-zone">
                         <div className={adminStyles.pageCard}>
                             <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>
                             <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
                                 Deactivating your ads account pauses all active campaigns indefinitely. This action cannot be undone from the dashboard.
                             </p>
-                            <button
-                                type="button"
-                                className={adminStyles.btnDanger}
+                            <Button
+                                variant="danger"
                                 onClick={() => setIsDeactivateModalOpen(true)}
-                                disabled={isDeactivating}
+                                isLoading={isDeactivating}
                             >
-                                {isDeactivating ? 'Deactivating...' : 'Deactivate Ads Account'}
-                            </button>
+                                Deactivate Ads Account
+                            </Button>
                         </div>
-                    </>
-                )}
-            </div>
+                    </TabsContent>
+                </div>
+            </Tabs>
 
             <ConfirmationModal
                 isOpen={!!pendingTab}

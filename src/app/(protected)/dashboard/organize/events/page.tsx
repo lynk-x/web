@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import FilterGroup from '@/components/dashboard/FilterGroup';
+import FilterGroup from '@/components/shared/FilterChips';
 import { createClient } from '@/utils/supabase/client';
 import type { OrganizerEvent } from '@/types/organize';
 import { exportToCSV } from '@/utils/export';
@@ -356,7 +356,7 @@ export default function OrganizerEventsPage() {
                 onSearchChange={setSearchTerm}
                 searchPlaceholder="Search events..."
             >
-                <FilterGroup
+                <FilterChips
                     options={[
                         { value: 'all', label: 'All' },
                         { value: 'draft', label: 'Draft' },

@@ -9,7 +9,7 @@ import Badge, { BadgeVariant } from '../../shared/Badge';
 import { formatString, formatDate } from '@/utils/format';
 import type { SystemJob } from '@/types/admin';
 import TableToolbar from '@/components/shared/TableToolbar';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import StatusFilterChips from '@/components/shared/FilterChips';
 
 interface SystemJobsTabProps {
     statusFilter: string;

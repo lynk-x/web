@@ -9,7 +9,7 @@ import KycVerificationTable from './KycVerificationTable';
 import KycDetailModal from './KycDetailModal';
 import type { KycVerification } from '@/types/admin';
 import TableToolbar from '@/components/shared/TableToolbar';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import StatusFilterChips from '@/components/shared/FilterChips';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 
 interface KYCTabProps {

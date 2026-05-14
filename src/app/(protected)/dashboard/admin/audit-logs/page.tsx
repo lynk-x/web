@@ -9,7 +9,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import StatusFilterChips from '@/components/shared/FilterChips';
 import SystemJobsTab from '@/components/admin/audit/SystemJobsTab';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
@@ -186,7 +186,7 @@ export default function AdminAuditLogsPage() {
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'audit' ? (
-                            <StatusFilterChips 
+                            <FilterChips 
                                 options={[
                                     { value: 'all', label: 'All Actions' },
                                     ...actionTypes.slice(0, 6).map(type => ({
@@ -198,7 +198,7 @@ export default function AdminAuditLogsPage() {
                                 onChange={setActionFilter}
                             />
                         ) : (
-                            <StatusFilterChips 
+                            <FilterChips 
                                 options={[
                                     { value: 'all', label: 'All Jobs' },
                                     { value: 'queued', label: 'Queued' },

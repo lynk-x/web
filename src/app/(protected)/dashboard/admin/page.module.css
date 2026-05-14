@@ -105,169 +105,45 @@
 
 /* --- Shared Standardized UI Classes --- */
 
+/* --- Shared Standardized UI Classes --- */
+
 /* Buttons */
 .btnPrimary {
-    background-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    padding: 10px 24px;
-    border-radius: var(--radius-full);
-    font-weight: 600;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.btnPrimary:hover {
-    transform: translateY(-1px);
-    opacity: 0.9;
+    composes: btn-primary from global;
 }
 
 .btnSecondary {
-    background: transparent;
-    border: 1px solid var(--color-interface-outline);
-    color: var(--color-utility-primaryText);
-    padding: 10px 24px;
-    border-radius: var(--radius-full);
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btnSecondary:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-color: var(--color-brand-primary);
-    color: var(--color-brand-primary);
+    composes: btn-secondary from global;
 }
 
 .btnBack {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: transparent;
-    border: none;
-    color: var(--color-utility-primaryText);
-    opacity: 0.6;
-    padding: 0;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btnBack:hover {
-    opacity: 1;
-    color: var(--color-brand-primary);
-    transform: translateX(-4px);
+    composes: btn-back from global;
 }
 
 /* Choice Chips / Filters */
 .chip {
-    background: transparent;
-    border: 1px solid var(--color-interface-outline);
-    color: var(--color-utility-primaryText);
-    padding: 8px 20px;
-    border-radius: var(--radius-full);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    opacity: 0.7;
-}
-
-.chip:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    opacity: 1;
+    composes: chip-base from global;
 }
 
 .chipActive {
-    background-color: var(--color-brand-primary);
-    border-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    opacity: 1;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(32, 249, 40, 0.2);
-}
-
-.chipActive:hover {
-    background-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    opacity: 0.9;
+    composes: chip-active from global;
 }
 
 /* Form Elements */
 .input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-}
-
-.input:focus {
-    border-color: var(--color-brand-primary);
-    background-color: transparent;
-}
-
-.input::placeholder,
-.textarea::placeholder {
-    color: var(--color-utility-primaryText);
-    opacity: 0.35;
+    composes: input-base from global;
 }
 
 .label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-utility-primaryText);
-    opacity: 0.7;
+    composes: label-base from global;
 }
 
 .select {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
-    font-size: 14px;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.2s;
-}
-
-.select:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.select:focus {
-    border-color: var(--color-brand-primary);
+    composes: select-base from global;
 }
 
 .textarea {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-    min-height: 100px;
-    resize: vertical;
-}
-
-.textarea:focus {
-    border-color: var(--color-brand-primary);
+    composes: textarea-base from global;
 }
 
 /* Form Layouts */
@@ -321,23 +197,9 @@
 }
 
 .filterSelect {
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
+    composes: select-base from global;
     font-size: 13px;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.2s;
-}
-
-.filterSelect:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.filterSelect:focus {
-    border-color: var(--color-brand-primary);
+    padding: 8px 12px;
 }
 
 /* Pagination */

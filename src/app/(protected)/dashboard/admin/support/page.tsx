@@ -13,9 +13,9 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
-import FilterGroup from '@/components/dashboard/FilterGroup';
+import FilterGroup from '@/components/shared/FilterChips';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import StatusFilterChips from '@/components/shared/FilterChips';
 import { useToast } from '@/components/ui/Toast';
 import type { ActionItem } from '@/types/shared';
 import { createClient } from '@/utils/supabase/client';
@@ -232,7 +232,7 @@ function SupportContent() {
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'reports' && (
-                            <StatusFilterChips
+                            <FilterChips
                                 options={['all', 'pending', 'investigating', 'resolved', 'dismissed'].map(f => ({ 
                                     value: f, 
                                     label: f.charAt(0).toUpperCase() + f.slice(1) 
@@ -242,7 +242,7 @@ function SupportContent() {
                             />
                         )}
                         {activeTab === 'tickets' && (
-                            <StatusFilterChips
+                            <FilterChips
                                 options={['all', 'new', 'investigating', 'resolved', 'dismissed'].map(s => ({ 
                                     value: s, 
                                     label: s.charAt(0).toUpperCase() + s.slice(1) 
@@ -252,7 +252,7 @@ function SupportContent() {
                             />
                         )}
                         {activeTab === 'feedback' && (
-                            <StatusFilterChips
+                            <FilterChips
                                 options={['all', 'new', 'reviewed', 'resolved', 'dismissed'].map(s => ({ 
                                     value: s, 
                                     label: s === 'all' ? 'All Statuses' : s.charAt(0).toUpperCase() + s.slice(1) 

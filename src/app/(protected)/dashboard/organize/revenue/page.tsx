@@ -8,7 +8,7 @@ import FinanceTable from '@/components/features/finance/FinanceTable';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import { formatCurrency } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -181,18 +181,16 @@ function RevenueContent() {
                 searchPlaceholder={`Search transactions...`}
             />
 
-            <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)' }}>
-                <Tabs
-                    options={[
-                        { id: 'all', label: 'All Activity' },
-                        { id: 'incoming', label: 'Earnings' },
-                        { id: 'outgoing', label: 'Withdrawals/Refunds' },
-                        { id: 'hold', label: 'Locked Escrow' }
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                />
-            </div>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)' }}>
+                    <TabsList>
+                        <TabsTrigger value="all">All Activity</TabsTrigger>
+                        <TabsTrigger value="incoming">Earnings</TabsTrigger>
+                        <TabsTrigger value="outgoing">Withdrawals/Refunds</TabsTrigger>
+                        <TabsTrigger value="hold">Locked Escrow</TabsTrigger>
+                    </TabsList>
+                </div>
+            </Tabs>
 
             <div className={styles.tableWrapper}>
                 <FinanceTable

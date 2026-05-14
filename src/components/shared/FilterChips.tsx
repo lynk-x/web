@@ -1,30 +1,36 @@
 "use client";
 
 import React from 'react';
-import styles from './DashboardShared.module.css';
 
 interface FilterOption {
     value: string;
     label: string;
 }
 
-interface FilterGroupProps {
+interface FilterChipsProps {
     options: FilterOption[];
     currentValue: string;
     onChange: (value: string) => void;
+    className?: string;
 }
 
-export default function FilterGroup({
+/**
+ * Standardized filter chips for dashboard pages.
+ * Replaces legacy FilterGroup and StatusFilterChips.
+ */
+export default function FilterChips({
     options,
     currentValue,
-    onChange
-}: FilterGroupProps) {
+    onChange,
+    className = '',
+}: FilterChipsProps) {
     return (
-        <div className={styles.filterGroup}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} className={className}>
             {options.map((option) => (
                 <button
                     key={option.value}
-                    className={`${styles.chip} ${currentValue === option.value ? styles.chipActive : ''}`}
+                    type="button"
+                    className={`chip-base ${currentValue === option.value ? 'chip-active' : ''}`}
                     onClick={() => onChange(option.value)}
                 >
                     {option.label}

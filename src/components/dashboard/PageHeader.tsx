@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
+import Button from '@/components/shared/Button';
 import styles from './DashboardShared.module.css';
 
 interface PageHeaderProps {
@@ -29,20 +29,16 @@ export default function PageHeader({
         if (customAction) return customAction;
         if (!actionLabel) return null;
 
-        if (actionHref) {
-            return (
-                <Link href={actionHref} className={`${styles.btnPrimary} ${actionClassName || ''}`}>
-                    {actionIcon}
-                    {actionLabel}
-                </Link>
-            );
-        }
-
         return (
-            <button className={`${styles.btnPrimary} ${actionClassName || ''}`} onClick={onActionClick}>
-                {actionIcon}
+            <Button 
+                href={actionHref} 
+                onClick={onActionClick} 
+                variant="primary" 
+                className={actionClassName}
+                icon={actionIcon}
+            >
                 {actionLabel}
-            </button>
+            </Button>
         );
     };
 

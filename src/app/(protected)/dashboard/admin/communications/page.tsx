@@ -8,7 +8,7 @@ import ContentTable, { ContentItem } from '@/components/admin/content/ContentTab
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { LegalDocument, SystemBanner, BroadcastLog, Spotlight } from '@/types/admin';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
 
 // ...
@@ -390,18 +390,17 @@ function CommunicationsContent() {
                 />
             </div>
 
-            {/* Sub-Navigation Tabs */}
-            <Tabs
-                options={[
-                    { id: 'spotlights', label: 'Hero Spotlights' },
-                    { id: 'broadcast', label: 'Broadcasts' },
-                    { id: 'banners', label: 'Alert Banners' },
-                    { id: 'content', label: 'Info Pages' },
-                    { id: 'legal', label: 'Legals' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
+                        <TabsTrigger value="spotlights">Hero Spotlights</TabsTrigger>
+                        <TabsTrigger value="broadcast">Broadcasts</TabsTrigger>
+                        <TabsTrigger value="banners">Alert Banners</TabsTrigger>
+                        <TabsTrigger value="content">Info Pages</TabsTrigger>
+                        <TabsTrigger value="legal">Legals</TabsTrigger>
+                    </TabsList>
+                </div>
+            </Tabs>
 
             {/* ─── TAB: SPOTLIGHTS ─── */}
             {activeTab === 'spotlights' && (

@@ -98,130 +98,32 @@
     color: var(--color-utility-primaryText);
 }
 
-/* Common Buttons */
+/* Common Buttons - Prefer using <Button /> component */
 .btnPrimary {
-    background-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    padding: 10px 24px;
-    border-radius: var(--radius-full);
-    font-weight: 600;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-}
-
-.btnPrimary:hover {
-    transform: translateY(-1px);
-    opacity: 0.9;
-}
-
-.btnDanger {
-    background-color: var(--color-interface-error);
-    color: #ffffff;
-    padding: 10px 24px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.btnDanger:hover {
-    transform: translateY(-1px);
-    opacity: 0.9;
+    composes: btn-primary from global;
 }
 
 .btnSecondary {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: var(--color-utility-primaryText);
-    padding: 10px 24px;
-    border-radius: var(--radius-full);
-    font-weight: 600;
-    font-size: 14px;
-    border: 1px solid var(--color-interface-outline);
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
+    composes: btn-secondary from global;
 }
 
-.btnSecondary:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+.btnDanger {
+    composes: btn-danger from global;
 }
 
 .btnGhost {
-    background: transparent;
-    color: var(--color-utility-primaryText);
-    padding: 10px 24px;
-    border-radius: var(--radius-full);
-    font-weight: 500;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    opacity: 0.7;
+    composes: btn-ghost from global;
 }
 
-.btnGhost:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Filter Chips */
-.filterGroup {
+/* Tabs - Prefer using shared/Tabs component */
+.tabsHeaderRow {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    border-bottom: 1px solid var(--color-interface-outline);
+    margin-bottom: var(--spacing-lg);
 }
 
-.chip {
-    background: transparent;
-    border: 1px solid var(--color-interface-outline);
-    color: var(--color-utility-primaryText);
-    padding: 8px 20px;
-    border-radius: var(--radius-full);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    opacity: 0.7;
-}
-
-.chip:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    opacity: 1;
-}
-
-.chipActive {
-    background-color: var(--color-brand-primary);
-    border-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    opacity: 1;
-    font-weight: 600;
-}
-
-.chipActive:hover {
-    background-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    opacity: 0.9;
-}
-
-/* Tabs */
 .tabs {
     display: flex;
     align-items: center;
@@ -242,11 +144,6 @@
     font-weight: 500;
     position: relative;
     transition: all 0.2s;
-}
-
-.tab:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.02);
 }
 
 .tabActive {
@@ -358,62 +255,19 @@
 }
 
 .input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-}
-
-.input:focus {
-    border-color: var(--color-brand-primary);
-    background-color: transparent;
-}
-
-.input::placeholder,
-.textarea::placeholder {
-    color: var(--color-utility-primaryText);
-    opacity: 0.35;
+    composes: input-base from global;
 }
 
 .label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-utility-primaryText);
-    opacity: 0.7;
+    composes: label-base from global;
 }
 
 .select {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
-    font-size: 14px;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.2s;
+    composes: select-base from global;
 }
 
 .textarea {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: var(--color-interface-surface);
-    color: var(--color-utility-primaryText);
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-    min-height: 100px;
-    resize: vertical;
+    composes: textarea-base from global;
 }
 
 .form {
@@ -464,41 +318,9 @@
 
 /* Table Styles */
 .table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 16px;
-    background: var(--color-interface-surface);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid var(--color-interface-outline);
+    composes: table-base from global;
 }
 
-.table th {
-    text-align: left;
-    padding: 16px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--color-utility-primaryText);
-    opacity: 0.5;
-    font-weight: 600;
-    border-bottom: 1px solid var(--color-interface-outline);
-}
-
-.table td {
-    padding: 16px;
-    font-size: 14px;
-    color: var(--color-utility-primaryText);
-    border-bottom: 1px solid var(--color-interface-outline);
-}
-
-.table tr:last-child td {
-    border-bottom: none;
-}
-
-.table tr:hover td {
-    background-color: rgba(255, 255, 255, 0.02);
-}
 
 /* Containers & States */
 .loadingContainer {

@@ -8,6 +8,7 @@
 import Sidebar from '@/components/dashboard/Sidebar';
 import MobileNudge from '@/components/dashboard/MobileNudge';
 import InactivityGuard from '@/components/dashboard/InactivityGuard';
+import '@/theme/dashboard.css';
 import styles from './layout.module.css';
 
 export default function DashboardLayout({

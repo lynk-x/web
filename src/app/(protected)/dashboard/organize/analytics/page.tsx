@@ -13,7 +13,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import { createClient } from '@/utils/supabase/client';
 
 export default function AnalyticsPage() {
@@ -151,16 +151,14 @@ export default function AnalyticsPage() {
                 </TableToolbar>
             </div>
 
-            <div style={{ marginTop: 'var(--spacing-md)' }}>
-                <Tabs
-                    options={[
-                        { id: 'summary', label: 'Performance Summary' },
-                        { id: 'breakdown', label: 'Detailed Breakdown' },
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                />
-            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <div style={{ marginTop: 'var(--spacing-md)' }}>
+                    <TabsList>
+                        <TabsTrigger value="summary">Performance Summary</TabsTrigger>
+                        <TabsTrigger value="breakdown">Detailed Breakdown</TabsTrigger>
+                    </TabsList>
+                </div>
+            </Tabs>
 
             {activeTab === 'summary' ? (
                 <div className={adminStyles.subPageGridBalanced} style={{ marginTop: 'var(--spacing-md)' }}>

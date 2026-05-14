@@ -3,7 +3,7 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import StatusFilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
@@ -428,7 +428,7 @@ export default function AdminEventsPage() {
                     
                     <div className={adminStyles.chipsWrapper}>
                         {activeTab === 'events' ? (
-                            <StatusFilterChips
+                            <FilterChips
                                 options={[
                                     { value: 'all', label: 'All' },
                                     { value: 'draft', label: 'Draft' },
@@ -443,7 +443,7 @@ export default function AdminEventsPage() {
                                 onChange={setStatusFilter}
                             />
                         ) : (
-                            <StatusFilterChips
+                            <FilterChips
                                 options={[
                                     { value: 'all', label: 'All' },
                                     { value: 'open', label: 'Open' },

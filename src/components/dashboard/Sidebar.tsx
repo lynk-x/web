@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -26,21 +26,22 @@ import { useAuth } from '@/context/AuthContext';
 const Sidebar = () => {
     const pathname = usePathname();
     const { user } = useAuth();
-    const [mode, setMode] = useState<DashboardMode>('events');
+
+    const mode = useMemo<DashboardMode>(() => {
+        const segments = pathname.split('/');
+        const modeSegment = segments[2];
+
+        const modeMap: Record<string, DashboardMode> = {
+            admin: 'admin',
+            ads: 'ads',
+            pulse: 'pulse',
+            organize: 'events'
+        };
+
+        return modeMap[modeSegment] || 'events';
+    }, [pathname]);
 
     const isUnverified = user && !user.email_confirmed_at;
-
-    useEffect(() => {
-        if (pathname.startsWith('/dashboard/admin')) {
-            setMode('admin');
-        } else if (pathname.startsWith('/dashboard/ads')) {
-            setMode('ads');
-        } else if (pathname.startsWith('/dashboard/pulse')) {
-            setMode('pulse');
-        } else {
-            setMode('events');
-        }
-    }, [pathname]);
 
     // Hide the sidebar on the workspace picker page — all other dashboard
     // sub-routes (organize, ads, admin) show the sidebar.

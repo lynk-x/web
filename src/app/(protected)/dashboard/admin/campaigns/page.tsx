@@ -3,7 +3,7 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import StatusFilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
@@ -430,7 +430,7 @@ function CampaignsContent() {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'campaigns' && (
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                <StatusFilterChips
+                                <FilterChips
                                     options={[
                                         { value: 'all', label: 'All Status' },
                                         { value: 'active', label: 'Active' },

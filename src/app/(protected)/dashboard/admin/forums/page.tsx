@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import FilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
@@ -13,7 +13,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Modal from '@/components/shared/Modal';
 import ReportTable from '@/components/admin/moderation/ReportTable';
-import Tabs from '@/components/dashboard/Tabs';
+
 import { Report } from '@/types/admin';
 import type { ActionItem } from '@/types/shared';
 
@@ -272,7 +272,7 @@ function ForumsContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <StatusFilterChips
+                <FilterChips
                     options={[
                         { value: 'all', label: 'All' },
                         { value: 'open', label: 'Open' },

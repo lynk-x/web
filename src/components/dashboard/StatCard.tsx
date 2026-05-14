@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import styles from './DashboardShared.module.css';
+import styles from './StatCard.module.css';
 
 interface StatCardProps {
     label: string;

@@ -7,7 +7,7 @@ import ConfigTab from '@/components/admin/settings/ConfigTab';
 import FeatureFlagTab from '@/components/admin/settings/FeatureFlagTab';
 import PaymentProvidersTab from '@/components/admin/settings/PaymentProvidersTab';
 import RegionsTab from '@/components/admin/settings/RegionsTab';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import TableToolbar from '@/components/shared/TableToolbar';
 
 type Tab = 'config' | 'feature-flags' | 'payment-providers' | 'regions';
@@ -65,21 +65,29 @@ function SettingsContent() {
                 onSearchChange={setSearchTerm}
             />
 
-            <Tabs
-                options={[
-                    { id: 'config', label: 'System Config' },
-                    { id: 'feature-flags', label: 'Feature Flags' },
-                    { id: 'payment-providers', label: 'Payment Providers' },
-                    { id: 'regions', label: 'Supported Regions' }
-                ]}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
+                        <TabsTrigger value="config">System Config</TabsTrigger>
+                        <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
+                        <TabsTrigger value="payment-providers">Payment Providers</TabsTrigger>
+                        <TabsTrigger value="regions">Supported Regions</TabsTrigger>
+                    </TabsList>
+                </div>
 
-            {activeTab === 'config' && <ConfigTab searchTerm={searchTerm} />}
-            {activeTab === 'feature-flags' && <FeatureFlagTab searchTerm={searchTerm} />}
-            {activeTab === 'payment-providers' && <PaymentProvidersTab searchTerm={searchTerm} />}
-            {activeTab === 'regions' && <RegionsTab searchTerm={searchTerm} />}
+                <TabsContent value="config">
+                    <ConfigTab searchTerm={searchTerm} />
+                </TabsContent>
+                <TabsContent value="feature-flags">
+                    <FeatureFlagTab searchTerm={searchTerm} />
+                </TabsContent>
+                <TabsContent value="payment-providers">
+                    <PaymentProvidersTab searchTerm={searchTerm} />
+                </TabsContent>
+                <TabsContent value="regions">
+                    <RegionsTab searchTerm={searchTerm} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

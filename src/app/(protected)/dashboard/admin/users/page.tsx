@@ -15,7 +15,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import KYCTab from '@/components/admin/users/KYCTab';
 import CreateAccountDrawer from '@/components/admin/users/CreateAccountDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
-import StatusFilterChips from '@/components/shared/StatusFilterChips';
+import FilterChips from '@/components/shared/FilterChips';
+import Select from '@/components/shared/Select';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import type { AdminAccount } from '@/types/admin';
@@ -184,31 +185,27 @@ function AccountsContent() {
             >
                 {activeTab === 'accounts' && (
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <select 
-                            className={adminStyles.filterSelect}
+                        <Select 
                             value={countryFilter}
                             onChange={(e) => setCountryFilter(e.target.value)}
-                            style={{ height: '36px', padding: '0 12px' }}
-                        >
-                            <option value="all">All Countries</option>
-                            {countries.map(c => (
-                                <option key={c.code} value={c.code}>
-                                    {c.display_name} ({c.code})
-                                </option>
-                            ))}
-                        </select>
-                        <select 
-                            className={adminStyles.filterSelect}
+                            options={[
+                                { value: 'all', label: 'All Countries' },
+                                ...countries.map(c => ({ value: c.code, label: `${c.display_name} (${c.code})` }))
+                            ]}
+                            style={{ height: '36px' }}
+                        />
+                        <Select 
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
-                            style={{ height: '36px', padding: '0 12px' }}
-                        >
-                            <option value="all">All Types</option>
-                            <option value="organizer">Organizers</option>
-                            <option value="advertiser">Advertisers</option>
-                            <option value="pulse_user">Pulse Users</option>
-                            <option value="attendee">Attendees</option>
-                        </select>
+                            options={[
+                                { value: 'all', label: 'All Types' },
+                                { value: 'organizer', label: 'Organizers' },
+                                { value: 'advertiser', label: 'Advertisers' },
+                                { value: 'pulse_user', label: 'Pulse Users' },
+                                { value: 'attendee', label: 'Attendees' }
+                            ]}
+                            style={{ height: '36px' }}
+                        />
                     </div>
                 )}
                 <DateRangeRow 
@@ -232,7 +229,7 @@ function AccountsContent() {
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'accounts' ? (
-                            <StatusFilterChips 
+                            <FilterChips 
                                 options={[
                                     { value: 'all', label: 'All Statuses' },
                                     { value: 'active', label: 'Active' },
@@ -243,7 +240,7 @@ function AccountsContent() {
                                 onChange={setStatusFilter}
                             />
                         ) : (
-                            <StatusFilterChips 
+                            <FilterChips 
                                 options={[
                                     { value: 'pending', label: 'Pending' },
                                     { value: 'under_review', label: 'Under Review' },

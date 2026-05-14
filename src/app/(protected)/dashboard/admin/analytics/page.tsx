@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
-import Tabs from '@/components/dashboard/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -366,18 +366,17 @@ function AnalyticsContent() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', marginBottom: 'var(--spacing-md)' }}>
-                <Tabs
-                    options={[
-                        { id: 'demographics', label: 'Demographics' },
-                        { id: 'performance', label: 'Performance' },
-                        { id: 'revenue', label: 'Revenue' },
-                        { id: 'insights', label: 'Insights' },
-                        { id: 'intelligence', label: 'Intelligence' }
-                    ]}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    style={{ borderBottom: 'none', marginBottom: 0 }}
-                />
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
+                    <div className={sharedStyles.tabsHeaderRow} style={{ marginBottom: 0, borderBottom: 'none' }}>
+                        <TabsList>
+                            <TabsTrigger value="demographics">Demographics</TabsTrigger>
+                            <TabsTrigger value="performance">Performance</TabsTrigger>
+                            <TabsTrigger value="revenue">Revenue</TabsTrigger>
+                            <TabsTrigger value="insights">Insights</TabsTrigger>
+                            <TabsTrigger value="intelligence">Intelligence</TabsTrigger>
+                        </TabsList>
+                    </div>
+                </Tabs>
 
                 <div style={{ paddingBottom: '12px' }}>
                     <select 
