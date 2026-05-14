@@ -28,7 +28,8 @@ import Modal from '@/components/shared/Modal';
 import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
 import ReportTable from '@/components/admin/moderation/ReportTable';
 import TicketingTab from '@/components/admin/events/ticketing/TicketingTab';
-import { formatRelativeTime } from '@/utils/format';
+import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
+import { formatRelativeTime, formatCurrency } from '@/utils/format';
 
 // --- Local Components ---
 
@@ -95,6 +96,14 @@ export default function AdminEventsPage() {
     const [selectedForumIds, setSelectedForumIds] = useState<Set<string>>(new Set());
     const [summary, setSummary] = useState<any>(null);
 
+    // Payouts State
+    const [payouts, setPayouts] = useState<Payout[]>([]);
+    const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
+    const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
+    const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
+    const [payoutCountryFilter, setPayoutCountryFilter] = useState('all');
+    const [countries, setCountries] = useState<{ code: string, name: string }[]>([]);
+
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 10;
 
@@ -107,6 +116,45 @@ export default function AdminEventsPage() {
             setSummary(data);
         }
     }, [supabase]);
+
+    const fetchPayouts = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('get_admin_payouts', {
+                p_search: debouncedSearch,
+                p_start_date: startDate ? new Date(startDate).toISOString() : null,
+                p_end_date: endDate ? new Date(endDate).toISOString() : null,
+                p_country_code: payoutCountryFilter,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
+            });
+
+            if (error) throw error;
+            const total = data?.[0]?.total_count || 0;
+            setTotalCount(total);
+
+            setPayouts((data || []).map((p: any) => ({
+                id: p.id,
+                recipient: p.recipient_name,
+                amount: p.amount,
+                status: p.status,
+                requestedAt: p.created_at,
+                reference: p.reference,
+                bankName: p.bank_name,
+                type: p.method,
+                kyc_status: p.approval_status,
+                kyc_tier: p.kyc_tier,
+                is_verified: p.is_verified,
+                reporting_amount: p.reporting_amount,
+                reporting_currency: p.reporting_currency,
+                createdAt: p.created_at
+            })));
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, debouncedSearch, startDate, endDate, payoutCountryFilter, currentPage, showToast]);
 
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
@@ -173,9 +221,21 @@ export default function AdminEventsPage() {
         }
     }, [supabase, debouncedSearch, statusFilter, currentPage, showToast]);
 
+    const fetchCountries = useCallback(async () => {
+        const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
+        if (data) {
+            setCountries(data.map(c => ({ code: c.code, name: c.display_name })));
+        }
+    }, [supabase]);
+
     useEffect(() => {
-        fetchEvents();
-    }, [fetchEvents]);
+        fetchCountries();
+    }, [fetchCountries]);
+
+    useEffect(() => {
+        if (activeTab === 'events') fetchEvents();
+        else if (activeTab === 'payouts') fetchPayouts();
+    }, [activeTab, fetchEvents, fetchPayouts]);
 
     useEffect(() => {
         fetchDashboardSummary();
@@ -184,7 +244,7 @@ export default function AdminEventsPage() {
     // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, forumStatusFilter, activeTab, startDate, endDate]);
+    }, [debouncedSearch, statusFilter, forumStatusFilter, activeTab, startDate, endDate, payoutCountryFilter]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -209,6 +269,65 @@ export default function AdminEventsPage() {
             const newSelected = new Set(selectedEventIds);
             events.forEach(event => newSelected.add(event.id));
             setSelectedEventIds(newSelected);
+        }
+    };
+
+    const handleApprovePayout = async (payout: Payout) => {
+        if (!payout.is_verified) {
+            showToast(`Critical Block: Recipient identity is NOT verified. Approve KYC first.`, 'error');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to approve this payout for ${payout.recipient}? This will initiate disbursement.`)) return;
+        
+        try {
+            const { data, error } = await supabase.functions.invoke('payout-fulfillment', {
+                body: { payout_id: payout.id }
+            });
+            
+            if (error || !data?.success) {
+                throw new Error(error?.message || data?.error || 'Failed to initiate payout');
+            }
+            
+            showToast('Payout successfully initiated.', 'success');
+            fetchPayouts();
+            fetchDashboardSummary();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleRejectPayout = async (reason: string) => {
+        const isBulk = !pendingRejectPayout;
+        const count = isBulk ? selectedPayoutIds.size : 1;
+        
+        showToast(`Rejecting ${count} payout(s)...`, 'info');
+        try {
+            if (isBulk) {
+                const selectedPayoutsList = payouts.filter(p => selectedPayoutIds.has(p.id));
+                const { error } = await supabase.rpc('bulk_reject_payouts', {
+                    p_payout_ids: Array.from(selectedPayoutIds),
+                    p_created_at_list: selectedPayoutsList.map(p => p.createdAt),
+                    p_reason: reason
+                });
+                if (error) throw error;
+                setSelectedPayoutIds(new Set());
+            } else if (pendingRejectPayout) {
+                const { error } = await supabase.rpc('reject_payout', {
+                    p_payout_id: pendingRejectPayout.id,
+                    p_created_at: pendingRejectPayout.createdAt,
+                    p_reason: reason
+                });
+                if (error) throw error;
+            }
+
+            showToast(`${count > 1 ? 'Payouts' : 'Payout'} rejected and funds returned to escrow.`, 'success');
+            setIsPayoutRejectModalOpen(false);
+            setPendingRejectPayout(null);
+            fetchPayouts();
+            fetchDashboardSummary();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
         }
     };
 
@@ -396,20 +515,49 @@ export default function AdminEventsPage() {
             </div>
 
             <TableToolbar
-                searchPlaceholder="Search events or organizers..."
+                searchPlaceholder={
+                    activeTab === 'payouts' ? "Search by reference or recipient..." :
+                    activeTab === 'forums' ? "Search forum threads..." : "Search events or venues..."
+                }
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <DateRangeRow
-                    startDate={startDate}
-                    endDate={endDate}
-                    onStartDateChange={setStartDate}
-                    onEndDateChange={setEndDate}
-                    onClear={() => {
-                        setStartDate('');
-                        setEndDate('');
-                    }}
-                />
+                {activeTab === 'payouts' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <DateRangeRow 
+                            startDate={startDate}
+                            endDate={endDate}
+                            onStartDateChange={setStartDate}
+                            onEndDateChange={setEndDate}
+                            onClear={() => {
+                                setStartDate('');
+                                setEndDate('');
+                            }}
+                        />
+                        <select 
+                            className={adminStyles.select}
+                            style={{ height: '40px' }}
+                            value={payoutCountryFilter}
+                            onChange={(e) => setPayoutCountryFilter(e.target.value)}
+                        >
+                            <option value="all">All Regions</option>
+                            {countries.map(c => (
+                                <option key={c.code} value={c.code}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                ) : (
+                    <DateRangeRow 
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                    />
+                )}
             </TableToolbar>
 
             <BulkActionsBar
@@ -422,8 +570,10 @@ export default function AdminEventsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="events">Events & Tickets</TabsTrigger>
-                        <TabsTrigger value="forums">Forums & Chat Rooms</TabsTrigger>
+                        <TabsTrigger value="events">Live Events</TabsTrigger>
+                        <TabsTrigger value="forums">Community Forums</TabsTrigger>
+                        <TabsTrigger value="ticketing">Ticketing Ops</TabsTrigger>
+                        <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
                     </TabsList>
                     
                     <div className={adminStyles.chipsWrapper}>
@@ -442,7 +592,7 @@ export default function AdminEventsPage() {
                                 currentValue={statusFilter}
                                 onChange={setStatusFilter}
                             />
-                        ) : (
+                        ) : activeTab === 'forums' ? (
                             <FilterChips
                                 options={[
                                     { value: 'all', label: 'All' },
@@ -453,7 +603,7 @@ export default function AdminEventsPage() {
                                 currentValue={forumStatusFilter}
                                 onChange={setForumStatusFilter}
                             />
-                        )}
+                        ) : null}
                     </div>
                 </div>
 
@@ -538,6 +688,62 @@ export default function AdminEventsPage() {
                                 showToast('Forum status updated.', 'success');
                                 fetchEvents();
                             }
+                        }}
+                    />
+                </TabsContent>
+
+                <TabsContent value="payouts">
+                    <BulkActionsBar
+                        selectedCount={selectedPayoutIds.size}
+                        actions={[
+                            {
+                                label: 'Approve Selected',
+                                onClick: async () => {
+                                    if (!confirm(`Approve ${selectedPayoutIds.size} payouts?`)) return;
+                                    try {
+                                        const { error } = await supabase.rpc('bulk_approve_payouts', {
+                                            p_payout_ids: Array.from(selectedPayoutIds)
+                                        });
+                                        if (error) throw error;
+                                        showToast('Bulk approval initiated.', 'success');
+                                        fetchPayouts();
+                                        setSelectedPayoutIds(new Set());
+                                    } catch (err: any) {
+                                        showToast(err.message, 'error');
+                                    }
+                                },
+                                variant: 'success'
+                            },
+                            {
+                                label: 'Reject Selected',
+                                onClick: () => {
+                                    setPendingRejectPayout(null); // Bulk mode
+                                    setIsPayoutRejectModalOpen(true);
+                                },
+                                variant: 'danger'
+                            }
+                        ]}
+                        onCancel={() => setSelectedPayoutIds(new Set())}
+                        itemTypeLabel="payouts"
+                    />
+
+                    <PayoutTable
+                        payouts={payouts}
+                        isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        selectedIds={selectedPayoutIds}
+                        onSelect={(id) => {
+                            const next = new Set(selectedPayoutIds);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
+                            setSelectedPayoutIds(next);
+                        }}
+                        onApprove={handleApprovePayout}
+                        onReject={(payout) => {
+                            setPendingRejectPayout(payout);
+                            setIsPayoutRejectModalOpen(true);
                         }}
                     />
                 </TabsContent>

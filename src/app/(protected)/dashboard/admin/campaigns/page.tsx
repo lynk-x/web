@@ -9,7 +9,7 @@ import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
 import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
-import AdCreditsTab from '@/components/admin/campaigns/AdCreditsTab';
+import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
 import Link from 'next/link';
 import CreateCampaignDrawer from '@/components/admin/campaigns/CreateCampaignDrawer';
 
@@ -37,8 +37,8 @@ function CampaignsContent() {
     const searchParams = useSearchParams();
 
     const initialTab = (searchParams.get('tab') as string) || 'campaigns';
-    const [activeTab, setActiveTab] = useState<'campaigns' | 'credits'>(
-        ['campaigns', 'credits'].includes(initialTab) ? initialTab as 'campaigns' | 'credits' : 'campaigns'
+    const [activeTab, setActiveTab] = useState<'campaigns' | 'analytics'>(
+        ['campaigns', 'analytics'].includes(initialTab) ? initialTab as 'campaigns' | 'analytics' : 'campaigns'
     );
     
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -90,7 +90,7 @@ function CampaignsContent() {
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
-        if (tab && ['campaigns', 'credits'].includes(tab)) {
+        if (tab && ['campaigns', 'analytics'].includes(tab)) {
             setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
@@ -403,7 +403,7 @@ function CampaignsContent() {
 
             <TableToolbar
                 searchPlaceholder={
-                    activeTab === 'credits' ? "Search by advertiser..." : "Search campaigns or clients..."
+                    activeTab === 'analytics' ? "Search by advertiser..." : "Search campaigns or clients..."
                 }
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -423,8 +423,8 @@ function CampaignsContent() {
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="campaigns">Ad Campaigns</TabsTrigger>
-                        <TabsTrigger value="credits">Ad Credits</TabsTrigger>
+                        <TabsTrigger value="campaigns">Active Campaigns</TabsTrigger>
+                        <TabsTrigger value="analytics">Ad Analytics</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -455,15 +455,6 @@ function CampaignsContent() {
                                 </select>
                             </div>
                         )}
-                        {activeTab === 'credits' && (
-                            <button
-                                className={adminStyles.btnPrimary}
-                                onClick={() => setIsIssueModalOpen(true)}
-                                style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}
-                            >
-                                + Issue Credit
-                            </button>
-                        )}
                     </div>
                 </div>
 
@@ -478,28 +469,23 @@ function CampaignsContent() {
                     <CampaignTable
                         campaigns={campaigns}
                         selectedIds={selectedCampaignIds}
-                        onSelect={handleSelectCampaign}
-                        onSelectAll={() => handleSelectAll(campaigns.map(c => c.id))}
-                        onStatusChange={handleSingleStatusUpdate}
-                        onDelete={handleSingleDelete}
-                        onPreview={handlePreview}
-                        onViewStats={handleViewStats}
-                        onFlag={handleFlag}
-                        onEdit={handleEdit}
+                        onSelect={(id) => {
+                            const next = new Set(selectedCampaignIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedCampaignIds(next);
+                        }}
+                        onSelectAll={() => setSelectedCampaignIds(selectedCampaignIds.size === campaigns.length ? new Set() : new Set(campaigns.map(c => c.id)))}
+                        onPreview={(c) => setViewerConfig({ isOpen: true, type: 'preview', campaign: c, mediaUrl: c.metadata?.media_url })}
+                        onViewStats={(c) => setViewerConfig({ isOpen: true, type: 'stats', campaign: c })}
+                        onEdit={(c) => { setEditingCampaign(c); setIsEditModalOpen(true); }}
                         currentPage={currentPage}
-                        totalPages={totalPages}
+                        totalPages={Math.ceil(totalCount / itemsPerPage)}
                         onPageChange={setCurrentPage}
                     />
                 </TabsContent>
 
-
-                <TabsContent value="credits">
-                    <AdCreditsTab 
-                        hideToolbar 
-                        isIssueModalOpen={isIssueModalOpen}
-                        setIsIssueModalOpen={setIsIssueModalOpen}
-                        searchTerm={searchTerm}
-                    />
+                <TabsContent value="analytics">
+                    <AdAnalyticsTab />
                 </TabsContent>
             </Tabs>
 

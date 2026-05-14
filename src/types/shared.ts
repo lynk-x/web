@@ -45,7 +45,7 @@ export interface Column<T> {
     /** Text shown in the `<th>` header cell. */
     header: string;
     /** Renders the cell content for a given row. */
-    render: (item: T) => React.ReactNode;
+    render: (item: T, index: number) => React.ReactNode;
     /** Optional inline styles applied to the `<th>` element. */
     headerStyle?: React.CSSProperties;
     /** Optional inline styles applied to the `<td>` element. */

@@ -1,170 +1,146 @@
 "use client";
-import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
-import Badge from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
-import { useToast } from '@/components/ui/Toast';
-import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import Badge from '@/components/shared/Badge';
+import { formatCurrency } from '@/utils/format';
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { useDebounce } from '@/hooks/useDebounce';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-/** Aggregated row from `ad_analytics` joined with `ad_campaigns`. */
-interface AnalyticsRow {
-    id: string;
-    campaign_id: string;
-    campaign_title: string;
-    campaign_ref: string;
-    campaign_type: string;
-    interaction_type: string;
-    event_count: number;
-    total_cost: number;
-    /** YYYY-MM-DD bucket */
-    date: string;
+interface AdvertiserAnalytics {
+    account_id: string;
+    account_name: string;
+    campaign_count: number;
+    total_impressions: number;
+    total_clicks: number;
+    total_spend: number;
+    avg_ctr: number;
+    avg_cpc: number;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-/**
- * Campaigns tab showing daily aggregated `ad_analytics` data.
- * Useful for fraud detection and performance oversight.
- * Data is grouped by campaign + interaction_type + date.
- */
 export default function AdAnalyticsTab() {
+    const supabase = React.useMemo(() => createClient(), []);
     const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
-
-    const [rows, setRows] = useState<AnalyticsRow[]>([]);
+    
+    const [data, setData] = useState<AdvertiserAnalytics[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [interactionFilter, setInteractionFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 14;
+    const [totalCount, setTotalCount] = useState(0);
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    
+    const itemsPerPage = 20;
 
-    const fetchAnalytics = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            /**
-             * We query the raw ad_analytics rows (limited to last 30 days)
-             * and group them client-side to avoid requiring a DB view or RPC for this read.
-             * For production scale, move aggregation to mv_ad_campaign_performance.
-             */
-            const since = new Date();
-            since.setDate(since.getDate() - 30);
-
-            const { data, error } = await supabase
-                .from('ad_analytics')
-                .select('campaign_id, interaction_type, cost_charged, created_at, campaign:ad_campaigns!campaign_id(title, type, reference)')
-                .gte('created_at', since.toISOString())
-                .order('created_at', { ascending: false })
-                .limit(5000);
-            if (error) throw error;
-
-            // Client-side aggregation: group by campaign + interaction_type + date
-            const map = new Map<string, AnalyticsRow>();
-            (data || []).forEach((r: any) => {
-                const date = r.created_at.slice(0, 10);
-                const key = `${r.campaign_id}:${r.interaction_type}:${date}`;
-                if (map.has(key)) {
-                    const existing = map.get(key)!;
-                    existing.event_count += 1;
-                    existing.total_cost += parseFloat(r.cost_charged || '0');
-                } else {
-                    map.set(key, {
-                        id: key,
-                        campaign_id: r.campaign_id,
-                        campaign_title: r.campaign?.title ?? 'Unknown',
-                        campaign_ref: r.campaign?.reference ?? 'N/A',
-                        campaign_type: r.campaign?.type ?? '—',
-                        interaction_type: r.interaction_type,
-                        event_count: 1,
-                        total_cost: parseFloat(r.cost_charged || '0'),
-                        date,
-                    });
-                }
+            const { data, error } = await supabase.rpc('get_admin_advertiser_analytics', {
+                p_search: debouncedSearch,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
             });
-            setRows(Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date)));
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to load analytics', 'error');
+
+            if (error) throw error;
+            setData(data || []);
+            setTotalCount(data?.[0]?.total_count || 0);
+        } catch (error: any) {
+            showToast(error.message || 'Failed to load analytics', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, debouncedSearch, currentPage, showToast]);
 
-    useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
-    const filtered = rows.filter(r => {
-        const matchesInteraction = interactionFilter === 'all' || r.interaction_type === interactionFilter;
-        const matchesSearch = r.campaign_title.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesInteraction && matchesSearch;
-    });
-    const totalPages = Math.ceil(filtered.length / itemsPerPage);
-    const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    const columns: Column<AnalyticsRow>[] = [
+    const columns: Column<AdvertiserAnalytics>[] = [
         {
-            header: 'Date',
-            render: (r) => <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 600 }}>{r.date}</div>,
+            header: '#',
+            width: '50px',
+            render: (r: AdvertiserAnalytics, index: number) => (
+                <div style={{ opacity: 0.5, fontWeight: 600 }}>
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                </div>
+            )
         },
         {
-            header: 'Reference',
+            header: 'Advertiser',
             render: (r) => (
                 <div>
-                    <div style={{ fontSize: '11px', fontFamily: 'monospace', opacity: 0.6, letterSpacing: '0.5px' }}>{r.campaign_ref}</div>
-                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{r.campaign_title}</div>
-                    <Badge label={r.campaign_type} variant="info" />
+                    <div style={{ fontWeight: 600 }}>{r.account_name}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.6 }}>{r.account_id}</div>
                 </div>
-            ),
+            )
         },
         {
-            header: 'Interaction',
-            render: (r) => <Badge label={r.interaction_type === 'impression' ? 'CPM' : 'CPC'} variant={r.interaction_type === 'impression' ? 'neutral' : 'success'} />,
-        },
-        {
-            header: 'Events',
-            render: (r) => <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'monospace' }}>{r.event_count.toLocaleString()}</div>,
-        },
-        {
-            header: 'Total Cost',
+            header: 'Campaigns',
             render: (r) => (
-                <div style={{ fontWeight: 700, fontSize: '14px', fontFamily: 'monospace' }}>
-                    ${r.total_cost.toFixed(4)}
+                <div style={{ fontWeight: 500 }}>
+                    {r.campaign_count}
                 </div>
-            ),
+            )
         },
+        {
+            header: 'Reach',
+            render: (r) => (
+                <div>
+                    <div style={{ fontWeight: 600 }}>{r.total_impressions.toLocaleString()}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.6 }}>Impressions</div>
+                </div>
+            )
+        },
+        {
+            header: 'Engagement',
+            render: (r) => (
+                <div>
+                    <div style={{ fontWeight: 600 }}>{r.total_clicks.toLocaleString()}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-brand-primary)', fontWeight: 600 }}>
+                        {r.avg_ctr}% CTR
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Total Spend',
+            render: (r) => (
+                <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                    {formatCurrency(r.total_spend)}
+                </div>
+            )
+        },
+        {
+            header: 'Efficiency',
+            render: (r) => (
+                <div>
+                    <div style={{ fontWeight: 600 }}>{formatCurrency(r.avg_cpc)}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.6 }}>Avg. CPC</div>
+                </div>
+            )
+        }
     ];
 
-    const totalCost = filtered.reduce((acc, r) => acc + r.total_cost, 0);
-    const totalEvents = filtered.reduce((acc, r) => acc + r.event_count, 0);
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            {/* Filters */}
-            <TableToolbar 
-                searchPlaceholder="Search campaign analytics..." 
-                searchValue={searchTerm} 
-                onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}
-            >
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[{ value: 'all', label: 'All' }, { value: 'impression', label: 'Impressions (CPM)' }, { value: 'click', label: 'Clicks (CPC)' }].map(({ value, label }) => (
-                        <button key={value} className={`${adminStyles.chip} ${interactionFilter === value ? adminStyles.chipActive : ''}`} onClick={() => { setInteractionFilter(value); setCurrentPage(1); }}>
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </TableToolbar>
-
-            <DataTable<AnalyticsRow>
-                data={paginated}
-                columns={columns}
-                isLoading={isLoading}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                emptyMessage="No analytics data for the last 30 days."
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <TableToolbar
+                searchPlaceholder="Filter by advertiser..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
             />
+
+            <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
+                <DataTable
+                    data={data.map(r => ({ ...r, id: r.account_id }))}
+                    columns={columns}
+                    isLoading={isLoading}
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(totalCount / itemsPerPage)}
+                    onPageChange={setCurrentPage}
+                    emptyMessage="No advertiser data found."
+                />
+            </div>
         </div>
     );
 }

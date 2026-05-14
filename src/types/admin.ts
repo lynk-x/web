@@ -41,6 +41,7 @@ export interface Campaign {
     endDate: string;
     moderationId?: string;
     isFlagged?: boolean;
+    metadata?: Record<string, any>;
     /** Partition key for advertising.campaigns */
     createdAt: string;
 }

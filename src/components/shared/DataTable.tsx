@@ -89,7 +89,7 @@ function DataTable<T extends { id: string | number }>({
                 </thead>
 
                 <tbody>
-                    {data.map((item) => (
+                    {data.map((item, rowIndex) => (
                         <tr
                             key={String(item.id)}
                             className={selectedIds?.has(String(item.id)) ? styles.rowSelected : ''}
@@ -106,7 +106,7 @@ function DataTable<T extends { id: string | number }>({
 
                             {/* Data cells */}
                             {columns.map((col, idx) => (
-                                <td key={idx} style={col.cellStyle}>{col.render(item)}</td>
+                                <td key={idx} style={col.cellStyle}>{col.render(item, rowIndex)}</td>
                             ))}
 
                             {/* Row actions */}

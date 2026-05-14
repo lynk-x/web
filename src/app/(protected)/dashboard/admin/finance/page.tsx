@@ -8,10 +8,10 @@ import styles from './page.module.css';
 import Link from 'next/link';
 import adminStyles from '../page.module.css';
 import FinanceTable from '@/components/features/finance/FinanceTable';
-import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import FXRateTable from '@/components/admin/finance/FXRateTable';
 import PromoCodeTable from '@/components/admin/finance/PromoCodeTable';
+import WalletTable, { AdminWallet } from '@/components/admin/finance/WalletTable';
 import SubscriptionTable, { Subscription } from '@/components/admin/finance/SubscriptionTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
@@ -56,19 +56,14 @@ function FinanceContent() {
 
     // State for different datasets
     const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
-    const [payouts, setPayouts] = useState<Payout[]>([]);
     const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
     const [fxRates, setFxRates] = useState<FXRate[]>([]);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+    const [wallets, setWallets] = useState<AdminWallet[]>([]);
 
     // Selection state
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
-    const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
-
-    // Payout rejection modal state
-    const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
-    const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
 
     // Tax Modal state
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
@@ -89,9 +84,6 @@ function FinanceContent() {
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
     const [newPlanId, setNewPlanId] = useState('');
-
-    // Country/Region Filter for Payouts
-    const [payoutCountryFilter, setPayoutCountryFilter] = useState('all');
 
     // Selection state for Promo Codes
     const [selectedPromoIds, setSelectedPromoIds] = useState<Set<string>>(new Set());
@@ -221,52 +213,17 @@ function FinanceContent() {
                     reporting_currency: s.reporting_currency
                 })));
                 setTotalCount(data?.[0]?.total_count || 0);
-            } else if (activeTab === 'payouts') {
-                const { data, error } = await supabase.rpc('get_admin_payouts', {
+            } else if (activeTab === 'wallets') {
+                const { data, error } = await supabase.rpc('get_admin_wallets', {
                     p_search: debouncedSearch,
-                    p_start_date: startDate ? new Date(startDate).toISOString() : null,
-                    p_end_date: endDate ? new Date(endDate).toISOString() : null,
-                    p_country_code: payoutCountryFilter,
+                    p_status: categoryFilter,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
 
                 if (error) throw error;
-                const total = data?.[0]?.total_count || 0;
-                setTotalCount(total);
-
-                interface PayoutRow {
-                    id: string;
-                    recipient_name: string;
-                    amount: number;
-                    status: string;
-                    created_at: string;
-                    reference: string;
-                    bank_name: string | null;
-                    method: string;
-                    approval_status: string;
-                    kyc_tier: string;
-                    is_verified: boolean;
-                    reporting_currency: string;
-                    reporting_amount: number;
-                }
-
-                setPayouts((data || []).map((p: PayoutRow) => ({
-                    id: p.id,
-                    recipient: p.recipient_name,
-                    amount: p.amount,
-                    status: p.status,
-                    requestedAt: p.created_at,
-                    reference: p.reference,
-                    bankName: p.bank_name,
-                    type: p.method,
-                    kyc_status: p.approval_status,
-                    kyc_tier: p.kyc_tier,
-                    is_verified: p.is_verified,
-                    reporting_amount: p.reporting_amount,
-                    reporting_currency: p.reporting_currency,
-                    createdAt: p.created_at
-                })));
+                setWallets(data || []);
+                setTotalCount(data?.[0]?.total_count || 0);
             } else if (activeTab === 'tax-rates') {
                 // ... Tax rates, fx rates, etc. usually stay small and don't require server-side scaling
                 const { data, error } = await supabase.from('tax_rates').select(`
@@ -335,7 +292,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter, payoutCountryFilter]);
+    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -359,14 +316,6 @@ function FinanceContent() {
                     }
                 }
             )
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'payouts', table: 'payouts' },
-                () => {
-                    if (activeTabRef.current === 'payouts') fetchDataRef.current();
-                    fetchGlobalStatsRef.current();
-                }
-            )
             .subscribe();
 
         return () => {
@@ -382,12 +331,11 @@ function FinanceContent() {
     useEffect(() => {
         setCurrentPage(1);
         fetchData();
-    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, payoutCountryFilter]);
+    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter]);
 
     useEffect(() => {
         fetchData();
         setSelectedTxIds(new Set());
-        setSelectedPayoutIds(new Set());
 
         const fetchCountries = async () => {
             const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
@@ -442,74 +390,6 @@ function FinanceContent() {
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         }
-    };
-
-    // ── Payout Lifecycle Handlers ───────────────────────────────────────────
-    const handleApprovePayout = async (payout: Payout) => {
-        // KYC Gate: Resolves Part 2 audit item #1
-        if (!payout.is_verified) {
-            showToast(`Critical Block: Recipient identity is NOT verified. Approve KYC first.`, 'error');
-            return;
-        }
-
-        showToast(`Triggering disbursement for ${payout.reference}...`, 'info');
-        try {
-            const { data, error } = await supabase.functions.invoke('payout-fulfillment', {
-                body: { payout_id: payout.id }
-            });
-            
-            if (error || !data?.success) {
-                throw new Error(error?.message || data?.error || 'Failed to initiate payout');
-            }
-            
-            showToast('Payout successfully initiated.', 'success');
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
-    };
-
-    const handleRejectPayout = (payout: Payout) => {
-        setPendingRejectPayout(payout);
-        setIsPayoutRejectModalOpen(true);
-    };
-
-    const confirmRejectPayout = async (reason: string) => {
-        const isBulk = !pendingRejectPayout;
-        const count = isBulk ? selectedPayoutIds.size : 1;
-        
-        showToast(`Rejecting ${count} payout(s)...`, 'info');
-        try {
-            if (isBulk) {
-                const selectedPayoutsList = payouts.filter(p => selectedPayoutIds.has(p.id));
-                const { error } = await supabase.rpc('bulk_reject_payouts', {
-                    p_payout_ids: Array.from(selectedPayoutIds),
-                    p_created_at_list: selectedPayoutsList.map(p => p.createdAt),
-                    p_reason: reason
-                });
-                if (error) throw error;
-                setSelectedPayoutIds(new Set());
-            } else if (pendingRejectPayout) {
-                const { error } = await supabase.rpc('reject_payout', {
-                    p_payout_id: pendingRejectPayout.id,
-                    p_created_at: pendingRejectPayout.createdAt,
-                    p_reason: reason
-                });
-                if (error) throw error;
-            }
-
-            showToast(`${count > 1 ? 'Payouts' : 'Payout'} rejected and funds returned to escrow.`, 'success');
-            setIsPayoutRejectModalOpen(false);
-            setPendingRejectPayout(null);
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
-    };
-
-    const handleRetryPayout = async (payout: Payout) => {
-        // Retrying is the same as re-attempting approval via the gateway
-        handleApprovePayout(payout);
     };
 
     /**
@@ -608,44 +488,6 @@ function FinanceContent() {
     };
 
     const getBulkActions = (): BulkAction[] => {
-        if (activeTab === 'payouts' && selectedPayoutIds.size > 0 && isPayoutMgmtEnabled) {
-            return [
-                {
-                    label: 'Batch Approve',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
-                    onClick: async () => {
-                        showToast(`Initiating background processing for ${selectedPayoutIds.size} payouts...`, 'info');
-                        try {
-                            const { data, error } = await supabase.rpc('bulk_approve_payouts', {
-                                p_payout_ids: Array.from(selectedPayoutIds)
-                            });
-                            if (error) throw error;
-                            
-                            if (data.processed_count === 0) {
-                                showToast('No payouts were approved. Check if recipients are identity-verified.', 'warning');
-                            } else {
-                                showToast(`Successfully queued ${data.processed_count} payouts for background fulfillment.`, 'success');
-                                fetchData();
-                            }
-                            setSelectedPayoutIds(new Set());
-                        } catch (err: unknown) {
-                            showToast(getErrorMessage(err) || 'Failed to process bulk payout approval.', 'error');
-                        }
-                    },
-                    variant: 'success'
-                },
-                {
-                    label: 'Batch Reject',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
-                    onClick: () => {
-                        setIsPayoutRejectModalOpen(true);
-                        setPendingRejectPayout(null); // Indicates bulk mode
-                    },
-                    variant: 'danger'
-                }
-            ];
-        }
-
         if (activeTab === 'promo-codes' && selectedPromoIds.size > 0) {
             return [
                 {
@@ -688,97 +530,6 @@ function FinanceContent() {
     };
     
     const totalPages = Math.ceil(totalCount / itemsPerPage);
-
-    const renderActiveTab = () => {
-        if (activeTab === 'payouts') {
-            return (
-                <PayoutTable
-                    payouts={payouts}
-                    selectedIds={selectedPayoutIds}
-                    onSelect={(id) => {
-                        const next = new Set(selectedPayoutIds);
-                        next.has(id) ? next.delete(id) : next.add(id);
-                        setSelectedPayoutIds(next);
-                    }}
-                    onSelectAll={() => setSelectedPayoutIds(selectedPayoutIds.size === payouts.length ? new Set() : new Set(payouts.map(p => p.id)))}
-                    onApprove={isPayoutMgmtEnabled ? handleApprovePayout : undefined}
-                    onReject={isPayoutMgmtEnabled ? handleRejectPayout : undefined}
-                    onRetry={isPayoutMgmtEnabled ? handleRetryPayout : undefined}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    isLoading={isLoading}
-                />
-            );
-        }
-
-        if (activeTab === 'tax-rates') {
-            return (
-                <>
-                    <TaxRateTable
-                        data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
-                        isLoading={isLoading}
-                        onUpdate={fetchData}
-                        onEdit={(rate) => {
-                            setEditingTaxRate(rate);
-                            setTaxForm({
-                                display_name: rate.display_name,
-                                country_code: rate.country_code,
-                                applicable_reason: rate.applicable_reason,
-                                rate_percent: rate.rate_percent,
-                                is_inclusive: rate.is_inclusive
-                            });
-                            setIsTaxModalOpen(true);
-                        }}
-                    />
-                </>
-            );
-        }
-
-        if (activeTab === 'fx-rates') {
-            return (
-                <>
-                    <FXRateTable data={fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} onUpdate={fetchData} />
-                </>
-            );
-        }
-
-        if (activeTab === 'promo-codes') {
-            return (
-                <>
-                    <PromoCodeTable data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} />
-                </>
-            );
-        }
-
-        if (activeTab === 'subscriptions') {
-            return (
-                <SubscriptionTable
-                    data={subscriptions}
-                    isLoading={isLoading}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                />
-            );
-        }
-
-        return (
-            <FinanceTable
-                transactions={transactions.filter(tx => tx.description.toLowerCase().includes(searchTerm.toLowerCase()))}
-                selectedIds={selectedTxIds}
-                onSelect={(id) => {
-                    const next = new Set(selectedTxIds);
-                    next.has(id) ? next.delete(id) : next.add(id);
-                    setSelectedTxIds(next);
-                }}
-                onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
-        );
-    };
 
     return (
         <div className={sharedStyles.container}>
@@ -834,33 +585,6 @@ function FinanceContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                {activeTab === 'payouts' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <DateRangeRow 
-                            startDate={startDate}
-                            endDate={endDate}
-                            onStartDateChange={setStartDate}
-                            onEndDateChange={setEndDate}
-                            onClear={() => {
-                                setStartDate('');
-                                setEndDate('');
-                            }}
-                        />
-                        <div className={styles.filterGroup}>
-                            <select 
-                                className={adminStyles.select}
-                                style={{ height: '40px' }}
-                                value={payoutCountryFilter}
-                                onChange={(e) => setPayoutCountryFilter(e.target.value)}
-                            >
-                                <option value="all">All Regions</option>
-                                {countries.map(c => (
-                                    <option key={c.code} value={c.code}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                )}
                 {activeTab === 'transactions' && (
                     <DateRangeRow 
                         startDate={startDate}
@@ -878,12 +602,12 @@ function FinanceContent() {
             <Tabs value={activeTab} onValueChange={handleTabChange} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="transactions">Transactions</TabsTrigger>
-                        <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-                        <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
+                        <TabsTrigger value="transactions">Audit Ledger</TabsTrigger>
+                        <TabsTrigger value="wallets">Account Wallets</TabsTrigger>
+                        <TabsTrigger value="subscriptions">User Subscriptions</TabsTrigger>
+                        <TabsTrigger value="tax-rates">Tax Regions</TabsTrigger>
+                        <TabsTrigger value="fx-rates">FX Markets</TabsTrigger>
                         <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
-                        <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
-                        <TabsTrigger value="fx-rates">FX Rates</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -912,6 +636,18 @@ function FinanceContent() {
                                 <option value="trialing">Trialing</option>
                                 <option value="past_due">Past Due</option>
                                 <option value="canceled">Canceled</option>
+                            </select>
+                        )}
+                        {activeTab === 'wallets' && (
+                            <select 
+                                className={adminStyles.filterSelect}
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active Only</option>
+                                <option value="frozen">Frozen Only</option>
+                                <option value="restricted">Restricted</option>
                             </select>
                         )}
                         
@@ -983,26 +719,6 @@ function FinanceContent() {
                     />
                 </TabsContent>
 
-                <TabsContent value="payouts">
-                    <PayoutTable
-                        payouts={payouts}
-                        selectedIds={selectedPayoutIds}
-                        onSelect={(id) => {
-                            const next = new Set(selectedPayoutIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
-                            setSelectedPayoutIds(next);
-                        }}
-                        onSelectAll={() => setSelectedPayoutIds(selectedPayoutIds.size === payouts.length ? new Set() : new Set(payouts.map(p => p.id)))}
-                        onApprove={isPayoutMgmtEnabled ? handleApprovePayout : undefined}
-                        onReject={isPayoutMgmtEnabled ? handleRejectPayout : undefined}
-                        onRetry={isPayoutMgmtEnabled ? handleRetryPayout : undefined}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        isLoading={isLoading}
-                    />
-                </TabsContent>
-
                 <TabsContent value="tax-rates">
                     <TaxRateTable
                         data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
@@ -1047,22 +763,14 @@ function FinanceContent() {
             <BulkActionsBar
                 actions={getBulkActions()}
                 selectedCount={
-                    activeTab === 'payouts' ? selectedPayoutIds.size : 
                     activeTab === 'promo-codes' ? selectedPromoIds.size : 
                     0
                 }
                 onCancel={() => {
-                    setSelectedPayoutIds(new Set());
                     setSelectedPromoIds(new Set());
                 }}
             />
 
-            <RejectionModal
-                isOpen={isPayoutRejectModalOpen}
-                onClose={() => { setIsPayoutRejectModalOpen(false); setPendingRejectPayout(null); }}
-                onConfirm={confirmRejectPayout}
-                title="Reject Payout Request"
-            />
 
             <Modal
                 isOpen={isTaxModalOpen}
