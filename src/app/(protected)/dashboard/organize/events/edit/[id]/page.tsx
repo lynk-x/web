@@ -20,6 +20,7 @@ export default function EditEventPage() {
     const { showToast } = useToast();
 
     const [initialData, setInitialData] = useState<OrganizerEventFormData | null>(null);
+    const [eventCreatedAt, setEventCreatedAt] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -35,7 +36,7 @@ export default function EditEventPage() {
                 const { data: event, error: eventError } = await supabase
                     .from('events')
                     .select(`
-                        id, title, description, category_id, is_online, is_private, 
+                        id, created_at, title, description, category_id, is_online, is_private, 
                         location, starts_at, ends_at, media, timezone,
                         ticket_tiers (
                             id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
@@ -97,6 +98,7 @@ export default function EditEventPage() {
                     tickets: mappedTickets,
                     timezone: event.timezone || 'UTC'
                 });
+                setEventCreatedAt(event.created_at);
 
             } catch (error: unknown) {
                 console.error("Error fetching event:", error);
@@ -159,72 +161,36 @@ export default function EditEventPage() {
             const startDateTime = toUtcIso(data.startDate, data.startTime, data.timezone);
             const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 
-            // 3. Update Event Record
-            const { error: eventError } = await supabase
-                .from('events')
-                .update({
+            // 3. Upsert Event & Tiers via Atomic RPC
+            const { error: rpcError } = await supabase.rpc('upsert_organizer_event', {
+                p_account_id: activeAccount.id,
+                p_event_id: eventId,
+                p_created_at: eventCreatedAt,
+                p_data: {
                     title: data.title,
                     description: data.description,
-                    category_id: data.category,
-                    is_online: data.isOnline,
-                    is_private: data.isPrivate,
-                    // Write location into the JSONB location column
-                    location: data.location ? { name: data.location } : null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    // Write thumbnail into the JSONB media column
-                    ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
-                    ...(data.status ? { status: data.status } : {}),
-                    timezone: data.timezone || 'UTC'
-                })
-                .eq('id', eventId)
-                .eq('account_id', activeAccount.id);
-
-            if (eventError) throw eventError;
-
-            // 4. Update Tickets
-            // Delete removed tickets
-            const incomingIds = data.tickets.map(t => t.id).filter(id => id); // Get all passed IDs
-
-            const { data: existingTickets } = await supabase
-                .from('ticket_tiers')
-                .select('id')
-                .eq('event_id', eventId);
-
-            const existingIds = existingTickets?.map(t => t.id) || [];
-            const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
-
-            if (idsToDelete.length > 0) {
-                const { error: deleteError } = await supabase
-                    .from('ticket_tiers')
-                    .delete()
-                    .in('id', idsToDelete);
-
-                if (deleteError) {
-                    throw new Error("Cannot delete ticket tiers that already have sales attached to them.");
-                }
-            }
-
-            // Upsert remaining/new tickets
-            if (data.tickets.length > 0) {
-                const ticketsToUpsert = data.tickets.map((t) => ({
-                    ...(t.id ? { id: t.id } : {}),
-                    event_id: eventId,
-                    display_name: t.display_name,
+                    timezone: data.timezone || 'UTC',
+                    location: data.location ? { name: data.location } : null,
+                    media: uploadedThumbnailUrl ? { thumbnail: uploadedThumbnailUrl } : {},
+                    currency: 'KES', // Defaulting to KES as per initial state
+                    is_private: data.isPrivate,
+                    status: data.status || undefined
+                },
+                p_tiers: data.tickets.map(t => ({
+                    id: t.id || undefined,
+                    name: t.display_name,
                     price: data.isPaid ? parseFloat(t.price || '0') : 0,
                     capacity: parseInt(t.capacity || '0'),
-                    max_per_user: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
-                    sales_start_at: t.saleStart ? toUtcIso(t.saleStart, '00:00', data.timezone) : startDateTime,
-                    sales_end_at: t.saleEnd ? toUtcIso(t.saleEnd, '23:59', data.timezone) : endDateTime,
-                    description: t.description || null
-                }));
+                    sales_start: t.saleStart ? toUtcIso(t.saleStart, '00:00', data.timezone) : startDateTime,
+                    sales_end: t.saleEnd ? toUtcIso(t.saleEnd, '23:59', data.timezone) : endDateTime,
+                    description: t.description || null,
+                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5
+                }))
+            });
 
-                const { error: upsertError } = await supabase
-                    .from('ticket_tiers')
-                    .upsert(ticketsToUpsert);
-
-                if (upsertError) throw upsertError;
-            }
+            if (rpcError) throw rpcError;
 
             // 5. Update Tags
             // Delete current links

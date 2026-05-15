@@ -74,6 +74,7 @@ export default function OrganizerEventsPage() {
                 event_reference: string;
                 is_private: boolean;
                 currency: string;
+                created_at: string;
             }
 
             const formattedEvents: OrganizerEvent[] = (data.items || []).map((e: EventItem) => ({
@@ -90,7 +91,8 @@ export default function OrganizerEventsPage() {
                 thumbnailUrl: e.thumbnail_url,
                 eventReference: e.event_reference,
                 isPrivate: e.is_private,
-                currency: e.currency
+                currency: e.currency,
+                createdAt: e.created_at
             }));
 
             setEvents(formattedEvents);
@@ -142,11 +144,12 @@ export default function OrganizerEventsPage() {
         }
     };
 
-    const handleDuplicate = async (eventId: string) => {
+    const handleDuplicate = async (event: OrganizerEvent) => {
         showToast('Cloning event...', 'info');
         try {
             const { data: newId, error } = await supabase.rpc('duplicate_event', {
-                p_event_id: eventId
+                p_event_id: event.id,
+                p_created_at: event.createdAt
             });
             if (error) throw error;
             showToast('Event duplicated to draft.', 'success');
@@ -160,8 +163,14 @@ export default function OrganizerEventsPage() {
         if (selectedIds.size === 0) return;
         showToast(`Cloning ${selectedIds.size} events...`, 'info');
         try {
+            // Group IDs and their partition keys
+            const selectedEvents = events.filter(e => selectedIds.has(e.id));
+            const ids = selectedEvents.map(e => e.id);
+            const createdAts = selectedEvents.map(e => e.createdAt);
+
             const { data, error } = await supabase.rpc('bulk_duplicate_events', {
-                p_event_ids: Array.from(selectedIds)
+                p_event_ids: ids,
+                p_created_ats: createdAts
             });
             if (error) throw error;
             showToast(`Batch duplication complete: ${data.processed_count} events added to drafts.`, 'success');
@@ -185,15 +194,30 @@ export default function OrganizerEventsPage() {
     };
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
-        if (!activeAccount) return;
+        if (!activeAccount || selectedIds.size === 0) return;
         showToast(`Updating ${selectedIds.size} events...`, 'info');
+        
         try {
-            const { error } = await supabase.rpc('bulk_update_events_status', {
-                p_account_id: activeAccount.id,
-                p_event_ids: Array.from(selectedIds),
-                p_status: newStatus
+            // Group IDs by partition key (createdAt)
+            const groups: Record<string, string[]> = {};
+            events.forEach(e => {
+                if (selectedIds.has(e.id)) {
+                    if (!groups[e.createdAt]) groups[e.createdAt] = [];
+                    groups[e.createdAt].push(e.id);
+                }
             });
-            if (error) throw error;
+
+            // Call RPC for each partition group
+            for (const [createdAt, ids] of Object.entries(groups)) {
+                const { error } = await supabase.rpc('bulk_update_events_status', {
+                    p_account_id: activeAccount.id,
+                    p_event_ids: ids,
+                    p_created_at: createdAt,
+                    p_status: newStatus
+                });
+                if (error) throw error;
+            }
+
             showToast(`Successfully updated ${selectedIds.size} events to ${newStatus}.`, 'success');
             setSelectedIds(new Set());
             fetchEvents();
@@ -263,15 +287,27 @@ export default function OrganizerEventsPage() {
     };
 
     const confirmDelete = async () => {
-        if (!activeAccount) return;
+        if (!activeAccount || selectedIds.size === 0) return;
         showToast('Processing deletion...', 'info');
         try {
-            const { error } = await supabase.rpc('bulk_delete_events', {
-                p_account_id: activeAccount.id,
-                p_event_ids: Array.from(selectedIds)
+            // Group IDs by partition key (createdAt)
+            const groups: Record<string, string[]> = {};
+            events.forEach(e => {
+                if (selectedIds.has(e.id)) {
+                    if (!groups[e.createdAt]) groups[e.createdAt] = [];
+                    groups[e.createdAt].push(e.id);
+                }
             });
 
-            if (error) throw error;
+            // Call RPC for each partition group
+            for (const [createdAt, ids] of Object.entries(groups)) {
+                const { error } = await supabase.rpc('bulk_delete_events', {
+                    p_account_id: activeAccount.id,
+                    p_event_ids: ids,
+                    p_created_at: createdAt
+                });
+                if (error) throw error;
+            }
 
             showToast(`Successfully deleted ${selectedIds.size} events.`, 'success');
             setSelectedIds(new Set());
@@ -291,6 +327,7 @@ export default function OrganizerEventsPage() {
             const { error } = await supabase.rpc('cancel_event_full', {
                 p_account_id: activeAccount.id,
                 p_event_id: cancelTarget.event.id,
+                p_created_at: cancelTarget.event.createdAt,
                 p_reason: reason
             });
 
@@ -319,6 +356,7 @@ export default function OrganizerEventsPage() {
             const { error } = await supabase.rpc('bulk_update_events_status', {
                 p_account_id: activeAccount.id,
                 p_event_ids: [event.id],
+                p_created_at: event.createdAt,
                 p_status: newStatus
             });
 

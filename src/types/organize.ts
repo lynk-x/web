@@ -39,6 +39,8 @@ export interface OrganizerEvent {
     message_count?: number;
     media_count?: number;
     escalated_reports_count?: number;
+    /** Partition key for events.events */
+    createdAt: string;
 }
 
 /** A row in the organizer events (overview) table. */
@@ -59,6 +61,8 @@ export interface EventRow {
     /** Unique share/lookup code — from `events.reference` column */
     reference?: string;
     currency?: string;
+    /** Partition key for events.events */
+    createdAt: string;
 }
 
 /** A financial transaction — aligned to the `transactions` DB table.

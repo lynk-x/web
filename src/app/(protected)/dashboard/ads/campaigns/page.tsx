@@ -47,6 +47,7 @@ export default function CampaignsPage() {
 
             interface CampaignItem {
                 id: string;
+                created_at: string;
                 title: string;
                 type: string;
                 start_at: string;
@@ -54,13 +55,14 @@ export default function CampaignsPage() {
                 status: AdsCampaign['status'];
                 total_budget: number;
                 spent_amount: number;
-                target_url: string | null;
+                destination_url: string | null;
                 total_impressions: number;
                 total_clicks: number;
             }
 
             const formatted: AdsCampaign[] = (data.items || []).map((c: CampaignItem) => ({
                 id: c.id,
+                created_at: c.created_at,
                 title: c.title,
                 type: c.type,
                 start_at: c.start_at,
@@ -68,7 +70,7 @@ export default function CampaignsPage() {
                 status: c.status,
                 total_budget: Number(c.total_budget),
                 spent_amount: Number(c.spent_amount),
-                target_url: c.target_url || '',
+                destination_url: c.destination_url || '',
                 total_impressions: Number(c.total_impressions),
                 total_clicks: Number(c.total_clicks),
                 metrics: {
@@ -122,9 +124,13 @@ export default function CampaignsPage() {
         if (!activeAccount || selectedIds.size === 0) return;
         showToast(`Pausing ${selectedIds.size} campaigns...`, 'info');
         try {
+            const selectedCampaigns = campaigns
+                .filter(c => selectedIds.has(c.id))
+                .map(c => ({ id: c.id, created_at: c.created_at }));
+
             const { error } = await supabase.rpc('bulk_toggle_campaigns', {
                 p_account_id: activeAccount.id,
-                p_campaign_ids: Array.from(selectedIds),
+                p_campaigns: selectedCampaigns,
                 p_status: 'paused'
             });
 
@@ -141,9 +147,13 @@ export default function CampaignsPage() {
         if (!activeAccount || selectedIds.size === 0) return;
         showToast(`Deleting ${selectedIds.size} campaigns...`, 'info');
         try {
+            const selectedCampaigns = campaigns
+                .filter(c => selectedIds.has(c.id))
+                .map(c => ({ id: c.id, created_at: c.created_at }));
+
             const { error } = await supabase.rpc('bulk_delete_campaigns', {
                 p_account_id: activeAccount.id,
-                p_campaign_ids: Array.from(selectedIds)
+                p_campaigns: selectedCampaigns
             });
 
             if (error) throw error;
@@ -194,12 +204,15 @@ export default function CampaignsPage() {
     /** Single-row status change (pause or resume/launch). */
     const handleStatusChange = async (id: string, newStatus: 'active' | 'paused') => {
         if (!activeAccount) return;
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+
         const label = newStatus === 'paused' ? 'Pausing' : 'Activating';
         showToast(`${label} campaign...`, 'info');
         try {
             const { error } = await supabase.rpc('bulk_toggle_campaigns', {
                 p_account_id: activeAccount.id,
-                p_campaign_ids: [id],
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }],
                 p_status: newStatus
             });
             if (error) throw error;
@@ -213,11 +226,14 @@ export default function CampaignsPage() {
     /** Single-row delete. */
     const handleSingleDelete = async (id: string, title: string) => {
         if (!activeAccount) return;
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+
         showToast(`Archiving "${title}"...`, 'info');
         try {
             const { error } = await supabase.rpc('bulk_delete_campaigns', {
                 p_account_id: activeAccount.id,
-                p_campaign_ids: [id]
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }]
             });
             if (error) throw error;
             showToast(`"${title}" archived.`, 'success');

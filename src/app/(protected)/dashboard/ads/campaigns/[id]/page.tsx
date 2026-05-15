@@ -52,7 +52,7 @@ interface CampaignDetail {
     max_bid_amount: number;
     total_impressions: number;
     total_clicks: number;
-    target_url: string;
+    destination_url: string;
     target_event_id: string | null;
     reviewed_at: string | null;
     reviewed_by: string | null;
@@ -402,7 +402,7 @@ export default function CampaignDetailPage() {
             <div className={adminStyles.pageCard}>
                 <h2 className={adminStyles.sectionTitle}>Campaign Details</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                    <DetailRow label="Target URL" value={campaign.target_url} isLink />
+                    <DetailRow label="Destination URL" value={campaign.destination_url} isLink />
                     <DetailRow label="Max Bid" value={formatCurrency(campaign.max_bid_amount, campaign.currency)} />
                     <DetailRow label="Daily Limit" value={campaign.daily_limit ? formatCurrency(campaign.daily_limit, campaign.currency) : 'No limit'} />
                     <DetailRow label="Budget" value={formatCurrency(campaign.total_budget, campaign.currency)} />

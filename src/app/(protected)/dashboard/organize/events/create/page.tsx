@@ -71,52 +71,38 @@ export default function CreateEventPage() {
             const startDateTime = toUtcIso(data.startDate, data.startTime, data.timezone);
             const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 
-            // 3. Insert Event Record
-            const { data: newEvent, error: eventError } = await supabase
-                .from('events')
-                .insert({
-                    account_id: activeAccount.id,
+            // 3. Upsert Event & Tiers via Atomic RPC
+            const { data: rpcResult, error: rpcError } = await supabase.rpc('upsert_organizer_event', {
+                p_account_id: activeAccount.id,
+                p_event_id: null, // New event
+                p_created_at: null,
+                p_data: {
                     title: data.title,
                     description: data.description,
-                    category_id: data.category,
-                    currency: data.currency,
-                    is_online: data.isOnline,
-                    is_private: data.isPrivate,
-                    // Write location into the JSONB location column
-                    location: data.location ? { name: data.location } : null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    // Write thumbnail into the JSONB media column
-                    ...(uploadedThumbnailUrl ? { media: { thumbnail: uploadedThumbnailUrl } } : {}),
                     timezone: data.timezone || null,
+                    location: data.location ? { name: data.location } : null,
+                    media: uploadedThumbnailUrl ? { thumbnail: uploadedThumbnailUrl } : {},
+                    currency: data.currency,
+                    is_private: data.isPrivate,
                     status: data.status || 'published'
-                })
-                .select('id')
-                .single();
-
-            if (eventError) throw eventError;
-
-            // 4. Insert Tickets
-            if (data.tickets.length > 0 && newEvent) {
-                const ticketsToInsert = data.tickets.map((t) => ({
-                    event_id: newEvent.id,
-                    display_name: t.display_name,
+                },
+                p_tiers: data.tickets.map(t => ({
+                    name: t.display_name,
                     price: data.isPaid ? parseFloat(t.price || '0') : 0,
                     capacity: parseInt(t.capacity || '0'),
-                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5,
                     sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
                     sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
-                }));
+                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5
+                }))
+            });
 
-                const { error: ticketError } = await supabase
-                    .from('ticket_tiers')
-                    .insert(ticketsToInsert);
-
-                if (ticketError) throw ticketError;
-            }
+            if (rpcError) throw rpcError;
+            const newEventId = rpcResult.event_id;
 
             // 5. Link Tags
-            if (data.tags.length > 0 && newEvent) {
+            if (data.tags.length > 0 && newEventId) {
                 const tagsToUpsert = data.tags.map(tag => ({
                     name: tag,
                     slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
@@ -149,7 +135,7 @@ export default function CreateEventPage() {
 
                 if (resolvedTags.length > 0) {
                     const eventTagsToInsert = resolvedTags.map(tag => ({
-                        event_id: newEvent.id,
+                        event_id: newEventId,
                         tag_id: tag.id
                     }));
 

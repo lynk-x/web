@@ -27,6 +27,7 @@ export interface Creative {
 
 export interface CampaignData {
     id?: string;
+    created_at?: string;
     title: string;
     description: string;
     type: 'banner' | 'interstitial' | 'interstitial_video';
@@ -34,7 +35,7 @@ export interface CampaignData {
     daily_limit: string;
     start_at: string;
     end_at: string;
-    target_url: string;
+    destination_url: string;
     target_event_id?: string;
     max_bid_amount: string;
     target_countries: string[];
@@ -131,7 +132,7 @@ export default function CreateCampaignForm({
         daily_limit: '',
         start_at: '',
         end_at: '',
-        target_url: '',
+        destination_url: '',
 
         target_countries: [],
         target_tags: [],
@@ -528,16 +529,16 @@ export default function CreateCampaignForm({
         }
 
         if (tab === 'targeting') {
-            const url = formData.target_url.trim();
+            const url = formData.destination_url.trim();
             if (!url) {
-                newErrors.target_url = 'Target URL is required.';
+                newErrors.destination_url = 'Destination URL is required.';
             } else if (!url.startsWith('https://')) {
-                newErrors.target_url = 'A secure target URL (https://...) is required.';
+                newErrors.destination_url = 'A secure destination URL (https://...) is required.';
             } else {
                 try {
                     new URL(url);
                 } catch {
-                    newErrors.target_url = 'Target URL is not in a valid format.';
+                    newErrors.destination_url = 'Destination URL is not in a valid format.';
                 }
             }
         }
@@ -589,11 +590,11 @@ export default function CreateCampaignForm({
             newErrors['creative.0.asset'] = 'An ad asset is required.';
         }
 
-        const url = formData.target_url.trim();
+        const url = formData.destination_url.trim();
         if (!url) {
-            newErrors.target_url = 'Target URL is required.';
+            newErrors.destination_url = 'Destination URL is required.';
         } else if (!url.startsWith('https://')) {
-            newErrors.target_url = 'A secure target URL (https://...) is required.';
+            newErrors.destination_url = 'A secure destination URL (https://...) is required.';
         }
 
         setErrors(newErrors);
@@ -656,6 +657,7 @@ export default function CreateCampaignForm({
             const { data, error } = await supabase.rpc('upsert_advertiser_campaign', {
                 p_account_id: activeAccount.id,
                 p_campaign_id: isEditing ? formData.id : null,
+                p_created_at: formData.created_at || null,
                 p_data: {
                     title: formData.title,
                     description: formData.description,
@@ -665,7 +667,7 @@ export default function CreateCampaignForm({
                     max_bid_amount: parseFloat(formData.max_bid_amount),
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
-                    target_url: formData.target_url
+                    destination_url: formData.destination_url
                 },
                 p_regions: formData.target_countries,
                 p_tags: formData.target_tags,
@@ -840,13 +842,13 @@ export default function CreateCampaignForm({
                                     <div className={styles.formSection}>
 
                                         <div className={styles.inputGroup}>
-                                            <label className={styles.label} htmlFor="target_url">
+                                            <label className={styles.label} htmlFor="destination_url">
                                                 Destination URL <span className={styles.requiredIndicator}>*Required</span>
                                             </label>
-                                            <input id="target_url" name="target_url" type="url" className={`${styles.input} ${errors.target_url ? styles.inputError : ''}`}
-                                                placeholder="https://lynk-x.com/event/..." value={formData.target_url}
+                                            <input id="destination_url" name="destination_url" type="url" className={`${styles.input} ${errors.destination_url ? styles.inputError : ''}`}
+                                                placeholder="https://lynk-x.app/..." value={formData.destination_url}
                                                 onChange={handleInputChange} required />
-                                            {errors.target_url && <p className={styles.errorMessage}>{errors.target_url}</p>}
+                                            {errors.destination_url && <p className={styles.errorMessage}>{errors.destination_url}</p>}
                                         </div>
 
                                         {/* Multi-Country Targeting */}
@@ -1082,6 +1084,10 @@ export default function CreateCampaignForm({
                                                     {formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Worldwide'}
                                                     {formData.target_tags.length > 0 && ` • ${formData.target_tags.join(', ')}`}
                                                 </div>
+                                            </div>
+                                            <div className={styles.reviewItem}>
+                                                <label>Destination URL</label>
+                                                <div style={{ wordBreak: 'break-all' }}>{formData.destination_url}</div>
                                             </div>
                                         </div>
 

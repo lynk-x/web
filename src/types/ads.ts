@@ -8,6 +8,7 @@
 /** An advertiser-managed campaign. */
 export interface AdsCampaign {
     id: string;
+    created_at: string;
     /** Internal DB field: title */
     title: string;
     /** From `ad_type` enum */
@@ -22,7 +23,7 @@ export interface AdsCampaign {
     daily_limit?: number;
     spent_amount: number;
     /** Creative/Targeting */
-    target_url: string;
+    destination_url: string;
     target_event_id?: string;
     target_country_code?: string;
     /** denormalized schema columns */

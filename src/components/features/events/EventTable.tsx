@@ -54,7 +54,7 @@ interface AdminModeProps extends SharedProps {
     events: OrganizerEvent[];
     onEdit?: (event: OrganizerEvent) => void;
     onDelete?: (event: OrganizerEvent) => void;
-    onDuplicate?: (eventId: string) => void;
+    onDuplicate?: (event: OrganizerEvent) => void;
     onStatusChange?: (event: OrganizerEvent, newStatus: 'draft' | 'published' | 'active' | 'suspended' | 'rejected' | 'cancelled') => void;
 }
 
@@ -62,7 +62,7 @@ interface OrganizerModeProps extends SharedProps {
     mode: 'organizer';
     /** Lightweight organizer event rows. */
     events: EventRow[];
-    onDuplicate?: (eventId: string) => void;
+    onDuplicate?: (event: EventRow) => void;
 }
 
 type EventTableProps = AdminModeProps | OrganizerModeProps;
@@ -215,7 +215,7 @@ export default function EventTable(props: EventTableProps) {
                 actions.push({
                     label: 'Duplicate',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-                    onClick: () => onDuplicate(event.id)
+                    onClick: () => onDuplicate(event)
                 });
             }
 

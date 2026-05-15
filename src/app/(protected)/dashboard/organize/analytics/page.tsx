@@ -24,6 +24,7 @@ export default function AnalyticsPage() {
     const [timeRange, setTimeRange] = useState('30');
     const [statusFilter, setStatusFilter] = useState('all');
     const [activeTab, setActiveTab] = useState('summary');
+    const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [data, setData] = useState<{ insights: PerformanceEvent[], timeSeries: any[] }>({
         insights: [],
@@ -54,9 +55,11 @@ export default function AnalyticsPage() {
         }
     }, [isOrgLoading, activeAccount, fetchData]);
 
-    const filteredInsights = (data?.insights || []).filter(item =>
-        statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase()
-    );
+    const filteredInsights = (data?.insights || []).filter(item => {
+        const matchesStatus = statusFilter === 'all' || item.status.toLowerCase() === statusFilter.toLowerCase();
+        const matchesSearch = item.event.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesStatus && matchesSearch;
+    });
 
     const handleExport = () => {
         if (filteredInsights.length === 0) {
@@ -125,7 +128,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="tour-analytics-range" style={{ marginTop: 'var(--spacing-md)' }}>
-                <TableToolbar searchPlaceholder="Filter by name..." searchValue="" onSearchChange={() => {}}>
+                <TableToolbar searchPlaceholder="Filter by name..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
                     <div className={adminStyles.filterGroup}>
                         {['all', 'active', 'past', 'draft'].map((status) => (
                             <button
