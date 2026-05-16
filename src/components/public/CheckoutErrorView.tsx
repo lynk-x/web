@@ -14,7 +14,7 @@ interface CheckoutErrorViewProps {
 
 const CheckoutErrorView: React.FC<CheckoutErrorViewProps> = ({
     title = "Checkout Unavailable",
-    description = "Your checkout session is invalid or has expired. Please return to the event page to select your tickets again.",
+    description = "Your checkout session is invalid or has expired.",
     actionLabel = "Back to Events",
     actionHref = "/"
 }) => {

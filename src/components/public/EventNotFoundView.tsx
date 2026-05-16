@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import EmptyStateGuide from '@/components/dashboard/EmptyStateGuide';
 import styles from './EventDetailsView.module.css';
 
 const EventNotFoundView: React.FC = () => {
@@ -27,28 +26,15 @@ const EventNotFoundView: React.FC = () => {
                 </div>
             </header>
 
-            <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                padding: '100px 20px',
-                minHeight: '60vh'
-            }}>
-                <EmptyStateGuide
-                    title="Event Not Found"
-                    description="The event reference you followed is incorrect or the event has been removed. Double check the URL and try again."
-                    icon={
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    }
-                    actionLabel="Explore Events"
-                    actionHref="/"
-                />
-            </div>
+            <main className={styles.emptyStateContainer}>
+                <h2 className={styles.emptyStateTitle}>Event Not Found</h2>
+                <p className={styles.emptyStateText}>
+                    The event reference you followed is incorrect or the event has been removed.
+                </p>
+                <Link href="/" className={styles.getTicketBtn} style={{ maxWidth: 240 }}>
+                    Explore Events
+                </Link>
+            </main>
         </div>
     );
 };

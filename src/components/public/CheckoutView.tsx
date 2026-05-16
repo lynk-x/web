@@ -420,7 +420,7 @@ const CheckoutView: React.FC = () => {
         return (
             <CheckoutErrorView 
                 title="Your cart is empty"
-                description="Looks like you haven't added any tickets yet. Browse our events to find something you'll love."
+                description="Looks like you haven't added any tickets yet."
                 actionLabel="Browse Events"
                 actionHref="/"
             />
