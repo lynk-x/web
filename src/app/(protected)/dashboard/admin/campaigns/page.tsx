@@ -11,7 +11,6 @@ import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTa
 import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
 import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
 import Link from 'next/link';
-import CreateCampaignDrawer from '@/components/admin/campaigns/CreateCampaignDrawer';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
@@ -63,7 +62,6 @@ function CampaignsContent() {
     }>({ isOpen: false, type: 'none', campaign: null });
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
@@ -367,7 +365,7 @@ function CampaignsContent() {
                 title="Ad Campaign Moderation" 
                 subtitle="Manage brand visibility and ad revenue distribution."
                 actionLabel="+ Create Campaign"
-                onActionClick={() => setIsCreateDrawerOpen(true)}
+                actionHref="/dashboard/admin/campaigns/create"
             />
             
             <div className={adminStyles.statsGrid} style={{ marginBottom: 'var(--spacing-xs)' }}>
@@ -489,14 +487,6 @@ function CampaignsContent() {
                 </TabsContent>
             </Tabs>
 
-            <CreateCampaignDrawer 
-                isOpen={isCreateDrawerOpen}
-                onClose={() => setIsCreateDrawerOpen(false)}
-                onSuccess={() => {
-                    fetchCampaigns();
-                    fetchDashboardSummary();
-                }}
-            />
         </>
     );
 }

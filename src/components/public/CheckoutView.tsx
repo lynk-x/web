@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import styles from './CheckoutView.module.css';
 import Skeleton from './Skeleton';
+import CheckoutErrorView from './CheckoutErrorView';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/components/ui/Toast';
 import { validateKenyanPhone } from '@/utils/phone';
@@ -417,14 +418,12 @@ const CheckoutView: React.FC = () => {
     // ── Empty cart ────────────────────────────────────────────────────────────
     if (items.length === 0 && !isLoading) {
         return (
-            <div className={styles.container}>
-                <CheckoutHeader />
-                <main className={styles.emptyStateContainer}>
-                    <h2 className={styles.emptyStateTitle}>Your cart is empty</h2>
-                    <p className={styles.emptyStateText}>{"Looks like you haven't added any tickets yet."}</p>
-                    <Link href="/" className={styles.payBtn} style={{ maxWidth: 200 }}>Browse Events</Link>
-                </main>
-            </div>
+            <CheckoutErrorView 
+                title="Your cart is empty"
+                description="Looks like you haven't added any tickets yet. Browse our events to find something you'll love."
+                actionLabel="Browse Events"
+                actionHref="/"
+            />
         );
     }
 

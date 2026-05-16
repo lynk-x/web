@@ -1,9 +1,7 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
-import adminStyles from './page.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import WorldClock from '@/components/admin/overview/WorldClock';
 import { useState, useEffect } from 'react';
@@ -12,7 +10,6 @@ const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), {
 
 export default function AdminDashboard() {
     const [isMounted, setIsMounted] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);

@@ -13,7 +13,6 @@ import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import { useDebounce } from '@/hooks/useDebounce';
 import KYCTab from '@/components/admin/users/KYCTab';
-import CreateAccountDrawer from '@/components/admin/users/CreateAccountDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import FilterChips from '@/components/shared/FilterChips';
 import Select from '@/components/shared/Select';
@@ -49,7 +48,6 @@ function AccountsContent() {
         };
     }
     const [summary, setSummary] = useState<AdminSummary | null>(null);
-    const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
@@ -139,7 +137,7 @@ function AccountsContent() {
                 title="Identity & Compliance" 
                 subtitle="Manage organizational accounts, KYC status and system access." 
                 actionLabel="Create Account"
-                onActionClick={() => setIsCreateDrawerOpen(true)}
+                actionHref="/dashboard/admin/users/create"
                 actionIcon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '8px' }}>
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -312,14 +310,6 @@ function AccountsContent() {
                 </TabsContent>
             </Tabs>
 
-            <CreateAccountDrawer 
-                isOpen={isCreateDrawerOpen}
-                onClose={() => setIsCreateDrawerOpen(false)}
-                onSuccess={() => {
-                    fetchAccounts();
-                    fetchSummary();
-                }}
-            />
         </div>
     );
 }

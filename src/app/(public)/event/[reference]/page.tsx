@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import EventDetailsView from '@/components/public/EventDetailsView';
+import EventNotFoundView from '@/components/public/EventNotFoundView';
 import { notFound } from 'next/navigation';
 import { Event } from '@/types';
 import { Metadata, ResolvingMetadata } from 'next';
@@ -50,7 +51,7 @@ export default async function EventPage({ params }: { params: { reference: strin
         .single();
 
     if (error || !rawEvent) {
-        return notFound();
+        return <EventNotFoundView />;
     }
 
     // Fetch ticket tiers (includes sold-out detection)

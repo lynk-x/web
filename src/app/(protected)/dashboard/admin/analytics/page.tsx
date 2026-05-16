@@ -334,7 +334,6 @@ function IntelligenceTab() {
     );
 }
 
-
 // ─── Content Component ──────────────────────────────────────────────────────
 
 function AnalyticsContent() {
