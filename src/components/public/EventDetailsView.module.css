@@ -1,6 +1,8 @@
 .container {
     background-color: var(--color-utility-primaryBackground);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     padding-bottom: 80px;
 }
 
@@ -397,9 +399,8 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 100px 20px;
+    padding: 20px;
     flex: 1;
-    min-height: 60vh;
 }
 
 .emptyStateTitle {
