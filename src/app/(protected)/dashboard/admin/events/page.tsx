@@ -220,7 +220,8 @@ export default function AdminEventsPage() {
                 forum_status: e.forum_status,
                 message_count: e.message_count,
                 media_count: e.media_count,
-                escalated_reports_count: e.escalated_reports_count
+                escalated_reports_count: e.escalated_reports_count,
+                createdAt: e.created_at
             }));
 
             const mappedThreads: ForumThread[] = (data || [])
@@ -366,9 +367,16 @@ export default function AdminEventsPage() {
         const confirmMsg = newStatus === 'rejected' ? 'Are you sure you want to REJECT the selected events?' : `Update ${selectedEventIds.size} events to ${newStatus}?`;
         if (!await confirm(confirmMsg, { title: 'Bulk Update' })) return;
 
+        const ids = Array.from(selectedEventIds);
+        const createdAts = ids.map(id => {
+            const ev = events.find(e => e.id === id);
+            return ev?.createdAt || '';
+        });
+
         await executeAction(
             () => supabase.rpc('bulk_moderate_events', {
-                p_event_ids: Array.from(selectedEventIds),
+                p_event_ids: ids,
+                p_created_ats: createdAts,
                 p_status: newStatus,
                 p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
             }),
@@ -390,12 +398,14 @@ export default function AdminEventsPage() {
         await executeAction(
             async () => {
                 const ids = Array.from(selectedEventIds);
-                const results = await Promise.all(ids.map(id => 
-                    supabase.rpc('admin_manage_event', {
+                const results = await Promise.all(ids.map(id => {
+                    const ev = events.find(e => e.id === id);
+                    return supabase.rpc('admin_manage_event', {
                         p_action: 'delete',
-                        p_id: id
-                    })
-                ));
+                        p_id: id,
+                        p_created_at: ev?.createdAt || null
+                    });
+                }));
                 return { error: results.find(r => r.error)?.error || null };
             },
             {
@@ -451,6 +461,7 @@ export default function AdminEventsPage() {
         await executeAction(
             () => supabase.rpc('bulk_moderate_events', {
                 p_event_ids: [event.id],
+                p_created_ats: [event.createdAt],
                 p_status: newStatus,
                 p_reason: reason || `Status updated to ${newStatus} via Admin Events dashboard.`
             }),
@@ -471,7 +482,8 @@ export default function AdminEventsPage() {
         await executeAction(
             () => supabase.rpc('admin_manage_event', {
                 p_action: 'delete',
-                p_id: event.id
+                p_id: event.id,
+                p_created_at: event.createdAt
             }),
             {
                 loadingMessage: `Deleting ${event.title}...`,

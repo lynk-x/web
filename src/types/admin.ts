@@ -80,6 +80,7 @@ export interface Event {
     message_count?: number;
     media_count?: number;
     escalated_reports_count?: number;
+    createdAt: string;
 }
 
 /** A content item in the CMS. */

@@ -78,7 +78,7 @@ export default function EventRefundsPage() {
 
             setRefunds(refundsRes.data || []);
             setSelectedIds(new Set());
-        } catch (e: unknown) {
+        } catch {
             showToast('Failed to load refund requests', 'error');
         } finally {
             setIsLoading(false);
@@ -139,7 +139,12 @@ export default function EventRefundsPage() {
 
         setIsProcessing(true);
         try {
-            const update: Record<string, any> = {
+            const update: {
+                status: string;
+                processed_at: string;
+                amount?: number;
+                currency?: string;
+            } = {
                 status: decision,
                 processed_at: new Date().toISOString(),
             };
@@ -152,7 +157,8 @@ export default function EventRefundsPage() {
             const { error } = await supabase
                 .from('refund_requests')
                 .update(update)
-                .eq('id', selectedRefund.id);
+                .eq('id', selectedRefund.id)
+                .eq('created_at', selectedRefund.created_at);
 
             if (error) throw error;
 
