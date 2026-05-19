@@ -1,28 +1,31 @@
 "use client";
-import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import adminStyles from '../page.module.css';
-import { createClient } from '@/utils/supabase/client';
-import DataTable, { Column } from '@/components/shared/DataTable';
-import Badge from '@/components/shared/Badge';
+import DataTable from '@/components/shared/DataTable';
 import { useToast } from '@/components/ui/Toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useCountries } from '@/hooks/useCountries';
+import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 
 type Tab = 'demographics' | 'performance' | 'revenue' | 'insights' | 'intelligence';
-
 
 /**
  * Horizontal bar chart row.
  * `pct` is 0–100, used as the bar width percentage.
  */
-function BarRow({ label, count, pct, color }: { label: string; count: number | string; pct: number; color?: string }) {
+interface BarRowProps {
+    label: string;
+    count: number | string;
+    pct: number;
+    color?: string;
+}
+
+function BarRow({ label, count, pct, color }: BarRowProps) {
     return (
         <div className={styles.barRow}>
             <span className={styles.barLabel} title={label}>{label}</span>
@@ -34,101 +37,133 @@ function BarRow({ label, count, pct, color }: { label: string; count: number | s
     );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Interfaces ───────────────────────────────────────────────────────────────
 
-interface PlatformOverview {
-    total_users: number;
-    live_events: number;
-    upcoming_events: number;
-    total_tickets_sold: number;
-    total_platform_revenue_usd: number;
-    open_reports: number;
-    active_campaigns: number;
-    computed_at: string;
-}
-
-interface LedgerDay {
-    id: string;           // DATE_TRUNC result (ISO string)
-    total_volume: number;
-    platform_fee_collected: number;
-    tax_collected: number;
-    payouts_processed: number;
-}
-
-interface CampaignPerf {
-    id: string;
-    campaign_title: string;
-    total_impressions: number;
-    total_clicks: number;
-    ctr: number;
-    total_spend: number;
-}
-
-interface DemographicRow {
-    id: string;           // country_code
-    gender: string;
+interface AgeGenderRow {
+    country: string;
     age_bucket: string;
+    gender: string;
     user_count: number;
 }
 
-interface SearchQuery {
-    id: string;
-    query_text: string;
-    results_count: number;
-    created_at: string;
+interface GeoRow {
+    country: string;
+    account_role: string;
+    user_count: number;
 }
 
-interface TagRow {
-    id: string;
-    name: string;
-    use_count: number;
-    recent_event_count: number;
+interface DemographicData {
+    age_gender: AgeGenderRow[];
+    geo: GeoRow[];
+}
+
+interface YieldRow {
+    category_id: string;
+    sell_through_rate: number;
+}
+
+interface FillRateRow {
+    event_id: string;
+    title: string;
+    fill_rate_pct: number;
+}
+
+interface PerformanceData {
+    search_count_24h: number;
+    yield: YieldRow[];
+    fill_rates: FillRateRow[];
+}
+
+interface StreamRow {
+    stream_type: string;
+    total_amount: number;
+    total_tax?: number;
+}
+
+interface LedgerRow {
+    day: string;
+    volume: number;
+}
+
+interface RevenueData {
+    wallet_gross: number;
+    streams: StreamRow[];
+    ledger: LedgerRow[];
+}
+
+interface CommunityHealthRow {
+    forum_id: string;
+    community_name: string;
+    toxicity_index: number;
+}
+
+interface SearchGapRow {
+    query: string;
+    search_count: number;
+}
+
+interface InsightsData {
+    community_health: CommunityHealthRow[];
+    search_gaps_total: number;
+    search_gaps: SearchGapRow[];
+    trends: string[];
+    avg_engagement: number;
+}
+
+interface ChurnRow {
+    churn_risk: string;
+    count: number;
+}
+
+interface AffinityRow {
+    category_a: string;
+    category_b: string;
+    shared_users: number;
+}
+
+interface IntelligenceData {
+    churn: ChurnRow[];
+    affinity: AffinityRow[];
 }
 
 // ─── Tab Components ─────────────────────────────────────────────────────────
 
-// ─── Refactored Tab Components ─────────────────────────────────────────────
-
 function DemographicTab({ countryFilter }: { countryFilter: string }) {
-    const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
-    const [data, setData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const { countries } = useCountries();
+
+    const { data, isLoading } = useSupabaseQuery<DemographicData>(
+        ['admin-analytics-demographics'],
+        async (supabase) => {
+            const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'demographics' });
+            if (error) throw error;
+            return (res as DemographicData | null) || { age_gender: [], geo: [] };
+        }
+    );
 
     const getCountryName = useCallback((code: string) => {
         return countries.find(c => c.code === code)?.display_name || code;
     }, [countries]);
 
-    useEffect(() => {
-        const load = async () => {
-            setIsLoading(true);
-            const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'demographics' });
-            if (error) showToast(error.message, 'error');
-            else setData(res);
-            setIsLoading(false);
-        };
-        load();
-    }, [supabase, showToast]);
-
     if (isLoading) return <div className={styles.loading}>Loading Demographics...</div>;
 
-    const filteredAge = (data?.age_gender || []).filter((r: any) => countryFilter === 'all' || r.country === countryFilter);
-    const ageBuckets = filteredAge.reduce((acc: any, r: any) => {
+    const filteredAge = (data?.age_gender || []).filter(r => countryFilter === 'all' || r.country === countryFilter);
+    
+    const ageBuckets = filteredAge.reduce<Record<string, number>>((acc, r) => {
         acc[r.age_bucket] = (acc[r.age_bucket] || 0) + r.user_count;
         return acc;
     }, {});
-    const maxAge = Math.max(...Object.values(ageBuckets) as number[], 1);
+    
+    const maxAge = Math.max(...Object.values(ageBuckets), 1);
 
     return (
         <div className={styles.tabContent}>
-
             <div className={styles.statsGrid}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Location Heatmap</h3>
                     {(() => {
-                        const geoMax = Math.max(...(data?.geo || []).map((g: any) => g.user_count), 1);
-                        return (data?.geo || []).slice(0, 8).map((r: any) => (
+                        const geoList = data?.geo || [];
+                        const geoMax = Math.max(...geoList.map(g => g.user_count), 1);
+                        return geoList.slice(0, 8).map(r => (
                             <BarRow 
                                 key={`${r.country}-${r.account_role}`} 
                                 label={`${getCountryName(r.country)} (${r.account_role})`} 
@@ -140,7 +175,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Age Buckets</h3>
-                    {Object.entries(ageBuckets).map(([label, count]: any) => (
+                    {Object.entries(ageBuckets).map(([label, count]) => (
                         <BarRow key={label} label={label} count={count} pct={(count / maxAge) * 100} color="#6c63ff" />
                     ))}
                 </div>
@@ -150,41 +185,41 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
 }
 
 function PerformanceTab() {
-    const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
-    const [data, setData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const load = async () => {
-            setIsLoading(true);
+    const { data, isLoading } = useSupabaseQuery<PerformanceData>(
+        ['admin-analytics-performance'],
+        async (supabase) => {
             const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'performance' });
-            if (error) showToast(error.message, 'error');
-            else setData(res);
-            setIsLoading(false);
-        };
-        load();
-    }, [supabase, showToast]);
+            if (error) throw error;
+            return (res as PerformanceData | null) || { search_count_24h: 0, yield: [], fill_rates: [] };
+        }
+    );
+
+    if (isLoading) return <div className={styles.loading}>Loading Performance...</div>;
+
+    const yieldList = data?.yield || [];
+    const fillRatesList = data?.fill_rates || [];
+    const searchCount = data?.search_count_24h ?? 0;
+    const avgYield = yieldList[0] ? `${Math.round(yieldList[0].sell_through_rate)}%` : '—';
 
     return (
         <div className={styles.tabContent}>
             <div className={styles.statsGrid}>
-                <StatCard label="Search Volume" value={data?.search_count_24h?.toLocaleString()} change="Last 24 hours" trend="positive" />
+                <StatCard label="Search Volume" value={searchCount.toLocaleString()} change="Last 24 hours" trend="positive" />
                 <StatCard label="Conversion Rate" value="3.2%" change="Optimized" trend="positive" />
                 <StatCard label="Ad Fill Rate" value="88%" change="Stable" trend="neutral" />
-                <StatCard label="Yield Analysis" value={data?.yield?.[0] ? `${Math.round(data.yield[0].sell_through_rate)}%` : null} change="Live" trend="positive" />
+                <StatCard label="Yield Analysis" value={avgYield} change="Live" trend="positive" />
             </div>
 
             <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Yield Analysis per Category</h3>
-                    {(data?.yield || []).map((r: any) => (
+                    {yieldList.map(r => (
                         <BarRow key={r.category_id} label={r.category_id} count={`${Math.round(r.sell_through_rate)}%`} pct={r.sell_through_rate} />
                     ))}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Top Event Fill Rates</h3>
-                    {(data?.fill_rates || []).map((r: any) => (
+                    {fillRatesList.map(r => (
                         <BarRow key={r.event_id} label={r.title} count={`${r.fill_rate_pct}%`} pct={r.fill_rate_pct} />
                     ))}
                 </div>
@@ -194,43 +229,39 @@ function PerformanceTab() {
 }
 
 function RevenueTab() {
-    const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
-    const [data, setData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const load = async () => {
-            setIsLoading(true);
+    const { data, isLoading } = useSupabaseQuery<RevenueData>(
+        ['admin-analytics-revenue'],
+        async (supabase) => {
             const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'revenue' });
-            if (error) showToast(error.message, 'error');
-            else setData(res);
-            setIsLoading(false);
-        };
-        load();
-    }, [supabase, showToast]);
+            if (error) throw error;
+            return (res as RevenueData | null) || { wallet_gross: 0, streams: [], ledger: [] };
+        }
+    );
 
     if (isLoading) return <div className={styles.loading}>Loading Revenue...</div>;
 
     const walletGross = data?.wallet_gross || 0;
     const streams = data?.streams || [];
-    const ticketRev = streams.find((s: any) => s.stream_type === 'ticket_sale')?.total_amount || 0;
-    const adRev = streams.find((s: any) => s.stream_type === 'ad_campaign_payment')?.total_amount || 0;
-    const totalTax = streams.reduce((acc: number, s: any) => acc + (s.total_tax || 0), 0);
+    const ledgerList = data?.ledger || [];
+
+    const ticketRev = streams.find(s => s.stream_type === 'ticket_sale')?.total_amount || 0;
+    const adRev = streams.find(s => s.stream_type === 'ad_campaign_payment')?.total_amount || 0;
+    const totalTax = streams.reduce<number>((acc, s) => acc + (s.total_tax || 0), 0);
+    const maxLedgerVolume = Math.max(...ledgerList.map(l => l.volume), 1);
 
     return (
         <div className={styles.tabContent}>
             <div className={styles.statsGrid}>
-                <StatCard label="Total Wallet Gross" value={`$${walletGross.toLocaleString()}`} change="Platform-wide float" trend="neutral" />
-                <StatCard label="Ticket Revenue" value={`$${ticketRev.toLocaleString()}`} change="Total Volume" trend="positive" />
-                <StatCard label="Ad Revenue" value={`$${adRev.toLocaleString()}`} change="Total Volume" trend="positive" />
-                <StatCard label="Tax Collected" value={`$${totalTax.toLocaleString()}`} change="Across all streams" trend="neutral" />
+                <StatCard label="Total Wallet Gross" value={`KES ${walletGross.toLocaleString()}`} change="Platform-wide float" trend="neutral" />
+                <StatCard label="Ticket Revenue" value={`KES ${ticketRev.toLocaleString()}`} change="Total Volume" trend="positive" />
+                <StatCard label="Ad Revenue" value={`KES ${adRev.toLocaleString()}`} change="Total Volume" trend="positive" />
+                <StatCard label="Tax Collected" value={`KES ${totalTax.toLocaleString()}`} change="Across all streams" trend="neutral" />
             </div>
 
             <div className={styles.card} style={{ marginTop: '24px' }}>
                 <h3 className={styles.cardTitle}>Daily Volume Ledger</h3>
-                {(data?.ledger || []).slice(0, 10).map((r: any) => (
-                    <BarRow key={r.day} label={new Date(r.day).toLocaleDateString()} count={`$${r.volume.toLocaleString()}`} pct={(r.volume / Math.max(...(data?.ledger?.map((l: any) => l.volume) ?? [1]))) * 100} />
+                {ledgerList.slice(0, 10).map(r => (
+                    <BarRow key={r.day} label={new Date(r.day).toLocaleDateString()} count={`KES ${r.volume.toLocaleString()}`} pct={(r.volume / maxLedgerVolume) * 100} />
                 ))}
             </div>
         </div>
@@ -238,44 +269,47 @@ function RevenueTab() {
 }
 
 function InsightsTab() {
-    const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
-    const [data, setData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const load = async () => {
-            setIsLoading(true);
+    const { data, isLoading } = useSupabaseQuery<InsightsData>(
+        ['admin-analytics-insights'],
+        async (supabase) => {
             const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'insights' });
-            if (error) showToast(error.message, 'error');
-            else setData(res);
-            setIsLoading(false);
-        };
-        load();
-    }, [supabase, showToast]);
+            if (error) throw error;
+            return (res as InsightsData | null) || { community_health: [], search_gaps_total: 0, search_gaps: [], trends: [], avg_engagement: 0 };
+        }
+    );
 
     if (isLoading) return <div className={styles.loading}>Loading Insights...</div>;
 
-    const maxToxicity = Math.max(...(data?.community_health || []).map((h: any) => h.toxicity_index ?? 0), 1);
+    const healthList = data?.community_health || [];
+    const searchGapsList = data?.search_gaps || [];
+    const searchGapsTotal = data?.search_gaps_total ?? 0;
+    const trendsList = data?.trends || [];
+    const avgEngagement = data?.avg_engagement ?? 0;
+
+    const maxToxicity = Math.max(...healthList.map(h => h.toxicity_index), 1);
+    const maxGapCount = Math.max(...searchGapsList.map(g => g.search_count), 1);
+    const avgToxicityPercent = healthList.length > 0
+        ? Math.round(healthList.reduce((acc, h) => acc + h.toxicity_index, 0) / healthList.length)
+        : 0;
 
     return (
         <div className={styles.tabContent}>
              <div className={styles.statsGrid}>
-                <StatCard label="Avg Toxicity" value={`${Math.round((data?.community_health || []).reduce((acc: any, h: any) => acc + h.toxicity_index, 0) / Math.max(data?.community_health?.length || 1, 1))}%`} change="Report density" trend="neutral" />
-                <StatCard label="Search Gaps" value={data?.search_gaps_total || 0} change="High demand keywords" trend="positive" />
-                <StatCard label="Hot Trends" value={(data?.trends || []).join(', ')} change="Top Categories" trend="positive" />
-                <StatCard label="Avg Engagement" value={`${(data?.avg_engagement || 0).toFixed(1)} msg/user`} change="Community Velocity" trend="positive" />
+                <StatCard label="Avg Toxicity" value={`${avgToxicityPercent}%`} change="Report density" trend="neutral" />
+                <StatCard label="Search Gaps" value={searchGapsTotal.toLocaleString()} change="High demand keywords" trend="positive" />
+                <StatCard label="Hot Trends" value={trendsList.join(', ') || '—'} change="Top Categories" trend="positive" />
+                <StatCard label="Avg Engagement" value={`${avgEngagement.toFixed(1)} msg/user`} change="Community Velocity" trend="positive" />
             </div>
             <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Search Gaps (Top queries with 0 results)</h3>
-                    {(data?.search_gaps || []).map((r: any) => (
-                        <BarRow key={r.query} label={r.query} count={r.search_count} pct={(r.search_count / Math.max(...(data?.search_gaps?.map((g: any) => g.search_count) ?? [1]))) * 100} color="#ff9800" />
+                    {searchGapsList.map(r => (
+                        <BarRow key={r.query} label={r.query} count={r.search_count} pct={(r.search_count / maxGapCount) * 100} color="#ff9800" />
                     ))}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Community Toxicity Index</h3>
-                    {(data?.community_health || []).map((h: any) => (
+                    {healthList.map(h => (
                         <BarRow key={h.forum_id} label={h.community_name} count={`${h.toxicity_index.toFixed(1)}%`} pct={(h.toxicity_index / maxToxicity) * 100} color={h.toxicity_index > 10 ? '#ff4d4d' : '#4caf50'} />
                     ))}
                 </div>
@@ -285,41 +319,39 @@ function InsightsTab() {
 }
 
 function IntelligenceTab() {
-    const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
-    const [data, setData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const load = async () => {
-            setIsLoading(true);
+    const { data, isLoading } = useSupabaseQuery<IntelligenceData>(
+        ['admin-analytics-intelligence'],
+        async (supabase) => {
             const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'intelligence' });
-            if (error) showToast(error.message, 'error');
-            else setData(res);
-            setIsLoading(false);
-        };
-        load();
-    }, [supabase, showToast]);
+            if (error) throw error;
+            return (res as IntelligenceData | null) || { churn: [], affinity: [] };
+        }
+    );
 
     if (isLoading) return <div className={styles.loading}>Loading Intelligence...</div>;
 
-    const churnData = (data?.churn || []).reduce((acc: any, c: any) => {
+    const churnList = data?.churn || [];
+    const affinityList = data?.affinity || [];
+
+    const churnData = churnList.reduce<Record<string, number>>((acc, c) => {
         acc[c.churn_risk] = c.count;
         return acc;
     }, {});
 
+    const maxAffinityCount = Math.max(...affinityList.map(a => a.shared_users), 1);
+
     return (
         <div className={styles.tabContent}>
             <div className={styles.statsGrid}>
-                <StatCard label="High Churn Risk" value={churnData['High Risk'] || 0} change="Immediate action" trend="negative" />
-                <StatCard label="Affinity Clusters" value={data?.affinity?.length || 0} change="Cross-category overlaps" trend="positive" />
+                <StatCard label="High Churn Risk" value={(churnData['High Risk'] || 0).toLocaleString()} change="Immediate action" trend="negative" />
+                <StatCard label="Affinity Clusters" value={affinityList.length.toLocaleString()} change="Cross-category overlaps" trend="positive" />
             </div>
             <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Category Affinity (Shared Users)</h3>
-{(data?.affinity || []).map((r: any) => (
-                         <BarRow key={`${r.category_a}-${r.category_b}`} label={`${r.category_a} + ${r.category_b}`} count={r.shared_users} pct={(r.shared_users / Math.max(...(data?.affinity?.map((a: any) => a.shared_users) ?? [1]))) * 100} color="#6c63ff" />
-                     ))}
+                    {affinityList.map(r => (
+                         <BarRow key={`${r.category_a}-${r.category_b}`} label={`${r.category_a} + ${r.category_b}`} count={r.shared_users} pct={(r.shared_users / maxAffinityCount) * 100} color="#6c63ff" />
+                    ))}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Churn Risk Segmentation</h3>
@@ -385,7 +417,7 @@ function AnalyticsContent() {
                         style={{ height: '36px', minWidth: '200px' }}
                     >
                         <option value="all">Global (All Countries)</option>
-                        {countries.map((c: any) => (
+                        {countries.map(c => (
                             <option key={c.code} value={c.code}>{c.display_name} ({c.code})</option>
                         ))}
                     </select>
