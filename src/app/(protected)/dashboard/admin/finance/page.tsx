@@ -7,10 +7,10 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
 import adminStyles from '../page.module.css';
+import { useOrganization } from '@/context/OrganizationContext';
 import FinanceTable from '@/components/features/finance/FinanceTable';
-import TaxRateTable from '@/components/admin/finance/TaxRateTable';
-import FXRateTable from '@/components/admin/finance/FXRateTable';
 import PromoCodeTable from '@/components/admin/finance/PromoCodeTable';
+import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import WalletTable, { AdminWallet } from '@/components/admin/finance/WalletTable';
 import SubscriptionTable, { Subscription } from '@/components/admin/finance/SubscriptionTable';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -25,7 +25,7 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import type { FinanceTransaction } from '@/types/organize';
-import type { TaxRate, FXRate, PromoCode } from '@/types/admin';
+import type { PromoCode, TaxRate } from '@/types/admin';
 import { exportToCSV } from '@/utils/export';
 import { formatDate, formatCurrency } from '@/utils/format';
 import RejectionModal from '@/components/shared/RejectionModal';
@@ -35,12 +35,23 @@ import { useDebounce } from '@/hooks/useDebounce';
 function FinanceContent() {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
+    const { activeAccount } = useOrganization();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const { enabled: isPayoutMgmtEnabled } = useFeatureFlag('enable_payout_management');
+    const resolvedCountryFilter = useMemo(() => {
+        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
+            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
+            if (proxyCode) return proxyCode;
+        }
+        if (activeAccount?.country_code) {
+            return activeAccount.country_code;
+        }
+        return 'all';
+    }, [activeAccount]);
+
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'wallets');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -58,29 +69,13 @@ function FinanceContent() {
 
     // State for different datasets
     const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
-    const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
-    const [fxRates, setFxRates] = useState<FXRate[]>([]);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+    const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [wallets, setWallets] = useState<AdminWallet[]>([]);
 
     const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
     const [selectedWalletIds, setSelectedWalletIds] = useState<Set<string>>(new Set());
-
-    // Tax Modal state
-    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
-    const [editingTaxRate, setEditingTaxRate] = useState<TaxRate | null>(null);
-    const [taxForm, setTaxForm] = useState({
-        display_name: '',
-        country_code: 'KE',
-        applicable_reason: 'ticket_sale',
-        rate_percent: 0,
-        is_inclusive: true
-    });
-    const [countries, setCountries] = useState<{ code: string, name: string }[]>([]);
-
-    // FX State
-    const [isSyncingFX, setIsSyncingFX] = useState(false);
 
     // Subscription Action State
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -167,6 +162,7 @@ function FinanceContent() {
                     p_category: p_category,
                     p_start_date: startDate ? new Date(startDate).toISOString() : null,
                     p_end_date: endDate ? new Date(endDate).toISOString() : null,
+                    p_country_code: resolvedCountryFilter,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
@@ -206,6 +202,7 @@ function FinanceContent() {
                 const { data, error } = await supabase.rpc('get_admin_subscriptions', {
                     p_search: debouncedSearch,
                     p_status: categoryFilter, // Reuse categoryFilter for status
+                    p_country_code: resolvedCountryFilter,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
@@ -222,6 +219,7 @@ function FinanceContent() {
                 const { data, error } = await supabase.rpc('get_admin_wallets', {
                     p_search: debouncedSearch,
                     p_status: categoryFilter,
+                    p_country_code: resolvedCountryFilter,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
@@ -229,21 +227,7 @@ function FinanceContent() {
                 if (error) throw error;
                 setWallets(data || []);
                 setTotalCount(data?.[0]?.total_count || 0);
-            } else if (activeTab === 'tax-rates') {
-                // ... Tax rates, fx rates, etc. usually stay small and don't require server-side scaling
-                const { data, error } = await supabase.from('tax_rates').select(`
-                    *,
-                    country:countries(display_name)
-                `).order('display_name');
-                if (error) throw error;
-                setTaxRates((data || []).map(t => ({
-                    ...t,
-                    country_name: t.country?.display_name || t.country_code
-                })));
-            } else if (activeTab === 'fx-rates') {
-                const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
-                if (error) throw error;
-                setFxRates(data || []);
+
             } else if (activeTab === 'promo-codes') {
                 const { data, error } = await supabase
                     .from('promo_codes')
@@ -291,13 +275,21 @@ function FinanceContent() {
                         created_at: p.created_at
                     };
                 }));
+            } else if (activeTab === 'tax-rates') {
+                const { data, error } = await supabase
+                    .from('tax_rates')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setTaxRates(data || []);
             }
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter]);
+    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter, resolvedCountryFilter, activeAccount?.country_code]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -341,13 +333,7 @@ function FinanceContent() {
     useEffect(() => {
         fetchData();
         setSelectedTxIds(new Set());
-
-        const fetchCountries = async () => {
-            const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
-            if (data) setCountries(data.map((c: any) => ({ code: c.code, name: c.display_name })));
-        };
-        fetchCountries();
-    }, [fetchData, supabase]);
+    }, [fetchData]);
 
     /**
      * Exports current dataset to CSV
@@ -373,49 +359,7 @@ function FinanceContent() {
         showToast('Export complete.', 'success');
     };
 
-    const handleSaveTaxRate = async () => {
-        try {
-            const payload = {
-                ...taxForm,
-                rate_percent: Number(taxForm.rate_percent),
-                updated_at: new Date().toISOString()
-            };
 
-            if (editingTaxRate) {
-                const { error } = await supabase.from('tax_rates').update(payload).eq('id', editingTaxRate.id);
-                if (error) throw error;
-                showToast('Tax rate updated', 'success');
-            } else {
-                const { error } = await supabase.from('tax_rates').insert([payload]);
-                if (error) throw error;
-                showToast('Tax rate created', 'success');
-            }
-            setIsTaxModalOpen(false);
-            fetchData();
-        } catch (error: unknown) {
-            showToast(getErrorMessage(error), 'error');
-        }
-    };
-
-    /**
-     * Syncs FX rates by calling the `sync_fx_rates` Supabase RPC.
-     * Falls back gracefully with a toast if the function is not yet deployed.
-     */
-    const handleSyncFX = async () => {
-        setIsSyncingFX(true);
-        showToast('Syncing with global rates...', 'info');
-        try {
-            const { error } = await supabase.rpc('sync_fx_rates');
-            if (error) throw error;
-            showToast('FX rates synchronized successfully.', 'success');
-            fetchData();
-        } catch (err: unknown) {
-            // If the RPC doesn't exist yet, surface the error clearly instead of silently failing
-            showToast(getErrorMessage(err) || 'FX sync function not available.', 'error');
-        } finally {
-            setIsSyncingFX(false);
-        }
-    };
 
     // ── Subscription Management Handlers ─────────────────────────────────────
     const handlePauseSubscription = async (id: string) => {
@@ -628,11 +572,9 @@ function FinanceContent() {
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="wallets">Wallets</TabsTrigger>
-                        <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+                        <TabsTrigger value="subscriptions">Subscription</TabsTrigger>
                         <TabsTrigger value="transactions">Transactions</TabsTrigger>
-                        <TabsTrigger value="tax-rates">Tax Regions</TabsTrigger>
-                        <TabsTrigger value="fx-rates">FX Markets</TabsTrigger>
-                        <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
+                        <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -676,29 +618,7 @@ function FinanceContent() {
                             </select>
                         )}
                         
-                        {activeTab === 'tax-rates' && (
-                            <button className={adminStyles.btnPrimary} onClick={() => {
-                                setEditingTaxRate(null);
-                                setTaxForm({ display_name: '', country_code: 'KE', applicable_reason: 'ticket_sale', rate_percent: 0, is_inclusive: true });
-                                setIsTaxModalOpen(true);
-                            }}>
-                                + Add Tax Rate
-                            </button>
-                        )}
 
-                        {activeTab === 'fx-rates' && (
-                            <button
-                                className={adminStyles.btnSecondary}
-                                onClick={handleSyncFX}
-                                disabled={isSyncingFX}
-                            >
-                                <svg className={isSyncingFX ? adminStyles.spinner : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
-                                    <path d="M23 4v6h-6M1 20v-6h6"></path>
-                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                                </svg>
-                                {isSyncingFX ? 'Syncing...' : 'Sync Live Rates'}
-                            </button>
-                        )}
 
                         {activeTab === 'promo-codes' && (
                             <Link href="/dashboard/admin/finance/promo-codes/create">
@@ -762,42 +682,10 @@ function FinanceContent() {
                 </TabsContent>
 
                 <TabsContent value="tax-rates">
-                    <TaxRateTable
-                        data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
-                        isLoading={isLoading}
-                        onUpdate={fetchData}
-                        onEdit={(rate) => {
-                            setEditingTaxRate(rate);
-                            setTaxForm({
-                                display_name: rate.display_name,
-                                country_code: rate.country_code,
-                                applicable_reason: rate.applicable_reason,
-                                rate_percent: rate.rate_percent,
-                                is_inclusive: rate.is_inclusive
-                            });
-                            setIsTaxModalOpen(true);
-                        }}
-                    />
-                </TabsContent>
-
-                <TabsContent value="fx-rates">
-                    <FXRateTable data={fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()))} isLoading={isLoading} onUpdate={fetchData} />
-                </TabsContent>
-
-                <TabsContent value="promo-codes">
-                    <PromoCodeTable 
-                        data={promoCodes.filter(p => p.code.toLowerCase().includes(searchTerm.toLowerCase()))} 
+                    <TaxRateTable 
+                        data={taxRates.filter(p => p.display_name.toLowerCase().includes(searchTerm.toLowerCase()))} 
                         isLoading={isLoading} 
-                        selectedIds={selectedPromoIds}
-                        onSelect={(id) => {
-                            const next = new Set(selectedPromoIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
-                            setSelectedPromoIds(next);
-                        }}
-                        onSelectAll={() => setSelectedPromoIds(selectedPromoIds.size === promoCodes.length ? new Set() : new Set(promoCodes.map(p => p.id)))}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
+                        onUpdate={fetchData}
                     />
                 </TabsContent>
             </Tabs>
@@ -814,78 +702,6 @@ function FinanceContent() {
                     setSelectedWalletIds(new Set());
                 }}
             />
-
-
-            <Modal
-                isOpen={isTaxModalOpen}
-                onClose={() => setIsTaxModalOpen(false)}
-                title={editingTaxRate ? 'Edit Tax Rate' : 'Add New Tax Rate'}
-                footer={
-                    <>
-                        <button className={adminStyles.btnSecondary} onClick={() => setIsTaxModalOpen(false)}>Cancel</button>
-                        <button className={adminStyles.btnPrimary} onClick={handleSaveTaxRate}>Save Rate</button>
-                    </>
-                }
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div>
-                        <label className={adminStyles.label}>Rate Name</label>
-                        <input
-                            className={adminStyles.input}
-                            placeholder="e.g. VAT, Sales Tax"
-                            value={taxForm.display_name}
-                            onChange={e => setTaxForm({ ...taxForm, display_name: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className={adminStyles.label}>Applicable Reason</label>
-                        <select
-                            className={adminStyles.select}
-                            style={{ width: '100%' }}
-                            value={taxForm.applicable_reason}
-                            onChange={e => setTaxForm({ ...taxForm, applicable_reason: e.target.value })}
-                        >
-                            <option value="ticket_sale">Ticket Sale</option>
-                            <option value="ad_campaign_payment">Ad Campaign</option>
-                            <option value="subscription_payment">Subscription</option>
-                            <option value="wallet_top_up">Wallet Top-up</option>
-                            <option value="organizer_payout">Organizer Payout</option>
-                        </select>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Country</label>
-                            <select
-                                className={adminStyles.select}
-                                style={{ width: '100%' }}
-                                value={taxForm.country_code}
-                                onChange={e => setTaxForm({ ...taxForm, country_code: e.target.value })}
-                            >
-                                {countries.map(c => (
-                                    <option key={c.code} value={c.code}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>Rate (%)</label>
-                            <input
-                                type="number"
-                                className={adminStyles.input}
-                                value={taxForm.rate_percent}
-                                onChange={e => setTaxForm({ ...taxForm, rate_percent: Number(e.target.value) })}
-                            />
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                        <input
-                            type="checkbox"
-                            checked={taxForm.is_inclusive}
-                            onChange={e => setTaxForm({ ...taxForm, is_inclusive: e.target.checked })}
-                        />
-                        <span style={{ fontSize: '14px', opacity: 0.8 }}>Inclusive of price</span>
-                    </div>
-                </div>
-            </Modal>
 
             {/* Plan Migration Modal */}
             <Modal

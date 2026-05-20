@@ -35,7 +35,8 @@ const Sidebar = () => {
             admin: 'admin',
             ads: 'ads',
             pulse: 'pulse',
-            organize: 'events'
+            organize: 'events',
+            system: 'system'
         };
 
         return modeMap[modeSegment] || 'events';
@@ -77,6 +78,7 @@ const Sidebar = () => {
                     {mode === 'admin' ? 'Admin Dashboard' : 
                      mode === 'ads' ? 'Ads Dashboard' : 
                      mode === 'pulse' ? 'Pulse Dashboard' :
+                     mode === 'system' ? 'System Control' :
                      'Events Dashboard'}
                 </span>
                 <div className={styles.modeContextDivider} />

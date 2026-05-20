@@ -69,7 +69,7 @@ export default function EditTagTypePage() {
 
             showToast('Tag type updated successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/admin/registry');
+            router.push('/dashboard/system/registry');
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         } finally {

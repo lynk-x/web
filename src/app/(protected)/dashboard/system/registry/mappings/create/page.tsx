@@ -73,7 +73,7 @@ export default function CreateMappingPage() {
             }
 
             showToast('Mapping successfully created', 'success');
-            router.push('/dashboard/admin/registry');
+            router.push('/dashboard/system/registry');
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         } finally {

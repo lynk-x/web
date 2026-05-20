@@ -13,6 +13,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Modal from '@/components/shared/Modal';
 import ReportTable from '@/components/admin/moderation/ReportTable';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 
 import { Report } from '@/types/admin';
 import type { ActionItem } from '@/types/shared';
@@ -58,6 +59,7 @@ function ForumsContent() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
+    const [activeTab, setActiveTab] = useState('forums');
     const itemsPerPage = 8;
 
     // All forum data is loaded once via the secure RPC, then paginated/filtered client-side.
@@ -267,46 +269,65 @@ function ForumsContent() {
 
 
 
-            <TableToolbar
-                searchPlaceholder="Search forum name or event..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <FilterChips
-                    options={[
-                        { value: 'all', label: 'All' },
-                        { value: 'open', label: 'Open' },
-                        { value: 'read_only', label: 'Read Only' },
-                        { value: 'archived', label: 'Archived' },
-                    ]}
-                    currentValue={statusFilter}
-                    onChange={setStatusFilter}
-                />
-            </TableToolbar>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
+                <div className={adminStyles.tabsHeaderRow} style={{ marginBottom: '20px' }}>
+                    <TabsList>
+                        <TabsTrigger value="forums">Forums</TabsTrigger>
+                        <TabsTrigger value="surveys">Surveys</TabsTrigger>
+                    </TabsList>
+                </div>
 
-            <BulkActionsBar
-                selectedCount={selectedThreadIds.size}
-                actions={bulkActions}
-                onCancel={() => setSelectedThreadIds(new Set())}
-                itemTypeLabel="forums"
-            />
+                <TabsContent value="forums">
+                    {isLoading ? (
+                        <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
+                    ) : (
+                        <>
+                            <TableToolbar
+                                searchPlaceholder="Search forum name or event..."
+                                searchValue={searchTerm}
+                                onSearchChange={setSearchTerm}
+                            >
+                                <FilterChips
+                                    options={[
+                                        { value: 'all', label: 'All' },
+                                        { value: 'open', label: 'Open' },
+                                        { value: 'read_only', label: 'Read Only' },
+                                        { value: 'archived', label: 'Archived' },
+                                    ]}
+                                    currentValue={statusFilter}
+                                    onChange={setStatusFilter}
+                                />
+                            </TableToolbar>
 
-            {isLoading ? (
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
-            ) : (
-                <ForumTable
-                    threads={paginatedThreads}
-                    selectedIds={selectedThreadIds}
-                    onSelect={handleSelectThread}
-                        onSelectAll={handleSelectAll}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        onStatusChange={handleSingleStatusUpdate}
-                        onEditForum={(thread) => setViewerConfig({ isOpen: true, type: 'edit', thread })}
-                        onViewReports={(thread) => setViewerConfig({ isOpen: true, type: 'reports', thread })}
-                    />
-                )}
+                            <BulkActionsBar
+                                selectedCount={selectedThreadIds.size}
+                                actions={bulkActions}
+                                onCancel={() => setSelectedThreadIds(new Set())}
+                                itemTypeLabel="forums"
+                            />
+
+                            <ForumTable
+                                threads={paginatedThreads}
+                                selectedIds={selectedThreadIds}
+                                onSelect={handleSelectThread}
+                                onSelectAll={handleSelectAll}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                onStatusChange={handleSingleStatusUpdate}
+                                onEditForum={(thread) => setViewerConfig({ isOpen: true, type: 'edit', thread })}
+                                onViewReports={(thread) => setViewerConfig({ isOpen: true, type: 'reports', thread })}
+                            />
+                        </>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="surveys">
+                    <div style={{ padding: '60px', textAlign: 'center', background: 'var(--color-interface-surface)', border: '1px dashed var(--color-interface-border-subtle)', borderRadius: '12px', opacity: 0.6 }}>
+                        No surveys configured in this territory.
+                    </div>
+                </TabsContent>
+            </Tabs>
             
             {/* ── Contextual Moderation Modal ── */}
             <Modal

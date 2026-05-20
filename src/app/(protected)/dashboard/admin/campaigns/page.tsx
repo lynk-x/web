@@ -11,6 +11,7 @@ import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTa
 import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
 import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
 import Link from 'next/link';
+import { useOrganization } from '@/context/OrganizationContext';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
@@ -31,9 +32,21 @@ function CampaignsContent() {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { executeAction } = useModerationAction();
+    const { activeAccount } = useOrganization();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+
+    const resolvedCountryFilter = useMemo(() => {
+        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
+            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
+            if (proxyCode) return proxyCode;
+        }
+        if (activeAccount?.country_code) {
+            return activeAccount.country_code;
+        }
+        return 'all';
+    }, [activeAccount]);
 
     const initialTab = (searchParams.get('tab') as string) || 'campaigns';
     const [activeTab, setActiveTab] = useState<'campaigns' | 'analytics'>(
@@ -76,7 +89,9 @@ function CampaignsContent() {
     }, [supabase]);
 
     const fetchCampaignPerf = useCallback(async () => {
-        const { data, error } = await supabase.rpc('get_admin_ad_performance');
+        const { data, error } = await supabase.rpc('get_admin_ad_performance', {
+            p_country_code: resolvedCountryFilter
+        });
 
         if (!error && data) {
             setCampaignPerf({
@@ -84,7 +99,7 @@ function CampaignsContent() {
                 avgCpc: `$${data.avg_cpc}`
             });
         }
-    }, [supabase]);
+    }, [supabase, resolvedCountryFilter]);
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
@@ -110,6 +125,7 @@ function CampaignsContent() {
                 p_search: debouncedSearch,
                 p_status: statusFilter,
                 p_type: adTypeFilter,
+                p_country_code: resolvedCountryFilter,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -139,7 +155,7 @@ function CampaignsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, statusFilter, adTypeFilter, currentPage, activeTab, showToast]);
+    }, [supabase, debouncedSearch, statusFilter, adTypeFilter, resolvedCountryFilter, currentPage, activeTab, showToast]);
 
     useEffect(() => {
         fetchCampaigns();
@@ -421,8 +437,8 @@ function CampaignsContent() {
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="campaigns">Active Campaigns</TabsTrigger>
-                        <TabsTrigger value="analytics">Ad Analytics</TabsTrigger>
+                        <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+                        <TabsTrigger value="analytics">Impressions</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -483,7 +499,7 @@ function CampaignsContent() {
                 </TabsContent>
 
                 <TabsContent value="analytics">
-                    <AdAnalyticsTab search={debouncedSearch} />
+                    <AdAnalyticsTab search={debouncedSearch} countryCode={resolvedCountryFilter} />
                 </TabsContent>
             </Tabs>
 

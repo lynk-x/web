@@ -3,6 +3,7 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useOrganization } from '@/context/OrganizationContext';
 import FilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
@@ -81,6 +82,7 @@ export default function AdminEventsPage() {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { executeAction } = useModerationAction();
+    const { activeAccount } = useOrganization();
     const router = useRouter();
 
     const [events, setEvents] = useState<Event[]>([]);
@@ -114,6 +116,28 @@ export default function AdminEventsPage() {
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+    const resolvedCountryFilter = useMemo(() => {
+        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
+            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
+            if (proxyCode) return proxyCode;
+        }
+        if (activeAccount?.country_code) {
+            return activeAccount.country_code;
+        }
+        return 'all';
+    }, [activeAccount]);
+
+    const resolvedPayoutCountryFilter = useMemo(() => {
+        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
+            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
+            if (proxyCode) return proxyCode;
+        }
+        if (activeAccount?.country_code) {
+            return activeAccount.country_code;
+        }
+        return payoutCountryFilter;
+    }, [activeAccount, payoutCountryFilter]);
+
     const fetchDashboardSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
         if (!error && data) {
@@ -128,7 +152,7 @@ export default function AdminEventsPage() {
                 p_search: debouncedSearch,
                 p_start_date: startDate ? new Date(startDate).toISOString() : null,
                 p_end_date: endDate ? new Date(endDate).toISOString() : null,
-                p_country_code: payoutCountryFilter,
+                p_country_code: resolvedPayoutCountryFilter,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -161,7 +185,7 @@ export default function AdminEventsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, startDate, endDate, payoutCountryFilter, currentPage, showToast]);
+    }, [supabase, debouncedSearch, startDate, endDate, resolvedPayoutCountryFilter, currentPage, showToast]);
 
     const fetchResales = useCallback(async () => {
         setIsLoading(true);
@@ -193,6 +217,7 @@ export default function AdminEventsPage() {
                 p_forum_status: forumStatusFilter,
                 p_start_date: startDate || null,
                 p_end_date: endDate || null,
+                p_country_code: resolvedCountryFilter,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -248,7 +273,7 @@ export default function AdminEventsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, statusFilter, currentPage, showToast]);
+    }, [supabase, debouncedSearch, statusFilter, forumStatusFilter, startDate, endDate, resolvedCountryFilter, currentPage, showToast]);
 
     const fetchCountries = useCallback(async () => {
         const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
@@ -274,7 +299,7 @@ export default function AdminEventsPage() {
     // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, forumStatusFilter, activeTab, startDate, endDate, payoutCountryFilter]);
+    }, [debouncedSearch, statusFilter, forumStatusFilter, activeTab, startDate, endDate, resolvedPayoutCountryFilter]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -565,17 +590,19 @@ export default function AdminEventsPage() {
             >
                 {activeTab === 'payouts' ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <select 
-                            className={adminStyles.select}
-                            style={{ height: '40px', width: 'fit-content', minWidth: '130px' }}
-                            value={payoutCountryFilter}
-                            onChange={(e) => setPayoutCountryFilter(e.target.value)}
-                        >
-                            <option value="all">All Regions</option>
-                            {countries.map(c => (
-                                <option key={c.code} value={c.code}>{c.name}</option>
-                            ))}
-                        </select>
+                        {!activeAccount?.country_code && (
+                            <select 
+                                className={adminStyles.select}
+                                style={{ height: '40px', width: 'fit-content', minWidth: '130px' }}
+                                value={payoutCountryFilter}
+                                onChange={(e) => setPayoutCountryFilter(e.target.value)}
+                            >
+                                <option value="all">All Regions</option>
+                                {countries.map(c => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
+                        )}
                         <DateRangeRow 
                             startDate={startDate}
                             endDate={endDate}
@@ -611,9 +638,7 @@ export default function AdminEventsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="events">Events & Venues</TabsTrigger>
-                        <TabsTrigger value="forums">Community Forums</TabsTrigger>
-                        <TabsTrigger value="ticketing">Ticket Resales</TabsTrigger>
+                        <TabsTrigger value="events">Events</TabsTrigger>
                         <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
                     </TabsList>
                     

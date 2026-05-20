@@ -67,7 +67,7 @@ export default function EditDisclaimerPage() {
 
             showToast('Compliance rule updated', 'success');
             setIsDirty(false);
-            router.push('/dashboard/admin/registry');
+            router.push('/dashboard/system/registry');
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         } finally {

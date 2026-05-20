@@ -158,7 +158,7 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
                     searchValue={searchTerm}
                     onSearchChange={setSearchTerm}
                 >
-                    <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/mappings/create')}>
+                    <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/system/registry/mappings/create')}>
                         Create Mapping
                     </button>
                 </TableToolbar>

@@ -44,7 +44,7 @@ export default function CreateTagTypePage() {
             if (error) throw error;
 
             showToast('Tag type created successfully', 'success');
-            router.push('/dashboard/admin/registry');
+            router.push('/dashboard/system/registry');
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         } finally {

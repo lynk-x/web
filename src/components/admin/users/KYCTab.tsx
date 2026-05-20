@@ -11,6 +11,7 @@ import type { KycVerification } from '@/types/admin';
 import TableToolbar from '@/components/shared/TableToolbar';
 import StatusFilterChips from '@/components/shared/FilterChips';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import { useOrganization } from '@/context/OrganizationContext';
 
 interface KYCTabProps {
     searchTerm: string;
@@ -21,6 +22,7 @@ interface KYCTabProps {
 const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilter }) => {
     const supabase = createClient();
     const { showToast } = useToast();
+    const { activeAccount } = useOrganization();
     
     const [queue, setQueue] = useState<KycVerification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +43,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
                 p_params: {
                     status: statusFilter,
                     search: debouncedSearch,
+                    country_code: activeAccount?.country_code || 'all',
                     limit: itemsPerPage,
                     offset: (currentPage - 1) * itemsPerPage
                 }
@@ -55,7 +58,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, statusFilter, currentPage]);
+    }, [supabase, showToast, statusFilter, currentPage, debouncedSearch, activeAccount?.country_code]);
 
     useEffect(() => {
         fetchQueue();

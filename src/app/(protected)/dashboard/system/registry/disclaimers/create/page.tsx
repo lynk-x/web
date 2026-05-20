@@ -55,7 +55,7 @@ export default function CreateDisclaimerPage() {
             if (error) throw error;
 
             showToast('Compliance rule created successfully', 'success');
-            router.push('/dashboard/admin/registry');
+            router.push('/dashboard/system/registry');
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
         } finally {

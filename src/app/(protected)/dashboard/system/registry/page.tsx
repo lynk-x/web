@@ -63,22 +63,22 @@ function RegistryContent() {
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'tags' && (
-                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/tags/create')}>
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/system/registry/tags/create')}>
                                 + Add Tag
                             </button>
                         )}
                         {activeTab === 'types' && (
-                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/types/create')}>
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/system/registry/types/create')}>
                                 + New Type
                             </button>
                         )}
                         {activeTab === 'logic' && (
-                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/mappings/create')}>
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/system/registry/mappings/create')}>
                                 + Create Mapping
                             </button>
                         )}
                         {activeTab === 'disclaimer' && (
-                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/admin/registry/disclaimers/create')}>
+                            <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/system/registry/disclaimers/create')}>
                                 + New Disclaimer
                             </button>
                         )}

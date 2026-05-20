@@ -22,9 +22,10 @@ interface AdvertiserAnalytics {
 
 interface AdAnalyticsTabProps {
     search: string;
+    countryCode: string;
 }
 
-export default function AdAnalyticsTab({ search }: AdAnalyticsTabProps) {
+export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabProps) {
     const supabase = React.useMemo(() => createClient(), []);
     const { showToast } = useToast();
     
@@ -40,6 +41,7 @@ export default function AdAnalyticsTab({ search }: AdAnalyticsTabProps) {
         try {
             const { data, error } = await supabase.rpc('get_admin_advertiser_analytics', {
                 p_search: search,
+                p_country_code: countryCode,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -52,7 +54,7 @@ export default function AdAnalyticsTab({ search }: AdAnalyticsTabProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, search, currentPage, showToast]);
+    }, [supabase, search, countryCode, currentPage, showToast]);
 
     useEffect(() => {
         fetchData();

@@ -19,22 +19,22 @@ import Select from '@/components/shared/Select';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import type { AdminAccount } from '@/types/admin';
+import { useOrganization } from '@/context/OrganizationContext';
 
 function AccountsContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { activeAccount } = useOrganization();
 
     const [accounts, setAccounts] = useState<AdminAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [countryFilter, setCountryFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const [countries, setCountries] = useState<{ code: string; display_name: string }[]>([]);
     const [activeTab, setActiveTab] = useState('accounts');
     const [kycStatusFilter, setKycStatusFilter] = useState('pending');
     const [startDate, setStartDate] = useState('');
@@ -52,6 +52,8 @@ function AccountsContent() {
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
 
+    const activeCountry = activeAccount?.country_code || 'KE';
+
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.rpc('admin_stat_summary');
         if (!error && data) setSummary(data);
@@ -64,7 +66,7 @@ function AccountsContent() {
                 p_search: debouncedSearch.trim(),
                 p_type: typeFilter,
                 p_status: statusFilter,
-                p_country_code: countryFilter,
+                p_country_code: activeCountry,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -78,18 +80,7 @@ function AccountsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, countryFilter, currentPage]);
-
-    const fetchCountries = useCallback(async () => {
-        const { data, error } = await supabase.rpc('get_countries');
-        if (!error && data) {
-            setCountries(data);
-        }
-    }, [supabase]);
-
-    useEffect(() => {
-        fetchCountries();
-    }, [fetchCountries]);
+    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, activeCountry, currentPage]);
 
     useEffect(() => {
         fetchAccounts();
@@ -102,7 +93,7 @@ function AccountsContent() {
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, typeFilter, statusFilter, countryFilter, startDate, endDate]);
+    }, [debouncedSearch, typeFilter, statusFilter, activeCountry, startDate, endDate]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -183,14 +174,6 @@ function AccountsContent() {
             >
                 {activeTab === 'accounts' && (
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <Select 
-                            value={countryFilter}
-                            onChange={(e) => setCountryFilter(e.target.value)}
-                            options={[
-                                { value: 'all', label: 'All Countries' },
-                                ...countries.map(c => ({ value: c.code, label: `${c.display_name} (${c.code})` }))
-                            ]}
-                        />
                         <Select 
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
