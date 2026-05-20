@@ -267,5 +267,69 @@ export function createFinanceRepository(client: DbClient) {
             if (error) return { data: null, error: toError(error) };
             return { data: data as TaxRate[], error: null };
         },
+
+        /** Fetch organizer-scoped payouts via the `get_organizer_payouts` RPC. */
+        async getOrganizerPayouts(
+            accountId: string,
+            opts?: ListOptions & { status?: string }
+        ): Promise<RepoListResult<Record<string, unknown>>> {
+            const page = opts?.page ?? 1;
+            const size = opts?.pageSize ?? 20;
+            const offset = (page - 1) * size;
+
+            const { data, error } = await client.rpc('get_organizer_payouts', {
+                p_account_id: accountId,
+                p_status: opts?.status ?? null,
+                p_limit: size,
+                p_offset: offset,
+            });
+
+            if (error) return { data: null, total: null, error: toError(error) };
+            return { data: (data as { items?: Record<string, unknown>[]; total?: number })?.items ?? [], total: (data as { items?: Record<string, unknown>[]; total?: number })?.total ?? null, error: null };
+        },
+
+        /** Fetch organizer-scoped refund requests via the `get_organizer_refund_requests` RPC. */
+        async getOrganizerRefundRequests(
+            accountId: string,
+            opts?: ListOptions & { status?: string }
+        ): Promise<RepoListResult<Record<string, unknown>>> {
+            const page = opts?.page ?? 1;
+            const size = opts?.pageSize ?? 20;
+            const offset = (page - 1) * size;
+
+            const { data, error } = await client.rpc('get_organizer_refund_requests', {
+                p_account_id: accountId,
+                p_status: opts?.status ?? null,
+                p_limit: size,
+                p_offset: offset,
+            });
+
+            if (error) return { data: null, total: null, error: toError(error) };
+            return { data: (data as { items?: Record<string, unknown>[]; total?: number })?.items ?? [], total: (data as { items?: Record<string, unknown>[]; total?: number })?.total ?? null, error: null };
+        },
+
+        /** Approve or reject a refund request for an organizer's own event. */
+        async approveOrganizerRefund(
+            refundId: string,
+            status: 'approved' | 'rejected'
+        ): Promise<RepoResult<Record<string, unknown>>> {
+            const { data, error } = await client.rpc('approve_organizer_refund_request', {
+                p_refund_id: refundId,
+                p_status: status,
+            });
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as Record<string, unknown>, error: null };
+        },
+
+        /** Retry a failed payout via the `retry_payout` RPC. */
+        async retryPayout(
+            payoutId: string
+        ): Promise<RepoResult<Record<string, unknown>>> {
+            const { data, error } = await client.rpc('retry_payout', {
+                p_payout_id: payoutId,
+            });
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as Record<string, unknown>, error: null };
+        },
     };
 }

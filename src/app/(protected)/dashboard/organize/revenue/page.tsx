@@ -4,18 +4,20 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import FinanceTable from '@/components/features/finance/FinanceTable';
+import PayoutTable from '@/components/features/finance/PayoutTable';
+import RefundTable from '@/components/features/finance/RefundTable';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatString, formatDate } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import PageHeader from '@/components/dashboard/PageHeader';
-import ProductTour from '@/components/dashboard/ProductTour';
-import TableToolbar from '@/components/shared/TableToolbar';
 import StatCard from '@/components/dashboard/StatCard';
-import type { FinanceTransaction, AccountWallet } from '@/types/organize';
+import TableToolbar from '@/components/shared/TableToolbar';
+import type { AccountWallet } from '@/types/organize';
+
+type TabId = 'payouts' | 'refunds';
 
 function RevenueContent() {
     const { showToast } = useToast();
@@ -25,120 +27,183 @@ function RevenueContent() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const VALID_TABS = ['all', 'incoming', 'outgoing', 'hold'] as const;
-    type TabId = typeof VALID_TABS[number];
-    
-    const initialTab = (searchParams.get('tab') as string) || 'all';
+    const VALID_TABS: TabId[] = ['payouts', 'refunds'];
+    const initialTab = (searchParams.get('tab') as TabId) || 'payouts';
     const [activeTab, setActiveTab] = useState<TabId>(
-        (VALID_TABS as readonly string[]).includes(initialTab) ? initialTab as TabId : 'all'
+        VALID_TABS.includes(initialTab) ? initialTab : 'payouts'
     );
-    
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
-    const [totalTransactions, setTotalTransactions] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
 
+    const [isSummaryLoading, setIsSummaryLoading] = useState(true);
     const [wallets, setWallets] = useState<AccountWallet[]>([]);
     const [stats, setStats] = useState({
         grossRevenue: 0,
         availableBalance: 0,
         pendingEscrow: 0,
         totalRefunded: 0,
-        totalPaidOut: 0
+        totalPaidOut: 0,
     });
 
+    // Payouts tab
+    const [isPayoutsLoading, setIsPayoutsLoading] = useState(true);
+    const [payoutIds, setPayoutIds] = useState<Set<string>>(new Set());
+    const [payouts, setPayouts] = useState<Record<string, unknown>[]>([]);
+    const [totalPayouts, setTotalPayouts] = useState(0);
+    const [refundIds, setRefundIds] = useState<Set<string>>(new Set());
+    const [refunds, setRefunds] = useState<Record<string, unknown>[]>([]);
+    const [totalRefunds, setTotalRefunds] = useState(0);
+    const itemsPerPage = 10;
+    const [payoutsPage, setPayoutsPage] = useState(1);
+    const [refundsPage, setRefundsPage] = useState(1);
+
+    /* ─ Mapping helpers (separated into two named functions) ─────────────────── */
+
+    const buildPayoutRow = (r: Record<string, unknown>) => ({
+        id:            String(r.payout_id),
+        reference:     String(r.reference ?? r.reference ?? ''),
+        eventName:     String(r.event_name ?? ''),
+        payableWallet: String(r.wallet_reference ?? ''),
+        wallet:        String(r.wallet_reference ?? ''),
+        currency:      String(r.currency ?? r.wallet_currency ?? ''),
+        amount:        Number(r.amount) || 0,
+        status:        String(r.status ?? ''),
+        processedAt:   typeof r.processed_at === 'string' ? r.processed_at : undefined,
+        requestedAt:   String(r.requested_at ?? ''),
+        createdAt:     String(r.requested_at ?? ''),
+    });
+
+    const buildRefundRow = (r: Record<string, unknown>) => ({
+        id:           String(r.refund_id ?? r.id ?? ''),
+        reference:    String(r.reference ?? ''),
+        event_name:   String(r.event_name ?? ''),
+        ticket_code:  String(r.ticket_code ?? ''),
+        amount:       Number(r.amount) || 0,
+        currency:     String(r.currency ?? ''),
+        status:       String(r.status ?? ''),
+        created_at:   String(r.created_at ?? ''),
+        processed_at: typeof r.processed_at === 'string' ? r.processed_at : undefined,
+    });
+
+    /* ── Data fetch: summary ─────────────────────────────────────────────────── */
     const fetchSummary = useCallback(async () => {
         if (!activeAccount) return;
         try {
             const { data, error } = await supabase.rpc('get_organizer_revenue_summary', {
-                p_account_id: activeAccount.id
+                p_account_id: activeAccount.id,
             });
             if (error) throw error;
-            setWallets(data.wallets || []);
-            setStats(data.stats);
+            setWallets(data?.wallets || []);
+            setStats({
+                grossRevenue:     Number(data?.stats?.total_revenue) || 0,
+                availableBalance: Number(data?.stats?.net_revenue) || 0,
+                pendingEscrow:    Number(data?.payouts) || 0,
+                totalRefunded:    Number(data?.stats?.total_revenue) || 0,
+                totalPaidOut:     Number(data?.stats?.payouts) || 0,
+            });
         } catch (err) {
             console.error('Failed to fetch revenue summary:', err);
         }
     }, [activeAccount, supabase]);
 
-    const fetchTransactions = useCallback(async () => {
+    /* ── Data fetch: payouts ─────────────────────────────────────────────────── */
+    const fetchPayouts = useCallback(async () => {
         if (!activeAccount) return;
-        setIsLoading(true);
+        setIsPayoutsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_organizer_transactions', {
+            const { data, error } = await supabase.rpc('get_organizer_payouts', {
                 p_account_id: activeAccount.id,
-                p_category: activeTab === 'all' ? null : activeTab,
-                p_limit: itemsPerPage,
-                p_offset: (currentPage - 1) * itemsPerPage
+                p_status:     null,
+                p_limit:      itemsPerPage,
+                p_offset:     (payoutsPage - 1) * itemsPerPage,
             });
-
             if (error) throw error;
-
-            interface TransactionRow {
-                id: string;
-                reason: string;
-                ticket_code: string | null;
-                amount: number;
-                created_at: string;
-                status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
-                category: 'incoming' | 'outgoing' | 'internal' | 'hold';
-                event_title: string | null;
-            }
-
-            setTransactions((data.transactions || []).map((t: TransactionRow) => ({
-                id: t.id,
-                description: t.reason === 'ticket_sale' ? `Ticket Sale: ${t.ticket_code || '—'}` : null,
-                amount: t.amount,
-                date: t.created_at,
-                status: t.status,
-                type: t.reason as FinanceTransaction['type'],
-                category: t.category,
-                reference: t.id.split('-')[0].toUpperCase(),
-                event: t.event_title,
-                createdAt: t.created_at
-            })));
-            setTotalTransactions(data.total || 0);
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to sync your financial records.', 'error');
+            const raw = (data as { items?: Record<string, unknown>[]; total?: number } | null);
+            const rows = (raw?.items ?? []).filter((row) => String(row.payout_id ?? row.id ?? '')).map(buildPayoutRow);
+            setPayouts(rows);
+            setTotalPayouts(raw?.total ?? rows.length);
+        } catch (err) {
+            showToast(getErrorMessage(err) || 'Failed to load payouts.', 'error');
         } finally {
-            setIsLoading(false);
+            setIsPayoutsLoading(false);
         }
-    }, [activeAccount, activeTab, currentPage, supabase, showToast]);
+    }, [activeAccount, supabase, payoutsPage, showToast]);
 
+    /* ── Data fetch: refunds ─────────────────────────────────────────────────── */
+    const fetchRefunds = useCallback(async () => {
+        if (!activeAccount) return;
+        setIsRefundsLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('get_organizer_refund_requests', {
+                p_account_id: activeAccount.id,
+                p_status:     null,
+                p_limit:      itemsPerPage,
+                p_offset:     (refundsPage - 1) * itemsPerPage,
+            });
+            if (error) throw error;
+            const raw = (data as { items?: Record<string, unknown>[]; total?: number } | null);
+            const rows = (raw?.items ?? []).filter((row) => String(row.refund_id ?? row.id ?? '')).map(buildRefundRow);
+            setRefunds(rows);
+            setTotalRefunds(raw?.total ?? rows.length);
+        } catch (err) {
+            showToast(getErrorMessage(err) || 'Failed to load refunds.', 'error');
+        } finally {
+            setIsRefundsLoading(false);
+        }
+    }, [activeAccount, supabase, refundsPage, showToast]);
+
+    /* ── Effects ─────────────────────────────────────────────────────────────── */
     useEffect(() => {
         if (!isOrgLoading && activeAccount) {
             fetchSummary();
-            fetchTransactions();
+            fetchPayouts();
+            fetchRefunds();
         }
-    }, [isOrgLoading, activeAccount, fetchSummary, fetchTransactions]);
+    }, [isOrgLoading, activeAccount, fetchSummary, fetchPayouts, fetchRefunds]);
 
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab as TabId);
-        setCurrentPage(1);
+        setPayoutsPage(1);
+        setRefundsPage(1);
+        setPayoutIds(new Set());
+        setRefundIds(new Set());
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
     };
 
+    /* ── Export ──────────────────────────────────────────────────────────────── */
     const handleExport = () => {
-        if (transactions.length === 0) {
-            showToast(`No data to export.`, 'warning');
+        const rows = activeTab === 'payouts' ? payouts : refunds;
+        if (rows.length === 0) {
+            showToast('No data to export.', 'warning');
             return;
         }
-        showToast(`Preparing report...`, 'info');
-        exportToCSV(
-            transactions.map(t => ({
-                date: t.date,
-                event: t.event || '—',
-                type: t.type,
-                amount: t.amount,
-                currency: 'KES',
-                status: t.status
-            })),
-            `revenue_report_${activeAccount?.name || 'org'}`
-        );
+        showToast('Preparing report...', 'info');
+        const csvRows = rows.map((r) => {
+            if (activeTab === 'payouts') {
+                return {
+                    reference:  String(r.reference ?? ''),
+                    event:      String(r.event_name ?? ''),
+                    wallet:     String(r.wallet_reference ?? ''),
+                    currency:   String(r.currency ?? ''),
+                    amount:     Number(r.amount) || 0,
+                    status:     String(r.status ?? ''),
+                    settled_at: typeof r.processed_at === 'string'
+                        ? formatDate(r.processed_at)
+                        : formatDate(String(r.requested_at ?? '')),
+                };
+            } else {
+                return {
+                    reference:    String(r.reference ?? ''),
+                    event:        String(r.event_name ?? ''),
+                    ticket_code:  String(r.ticket_code ?? ''),
+                    currency:     String(r.currency ?? ''),
+                    amount:       Number(r.amount) || 0,
+                    status:       String(r.status ?? ''),
+                    requested_at: formatDate(String(r.created_at ?? '')),
+                };
+            }
+        });
+        exportToCSV(csvRows, `${activeTab}_report_${activeAccount?.name ?? 'org'}`);
         showToast('Report downloaded.', 'success');
     };
 
@@ -146,63 +211,104 @@ function RevenueContent() {
         <div className={styles.dashboardPage}>
             <PageHeader
                 title="Revenue & Payouts"
-                subtitle="Track your earnings and transaction history."
+                subtitle="Track payouts, refund requests and transaction history."
                 actionLabel="Generate Report"
                 onActionClick={handleExport}
-                actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>}
+                actionIcon={
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                }
             />
 
             {/* Stat Cards */}
             <div className={styles.statsGrid}>
-                <StatCard 
-                    label="Gross Revenue" 
-                    value={formatCurrency(stats.grossRevenue)} 
+                <StatCard
+                    label="Gross Revenue"
+                    value={formatCurrency(stats.grossRevenue)}
                     trend="positive"
-                    isLoading={isLoading}
+                    isLoading={isSummaryLoading}
                 />
-                <StatCard 
-                    label="Available Balance" 
-                    value={formatCurrency(stats.availableBalance)} 
+                <StatCard
+                    label="Available Balance"
+                    value={formatCurrency(stats.availableBalance)}
                     change="Spendable"
-                    isLoading={isLoading}
+                    isLoading={isSummaryLoading}
                 />
-                <StatCard 
-                    label="Pending Escrow" 
-                    value={formatCurrency(stats.pendingEscrow)} 
+                <StatCard
+                    label="Pending Escrow"
+                    value={formatCurrency(stats.pendingEscrow)}
                     change="Locked"
-                    isLoading={isLoading}
+                    isLoading={isSummaryLoading}
                 />
-                <StatCard 
-                    label="Total Paid Out" 
-                    value={formatCurrency(stats.totalPaidOut)} 
-                    isLoading={isLoading}
+                <StatCard
+                    label="Total Paid Out"
+                    value={formatCurrency(stats.totalPaidOut)}
+                    isLoading={isSummaryLoading}
                 />
             </div>
 
             <TableToolbar
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-                searchPlaceholder={`Search transactions...`}
+                searchValue=""
+                onSearchChange={() => {}}
+                searchPlaceholder={`Search ${activeTab}...`}
             />
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)' }}>
                     <TabsList>
-                        <TabsTrigger value="all">All Activity</TabsTrigger>
-                        <TabsTrigger value="incoming">Earnings</TabsTrigger>
-                        <TabsTrigger value="outgoing">Withdrawals/Refunds</TabsTrigger>
-                        <TabsTrigger value="hold">Locked Escrow</TabsTrigger>
+                        <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                        <TabsTrigger value="refunds">Refunds</TabsTrigger>
                     </TabsList>
                 </div>
             </Tabs>
 
             <div className={styles.tableWrapper}>
-                <FinanceTable
-                    transactions={transactions}
-                    currentPage={currentPage}
-                    totalPages={Math.ceil(totalTransactions / itemsPerPage)}
-                    onPageChange={setCurrentPage}
-                />
+                {activeTab === 'payouts' ? (
+                    <PayoutTable
+                        payouts={payouts}
+                        selectedIds={payoutIds}
+                        onSelect={(id) =>
+                            setPayoutIds((prev) => {
+                                const next = new Set(prev);
+                                next.has(id) ? next.delete(id) : next.add(id);
+                                return next;
+                            })
+                        }
+                        onSelectAll={() =>
+                            setPayoutIds((prev) =>
+                                prev.size === payouts.length ? new Set() : new Set(payouts.map((p) => p.id))
+                            )
+                        }
+                        currentPage={payoutsPage}
+                        totalPages={Math.ceil(totalPayouts / itemsPerPage)}
+                        onPageChange={setPayoutsPage}
+                        isLoading={isPayoutsLoading}
+                    />
+                ) : (
+                    <RefundTable
+                        refunds={refunds}
+                        selectedIds={refundIds}
+                        onSelect={(id) =>
+                            setRefundIds((prev) => {
+                                const next = new Set(prev);
+                                next.has(id) ? next.delete(id) : next.add(id);
+                                return next;
+                            })
+                        }
+                        onSelectAll={() =>
+                            setRefundIds((prev) =>
+                                prev.size === refunds.length ? new Set() : new Set(refunds.map((p) => p.id))
+                            )
+                        }
+                        currentPage={refundsPage}
+                        totalPages={Math.ceil(totalRefunds / itemsPerPage)}
+                        onPageChange={setRefundsPage}
+                        isLoading={isRefundsLoading}
+                    />
+                )}
             </div>
 
             <ProductTour
@@ -212,14 +318,14 @@ function RevenueContent() {
                         target: 'body',
                         placement: 'center',
                         title: 'Financial Dashboard',
-                        content: 'Track every cent earned from your events. View gross revenue, pending escrow, and successful payouts.',
+                        content: "Track every cent earned from your events. View gross revenue, pending escrow, and successful payouts.",
                         skipBeacon: true,
                     },
                     {
                         target: '.stats-grid',
                         title: 'Real-time Balances',
                         content: 'Monitor your available balance and funds currently held in escrow until your events are successfully completed.',
-                    }
+                    },
                 ]}
             />
         </div>

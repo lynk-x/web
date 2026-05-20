@@ -4,7 +4,7 @@ import React from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
-import { formatString, formatCurrency } from '@/utils/format';
+import { formatString, formatCurrency, formatDate } from '@/utils/format';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 import type { Payout } from '@/types/organize';
 
@@ -19,14 +19,16 @@ interface PayoutTableProps {
     isLoading?: boolean;
 }
 
+/** Maps `payout_status` schema enum values to badge colour variants. */
 const getPayoutStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'completed': return 'success';
         case 'processing': return 'warning';
         case 'requested': return 'info';
-        case 'failed': return 'error';
-        case 'rejected': return 'error';
-        default: return 'neutral';
+        case 'hold':       return 'warning';
+        case 'failed':     return 'error';
+        case 'rejected':   return 'subtle';
+        default:           return 'neutral';
     }
 };
 
@@ -45,37 +47,55 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
     const columns: Column<Payout>[] = [
         {
             header: 'Reference',
-            render: (payout) => (
-                <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)', fontSize: '13px' }}>
+            render: (payout, _idx) => (
+                <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.7 }}>
                     {payout.reference || '—'}
-                </div>
+                </span>
             ),
         },
         {
             header: 'Event Name',
-            render: (payout) => (
-                <div style={{ fontWeight: 500 }}>{(payout as any).eventName || payout.recipient}</div>
+            render: (payout, _idx) => (
+                <div style={{ fontWeight: 500, fontSize: '13px' }}>{payout.eventName || 'System Adjustment'}</div>
             ),
         },
         {
-            header: 'Payable Wallet',
-            render: (payout) => (
-                <div style={{ fontSize: '13px', opacity: 0.8, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {(payout as any).payableWallet || '—'}
-                </div>
+            header: 'Wallet Ref',
+            render: (payout, _idx) => (
+                <span style={{ fontSize: '13px', fontFamily: 'monospace', opacity: 0.8 }}>
+                    {payout.payableWallet || payout.wallet || '—'}
+                </span>
+            ),
+        },
+        {
+            header: 'Currency',
+            render: (payout, _idx) => (
+                <span style={{ fontWeight: 700, fontSize: '12px', opacity: 0.8 }}>
+                    {payout.currency || '—'}
+                </span>
             ),
         },
         {
             header: 'Amount',
-            render: (payout) => (
-                <div style={{ fontWeight: 600, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {formatCurrency(payout.amount, (payout as any).currency || 'KES')}
+            render: (payout, _idx) => (
+                <div style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                    {formatCurrency(payout.amount, payout.currency)}
                 </div>
             ),
         },
         {
+            header: 'Settled At',
+            render: (payout, _idx) => (
+                <span style={{ fontSize: '13px', opacity: 0.8 }}>
+                    {formatDate(payout.processedAt || payout.requestedAt)}
+                </span>
+            ),
+        },
+        {
             header: 'Status',
-            render: (payout) => <Badge label={formatString(payout.status)} variant={getPayoutStatusVariant(payout.status)} showDot />,
+            render: (payout, _idx) => (
+                <Badge label={formatString(payout.status)} variant={getPayoutStatusVariant(payout.status)} showDot />
+            ),
         },
     ];
 
@@ -116,7 +136,7 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
             totalPages={totalPages}
             onPageChange={onPageChange}
             isLoading={isLoading}
-            emptyMessage="No payout requests found."
+            emptyMessage="No payouts found."
         />
     );
 };
