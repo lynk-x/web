@@ -252,9 +252,6 @@ export default function AdminDashboard() {
 
             {/* Consolidated Territory Audit & Activity Log - Spanning Full Width Below */}
             <section className={styles.activitySection}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={sharedStyles.sectionTitle} style={{ margin: 0 }}>Territory Audit & Activity</h2>
-                </div>
 
                 <div className={styles.activityFeed}>
                     {isActivityLoading ? (
