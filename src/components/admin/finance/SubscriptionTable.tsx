@@ -28,8 +28,6 @@ interface SubscriptionTableProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
-    onPause?: (id: string) => void;
-    onResume?: (id: string) => void;
     onChangePlan?: (id: string) => void;
     onResendInvoice?: (id: string) => void;
     onCancel?: (id: string) => void;
@@ -41,8 +39,6 @@ export default function SubscriptionTable({
     currentPage,
     totalPages,
     onPageChange,
-    onPause,
-    onResume,
     onChangePlan,
     onResendInvoice,
     onCancel
@@ -111,12 +107,6 @@ export default function SubscriptionTable({
 
     const getActions = (row: Subscription): ActionItem[] => {
         const actions: ActionItem[] = [];
-
-        if (row.status === 'paused') {
-            if (onResume) actions.push({ label: 'Resume Subscription', onClick: () => onResume(row.id) });
-        } else if (['active', 'trialing', 'past_due'].includes(row.status)) {
-            if (onPause) actions.push({ label: 'Pause Subscription', onClick: () => onPause(row.id) });
-        }
 
         if (onChangePlan) actions.push({ label: 'Change Plan', onClick: () => onChangePlan(row.id) });
         if (onResendInvoice) actions.push({ label: 'Resend Latest Invoice', onClick: () => onResendInvoice(row.id) });

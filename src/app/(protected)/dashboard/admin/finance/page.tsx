@@ -362,30 +362,6 @@ function FinanceContent() {
 
 
     // ── Subscription Management Handlers ─────────────────────────────────────
-    const handlePauseSubscription = async (id: string) => {
-        showToast('Pausing subscription...', 'info');
-        try {
-            const { error } = await supabase.rpc('admin_pause_subscription', { p_subscription_id: id });
-            if (error) throw error;
-            showToast('Subscription paused successfully.', 'success');
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
-    };
-
-    const handleResumeSubscription = async (id: string) => {
-        showToast('Resuming subscription...', 'info');
-        try {
-            const { error } = await supabase.rpc('admin_resume_subscription', { p_subscription_id: id });
-            if (error) throw error;
-            showToast('Subscription resumed successfully.', 'success');
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
-    };
-
     const handleCancelSubscription = async (id: string) => {
         if (!await confirm('Are you sure you want to cancel this subscription? Immediate cancellation will terminate access.')) return;
         
@@ -654,8 +630,6 @@ function FinanceContent() {
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
-                        onPause={handlePauseSubscription}
-                        onResume={handleResumeSubscription}
                         onCancel={handleCancelSubscription}
                         onResendInvoice={handleResendInvoice}
                         onChangePlan={(id) => {

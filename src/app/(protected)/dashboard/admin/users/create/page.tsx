@@ -28,7 +28,7 @@ export default function CreateAccountPage() {
     }, []);
 
     const fetchCountries = async () => {
-        const { data } = await supabase.rpc('get_countries');
+        const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
         if (data) setCountries(data);
     };
 

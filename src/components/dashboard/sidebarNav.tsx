@@ -187,7 +187,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Identity & Compliance', href: '/dashboard/admin/users', icon: (
+                    name: 'Identity', href: '/dashboard/admin/users', icon: (
                         <svg {...svgProps}>
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -197,7 +197,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Event Calendar', href: '/dashboard/admin/events', icon: (
+                    name: 'Events', href: '/dashboard/admin/events', icon: (
                         <svg {...svgProps}>
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -207,7 +207,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Forum Moderation', href: '/dashboard/admin/forums', icon: (
+                    name: 'Forums', href: '/dashboard/admin/forums', icon: (
                         <svg {...svgProps}>
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -237,7 +237,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Analytics & Reports', href: '/dashboard/admin/analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/admin/analytics', icon: (
                         <svg {...svgProps}>
                             <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
