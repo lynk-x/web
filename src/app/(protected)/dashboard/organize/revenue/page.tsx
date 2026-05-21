@@ -12,6 +12,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import { formatCurrency, formatString, formatDate } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
+import FilterChips from '@/components/shared/FilterChips';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
@@ -48,9 +49,11 @@ function RevenueContent() {
     const [payoutIds, setPayoutIds] = useState<Set<string>>(new Set());
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [totalPayouts, setTotalPayouts] = useState(0);
+    const [payoutStatusFilter, setPayoutStatusFilter] = useState<string>('all');
     const [refundIds, setRefundIds] = useState<Set<string>>(new Set());
     const [refunds, setRefunds] = useState<Refund[]>([]);
     const [totalRefunds, setTotalRefunds] = useState(0);
+    const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
     const [isRefundsLoading, setIsRefundsLoading] = useState(true);
     const itemsPerPage = 10;
     const [payoutsPage, setPayoutsPage] = useState(1);
@@ -113,7 +116,7 @@ function RevenueContent() {
         try {
             const { data, error } = await supabase.rpc('get_organizer_payouts', {
                 p_account_id: activeAccount.id,
-                p_status:     null,
+                p_status:     payoutStatusFilter === 'all' ? null : payoutStatusFilter,
                 p_limit:      itemsPerPage,
                 p_offset:     (payoutsPage - 1) * itemsPerPage,
             });
@@ -127,7 +130,7 @@ function RevenueContent() {
         } finally {
             setIsPayoutsLoading(false);
         }
-    }, [activeAccount, supabase, payoutsPage, showToast]);
+    }, [activeAccount, supabase, payoutsPage, payoutStatusFilter, showToast]);
 
     /* ── Data fetch: refunds ─────────────────────────────────────────────────── */
     const fetchRefunds = useCallback(async () => {
@@ -136,7 +139,7 @@ function RevenueContent() {
         try {
             const { data, error } = await supabase.rpc('get_organizer_refund_requests', {
                 p_account_id: activeAccount.id,
-                p_status:     null,
+                p_status:     refundStatusFilter === 'all' ? null : refundStatusFilter,
                 p_limit:      itemsPerPage,
                 p_offset:     (refundsPage - 1) * itemsPerPage,
             });
@@ -150,7 +153,7 @@ function RevenueContent() {
         } finally {
             setIsRefundsLoading(false);
         }
-    }, [activeAccount, supabase, refundsPage, showToast]);
+    }, [activeAccount, supabase, refundsPage, refundStatusFilter, showToast]);
 
     /* ── Effects ─────────────────────────────────────────────────────────────── */
     useEffect(() => {
@@ -167,6 +170,8 @@ function RevenueContent() {
         setRefundsPage(1);
         setPayoutIds(new Set());
         setRefundIds(new Set());
+        setPayoutStatusFilter('all');
+        setRefundStatusFilter('all');
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -268,49 +273,77 @@ function RevenueContent() {
 
             <div className={styles.tableWrapper}>
                 {activeTab === 'payouts' ? (
-                    <PayoutTable
-                        payouts={payouts}
-                        selectedIds={payoutIds}
-                        onSelect={(id) =>
-                            setPayoutIds((prev) => {
-                                const next = new Set(prev);
-                                next.has(id) ? next.delete(id) : next.add(id);
-                                return next;
-                            })
-                        }
-                        onSelectAll={() =>
-                            setPayoutIds((prev) =>
-                                prev.size === payouts.length ? new Set() : new Set(payouts.map((p) => p.id))
-                            )
-                        }
-                        currentPage={payoutsPage}
-                        totalPages={Math.ceil(totalPayouts / itemsPerPage)}
-                        onPageChange={setPayoutsPage}
-                        isLoading={isPayoutsLoading}
-                    />
+                    <>
+                        <FilterChips
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'requested', label: 'Requested' },
+                                { value: 'processing', label: 'Processing' },
+                                { value: 'completed', label: 'Completed' },
+                                { value: 'failed', label: 'Failed' },
+                                { value: 'rejected', label: 'Rejected' },
+                            ]}
+                            currentValue={payoutStatusFilter}
+                            onChange={setPayoutStatusFilter}
+                        />
+                        <PayoutTable
+                            payouts={payouts}
+                            selectedIds={payoutIds}
+                            onSelect={(id) =>
+                                setPayoutIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.has(id) ? next.delete(id) : next.add(id);
+                                    return next;
+                                })
+                            }
+                            onSelectAll={() =>
+                                setPayoutIds((prev) =>
+                                    prev.size === payouts.length ? new Set() : new Set(payouts.map((p) => p.id))
+                                )
+                            }
+                            currentPage={payoutsPage}
+                            totalPages={Math.ceil(totalPayouts / itemsPerPage)}
+                            onPageChange={setPayoutsPage}
+                            isLoading={isPayoutsLoading}
+                        />
+                    </>
                 ) : (
-                    <RefundTable
-                        refunds={refunds}
-                        selectedIds={refundIds}
-                        onSelect={(id) =>
-                            setRefundIds((prev) => {
-                                const next = new Set(prev);
-                                next.has(id) ? next.delete(id) : next.add(id);
-                                return next;
-                            })
-                        }
-                        onSelectAll={() =>
-                            setRefundIds((prev) =>
-                                prev.size === refunds.length ? new Set() : new Set(refunds.map((p) => p.id))
-                            )
-                        }
-                        currentPage={refundsPage}
-                        totalPages={Math.ceil(totalRefunds / itemsPerPage)}
-                        onPageChange={setRefundsPage}
-                        isLoading={isRefundsLoading}
-                    />
+                    <>
+                        <FilterChips
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'pending', label: 'Pending' },
+                                { value: 'approved', label: 'Approved' },
+                                { value: 'rejected', label: 'Rejected' },
+                                { value: 'processed', label: 'Processed' },
+                            ]}
+                            currentValue={refundStatusFilter}
+                            onChange={setRefundStatusFilter}
+                        />
+                        <RefundTable
+                            refunds={refunds}
+                            selectedIds={refundIds}
+                            onSelect={(id) =>
+                                setRefundIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.has(id) ? next.delete(id) : next.add(id);
+                                    return next;
+                                })
+                            }
+                            onSelectAll={() =>
+                                setRefundIds((prev) =>
+                                    prev.size === refunds.length ? new Set() : new Set(refunds.map((p) => p.id))
+                                )
+                            }
+                            currentPage={refundsPage}
+                            totalPages={Math.ceil(totalRefunds / itemsPerPage)}
+                            onPageChange={setRefundsPage}
+                            isLoading={isRefundsLoading}
+                        />
+                    </>
                 )}
             </div>
+
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgRevenueJoyride_${activeAccount.id}` : 'hasSeenOrgRevenueJoyride_guest'}

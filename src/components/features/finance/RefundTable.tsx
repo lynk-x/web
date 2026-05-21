@@ -76,6 +76,12 @@ const RefundTable: React.FC<RefundTableProps> = ({
             ),
         },
         {
+            header: 'Currency',
+            render: (refund, _idx) => (
+                <span style={{ fontWeight: 600 }}>{refund.currency || '—'}</span>
+            ),
+        },
+        {
             header: 'Amount',
             render: (refund, _idx) => (
                 <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>

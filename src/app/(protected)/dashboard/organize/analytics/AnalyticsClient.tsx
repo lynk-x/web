@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import PerformanceTable, { type PerformanceEvent } from '@/components/features/analytics/PerformanceTable';
+import FilterChips from '@/components/shared/FilterChips';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -128,17 +129,6 @@ export default function AnalyticsClient() {
 
             <div className="tour-analytics-range" style={{ marginTop: 'var(--spacing-md)' }}>
                 <TableToolbar searchPlaceholder="Filter by name..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
-                    <div className={adminStyles.filterGroup}>
-                        {['all', 'active', 'past', 'draft'].map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => setStatusFilter(status)}
-                                className={`${adminStyles.chip} ${statusFilter === status ? adminStyles.chipActive : ''}`}
-                            >
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </button>
-                        ))}
-                    </div>
                     <select
                         className={adminStyles.select}
                         value={timeRange}
@@ -151,16 +141,26 @@ export default function AnalyticsClient() {
                         <option value="365">Last Year</option>
                     </select>
                 </TableToolbar>
-            </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <div style={{ marginTop: 'var(--spacing-md)' }}>
-                    <TabsList>
-                        <TabsTrigger value="summary">Performance Summary</TabsTrigger>
-                        <TabsTrigger value="breakdown">Detailed Breakdown</TabsTrigger>
-                    </TabsList>
-                </div>
-            </Tabs>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
+                        <TabsList>
+                            <TabsTrigger value="summary">Performance Summary</TabsTrigger>
+                            <TabsTrigger value="breakdown">Detailed Breakdown</TabsTrigger>
+                        </TabsList>
+                        <FilterChips
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'active', label: 'Active' },
+                                { value: 'past', label: 'Past' },
+                                { value: 'draft', label: 'Draft' },
+                            ]}
+                            currentValue={statusFilter}
+                            onChange={setStatusFilter}
+                        />
+                    </div>
+                </Tabs>
+            </div>
 
             {activeTab === 'summary' ? (
                 <div className={adminStyles.subPageGridBalanced} style={{ marginTop: 'var(--spacing-md)' }}>
