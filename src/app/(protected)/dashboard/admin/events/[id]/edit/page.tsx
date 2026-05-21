@@ -1,26 +1,33 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useMemo } from 'react';
 import EventForm from '@/components/features/events/EventForm';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
+import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import type { OrganizerEventFormData, OrganizerEventTicket } from '@/types/organize';
 
 export default function AdminEditEventPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: eventId } = use(params);
 
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { activeAccount } = useOrganization();
 
     const [initialData, setInitialData] = useState<OrganizerEventFormData | null>(null);
     const [eventCreatedAt, setEventCreatedAt] = useState<string | null>(null);
-    const [accountId, setAccountId] = useState<string | null>(null);
+    const [eventAccountId, setEventAccountId] = useState<string | null>(null);
     const [eventCurrency, setEventCurrency] = useState<string>('KES');
     const [isLoading, setIsLoading] = useState(true);
+
+    const [accountId, setAccountId] = useState<string>('');
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -31,7 +38,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 const { data: event, error: eventError } = await supabase
                     .from('events')
                     .select(`
-                        id, title, description, category_id, is_online, is_private, 
+                        id, title, description, category_id, is_online, is_private,
                         location, coordinates, starts_at, ends_at, media,
                         account_id, currency, created_at,
                         ticket_tiers (
@@ -43,6 +50,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
                 if (eventError) throw eventError;
 
+                setEventAccountId(event.account_id);
                 setAccountId(event.account_id);
                 setEventCreatedAt(event.created_at);
                 setEventCurrency(event.currency || 'KES');
@@ -108,7 +116,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     }, [eventId, router, showToast]);
 
     const handleEdit = async (data: OrganizerEventFormData, file?: File | null) => {
-        if (!accountId || !eventCreatedAt) return;
+        const resolvedAccountId = accountId || eventAccountId;
+        if (!resolvedAccountId || !eventCreatedAt) return;
 
         try {
             let uploadedThumbnailUrl = data.thumbnailUrl || null;
@@ -117,7 +126,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             if (file) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `events/${accountId}/${fileName}`;
+                const filePath = `events/${resolvedAccountId}/${fileName}`;
 
                 const { error: uploadError } = await supabase.storage
                     .from('media')
@@ -140,6 +149,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             const { error: eventError } = await supabase
                 .from('events')
                 .update({
+                    account_id: resolvedAccountId,
                     title: data.title,
                     description: data.description,
                     category_id: data.category,
@@ -150,7 +160,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     starts_at: startDateTime,
                     ends_at: endDateTime,
                     currency: data.currency,
-                    media: { 
+                    media: {
                         thumbnail: uploadedThumbnailUrl || (initialData?.thumbnailUrl)
                     },
                     updated_at: new Date().toISOString()
@@ -214,8 +224,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
     if (isLoading) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
-                <p>Loading event data...</p>
+            <div className={adminStyles.loadingContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+                <div className={adminStyles.spinner} />
             </div>
         );
     }
@@ -223,12 +233,31 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     if (!initialData) return null;
 
     return (
-        <EventForm
-            initialData={initialData}
-            isEditMode={true}
-            pageTitle="Admin: Edit Event"
-            submitBtnText="Save Changes"
-            onSubmit={handleEdit}
-        />
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Admin: Edit Event"
+                subtitle="Change event details, timing or ticketing configuration."
+                backLabel="Back to Events"
+            />
+
+            <div className={adminStyles.pageCard}>
+                {/* Account Selector — admin can reassign event ownership */}
+                <AccountSearchInput
+                    value={accountId}
+                    onChange={setAccountId}
+                    label="Owning Account"
+                    placeholder="Search accounts by name or reference…"
+                    countryCode={activeAccount?.country_code || null}
+                />
+
+                <EventForm
+                    initialData={initialData}
+                    isEditMode={true}
+                    pageTitle="Event Details"
+                    submitBtnText="Save Changes"
+                    onSubmit={handleEdit}
+                />
+            </div>
+        </div>
     );
 }

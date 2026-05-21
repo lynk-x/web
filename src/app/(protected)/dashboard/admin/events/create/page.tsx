@@ -1,6 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
+import { useState, useMemo } from 'react';
 import EventForm from '@/components/features/events/EventForm';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
@@ -9,17 +10,21 @@ import { useToast } from '@/components/ui/Toast';
 
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
+import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 
 import type { OrganizerEventFormData } from '@/types/organize';
 
 export default function AdminCreateEventPage() {
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
     const { activeAccount } = useOrganization();
     const { showToast } = useToast();
 
+    const [accountId, setAccountId] = useState('');
+
     const handleCreate = async (data: OrganizerEventFormData, file?: File | null) => {
-        if (!activeAccount) {
+        const resolvedAccountId = accountId || activeAccount?.id;
+        if (!resolvedAccountId) {
             showToast('You must select an organization first.', 'error');
             return;
         }
@@ -31,7 +36,7 @@ export default function AdminCreateEventPage() {
             if (file) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `events/${activeAccount.id}/${fileName}`; // Organize by account in bucket
+                const filePath = `events/${resolvedAccountId}/${fileName}`; // Organize by account in bucket
 
                 const { error: uploadError } = await supabase.storage
                     .from('media')
@@ -54,7 +59,7 @@ export default function AdminCreateEventPage() {
             const { data: newEvent, error: eventError } = await supabase
                 .from('events')
                 .insert({
-                    account_id: activeAccount.id,
+                    account_id: resolvedAccountId,
                     title: data.title,
                     description: data.description,
                     category_id: data.category,
@@ -65,7 +70,7 @@ export default function AdminCreateEventPage() {
                     starts_at: startDateTime,
                     ends_at: endDateTime,
                     currency: data.currency || 'KES',
-                    media: { 
+                    media: {
                         thumbnail: uploadedThumbnailUrl
                     },
                     status: 'published'
@@ -142,7 +147,17 @@ export default function AdminCreateEventPage() {
                 subtitle="Add a platform-level event or override existing listings."
                 backLabel="Back to Events"
             />
+
             <div className={adminStyles.pageCard}>
+                {/* Account Selector — admin chooses owning account */}
+                <AccountSearchInput
+                    value={accountId}
+                    onChange={setAccountId}
+                    label="Owning Account"
+                    placeholder="Search accounts by name or reference…"
+                    countryCode={activeAccount?.country_code || null}
+                />
+
                 <EventForm
                     pageTitle="Event Details"
                     submitBtnText="Publish Event"

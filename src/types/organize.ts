@@ -179,6 +179,7 @@ export interface PerformanceEvent {
 
 /** Form data for creating/editing an event. */
 export interface OrganizerEventFormData {
+    account_id?: string;          // Admin-assigned owning account
     title: string;
     description: string;
     category: string;

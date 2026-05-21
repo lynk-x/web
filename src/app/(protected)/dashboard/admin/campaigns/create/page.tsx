@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { DatePicker } from '@/components/ui/DatePicker';
 import SubPageHeader from '@/components/shared/SubPageHeader';
+import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
+import { useOrganization } from '@/context/OrganizationContext';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 export default function CreateCampaignPage() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const router = useRouter();
+    const { activeAccount } = useOrganization();
 
-    const [accounts, setAccounts] = useState<{ id: string, display_name: string }[]>([]);
     const [formData, setFormData] = useState({
         account_id: '',
         title: '',
@@ -23,20 +25,6 @@ export default function CreateCampaignPage() {
         end_date: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-        fetchAccounts();
-    }, []);
-
-    const fetchAccounts = async () => {
-        const { data } = await supabase
-            .from('accounts')
-            .select('id, display_name')
-            .eq('is_active', true)
-            .order('display_name')
-            .limit(100);
-        setAccounts(data || []);
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -86,20 +74,12 @@ export default function CreateCampaignPage() {
                             />
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Advertiser Account</label>
-                            <select
-                                required
-                                className={adminStyles.select}
-                                value={formData.account_id}
-                                onChange={(e) => setFormData({ ...formData, account_id: e.target.value })}
-                            >
-                                <option value="">Select an account...</option>
-                                {accounts.map(a => (
-                                    <option key={a.id} value={a.id}>{a.display_name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <AccountSearchInput
+                            value={formData.account_id}
+                            onChange={(id) => setFormData({ ...formData, account_id: id })}
+                            label="Advertiser Account"
+                            countryCode={activeAccount?.country_code || null}
+                        />
 
                         <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label}>Ad Type</label>

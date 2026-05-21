@@ -262,6 +262,7 @@ function CampaignsContent() {
                     total_budget: updates.budget,
                     start_at: updates.startDate,
                     end_at: updates.endDate,
+                    account_id: updates.account_id,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', campaignId)
