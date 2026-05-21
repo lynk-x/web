@@ -267,26 +267,25 @@ function ForumsContent() {
                 />
             </div>
 
-
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
-                <div className={adminStyles.tabsHeaderRow} style={{ marginBottom: '20px' }}>
-                    <TabsList>
-                        <TabsTrigger value="forums">Forums</TabsTrigger>
-                        <TabsTrigger value="surveys">Surveys</TabsTrigger>
-                    </TabsList>
-                </div>
 
                 <TabsContent value="forums">
                     {isLoading ? (
                         <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
                     ) : (
                         <>
-                            <TableToolbar
-                                searchPlaceholder="Search forum name or event..."
-                                searchValue={searchTerm}
-                                onSearchChange={setSearchTerm}
-                            >
+                            <div className={adminStyles.tabsHeaderRow} style={{ marginBottom: '20px' }}>
+                                <TableToolbar
+                                    searchPlaceholder="Search forum name or event..."
+                                    searchValue={searchTerm}
+                                    onSearchChange={setSearchTerm}
+                                />
+                            </div>
+                            <div className={adminStyles.tabsHeaderRow} style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
+                                <TabsList>
+                                    <TabsTrigger value="forums">Forums</TabsTrigger>
+                                    <TabsTrigger value="surveys">Surveys</TabsTrigger>
+                                </TabsList>
                                 <FilterChips
                                     options={[
                                         { value: 'all', label: 'All' },
@@ -297,7 +296,7 @@ function ForumsContent() {
                                     currentValue={statusFilter}
                                     onChange={setStatusFilter}
                                 />
-                            </TableToolbar>
+                            </div>
 
                             <BulkActionsBar
                                 selectedCount={selectedThreadIds.size}

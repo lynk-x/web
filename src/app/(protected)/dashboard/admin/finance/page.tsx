@@ -14,7 +14,9 @@ import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import WalletTable, { AdminWallet } from '@/components/admin/finance/WalletTable';
 import SubscriptionTable, { Subscription } from '@/components/admin/finance/SubscriptionTable';
 import TableToolbar from '@/components/shared/TableToolbar';
+import FilterChips from '@/components/shared/FilterChips';
 import DateRangeRow from '@/components/shared/DateRangeRow';
+import AmountRangeRow from '@/components/shared/AmountRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import Modal from '@/components/shared/Modal';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -66,6 +68,10 @@ function FinanceContent() {
     // Date range state
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    // Amount range state (wallets tab)
+    const [minAmount, setMinAmount] = useState('');
+    const [maxAmount, setMaxAmount] = useState('');
 
     // State for different datasets
     const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
@@ -120,6 +126,10 @@ function FinanceContent() {
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab);
         setCategoryFilter('all');
+        setStartDate('');
+        setEndDate('');
+        setMinAmount('');
+        setMaxAmount('');
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
@@ -203,6 +213,8 @@ function FinanceContent() {
                     p_search: debouncedSearch,
                     p_status: categoryFilter, // Reuse categoryFilter for status
                     p_country_code: resolvedCountryFilter,
+                    p_start_date: startDate ? new Date(startDate).toISOString() : null,
+                    p_end_date: endDate ? new Date(endDate).toISOString() : null,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
@@ -220,6 +232,8 @@ function FinanceContent() {
                     p_search: debouncedSearch,
                     p_status: categoryFilter,
                     p_country_code: resolvedCountryFilter,
+                    p_min_amount: minAmount ? parseFloat(minAmount) : null,
+                    p_max_amount: maxAmount ? parseFloat(maxAmount) : null,
                     p_offset: (currentPage - 1) * itemsPerPage,
                     p_limit: itemsPerPage
                 });
@@ -289,7 +303,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, currentPage, debouncedSearch, categoryFilter, resolvedCountryFilter, activeAccount?.country_code]);
+    }, [activeTab, supabase, showToast, startDate, endDate, minAmount, maxAmount, currentPage, debouncedSearch, categoryFilter, resolvedCountryFilter, activeAccount?.country_code]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -328,7 +342,7 @@ function FinanceContent() {
     useEffect(() => {
         setCurrentPage(1);
         fetchData();
-    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter]);
+    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, minAmount, maxAmount]);
 
     useEffect(() => {
         fetchData();
@@ -530,7 +544,31 @@ function FinanceContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
+                {activeTab === 'wallets' && (
+                    <AmountRangeRow 
+                        minAmount={minAmount}
+                        maxAmount={maxAmount}
+                        onMinAmountChange={setMinAmount}
+                        onMaxAmountChange={setMaxAmount}
+                        onClear={() => {
+                            setMinAmount('');
+                            setMaxAmount('');
+                        }}
+                    />
+                )}
                 {activeTab === 'transactions' && (
+                    <DateRangeRow 
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                    />
+                )}
+                {activeTab === 'subscriptions' && (
                     <DateRangeRow 
                         startDate={startDate}
                         endDate={endDate}
@@ -553,55 +591,45 @@ function FinanceContent() {
                         <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
                     </TabsList>
 
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div className={adminStyles.chipsWrapper}>
                         {activeTab === 'transactions' && (
-                            <select 
-                                className={adminStyles.filterSelect}
-                                value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                            >
-                                <option value="all">All Transactions</option>
-                                <option value="incoming">Revenue (Incoming)</option>
-                                <option value="outgoing">Refunds (Outgoing)</option>
-                                <option value="hold">Escrow (Hold)</option>
-                                <option value="internal">Internal Transfers</option>
-                            </select>
+                            <FilterChips
+                                options={[
+                                    { value: 'all', label: 'All Transactions' },
+                                    { value: 'incoming', label: 'Revenue (Incoming)' },
+                                    { value: 'outgoing', label: 'Refunds (Outgoing)' },
+                                    { value: 'hold', label: 'Escrow (Hold)' },
+                                    { value: 'internal', label: 'Internal Transfers' },
+                                ]}
+                                currentValue={categoryFilter}
+                                onChange={setCategoryFilter}
+                            />
                         )}
 
                         {activeTab === 'subscriptions' && (
-                            <select 
-                                className={adminStyles.filterSelect}
-                                value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="active">Active Only</option>
-                                <option value="trialing">Trialing</option>
-                                <option value="past_due">Past Due</option>
-                                <option value="canceled">Canceled</option>
-                            </select>
+                            <FilterChips
+                                options={[
+                                    { value: 'all', label: 'All Statuses' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'trialing', label: 'Trialing' },
+                                    { value: 'past_due', label: 'Past Due' },
+                                    { value: 'canceled', label: 'Canceled' },
+                                ]}
+                                currentValue={categoryFilter}
+                                onChange={setCategoryFilter}
+                            />
                         )}
                         {activeTab === 'wallets' && (
-                            <select 
-                                className={adminStyles.filterSelect}
-                                value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="active">Active Only</option>
-                                <option value="frozen">Frozen Only</option>
-                                <option value="restricted">Restricted</option>
-                            </select>
-                        )}
-                        
-
-
-                        {activeTab === 'promo-codes' && (
-                            <Link href="/dashboard/admin/finance/promo-codes/create">
-                                <button className={adminStyles.btnPrimary}>
-                                    + Create Promo Code
-                                </button>
-                            </Link>
+                            <FilterChips
+                                options={[
+                                    { value: 'all', label: 'All Statuses' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'frozen', label: 'Frozen' },
+                                    { value: 'restricted', label: 'Restricted' },
+                                ]}
+                                currentValue={categoryFilter}
+                                onChange={setCategoryFilter}
+                            />
                         )}
                     </div>
                 </div>

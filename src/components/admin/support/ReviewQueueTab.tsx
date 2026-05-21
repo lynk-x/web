@@ -8,11 +8,13 @@ import ModerationTable, { ModerationEntry } from '../moderation/ModerationTable'
 interface ReviewQueueTabProps {
     searchQuery?: string;
     statusFilter?: string;
+    dateRange?: { startDate: string; endDate: string };
 }
 
 export default function ReviewQueueTab({
     searchQuery = '',
-    statusFilter = 'all'
+    statusFilter = 'all',
+    dateRange,
 }: ReviewQueueTabProps) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
@@ -39,17 +41,26 @@ export default function ReviewQueueTab({
 
             if (error) throw error;
 
+            let raw = data.items || [];
+            if (dateRange?.startDate || dateRange?.endDate) {
+                const startTs = dateRange.startDate ? new Date(dateRange.startDate).getTime() : 0;
+                const endTs   = dateRange.endDate   ? new Date(dateRange.endDate).setHours(23, 59, 59, 999) : Infinity;
+                raw = raw.filter((m: ModerationEntry) => {
+                    const t = new Date(m.created_at).getTime();
+                    return t >= startTs && t <= endTs;
+                });
+            }
             setTotalCount(data.total || 0);
-            setItems(data.items || []);
+            setItems(raw);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load moderation queue', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, currentPage, statusFilter, searchQuery]);
+    }, [supabase, showToast, currentPage, statusFilter, searchQuery, dateRange]);
 
     useEffect(() => { fetchQueue(); }, [fetchQueue]);
-    useEffect(() => { setCurrentPage(1); }, [statusFilter, searchQuery]);
+    useEffect(() => { setCurrentPage(1); }, [statusFilter, searchQuery, dateRange]);
 
     const handleModerate = async (entry: ModerationEntry, status: string) => {
         try {

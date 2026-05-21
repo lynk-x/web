@@ -16,6 +16,7 @@ import StatCard from '@/components/dashboard/StatCard';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import FilterChips from '@/components/shared/FilterChips';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 type SupportTab = 'queue' | 'tickets';
@@ -49,6 +50,9 @@ function SupportContent() {
     // ── Filtering State ───────────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackStatusFilter, setFeedbackStatusFilter] = useState('all');
+    const [queueStatusFilter, setQueueStatusFilter] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const fetchSummary = useCallback(async () => {
         setIsLoading(true);
@@ -107,7 +111,18 @@ function SupportContent() {
                 searchPlaceholder="Search reports, feedback, or blocks..." 
                 searchValue={searchTerm} 
                 onSearchChange={setSearchTerm} 
-            />
+            >
+                <DateRangeRow 
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                />
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
@@ -117,6 +132,16 @@ function SupportContent() {
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {activeTab === 'queue' && (
+                            <FilterChips
+                                options={['all', 'pending_review', 'approved', 'rejected', 'flagged', 'appealed', 'resolved'].map(s => ({ 
+                                    value: s, 
+                                    label: s === 'all' ? 'All' : s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') 
+                                }))}
+                                currentValue={queueStatusFilter}
+                                onChange={setQueueStatusFilter}
+                            />
+                        )}
                         {activeTab === 'tickets' && (
                             <FilterChips
                                 options={['all', 'new', 'investigating', 'resolved', 'dismissed'].map(s => ({ 
@@ -131,13 +156,14 @@ function SupportContent() {
                 </div>
 
                 <TabsContent value="queue">
-                    <ReviewQueueTab searchQuery={searchTerm} />
+                    <ReviewQueueTab searchQuery={searchTerm} statusFilter={queueStatusFilter} dateRange={{ startDate, endDate }} />
                 </TabsContent>
 
                 <TabsContent value="tickets">
                     <SupportTicketsTab 
                         searchQuery={searchTerm}
                         statusFilter={feedbackStatusFilter}
+                        dateRange={{ startDate, endDate }}
                     />
                 </TabsContent>
             </Tabs>

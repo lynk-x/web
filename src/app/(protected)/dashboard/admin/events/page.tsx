@@ -638,8 +638,8 @@ export default function AdminEventsPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.mainTabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="events">Events</TabsTrigger>
-                        <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
+                        <TabsTrigger value="events">Events & tickets</TabsTrigger>
+                        <TabsTrigger value="payouts">Payout Queue</TabsTrigger>
                     </TabsList>
                     
                     <div className={adminStyles.chipsWrapper}>

@@ -36,11 +36,13 @@ const priorityVariant: Record<string, any> = {
 interface SupportTicketsTabProps {
     searchQuery?: string;
     statusFilter?: string;
+    dateRange?: { startDate: string; endDate: string };
 }
 
 export default function SupportTicketsTab({
     searchQuery = '',
-    statusFilter = 'all'
+    statusFilter = 'all',
+    dateRange,
 }: SupportTicketsTabProps) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
@@ -67,8 +69,17 @@ export default function SupportTicketsTab({
 
             if (error) throw error;
 
+            let raw = data.items || [];
+            if (dateRange?.startDate || dateRange?.endDate) {
+                const startTs = dateRange.startDate ? new Date(dateRange.startDate).getTime() : 0;
+                const endTs   = dateRange.endDate   ? new Date(dateRange.endDate).setHours(23, 59, 59, 999) : Infinity;
+                raw = raw.filter((t: SupportTicket) => {
+                    const ts = new Date(t.created_at).getTime();
+                    return ts >= startTs && ts <= endTs;
+                });
+            }
             setTotalCount(data.total || 0);
-            setItems((data.items || []).map((t: any) => ({
+            setItems((raw || []).map((t: any) => ({
                 id: t.id,
                 reference: t.reference,
                 submitter: t.full_name || t.submitter_username || null,
@@ -84,10 +95,10 @@ export default function SupportTicketsTab({
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, currentPage, statusFilter, searchQuery]);
+    }, [supabase, showToast, currentPage, statusFilter, searchQuery, dateRange]);
 
     useEffect(() => { fetchTickets(); }, [fetchTickets]);
-    useEffect(() => { setCurrentPage(1); }, [statusFilter, searchQuery]);
+    useEffect(() => { setCurrentPage(1); }, [statusFilter, searchQuery, dateRange]);
 
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
