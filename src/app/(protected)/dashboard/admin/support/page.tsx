@@ -156,14 +156,15 @@ function SupportContent() {
                 </div>
 
                 <TabsContent value="queue">
-                    <ReviewQueueTab searchQuery={searchTerm} statusFilter={queueStatusFilter} dateRange={{ startDate, endDate }} />
+                    <ReviewQueueTab searchQuery={searchTerm} statusFilter={queueStatusFilter} startDate={startDate} endDate={endDate} />
                 </TabsContent>
 
                 <TabsContent value="tickets">
                     <SupportTicketsTab 
                         searchQuery={searchTerm}
                         statusFilter={feedbackStatusFilter}
-                        dateRange={{ startDate, endDate }}
+                        startDate={startDate}
+                        endDate={endDate}
                     />
                 </TabsContent>
             </Tabs>

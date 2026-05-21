@@ -267,37 +267,38 @@ function ForumsContent() {
                 />
             </div>
 
+            <TableToolbar
+                searchPlaceholder="Search forum name or event..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            />
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
+                <div className={adminStyles.tabsHeaderRow}>
+                    <TabsList>
+                        <TabsTrigger value="forums">Forums</TabsTrigger>
+                        <TabsTrigger value="surveys">Surveys</TabsTrigger>
+                    </TabsList>
+
+                    <div className={adminStyles.chipsWrapper}>
+                        <FilterChips
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'open', label: 'Open' },
+                                { value: 'read_only', label: 'Read Only' },
+                                { value: 'archived', label: 'Archived' },
+                            ]}
+                            currentValue={statusFilter}
+                            onChange={setStatusFilter}
+                        />
+                    </div>
+                </div>
 
                 <TabsContent value="forums">
                     {isLoading ? (
                         <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading forums...</div>
                     ) : (
                         <>
-                            <div className={adminStyles.tabsHeaderRow} style={{ marginBottom: '20px' }}>
-                                <TableToolbar
-                                    searchPlaceholder="Search forum name or event..."
-                                    searchValue={searchTerm}
-                                    onSearchChange={setSearchTerm}
-                                />
-                            </div>
-                            <div className={adminStyles.tabsHeaderRow} style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
-                                <TabsList>
-                                    <TabsTrigger value="forums">Forums</TabsTrigger>
-                                    <TabsTrigger value="surveys">Surveys</TabsTrigger>
-                                </TabsList>
-                                <FilterChips
-                                    options={[
-                                        { value: 'all', label: 'All' },
-                                        { value: 'open', label: 'Open' },
-                                        { value: 'read_only', label: 'Read Only' },
-                                        { value: 'archived', label: 'Archived' },
-                                    ]}
-                                    currentValue={statusFilter}
-                                    onChange={setStatusFilter}
-                                />
-                            </div>
-
                             <BulkActionsBar
                                 selectedCount={selectedThreadIds.size}
                                 actions={bulkActions}

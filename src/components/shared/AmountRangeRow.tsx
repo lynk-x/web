@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import styles from './AmountRangeRow.module.css';
 
 interface AmountRangeRowProps {
@@ -51,7 +52,7 @@ const AmountRangeRow: React.FC<AmountRangeRowProps> = ({
                     </div>
                 </div>
                 {(minAmount || maxAmount) && (
-                    <button className={styles.clearBtn} onClick={onClear}>
+                    <button className={adminStyles.btnSecondary} onClick={onClear} style={{ padding: '8px 16px', fontSize: '13px' }}>
                         Clear
                     </button>
                 )}
