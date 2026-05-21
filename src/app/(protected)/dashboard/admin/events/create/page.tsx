@@ -148,18 +148,17 @@ export default function AdminCreateEventPage() {
                 backLabel="Back to Events"
             />
 
-            <div className={adminStyles.pageCard}>
-                {/* Account Selector — admin chooses owning account */}
-                <AccountSearchInput
-                    value={accountId}
-                    onChange={setAccountId}
-                    label="Owning Account"
-                    placeholder="Search accounts by name or reference…"
-                    countryCode={activeAccount?.country_code || null}
-                />
+            {/* Account Selector — admin chooses owning account */}
+            <AccountSearchInput
+                value={accountId}
+                onChange={setAccountId}
+                label="Owning Account"
+                placeholder="Search accounts by name or reference…"
+                countryCode={activeAccount?.country_code || null}
+            />
 
+            <div className={adminStyles.pageCard}>
                 <EventForm
-                    pageTitle="Event Details"
                     submitBtnText="Publish Event"
                     onSubmit={handleCreate}
                 />

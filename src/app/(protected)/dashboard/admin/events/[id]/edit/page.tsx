@@ -240,20 +240,19 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 backLabel="Back to Events"
             />
 
-            <div className={adminStyles.pageCard}>
-                {/* Account Selector — admin can reassign event ownership */}
-                <AccountSearchInput
-                    value={accountId}
-                    onChange={setAccountId}
-                    label="Owning Account"
-                    placeholder="Search accounts by name or reference…"
-                    countryCode={activeAccount?.country_code || null}
-                />
+            {/* Account Selector — admin can reassign event ownership */}
+            <AccountSearchInput
+                value={accountId}
+                onChange={setAccountId}
+                label="Owning Account"
+                placeholder="Search accounts by name or reference…"
+                countryCode={activeAccount?.country_code || null}
+            />
 
+            <div className={adminStyles.pageCard}>
                 <EventForm
                     initialData={initialData}
                     isEditMode={true}
-                    pageTitle="Event Details"
                     submitBtnText="Save Changes"
                     onSubmit={handleEdit}
                 />

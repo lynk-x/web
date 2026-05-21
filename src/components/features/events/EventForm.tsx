@@ -32,7 +32,7 @@ export type { OrganizerEventFormData as EventData, OrganizerEventTicket as Ticke
 
 interface EventFormProps {
     initialData?: Partial<EventData>;
-    pageTitle: string;
+    pageTitle?: string;
     submitBtnText: string;
     onSubmit: (data: EventData, file?: File | null) => Promise<void>;
     isEditMode?: boolean;
@@ -151,7 +151,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     <BackButton label="Back to Events" isDirty={isDirty} />
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <h1 className={styles.title}>{pageTitle}</h1>
+                            {pageTitle && <h1 className={styles.title}>{pageTitle}</h1>}
                             {isDraftLoaded && !isEditMode && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ fontSize: '10px', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--color-brand-primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Draft Restored</span>
