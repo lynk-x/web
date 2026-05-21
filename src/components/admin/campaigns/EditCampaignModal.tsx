@@ -3,79 +3,71 @@
 import { useState, useEffect, useMemo } from 'react';
 import Modal from '@/components/shared/Modal';
 import { Campaign } from './CampaignTable';
-import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
-import { DatePicker } from '@/components/ui/DatePicker';
+import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import { useOrganization } from '@/context/OrganizationContext';
 
 interface EditCampaignModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (id: string, updates: any) => void;
+    onSave: (id: string, updates: { name: string; budget: number; startDate: string; endDate: string; account_id: string }) => void;
     campaign: Campaign | null;
 }
 
 export default function EditCampaignModal({ isOpen, onClose, onSave, campaign }: EditCampaignModalProps) {
     const { activeAccount } = useOrganization();
-    const [name, setName] = useState('');
-    const [budget, setBudget] = useState(0);
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [accountId, setAccountId] = useState('');
+    const [initialData, setInitialData] = useState<CampaignData | null>(null);
 
     useEffect(() => {
         if (campaign) {
-            setName(campaign.name);
-            setBudget(campaign.budget);
-
-            // Format dates for input type="date"
-            const start = new Date(campaign.startDate);
-            const end = new Date(campaign.endDate);
-
-            if (!isNaN(start.getTime())) {
-                setStartDate(start.toISOString().split('T')[0]);
-            }
-            if (!isNaN(end.getTime())) {
-                setEndDate(end.toISOString().split('T')[0]);
-            }
-
-            // Pre-select current account if available on campaign
-            if ((campaign as any).account_id) {
-                setAccountId((campaign as any).account_id);
-            }
+            setAccountId((campaign as any).account_id || '');
+            setInitialData({
+                id: campaign.id,
+                created_at: (campaign as any).createdAt,
+                title: campaign.name,
+                type: campaign.adType || 'banner',
+                total_budget: String(campaign.budget),
+                start_at: campaign.startDate,
+                end_at: campaign.endDate,
+                description: '',
+                daily_limit: '',
+                destination_url: '',
+                max_bid_amount: '0.01',
+                target_countries: [],
+                target_tags: [],
+                creatives: [{ headline: '', imageUrl: '', preview: '', file: undefined }],
+                adHeadline: '',
+                adImageUrl: '',
+                account_id: (campaign as any).account_id || '',
+            });
         }
     }, [campaign, isOpen]);
 
-    const handleSave = () => {
+    const handleAdminSave = async (_formData: CampaignData) => {
         if (!campaign) return;
         onSave(campaign.id, {
-            name,
-            budget,
-            startDate: new Date(startDate).toISOString(),
-            endDate: new Date(endDate).toISOString(),
-            account_id: accountId || (campaign as any).account_id,
+            name: _formData.title,
+            budget: parseFloat(_formData.total_budget) || 0,
+            startDate: new Date(_formData.start_at).toISOString(),
+            endDate: new Date(_formData.end_at).toISOString(),
+            account_id: accountId || _formData.account_id || '',
         });
+        onClose();
     };
+
+    const headerTitle = campaign && campaign.campaignRef
+        ? `Edit Campaign: ${campaign.campaignRef}`
+        : 'Edit Campaign';
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Edit Campaign: ${campaign?.campaignRef || ''}`}
+            title={headerTitle}
             size="medium"
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px' }}>
-                <label className={adminStyles.fieldLabel}>
-                    Campaign Name
-                    <input
-                        type="text"
-                        className={adminStyles.input}
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-                </label>
-
                 <AccountSearchInput
                     value={accountId}
                     onChange={setAccountId}
@@ -84,43 +76,13 @@ export default function EditCampaignModal({ isOpen, onClose, onSave, campaign }:
                     countryCode={activeAccount?.country_code || null}
                 />
 
-                <label className={adminStyles.fieldLabel}>
-                    Total Budget (USD)
-                    <input
-                        type="number"
-                        className={adminStyles.input}
-                        value={budget}
-                        onChange={(e) => setBudget(parseFloat(e.target.value))}
+                {initialData && (
+                    <CreateCampaignForm
+                        initialData={initialData}
+                        isEditing={true}
+                        onSubmit={handleAdminSave}
                     />
-                </label>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <label className={adminStyles.fieldLabel}>
-                        Start Date
-                        <DatePicker
-                            value={startDate}
-                            onChange={setStartDate}
-                            placeholder="dd/mm/yyyy"
-                        />
-                    </label>
-                    <label className={adminStyles.fieldLabel}>
-                        End Date
-                        <DatePicker
-                            value={endDate}
-                            onChange={setEndDate}
-                            placeholder="dd/mm/yyyy"
-                        />
-                    </label>
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                    <button className={adminStyles.secondaryButton} onClick={onClose}>
-                        Cancel
-                    </button>
-                    <button className={adminStyles.btnPrimary} onClick={handleSave}>
-                        Save Changes
-                    </button>
-                </div>
+                )}
             </div>
         </Modal>
     );

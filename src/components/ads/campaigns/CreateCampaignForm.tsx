@@ -43,6 +43,7 @@ export interface CampaignData {
     creatives: Creative[];
     adHeadline: string;
     adImageUrl?: string;
+    account_id?: string;
 }
 
 interface PricingConfig {
@@ -57,6 +58,11 @@ interface CreateCampaignFormProps {
     isEditing?: boolean;
     redirectPath?: string;
     onDirtyChange?: (isDirty: boolean) => void;
+    /** When provided, the form delegates submission to this callback instead of its internal RPC logic.
+     *  Receives the current form data and the editing flag. */
+    onSubmit?: (formData: CampaignData, isEditing: boolean) => Promise<void>;
+    /** When provided, seeds the initial account_id in the form data (admin reuse). */
+    initialAccountId?: string;
 }
 
 
@@ -73,6 +79,8 @@ export default function CreateCampaignForm({
     isEditing = false,
     redirectPath = '/dashboard/ads/campaigns',
     onDirtyChange,
+    onSubmit,
+    initialAccountId,
 }: CreateCampaignFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
@@ -133,6 +141,7 @@ export default function CreateCampaignForm({
         start_at: '',
         end_at: '',
         destination_url: '',
+        account_id: initialAccountId ?? '',
 
         target_countries: [],
         target_tags: [],
@@ -625,6 +634,7 @@ export default function CreateCampaignForm({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
+        if (onSubmit) { await onSubmit(formData, isEditing); return; }
         if (!activeAccount) { showToast('Please select an active account first.', 'error'); return; }
         if (!validateForm()) { showToast('Please review the form for errors.', 'error'); return; }
 
