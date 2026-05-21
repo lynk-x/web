@@ -76,11 +76,13 @@ export default function EditPromoCodePage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader 
+            <SubPageHeader
                 title={`Edit Code: ${initialData.code}`}
                 subtitle="Modify discount values, usage limits or validity periods."
             />
-            <PromoCodeForm initialData={initialData} isEditing={true} />
+            <div className={adminStyles.pageCard}>
+                <PromoCodeForm initialData={initialData} isEditing={true} />
+            </div>
         </div>
     );
 }

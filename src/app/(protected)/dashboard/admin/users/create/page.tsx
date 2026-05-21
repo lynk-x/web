@@ -4,15 +4,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import PageHeader from '@/components/dashboard/PageHeader';
-import styles from '../../campaigns/create/page.module.css'; // Reusing the same layout styles
-import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import SubPageHeader from '@/components/shared/SubPageHeader';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 export default function CreateAccountPage() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const router = useRouter();
-    
+
     const [countries, setCountries] = useState<{ code: string, display_name: string }[]>([]);
     const [formData, setFormData] = useState({
         display_name: '',
@@ -57,34 +56,34 @@ export default function CreateAccountPage() {
     };
 
     return (
-        <div className={sharedStyles.container}>
-            <PageHeader 
-                title="Create New Account" 
+        <div className={adminStyles.container}>
+            <SubPageHeader
+                title="Create New Account"
                 subtitle="Register a new organization or individual entity"
-                backHref="/dashboard/admin/users"
+                backLabel="Back to Identity"
             />
 
-            <div className={styles.formContainer}>
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <div className={styles.formSection}>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Organization Name</label>
-                            <input 
+            <div className={adminStyles.pageCard}>
+                <form onSubmit={handleSubmit} className={adminStyles.form}>
+                    <div className={adminStyles.formGrid}>
+                        <div className={adminStyles.inputGroup}>
+                            <label className={adminStyles.label}>Organization Name</label>
+                            <input
                                 type="text"
                                 required
-                                className={styles.input}
+                                className={adminStyles.input}
                                 value={formData.display_name}
                                 onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
                                 placeholder="e.g. Acme Corporation"
                             />
                         </div>
 
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Primary Owner Email</label>
-                            <input 
+                        <div className={adminStyles.inputGroup}>
+                            <label className={adminStyles.label}>Primary Owner Email</label>
+                            <input
                                 type="email"
                                 required
-                                className={styles.input}
+                                className={adminStyles.input}
                                 value={formData.owner_email}
                                 onChange={(e) => setFormData({ ...formData, owner_email: e.target.value })}
                                 placeholder="owner@example.com"
@@ -92,64 +91,64 @@ export default function CreateAccountPage() {
                             <span style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>Account will be linked if this user exists.</span>
                         </div>
 
-                        <div className={styles.grid}>
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Account Type</label>
-                                <select 
-                                    className={styles.select}
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                >
-                                    <option value="organizer">Organizer</option>
-                                    <option value="advertiser">Advertiser</option>
-                                    <option value="attendee">Attendee</option>
-                                    <option value="pulse_user">Pulse User</option>
-                                </select>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Country</label>
-                                <select 
-                                    className={styles.select}
-                                    value={formData.country_code}
-                                    onChange={(e) => setFormData({ ...formData, country_code: e.target.value })}
-                                >
-                                    {countries.map(c => (
-                                        <option key={c.code} value={c.code}>{c.display_name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <div className={adminStyles.inputGroup}>
+                            <label className={adminStyles.label}>Account Type</label>
+                            <select
+                                className={adminStyles.select}
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                            >
+                                <option value="organizer">Organizer</option>
+                                <option value="advertiser">Advertiser</option>
+                                <option value="attendee">Attendee</option>
+                                <option value="pulse_user">Pulse User</option>
+                            </select>
                         </div>
 
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Initial Status</label>
-                            <select 
-                                className={styles.select}
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        <div className={adminStyles.inputGroup}>
+                            <label className={adminStyles.label}>Country</label>
+                            <select
+                                className={adminStyles.select}
+                                value={formData.country_code}
+                                onChange={(e) => setFormData({ ...formData, country_code: e.target.value })}
                             >
-                                <option value="active">Active</option>
-                                <option value="pending_activation">Pending Activation</option>
-                                <option value="suspended">Suspended</option>
+                                {countries.map(c => (
+                                    <option key={c.code} value={c.code}>{c.display_name}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
 
-                    <div className={styles.footer}>
-                        <button 
-                            type="button" 
-                            onClick={() => router.back()} 
-                            className={styles.cancelButton}
+                    <div className={adminStyles.inputGroup}>
+                        <label className={adminStyles.label}>Initial Status</label>
+                        <select
+                            className={adminStyles.select}
+                            value={formData.status}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                         >
-                            Cancel
-                        </button>
-                        <button 
-                            type="submit" 
-                            className={styles.submitButton}
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Account'}
-                        </button>
+                            <option value="active">Active</option>
+                            <option value="pending_activation">Pending Activation</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </div>
+
+                    <div className={adminStyles.inputGroup} style={{ marginTop: '24px' }}>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className={adminStyles.btnSecondary}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className={adminStyles.btnPrimary}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'Creating...' : 'Create Account'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

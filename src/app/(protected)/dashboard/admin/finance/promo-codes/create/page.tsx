@@ -8,11 +8,13 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 export default function CreatePromoCodePage() {
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader 
+            <SubPageHeader
                 title="Create Promo Code"
                 subtitle="Configure a new discount code for accounts, events or ticket tiers."
             />
-            <PromoCodeForm isEditing={false} />
+            <div className={adminStyles.pageCard}>
+                <PromoCodeForm isEditing={false} />
+            </div>
         </div>
     );
 }

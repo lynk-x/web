@@ -3,7 +3,7 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import styles from '@/app/(protected)/dashboard/admin/page.module.css';
+import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { sanitizeInput } from '@/utils/sanitization';
 import SubPageHeader from '@/components/shared/SubPageHeader';
@@ -37,7 +37,7 @@ export default function EditFeatureFlagPage() {
             });
 
             if (error) throw error;
-            
+
             const flag = (data || []).find((f: any) => f.key === decodeURIComponent(params.id as string));
             if (flag) {
                 setFormData({
@@ -111,14 +111,14 @@ export default function EditFeatureFlagPage() {
 
     if (isFetching) {
         return (
-            <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
-                <svg className={styles.spinner} width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+            <div className={adminStyles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+                <svg className={adminStyles.spinner} width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
             </div>
         );
     }
 
     return (
-        <div className={styles.container}>
+        <div className={adminStyles.container}>
             <SubPageHeader
                 title="Edit Feature Flag"
                 subtitle={`Modify deployment rules for ${formData.key}`}
@@ -129,85 +129,87 @@ export default function EditFeatureFlagPage() {
                 }}
             />
 
-            <form onSubmit={handleSubmit} className={styles.formCard}>
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Flag Key (Read-only)</label>
-                    <input
-                        className={styles.input}
-                        value={formData.key}
-                        disabled
-                    />
-                </div>
-
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Description</label>
-                    <textarea
-                        className={styles.textarea}
-                        value={formData.description}
-                        onChange={e => setFormData({ ...formData, description: sanitizeInput(e.target.value) })}
-                        rows={4}
-                    />
-                </div>
-
-                <div className={styles.formRow} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Rollout Percentage (%)</label>
+            <div className={adminStyles.pageCard}>
+                <form onSubmit={handleSubmit} className={adminStyles.form}>
+                    <div className={adminStyles.inputGroup}>
+                        <label className={adminStyles.label}>Flag Key (Read-only)</label>
                         <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            className={styles.input}
-                            value={formData.rollout_percent}
-                            onChange={e => setFormData({ ...formData, rollout_percent: parseInt(e.target.value) || 0 })}
+                            className={adminStyles.input}
+                            value={formData.key}
+                            disabled
                         />
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>Platforms</label>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                            {['web', 'ios', 'android'].map(platform => (
-                                <button
-                                    key={platform}
-                                    type="button"
-                                    className={formData.platforms.includes(platform) ? styles.chipActive : styles.chip}
-                                    onClick={() => togglePlatform(platform)}
-                                >
-                                    {platform.toUpperCase()}
-                                </button>
-                            ))}
+                    <div className={adminStyles.inputGroup}>
+                        <label className={adminStyles.label}>Description</label>
+                        <textarea
+                            className={adminStyles.textarea}
+                            value={formData.description}
+                            onChange={e => setFormData({ ...formData, description: sanitizeInput(e.target.value) })}
+                            rows={4}
+                        />
+                    </div>
+
+                    <div className={adminStyles.formGrid}>
+                        <div className={adminStyles.inputGroup}>
+                            <label className={adminStyles.label}>Rollout Percentage (%)</label>
+                            <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                className={adminStyles.input}
+                                value={formData.rollout_percent}
+                                onChange={e => setFormData({ ...formData, rollout_percent: parseInt(e.target.value) || 0 })}
+                            />
+                        </div>
+
+                        <div className={adminStyles.inputGroup}>
+                            <label className={adminStyles.label}>Platforms</label>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                {['web', 'ios', 'android'].map(platform => (
+                                    <button
+                                        key={platform}
+                                        type="button"
+                                        className={formData.platforms.includes(platform) ? adminStyles.chipActive : adminStyles.chip}
+                                        onClick={() => togglePlatform(platform)}
+                                    >
+                                        {platform.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Allowed Regions</label>
-                    <p style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px' }}>
-                        ISO 3166-1 alpha-2 codes (e.g. KE, NG, ZA). Leave empty to allow all regions.
-                    </p>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                        <input
-                            className={styles.input}
-                            placeholder="e.g. KE"
-                            maxLength={2}
-                            value={regionInput}
-                            onChange={e => setRegionInput(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRegion(); } }}
-                            style={{ maxWidth: '120px' }}
-                        />
-                        <button type="button" className={styles.chip} onClick={addRegion}>Add</button>
+                    <div className={adminStyles.inputGroup}>
+                        <label className={adminStyles.label}>Allowed Regions</label>
+                        <p style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px' }}>
+                            ISO 3166-1 alpha-2 codes (e.g. KE, NG, ZA). Leave empty to allow all regions.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <input
+                                className={adminStyles.input}
+                                placeholder="e.g. KE"
+                                maxLength={2}
+                                value={regionInput}
+                                onChange={e => setRegionInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRegion(); } }}
+                                style={{ maxWidth: '120px' }}
+                            />
+                            <button type="button" className={adminStyles.chip} onClick={addRegion}>Add</button>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {formData.allowed_regions.map(code => (
+                                <span key={code} className={adminStyles.chipActive} style={{ cursor: 'pointer' }} onClick={() => removeRegion(code)}>
+                                    {code} ✕
+                                </span>
+                            ))}
+                            {formData.allowed_regions.length === 0 && (
+                                <span style={{ fontSize: '12px', opacity: 0.4 }}>All regions</span>
+                            )}
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {formData.allowed_regions.map(code => (
-                            <span key={code} className={styles.chipActive} style={{ cursor: 'pointer' }} onClick={() => removeRegion(code)}>
-                                {code} ✕
-                            </span>
-                        ))}
-                        {formData.allowed_regions.length === 0 && (
-                            <span style={{ fontSize: '12px', opacity: 0.4 }}>All regions</span>
-                        )}
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     );
 }
