@@ -201,6 +201,11 @@
     box-shadow: 0 4px 12px rgba(32, 249, 40, 0.2);
 }
 
+.chip-active:hover {
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+}
+
 /* Tables */
 .table-base {
     width: 100%;

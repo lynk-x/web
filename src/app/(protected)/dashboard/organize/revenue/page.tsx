@@ -263,17 +263,12 @@ function RevenueContent() {
             />
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)' }}>
+                <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
                     <TabsList>
                         <TabsTrigger value="payouts">Payouts</TabsTrigger>
                         <TabsTrigger value="refunds">Refunds</TabsTrigger>
                     </TabsList>
-                </div>
-            </Tabs>
-
-            <div className={styles.tableWrapper}>
-                {activeTab === 'payouts' ? (
-                    <>
+                    {activeTab === 'payouts' ? (
                         <FilterChips
                             options={[
                                 { value: 'all', label: 'All' },
@@ -286,29 +281,7 @@ function RevenueContent() {
                             currentValue={payoutStatusFilter}
                             onChange={setPayoutStatusFilter}
                         />
-                        <PayoutTable
-                            payouts={payouts}
-                            selectedIds={payoutIds}
-                            onSelect={(id) =>
-                                setPayoutIds((prev) => {
-                                    const next = new Set(prev);
-                                    next.has(id) ? next.delete(id) : next.add(id);
-                                    return next;
-                                })
-                            }
-                            onSelectAll={() =>
-                                setPayoutIds((prev) =>
-                                    prev.size === payouts.length ? new Set() : new Set(payouts.map((p) => p.id))
-                                )
-                            }
-                            currentPage={payoutsPage}
-                            totalPages={Math.ceil(totalPayouts / itemsPerPage)}
-                            onPageChange={setPayoutsPage}
-                            isLoading={isPayoutsLoading}
-                        />
-                    </>
-                ) : (
-                    <>
+                    ) : (
                         <FilterChips
                             options={[
                                 { value: 'all', label: 'All' },
@@ -320,30 +293,55 @@ function RevenueContent() {
                             currentValue={refundStatusFilter}
                             onChange={setRefundStatusFilter}
                         />
-                        <RefundTable
-                            refunds={refunds}
-                            selectedIds={refundIds}
-                            onSelect={(id) =>
-                                setRefundIds((prev) => {
-                                    const next = new Set(prev);
-                                    next.has(id) ? next.delete(id) : next.add(id);
-                                    return next;
-                                })
-                            }
-                            onSelectAll={() =>
-                                setRefundIds((prev) =>
-                                    prev.size === refunds.length ? new Set() : new Set(refunds.map((p) => p.id))
-                                )
-                            }
-                            currentPage={refundsPage}
-                            totalPages={Math.ceil(totalRefunds / itemsPerPage)}
-                            onPageChange={setRefundsPage}
-                            isLoading={isRefundsLoading}
-                        />
-                    </>
+                    )}
+                </div>
+            </Tabs>
+
+            <div className={styles.tableWrapper}>
+                {activeTab === 'payouts' ? (
+                    <PayoutTable
+                        payouts={payouts}
+                        selectedIds={payoutIds}
+                        onSelect={(id) =>
+                            setPayoutIds((prev) => {
+                                const next = new Set(prev);
+                                next.has(id) ? next.delete(id) : next.add(id);
+                                return next;
+                            })
+                        }
+                        onSelectAll={() =>
+                            setPayoutIds((prev) =>
+                                prev.size === payouts.length ? new Set() : new Set(payouts.map((p) => p.id))
+                            )
+                        }
+                        currentPage={payoutsPage}
+                        totalPages={Math.ceil(totalPayouts / itemsPerPage)}
+                        onPageChange={setPayoutsPage}
+                        isLoading={isPayoutsLoading}
+                    />
+                ) : (
+                    <RefundTable
+                        refunds={refunds}
+                        selectedIds={refundIds}
+                        onSelect={(id) =>
+                            setRefundIds((prev) => {
+                                const next = new Set(prev);
+                                next.has(id) ? next.delete(id) : next.add(id);
+                                return next;
+                            })
+                        }
+                        onSelectAll={() =>
+                            setRefundIds((prev) =>
+                                prev.size === refunds.length ? new Set() : new Set(refunds.map((p) => p.id))
+                            )
+                        }
+                        currentPage={refundsPage}
+                        totalPages={Math.ceil(totalRefunds / itemsPerPage)}
+                        onPageChange={setRefundsPage}
+                        isLoading={isRefundsLoading}
+                    />
                 )}
             </div>
-
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgRevenueJoyride_${activeAccount.id}` : 'hasSeenOrgRevenueJoyride_guest'}
