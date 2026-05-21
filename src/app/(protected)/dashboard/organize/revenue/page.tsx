@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import PayoutTable from '@/components/features/finance/PayoutTable';
-import RefundTable from '@/components/features/finance/RefundTable';
+import RefundTable, { type Refund } from '@/components/features/finance/RefundTable';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -14,8 +14,9 @@ import { formatCurrency, formatString, formatDate } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
+import ProductTour from '@/components/dashboard/ProductTour';
 import TableToolbar from '@/components/shared/TableToolbar';
-import type { AccountWallet } from '@/types/organize';
+import type { AccountWallet, Payout } from '@/types/organize';
 
 type TabId = 'payouts' | 'refunds';
 
@@ -43,21 +44,22 @@ function RevenueContent() {
         totalPaidOut: 0,
     });
 
-    // Payouts tab
     const [isPayoutsLoading, setIsPayoutsLoading] = useState(true);
     const [payoutIds, setPayoutIds] = useState<Set<string>>(new Set());
-    const [payouts, setPayouts] = useState<Record<string, unknown>[]>([]);
+    const [payouts, setPayouts] = useState<Payout[]>([]);
     const [totalPayouts, setTotalPayouts] = useState(0);
     const [refundIds, setRefundIds] = useState<Set<string>>(new Set());
-    const [refunds, setRefunds] = useState<Record<string, unknown>[]>([]);
+    const [refunds, setRefunds] = useState<Refund[]>([]);
     const [totalRefunds, setTotalRefunds] = useState(0);
+    const [isRefundsLoading, setIsRefundsLoading] = useState(true);
     const itemsPerPage = 10;
     const [payoutsPage, setPayoutsPage] = useState(1);
     const [refundsPage, setRefundsPage] = useState(1);
 
     /* ─ Mapping helpers (separated into two named functions) ─────────────────── */
 
-    const buildPayoutRow = (r: Record<string, unknown>) => ({
+    const buildPayoutRow = (r: Record<string, unknown>): Payout => ({
+        recipient:      String(r.payout_id ?? 'Unknown Payout'),
         id:            String(r.payout_id),
         reference:     String(r.reference ?? r.reference ?? ''),
         eventName:     String(r.event_name ?? ''),
@@ -65,20 +67,20 @@ function RevenueContent() {
         wallet:        String(r.wallet_reference ?? ''),
         currency:      String(r.currency ?? r.wallet_currency ?? ''),
         amount:        Number(r.amount) || 0,
-        status:        String(r.status ?? ''),
+        status:        (String(r.status ?? '') as Payout['status']),
         processedAt:   typeof r.processed_at === 'string' ? r.processed_at : undefined,
         requestedAt:   String(r.requested_at ?? ''),
         createdAt:     String(r.requested_at ?? ''),
     });
 
-    const buildRefundRow = (r: Record<string, unknown>) => ({
+    const buildRefundRow = (r: Record<string, unknown>): Refund => ({
         id:           String(r.refund_id ?? r.id ?? ''),
         reference:    String(r.reference ?? ''),
         event_name:   String(r.event_name ?? ''),
         ticket_code:  String(r.ticket_code ?? ''),
         amount:       Number(r.amount) || 0,
         currency:     String(r.currency ?? ''),
-        status:       String(r.status ?? ''),
+        status:       String(r.status ?? '') as Refund['status'],
         created_at:   String(r.created_at ?? ''),
         processed_at: typeof r.processed_at === 'string' ? r.processed_at : undefined,
     });
@@ -180,28 +182,27 @@ function RevenueContent() {
         showToast('Preparing report...', 'info');
         const csvRows = rows.map((r) => {
             if (activeTab === 'payouts') {
+                const p = r as Payout;
                 return {
-                    reference:  String(r.reference ?? ''),
-                    event:      String(r.event_name ?? ''),
-                    wallet:     String(r.wallet_reference ?? ''),
-                    currency:   String(r.currency ?? ''),
-                    amount:     Number(r.amount) || 0,
-                    status:     String(r.status ?? ''),
-                    settled_at: typeof r.processed_at === 'string'
-                        ? formatDate(r.processed_at)
-                        : formatDate(String(r.requested_at ?? '')),
-                };
-            } else {
-                return {
-                    reference:    String(r.reference ?? ''),
-                    event:        String(r.event_name ?? ''),
-                    ticket_code:  String(r.ticket_code ?? ''),
-                    currency:     String(r.currency ?? ''),
-                    amount:       Number(r.amount) || 0,
-                    status:       String(r.status ?? ''),
-                    requested_at: formatDate(String(r.created_at ?? '')),
+                    reference:  p.reference,
+                    event:      p.eventName,
+                    wallet:     p.payableWallet || p.wallet || "",
+                    currency:   p.currency || "",
+                    amount:     p.amount,
+                    status:     p.status,
+                    settled_at: p.processedAt ? formatDate(p.processedAt) : formatDate(p.requestedAt),
                 };
             }
+            const ref = r as Refund;
+            return {
+                reference:    ref.reference,
+                event:        ref.event_name,
+                ticket_code:  ref.ticket_code,
+                currency:     ref.currency,
+                amount:       ref.amount,
+                status:       ref.status,
+                requested_at: formatDate(ref.created_at),
+            };
         });
         exportToCSV(csvRows, `${activeTab}_report_${activeAccount?.name ?? 'org'}`);
         showToast('Report downloaded.', 'success');

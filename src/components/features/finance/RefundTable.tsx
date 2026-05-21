@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatString, formatCurrency, formatDate } from '@/utils/format';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 
-interface Refund {
+export interface Refund {
     id: string;
     reference: string;
     event_name: string;
