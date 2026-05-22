@@ -938,8 +938,8 @@ function FinanceContent() {
                 </Modal>
             )}
         </div>
-    };
-}
+    );
+};
 
 export default function AdminFinancePage() {
     return (
