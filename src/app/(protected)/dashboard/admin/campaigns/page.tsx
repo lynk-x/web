@@ -8,14 +8,11 @@ import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import CampaignTable, { Campaign } from '@/components/admin/campaigns/CampaignTable';
-import EditCampaignModal from '@/components/admin/campaigns/EditCampaignModal';
 import AdAnalyticsTab from '@/components/admin/campaigns/AdAnalyticsTab';
-import Link from 'next/link';
 import { useOrganization } from '@/context/OrganizationContext';
 
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
-import Modal from '@/components/shared/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
@@ -67,16 +64,7 @@ function CampaignsContent() {
     const [summary, setSummary] = useState<any>(null);
     const [campaignPerf, setCampaignPerf] = useState<{ avgCtr: string; avgCpc: string } | null>(null);
 
-    const [viewerConfig, setViewerConfig] = useState<{
-        isOpen: boolean;
-        type: 'preview' | 'stats' | 'none';
-        campaign: Campaign | null;
-        mediaUrl?: string;
-    }>({ isOpen: false, type: 'none', campaign: null });
-
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
-    const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 10;
@@ -228,31 +216,8 @@ function CampaignsContent() {
         );
     };
 
-    const handlePreview = async (campaign: Campaign) => {
-        setViewerConfig({ isOpen: true, type: 'preview', campaign, mediaUrl: undefined });
-        
-        const { data, error } = await supabase
-            .from('ad_media')
-            .select('url')
-            .eq('campaign_id', campaign.id)
-            .limit(1)
-            .single();
-
-        if (!error && data) {
-            setViewerConfig(prev => ({ ...prev, mediaUrl: data.url }));
-        }
-    };
-
-    const handleViewStats = (campaign: Campaign) => {
-        setViewerConfig({ isOpen: true, type: 'stats', campaign });
-    };
-
-    const handleEdit = (campaign: Campaign) => {
-        setEditingCampaign(campaign);
-        setIsEditModalOpen(true);
-    };
-
     const handleSaveCampaign = async (campaignId: string, updates: any) => {
+        if (!campaignId) return;
         showToast(`Saving changes...`, 'info');
         try {
             const { error } = await supabase
@@ -262,16 +227,13 @@ function CampaignsContent() {
                     total_budget: updates.budget,
                     start_at: updates.startDate,
                     end_at: updates.endDate,
-                    account_id: updates.account_id,
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', campaignId)
-                .eq('created_at', editingCampaign?.createdAt);
+                .eq('id', campaignId);
 
             if (error) throw error;
 
             showToast(`Campaign updated successfully.`, 'success');
-            setIsEditModalOpen(false);
             fetchCampaigns();
         } catch (err) {
             showToast('Failed to update campaign.', 'error');
@@ -490,9 +452,6 @@ function CampaignsContent() {
                             setSelectedCampaignIds(next);
                         }}
                         onSelectAll={() => setSelectedCampaignIds(selectedCampaignIds.size === campaigns.length ? new Set() : new Set(campaigns.map(c => c.id)))}
-                        onPreview={(c) => setViewerConfig({ isOpen: true, type: 'preview', campaign: c, mediaUrl: c.metadata?.media_url })}
-                        onViewStats={(c) => setViewerConfig({ isOpen: true, type: 'stats', campaign: c })}
-                        onEdit={(c) => { setEditingCampaign(c); setIsEditModalOpen(true); }}
                         currentPage={currentPage}
                         totalPages={Math.ceil(totalCount / itemsPerPage)}
                         onPageChange={setCurrentPage}
