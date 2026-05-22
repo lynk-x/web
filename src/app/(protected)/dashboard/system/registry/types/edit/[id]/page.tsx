@@ -43,10 +43,6 @@ export default function EditTagTypePage() {
                 }
             } catch (error: unknown) {
                 showToast(getErrorMessage(error), 'error');
-                // Fallback for mock
-                if (params.id === 'event_category') {
-                    setFormData({ description: 'Primary categorization for events', is_active: true });
-                }
             } finally {
                 setIsFetching(false);
             }

@@ -208,7 +208,7 @@ function CommunicationsContent() {
                 await supabase.rpc('admin_manage_comms_item', {
                     p_tab: 'content',
                     p_action: 'bulk_status',
-                    p_id: '00000000-0000-0000-0000-000000000000', // Placeholder for bulk
+                    p_id: null,
                     p_params: { ids, status: action === 'publish' ? 'published' : 'archived' }
                 });
             }

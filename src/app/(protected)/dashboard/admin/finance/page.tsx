@@ -424,10 +424,13 @@ function FinanceContent() {
 
     const handleResendInvoice = async (id: string) => {
         showToast('Resending latest invoice...', 'info');
-        // Mocking invoice service call
-        setTimeout(() => {
+        try {
+            const { error } = await supabase.rpc('admin_resend_invoice', { p_subscription_id: id });
+            if (error) throw error;
             showToast('Success: Latest invoice resent to the customer.', 'success');
-        }, 800);
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
     };
 
     const handleOpenPlanModal = (sub: Subscription) => {

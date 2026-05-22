@@ -18,11 +18,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import { Report } from '@/types/admin';
 import type { ActionItem } from '@/types/shared';
 
-/**
- * Mock forums — aligned to `forum_status` schema enum.
- * Note: the exact casing of the enum is preserved (Open, Read_only, Archived).
- * When wiring up: `supabase.from('forums').select('*, event:events!event_id(title)')`
- */
 import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';

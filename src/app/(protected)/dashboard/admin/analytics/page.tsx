@@ -82,19 +82,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                 if (error) throw error;
                 return (res as DemographicData | null) || { age_gender: [], geo: [] };
             } catch (err) {
-                // Graceful fallback for non-system administrators
-                return {
-                    geo: [
-                        { country: countryFilter !== 'all' ? countryFilter : 'KE', account_role: 'organizer', user_count: 42 },
-                        { country: countryFilter !== 'all' ? countryFilter : 'KE', account_role: 'advertiser', user_count: 18 },
-                        { country: countryFilter !== 'all' ? countryFilter : 'KE', account_role: 'pulse_user', user_count: 850 }
-                    ],
-                    age_gender: [
-                        { country: countryFilter !== 'all' ? countryFilter : 'KE', age_bucket: '18-24', gender: 'male', user_count: 320 },
-                        { country: countryFilter !== 'all' ? countryFilter : 'KE', age_bucket: '25-34', gender: 'female', user_count: 450 },
-                        { country: countryFilter !== 'all' ? countryFilter : 'KE', age_bucket: '35-44', gender: 'male', user_count: 110 }
-                    ]
-                };
+                throw err;
             }
         }
     );
@@ -154,19 +142,7 @@ function RevenueTab({ countryFilter }: { countryFilter: string }) {
                 if (error) throw error;
                 return (res as RevenueData | null) || { wallet_gross: 0, streams: [], ledger: [] };
             } catch (err) {
-                // Graceful fallback for non-system administrators
-                return {
-                    wallet_gross: 450000,
-                    streams: [
-                        { stream_type: 'ticket_sale', total_amount: 380000, total_tax: 60800 },
-                        { stream_type: 'ad_campaign_payment', total_amount: 70000, total_tax: 11200 }
-                    ],
-                    ledger: [
-                        { day: new Date().toISOString(), volume: 45000 },
-                        { day: new Date(Date.now() - 86400000).toISOString(), volume: 38000 },
-                        { day: new Date(Date.now() - 172800000).toISOString(), volume: 52000 }
-                    ]
-                };
+                throw err;
             }
         }
     );

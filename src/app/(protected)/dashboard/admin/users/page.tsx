@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import KYCTab from '@/components/admin/users/KYCTab';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import FilterChips from '@/components/shared/FilterChips';
@@ -25,6 +26,7 @@ function AccountsContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
 
     const [accounts, setAccounts] = useState<AdminAccount[]>([]);
@@ -101,7 +103,7 @@ function AccountsContent() {
         if (selectedIds.size === 0) return;
 
         const actionLabel = newStatus.replace(/_/g, ' ');
-        if (!window.confirm(`Are you sure you want to ${actionLabel} ${selectedIds.size} accounts?`)) return;
+        if (!await confirm(`Are you sure you want to ${actionLabel} ${selectedIds.size} accounts?`)) return;
 
         showToast(`Updating ${selectedIds.size} accounts...`, 'info');
         try {
@@ -124,6 +126,7 @@ function AccountsContent() {
 
     return (
         <div className={sharedStyles.container}>
+            {ConfirmDialog}
             <PageHeader 
                 title="Identity & Compliance" 
                 subtitle="Manage organizational accounts, KYC status and system access." 
