@@ -333,7 +333,7 @@ export default function AdminEventsPage() {
             return;
         }
 
-        if (!confirm(`Are you sure you want to approve this payout for ${payout.recipient}? This will initiate disbursement.`)) return;
+        if (!await confirm(`Are you sure you want to approve this payout for ${payout.recipient}? This will initiate disbursement.`)) return;
         
         try {
             const { data, error } = await supabase.functions.invoke('payout-fulfillment', {

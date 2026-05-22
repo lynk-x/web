@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/utils/error';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import KycVerificationTable from './KycVerificationTable';
 import KycDetailModal from './KycDetailModal';
 import type { KycVerification } from '@/types/admin';
@@ -22,6 +23,7 @@ interface KYCTabProps {
 const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilter }) => {
     const supabase = createClient();
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     
     const [queue, setQueue] = useState<KycVerification[]>([]);
@@ -102,7 +104,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
             if (!reason) return;
         }
 
-        if (!window.confirm(`Are you sure you want to bulk ${action} ${selectedIds.size} requests?`)) return;
+        if (!await confirm(`Are you sure you want to bulk ${action} ${selectedIds.size} requests?`)) return;
 
         setIsBulkLoading(true);
         try {
@@ -126,6 +128,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
 
     return (
         <div className={adminStyles.container}>
+            {ConfirmDialog}
 
             {selectedIds.size > 0 && (
                 <div style={{ 
