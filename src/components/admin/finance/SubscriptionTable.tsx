@@ -31,6 +31,9 @@ interface SubscriptionTableProps {
     onChangePlan?: (id: string) => void;
     onResendInvoice?: (id: string) => void;
     onCancel?: (id: string) => void;
+    selectedIds?: Set<string>;
+    onSelect?: (id: string) => void;
+    onSelectAll?: () => void;
 }
 
 export default function SubscriptionTable({
@@ -41,7 +44,10 @@ export default function SubscriptionTable({
     onPageChange,
     onChangePlan,
     onResendInvoice,
-    onCancel
+    onCancel,
+    selectedIds,
+    onSelect,
+    onSelectAll,
 }: SubscriptionTableProps) {
     const columns: Column<Subscription>[] = [
         {
@@ -128,6 +134,9 @@ export default function SubscriptionTable({
             totalPages={totalPages}
             onPageChange={onPageChange}
             getActions={getActions}
+            selectedIds={selectedIds}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
             emptyMessage="No subscriptions found."
         />
     );

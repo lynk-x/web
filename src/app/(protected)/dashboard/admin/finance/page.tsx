@@ -91,6 +91,12 @@ function FinanceContent() {
     // Selection state for Promo Codes
     const [selectedPromoIds, setSelectedPromoIds] = useState<Set<string>>(new Set());
 
+    // Selection state for Subscriptions
+    const [selectedSubIds, setSelectedSubIds] = useState<Set<string>>(new Set());
+
+    // Subscription plan options pre-loaded for the plan-migration select
+    const [subscriptionPlans, setSubscriptionPlans] = useState<Array<{ id: string; display_name: string }>>([]);
+
     // Global Stats state
     interface GlobalFinanceStats {
         platformRevenue: number | null;
@@ -128,12 +134,38 @@ function FinanceContent() {
         setCategoryFilter('all');
         setStartDate('');
         setEndDate('');
+        setSearchTerm('');
         setMinAmount('');
         setMaxAmount('');
+        if (newTab === 'subscriptions') {
+            fetchSubscriptionPlans();
+        }
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', newTab);
         router.replace(`${pathname}?${params.toString()}`);
     };
+
+    // Wallet Actions — state keyed by (account_id, currency) — a unique compound key
+    // in the finance.account_wallets table is (account_id, currency).
+    const [adjustWalletKey, setAdjustWalletKey] = useState<string | null>(null);
+    const [showAdjustWalletModal, setShowAdjustWalletModal] = useState(false);
+    const [adjustBalanceType, setAdjustBalanceType] = useState<'cash' | 'credit' | 'escrow'>('cash');
+    const [adjustAmount, setAdjustAmount] = useState('');
+    const [adjustReason, setAdjustReason] = useState('');
+
+    const fetchSubscriptionPlans = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('subscription_plans')
+                .select('id, display_name, product_type')
+                .eq('status', 'active')
+                .order('display_name');
+            if (error) throw error;
+            setSubscriptionPlans((data || []) as any);
+        } catch (err) {
+            console.error('Failed to fetch subscription plans:', err);
+        }
+    }, [supabase]);
 
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
@@ -426,6 +458,58 @@ function FinanceContent() {
         }
     };
 
+    // ── Wallet Freeze / Unfreeze ────────────────────────────────────────────────
+    const handleFreezeWallet = async (accountId: string, currency: string, currentStatus: string) => {
+        if (!wallets.find(w => w.account_id === accountId && w.currency === currency)) {
+            showToast('Wallet not found (may have been removed).', 'error');
+            return;
+        }
+        const newStatus = currentStatus === 'active' ? 'frozen' : 'active';
+        if (!await confirm(`Set wallet ${accountId.slice(0, 8)}…/${currency} to "${newStatus}"?`)) return;
+
+        showToast(`${currentStatus === 'active' ? 'Freezing' : 'Unfreezing'} wallet...`, 'info');
+        try {
+            const { error } = await supabase
+                .from('account_wallets')
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq('account_id', accountId)
+                .eq('currency', currency);
+            if (error) throw error;
+            showToast(`Wallet ${newStatus}.`, 'success');
+            fetchData();
+        } catch (err) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleAdjustWallet = async () => {
+        if (!adjustWalletKey) return;
+        const [accountId, currency] = adjustWalletKey.split('|');
+        if (!accountId || !currency) { setShowAdjustWalletModal(false); return; }
+
+        const amount = parseFloat(adjustAmount);
+        if (isNaN(amount) || amount === 0) { showToast('Enter a non-zero amount.', 'error'); return; }
+        const reason = adjustReason.trim() || 'admin_adjustment';
+
+        setShowAdjustWalletModal(false);
+        showToast('Adjusting wallet balance…', 'info');
+        try {
+            const { error } = await supabase.rpc('admin_adjust_wallet_balance', {
+                p_account_id: accountId,
+                p_currency: currency,
+                p_amount: amount,
+                p_balance_type: adjustBalanceType,
+                p_reason: reason,
+                p_notes: `admin_finance_page`
+            });
+            if (error) throw error;
+            showToast(`Wallet ${adjustBalanceType} adjusted by ${formatCurrency(amount, currency)}.`, 'success');
+            fetchData();
+        } catch (err) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
     const getBulkActions = (): BulkAction[] => {
         if (activeTab === 'promo-codes' && selectedPromoIds.size > 0) {
             return [
@@ -467,23 +551,60 @@ function FinanceContent() {
         }
 
         if (activeTab === 'wallets' && selectedWalletIds.size > 0) {
-            return [
-                {
-                    label: 'Freeze Selected',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
+            const allFrozen = selectedWalletIds.size === wallets.filter(
+                (w: any) => selectedWalletIds.has(`${w.account_id}_${w.currency}`) && w.status === 'frozen'
+            ).length;
+            const actionLabel = allFrozen ? 'Unfreeze Selected' : 'Freeze Selected';
+            const newStatus = allFrozen ? 'active' : 'frozen';
+
+            return [{
+                label: actionLabel,
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
                     onClick: async () => {
-                        if (!await confirm(`Freeze ${selectedWalletIds.size} wallets?`)) return;
-                        showToast(`Freezing ${selectedWalletIds.size} wallets...`, 'info');
-                        // Simulation of bulk action
-                        setTimeout(() => {
-                            showToast(`Successfully frozen ${selectedWalletIds.size} wallets.`, 'success');
-                            setSelectedWalletIds(new Set());
-                            fetchData();
-                        }, 800);
+                        if (!await confirm(`${actionLabel} ${selectedWalletIds.size} wallets?`)) return;
+                        showToast(`${actionLabel}…`, 'info');
+                        // Resolve composite selection keys to real wallet UUIDs
+                        const walletUuids = Array.from(selectedWalletIds)
+                            .map((key: string) => (wallets as any[]).find(w => `${w.account_id}_${w.currency}` === key)?.id)
+                            .filter(Boolean) as string[];
+                        if (walletUuids.length === 0) { showToast('No matching wallets found.', 'error'); return; }
+                        const { error } = await supabase
+                            .from('account_wallets')
+                            .update({ status: newStatus, updated_at: new Date().toISOString() })
+                            .in('id', walletUuids);
+                        if (error) { showToast(getErrorMessage(error), 'error'); return; }
+                        showToast(`${walletUuids.length} wallet(s) ${newStatus}.`, 'success');
+                        setSelectedWalletIds(new Set());
+                        fetchData();
                     },
-                    variant: 'danger'
-                }
-            ];
+                variant: allFrozen ? 'success' : 'danger'
+            }];
+        }
+
+        if (activeTab === 'subscriptions' && selectedSubIds.size > 0) {
+            return [{
+                label: 'Cancel Selected Subscriptions',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>,
+                onClick: async () => {
+                    if (!await confirm(`Cancel ${selectedSubIds.size} subscriptions?`)) return;
+                    showToast(`Cancelling ${selectedSubIds.size} subscriptions…`, 'info');
+                    const ids = Array.from(selectedSubIds);
+                    const results = await Promise.all(
+                        ids.map((id: string) =>
+                            supabase.rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true })
+                        )
+                    );
+                    const failures = results.filter(r => r.error);
+                    if (failures.length) {
+                        showToast(getErrorMessage(failures[0].error), 'error');
+                    } else {
+                        showToast(`${selectedSubIds.size} subscription(s) cancelled.`, 'success');
+                    }
+                    setSelectedSubIds(new Set());
+                    fetchData();
+                },
+                variant: 'danger'
+            }];
         }
         return [];
     };
@@ -648,6 +769,11 @@ function FinanceContent() {
                             setSelectedWalletIds(next);
                         }}
                         onSelectAll={() => setSelectedWalletIds(selectedWalletIds.size === wallets.length ? new Set() : new Set(wallets.map(w => `${w.account_id}_${w.currency}`)))}
+                        onFreeze={handleFreezeWallet}
+                        onAdjustBalance={(accountId, currency) => {
+                            setAdjustWalletKey(`${accountId}|${currency}`);
+                            setShowAdjustWalletModal(true);
+                        }}
                     />
                 </TabsContent>
 
@@ -664,6 +790,13 @@ function FinanceContent() {
                             const sub = subscriptions.find(s => s.id === id);
                             if (sub) handleOpenPlanModal(sub);
                         }}
+                        selectedIds={selectedSubIds}
+                        onSelect={(id: string) => {
+                            const next = new Set(selectedSubIds);
+                            next.has(id) ? next.delete(id) : next.add(id);
+                            setSelectedSubIds(next);
+                        }}
+                        onSelectAll={() => setSelectedSubIds(selectedSubIds.size === subscriptions.length ? new Set() : new Set(subscriptions.map(s => s.id)))}
                     />
                 </TabsContent>
 
@@ -695,13 +828,15 @@ function FinanceContent() {
             <BulkActionsBar
                 actions={getBulkActions()}
                 selectedCount={
-                    activeTab === 'promo-codes' ? selectedPromoIds.size : 
+                    activeTab === 'promo-codes' ? selectedPromoIds.size :
                     activeTab === 'wallets' ? selectedWalletIds.size :
+                    activeTab === 'subscriptions' ? selectedSubIds.size :
                     0
                 }
                 onCancel={() => {
                     setSelectedPromoIds(new Set());
                     setSelectedWalletIds(new Set());
+                    setSelectedSubIds(new Set());
                 }}
             />
 
@@ -730,11 +865,10 @@ function FinanceContent() {
                             value={newPlanId}
                             onChange={e => setNewPlanId(e.target.value)}
                         >
-                            <option value="attendee_free">Attendee: Free</option>
-                            <option value="attendee_premium_monthly">Attendee: Premium Monthly</option>
-                            <option value="attendee_premium_yearly">Attendee: Premium Yearly</option>
-                            <option value="business_pulse_starter">Business: Pulse Starter</option>
-                            <option value="business_pulse_pro">Business: Pulse Pro</option>
+                            <option value="" disabled>Select a plan…</option>
+                            {subscriptionPlans.map(plan => (
+                                <option key={plan.id} value={plan.id}>{plan.display_name}</option>
+                            ))}
                         </select>
                         <p style={{ fontSize: '11px', marginTop: '8px', opacity: 0.6 }}>
                             Note: Changing the plan will update the enrollment immediately. Prorating must be handled manually in the gateway if required.
@@ -742,8 +876,66 @@ function FinanceContent() {
                     </div>
                 </div>
             </Modal>
+
+            {/* Wallet Adjust Balance Modal */}
+            {adjustWalletKey && (
+                <Modal
+                    isOpen={showAdjustWalletModal}
+                    onClose={() => setShowAdjustWalletModal(false)}
+                    title="Adjust Wallet Balance"
+                    footer={
+                        <>
+                            <button className={adminStyles.btnSecondary} onClick={() => setShowAdjustWalletModal(false)}>Cancel</button>
+                            <button className={adminStyles.btnPrimary} onClick={handleAdjustWallet} disabled={!adjustAmount || parseFloat(adjustAmount) === 0}>Apply Adjustment</button>
+                        </>
+                    }
+                >
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>
+                            <p><strong>Wallet:</strong> {adjustWalletKey}</p>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div>
+                                <label className={adminStyles.label}>Balance Type</label>
+                                <select
+                                    className={adminStyles.select}
+                                    style={{ width: '100%' }}
+                                    value={adjustBalanceType}
+                                    onChange={e => setAdjustBalanceType(e.target.value as any)}
+                                >
+                                    <option value="cash">Cash</option>
+                                    <option value="credit">Credit</option>
+                                    <option value="escrow">Escrow</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={adminStyles.label}>Amount ({adjustBalanceType === 'cash' ? '±' : 'signed value'})</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className={adminStyles.input}
+                                    placeholder="e.g. 500.00 or -250.00"
+                                    value={adjustAmount}
+                                    onChange={e => setAdjustAmount(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className={adminStyles.label}>Reason</label>
+                            <input
+                                type="text"
+                                className={adminStyles.input}
+                                placeholder="e.g. Ticket refund, goodwill, manual correction"
+                                value={adjustReason}
+                                onChange={e => setAdjustReason(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </div>
-    );
+    };
 }
 
 export default function AdminFinancePage() {
