@@ -20,7 +20,6 @@ export default async function ResourceIndex() {
     const { data: resources } = await supabase
         .from('cms_pages')
         .select('title, slug, content')
-        .eq('type', 'resource')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
 
