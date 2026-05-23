@@ -8,6 +8,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { sanitizeInput } from '@/utils/sanitization';
 import MemberTable from '@/components/features/members/MemberTable';
+import { MfaManager } from '@/components/MfaManager';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
 import WalletsTable from '@/components/features/finance/WalletsTable';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -76,6 +77,23 @@ function SettingsContent() {
     });
     const [wallets, setWallets] = useState<AccountWallet[]>([]);
     const [initialFormData, setInitialFormData] = useState(formData);
+    
+    const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+    const [isGeneratingRecovery, setIsGeneratingRecovery] = useState(false);
+
+    const handleGenerateRecoveryCode = async () => {
+        setIsGeneratingRecovery(true);
+        try {
+            const { data, error } = await supabase.rpc('generate_recovery_code');
+            if (error) throw error;
+            setRecoveryCode(data);
+            showToast('Recovery code generated successfully. Please save it immediately.', 'success');
+        } catch (err) {
+            showToast(getErrorMessage(err) || 'Failed to generate recovery code.', 'error');
+        } finally {
+            setIsGeneratingRecovery(false);
+        }
+    };
 
     const fetchData = useCallback(async () => {
         if (!activeAccount) return;
@@ -300,6 +318,40 @@ function SettingsContent() {
                     </TabsContent>
 
                     <TabsContent value="danger-zone">
+                        <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
+                            <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-warning)' }}>Account Security</h2>
+                            
+                            <MfaManager />
+
+                            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>
+                                <h3 className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 500, fontSize: '15px' }}>
+                                    Generate Recovery Code
+                                </h3>
+                            <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
+                                Generate a cryptographic recovery code for your Account Data. If you lose access to your primary authentication methods, this is the only way to recover your encrypted data.
+                            </p>
+                            {recoveryCode ? (
+                                <div style={{ padding: '16px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '8px', border: '1px solid var(--color-interface-outline)', marginBottom: '16px' }}>
+                                    <p style={{ margin: 0, fontWeight: 500, color: 'var(--color-text-primary)' }}>Your Recovery Code:</p>
+                                    <code style={{ display: 'block', padding: '12px', marginTop: '8px', backgroundColor: 'var(--color-background-surface)', borderRadius: '4px', fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
+                                        {recoveryCode}
+                                    </code>
+                                    <p style={{ margin: '12px 0 0 0', fontSize: '12px', color: 'var(--color-interface-error)' }}>
+                                        Please write this down immediately. It will not be shown again.
+                                    </p>
+                                </div>
+                            ) : (
+                                <Button
+                                    variant="secondary"
+                                    onClick={handleGenerateRecoveryCode}
+                                    isLoading={isGeneratingRecovery}
+                                >
+                                    Generate Recovery Code
+                                </Button>
+                            )}
+                            </div>
+                        </div>
+
                         <div className={adminStyles.pageCard}>
                             <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>
                             <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>

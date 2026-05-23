@@ -15,13 +15,22 @@ export async function login(formData: FormData) {
     // Honour the ?next= param so checkout and other gates land the user where they wanted.
     const next = sanitizeInput((formData.get('next') as string) || '/dashboard')
 
-    const { error } = await supabase.auth.signInWithPassword(
+    const { data, error } = await supabase.auth.signInWithPassword(
         phone ? { phone, password } : { email: email!, password }
     )
 
     if (error) {
         const errorMsg = error.message || 'Could not authenticate user'
         redirect(`/login?error=${encodeURIComponent(errorMsg)}&next=${encodeURIComponent(next)}`)
+    }
+
+    // Check if MFA is required
+    const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (!mfaError && mfaData) {
+        if (mfaData.nextLevel === 'aal2' && mfaData.currentLevel === 'aal1') {
+            // User needs to complete MFA challenge before accessing the dashboard
+            redirect(`/mfa-challenge?next=${encodeURIComponent(next)}`);
+        }
     }
 
     revalidatePath('/', 'layout')
