@@ -73,6 +73,28 @@ export default function WalletPage() {
     const [amount, setAmount] = useState('');
     const [currency, setCurrency] = useState('KES');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [providers, setProviders] = useState<any[]>([]);
+    const [selectedProvider, setSelectedProvider] = useState('mpesa');
+
+    const fetchProviders = useCallback(async () => {
+        try {
+            const { data } = await supabase
+                .from('platform_payment_providers')
+                .select('*')
+                .eq('supports_inbound', true)
+                .order('display_name');
+            if (data && data.length > 0) {
+                setProviders(data);
+                setSelectedProvider(data[0].provider_name);
+            }
+        } catch (e) {
+            console.error('Failed to load inbound providers', e);
+        }
+    }, [supabase]);
+
+    useEffect(() => {
+        fetchProviders();
+    }, [fetchProviders]);
 
     const fetchData = useCallback(async () => {
         if (!activeAccount) return;
@@ -114,6 +136,8 @@ export default function WalletPage() {
                 p_account_id: activeAccount!.id,
                 p_amount: numAmount,
                 p_currency: currency,
+                p_provider_name: selectedProvider,
+                p_payer_identity: 'dashboard_user'
             });
 
             if (error) throw error;
@@ -279,6 +303,18 @@ export default function WalletPage() {
                                         <option key={c.code} value={c.code}>{c.code} - {c.country_name}</option>
                                     ))
                                 )}
+                            </select>
+                        </label>
+                        <label className={adminStyles.fieldLabel}>
+                            Payment Method
+                            <select 
+                                className={adminStyles.select} 
+                                value={selectedProvider} 
+                                onChange={e => setSelectedProvider(e.target.value)}
+                            >
+                                {providers.map(p => (
+                                    <option key={p.provider_name} value={p.provider_name}>{p.display_name}</option>
+                                ))}
                             </select>
                         </label>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>

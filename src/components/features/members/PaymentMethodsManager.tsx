@@ -25,6 +25,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
     const [isSaving, setIsSaving] = useState(false);
 
     const [methodToDelete, setMethodToDelete] = useState<AccountPaymentMethod | null>(null);
+    const [providers, setProviders] = useState<any[]>([]);
 
     const fetchMethods = useCallback(async () => {
         setIsLoading(true);
@@ -51,9 +52,27 @@ export default function PaymentMethodsManager({ accountId }: Props) {
         }
     }, [accountId, supabase, showToast]);
 
+    const fetchProviders = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('platform_payment_providers')
+                .select('*')
+                .eq('supports_outbound', true)
+                .order('display_name');
+            if (error) throw error;
+            setProviders(data || []);
+            if (data && data.length > 0) {
+                setNewMethod(prev => ({ ...prev, provider: data[0].provider_name }));
+            }
+        } catch (err: unknown) {
+            console.error('Failed to load payment providers', err);
+        }
+    }, [supabase]);
+
     useEffect(() => {
         fetchMethods();
-    }, [fetchMethods]);
+        fetchProviders();
+    }, [fetchMethods, fetchProviders]);
 
     const handleAddMethod = async () => {
         if (!newMethod.identity.trim()) {
@@ -84,7 +103,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
 
             showToast('New payout destination added successfully.', 'success', 'Success');
             setIsAddModalOpen(false);
-            setNewMethod({ provider: 'mpesa', identity: '' });
+            setNewMethod({ provider: providers.length > 0 ? providers[0].provider_name : 'mpesa', identity: '' });
             fetchMethods();
 
         } catch (err: unknown) {
@@ -174,7 +193,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                                         {method.is_primary && <Badge label="PRIMARY" variant="info" />}
                                     </div>
                                     <div style={{ fontSize: '13px', opacity: 0.6, marginTop: '4px' }}>
-                                        {method.provider === 'mpesa' ? 'Mobile Money' : method.provider === 'bank_transfer' ? 'Bank Account' : 'Gateway'}
+                                        {providers.find(p => p.provider_name === method.provider)?.display_name || method.provider}
                                     </div>
                                 </div>
                             </div>
@@ -221,17 +240,16 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                             value={newMethod.provider}
                             onChange={(e) => setNewMethod({ ...newMethod, provider: e.target.value })}
                         >
-                            <option value="mpesa">M-Pesa</option>
-                            <option value="bank_transfer">Bank Transfer (Swift)</option>
-                            <option value="stripe_connect">Stripe Connect</option>
-                            <option value="paypal">PayPal</option>
+                            {providers.map(p => (
+                                <option key={p.provider_name} value={p.provider_name}>{p.display_name}</option>
+                            ))}
                         </select>
                     </div>
                     <div>
                         <label className={adminStyles.label}>Account Identity</label>
                         <input
                             type="text"
-                            placeholder={newMethod.provider === 'mpesa' ? "+254..." : newMethod.provider === 'bank_transfer' ? "IBAN or Account Number" : "Email or Account ID"}
+                            placeholder="Enter account identity (e.g. Phone, IBAN, Email)"
                             className={adminStyles.input}
                             value={newMethod.identity}
                             onChange={(e) => setNewMethod({ ...newMethod, identity: e.target.value })}
