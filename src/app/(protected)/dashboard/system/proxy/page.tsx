@@ -23,7 +23,7 @@ interface CountryItem {
     display_name: string;
     currency: string;
     region: string;
-    is_active: boolean;
+    status: string;
 }
 
 interface RegionalStats {
@@ -61,14 +61,14 @@ function OperationalProxyContent() {
             try {
                 const { data, error } = await supabase
                     .from('countries')
-                    .select('code, display_name, currency, region, is_active')
+                    .select('code, display_name, currency, region, status')
                     .order('display_name');
                 
                 if (error) throw error;
                 if (data && data.length > 0) {
                     setCountries(data);
                     // Default to first active country
-                    const firstActive = data.find(c => c.is_active) || data[0];
+                    const firstActive = data.find(c => c.status === 'approved') || data[0];
                     setSelectedCountry(firstActive.code);
                 }
             } catch (err) {
@@ -182,7 +182,7 @@ function OperationalProxyContent() {
                         <h2 className={sharedStyles.sectionTitle} style={{ margin: 0 }}>
                             {activeCountryObj.display_name} Registry Insights
                         </h2>
-                        <Badge variant={activeCountryObj.is_active ? 'success' : 'warning'} label={activeCountryObj.is_active ? 'Active Territory' : 'Inactive'} />
+                        <Badge variant={activeCountryObj.status === 'approved' ? 'success' : 'warning'} label={activeCountryObj.status === 'approved' ? 'Active Territory' : 'Inactive'} />
                     </div>
 
                     <div className={adminStyles.statsGrid}>

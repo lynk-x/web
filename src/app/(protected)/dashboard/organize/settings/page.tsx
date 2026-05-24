@@ -188,14 +188,24 @@ function SettingsContent() {
     const handleDeleteAccount = async () => {
         if (!activeAccount) return;
         try {
-            const { error } = await supabase
+            // 1. Deactivate the specific business account
+            const { error: accountError } = await supabase
                 .from('accounts')
-                .update({ is_active: false })
+                .update({ deleted_at: new Date().toISOString() })
                 .eq('id', activeAccount.id);
 
-            if (error) throw error;
-            showToast('Account deactivation requested.', 'success');
+            if (accountError) throw accountError;
+
+            // 2. Shred the entire user data (GDPR Compliance)
+            const { error: shredError } = await supabase.rpc('shred_user_data');
+            if (shredError) throw shredError;
+
+            showToast('Account successfully deactivated and data shredded.', 'success');
             setIsDeleteModalOpen(false);
+            
+            // Log them out and redirect home since their identity is now destroyed
+            await supabase.auth.signOut();
+            router.push('/');
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to deactivate account.', 'error');
         }

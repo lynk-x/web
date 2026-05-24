@@ -142,9 +142,9 @@ export function createReferenceRepository(client: DbClient) {
         async getCountries(): Promise<RepoResult<Country[]>> {
             const { data, error } = await client
                 .from('countries')
-                .select('code, name, currency, timezone, is_active')
-                .eq('is_active', true)
-                .order('name', { ascending: true });
+                .select('code, name:display_name, currency, timezone, status')
+                .eq('status', 'approved')
+                .order('display_name', { ascending: true });
 
             if (error) return { data: null, error: toError(error) };
             return { data: data as Country[], error: null };

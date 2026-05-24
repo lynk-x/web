@@ -35,7 +35,7 @@ export default function CountrySelect({
                 const { data, error } = await supabase
                     .from('countries')
                     .select('code, display_name')
-                    .eq('is_active', true)
+                    .eq('status', 'approved')
                     .order('display_name', { ascending: true });
 
                 if (error) throw error;

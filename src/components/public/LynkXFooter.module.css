@@ -69,7 +69,7 @@
 .link:hover {
     opacity: 1;
     color: var(--color-brand-primary);
-    padding-left: 4px;
+    padding-right: 4px;
 }
 
 /* Bottom Row */

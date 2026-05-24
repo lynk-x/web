@@ -20,6 +20,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import MarketExplorer from './MarketExplorer';
 import AudienceInsights from './AudienceInsights';
 import TrendsAnalysis from './TrendsAnalysis';
+import PulseSettings from './Settings';
 
 // ─── Sub-Components ─────────────────────────────────────────────────────────
 
@@ -159,6 +160,7 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
                             <TabsTrigger value="audience">Audience Insights</TabsTrigger>
                             <TabsTrigger value="trends">Trend Analysis</TabsTrigger>
                             <TabsTrigger value="reports">Data Reports</TabsTrigger>
+                            <TabsTrigger value="settings">Settings</TabsTrigger>
                         </TabsList>
 
                         <div className={adminStyles.chipsWrapper}>
@@ -193,11 +195,14 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
                             <div style={{ marginTop: '20px' }}>
                                 <Badge label="New" variant="success" showDot />
                                 <span style={{ marginLeft: '12px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                                    Weekly Market Recap (May 2026) is now available.
+                                    Weekly Market Recap is now available.
                                 </span>
                             </div>
                         </div>
                     </div>
+                )}
+                {activeTab === 'settings' && (
+                    <PulseSettings accountId={activeAccount?.id || ''} />
                 )}
             </div>
 

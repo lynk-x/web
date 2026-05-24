@@ -21,8 +21,8 @@ export function useCurrencies() {
             try {
                 const { data, error } = await supabase
                     .from('countries')
-                    .select('currency, currency_symbol, display_name')
-                    .eq('is_active', true)
+                    .select('currency, display_name')
+                    .eq('status', 'approved')
                     .order('currency');
 
                 if (error) throw error;
@@ -32,7 +32,7 @@ export function useCurrencies() {
                         if (!acc.find(c => c.code === current.currency)) {
                             acc.push({
                                 code: current.currency,
-                                symbol: current.currency_symbol,
+                                symbol: current.currency, // Since there is no currency_symbol
                                 country_name: current.display_name
                             });
                         }

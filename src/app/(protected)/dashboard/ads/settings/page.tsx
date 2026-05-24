@@ -188,16 +188,22 @@ function AdsSettingsContent() {
         if (!activeAccount) return;
         setIsDeactivating(true);
         try {
-            const { error } = await supabase.rpc('deactivate_ads_account', {
+            const { error: accountError } = await supabase.rpc('deactivate_ads_account', {
                 p_account_id: activeAccount.id
             });
+            if (accountError) throw accountError;
 
-            if (error) throw error;
+            // 2. Shred the entire user data (GDPR Compliance)
+            const { error: shredError } = await supabase.rpc('shred_user_data');
+            if (shredError) throw shredError;
 
-            showToast('Ads account deactivated. All active campaigns have been paused.', 'success');
+            showToast('Account deactivated and personal data shredded.', 'success');
             setIsDeactivateModalOpen(false);
             if (refreshAccounts) await refreshAccounts();
-            router.push('/dashboard/ads');
+            
+            // Log them out and redirect home since their identity is now destroyed
+            await supabase.auth.signOut();
+            router.push('/');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to deactivate account.', 'error');
         } finally {
