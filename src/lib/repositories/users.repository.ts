@@ -17,6 +17,7 @@ export interface UserProfile {
     gender?: string | null;
     last_seen_at?: string | null;
     created_at?: string;
+    active_account_id?: string | null;
 }
 
 export function createUsersRepository(client: DbClient) {
@@ -25,7 +26,7 @@ export function createUsersRepository(client: DbClient) {
         async getProfile(userId: string): Promise<RepoResult<UserProfile | null>> {
             const { data, error } = await client
                 .from('user_profile')
-                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
+                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at, active_account_id')
                 .eq('id', userId)
                 .maybeSingle();
 
@@ -46,11 +47,21 @@ export function createUsersRepository(client: DbClient) {
 
             const { data, error } = await client
                 .from('user_profile')
-                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
+                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at, active_account_id')
                 .in('id', ids);
 
             if (error) return { data: null, error: toError(error) };
             return { data: data as UserProfile[], error: null };
+        },
+
+        /** Switch the active organizational tenant workspace. Wraps `set_active_account` RPC. */
+        async setActiveAccount(accountId: string): Promise<RepoResult<{ success: boolean; active_account_id: string }>> {
+            const { data, error } = await client.rpc('set_active_account', {
+                p_account_id: accountId,
+            });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as { success: boolean; active_account_id: string }, error: null };
         },
 
         /** Check whether a username is available. Wraps `is_username_available` RPC. */

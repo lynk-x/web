@@ -16,7 +16,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { createAccountsRepository } from '@/lib/repositories';
+import { createAccountsRepository, createUsersRepository } from '@/lib/repositories';
 import { useAuth } from '@/context/AuthContext';
 
 /** Module-level singleton — shared with AuthContext. */
@@ -51,7 +51,7 @@ interface OrganizationContextType {
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
-    const { user, isLoading: isLoadingAuth } = useAuth();
+    const { user, profile, isLoading: isLoadingAuth } = useAuth();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [activeAccountId, setStoredActiveAccountId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -79,21 +79,35 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             if (memberships && memberships.length > 0) {
                 setAccounts(memberships);
 
+                const dbActiveId = profile?.active_account_id;
                 const savedId = localStorage.getItem('lynks_active_account_id');
                 const businessAccounts = memberships.filter(a => a.type !== 'attendee');
                 const fallbackAccounts = businessAccounts.length > 0 ? businessAccounts : memberships;
                 
+                const isValidDbId = dbActiveId && fallbackAccounts.some(a => a.id === dbActiveId);
                 const isValidSavedId = savedId && fallbackAccounts.some(a => a.id === savedId);
                 const primaryAccount = fallbackAccounts.find(a => a.isPrimary);
 
-                if (isValidSavedId) {
+                if (isValidDbId) {
+                    setStoredActiveAccountId(dbActiveId);
+                    localStorage.setItem('lynks_active_account_id', dbActiveId);
+                } else if (isValidSavedId) {
                     setStoredActiveAccountId(savedId);
+                    // Sync localStorage setting to DB
+                    if (dbActiveId !== savedId) {
+                        const usersRepo = createUsersRepository(supabase);
+                        usersRepo.setActiveAccount(savedId);
+                    }
                 } else if (primaryAccount) {
                     setStoredActiveAccountId(primaryAccount.id);
                     localStorage.setItem('lynks_active_account_id', primaryAccount.id);
+                    const usersRepo = createUsersRepository(supabase);
+                    usersRepo.setActiveAccount(primaryAccount.id);
                 } else {
                     setStoredActiveAccountId(fallbackAccounts[0].id);
                     localStorage.setItem('lynks_active_account_id', fallbackAccounts[0].id);
+                    const usersRepo = createUsersRepository(supabase);
+                    usersRepo.setActiveAccount(fallbackAccounts[0].id);
                 }
                 return memberships;
             } else {
@@ -107,7 +121,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [user, profile]);
 
     useEffect(() => {
         if (!isLoadingAuth) {
@@ -115,11 +129,18 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         }
     }, [isLoadingAuth, fetchAccounts]);
 
-    const setActiveAccountId = (idOrSlug: string) => {
+    const setActiveAccountId = async (idOrSlug: string) => {
         const targetAccount = accounts.find(a => a.id === idOrSlug || a.slug === idOrSlug);
         if (targetAccount) {
             setStoredActiveAccountId(targetAccount.id);
             localStorage.setItem('lynks_active_account_id', targetAccount.id);
+            
+            // Persist the transition directly to the user profile
+            const usersRepo = createUsersRepository(supabase);
+            const { error } = await usersRepo.setActiveAccount(targetAccount.id);
+            if (error) {
+                console.error("[OrganizationContext] Error setting active account in database:", error);
+            }
         }
     };
 

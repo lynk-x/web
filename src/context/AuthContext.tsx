@@ -29,6 +29,7 @@ interface UserProfile {
     user_name: string;
     full_name: string | null;
     avatar_url: string | null;
+    active_account_id?: string | null;
 }
 
 interface AuthContextType {
