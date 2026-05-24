@@ -59,17 +59,18 @@
 }
 
 .link {
+    display: inline-block;
     font-size: 15px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
 .link:hover {
     opacity: 1;
     color: var(--color-brand-primary);
-    padding-right: 4px;
+    transform: translateX(4px);
 }
 
 /* Bottom Row */

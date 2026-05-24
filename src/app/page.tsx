@@ -18,13 +18,12 @@ export default async function Home() {
     //  - aggregates low_price in SQL (no N+1 ticket_tiers sub-query on the client)
     //  - includes timezone for correct client-side display
     //  - is correctly indexed via idx_events_status_active
-    supabase
-      .from('vw_events')
+    supabase.from('vw_events')
       .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, is_featured, reference, low_price, currency, tags, cover_image_url')
       .order('starts_at', { ascending: true })
       .limit(50),
     supabase.from('event_categories').select('id, display_name').order('display_name'),
-    supabase.from('tags').select('id, name, type_id').order('name'),
+    supabase.from('tags').select('id, name, type_id, is_official').order('name'),
     supabase.from('category_tags').select('*')
   ]);
 
