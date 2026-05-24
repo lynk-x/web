@@ -22,6 +22,7 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
         if (pathname.startsWith('/dashboard/admin')) setCurrentMode('admin');
         else if (pathname.startsWith('/dashboard/ads')) setCurrentMode('ads');
         else if (pathname.startsWith('/dashboard/pulse')) setCurrentMode('pulse');
+        else if (pathname.startsWith('/dashboard/system')) setCurrentMode('system');
         else setCurrentMode('events');
     }, [pathname]);
 
@@ -90,7 +91,8 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                             .filter(a => a.type !== 'attendee')
                             .filter(a => {
                                 if (filterMode === 'ads') return a.type === 'advertiser';
-                                if (filterMode === 'events') return a.type === 'organizer' || a.type === 'platform';
+                                if (filterMode === 'system') return a.type === 'platform' || a.type === 'system';
+                                if (filterMode === 'events') return a.type === 'organizer' || a.type === 'platform' || a.type === 'system';
                                 return true; // Show all for admin or others
                             })
                             .map((account) => (
@@ -102,6 +104,8 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                     setIsOpen(false);
                                     // Ensure we go to the correct root if switching types
                                     if (account.type === 'advertiser') router.push('/dashboard/ads');
+                                    else if (filterMode === 'system' && (account.type === 'platform' || account.type === 'system')) router.push('/dashboard/system');
+                                    else if (account.type === 'system') router.push('/dashboard/system');
                                     else if (account.type === 'organizer' || account.type === 'platform') router.push('/dashboard/organize');
                                 }}
                             >

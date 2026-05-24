@@ -29,7 +29,7 @@ export interface Account {
     /** Extracted from accounts.media->>'logo' */
     logoUrl?: string;
     role: 'owner' | 'admin' | 'accountant' | 'editor' | 'staff' | 'reviewer' | 'moderator' | 'support_agent' | string;
-    type: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'pulse_user';
+    type: 'attendee' | 'organizer' | 'advertiser' | 'pulse_user' | 'platform' | 'system';
     wallet_balance?: number;
     wallet_currency?: string;
     payout_routing?: {

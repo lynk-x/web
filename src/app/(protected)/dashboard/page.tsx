@@ -116,10 +116,12 @@ function DashboardRoot() {
 
                                 <div className={styles.cardFooter}>
                                     <div className={styles.typeIcon} style={{
-                                        color: acc.type === 'platform' ? '#818cf8' : acc.type === 'pulse_user' ? '#22d3ee' : acc.type === 'advertiser' ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)',
-                                        background: acc.type === 'platform' ? 'rgba(129, 140, 248, 0.1)' : acc.type === 'pulse_user' ? 'rgba(34, 211, 238, 0.1)' : acc.type === 'advertiser' ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)'
+                                        color: acc.type === 'system' ? '#f43f5e' : acc.type === 'platform' ? '#818cf8' : acc.type === 'pulse_user' ? '#22d3ee' : acc.type === 'advertiser' ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)',
+                                        background: acc.type === 'system' ? 'rgba(244, 63, 94, 0.1)' : acc.type === 'platform' ? 'rgba(129, 140, 248, 0.1)' : acc.type === 'pulse_user' ? 'rgba(34, 211, 238, 0.1)' : acc.type === 'advertiser' ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)'
                                     }}>
-                                        {acc.type === 'platform' ? (
+                                        {acc.type === 'system' ? (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                        ) : acc.type === 'platform' ? (
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                                         ) : acc.type === 'pulse_user' ? (
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>

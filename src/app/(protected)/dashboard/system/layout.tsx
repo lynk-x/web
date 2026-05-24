@@ -4,7 +4,7 @@
  * System Admin Layout Guard
  * 
  * Protects ALL pages under /dashboard/system/* by enforcing two constraints:
- *   1. Active account type must be 'platform'.
+ *   1. Active account type must be 'platform' or 'system'.
  *   2. The user's membership scope must have allowed_country_code as NULL/undefined
  *      (indicating Global Admin authorization).
  * 
@@ -25,8 +25,8 @@ export default function SystemAdminLayout({ children }: { children: React.ReactN
     useEffect(() => {
         if (isLoading) return;
 
-        // Ensure user belongs to a platform account
-        if (activeAccount?.type !== 'platform') {
+        // Ensure user belongs to a platform or system account
+        if (activeAccount?.type !== 'platform' && activeAccount?.type !== 'system') {
             router.replace('/dashboard');
             return;
         }
@@ -50,7 +50,7 @@ export default function SystemAdminLayout({ children }: { children: React.ReactN
     }
 
     return (
-        <AccountGuard allowedTypes={['platform']}>
+        <AccountGuard allowedTypes={['platform', 'system']}>
             {children}
         </AccountGuard>
     );

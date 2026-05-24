@@ -27,7 +27,7 @@ export interface AccountSearchInputProps {
     countryCode?: string | null;
 }
 
-const ACCOUNT_TYPES: string[] = ['organizer', 'advertiser', 'platform', 'pulse_user'];
+const ACCOUNT_TYPES: string[] = ['organizer', 'advertiser', 'platform', 'pulse_user', 'system'];
 
 function buildLabel(a: AccountOption): string {
     const ref = a.reference || a.id.slice(0, 8).toUpperCase();

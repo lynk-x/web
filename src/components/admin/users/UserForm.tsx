@@ -14,7 +14,7 @@ export interface UserFormData {
     id?: string;
     name: string;
     email: string;
-    role: 'attendee' | 'organizer' | 'advertiser' | 'platform';
+    role: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'system';
     status: 'active' | 'temporarily_suspended' | 'permanently_suspended';
     countryCode: string;
     kycTier: 'tier_1_basic' | 'tier_2_verified' | 'tier_3_advanced';
@@ -260,10 +260,11 @@ export default function UserForm({
                             onChange={handleInputChange}
                             required
                         >
-                            <option value="attendee">Platform Attendee</option>
-                            <option value="organizer">Verified Organizer</option>
-                            <option value="advertiser">Ad Partner</option>
+                            <option value="attendee">Attendee</option>
+                            <option value="organizer">Organizer</option>
+                            <option value="advertiser">Advertiser</option>
                             <option value="platform">Platform Admin</option>
+                            <option value="system">System Admin</option>
                         </select>
                     </div>
 
