@@ -1,5 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Email Verification',
+};
 
 export default async function VerifySuccessPage(
   props: {

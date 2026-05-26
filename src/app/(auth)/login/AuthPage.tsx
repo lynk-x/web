@@ -217,25 +217,6 @@ export default function AuthPage() {
                 Continue with Google
             </button>
 
-            <button
-                type="button"
-                className={styles.socialBtn}
-                onClick={async () => {
-                    const supabase = createClient();
-                    await supabase.auth.signInWithOAuth({
-                        provider: 'apple',
-                        options: {
-                            redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
-                        },
-                    });
-                }}
-            >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.127 3.675-.552 9.12 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.99 3.96-.99 1.832 0 2.383.99 3.96.96 1.637-.033 2.626-1.423 3.622-2.879 1.139-1.636 1.606-3.22 1.619-3.32-.035-.013-3.13-1.203-3.163-4.757-.034-2.95 2.418-4.359 2.522-4.453-.137-.367-1.125-3.83-4.225-3.868-1.748.06-2.583 1.04-3.24 1.04-.64 0-1.228-1.04-2.45-1.04zM16.14 3.755c.806-1.002 1.34-2.396 1.196-3.793-1.157.062-2.553.805-3.376 1.77-.732.846-1.372 2.215-1.201 3.528 1.286.099 2.602-.65 3.38-1.505z" fill="white" />
-                </svg>
-                Continue with Apple
-            </button>
-
             {isLoginDetail && (
                 <div className={styles.forgotPassword}>
                     <Link href="/forgot-password" className={styles.forgotPasswordLink}>Forgot Password?</Link>

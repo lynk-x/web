@@ -10,6 +10,11 @@ import MobileNudge from '@/components/dashboard/MobileNudge';
 import InactivityGuard from '@/components/dashboard/InactivityGuard';
 import '@/theme/dashboard.css';
 import styles from './layout.module.css';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Workspaces',
+};
 
 export default function DashboardLayout({
     children,

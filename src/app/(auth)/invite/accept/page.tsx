@@ -1,5 +1,10 @@
 import React from "react";
 import AcceptInviteClient from "./AcceptInviteClient";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: 'Accept Invitation',
+};
 
 export default async function AcceptInvitePage({
     searchParams,

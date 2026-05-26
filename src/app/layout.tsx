@@ -20,7 +20,10 @@ const interTight = Inter_Tight({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://lynk-x.app'),
-  title: "Lynk-X | Event Interactions",
+  title: {
+    template: 'Lynk-X | %s',
+    default: 'Lynk-X | The Ultimate Event App',
+  },
   description: "Experience the ultimate event app designed for seamless event interactions.",
   icons: {
     icon: "/lynk-x_logo.svg",
