@@ -60,7 +60,7 @@ const HeroSection: React.FC<HeroProps> = ({ featuredEvents }) => {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <span className={styles.tag}>Pulsing Now</span>
+                        <span className={styles.tag}>Trending</span>
                         <h1 className={styles.title}>{currentEvent.title}</h1>
                         <p className={styles.description}>
                             {currentEvent.description || "Join us for an unforgettable experience."}

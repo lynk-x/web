@@ -59,8 +59,6 @@ const CheckoutView: React.FC = () => {
     } | null>(null);
     const [promoError, setPromoError] = useState('');
     const [promoLoading, setPromoLoading] = useState(false);
-    const [userBalances, setUserBalances] = useState<{ cash: number; credit: number } | null>(null);
-    const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
     // Derived totals
     const subtotal = getCartTotal();
@@ -68,8 +66,6 @@ const CheckoutView: React.FC = () => {
     const discountAmount = appliedPromo?.discount || 0;
     // Total is subtotal + fee - discount. If free entry, ensure it hits zero.
     const total = Math.max(0, (subtotal + commissionAmount) - discountAmount);
-
-    const residualAmount = Math.max(0, total - (userBalances?.credit || 0) - (userBalances?.cash || 0));
 
     const currency = items[0]?.currency || 'KES';
 
@@ -121,20 +117,6 @@ const CheckoutView: React.FC = () => {
                     setPaymentMethod(hasMpesa ? 'mpesa' : providers[0].provider_name);
                 }
 
-                // 4. Fetch user balances for waterfall preview
-                if (user && !user.is_anonymous) {
-                    setIsBalanceLoading(true);
-                    const { data: balances } = await supabase.rpc('get_my_wallet_balances', {
-                        p_currency: currency
-                    });
-                    if (balances && balances.length > 0) {
-                        setUserBalances({
-                            cash: Number(balances[0].cash_balance) || 0,
-                            credit: Number(balances[0].credit_balance) || 0
-                        });
-                    }
-                    setIsBalanceLoading(false);
-                }
             } catch (err) {
                 console.error('Checkout init error:', err);
             } finally {
@@ -531,40 +513,9 @@ const CheckoutView: React.FC = () => {
                                     )}
 
                                     <div className={styles.total}>
-                                        <span>Subtotal</span>
+                                        <span>Total</span>
                                         <span>{currency} {total.toLocaleString()}</span>
                                     </div>
-
-                                    {/* ── Waterfall Application Preview ── */}
-                                    {userBalances && (userBalances.cash > 0 || userBalances.credit > 0) && (
-                                        <div className={styles.waterfallContainer}>
-                                            <div className={styles.waterfallHeader}>
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                                    <path d="M12 2v20m0-20l-7 7m7-7l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                                <span>Wallet Coverage Applied</span>
-                                            </div>
-                                            
-                                            {userBalances.credit > 0 && (
-                                                <div className={styles.waterfallItem}>
-                                                    <span>Wallet Credit</span>
-                                                    <span>-{currency} {Math.min(userBalances.credit, total).toLocaleString()}</span>
-                                                </div>
-                                            )}
-
-                                            {userBalances.cash > 0 && Math.max(0, total - userBalances.credit) > 0 && (
-                                                <div className={styles.waterfallItem}>
-                                                    <span>Cash Balance Applied</span>
-                                                    <span>-{currency} {Math.min(userBalances.cash, Math.max(0, total - userBalances.credit)).toLocaleString()}</span>
-                                                </div>
-                                            )}
-
-                                            <div className={styles.residualTotal}>
-                                                <span>Amount to Pay</span>
-                                                <span>{currency} {residualAmount.toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             )}
                         </section>
@@ -686,9 +637,9 @@ const CheckoutView: React.FC = () => {
                                     disabled={isSubmitting || items.length === 0}
                                 >
                                     {isSubmitting ? 'Processing…' : (
-                                        residualAmount === 0 
+                                        total === 0 
                                             ? 'Confirm Reservation' 
-                                            : `Confirm & Pay ${currency} ${residualAmount.toLocaleString()}`
+                                            : `Confirm & Pay ${currency} ${total.toLocaleString()}`
                                     )}
                                 </button>
                             )}
