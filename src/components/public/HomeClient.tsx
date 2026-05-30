@@ -10,6 +10,8 @@ import LynkXFooter from "./LynkXFooter";
 import { useFilters } from '@/context/FilterContext';
 import { createClient } from '@/utils/supabase/client';
 
+
+
 interface HomeClientProps {
     carouselEvents: Event[];
     allEvents: Event[];
@@ -63,7 +65,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 const { data, error } = await supabase.rpc('search_events', params);
                 if (error) throw error;
 
-                const mapped: Event[] = (data ?? []).map((r: any) => ({
+                let mapped: Event[] = (data ?? []).map((r: any) => ({
                     id: r.id,
                     title: r.title,
                     description: r.description,
@@ -79,6 +81,8 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                     reference: r.reference,
                     // distance_km available for future "X km away" badge
                 }));
+
+
 
                 // If multiple categories selected, client-filter the RPC results
                 const filtered = selectedCategories.length > 1
@@ -97,8 +101,19 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, selectedCategories, userLocation]);
 
+    const finalCarouselEvents = React.useMemo(() => {
+        const unique = carouselEvents.filter((event, index, self) =>
+            self.findIndex(e => e.id === event.id || e.reference === event.reference) === index
+        );
+        return unique;
+    }, [carouselEvents]);
+
+    const finalGridEvents = React.useMemo(() => {
+        return allEvents;
+    }, [allEvents]);
+
     // When RPC is not active, apply local filters over pre-fetched events
-    const locallyFiltered = allEvents.filter(event => {
+    const locallyFiltered = finalGridEvents.filter(event => {
         if (selectedCategories.length > 0) {
             if (!event.category || !selectedCategories.includes(event.category)) return false;
         }
@@ -119,23 +134,42 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
         return true;
     });
 
-    // Apply date/tag filters on top of RPC results too
-    const displayEvents = isRpcActive
-        ? (rpcEvents ?? []).filter(event => {
-            if (selectedTags.length > 0) {
-                if (!event.tags || !selectedTags.some(tag => event.tags?.includes(tag))) return false;
-            }
-            if (selectedDates.length > 0 && event.start_datetime) {
-                const eventDate = new Date(event.start_datetime);
-                return selectedDates.some(d =>
-                    d.getDate() === eventDate.getDate() &&
-                    d.getMonth() === eventDate.getMonth() &&
-                    d.getFullYear() === eventDate.getFullYear()
+    // Apply search/tags/dates filters dynamically
+    const displayEvents = React.useMemo(() => {
+        if (isRpcActive) {
+            let base = rpcEvents;
+            if (base === null) {
+                // Client-side search fallback over all grid and carousel events when RPC fails/empty
+                const searchLower = searchTerm.toLowerCase();
+                base = [
+                    ...finalGridEvents,
+                    ...finalCarouselEvents
+                ].filter(e =>
+                    e.title.toLowerCase().includes(searchLower) ||
+                    e.description?.toLowerCase().includes(searchLower) ||
+                    e.category?.toLowerCase().includes(searchLower)
                 );
             }
-            return true;
-          })
-        : locallyFiltered;
+
+
+
+            return base.filter(event => {
+                if (selectedTags.length > 0) {
+                    if (!event.tags || !selectedTags.some(tag => event.tags?.includes(tag))) return false;
+                }
+                if (selectedDates.length > 0 && event.start_datetime) {
+                    const eventDate = new Date(event.start_datetime);
+                    return selectedDates.some(d =>
+                        d.getDate() === eventDate.getDate() &&
+                        d.getMonth() === eventDate.getMonth() &&
+                        d.getFullYear() === eventDate.getFullYear()
+                    );
+                }
+                return true;
+            });
+        }
+        return locallyFiltered;
+    }, [isRpcActive, rpcEvents, searchTerm, finalGridEvents, finalCarouselEvents, locallyFiltered, selectedTags, selectedDates]);
 
     return (
         <>
@@ -149,8 +183,8 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 />
             </div>
 
-            <div className={`${styles.heroWrapper} ${(isSearchFocused || hasActiveFilters) ? styles.heroHidden : ''}`}>
-                <HeroSection featuredEvents={carouselEvents} />
+            <div className={styles.heroWrapper}>
+                <HeroSection featuredEvents={finalCarouselEvents} />
             </div>
 
             <div className={styles.container}>

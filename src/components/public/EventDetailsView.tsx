@@ -64,7 +64,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const handleAcceptDisclaimer = () => {
         setIsDisclaimerOpen(false);
 
-        const eventImage = (event as any).cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.poster || (event.media as any)?.hero;
+        const eventImage = (event as any).cover_image_url || (event.media as any)?.cover_image_url || (event.media as any)?.thumbnail_url || (event.media as any)?.thumbnail || (event.media as any)?.poster || (event.media as any)?.hero;
         const selectedTier = ticketTiers.find(t => t.id === selectedTicket);
 
         if (selectedTier) {
@@ -205,9 +205,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                     transition={{ delay: 0.2, duration: 0.5 }}
                 >
                     <div className={styles.hero}>
-                        {((event as any).cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.poster) ? (
+                        {((event as any).cover_image_url || (event.media as any)?.cover_image_url || (event.media as any)?.thumbnail_url || (event.media as any)?.thumbnail || (event.media as any)?.poster) ? (
                             <img 
-                                src={(event as any).cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.poster} 
+                                src={(event as any).cover_image_url || (event.media as any)?.cover_image_url || (event.media as any)?.thumbnail_url || (event.media as any)?.thumbnail || (event.media as any)?.poster} 
                                 alt={event.title} 
                                 className={styles.heroImage} 
                             />
@@ -372,6 +372,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             transition={{ delay: 0.5 }}
                         >
                             <button
+                                id="buy-tickets-btn"
                                 onClick={handleGetTicketClick}
                                 className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
                             >

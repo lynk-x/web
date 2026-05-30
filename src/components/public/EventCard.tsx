@@ -29,7 +29,7 @@ interface EventCardProps {
  */
 const EventCard: React.FC<EventCardProps> = ({ id, reference, name, date, category, isActive, price, image }) => {
     return (
-        <div className={`${styles.card} ${isActive ? styles.active : ''}`}>
+        <div className={`event-card ${styles.card} ${isActive ? styles.active : ''}`} data-title={reference}>
             <div className={styles.imagePlaceholder}>
                 {image ? (
                     <img src={image} alt={name} className={styles.coverImage} />

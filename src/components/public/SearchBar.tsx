@@ -58,6 +58,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFocus, onBlur, categories, tags
 
 
             <input
+                id="search-bar"
                 type="text"
                 placeholder="Search for an event"
                 className={styles.input}

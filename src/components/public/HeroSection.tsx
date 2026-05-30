@@ -15,12 +15,13 @@ const HeroSection: React.FC<HeroProps> = ({ featuredEvents }) => {
 
     // Auto-play
     useEffect(() => {
+        if (!featuredEvents || featuredEvents.length <= 1) return;
         const timer = setInterval(() => {
             nextSlide();
         }, 6000); // 6 seconds per slide
 
         return () => clearInterval(timer);
-    }, [currentIndex]);
+    }, [currentIndex, featuredEvents]);
 
     const nextSlide = () => {
         setCurrentIndex((prev) => (prev + 1) % featuredEvents.length);
@@ -69,26 +70,25 @@ const HeroSection: React.FC<HeroProps> = ({ featuredEvents }) => {
                             <Link href={`/event/${currentEvent.reference}`} className={styles.primaryBtn}>
                                 Get Tickets
                             </Link>
-                            <button className={styles.secondaryBtn}>
-                                More Info
-                            </button>
                         </div>
                     </motion.div>
                 </AnimatePresence>
             </div>
 
             {/* Navigation Controls */}
-            <div className={styles.controls}>
-                <div className={styles.dots}>
-                    {featuredEvents.map((_, index) => (
-                        <div
-                            key={index}
-                            className={`${styles.dot} ${index === currentIndex ? styles.activeDot : ''}`}
-                            onClick={() => setCurrentIndex(index)}
-                        />
-                    ))}
+            {featuredEvents.length > 1 && (
+                <div className={styles.controls}>
+                    <div className={styles.dots}>
+                        {featuredEvents.map((_, index) => (
+                            <div
+                                key={index}
+                                className={`${styles.dot} ${index === currentIndex ? styles.activeDot : ''}`}
+                                onClick={() => setCurrentIndex(index)}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
