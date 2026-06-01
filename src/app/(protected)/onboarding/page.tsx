@@ -235,26 +235,6 @@ function OnboardingFlow() {
                     </p>
                 </div>
 
-                {/* Account type toggle — only shown when no type was passed via URL */}
-                {!typeParam && (
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
-                        <button
-                            onClick={() => setAccountType('organizer')}
-                            className={styles.backBtn}
-                            style={!isAdvertiser ? { borderColor: accentColor, color: accentColor } : {}}
-                        >
-                            Event Organizer
-                        </button>
-                        <button
-                            onClick={() => setAccountType('advertiser')}
-                            className={styles.backBtn}
-                            style={isAdvertiser ? { borderColor: accentColor, color: accentColor } : {}}
-                        >
-                            Advertiser
-                        </button>
-                    </div>
-                )}
-
                 <div className={styles.stepIndicator}>
                     <div className={`${styles.stepDot} ${step === 'DETAILS' ? styles.stepDotActive : ''}`} />
                     <div className={`${styles.stepDot} ${step === 'VERIFICATION' ? styles.stepDotActive : ''}`} />
