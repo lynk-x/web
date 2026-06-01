@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useAuth } from '@/context/AuthContext';
 import { sanitizeInput } from '@/utils/sanitization';
 import styles from './onboarding.module.css';
 import { useCountries } from '@/hooks/useCountries';
@@ -24,7 +25,8 @@ function OnboardingFlow() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const supabase = createClient();
-    const { refreshAccounts } = useOrganization();
+    const { refreshAccounts, accounts: existingAccounts } = useOrganization();
+    const { profile, isLoading: isLoadingAuth } = useAuth();
     const { countries, isLoading: isLoadingCountries } = useCountries();
 
     // ?type=organizer|advertiser  ?create=true (adding a new workspace)
@@ -37,7 +39,7 @@ function OnboardingFlow() {
     // Form state
     const [orgName, setOrgName] = useState('');
     const [orgDesc, setOrgDesc] = useState('');
-    const [country, setCountry] = useState('KE');
+    const [country, setCountry] = useState('');
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -46,17 +48,22 @@ function OnboardingFlow() {
     // KYC state
     const [kycRequirements, setKycRequirements] = useState<KycRequirement[]>([]);
     const [kycFiles, setKycFiles] = useState<Record<string, { file: File; preview: string }[]>>({});
+    const [kycTextData, setKycTextData] = useState<Record<string, string>>({});
     const [skipping, setSkipping] = useState(false);
     const kycFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     // Redirect logged-in users who already have an account of this type,
     // unless they are explicitly creating a new one.
     useEffect(() => {
-        if (isCreatingNew) return;
-        // No redirect here — the dashboard page handles the "already has account" redirect.
-        // Onboarding is now publicly accessible; users who aren't logged in will hit the
-        // auth check inside handleCreateOrganization.
-    }, [isCreatingNew]);
+        if (isLoadingAuth || isCreatingNew) return;
+        
+        // If they already have an account of this type, redirect to its dashboard
+        const existingAccount = existingAccounts.find(a => a.type === accountType);
+        if (existingAccount) {
+            const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
+            router.push(`/${dashType}/${existingAccount.slug || existingAccount.id}/dashboard`);
+        }
+    }, [isCreatingNew, existingAccounts, accountType, router, isLoadingAuth]);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -109,9 +116,9 @@ function OnboardingFlow() {
     const handleCreateOrganization = async (e?: React.FormEvent | null, isSkipAction = false) => {
         if (e) e.preventDefault();
 
-        // Ensure the user is authenticated before creating an account
+        // Ensure the user is authenticated and profile is loaded
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!user || !profile) {
             router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
@@ -143,33 +150,45 @@ function OnboardingFlow() {
                 if (updateError) console.error('Branding update failed (non-fatal):', updateError);
             }
 
-            // Upload KYC documents for each requirement
+            // Upload KYC documents and text for each requirement
             for (const req of kycRequirements) {
-                const files = kycFiles[req.id];
-                if (!files || files.length === 0) continue;
+                if (req.type === 'file') {
+                    const files = kycFiles[req.id];
+                    if (!files || files.length === 0) continue;
 
-                const uploadedPaths: string[] = [];
-                for (const item of files) {
-                    const fileExt = item.file.name.split('.').pop();
-                    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                    const { error: uploadError } = await supabase.storage
-                        .from('accounts')
-                        .upload(`${accountId}/kyc/${req.id}/${fileName}`, item.file);
-                    
-                    if (!uploadError) {
-                        const { data: { publicUrl } } = supabase.storage
+                    const uploadedPaths: string[] = [];
+                    for (const item of files) {
+                        const fileExt = item.file.name.split('.').pop();
+                        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                        const { error: uploadError } = await supabase.storage
                             .from('accounts')
-                            .getPublicUrl(`${accountId}/kyc/${req.id}/${fileName}`);
-                        uploadedPaths.push(publicUrl);
+                            .upload(`${accountId}/kyc/${req.id}/${fileName}`, item.file);
+                        
+                        if (!uploadError) {
+                            const { data: { publicUrl } } = supabase.storage
+                                .from('accounts')
+                                .getPublicUrl(`${accountId}/kyc/${req.id}/${fileName}`);
+                            uploadedPaths.push(publicUrl);
+                        }
                     }
-                }
 
-                if (uploadedPaths.length > 0) {
+                    if (uploadedPaths.length > 0) {
+                        await supabase.rpc('submit_identity_verification', {
+                            p_account_id: accountId,
+                            p_document_type: (req.subtype || req.id) as any, // Cast to kyc_document_type
+                            p_uploaded_docs: uploadedPaths,
+                            p_pii_data: { requirement_id: req.id }
+                        });
+                    }
+                } else if (req.type === 'text') {
+                    const textValue = kycTextData[req.id];
+                    if (!textValue || textValue.trim() === '') continue;
+
                     await supabase.rpc('submit_identity_verification', {
                         p_account_id: accountId,
-                        p_document_type: (req.subtype || req.id) as any, // Cast to kyc_document_type
-                        p_uploaded_docs: uploadedPaths,
-                        p_pii_data: { requirement_id: req.id }
+                        p_document_type: (req.subtype || req.id) as any,
+                        p_uploaded_docs: [],
+                        p_pii_data: { requirement_id: req.id, value: textValue.trim() }
                     });
                 }
             }
@@ -180,7 +199,11 @@ function OnboardingFlow() {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 memberships = await refreshAccounts();
             }
-            if (accountId) localStorage.setItem('lynks_active_account_id', accountId);
+            if (accountId) {
+                localStorage.setItem('lynks_active_account_id', accountId);
+                // Explicitly set the active account in the user's profile database record
+                await supabase.from('user_profile').update({ active_account_id: accountId }).eq('id', user.id);
+            }
 
             const newAccount = memberships.find((m: any) => m.id === accountId);
             const accountRef = newAccount?.slug || accountId;
@@ -373,6 +396,8 @@ function OnboardingFlow() {
                                                 className={styles.input} 
                                                 placeholder={`Enter ${req.label.toLowerCase()}...`}
                                                 required={req.mandatory}
+                                                value={kycTextData[req.id] || ''}
+                                                onChange={(e) => setKycTextData(prev => ({ ...prev, [req.id]: e.target.value }))}
                                             />
                                         )}
                                     </div>
@@ -386,7 +411,10 @@ function OnboardingFlow() {
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
-                                    disabled={loading || (kycRequirements.some(r => r.mandatory && (!kycFiles[r.id] || kycFiles[r.id].length === 0)))}
+                                    disabled={loading || (kycRequirements.some(r => r.mandatory && (
+                                        (r.type === 'file' && (!kycFiles[r.id] || kycFiles[r.id].length === 0)) ||
+                                        (r.type === 'text' && (!kycTextData[r.id] || kycTextData[r.id].trim() === ''))
+                                    )))}
                                     style={{ background: accentColor }}
                                 >
                                     {loading ? 'Processing...' : 'Complete & Launch'}
