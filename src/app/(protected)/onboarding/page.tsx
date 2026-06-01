@@ -116,9 +116,9 @@ function OnboardingFlow() {
     const handleCreateOrganization = async (e?: React.FormEvent | null, isSkipAction = false) => {
         if (e) e.preventDefault();
 
-        // Ensure the user is authenticated and profile is loaded
+        // Ensure the user is authenticated
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user || !profile) {
+        if (!user) {
             router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
