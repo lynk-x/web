@@ -38,7 +38,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
             // actually, just let them accept it straight via RPC or we can get basic info if we join
             const { data, error: fetchErr } = await supabase
                 .from("account_invitations")
-                .select("id, account_id, invitee_email, role_slug, accepted_at, expires_at, accounts!account_invitations_account_id_fkey(display_name, slug), inviter:invited_by(full_name, user_name)")
+                .select("id, account_id, invitee_email, role_slug, accepted_at, expires_at, accounts!account_id(display_name, slug), inviter:invited_by(full_name, user_name)")
                 .eq("token", token)
                 .single();
 
