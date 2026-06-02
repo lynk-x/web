@@ -65,6 +65,17 @@ function OnboardingFlow() {
         }
     }, [isCreatingNew, existingAccounts, accountType, router, isLoadingAuth]);
 
+    // Automatically select the first country in the list once they finish loading
+    useEffect(() => {
+        if (!isLoadingCountries && !country) {
+            if (countries.length > 0) {
+                setCountry(countries[0].code);
+            } else {
+                setCountry('');
+            }
+        }
+    }, [isLoadingCountries, countries, country]);
+
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -135,6 +146,7 @@ function OnboardingFlow() {
             const { data: accountId, error: rpcError } = await supabase.rpc('create_organization_account', {
                 p_org_name: cleanName,
                 p_account_type: accountType,
+                p_country_code: country || null,
             });
             if (rpcError) throw rpcError;
 

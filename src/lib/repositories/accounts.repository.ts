@@ -257,11 +257,13 @@ export function createAccountsRepository(client: DbClient) {
             orgName: string;
             contactEmail?: string;
             accountType?: 'organizer' | 'advertiser';
+            countryCode?: string;
         }): Promise<RepoResult<{ account_id: string }>> {
             const { data, error } = await client.rpc('create_organization_account', {
                 p_org_name: params.orgName,
                 p_contact_email: params.contactEmail ?? null,
                 p_account_type: params.accountType ?? 'organizer',
+                p_country_code: params.countryCode ?? null,
             });
 
             if (error) return { data: null, error: toError(error) };
