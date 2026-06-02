@@ -34,7 +34,7 @@ function DashboardRoot() {
                     : '/dashboard/organize';
 
         if (!isProfileComplete) {
-            router.push(`/setup-profile?next=${encodeURIComponent(path)}&accountRef=${account.id}`);
+            router.push('/setup-profile');
         } else {
             router.push(path);
         }

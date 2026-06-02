@@ -5,14 +5,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
-import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import styles from './setup.module.css';
 
 export default function ProfileSetupPage() {
     const router = useRouter();
     const { user, profile, isLoading: isLoadingAuth, isLoadingProfile } = useAuth();
-    const { setActiveAccountId } = useOrganization();
+
     const supabase = createClient();
 
     const [fullName, setFullName] = useState(profile?.full_name || '');

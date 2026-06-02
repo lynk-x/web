@@ -70,8 +70,7 @@ export function useAccountTypeGuard(allowedTypes: AccountType[]): GuardResult {
 
         // 2. Check profile completeness (single source of truth from AuthContext)
         if (!isProfileComplete) {
-            const type = allowedTypes.includes('advertiser') ? 'ads' : 'organize';
-            router.replace(`/setup-profile?type=${type}`);
+            router.replace('/setup-profile');
             setIsAuthorized(false);
             setIsChecking(false);
             return;

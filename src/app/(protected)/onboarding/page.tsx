@@ -208,9 +208,9 @@ function OnboardingFlow() {
             const newAccount = memberships.find((m: any) => m.id === accountId);
             const accountRef = newAccount?.slug || accountId;
 
-            // Redirect to user profile setup, then dashboard
+            // Redirect to the dashboard for the new account type
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
-            window.location.href = `/setup-profile?type=${dashType}&accountRef=${accountRef}`;
+            window.location.href = `/dashboard/${dashType}`;
         } catch (err: unknown) {
             console.error('Error creating organization:', err);
             setError(getErrorMessage(err) || 'Failed to create organization. Please try again.');

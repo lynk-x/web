@@ -96,18 +96,18 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                     // Sync localStorage setting to DB
                     if (dbActiveId !== savedId) {
                         const usersRepo = createUsersRepository(supabase);
-                        usersRepo.setActiveAccount(savedId);
+                        usersRepo.setActiveAccount(savedId).catch(() => {});
                     }
                 } else if (primaryAccount) {
                     setStoredActiveAccountId(primaryAccount.id);
                     localStorage.setItem('lynks_active_account_id', primaryAccount.id);
                     const usersRepo = createUsersRepository(supabase);
-                    usersRepo.setActiveAccount(primaryAccount.id);
+                    usersRepo.setActiveAccount(primaryAccount.id).catch(() => {});
                 } else {
                     setStoredActiveAccountId(fallbackAccounts[0].id);
                     localStorage.setItem('lynks_active_account_id', fallbackAccounts[0].id);
                     const usersRepo = createUsersRepository(supabase);
-                    usersRepo.setActiveAccount(fallbackAccounts[0].id);
+                    usersRepo.setActiveAccount(fallbackAccounts[0].id).catch(() => {});
                 }
                 return memberships;
             } else {
