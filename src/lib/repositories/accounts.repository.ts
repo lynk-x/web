@@ -91,7 +91,7 @@ export function createAccountsRepository(client: DbClient) {
                 .select(`
                     role_slug,
                     is_primary,
-                    accounts:account_id (
+                    accounts!account_members_account_id_fkey (
                         id,
                         slug,
                         display_name,
