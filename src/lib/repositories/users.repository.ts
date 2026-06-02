@@ -81,7 +81,7 @@ export function createUsersRepository(client: DbClient) {
             info?: Record<string, any>;
             countryCode?: string;
         }): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('update_my_profile', {
+            const { error } = await client.rpc('update_profile', {
                 p_full_name: params.fullName ?? null,
                 p_avatar_url: params.avatarUrl ?? null,
                 p_info: params.info ?? null,
