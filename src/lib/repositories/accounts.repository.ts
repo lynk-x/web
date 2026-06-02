@@ -86,48 +86,59 @@ export function createAccountsRepository(client: DbClient) {
          * Used by OrganizationContext on mount.
          */
         async getMembershipsForUser(userId: string): Promise<RepoResult<AccountMembership[]>> {
-            const { data, error } = await client
+            // 1. Fetch memberships first (direct query, no joins, bypasses PostgREST cache issues)
+            const { data: memberData, error: memberError } = await client
                 .from('account_members')
-                .select(`
-                    role_slug,
-                    is_primary,
-                    accounts!account_id (
-                        id,
-                        slug,
-                        display_name,
-                        type,
-                        media,
-                        payout_routing,
-                        country_code,
-                        countries:country_code (currency),
-                        account_wallets (currency, balance)
-                    )
-                `)
+                .select('account_id, role_slug, is_primary')
                 .eq('user_id', userId);
 
-            if (error) return { data: null, error: toError(error) };
+            if (memberError) return { data: null, error: toError(memberError) };
+            if (!memberData || memberData.length === 0) return { data: [], error: null };
 
-            const memberships: AccountMembership[] = (data ?? [])
-                .filter((member: any) => member.accounts != null)
+            const accountIds = memberData.map((m: any) => m.account_id);
+
+            // 2. Fetch detailed account data, wallets, and country information (direct FK relationships)
+            const { data: accountData, error: accountError } = await client
+                .from('accounts')
+                .select(`
+                    id,
+                    display_name,
+                    type,
+                    media,
+                    payout_routing,
+                    country_code,
+                    countries:country_code (currency),
+                    account_wallets (currency, balance)
+                `)
+                .in('id', accountIds);
+
+            if (accountError) return { data: null, error: toError(accountError) };
+
+            // 3. Map and merge the datasets in TypeScript
+            const accountMap = new Map((accountData ?? []).map((acc: any) => [acc.id, acc]));
+
+            const memberships: AccountMembership[] = memberData
+                .filter((member: any) => accountMap.has(member.account_id))
                 .map((member: any) => {
-                    const accountCurrency: string | undefined = member.accounts.countries?.currency;
-                    const wallets: { currency: string; balance: number }[] =
-                        member.accounts.account_wallets ?? [];
+                    const acc = accountMap.get(member.account_id)!;
+
+                    const accountCurrency: string | undefined = acc.countries?.currency;
+                    const wallets: { currency: string; balance: number }[] = acc.account_wallets ?? [];
                     const primaryWallet =
                         (accountCurrency ? wallets.find((w) => w.currency === accountCurrency) : undefined) ?? wallets[0];
 
                     return {
-                        id: member.accounts.id,
-                        slug: member.accounts.slug,
-                        name: member.accounts.display_name,
-                        logoUrl: (member.accounts.media as any)?.logo ?? undefined,
+                        id: acc.id,
+                        slug: acc.id,
+                        name: acc.display_name,
+                        logoUrl: (acc.media as any)?.logo ?? undefined,
                         role: member.role_slug,
-                        type: member.accounts.type,
+                        type: acc.type as 'attendee' | 'organizer' | 'advertiser' | 'platform',
                         currency: accountCurrency,
                         wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
                         wallet_currency: primaryWallet?.currency ?? accountCurrency ?? 'USD',
-                        payout_routing: member.accounts.payout_routing ?? {},
-                        country_code: member.accounts.country_code,
+                        payout_routing: acc.payout_routing ?? {},
+                        country_code: acc.country_code,
                         isPrimary: member.is_primary,
                     };
                 })
