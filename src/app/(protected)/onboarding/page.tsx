@@ -202,7 +202,7 @@ function OnboardingFlow() {
             if (accountId) {
                 localStorage.setItem('lynks_active_account_id', accountId);
                 // Explicitly set the active account in the user's profile database record
-                await supabase.from('user_profile').update({ active_account_id: accountId }).eq('id', user.id);
+                // await supabase.from('user_profile').update({ active_account_id: accountId }).eq('id', user.id);
             }
 
             const newAccount = memberships.find((m: any) => m.id === accountId);

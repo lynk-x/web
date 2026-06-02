@@ -26,7 +26,7 @@ export function createUsersRepository(client: DbClient) {
         async getProfile(userId: string): Promise<RepoResult<UserProfile | null>> {
             const { data, error } = await client
                 .from('user_profile')
-                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at, active_account_id')
+                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
                 .eq('id', userId)
                 .maybeSingle();
 
@@ -47,7 +47,7 @@ export function createUsersRepository(client: DbClient) {
 
             const { data, error } = await client
                 .from('user_profile')
-                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at, active_account_id')
+                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
                 .in('id', ids);
 
             if (error) return { data: null, error: toError(error) };

@@ -24,41 +24,16 @@ export default function ProfileSetupPage() {
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
-    const [accountType, setAccountType] = useState('organize');
-    const [accountRef, setAccountRef] = useState<string | null>(null);
-    const [nextUrl, setNextUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            setAccountType(params.get('type') || 'organize');
-            setAccountRef(params.get('accountRef') || params.get('accountId'));
-            setNextUrl(params.get('next'));
-        }
-    }, []);
 
     // Auto-redirect if profile is already complete
     useEffect(() => {
         if (!isLoadingAuth && !isLoadingProfile && !hasCheckedInitial) {
             if (profile && profile.full_name && profile.full_name.trim() !== '') {
-                if (accountRef) {
-                    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountRef)) {
-                        localStorage.setItem('lynks_active_account_id', accountRef);
-                    }
-                    setActiveAccountId(accountRef);
-                }
-                
-                if (nextUrl) {
-                    router.replace(nextUrl);
-                } else if (accountRef) {
-                    router.replace(`/dashboard/${accountType}`);
-                } else {
-                    router.replace('/dashboard');
-                }
+                router.replace('/dashboard');
             }
             setHasCheckedInitial(true);
         }
-    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router, accountType, accountRef, nextUrl, setActiveAccountId]);
+    }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router]);
 
     // Debounced username check
     useEffect(() => {
@@ -138,21 +113,8 @@ export default function ProfileSetupPage() {
 
             if (updateError) throw updateError;
             
-            if (accountRef) {
-                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountRef)) {
-                    localStorage.setItem('lynks_active_account_id', accountRef);
-                }
-                setActiveAccountId(accountRef);
-            }
-
-            // Success: Direct them to the workspace overview or next url
-            if (nextUrl) {
-                router.push(nextUrl);
-            } else if (accountRef) {
-                router.push(`/dashboard/${accountType}`);
-            } else {
-                router.push('/dashboard');
-            }
+            // Success: Direct them to the dashboard
+            router.push('/dashboard');
         } catch (err: unknown) {
             setError(getErrorMessage(err) || 'Failed to update profile.');
         } finally {
@@ -160,15 +122,12 @@ export default function ProfileSetupPage() {
         }
     };
 
-    const isAds = accountType === 'ads';
-    const displayRole = isAds ? 'Advertiser' : 'Organizer';
-
     return (
         <div className={styles.container}>
             <div className={styles.setupCard}>
                 <div className={styles.header}>
-                    <h1 className={styles.title}>Create Your {displayRole} Identity</h1>
-                    <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your public persona as {isAds ? 'an advertiser' : 'an organizer'} on the platform.</p>
+                    <h1 className={styles.title}>Complete Your Personal Profile</h1>
+                    <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your global identity across Lynk-X.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
