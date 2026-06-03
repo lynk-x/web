@@ -44,6 +44,7 @@ export default function OrganizerEventsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
     // ── fetchEvents ─────────────────────────────────────────────────────────
     const fetchEvents = useCallback(async () => {
@@ -183,6 +184,7 @@ export default function OrganizerEventsPage() {
 
     const handleBulkAction = (action: string) => {
         if (action === 'delete') {
+            setSingleDeleteId(null);
             setIsDeleteModalOpen(true);
         } else if (action === 'duplicate') {
             handleBulkDuplicate();
@@ -287,13 +289,14 @@ export default function OrganizerEventsPage() {
     };
 
     const confirmDelete = async () => {
-        if (!activeAccount || selectedIds.size === 0) return;
+        const idsToDelete = singleDeleteId ? new Set([singleDeleteId]) : selectedIds;
+        if (!activeAccount || idsToDelete.size === 0) return;
         showToast('Processing deletion...', 'info');
         try {
             // Group IDs by partition key (createdAt)
             const groups: Record<string, string[]> = {};
             events.forEach(e => {
-                if (selectedIds.has(e.id)) {
+                if (idsToDelete.has(e.id)) {
                     if (!groups[e.createdAt]) groups[e.createdAt] = [];
                     groups[e.createdAt].push(e.id);
                 }
@@ -309,13 +312,16 @@ export default function OrganizerEventsPage() {
                 if (error) throw error;
             }
 
-            showToast(`Successfully deleted ${selectedIds.size} events.`, 'success');
-            setSelectedIds(new Set());
+            showToast(`Successfully deleted ${idsToDelete.size} events.`, 'success');
+            if (!singleDeleteId) {
+                setSelectedIds(new Set());
+            }
             fetchEvents();
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to delete events.', 'error');
         } finally {
             setIsDeleteModalOpen(false);
+            setSingleDeleteId(null);
         }
     };
 
@@ -369,7 +375,7 @@ export default function OrganizerEventsPage() {
     };
 
     const handleDeleteSingle = (event: OrganizerEvent) => {
-        setSelectedIds(new Set([event.id]));
+        setSingleDeleteId(event.id);
         setIsDeleteModalOpen(true);
     };
 
@@ -443,10 +449,13 @@ export default function OrganizerEventsPage() {
             {/* Modals */}
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setSingleDeleteId(null);
+                }}
                 onConfirm={confirmDelete}
                 title="Delete Events?"
-                message={`Are you sure you want to delete ${selectedIds.size} selected event(s)? This action cannot be undone.`}
+                message={`Are you sure you want to delete ${singleDeleteId ? 1 : selectedIds.size} selected event(s)? This action cannot be undone.`}
                 confirmLabel="Delete"
                 variant="danger"
             />

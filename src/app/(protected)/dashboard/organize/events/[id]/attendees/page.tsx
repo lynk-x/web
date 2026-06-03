@@ -10,6 +10,7 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import AttendeeTable from '@/components/features/events/attendees/AttendeeTable';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
+import FilterChips from '@/components/shared/FilterChips';
 import type { Attendee } from '@/types/organize';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -128,17 +129,18 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <div className={adminStyles.filterGroup}>
-                    {['all', 'valid', 'used', 'cancelled', 'transferred', 'expired'].map(status => (
-                        <button
-                            key={status}
-                            className={`${adminStyles.chip} ${statusFilter === status ? adminStyles.chipActive : ''}`}
-                            onClick={() => setStatusFilter(status)}
-                        >
-                            {status === 'all' ? 'All' : status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
-                        </button>
-                    ))}
-                </div>
+                <FilterChips
+                    options={[
+                        { value: 'all', label: 'All' },
+                        { value: 'valid', label: 'Valid' },
+                        { value: 'used', label: 'Used' },
+                        { value: 'cancelled', label: 'Cancelled' },
+                        { value: 'transferred', label: 'Transferred' },
+                        { value: 'expired', label: 'Expired' }
+                    ]}
+                    currentValue={statusFilter}
+                    onChange={(val) => setStatusFilter(val)}
+                />
             </TableToolbar>
 
             <BulkActionsBar
