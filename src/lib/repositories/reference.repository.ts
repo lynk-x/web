@@ -108,9 +108,9 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch all active tags. Used by event form tag autocomplete. */
         async getTags(): Promise<RepoResult<Tag[]>> {
             const { data, error } = await client
-                .from('tags')
+                .schema('api' as any)
+                .from('v1_tags')
                 .select('id, name, type_id, use_count')
-                .eq('is_active', true)
                 .order('use_count', { ascending: false });
 
             if (error) return { data: null, error: toError(error) };
@@ -120,7 +120,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch all event categories ordered alphabetically. */
         async getEventCategories(): Promise<RepoResult<EventCategory[]>> {
             const { data, error } = await client
-                .from('event_categories')
+                .schema('api' as any)
+                .from('v1_event_categories')
                 .select('id, display_name')
                 .order('display_name', { ascending: true });
 

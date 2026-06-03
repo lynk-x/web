@@ -22,8 +22,8 @@ export default async function Home() {
       .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, is_featured, reference, low_price, currency, tags, cover_image_url')
       .order('starts_at', { ascending: true })
       .limit(50),
-    supabase.from('event_categories').select('id, display_name').order('display_name'),
-    supabase.from('tags').select('id, name, type_id, is_official').order('name'),
+    supabase.schema('api' as any).from('v1_event_categories').select('id, display_name').order('display_name'),
+    supabase.schema('api' as any).from('v1_tags').select('id, name, type_id').order('name'),
     supabase.from('category_tags').select('*')
   ]);
 

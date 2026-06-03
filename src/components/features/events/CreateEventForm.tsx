@@ -52,18 +52,18 @@ const CreateEventForm = () => {
         const fetchData = async () => {
             // Fetch tags
             const { data: tagData } = await supabase
-                .from('tags')
+                .schema('api' as any)
+                .from('v1_tags')
                 .select('id, name')
-                .eq('is_active', true)
                 .order('use_count', { ascending: false })
                 .limit(12);
             if (tagData) setTagSuggestions(tagData.map(t => t.name));
 
             // Fetch categories
             const { data: catData } = await supabase
-                .from('event_categories')
-                .select('id, display_name')
-                .eq('is_active', true);
+                .schema('api' as any)
+                .from('v1_event_categories')
+                .select('id, display_name');
             if (catData) {
                 setRealCategories(catData);
                 if (catData.length > 0) setCategory(catData[0].id);
