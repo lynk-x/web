@@ -190,8 +190,9 @@ function SettingsContent() {
         try {
             // 1. Deactivate the specific business account
             const { error: accountError } = await supabase
-                .from('accounts')
-                .update({ deleted_at: new Date().toISOString() })
+                .schema('api' as any)
+                .from('v1_accounts')
+                .delete()
                 .eq('id', activeAccount.id);
 
             if (accountError) throw accountError;

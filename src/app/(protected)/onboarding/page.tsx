@@ -151,15 +151,25 @@ function OnboardingFlow() {
             if (rpcError) throw rpcError;
 
             if (logoUrl || cleanDesc || country) {
-                const { error: updateError } = await supabase
-                    .from('accounts')
-                    .update({
-                        ...(logoUrl ? { media: { logo: logoUrl } } : {}),
-                        ...(cleanDesc ? { info: { description: cleanDesc } } : {}),
-                        ...(country ? { country_code: country } : {}),
-                    })
-                    .eq('id', accountId);
-                if (updateError) console.error('Branding update failed (non-fatal):', updateError);
+                if (logoUrl || country) {
+                    const { error: updateError } = await supabase
+                        .schema('api' as any)
+                        .from('v1_accounts')
+                        .update({
+                            ...(logoUrl ? { media: { logo: logoUrl } } : {}),
+                            ...(country ? { country_code: country } : {}),
+                        })
+                        .eq('id', accountId);
+                    if (updateError) console.error('Branding metadata update failed (non-fatal):', updateError);
+                }
+                if (cleanDesc) {
+                    const { error: rpcUpdateError } = await supabase.rpc('update_account_settings', {
+                        p_account_id: accountId,
+                        p_display_name: null,
+                        p_info: { description: cleanDesc }
+                    });
+                    if (rpcUpdateError) console.error('Branding description update failed (non-fatal):', rpcUpdateError);
+                }
             }
 
             // Upload KYC documents and text for each requirement

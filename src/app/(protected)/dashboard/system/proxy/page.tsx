@@ -93,9 +93,9 @@ function OperationalProxyContent() {
                 totalEvsRes,
                 liveEvsRes
             ] = await Promise.all([
-                supabase.from('accounts').select('id', { count: 'exact', head: true }).eq('country_code', countryCode),
-                supabase.from('accounts').select('id', { count: 'exact', head: true }).eq('country_code', countryCode).eq('type', 'organizer'),
-                supabase.from('accounts').select('id', { count: 'exact', head: true }).eq('country_code', countryCode).eq('type', 'advertiser'),
+                supabase.schema('api' as any).from('v1_accounts').select('id', { count: 'exact', head: true }).eq('country_code', countryCode),
+                supabase.schema('api' as any).from('v1_accounts').select('id', { count: 'exact', head: true }).eq('country_code', countryCode).eq('type', 'organizer'),
+                supabase.schema('api' as any).from('v1_accounts').select('id', { count: 'exact', head: true }).eq('country_code', countryCode).eq('type', 'advertiser'),
                 supabase.from('events').select('id', { count: 'exact', head: true }).eq('country_code', countryCode),
                 supabase.from('events').select('id', { count: 'exact', head: true }).eq('country_code', countryCode).eq('status', 'published')
             ]);
@@ -110,8 +110,9 @@ function OperationalProxyContent() {
 
             // B. Fetch recent registrations / event additions
             const { data: recAccs } = await supabase
-                .from('accounts')
-                .select('id, name, type, created_at')
+                .schema('api' as any)
+                .from('v1_accounts')
+                .select('id, name:display_name, type, created_at')
                 .eq('country_code', countryCode)
                 .order('created_at', { ascending: false })
                 .limit(5);

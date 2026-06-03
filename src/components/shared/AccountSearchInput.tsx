@@ -61,11 +61,11 @@ export const AccountSearchInput: React.FC<AccountSearchInputProps> = ({
             try {
                 const supabase = createClient();
                 const query = supabase
-                    .from('accounts')
+                    .schema('api' as any)
+                    .from('v1_accounts')
                     .select('id, reference, display_name, type, country_code')
                     .in('type', types)
-                    .eq('status', 'active')
-                    .is('deleted_at', null)
+                    .eq('is_active', true)
                     .order('display_name')
                     .limit(limit);
 

@@ -91,15 +91,23 @@ export default function AdCreditsTab({
     const fetchCredits = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data: creditsData, error: creditsError } = await supabase
                 .from('ad_credits')
-                .select('*, accounts(display_name)')
+                .select('*')
                 .order('created_at', { ascending: false });
-            if (error) throw error;
-            setCredits((data || []).map((r: any) => ({
+            if (creditsError) throw creditsError;
+
+            const { data: accountsData } = await supabase
+                .schema('api' as any)
+                .from('v1_accounts')
+                .select('id, display_name');
+
+            const accountsMap = new Map((accountsData || []).map((a: any) => [a.id, a.display_name]));
+
+            setCredits((creditsData || []).map((r: any) => ({
                 id: r.id,
                 account_id: r.account_id,
-                account_name: r.accounts?.display_name ?? 'Unknown',
+                account_name: accountsMap.get(r.account_id) ?? 'Unknown',
                 currency: r.currency,
                 amount: parseFloat(r.amount),
                 remaining: parseFloat(r.remaining),
@@ -117,7 +125,8 @@ export default function AdCreditsTab({
 
     const fetchAccounts = useCallback(async () => {
         const { data } = await supabase
-            .from('accounts')
+            .schema('api' as any)
+            .from('v1_accounts')
             .select('id, display_name')
             .eq('is_active', true)
             .order('display_name')

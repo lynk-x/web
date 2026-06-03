@@ -27,8 +27,9 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
         try {
             // 1. Deactivate the specific business account
             const { error: accountError } = await supabase
-                .from('accounts')
-                .update({ deleted_at: new Date().toISOString() })
+                .schema('api' as any)
+                .from('v1_accounts')
+                .delete()
                 .eq('id', accountId);
 
             if (accountError) throw accountError;

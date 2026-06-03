@@ -86,10 +86,11 @@ export function createAccountsRepository(client: DbClient) {
          * Used by OrganizationContext on mount.
          */
         async getMembershipsForUser(userId: string): Promise<RepoResult<AccountMembership[]>> {
-            // 1. Fetch memberships first (direct query, no joins, bypasses PostgREST cache issues)
+            // 1. Fetch memberships first from api.v1_account_memberships view
             const { data: memberData, error: memberError } = await client
-                .from('account_members')
-                .select('account_id, role_slug, is_primary')
+                .schema('api' as any)
+                .from('v1_account_memberships')
+                .select('*')
                 .eq('user_id', userId);
 
             if (memberError) return { data: null, error: toError(memberError) };
@@ -97,52 +98,58 @@ export function createAccountsRepository(client: DbClient) {
 
             const accountIds = memberData.map((m: any) => m.account_id);
 
-            // 2. Fetch detailed account data, wallets, and country information (direct FK relationships)
-            const { data: accountData, error: accountError } = await client
-                .from('accounts')
-                .select(`
-                    id,
-                    display_name,
-                    type,
-                    media,
-                    payout_routing,
-                    country_code,
-                    countries:country_code (currency),
-                    account_wallets (currency, balance)
-                `)
-                .in('id', accountIds);
+            // 2. Fetch countries/currencies from api.v1_countries
+            const countryCodes = Array.from(new Set(memberData.map((row: any) => row.country_code).filter(Boolean)));
+            let countryData: any[] = [];
+            if (countryCodes.length > 0) {
+                const { data: countries, error: countriesError } = await client
+                    .schema('api' as any)
+                    .from('v1_countries')
+                    .select('code, currency')
+                    .in('code', countryCodes);
+                if (countriesError) return { data: null, error: toError(countriesError) };
+                countryData = countries ?? [];
+            }
+            const countryMap = new Map(countryData.map((c: any) => [c.code, c.currency]));
 
-            if (accountError) return { data: null, error: toError(accountError) };
+            // 3. Fetch wallets from api.v1_wallet_balances
+            const { data: walletData, error: walletError } = await client
+                .schema('api' as any)
+                .from('v1_wallet_balances')
+                .select('account_id, currency, cash_balance')
+                .in('account_id', accountIds);
 
-            // 3. Map and merge the datasets in TypeScript
-            const accountMap = new Map((accountData ?? []).map((acc: any) => [acc.id, acc]));
+            if (walletError) return { data: null, error: toError(walletError) };
 
-            const memberships: AccountMembership[] = memberData
-                .filter((member: any) => accountMap.has(member.account_id))
-                .map((member: any) => {
-                    const acc = accountMap.get(member.account_id)!;
+            const walletsMap = new Map<string, { currency: string; balance: number }[]>();
+            for (const wallet of (walletData ?? [])) {
+                const list = walletsMap.get(wallet.account_id) ?? [];
+                list.push({ currency: wallet.currency, balance: Number(wallet.cash_balance) });
+                walletsMap.set(wallet.account_id, list);
+            }
 
-                    const accountCurrency: string | undefined = acc.countries?.currency;
-                    const wallets: { currency: string; balance: number }[] = acc.account_wallets ?? [];
-                    const primaryWallet =
-                        (accountCurrency ? wallets.find((w) => w.currency === accountCurrency) : undefined) ?? wallets[0];
+            // 4. Map and merge the datasets in TypeScript
+            const memberships: AccountMembership[] = memberData.map((member: any) => {
+                const accountCurrency = countryMap.get(member.country_code);
+                const wallets = walletsMap.get(member.account_id) ?? [];
+                const primaryWallet =
+                    (accountCurrency ? wallets.find((w) => w.currency === accountCurrency) : undefined) ?? wallets[0];
 
-                    return {
-                        id: acc.id,
-                        slug: acc.id,
-                        name: acc.display_name,
-                        logoUrl: (acc.media as any)?.logo ?? undefined,
-                        role: member.role_slug,
-                        type: acc.type as 'attendee' | 'organizer' | 'advertiser' | 'platform',
-                        currency: accountCurrency,
-                        wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
-                        wallet_currency: primaryWallet?.currency ?? accountCurrency ?? 'USD',
-                        payout_routing: acc.payout_routing ?? {},
-                        country_code: acc.country_code,
-                        isPrimary: member.is_primary,
-                    };
-                })
-                .sort((a, b) => (a.isPrimary === b.isPrimary ? 0 : a.isPrimary ? -1 : 1));
+                return {
+                    id: member.account_id,
+                    slug: member.account_id,
+                    name: member.account_name,
+                    logoUrl: member.logo_url ?? undefined,
+                    role: member.role_slug,
+                    type: member.type as 'attendee' | 'organizer' | 'advertiser' | 'platform',
+                    currency: accountCurrency,
+                    wallet_balance: primaryWallet ? Number(primaryWallet.balance) : 0,
+                    wallet_currency: primaryWallet?.currency ?? accountCurrency ?? 'USD',
+                    payout_routing: member.payout_routing ?? {},
+                    country_code: member.country_code,
+                    isPrimary: member.is_primary,
+                };
+            }).sort((a, b) => (a.isPrimary === b.isPrimary ? 0 : a.isPrimary ? -1 : 1));
 
             return { data: memberships, error: null };
         },
@@ -150,16 +157,22 @@ export function createAccountsRepository(client: DbClient) {
         /** Fetch all wallets for an account. */
         async getWallets(accountId: string): Promise<RepoResult<AccountWallet[]>> {
             const { data, error } = await client
-                .from('account_wallets')
-                .select('reference, account_id, currency, balance, escrow_balance, updated_at')
+                .schema('api' as any)
+                .from('v1_wallet_balances')
+                .select('reference, account_id, currency, cash_balance, escrow_balance, updated_at')
                 .eq('account_id', accountId);
 
             if (error) return { data: null, error: toError(error) };
             
-            // Map reference to id for DataTable compatibility
+            // Map reference to id for DataTable compatibility, and cash_balance to balance
             const mappedData = (data ?? []).map((row: any) => ({
-                ...row,
-                id: row.reference
+                id: row.reference,
+                account_id: row.account_id,
+                reference: row.reference,
+                currency: row.currency,
+                balance: Number(row.cash_balance),
+                escrow_balance: Number(row.escrow_balance),
+                updated_at: row.updated_at
             }));
 
             return { data: mappedData as AccountWallet[], error: null };
@@ -168,6 +181,7 @@ export function createAccountsRepository(client: DbClient) {
         /** Fetch all stored payment methods for an account, with provider names joined. */
         async getPaymentMethods(accountId: string): Promise<RepoResult<AccountPaymentMethod[]>> {
             const { data, error } = await client
+                .schema('finance' as any)
                 .from('account_payment_methods')
                 .select(`
                     id, account_id, provider_id, provider_identity, is_primary, metadata, created_at, updated_at,
@@ -201,6 +215,7 @@ export function createAccountsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
+                .schema('identity' as any)
                 .from('account_invitations')
                 .select('id, account_id, invitee_email, invitee_phone, role_slug, accepted_at, expires_at, created_at')
                 .eq('account_id', accountId)

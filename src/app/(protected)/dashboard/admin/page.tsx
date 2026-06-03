@@ -61,7 +61,8 @@ export default function AdminDashboard() {
 
             // Count organizers in the active country
             let orgQuery = supabase
-                .from('accounts')
+                .schema('api' as any)
+                .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'organizer');
             if (country !== 'all') {
@@ -71,7 +72,8 @@ export default function AdminDashboard() {
 
             // Count advertisers in the active country
             let advQuery = supabase
-                .from('accounts')
+                .schema('api' as any)
+                .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'advertiser');
             if (country !== 'all') {
@@ -81,7 +83,8 @@ export default function AdminDashboard() {
 
             // Count community/pulse attendees in the active country
             let pulseQuery = supabase
-                .from('accounts')
+                .schema('api' as any)
+                .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .in('type', ['pulse_user', 'attendee']);
             if (country !== 'all') {
@@ -118,8 +121,9 @@ export default function AdminDashboard() {
 
             // A. Fetch recent account signups in this country
             let accQuery = supabase
-                .from('accounts')
-                .select('id, name, type, created_at')
+                .schema('api' as any)
+                .from('v1_accounts')
+                .select('id, name:display_name, type, created_at')
                 .order('created_at', { ascending: false })
                 .limit(5);
             if (country !== 'all') {

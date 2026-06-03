@@ -44,7 +44,6 @@ function KycVerificationsContent() {
                 .from('identity_verifications')
                 .select(`
                     *,
-                    account:accounts(display_name),
                     provider:platform_kyc_providers(display_name)
                 `, { count: 'exact' });
 
@@ -61,9 +60,17 @@ function KycVerificationsContent() {
 
             if (error) throw error;
 
+            // Fetch accounts from api.v1_accounts for mapping
+            const { data: accountsData } = await supabase
+                .schema('api' as any)
+                .from('v1_accounts')
+                .select('id, display_name');
+
+            const accountsMap = new Map((accountsData || []).map((a: any) => [a.id, a.display_name]));
+
             const mapped: KycVerification[] = (data || []).map((v: any) => ({
                 ...v,
-                account_name: v.account?.display_name,
+                account_name: accountsMap.get(v.account_id) ?? 'Unknown',
                 provider_name: v.provider?.display_name
             }));
 
