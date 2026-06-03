@@ -60,9 +60,10 @@ interface AdminModeProps extends SharedProps {
 
 interface OrganizerModeProps extends SharedProps {
     mode: 'organizer';
-    /** Lightweight organizer event rows. */
     events: EventRow[];
     onDuplicate?: (event: EventRow) => void;
+    onEdit?: (event: EventRow) => void;
+    onDelete?: (event: EventRow) => void;
 }
 
 type EventTableProps = AdminModeProps | OrganizerModeProps;
@@ -192,15 +193,15 @@ export default function EventTable(props: EventTableProps) {
         const getAdminActions = (event: OrganizerEvent): ActionItem[] => {
             const actions: ActionItem[] = [
                 {
-                    label: 'Event Dashboard',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>,
-                    onClick: () => router.push(`/dashboard/organize/events/${event.id}`)
+                    label: 'View Event',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+                    onClick: () => router.push(`/event/${event.eventReference || event.id}`)
                 },
                 {
-                    label: 'Attendee List',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
-                    onClick: () => router.push(`/dashboard/organize/events/${event.id}/attendees`)
-                },
+                    label: 'Analytics',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
+                    onClick: () => router.push(`/dashboard/organize/events/${event.id}`)
+                }
             ];
 
             if (adminProps.onEdit) {
@@ -211,30 +212,28 @@ export default function EventTable(props: EventTableProps) {
                 });
             }
 
-            if (onDuplicate) {
-                actions.push({
-                    label: 'Duplicate',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-                    onClick: () => onDuplicate(event)
-                });
-            }
+            actions.push({
+                label: 'Attendee List',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
+                onClick: () => router.push(`/dashboard/organize/events/${event.id}/attendees`)
+            });
 
             actions.push({
-                label: 'Public View',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => router.push(`/event/${event.eventReference || event.id}`)
+                label: 'Check-in Logs',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>,
+                onClick: () => router.push(`/dashboard/organize/events/${event.id}/check-ins`)
             });
 
             if (adminProps.onStatusChange) {
-                if (event.status === 'draft' || event.status === 'published' || (event as any).status === 'pending_approval') {
+                if (event.status === 'draft' || (event as any).status === 'pending_approval') {
                     actions.push({
                         label: 'Publish Event',
                         variant: 'success' as const,
                         icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                        onClick: () => adminProps.onStatusChange!(event, 'active')
+                        onClick: () => adminProps.onStatusChange!(event, 'published')
                     });
                 }
-                if (event.status === 'active') {
+                if (event.status === 'active' || event.status === 'published') {
                     actions.push({
                         label: 'Cancel Event',
                         variant: 'danger' as const,
@@ -244,11 +243,13 @@ export default function EventTable(props: EventTableProps) {
                 }
             }
 
-            actions.push({
-                label: 'Check-in Logs',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>,
-                onClick: () => router.push(`/dashboard/organize/events/${event.id}/check-ins`)
-            });
+            if (onDuplicate) {
+                actions.push({
+                    label: 'Duplicate',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+                    onClick: () => onDuplicate(event)
+                });
+            }
 
             if (adminProps.onDelete) {
                 actions.push({
@@ -258,16 +259,6 @@ export default function EventTable(props: EventTableProps) {
                     onClick: () => adminProps.onDelete!(event)
                 });
             }
-
-            actions.push({
-                label: 'Export CSV',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-                onClick: () => {
-                    showToast(`Exporting data for ${event.title}`, 'info');
-                    exportToCSV([event], `event_export_${event.id}`);
-                    showToast('Export successful.', 'success');
-                }
-            });
 
             return actions;
         };
@@ -358,32 +349,46 @@ export default function EventTable(props: EventTableProps) {
         },
     ];
 
-    const getOrganizerActions = (event: EventRow): ActionItem[] => [
-        {
-            label: 'View Event',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-            onClick: () => router.push(`/event/${event.reference || event.id}`),
-        },
-        {
-            label: 'Edit Event',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
-            onClick: () => showToast(`Editing event: ${event.name}...`, 'info'),
-        },
-        {
+    const getOrganizerActions = (event: EventRow): ActionItem[] => {
+        const orgProps = props as OrganizerModeProps;
+        const actions: ActionItem[] = [
+            {
+                label: 'View Event',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+                onClick: () => router.push(`/event/${event.reference || event.id}`),
+            },
+            {
+                label: 'Analytics',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
+                onClick: () => router.push(`/dashboard/organize/events/${event.id}`)
+            }
+        ];
+
+        if (orgProps.onEdit) {
+            actions.push({
+                label: 'Edit Event',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
+                onClick: () => orgProps.onEdit!(event),
+            });
+        }
+
+        actions.push({
             label: 'Attendee List',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
             onClick: () => router.push(`/dashboard/organize/events/${event.id}/attendees`),
-        },
-        {
-            label: 'Delete',
-            variant: 'danger' as const,
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            onClick: () => {
-                showToast(`Deleting event: ${event.name}...`, 'info');
-                setTimeout(() => showToast('Event deleted.', 'success'), 1500);
-            },
-        },
-    ];
+        });
+
+        if (orgProps.onDelete) {
+            actions.push({
+                label: 'Delete',
+                variant: 'danger' as const,
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
+                onClick: () => orgProps.onDelete!(event),
+            });
+        }
+
+        return actions;
+    };
 
     return (
         <DataTable<EventRow>
