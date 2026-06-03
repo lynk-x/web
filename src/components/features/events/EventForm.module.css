@@ -460,7 +460,7 @@
 .ticketRow {
     display: flex;
     gap: var(--spacing-md);
-    align-items: flex-end;
+    align-items: flex-start;
     padding-right: 32px; /* Space for absolute remove btn */
 }
 

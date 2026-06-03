@@ -9,6 +9,7 @@ interface DatePickerProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    minDate?: Date;
 }
 
 /**
@@ -21,7 +22,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     onChange, 
     placeholder = "DD/MM/YYYY", 
     className,
-    disabled = false
+    disabled = false,
+    minDate
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [viewDate, setViewDate] = useState(() => value ? new Date(value) : new Date());
@@ -66,9 +68,15 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             const [d, m, y] = val.split('/').map(Number);
             const date = new Date(y, m - 1, d);
             if (!isNaN(date.getTime()) && date.getFullYear() === y && (date.getMonth() + 1) === m) {
-                const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                onChange(iso);
-                setViewDate(date);
+                // Check if disabled by minDate
+                const minDateTime = minDate ? new Date(new Date(minDate).setHours(0, 0, 0, 0)).getTime() : null;
+                const isDateDisabled = minDateTime ? date.getTime() < minDateTime : false;
+
+                if (!isDateDisabled) {
+                    const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    onChange(iso);
+                    setViewDate(date);
+                }
             }
         }
     };
@@ -166,6 +174,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                         ))}
                         
                         {calendarDays.map((d, i) => {
+                            const currentDateTime = new Date(d.year, d.month, d.day).getTime();
+                            const minDateTime = minDate ? new Date(new Date(minDate).setHours(0, 0, 0, 0)).getTime() : null;
+                            const isDateDisabled = minDateTime ? currentDateTime < minDateTime : false;
+
                             const isSelected = value && 
                                 new Date(value).getDate() === d.day && 
                                 new Date(value).getMonth() === d.month && 
@@ -183,8 +195,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                                         ${d.type !== 'current' ? styles.otherMonth : ''} 
                                         ${isSelected ? styles.selected : ''}
                                         ${isToday ? styles.today : ''}
+                                        ${isDateDisabled ? styles.disabled : ''}
                                     `}
-                                    onClick={() => selectDate(d.day, d.month, d.year)}
+                                    onClick={() => {
+                                        if (!isDateDisabled) selectDate(d.day, d.month, d.year);
+                                    }}
                                 >
                                     {d.day}
                                 </div>

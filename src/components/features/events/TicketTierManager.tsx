@@ -67,7 +67,9 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                             value={ticket.display_name}
                                             onChange={(e) => onChange(index, 'display_name', e.target.value)}
                                         />
-                                        <p className={styles.errorMessage}>{errors[`tickets.${index}.display_name`]}</p>
+                                        {errors[`tickets.${index}.display_name`] && (
+                                            <p className={styles.errorMessage}>{errors[`tickets.${index}.display_name`]}</p>
+                                        )}
                                     </div>
 
                                     {/* Price */}
@@ -116,7 +118,9 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                             value={ticket.capacity}
                                             onChange={(e) => onChange(index, 'capacity', e.target.value)}
                                         />
-                                        <p className={styles.errorMessage}>{errors[`tickets.${index}.capacity`]}</p>
+                                        {errors[`tickets.${index}.capacity`] && (
+                                            <p className={styles.errorMessage}>{errors[`tickets.${index}.capacity`]}</p>
+                                        )}
                                     </div>
 
                                 </div>

@@ -405,6 +405,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 onChange={(val) => handleInputChange({ target: { name: field, value: val } } as any)}
                                                 placeholder="dd/mm/yyyy"
                                                 className={errors[field] ? styles.inputError : ''}
+                                                minDate={!isEditMode ? new Date() : undefined}
                                             />
                                         ) : (
                                             <TimePicker
