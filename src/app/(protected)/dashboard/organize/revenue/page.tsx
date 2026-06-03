@@ -116,7 +116,7 @@ function RevenueContent() {
         try {
             const { data, error } = await supabase.rpc('get_organizer_payouts', {
                 p_account_id: activeAccount.id,
-                p_status:     payoutStatusFilter === 'all' ? null : payoutStatusFilter,
+                p_status:     payoutStatusFilter === 'all' ? undefined : payoutStatusFilter,
                 p_limit:      itemsPerPage,
                 p_offset:     (payoutsPage - 1) * itemsPerPage,
             });
@@ -139,7 +139,7 @@ function RevenueContent() {
         try {
             const { data, error } = await supabase.rpc('get_organizer_refund_requests', {
                 p_account_id: activeAccount.id,
-                p_status:     refundStatusFilter === 'all' ? null : refundStatusFilter,
+                p_status:     refundStatusFilter === 'all' ? undefined : refundStatusFilter,
                 p_limit:      itemsPerPage,
                 p_offset:     (refundsPage - 1) * itemsPerPage,
             });

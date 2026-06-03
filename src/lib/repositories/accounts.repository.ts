@@ -181,7 +181,6 @@ export function createAccountsRepository(client: DbClient) {
         /** Fetch all stored payment methods for an account, with provider names joined. */
         async getPaymentMethods(accountId: string): Promise<RepoResult<AccountPaymentMethod[]>> {
             const { data, error } = await client
-                .schema('finance' as any)
                 .from('account_payment_methods')
                 .select(`
                     id, account_id, provider_id, provider_identity, is_primary, metadata, created_at, updated_at,
@@ -215,7 +214,6 @@ export function createAccountsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .schema('identity' as any)
                 .from('account_invitations')
                 .select('id, account_id, invitee_email, invitee_phone, role_slug, accepted_at, expires_at, created_at')
                 .eq('account_id', accountId)

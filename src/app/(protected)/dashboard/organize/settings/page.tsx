@@ -99,7 +99,7 @@ function SettingsContent() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data: settings, error } = await supabase.rpc('get_organizer_settings', {
+            const { data: settings, error } = await supabase.rpc('get_account_settings', {
                 p_account_id: activeAccount.id
             });
 

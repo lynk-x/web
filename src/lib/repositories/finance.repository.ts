@@ -279,7 +279,7 @@ export function createFinanceRepository(client: DbClient) {
 
             const { data, error } = await client.rpc('get_organizer_payouts', {
                 p_account_id: accountId,
-                p_status: opts?.status ?? null,
+                p_status: opts?.status ?? undefined,
                 p_limit: size,
                 p_offset: offset,
             });
@@ -299,7 +299,7 @@ export function createFinanceRepository(client: DbClient) {
 
             const { data, error } = await client.rpc('get_organizer_refund_requests', {
                 p_account_id: accountId,
-                p_status: opts?.status ?? null,
+                p_status: opts?.status ?? undefined,
                 p_limit: size,
                 p_offset: offset,
             });

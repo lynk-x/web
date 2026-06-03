@@ -60,7 +60,8 @@ function OperationalProxyContent() {
             setIsLoadingCountries(true);
             try {
                 const { data, error } = await supabase
-                    .from('countries')
+                    .schema('api' as any)
+                    .from('v1_countries')
                     .select('code, display_name, currency, region, status')
                     .order('display_name');
                 
