@@ -112,9 +112,9 @@ export function MfaManager() {
 
     if (isEnrolling && qrCodeSvg) {
         return (
-            <div style={{ padding: '16px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Setup Two-Factor Authentication</h3>
-                <p style={{ margin: '0 0 16px 0', fontSize: '14px', opacity: 0.8 }}>
+            <div>
+                <h3 style={{ margin: '0 0 8px 0', fontWeight: 500, fontSize: '15px', color: 'var(--color-text-primary)' }}>Setup Two-Factor Authentication</h3>
+                <p style={{ margin: '0 0 16px 0', fontSize: '14px', opacity: 0.8, color: 'var(--color-text-primary)' }}>
                     Scan this QR code with your authenticator app (like Google Authenticator or Authy), then enter the 6-digit code below.
                 </p>
                 
@@ -140,18 +140,18 @@ export function MfaManager() {
     }
 
     return (
-        <div style={{ padding: '16px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '8px', border: '1px solid var(--color-interface-outline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
             <div>
-                <p style={{ margin: 0, fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontWeight: 500, fontSize: '15px', color: 'var(--color-text-primary)' }}>
                     Two-Factor Authentication (MFA)
-                </p>
-                <p style={{ margin: '4px 0 0 0', fontSize: '14px', opacity: 0.8 }}>
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', opacity: 0.8, color: 'var(--color-text-primary)' }}>
                     {isMfaEnabled 
                         ? 'Your account is currently protected by an authenticator app.'
                         : 'Add an extra layer of security to your account using a time-based authenticator app.'}
                 </p>
             </div>
-            <div>
+            <div style={{ flexShrink: 0 }}>
                 {isMfaEnabled ? (
                     <Button variant="danger" onClick={handleDisableMfa} isLoading={isLoading}>Disable 2FA</Button>
                 ) : (

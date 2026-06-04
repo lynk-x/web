@@ -312,26 +312,43 @@ function AdsSettingsContent() {
                         <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
                             <h2 className={adminStyles.sectionTitle} style={{ color: '#ffffff' }}>Account Security</h2>
                             
-                            {!hasRecoveryCode && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
                                 <div>
-                                    <h3 className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 500, fontSize: '15px' }}>
+                                    <h3 className={adminStyles.label} style={{ marginBottom: '8px', fontWeight: 500, fontSize: '15px' }}>
                                         Generate Recovery Code
                                     </h3>
-                                    <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
+                                    <p className={adminStyles.label} style={{ margin: 0, fontWeight: 400, opacity: 0.8 }}>
                                         Generate a cryptographic recovery code for your personal identity. If you lose access to your primary authentication methods, this is the only way to recover your encrypted data.
                                     </p>
+                                </div>
+                                <div style={{ flexShrink: 0 }}>
                                     <Button
                                         variant="secondary"
                                         onClick={handleGenerateRecoveryCode}
                                         isLoading={isGeneratingRecovery}
+                                        disabled={hasRecoveryCode}
                                     >
-                                        Generate Recovery Code
+                                        {hasRecoveryCode ? 'Recovery Code Generated' : 'Generate Recovery Code'}
                                     </Button>
                                 </div>
-                            )}
+                            </div>
 
                             <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>
                                 <MfaManager />
+                            </div>
+
+                            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>
+                                <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>
+                                <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
+                                    Deactivating your ads account pauses all active campaigns indefinitely. This action cannot be undone from the dashboard.
+                                </p>
+                                <Button
+                                    variant="danger"
+                                    onClick={() => setIsDeactivateModalOpen(true)}
+                                    isLoading={isDeactivating}
+                                >
+                                    Deactivate Ads Account
+                                </Button>
                             </div>
                         </div>
 
@@ -370,19 +387,7 @@ function AdsSettingsContent() {
                             </div>
                         </Modal>
 
-                        <div className={adminStyles.pageCard}>
-                            <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>
-                            <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
-                                Deactivating your ads account pauses all active campaigns indefinitely. This action cannot be undone from the dashboard.
-                            </p>
-                            <Button
-                                variant="danger"
-                                onClick={() => setIsDeactivateModalOpen(true)}
-                                isLoading={isDeactivating}
-                            >
-                                Deactivate Ads Account
-                            </Button>
-                        </div>
+
                     </TabsContent>
                 </div>
             </Tabs>
