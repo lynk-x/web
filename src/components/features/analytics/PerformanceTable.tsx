@@ -75,7 +75,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             headerStyle: { textAlign: 'right' },
             render: (item) => (
                 <div className={styles.actions}>
-                    <Link href={`/dashboard/analytics/event/${item.id}`} className={styles.viewLink} title="View Insights">
+                    <Link href={`/dashboard/organize/analytics/event/${item.id}`} className={styles.viewLink} title="View Insights">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="20" x2="18" y2="10"></line>
                             <line x1="12" y1="20" x2="12" y2="4"></line>

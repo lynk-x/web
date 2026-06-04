@@ -34,12 +34,13 @@ export default function EditEventPage() {
             try {
                 // Fetch event and ticket tiers
                 const { data: event, error: eventError } = await supabase
+                    .schema('events' as any)
                     .from('events')
                     .select(`
                         id, created_at, title, description, category_id, is_online, is_private, 
                         location, starts_at, ends_at, media, timezone,
                         ticket_tiers (
-                            id, display_name, price, capacity, description, sales_start_at, sales_end_at, max_per_user
+                            id, display_name, price, capacity, description, sales_start, sales_end, max_per_order
                         ),
                         event_tags (
                             tags (id, name)
@@ -72,9 +73,9 @@ export default function EditEventPage() {
                         price: t.price.toString(),
                         capacity: t.capacity.toString(),
                         description: t.description || '',
-                        saleStart: t.sales_start_at ? formatDateLocal(new Date(t.sales_start_at)) : '',
-                        saleEnd: t.sales_end_at ? formatDateLocal(new Date(t.sales_end_at)) : '',
-                        maxPerOrder: t.max_per_user?.toString() || ''
+                        saleStart: t.sales_start ? formatDateLocal(new Date(t.sales_start)) : '',
+                        saleEnd: t.sales_end ? formatDateLocal(new Date(t.sales_end)) : '',
+                        maxPerOrder: t.max_per_order?.toString() || ''
                     };
                 });
 
@@ -194,7 +195,7 @@ export default function EditEventPage() {
 
             // 5. Update Tags
             // Delete current links
-            await supabase.from('event_tags').delete().eq('event_id', eventId);
+            await supabase.schema('events' as any).from('event_tags').delete().eq('event_id', eventId);
 
             if (data.tags.length > 0) {
                 const tagsToUpsert = data.tags.map(tag => ({
@@ -204,6 +205,7 @@ export default function EditEventPage() {
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase
+                    .schema('identity' as any)
                     .from('tags')
                     .upsert(tagsToUpsert, { onConflict: 'slug' })
                     .select('id');
@@ -217,6 +219,7 @@ export default function EditEventPage() {
                     }));
 
                     const { error: eventTagError } = await supabase
+                        .schema('events' as any)
                         .from('event_tags')
                         .insert(eventTagsToInsert);
 
