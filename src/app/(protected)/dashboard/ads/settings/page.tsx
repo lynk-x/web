@@ -60,6 +60,25 @@ function AdsSettingsContent() {
     const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
     const [isGeneratingRecovery, setIsGeneratingRecovery] = useState(false);
     const [hasRecoveryCode, setHasRecoveryCode] = useState(false);
+    const [isSendingReset, setIsSendingReset] = useState(false);
+
+    const handleSendPasswordReset = async () => {
+        setIsSendingReset(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user?.email) throw new Error('No email found for this user.');
+
+            const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+                redirectTo: `${window.location.origin}/update-password`,
+            });
+            if (error) throw error;
+            showToast('Password reset email sent. Please check your inbox.', 'success');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to send password reset email.', 'error');
+        } finally {
+            setIsSendingReset(false);
+        }
+    };
 
     const handleGenerateRecoveryCode = async () => {
         setIsGeneratingRecovery(true);
@@ -335,6 +354,28 @@ function AdsSettingsContent() {
 
                             <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>
                                 <MfaManager />
+                            </div>
+
+                            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
+                                    <div>
+                                        <h3 className={adminStyles.label} style={{ marginBottom: '8px', fontWeight: 500, fontSize: '15px', color: 'var(--color-text-primary)' }}>
+                                            Password Reset
+                                        </h3>
+                                        <p className={adminStyles.label} style={{ margin: 0, fontWeight: 400, opacity: 0.8, color: 'var(--color-text-primary)' }}>
+                                            Receive an email with a secure link to update your account password.
+                                        </p>
+                                    </div>
+                                    <div style={{ flexShrink: 0 }}>
+                                        <Button
+                                            variant="secondary"
+                                            onClick={handleSendPasswordReset}
+                                            isLoading={isSendingReset}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>

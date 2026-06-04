@@ -133,10 +133,9 @@ function VerifyFlow() {
                 }
             }
 
-            // Redirect back to dashboard based on account type
+            // Redirect back to settings based on account type
             const dashType = activeAccount.type === 'advertiser' ? 'ads' : 'organize';
-            const dashRef = activeAccount.slug || activeAccount.id;
-            window.location.href = `/dashboard/${dashType}/${dashRef}/dashboard`;
+            window.location.href = `/dashboard/${dashType}/settings`;
         } catch (err: unknown) {
             console.error('Error submitting verification:', err);
             setError(getErrorMessage(err) || 'Failed to submit verification. Please try again.');
