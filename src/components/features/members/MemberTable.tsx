@@ -138,7 +138,7 @@ export default function MemberTable() {
         try {
             const { error } = await supabase.rpc('create_account_invitation', {
                 p_account_id: activeAccount.id,
-                p_email: inviteEmail.toLowerCase(),
+                p_invitee_email: inviteEmail.toLowerCase(),
                 p_role_slug: inviteRole
             });
 

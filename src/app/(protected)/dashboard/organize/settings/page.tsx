@@ -19,6 +19,7 @@ import KycStatusCard from '@/components/dashboard/KycStatusCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
+import Select from '@/components/shared/Select';
 import Button from '@/components/shared/Button';
 import Textarea from '@/components/shared/Textarea';
 import type { AccountWallet } from '@/types/organize';
@@ -81,6 +82,10 @@ function SettingsContent() {
     const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
     const [isGeneratingRecovery, setIsGeneratingRecovery] = useState(false);
 
+    const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
+    const [newWalletCurrency, setNewWalletCurrency] = useState('USD');
+    const [isAddingWallet, setIsAddingWallet] = useState(false);
+
     const handleGenerateRecoveryCode = async () => {
         setIsGeneratingRecovery(true);
         try {
@@ -92,6 +97,24 @@ function SettingsContent() {
             showToast(getErrorMessage(err) || 'Failed to generate recovery code.', 'error');
         } finally {
             setIsGeneratingRecovery(false);
+        }
+    };
+
+    const handleAddWallet = async () => {
+        if (!activeAccount) return;
+        setIsAddingWallet(true);
+        try {
+            const { error } = await supabase.rpc('create_wallet', {
+                p_currency: newWalletCurrency
+            });
+            if (error) throw error;
+            showToast(`Successfully created ${newWalletCurrency} wallet.`, 'success');
+            setIsAddWalletOpen(false);
+            fetchData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to create wallet.', 'error');
+        } finally {
+            setIsAddingWallet(false);
         }
     };
 
@@ -322,8 +345,11 @@ function SettingsContent() {
                             </div>
 
                             <div className={adminStyles.pageCard}>
-                                <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
-                                <WalletsTable data={wallets} isLoading={isLoading} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Account Wallets</h2>
+                                    <Button variant="secondary" onClick={() => setIsAddWalletOpen(true)}>Add Wallet</Button>
+                                </div>
+                                <WalletsTable data={wallets} isLoading={isLoading} accountId={activeAccount?.id} onRefresh={fetchData} />
                             </div>
                         </div>
                     </TabsContent>
@@ -397,6 +423,30 @@ function SettingsContent() {
                 variant="danger"
                 confirmText="DEACTIVATE"
             />
+
+            <ConfirmationModal
+                isOpen={isAddWalletOpen}
+                onClose={() => setIsAddWalletOpen(false)}
+                onConfirm={handleAddWallet}
+                title="Create New Wallet"
+                message="Select the currency for your new wallet. Note that your organization's KYC verification tier dictates maximum limits for specific currencies."
+                confirmLabel={isAddingWallet ? "Creating..." : "Create Wallet"}
+                variant="default"
+            >
+                <div style={{ marginTop: '16px' }}>
+                    <Select
+                        label="Currency"
+                        options={[
+                            { value: 'USD', label: 'USD - US Dollar' },
+                            { value: 'KES', label: 'KES - Kenyan Shilling' },
+                            { value: 'GBP', label: 'GBP - British Pound' },
+                            { value: 'EUR', label: 'EUR - Euro' }
+                        ]}
+                        value={newWalletCurrency}
+                        onChange={(e) => setNewWalletCurrency(e.target.value)}
+                    />
+                </div>
+            </ConfirmationModal>
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenOrgSettingsJoyride_${activeAccount.id}` : 'hasSeenOrgSettingsJoyride_guest'}

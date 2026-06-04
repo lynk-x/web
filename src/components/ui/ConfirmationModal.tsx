@@ -13,6 +13,7 @@ interface ConfirmationModalProps {
     cancelLabel?: string;
     variant?: 'danger' | 'default';
     confirmText?: string;
+    children?: React.ReactNode;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -24,7 +25,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmLabel = 'Confirm',
     cancelLabel = 'Cancel',
     variant = 'danger',
-    confirmText
+    confirmText,
+    children
 }) => {
     const [inputValue, setInputValue] = React.useState('');
 
@@ -65,6 +67,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
                 <div className={styles.body}>
                     <p>{message}</p>
+                    {children}
                     {confirmText && (
                         <div className={styles.confirmInputContainer}>
                             <p className={styles.confirmPrompt}>

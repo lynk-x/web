@@ -189,11 +189,11 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '15px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {method.provider_identity}
+                                        {providers.find(p => p.provider_name === method.provider)?.display_name || method.provider}
                                         {method.is_primary && <Badge label="PRIMARY" variant="info" />}
                                     </div>
                                     <div style={{ fontSize: '13px', opacity: 0.6, marginTop: '4px' }}>
-                                        {providers.find(p => p.provider_name === method.provider)?.display_name || method.provider}
+                                        {method.metadata?.label || "Account identity securely encrypted"}
                                     </div>
                                 </div>
                             </div>
