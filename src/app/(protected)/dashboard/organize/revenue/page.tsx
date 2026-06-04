@@ -98,11 +98,11 @@ function RevenueContent() {
             if (error) throw error;
             setWallets(data?.wallets || []);
             setStats({
-                grossRevenue:     Number(data?.stats?.total_revenue) || 0,
-                availableBalance: Number(data?.stats?.net_revenue) || 0,
-                pendingEscrow:    Number(data?.payouts) || 0,
-                totalRefunded:    Number(data?.stats?.total_revenue) || 0,
-                totalPaidOut:     Number(data?.stats?.payouts) || 0,
+                grossRevenue:     Number(data?.total_revenue) || 0,
+                availableBalance: Number(data?.net_revenue) || 0,
+                pendingEscrow:    Number(data?.pending_escrow) || 0,
+                totalRefunded:    Number(data?.total_refunded) || 0,
+                totalPaidOut:     Number(data?.payouts) || 0,
             });
         } catch (err) {
             console.error('Failed to fetch revenue summary:', err);

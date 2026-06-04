@@ -70,7 +70,7 @@ export default function MemberTable() {
             // Fetch Pending Invitations
             const { data: inviteData, error: inviteError } = await supabase
                 .from('account_invitations')
-                .select('id, email, role_slug, created_at')
+                .select('id, invitee_email, role_slug, created_at')
                 .eq('account_id', activeAccount.id)
                 .is('accepted_at', null);
 
@@ -91,7 +91,7 @@ export default function MemberTable() {
             const mappedInvites: AccountMember[] = (inviteData || []).map(i => ({
                 id: i.id, // For pending, ID is the invitation ID
                 name: 'Pending Invite',
-                email: i.email,
+                email: i.invitee_email || '',
                 role: i.role_slug,
                 joinedAt: formatDate(i.created_at),
                 isPending: true
