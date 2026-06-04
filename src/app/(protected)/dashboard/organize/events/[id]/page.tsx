@@ -71,7 +71,7 @@ export default function EventDetailPage() {
         if (!id || !activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('events' as any).rpc('get_organizer_event_details', {
+            const { data, error } = await supabase.rpc('get_organizer_event_details', {
                 p_account_id: activeAccount.id,
                 p_event_id: id
             });

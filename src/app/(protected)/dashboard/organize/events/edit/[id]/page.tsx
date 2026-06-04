@@ -34,7 +34,6 @@ export default function EditEventPage() {
             try {
                 // Fetch event and ticket tiers
                 const { data: event, error: eventError } = await supabase
-                    .schema('events' as any)
                     .from('events')
                     .select(`
                         id, created_at, title, description, category_id, is_online, is_private, 
@@ -195,7 +194,7 @@ export default function EditEventPage() {
 
             // 5. Update Tags
             // Delete current links
-            await supabase.schema('events' as any).from('event_tags').delete().eq('event_id', eventId);
+            await supabase.from('event_tags').delete().eq('event_id', eventId);
 
             if (data.tags.length > 0) {
                 const tagsToUpsert = data.tags.map(tag => ({
@@ -205,7 +204,6 @@ export default function EditEventPage() {
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase
-                    .schema('identity' as any)
                     .from('tags')
                     .upsert(tagsToUpsert, { onConflict: 'slug' })
                     .select('id');
@@ -219,7 +217,6 @@ export default function EditEventPage() {
                     }));
 
                     const { error: eventTagError } = await supabase
-                        .schema('events' as any)
                         .from('event_tags')
                         .insert(eventTagsToInsert);
 

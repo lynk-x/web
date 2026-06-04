@@ -33,22 +33,37 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
         const fetchAttendees = async () => {
             setIsLoading(true);
             try {
+                // First get event created_at and account_id
+                const { data: eventData, error: evErr } = await supabase
+                    .from('events')
+                    .select('created_at, account_id')
+                    .eq('id', id)
+                    .maybeSingle();
+
+                if (evErr) throw evErr;
+                if (!eventData) throw new Error('Event not found');
+
+                // Now get attendees via RPC
                 const { data, error } = await supabase
-                    .from('vw_attendees_list')
-                    .select('*')
-                    .eq('event_id', id)
-                    .order('purchase_date', { ascending: false });
+                    .schema('api' as any)
+                    .rpc('get_organizer_attendees', {
+                        p_account_id: activeAccount?.id || eventData.account_id,
+                        p_event_id: id,
+                        p_created_at: eventData.created_at,
+                        p_limit: 10000,
+                        p_offset: 0
+                    });
 
                 if (error) throw error;
 
-                const mapped: Attendee[] = (data || []).map((row: any) => ({
+                const mapped: Attendee[] = (data?.items || []).map((row: any) => ({
                     id: row.ticket_id,
-                    name: row.attendee_name || 'Anonymous',
-                    email: row.attendee_email || 'No email',
+                    name: row.full_name || row.user_name || 'Anonymous',
+                    email: row.email || 'No email',
                     tierName: row.tier_name,
-                    purchaseDate: new Date(row.purchase_date).toLocaleDateString(),
-                    status: row.ticket_status,
-                    ticketCode: row.ticket_code
+                    purchaseDate: new Date(row.created_at).toLocaleDateString(),
+                    status: row.status,
+                    ticketCode: row.ticket_code || 'N/A'
                 }));
 
                 setAttendees(mapped);
