@@ -105,7 +105,8 @@ function SettingsContent() {
         setIsAddingWallet(true);
         try {
             const { error } = await supabase.rpc('create_wallet', {
-                p_currency: newWalletCurrency
+                p_currency: newWalletCurrency,
+                p_account_id: activeAccount.id
             });
             if (error) throw error;
             showToast(`Successfully created ${newWalletCurrency} wallet.`, 'success');
