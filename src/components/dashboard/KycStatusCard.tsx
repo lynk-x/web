@@ -62,7 +62,7 @@ export default function KycStatusCard({ accountId }: KycStatusCardProps) {
                 {text}
             </div>
             {(status === 'none' || status === 'rejected') && (
-                <button className={styles.verifyBtn} onClick={() => window.location.href = '/onboarding'}>
+                <button className={styles.verifyBtn} onClick={() => window.location.href = '/verify'}>
                     {status === 'rejected' ? 'Re-verify' : 'Verify Now'}
                 </button>
             )}

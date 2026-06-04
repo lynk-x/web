@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { MfaManager } from '@/components/MfaManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import Modal from '@/components/shared/Modal';
 import PageHeader from '@/components/dashboard/PageHeader';
 import MemberTable from '@/components/features/members/MemberTable';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
@@ -58,6 +59,7 @@ function AdsSettingsContent() {
     
     const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
     const [isGeneratingRecovery, setIsGeneratingRecovery] = useState(false);
+    const [hasRecoveryCode, setHasRecoveryCode] = useState(false);
 
     const handleGenerateRecoveryCode = async () => {
         setIsGeneratingRecovery(true);
@@ -65,6 +67,7 @@ function AdsSettingsContent() {
             const { data, error } = await supabase.rpc('generate_recovery_code');
             if (error) throw error;
             setRecoveryCode(data);
+            setHasRecoveryCode(true);
             showToast('Recovery code generated successfully. Please save it immediately.', 'success');
         } catch (err) {
             showToast(getErrorMessage(err) || 'Failed to generate recovery code.', 'error');
@@ -115,6 +118,9 @@ function AdsSettingsContent() {
                 setFormData(newValues);
                 setInitialFormData(newValues);
                 setWallets((data.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
+
+                const { data: hasCode } = await supabase.rpc('has_recovery_code');
+                setHasRecoveryCode(!!hasCode);
             } catch (err) {
                 showToast(getErrorMessage(err) || 'Failed to sync your account settings.', 'error');
             } finally {
@@ -304,38 +310,65 @@ function AdsSettingsContent() {
 
                     <TabsContent value="danger-zone">
                         <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
-                            <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-warning)' }}>Account Security</h2>
+                            <h2 className={adminStyles.sectionTitle} style={{ color: '#ffffff' }}>Account Security</h2>
                             
-                            <MfaManager />
+                            {!hasRecoveryCode && (
+                                <div>
+                                    <h3 className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 500, fontSize: '15px' }}>
+                                        Generate Recovery Code
+                                    </h3>
+                                    <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
+                                        Generate a cryptographic recovery code for your personal identity. If you lose access to your primary authentication methods, this is the only way to recover your encrypted data.
+                                    </p>
+                                    <Button
+                                        variant="secondary"
+                                        onClick={handleGenerateRecoveryCode}
+                                        isLoading={isGeneratingRecovery}
+                                    >
+                                        Generate Recovery Code
+                                    </Button>
+                                </div>
+                            )}
 
                             <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--color-interface-outline)' }}>
-                                <h3 className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 500, fontSize: '15px' }}>
-                                    Generate Recovery Code
-                                </h3>
-                            <p className={adminStyles.label} style={{ marginBottom: '16px', fontWeight: 400, opacity: 0.8 }}>
-                                Generate a cryptographic recovery code for your personal identity. If you lose access to your primary authentication methods, this is the only way to recover your encrypted data.
-                            </p>
-                            {recoveryCode ? (
-                                <div style={{ padding: '16px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '8px', border: '1px solid var(--color-interface-outline)', marginBottom: '16px' }}>
-                                    <p style={{ margin: 0, fontWeight: 500, color: 'var(--color-text-primary)' }}>Your Recovery Code:</p>
-                                    <code style={{ display: 'block', padding: '12px', marginTop: '8px', backgroundColor: 'var(--color-background-surface)', borderRadius: '4px', fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
-                                        {recoveryCode}
-                                    </code>
-                                    <p style={{ margin: '12px 0 0 0', fontSize: '12px', color: 'var(--color-interface-error)' }}>
-                                        Please write this down immediately. It will not be shown again.
-                                    </p>
-                                </div>
-                            ) : (
-                                <Button
-                                    variant="secondary"
-                                    onClick={handleGenerateRecoveryCode}
-                                    isLoading={isGeneratingRecovery}
-                                >
-                                    Generate Recovery Code
-                                </Button>
-                            )}
+                                <MfaManager />
                             </div>
                         </div>
+
+                        <Modal
+                            isOpen={!!recoveryCode}
+                            onClose={() => setRecoveryCode(null)}
+                            title="Your Recovery Code"
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <p style={{ margin: 0, fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                                    Please write this down immediately. It will not be shown again.
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: 'var(--color-background-surface)', borderRadius: '4px', border: '1px solid var(--color-interface-outline)' }}>
+                                    <code style={{ flex: 1, fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
+                                        {recoveryCode}
+                                    </code>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(recoveryCode || '');
+                                            showToast('Recovery code copied to clipboard!', 'success');
+                                        }}
+                                        style={{
+                                            background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)'
+                                        }}
+                                        title="Copy to clipboard"
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <Button variant="primary" onClick={() => setRecoveryCode(null)}>
+                                    I have saved my recovery code
+                                </Button>
+                            </div>
+                        </Modal>
 
                         <div className={adminStyles.pageCard}>
                             <h2 className={adminStyles.sectionTitle} style={{ color: 'var(--color-interface-error)' }}>Danger Zone</h2>

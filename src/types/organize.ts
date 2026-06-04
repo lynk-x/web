@@ -251,7 +251,9 @@ export interface AccountWallet {
     reference: string;
     account_id: string;
     currency: string;
-    balance: number;
+    balance?: number; // legacy property, currently maps to cash_balance
+    cash_balance: number;
+    credit_balance: number;
     escrow_balance: number;
     updated_at: string;
 }
