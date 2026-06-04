@@ -254,7 +254,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
     ];
 
     return (
-        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px' }}>
             <DataTable
                 data={data}
                 columns={columns}

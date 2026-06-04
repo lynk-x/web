@@ -61,6 +61,8 @@ export interface EventRow {
     /** Unique share/lookup code — from `events.reference` column */
     reference?: string;
     currency?: string;
+    // Forum integration
+    forum_id?: string;
     /** Partition key for events.events */
     createdAt: string;
 }

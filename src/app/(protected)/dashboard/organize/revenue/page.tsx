@@ -17,6 +17,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import type { AccountWallet, Payout } from '@/types/organize';
 
 type TabId = 'payouts' | 'refunds';
@@ -58,6 +59,8 @@ function RevenueContent() {
     const itemsPerPage = 10;
     const [payoutsPage, setPayoutsPage] = useState(1);
     const [refundsPage, setRefundsPage] = useState(1);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     /* ─ Mapping helpers (separated into two named functions) ─────────────────── */
 
@@ -117,6 +120,8 @@ function RevenueContent() {
             const { data, error } = await supabase.rpc('get_organizer_payouts', {
                 p_account_id: activeAccount.id,
                 p_status:     payoutStatusFilter === 'all' ? undefined : payoutStatusFilter,
+                p_start_date: startDate ? new Date(startDate).toISOString() : undefined,
+                p_end_date:   endDate ? new Date(endDate).toISOString() : undefined,
                 p_limit:      itemsPerPage,
                 p_offset:     (payoutsPage - 1) * itemsPerPage,
             });
@@ -130,7 +135,7 @@ function RevenueContent() {
         } finally {
             setIsPayoutsLoading(false);
         }
-    }, [activeAccount, supabase, payoutsPage, payoutStatusFilter, showToast]);
+    }, [activeAccount, supabase, payoutsPage, payoutStatusFilter, startDate, endDate, showToast]);
 
     /* ── Data fetch: refunds ─────────────────────────────────────────────────── */
     const fetchRefunds = useCallback(async () => {
@@ -140,6 +145,8 @@ function RevenueContent() {
             const { data, error } = await supabase.rpc('get_organizer_refund_requests', {
                 p_account_id: activeAccount.id,
                 p_status:     refundStatusFilter === 'all' ? undefined : refundStatusFilter,
+                p_start_date: startDate ? new Date(startDate).toISOString() : undefined,
+                p_end_date:   endDate ? new Date(endDate).toISOString() : undefined,
                 p_limit:      itemsPerPage,
                 p_offset:     (refundsPage - 1) * itemsPerPage,
             });
@@ -153,7 +160,7 @@ function RevenueContent() {
         } finally {
             setIsRefundsLoading(false);
         }
-    }, [activeAccount, supabase, refundsPage, refundStatusFilter, showToast]);
+    }, [activeAccount, supabase, refundsPage, refundStatusFilter, startDate, endDate, showToast]);
 
     /* ── Effects ─────────────────────────────────────────────────────────────── */
     useEffect(() => {
@@ -260,7 +267,18 @@ function RevenueContent() {
                 searchValue=""
                 onSearchChange={() => {}}
                 searchPlaceholder={`Search ${activeTab}...`}
-            />
+            >
+                <DateRangeRow
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                />
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className="tour-revenue-tabs" style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>

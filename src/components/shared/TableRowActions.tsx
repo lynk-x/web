@@ -84,6 +84,8 @@ const TableRowActions: React.FC<TableRowActionsProps> = ({ actions }) => {
                                 {index > 0 && action.variant === 'danger' &&
                                     // Check if previous item was NOT a divider to avoid double dividers if mixed
                                     !('divider' in actions[index - 1] && actions[index - 1]['divider']) &&
+                                    // Check if previous item was NOT a danger action to group danger actions together
+                                    (!('variant' in actions[index - 1]) || (actions[index - 1] as any).variant !== 'danger') &&
                                     <div className={styles.divider} />
                                 }
 
