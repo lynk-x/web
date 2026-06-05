@@ -40,4 +40,8 @@ export interface Invoice {
     date: string;
     amount: string;
     status: 'paid' | 'pending' | 'overdue';
+    reference?: string;
+    reason?: string;
+    campaign_title?: string;
+    currency?: string;
 }

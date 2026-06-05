@@ -48,22 +48,29 @@ export default function AdsBillingPage() {
             }
             const primaryWallet = (data.wallets || []).find((w: WalletItem) => w.currency === currency) || data.wallets?.[0];
             
-            interface TopUpItem {
+            interface TransactionItem {
                 id: string;
+                reference: string;
                 created_at: string;
                 amount: number;
                 currency: string;
                 status: string;
+                reason: string;
+                metadata?: any;
             }
-            const mapped: Invoice[] = (data.top_ups || []).map((tx: TopUpItem) => ({
+            const mapped: Invoice[] = (data.transactions || []).map((tx: TransactionItem) => ({
                 id: tx.id,
+                reference: tx.reference,
                 date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                 amount: formatCurrency(Number(tx.amount), tx.currency || currency),
-                status: tx.status === 'completed' ? 'paid' : tx.status === 'pending' ? 'pending' : 'overdue'
+                status: tx.status === 'completed' ? 'paid' : tx.status === 'pending' ? 'pending' : 'overdue',
+                reason: tx.reason,
+                campaign_title: tx.metadata?.campaign_title || (tx.reason === 'wallet_top_up' ? 'Wallet Deposit' : 'Ad Campaign Payment'),
+                currency: tx.currency
             }));
 
             setAllInvoices(mapped);
-            setTotalCount(Number(data.top_up_count || 0));
+            setTotalCount(Number(data.transaction_count || 0));
             setRawTotalSpend(Number(data.total_spend || 0));
             setAdCredits(Number(data.total_credits || 0));
             setWalletBalance(Number(primaryWallet?.cash_balance ?? 0));
@@ -88,6 +95,7 @@ export default function AdsBillingPage() {
     const invoices = searchQuery
         ? allInvoices.filter(inv =>
             inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (inv.reference && inv.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
             inv.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
             inv.status.toLowerCase().includes(searchQuery.toLowerCase())
           )

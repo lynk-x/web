@@ -50,14 +50,39 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
     const columns: Column<Invoice>[] = [
         {
             header: 'Date',
+            width: '120px',
             render: (invoice) => <div>{invoice.date}</div>,
         },
         {
+            header: 'Reference',
+            width: '140px',
+            cellStyle: { fontFamily: 'var(--font-mono, monospace)', fontSize: '0.875rem' },
+            render: (invoice) => <span>{invoice.reference || '—'}</span>,
+        },
+        {
+            header: 'Description / Campaign',
+            render: (invoice) => (
+                <div style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
+                    {invoice.campaign_title || 'General Wallet Transaction'}
+                </div>
+            ),
+        },
+        {
+            header: 'Currency',
+            width: '90px',
+            cellStyle: { color: 'var(--color-utility-secondaryText)' },
+            render: (invoice) => <div>{invoice.currency || 'USD'}</div>,
+        },
+        {
             header: 'Amount',
+            width: '120px',
+            headerStyle: { textAlign: 'right' },
+            cellStyle: { textAlign: 'right', fontWeight: 500 },
             render: (invoice) => <div>{invoice.amount}</div>,
         },
         {
             header: 'Status',
+            width: '120px',
             render: (invoice) => (
                 <Badge
                     label={formatString(invoice.status)}

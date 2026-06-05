@@ -38,12 +38,12 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                 <thead>
                     <tr>
                         <th style={{ textAlign: 'left' }}>Campaign</th>
-                        <th style={{ textAlign: 'right', width: '110px' }}>Spend</th>
-                        <th style={{ textAlign: 'right', width: '135px' }}>Impressions</th>
-                        <th style={{ textAlign: 'right', width: '100px' }}>Clicks</th>
-                        <th style={{ textAlign: 'right', width: '100px' }}>CTR</th>
-                        <th style={{ textAlign: 'right', width: '110px' }}>CPC</th>
-                        <th style={{ textAlign: 'left', width: '120px' }}>Status</th>
+                        <th style={{ textAlign: 'right', width: '210px' }}>Spend</th>
+                        <th style={{ textAlign: 'right', width: '235px' }}>Impressions</th>
+                        <th style={{ textAlign: 'right', width: '200px' }}>Clicks</th>
+                        <th style={{ textAlign: 'right', width: '200px' }}>CTR</th>
+                        <th style={{ textAlign: 'right', width: '210px' }}>CPC</th>
+                        <th style={{ textAlign: 'left' }}>Status</th>
                         <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
                     </tr>
                 </thead>
