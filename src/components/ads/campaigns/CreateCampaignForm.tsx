@@ -664,7 +664,7 @@ export default function CreateCampaignForm({
             }));
 
             // 2. Submit to RPC for atomic persistence
-            const { data, error } = await supabase.schema('advertising' as any).rpc('upsert_advertiser_campaign', {
+            const { data, error } = await supabase.rpc('upsert_advertiser_campaign', {
                 p_account_id: activeAccount.id,
                 p_campaign_id: isEditing ? formData.id : null,
                 p_created_at: formData.created_at || null,
@@ -865,15 +865,6 @@ export default function CreateCampaignForm({
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Leave empty for worldwide)</span></label>
                                             <div className={styles.tagInput}>
-                                                {formData.target_countries?.map(code => {
-                                                    const country = countries.find(c => c.code === code);
-                                                    return (
-                                                        <span key={code} className={styles.tag}>
-                                                            {country?.display_name || code}
-                                                            <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
-                                                        </span>
-                                                    );
-                                                })}
                                                 <input
                                                     className={styles.tagInputField}
                                                     placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Leave empty for worldwide'}
@@ -910,6 +901,44 @@ export default function CreateCampaignForm({
                                                     </div>
                                                 )}
                                             </div>
+                                            {formData.target_countries && formData.target_countries.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                    {formData.target_countries.map(code => {
+                                                        const country = countries.find(c => c.code === code);
+                                                        return (
+                                                            <span key={code} className={styles.tag}>
+                                                                {country?.display_name || code}
+                                                                <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            {!countryInput && countrySuggestions.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                    {countrySuggestions.filter(c => !formData.target_countries?.includes(c.code)).map(c => (
+                                                        <button 
+                                                            key={c.code} 
+                                                            type="button" 
+                                                            onClick={() => addCountry(c.code)}
+                                                            style={{ 
+                                                                padding: '4px 12px', 
+                                                                fontSize: '12px', 
+                                                                borderRadius: '16px', 
+                                                                border: '1px solid rgba(255,255,255,0.1)', 
+                                                                background: 'rgba(255,255,255,0.02)',
+                                                                color: 'rgba(255,255,255,0.7)',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                                                        >
+                                                            + {c.display_name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Market Competition Insights */}
@@ -941,12 +970,6 @@ export default function CreateCampaignForm({
                                         <div className={styles.inputGroup} style={{ marginTop: '24px' }}>
                                             <label className={styles.label}>Interest-Based Targeting <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(e.g. Music, Tech)</span></label>
                                             <div className={styles.tagInput}>
-                                                {formData.target_tags.map(tag => (
-                                                    <span key={tag} className={styles.tag}>
-                                                        {tag}
-                                                        <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
-                                                    </span>
-                                                ))}
                                                 <input
                                                     className={styles.tagInputField}
                                                     placeholder="Type interest and press enter..."
@@ -973,6 +996,41 @@ export default function CreateCampaignForm({
                                                     </div>
                                                 )}
                                             </div>
+                                            {formData.target_tags && formData.target_tags.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                    {formData.target_tags.map(tag => (
+                                                        <span key={tag} className={styles.tag}>
+                                                            {tag}
+                                                            <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {!tagInput && tagSuggestions.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                    {tagSuggestions.filter(t => !formData.target_tags?.includes(t)).slice(0, 5).map(t => (
+                                                        <button 
+                                                            key={t} 
+                                                            type="button" 
+                                                            onClick={() => addTag(t)}
+                                                            style={{ 
+                                                                padding: '4px 12px', 
+                                                                fontSize: '12px', 
+                                                                borderRadius: '16px', 
+                                                                border: '1px solid rgba(255,255,255,0.1)', 
+                                                                background: 'rgba(255,255,255,0.02)',
+                                                                color: 'rgba(255,255,255,0.7)',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                                                        >
+                                                            + {t}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
