@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -15,7 +15,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import MemberTable from '@/components/features/members/MemberTable';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
-import WalletsTable from '@/components/features/finance/WalletsTable';
+import WalletManager from '@/components/features/finance/WalletManager';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
@@ -96,6 +96,8 @@ function AdsSettingsContent() {
     };
 
 
+
+
     const isDirty = useMemo(() => {
         if (!activeAccount) return false;
         return JSON.stringify(formData) !== JSON.stringify(initialFormData);
@@ -108,47 +110,48 @@ function AdsSettingsContent() {
         }
     }, [searchParams]);
 
+    const fetchData = useCallback(async () => {
+        if (!activeAccount) return;
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('get_account_settings', {
+                p_account_id: activeAccount.id
+            });
+
+            if (error) throw error;
+
+            const profile = data.profile || {};
+            const ba = typeof profile.billing_address === 'string' ? {} : (profile.billing_address || {});
+            const newValues = {
+                name: data.account?.name || '',
+                secondary_contact: profile.secondary_contact || '',
+                description: profile.description || '',
+                support_email: profile.contact_email || '',
+                primary_contact: profile.phone_number || '',
+                address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
+                town: ba.town || '',
+                city: ba.city || '',
+                country: ba.country || data.account?.country_code || ''
+            };
+
+            setFormData(newValues);
+            setInitialFormData(newValues);
+            setWallets((data.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
+
+            const { data: hasCode } = await supabase.rpc('has_recovery_code');
+            setHasRecoveryCode(!!hasCode);
+        } catch (err) {
+            showToast(getErrorMessage(err) || 'Failed to sync your account settings.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeAccount, supabase, showToast]);
+
     useEffect(() => {
-        if (isOrgLoading || !activeAccount) return;
-
-        const fetchAllData = async () => {
-            setIsLoading(true);
-            try {
-                const { data, error } = await supabase.rpc('get_advertiser_account_settings', {
-                    p_account_id: activeAccount.id
-                });
-
-                if (error) throw error;
-
-                const profile = data.profile || {};
-                const ba = typeof profile.billing_address === 'string' ? {} : (profile.billing_address || {});
-                const newValues = {
-                    name: data.account?.name || '',
-                    secondary_contact: profile.secondary_contact || '',
-                    description: profile.description || '',
-                    support_email: profile.contact_email || '',
-                    primary_contact: profile.phone_number || '',
-                    address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
-                    town: ba.town || '',
-                    city: ba.city || '',
-                    country: ba.country || data.account?.country_code || ''
-                };
-
-                setFormData(newValues);
-                setInitialFormData(newValues);
-                setWallets((data.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
-
-                const { data: hasCode } = await supabase.rpc('has_recovery_code');
-                setHasRecoveryCode(!!hasCode);
-            } catch (err) {
-                showToast(getErrorMessage(err) || 'Failed to sync your account settings.', 'error');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchAllData();
-    }, [isOrgLoading, activeAccount, supabase, showToast]);
+        if (!isOrgLoading && activeAccount) {
+            fetchData();
+        }
+    }, [isOrgLoading, activeAccount, fetchData]);
 
     const handleTabChange = (newTab: string) => {
         if (isDirty && activeTab !== newTab) {
@@ -320,10 +323,12 @@ function AdsSettingsContent() {
                                 )}
                             </div>
 
-                            <div className={adminStyles.pageCard}>
-                                <h2 className={adminStyles.sectionTitle}>Account Wallets</h2>
-                                <WalletsTable data={wallets} isLoading={isLoading} />
-                            </div>
+                            <WalletManager 
+                                accountId={activeAccount?.id || ''} 
+                                wallets={wallets} 
+                                isLoading={isLoading} 
+                                onRefresh={fetchData} 
+                            />
                         </div>
                     </TabsContent>
 
@@ -452,6 +457,9 @@ function AdsSettingsContent() {
                 confirmLabel="Leave Tab"
                 variant="danger"
             />
+
+
+
 
             <ConfirmationModal
                 isOpen={isDeactivateModalOpen}

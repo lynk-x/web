@@ -664,7 +664,7 @@ export default function CreateCampaignForm({
             }));
 
             // 2. Submit to RPC for atomic persistence
-            const { data, error } = await supabase.rpc('upsert_advertiser_campaign', {
+            const { data, error } = await supabase.schema('advertising' as any).rpc('upsert_advertiser_campaign', {
                 p_account_id: activeAccount.id,
                 p_campaign_id: isEditing ? formData.id : null,
                 p_created_at: formData.created_at || null,
