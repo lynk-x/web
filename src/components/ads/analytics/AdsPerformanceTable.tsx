@@ -18,14 +18,6 @@ interface AdsPerformanceTableProps {
 }
 
 export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) {
-    if (data.length === 0) {
-        return (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-utility-secondaryText)' }}>
-                No campaign data found for this period.
-            </div>
-        );
-    }
-
     return (
         <div className={styles.tableContainer}>
             <table className={styles.table}>
@@ -42,12 +34,19 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map(item => {
-                        const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
-                        const cpc = item.clicks > 0 ? item.total_cost / item.clicks : 0;
+                    {data.length === 0 ? (
+                        <tr>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-utility-secondaryText)' }}>
+                                No campaign data found for this period.
+                            </td>
+                        </tr>
+                    ) : (
+                        data.map(item => {
+                            const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
+                            const cpc = item.clicks > 0 ? item.total_cost / item.clicks : 0;
 
-                        return (
-                            <tr key={item.campaign_id}>
+                            return (
+                                <tr key={item.campaign_id}>
                                 <td style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
                                     {item.title}
                                 </td>
@@ -86,7 +85,7 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                                 </td>
                             </tr>
                         );
-                    })}
+                    }))}
                 </tbody>
             </table>
         </div>
