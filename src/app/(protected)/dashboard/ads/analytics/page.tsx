@@ -12,6 +12,7 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
 import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import AdsPerformanceTable, { CampaignPerformance } from '@/components/ads/analytics/AdsPerformanceTable';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -25,8 +26,12 @@ function AnalyticsContent() {
     const pathname = usePathname();
 
     const [isLoading, setIsLoading] = useState(true);
-    const initialRange = Number(searchParams.get('range')) || 7;
-    const [timeRange, setTimeRange] = useState(initialRange);
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d.toISOString().split('T')[0];
+    });
+    const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [searchQuery, setSearchQuery] = useState('');
     const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
     
@@ -43,7 +48,8 @@ function AnalyticsContent() {
         try {
             const { data, error } = await supabase.rpc('get_campaigns_performance_summary', {
                 p_account_id: activeAccount.id,
-                p_days: timeRange
+                p_start_date: startDate,
+                p_end_date: endDate
             });
 
             if (error) throw error;
@@ -70,7 +76,7 @@ function AnalyticsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, timeRange, showToast]);
+    }, [activeAccount, supabase, startDate, endDate, showToast]);
 
     useEffect(() => {
         if (!isOrgLoading) {
@@ -83,16 +89,38 @@ function AnalyticsContent() {
     }, [isOrgLoading, activeAccount, fetchAnalytics]);
 
     useEffect(() => {
-        const range = searchParams.get('range');
-        if (range) {
-            setTimeRange(Number(range));
-        }
+        const urlStart = searchParams.get('startDate');
+        const urlEnd = searchParams.get('endDate');
+        if (urlStart) setStartDate(urlStart);
+        if (urlEnd) setEndDate(urlEnd);
     }, [searchParams]);
 
-    const handleRangeChange = (newRange: number) => {
-        setTimeRange(newRange);
+    const handleStartDateChange = (date: string) => {
+        setStartDate(date);
         const params = new URLSearchParams(searchParams.toString());
-        params.set('range', newRange.toString());
+        params.set('startDate', date);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const handleEndDateChange = (date: string) => {
+        setEndDate(date);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('endDate', date);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const handleClearDates = () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        const defaultStart = d.toISOString().split('T')[0];
+        const defaultEnd = new Date().toISOString().split('T')[0];
+        
+        setStartDate(defaultStart);
+        setEndDate(defaultEnd);
+        
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('startDate');
+        params.delete('endDate');
         router.replace(`${pathname}?${params.toString()}`);
     };
 
@@ -101,11 +129,53 @@ function AnalyticsContent() {
         return campaigns.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [campaigns, searchQuery]);
 
+    const downloadCSV = () => {
+        if (!filteredCampaigns || filteredCampaigns.length === 0) return;
+        
+        const headers = ['Campaign', 'Status', 'Impressions', 'Clicks', 'CTR (%)', 'CPC ($)', 'Spend ($)'];
+        const csvRows = [headers.join(',')];
+        
+        for (const item of filteredCampaigns) {
+            const ctr = item.impressions > 0 ? ((item.clicks / item.impressions) * 100).toFixed(2) : '0.00';
+            const cpc = item.clicks > 0 ? (item.total_cost / item.clicks).toFixed(2) : '0.00';
+            
+            const row = [
+                `"${item.title.replace(/"/g, '""')}"`,
+                item.status,
+                item.impressions,
+                item.clicks,
+                ctr,
+                cpc,
+                item.total_cost.toFixed(2)
+            ];
+            
+            csvRows.push(row.join(','));
+        }
+        
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Ads_Analytics_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className={styles.container}>
             <PageHeader
                 title="Ads Analytics"
                 subtitle="Analyze your campaign reach and performance."
+                actionLabel="Generate Report"
+                onActionClick={downloadCSV}
+                actionIcon={
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                }
             />
 
             {/* Overview Cards */}
@@ -146,21 +216,17 @@ function AnalyticsContent() {
                     searchValue={searchQuery} 
                     onSearchChange={setSearchQuery}
                 >
-                    <select
-                        className={sharedStyles.select}
-                        value={timeRange}
-                        onChange={(e) => handleRangeChange(Number(e.target.value))}
-                        style={{ width: 'auto', minWidth: '160px' }}
-                    >
-                        <option value={7}>Last 7 Days</option>
-                        <option value={30}>Last 30 Days</option>
-                        <option value={90}>Last 90 Days</option>
-                    </select>
+                    <DateRangeRow
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={handleStartDateChange}
+                        onEndDateChange={handleEndDateChange}
+                        onClear={handleClearDates}
+                    />
                 </TableToolbar>
             </div>
 
-            <div className={sharedStyles.pageCard} style={{ marginTop: 'var(--spacing-md)' }}>
-                <h2 className={sharedStyles.sectionTitle}>Campaign Performance Matrix</h2>
+            <div style={{ marginTop: 'var(--spacing-md)' }}>
                 <AdsPerformanceTable data={filteredCampaigns} />
             </div>
 

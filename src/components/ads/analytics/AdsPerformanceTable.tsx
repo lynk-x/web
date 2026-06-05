@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { formatCurrency } from '@/utils/format';
 import Badge from '@/components/shared/Badge';
+import Pagination from '@/components/shared/Pagination';
 import styles from '@/components/shared/DataTable.module.css';
 
 export interface CampaignPerformance {
@@ -18,18 +19,31 @@ interface AdsPerformanceTableProps {
 }
 
 export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+    
+    const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE) || 1;
+    
+    // Ensure currentPage is valid if data changes
+    if (currentPage > totalPages) {
+        setCurrentPage(totalPages);
+    }
+    
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const currentData = data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
     return (
         <div className={styles.tableContainer}>
             <table className={styles.table}>
                 <thead>
                     <tr>
                         <th style={{ textAlign: 'left' }}>Campaign</th>
-                        <th style={{ textAlign: 'left' }}>Status</th>
                         <th style={{ textAlign: 'right' }}>Impressions</th>
                         <th style={{ textAlign: 'right' }}>Clicks</th>
                         <th style={{ textAlign: 'right' }}>CTR</th>
                         <th style={{ textAlign: 'right' }}>CPC</th>
                         <th style={{ textAlign: 'right' }}>Spend</th>
+                        <th style={{ textAlign: 'left' }}>Status</th>
                         <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
                     </tr>
                 </thead>
@@ -37,11 +51,11 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                     {data.length === 0 ? (
                         <tr>
                             <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-utility-secondaryText)' }}>
-                                No campaign data found for this period.
+                                
                             </td>
                         </tr>
                     ) : (
-                        data.map(item => {
+                        currentData.map(item => {
                             const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
                             const cpc = item.clicks > 0 ? item.total_cost / item.clicks : 0;
 
@@ -50,17 +64,17 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                                 <td style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
                                     {item.title}
                                 </td>
+                                <td style={{ textAlign: 'right' }}>{item.impressions.toLocaleString()}</td>
+                                <td style={{ textAlign: 'right' }}>{item.clicks.toLocaleString()}</td>
+                                <td style={{ textAlign: 'right' }}>{ctr.toFixed(2)}%</td>
+                                <td style={{ textAlign: 'right' }}>{formatCurrency(cpc, 'USD')}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.total_cost, 'USD')}</td>
                                 <td>
                                     <Badge 
                                         label={item.status.replace('_', ' ')}
                                         variant={item.status === 'active' ? 'success' : item.status === 'paused' ? 'warning' : 'neutral'}
                                     />
                                 </td>
-                                <td style={{ textAlign: 'right' }}>{item.impressions.toLocaleString()}</td>
-                                <td style={{ textAlign: 'right' }}>{item.clicks.toLocaleString()}</td>
-                                <td style={{ textAlign: 'right' }}>{ctr.toFixed(2)}%</td>
-                                <td style={{ textAlign: 'right' }}>{formatCurrency(cpc, 'USD')}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.total_cost, 'USD')}</td>
                                 <td style={{ textAlign: 'center' }}>
                                     <Link 
                                         href={`/dashboard/ads/analytics/campaign/${item.campaign_id}`}
@@ -88,6 +102,11 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                     }))}
                 </tbody>
             </table>
+            <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
         </div>
     );
 }

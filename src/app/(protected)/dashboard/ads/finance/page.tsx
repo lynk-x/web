@@ -148,7 +148,6 @@ export default function AdsBillingPage() {
             </div>
 
             <div style={{ marginTop: '32px' }} className="tour-billing-history">
-                <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '16px' }}>Ad Spend History</h2>
                 <TableToolbar
                     onSearchChange={setSearchQuery}
                     searchValue={searchQuery}

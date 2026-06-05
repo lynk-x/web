@@ -35,10 +35,16 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
                 
             if (campaignData) setCampaignTitle(campaignData.title);
 
-            // Fetch timeseries for this campaign (defaulting to 30 days)
+            // Fetch timeseries for this campaign (defaulting to last 30 days)
+            const d = new Date();
+            const endDate = d.toISOString().split('T')[0];
+            d.setDate(d.getDate() - 30);
+            const startDate = d.toISOString().split('T')[0];
+
             const { data, error } = await supabase.rpc('get_ads_performance_metrics', {
                 p_account_id: activeAccount.id,
-                p_days: 30,
+                p_start_date: startDate,
+                p_end_date: endDate,
                 p_campaign_id: id
             });
 
