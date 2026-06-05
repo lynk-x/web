@@ -56,8 +56,8 @@ export default function CampaignsPage() {
                 total_budget: number;
                 spent_amount: number;
                 destination_url: string | null;
-                total_impressions: number;
-                total_clicks: number;
+                target_tags: string[];
+                target_regions: string[];
             }
 
             const formatted: AdsCampaign[] = (data.items || []).map((c: CampaignItem) => ({
@@ -71,13 +71,8 @@ export default function CampaignsPage() {
                 total_budget: Number(c.total_budget),
                 spent_amount: Number(c.spent_amount),
                 destination_url: c.destination_url || '',
-                total_impressions: Number(c.total_impressions),
-                total_clicks: Number(c.total_clicks),
-                metrics: {
-                    impressions: Number(c.total_impressions),
-                    clicks: Number(c.total_clicks),
-                    ctr: Number(c.total_impressions) > 0 ? (Number(c.total_clicks) / Number(c.total_impressions)) * 100 : 0
-                }
+                target_tags: c.target_tags,
+                target_regions: c.target_regions
             }));
             setCampaigns(formatted);
             setTotalCount(data.total || 0);

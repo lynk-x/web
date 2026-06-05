@@ -238,37 +238,50 @@ const CreateEventForm = () => {
 
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Tags</label>
-                            <div className={styles.inputGroup}>
+                            <div className={styles.inputGroup} style={{ display: 'block' }}>
                                 <input
                                     type="text"
                                     className={styles.input}
-                                    placeholder="Add a tag..."
+                                    placeholder="Add a tag e.g Music, Tech, etc."
                                     value={tagInput}
                                     onChange={(e) => setTagInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddTag();
+                                        }
+                                    }}
                                 />
-                                <button type="button" className={styles.addBtn} onClick={() => handleAddTag()}>Add</button>
                             </div>
-                            <div className={styles.tagList}>
-                                {tags.map(tag => (
-                                    <span key={tag} className={styles.tagPill}>
-                                        {tag}
-                                        <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>×</button>
-                                    </span>
-                                ))}
-                            </div>
-                            <div className={styles.tagSuggestions}>
-                                {tagSuggestions.filter(t => !tags.includes(t)).map(t => (
-                                    <button
-                                        key={t}
-                                        type="button"
-                                        className={styles.tagSuggestion}
-                                        onClick={() => handleAddTag(t)}
-                                    >
-                                        + {t}
-                                    </button>
-                                ))}
-                            </div>
+                            
+                            {tags.length > 0 && (
+                                <div className={styles.tagList}>
+                                    {tags.map(tag => (
+                                        <span key={tag} className={styles.tagPill}>
+                                            {tag}
+                                            <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>×</button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {tagSuggestions.length > 0 && (
+                                <div className={styles.tagSuggestions}>
+                                    {tagSuggestions
+                                        .filter(t => !tags.includes(t))
+                                        .filter(t => !tagInput || t.toLowerCase().includes(tagInput.toLowerCase()))
+                                        .map(t => (
+                                        <button
+                                            key={t}
+                                            type="button"
+                                            className={styles.tagSuggestion}
+                                            onClick={() => handleAddTag(t)}
+                                        >
+                                            + {t}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <button type="button" className={styles.primaryBtn} onClick={() => setStep(2)}>Next: Logistics</button>

@@ -362,18 +362,18 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                                 </p>
                                             )}
                                             <div className={styles.choiceGrid}>
-                                                {popularTags.map((tag: string) => {
-                                                    const isSelected = formData.tags.includes(tag);
-                                                    return (
+                                                {popularTags
+                                                    .filter((tag: string) => !formData.tags.includes(tag))
+                                                    .filter((tag: string) => !tagInput || tag.toLowerCase().includes(tagInput.toLowerCase()))
+                                                    .map((tag: string) => (
                                                         <div 
                                                             key={tag} 
-                                                            className={`${styles.choiceChip} ${isSelected ? styles.choiceChipSelected : ''}`}
-                                                            onClick={() => isSelected ? handleRemoveTag(tag) : handleAddTag(tag)}
+                                                            className={styles.choiceChip}
+                                                            onClick={() => handleAddTag(tag)}
                                                         >
-                                                            {tag}
+                                                            + {tag}
                                                         </div>
-                                                    );
-                                                })}
+                                                ))}
                                             </div>
                                         </>
                                     ) : (

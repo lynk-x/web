@@ -77,12 +77,6 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             render: (campaign) => <Badge label={formatString(campaign.type)} variant="subtle" />,
         },
         {
-            header: 'Status',
-            render: (campaign) => (
-                <Badge label={formatString(campaign.status)} variant={getStatusVariant(campaign.status)} showDot />
-            ),
-        },
-        {
             header: 'Spend',
             render: (campaign) => (
                 <div className={styles.metrics}>
@@ -93,14 +87,19 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             ),
         },
         {
-            header: 'Performance',
+            header: 'Targeting',
             render: (campaign) => (
-                <div className={styles.metrics}>
-                    <span className={styles.metricValue}>
-                        {campaign.metrics?.impressions.toLocaleString() || '0'} Impr.
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '13px' }}>
+                        📍 {campaign.target_regions?.length ? campaign.target_regions.join(', ') : 'Global'}
                     </span>
-                    <span className={styles.metricLabel}>
-                        {campaign.metrics?.clicks.toLocaleString() || '0'} clicks ({campaign.metrics?.ctr || '0'}% CTR)
+                    <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                        🏷️ {campaign.target_tags?.length ? (
+                            <>
+                                {campaign.target_tags.slice(0, 3).join(', ')}
+                                {campaign.target_tags.length > 3 ? ` +${campaign.target_tags.length - 3}` : ''}
+                            </>
+                        ) : 'Any Interests'}
                     </span>
                 </div>
             ),
@@ -116,6 +115,12 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
                     </div>
                 );
             },
+        },
+        {
+            header: 'Status',
+            render: (campaign) => (
+                <Badge label={formatString(campaign.status)} variant={getStatusVariant(campaign.status)} showDot />
+            ),
         },
     ];
 

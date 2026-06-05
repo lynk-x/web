@@ -914,9 +914,12 @@ export default function CreateCampaignForm({
                                                     })}
                                                 </div>
                                             )}
-                                            {!countryInput && countrySuggestions.length > 0 && (
+                                            {countrySuggestions.length > 0 && (
                                                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                                    {countrySuggestions.filter(c => !formData.target_countries?.includes(c.code)).map(c => (
+                                                    {countrySuggestions
+                                                        .filter(c => !formData.target_countries?.includes(c.code))
+                                                        .filter(c => !countryInput || c.display_name.toLowerCase().includes(countryInput.toLowerCase()))
+                                                        .map(c => (
                                                         <button 
                                                             key={c.code} 
                                                             type="button" 
@@ -1006,9 +1009,13 @@ export default function CreateCampaignForm({
                                                     ))}
                                                 </div>
                                             )}
-                                            {!tagInput && tagSuggestions.length > 0 && (
+                                            {tagSuggestions.length > 0 && (
                                                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                                    {tagSuggestions.filter(t => !formData.target_tags?.includes(t)).slice(0, 5).map(t => (
+                                                    {tagSuggestions
+                                                        .filter(t => !formData.target_tags?.includes(t))
+                                                        .filter(t => !tagInput || t.toLowerCase().includes(tagInput.toLowerCase()))
+                                                        .slice(0, 5)
+                                                        .map(t => (
                                                         <button 
                                                             key={t} 
                                                             type="button" 

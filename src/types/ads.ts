@@ -26,15 +26,8 @@ export interface AdsCampaign {
     destination_url: string;
     target_event_id?: string;
     target_country_code?: string;
-    /** denormalized schema columns */
-    total_impressions: number;
-    total_clicks: number;
-    /** UI-only metrics - computed for display */
-    metrics?: {
-        impressions: number;
-        clicks: number;
-        ctr: number;
-    };
+    target_tags?: string[];
+    target_regions?: string[];
     /** Backward compatibility / UI display fields */
     name?: string; // mapping from title
     spent?: string; // formatted spent_amount
