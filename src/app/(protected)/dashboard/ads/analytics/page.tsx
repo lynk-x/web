@@ -26,12 +26,8 @@ function AnalyticsContent() {
     const pathname = usePathname();
 
     const [isLoading, setIsLoading] = useState(true);
-    const [startDate, setStartDate] = useState(() => {
-        const d = new Date();
-        d.setDate(d.getDate() - 30);
-        return d.toISOString().split('T')[0];
-    });
-    const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
     
@@ -46,11 +42,11 @@ function AnalyticsContent() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_campaigns_performance_summary', {
-                p_account_id: activeAccount.id,
-                p_start_date: startDate,
-                p_end_date: endDate
-            });
+            const params: any = { p_account_id: activeAccount.id };
+            if (startDate) params.p_start_date = startDate;
+            if (endDate) params.p_end_date = endDate;
+            
+            const { data, error } = await supabase.rpc('get_campaigns_performance_summary', params);
 
             if (error) throw error;
 

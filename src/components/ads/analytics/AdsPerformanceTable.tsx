@@ -38,11 +38,11 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                 <thead>
                     <tr>
                         <th style={{ textAlign: 'left' }}>Campaign</th>
+                        <th style={{ textAlign: 'center' }}>Spend</th>
                         <th style={{ textAlign: 'right' }}>Impressions</th>
                         <th style={{ textAlign: 'right' }}>Clicks</th>
                         <th style={{ textAlign: 'right' }}>CTR</th>
                         <th style={{ textAlign: 'right' }}>CPC</th>
-                        <th style={{ textAlign: 'right' }}>Spend</th>
                         <th style={{ textAlign: 'left' }}>Status</th>
                         <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
                     </tr>
@@ -64,11 +64,11 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                                 <td style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
                                     {item.title}
                                 </td>
+                                <td style={{ textAlign: 'right', fontWeight: 500, paddingLeft: '24px' }}>{formatCurrency(item.total_cost, 'USD')}</td>
                                 <td style={{ textAlign: 'right' }}>{item.impressions.toLocaleString()}</td>
                                 <td style={{ textAlign: 'right' }}>{item.clicks.toLocaleString()}</td>
                                 <td style={{ textAlign: 'right' }}>{ctr.toFixed(2)}%</td>
                                 <td style={{ textAlign: 'right' }}>{formatCurrency(cpc, 'USD')}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.total_cost, 'USD')}</td>
                                 <td>
                                     <Badge 
                                         label={item.status.replace('_', ' ')}

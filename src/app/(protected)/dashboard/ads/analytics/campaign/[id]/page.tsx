@@ -89,14 +89,14 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
     }
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div>
+            <div style={{ marginBottom: '8px' }}>
+                <BackButton label="Back to Analytics" />
+            </div>
             <PageHeader
                 title={`${campaignTitle} Performance`}
                 subtitle="Detailed breakdown of your campaign metrics over the last 30 days."
             />
-            <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                <BackButton label="Back to Analytics" />
-            </div>
 
             <div className={sharedStyles.pageCard}>
                 <h2 className={sharedStyles.sectionTitle}>Performance Over Time</h2>
