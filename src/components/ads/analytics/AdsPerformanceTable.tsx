@@ -38,12 +38,12 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                 <thead>
                     <tr>
                         <th style={{ textAlign: 'left' }}>Campaign</th>
-                        <th style={{ textAlign: 'center' }}>Spend</th>
-                        <th style={{ textAlign: 'right' }}>Impressions</th>
-                        <th style={{ textAlign: 'right' }}>Clicks</th>
-                        <th style={{ textAlign: 'right' }}>CTR</th>
-                        <th style={{ textAlign: 'right' }}>CPC</th>
-                        <th style={{ textAlign: 'left' }}>Status</th>
+                        <th style={{ textAlign: 'right', width: '110px' }}>Spend</th>
+                        <th style={{ textAlign: 'right', width: '135px' }}>Impressions</th>
+                        <th style={{ textAlign: 'right', width: '100px' }}>Clicks</th>
+                        <th style={{ textAlign: 'right', width: '100px' }}>CTR</th>
+                        <th style={{ textAlign: 'right', width: '110px' }}>CPC</th>
+                        <th style={{ textAlign: 'left', width: '120px' }}>Status</th>
                         <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
                     </tr>
                 </thead>
@@ -51,7 +51,7 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                     {data.length === 0 ? (
                         <tr>
                             <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-utility-secondaryText)' }}>
-                                
+                                No campaigns found matching criteria.
                             </td>
                         </tr>
                     ) : (
@@ -64,7 +64,7 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                                 <td style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
                                     {item.title}
                                 </td>
-                                <td style={{ textAlign: 'right', fontWeight: 500, paddingLeft: '24px' }}>{formatCurrency(item.total_cost, 'USD')}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.total_cost, 'USD')}</td>
                                 <td style={{ textAlign: 'right' }}>{item.impressions.toLocaleString()}</td>
                                 <td style={{ textAlign: 'right' }}>{item.clicks.toLocaleString()}</td>
                                 <td style={{ textAlign: 'right' }}>{ctr.toFixed(2)}%</td>
