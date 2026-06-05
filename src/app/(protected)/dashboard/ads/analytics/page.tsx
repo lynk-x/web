@@ -3,7 +3,6 @@ import { getErrorMessage } from '@/utils/error';
 
 import styles from './page.module.css';
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -12,6 +11,8 @@ import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
+import TableToolbar from '@/components/shared/TableToolbar';
+import AdsPerformanceTable, { CampaignPerformance } from '@/components/ads/analytics/AdsPerformanceTable';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -26,7 +27,9 @@ function AnalyticsContent() {
     const [isLoading, setIsLoading] = useState(true);
     const initialRange = Number(searchParams.get('range')) || 7;
     const [timeRange, setTimeRange] = useState(initialRange);
-    const [performanceData, setPerformanceData] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
+    
     const [kpis, setKpis] = useState({
         impressions: '0',
         clicks: '0',
@@ -38,7 +41,7 @@ function AnalyticsContent() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_ads_performance_metrics', {
+            const { data, error } = await supabase.rpc('get_campaigns_performance_summary', {
                 p_account_id: activeAccount.id,
                 p_days: timeRange
             });
@@ -46,6 +49,7 @@ function AnalyticsContent() {
             if (error) throw error;
 
             const results = Array.isArray(data) ? data : [];
+            
             const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions || 0), 0);
             const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks || 0), 0);
             const totalCost = results.reduce((acc: number, r: any) => acc + Number(r.total_cost || 0), 0);
@@ -60,20 +64,7 @@ function AnalyticsContent() {
                 cpc: formatCurrency(cpc, 'USD')
             });
 
-            const formatted = results.map((r: any) => {
-                const date = new Date(r.day);
-                const label = timeRange <= 7
-                    ? date.toLocaleDateString('en-US', { weekday: 'short' })
-                    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                return {
-                    name: label,
-                    impressions: Number(r.impressions || 0),
-                    clicks: Number(r.clicks || 0),
-                    sortKey: date.getTime()
-                };
-            });
-
-            setPerformanceData(formatted);
+            setCampaigns(results);
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to sync your performance data.', 'error');
         } finally {
@@ -104,22 +95,17 @@ function AnalyticsContent() {
         params.set('range', newRange.toString());
         router.replace(`${pathname}?${params.toString()}`);
     };
+
+    const filteredCampaigns = useMemo(() => {
+        if (!searchQuery) return campaigns;
+        return campaigns.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [campaigns, searchQuery]);
+
     return (
         <div className={styles.container}>
             <PageHeader
                 title="Ads Analytics"
                 subtitle="Analyze your campaign reach and performance."
-                customAction={
-                    <select
-                        className={`${styles.dateRangeBtn} tour-ads-analytics-range`}
-                        value={timeRange}
-                        onChange={(e) => handleRangeChange(Number(e.target.value))}
-                    >
-                        <option value={7}>Last 7 Days</option>
-                        <option value={30}>Last 30 Days</option>
-                        <option value={90}>Last 90 Days</option>
-                    </select>
-                }
             />
 
             {/* Overview Cards */}
@@ -154,35 +140,28 @@ function AnalyticsContent() {
                 />
             </div>
 
-            {/* Main Chart */}
-            <div className={styles.chartSection}>
-                <h2 className={styles.sectionTitle}>Performance Over Time</h2>
-                <div style={{ width: '100%', height: 300 }}>
-                    <ResponsiveContainer>
-                        <AreaChart
-                            data={performanceData}
-                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                        >
-                            <defs>
-                                <linearGradient id="colorImp" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#20f928" stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor="#20f928" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="colorClick" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="rgba(255, 255, 255, 0.4)" stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor="rgba(255, 255, 255, 0.4)" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} />
-                            <Legend />
-                            <Area type="monotone" dataKey="impressions" stroke="#20f928" fillOpacity={1} fill="url(#colorImp)" strokeWidth={2} />
-                            <Area type="monotone" dataKey="clicks" stroke="rgba(255, 255, 255, 0.4)" fillOpacity={1} fill="url(#colorClick)" strokeWidth={2} />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
+            <div className="tour-ads-analytics-range" style={{ marginTop: 'var(--spacing-md)' }}>
+                <TableToolbar 
+                    searchPlaceholder="Search campaigns..." 
+                    searchValue={searchQuery} 
+                    onSearchChange={setSearchQuery}
+                >
+                    <select
+                        className={sharedStyles.select}
+                        value={timeRange}
+                        onChange={(e) => handleRangeChange(Number(e.target.value))}
+                        style={{ width: 'auto', minWidth: '160px' }}
+                    >
+                        <option value={7}>Last 7 Days</option>
+                        <option value={30}>Last 30 Days</option>
+                        <option value={90}>Last 90 Days</option>
+                    </select>
+                </TableToolbar>
+            </div>
+
+            <div className={sharedStyles.pageCard} style={{ marginTop: 'var(--spacing-md)' }}>
+                <h2 className={sharedStyles.sectionTitle}>Campaign Performance Matrix</h2>
+                <AdsPerformanceTable data={filteredCampaigns} />
             </div>
 
             <ProductTour
@@ -204,11 +183,6 @@ function AnalyticsContent() {
                         target: '.tour-ads-analytics-stats',
                         title: 'Success Metrics',
                         content: 'Monitor Click-Through Rate (CTR) and Cost Per Click (CPC) to measure the effectiveness and efficiency of your ad spend.',
-                    },
-                    {
-                        target: `.${styles.chartSection}`,
-                        title: 'Visualizing Growth',
-                        content: 'The performance chart shows impressions and clicks over time, helping you identify peak engagement periods.',
                     }
                 ]}
             />

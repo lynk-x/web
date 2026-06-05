@@ -24,71 +24,38 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
             }
             setIsLoading(true);
             const { data, error } = await supabase
-                .from('ad_campaign_campaigns_with_assets')
+                .schema('advertising' as any)
+                .from('campaigns')
                 .select(`
                     *,
-                    ad_media (call_to_action, url, is_primary, media_type),
-                    ad_campaign_regions (country_code),
-                    campaign_tags (tags (name))
+                    ad_media:media (call_to_action, url, is_primary, media_type),
+                    ad_campaign_regions:campaign_regions (country_code),
+                    campaign_tags (tag_id)
                 `)
                 .eq('id', id)
                 .eq('account_id', activeAccount.id)
                 .single();
 
             if (error || !data) {
-                const { data: rawData, error: rawError } = await supabase
-                    .from('ad_campaigns')
-                    .select(`
-                        *,
-                        ad_media (call_to_action, url, is_primary, media_type),
-                        ad_campaign_regions (country_code),
-                        campaign_tags (tags (name))
-                    `)
-                    .eq('id', id)
-                    .eq('account_id', activeAccount.id)
-                    .single();
-
-                if (rawError || !rawData) {
-                    setNotFound(true);
-                    setIsLoading(false);
-                    return;
-                }
-
-                const assets = (rawData.ad_media as any[]) || [];
-                const regions = (rawData.ad_campaign_regions as any[]) || [];
-                const tags = (rawData.campaign_tags as any[]) || [];
-
-                setCampaign({
-                    id: rawData.id,
-                    title: rawData.title,
-                    description: rawData.description || '',
-                    type: rawData.type,
-                    total_budget: String(rawData.total_budget),
-                    daily_limit: rawData.daily_limit != null ? String(rawData.daily_limit) : '',
-                    max_bid_amount: rawData.max_bid_amount != null ? String(rawData.max_bid_amount) : '0.01',
-                    start_at: rawData.start_at ? rawData.start_at.slice(0, 10) : '',
-                    end_at: rawData.end_at ? rawData.end_at.slice(0, 10) : '',
-                    destination_url: rawData.destination_url || '',
-                    created_at: rawData.created_at,
-                    target_event_id: rawData.target_event_id || '',
-                    target_countries: regions.map(r => r.country_code),
-                    target_tags: tags.map(t => t.tags?.name).filter(Boolean),
-                    creatives: assets.map(a => ({
-                        headline: a.call_to_action || '',
-                        imageUrl: a.url || '',
-                        preview: a.url || '',
-                        mediaType: a.media_type
-                    })),
-                    adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
-                    adImageUrl: assets.find(a => a.is_primary)?.url || ''
-                });
+                setNotFound(true);
                 setIsLoading(false);
                 return;
             }
 
+            // Since campaign_tags only returns tag_id, we need to fetch the tag slugs from identity.tags
+            const tagIds = (data.campaign_tags as any[])?.map(ct => ct.tag_id) || [];
+            let tagNames: string[] = [];
+            if (tagIds.length > 0) {
+                const { data: tagsData } = await supabase
+                    .schema('identity' as any)
+                    .from('tags')
+                    .select('slug')
+                    .in('id', tagIds);
+                tagNames = tagsData?.map(t => t.slug) || [];
+            }
+
             const assets = (data.ad_media as any[]) || [];
             const regions = (data.ad_campaign_regions as any[]) || [];
-            const tags = (data.campaign_tags as any[]) || [];
 
             setCampaign({
                 id: data.id,
@@ -104,7 +71,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 created_at: data.created_at,
                 target_event_id: data.target_event_id || '',
                 target_countries: regions.map(r => r.country_code),
-                target_tags: tags.map(t => t.tags?.name).filter(Boolean),
+                target_tags: tagNames,
                 creatives: assets.map(a => ({
                     headline: a.call_to_action || '',
                     imageUrl: a.url || '',

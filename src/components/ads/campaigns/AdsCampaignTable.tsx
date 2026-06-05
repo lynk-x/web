@@ -142,12 +142,12 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             });
         }
 
-        if (campaign.status === 'paused' || campaign.status === 'draft') {
+        if (campaign.status === 'paused') {
             actions.push({
-                label: campaign.status === 'paused' ? 'Resume' : 'Submit for Approval',
+                label: 'Resume',
                 variant: 'success' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
-                onClick: () => onStatusChange?.(campaign.id, campaign.status === 'paused' ? 'active' : 'pending_approval' as any),
+                onClick: () => onStatusChange?.(campaign.id, 'active'),
             });
         }
 
