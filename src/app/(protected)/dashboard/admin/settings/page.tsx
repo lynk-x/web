@@ -84,16 +84,19 @@ function SettingsContent() {
 
             const acc = data?.account || {};
             const info = acc.info || {};
+            const profile = info.profile || {};
+            const contact = info.contact || {};
+            const phone = contact.phone || {};
             const ba = info.billing_address || {};
 
             const newValues = {
-                name: acc.name || '',
-                support_email: info.contact_email || info.support_email || '',
-                primary_contact: info.phone_number || '',
-                secondary_contact: info.secondary_contact || '',
-                description: info.description || '',
-                address_line: ba.line || '',
-                town: ba.town || '',
+                name: profile.name || acc.name || '',
+                support_email: contact.email || info.contact_email || info.support_email || '',
+                primary_contact: phone.primary || info.phone_number || '',
+                secondary_contact: phone.secondary || info.secondary_contact || '',
+                description: profile.description || info.description || '',
+                address_line: ba.line1 || ba.line || '',
+                town: ba.city || ba.town || '',
                 city: ba.city || '',
                 country: ba.country || acc.country_code || ''
             };
@@ -136,13 +139,19 @@ function SettingsContent() {
                 p_account_id: activeAccount.id,
                 p_display_name: formData.name,
                 p_info: {
-                    contact_email: formData.support_email,
-                    phone_number: formData.primary_contact,
-                    secondary_contact: formData.secondary_contact,
-                    description: formData.description,
+                    profile: {
+                        name: formData.name,
+                        description: formData.description
+                    },
+                    contact: {
+                        email: formData.support_email,
+                        phone: {
+                            primary: formData.primary_contact,
+                            secondary: formData.secondary_contact
+                        }
+                    },
                     billing_address: {
-                        line: formData.address_line,
-                        town: formData.town,
+                        line1: formData.address_line,
                         city: formData.city,
                         country: formData.country
                     }

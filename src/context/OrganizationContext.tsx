@@ -32,9 +32,6 @@ export interface Account {
     type: 'attendee' | 'organizer' | 'advertiser' | 'pulse_user' | 'platform' | 'system';
     wallet_balance?: number;
     wallet_currency?: string;
-    payout_routing?: {
-        [key: string]: any;
-    };
     country_code?: string;
     isPrimary: boolean;
 }

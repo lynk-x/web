@@ -132,18 +132,23 @@ function SettingsContent() {
 
             if (error) throw error;
 
-            const profile = settings?.profile || {};
-            const ba = typeof profile.billing_address === 'string' ? {} : (profile.billing_address || {});
+            const acc = settings?.account || {};
+            const info = acc.info || {};
+            const profile = info.profile || {};
+            const contact = info.contact || {};
+            const phone = contact.phone || {};
+            const ba = info.billing_address || {};
+
             const newValues = {
-                name: settings?.account?.name || '',
-                secondary_contact: profile.secondary_contact || '',
-                description: profile.description || '',
-                support_email: profile.contact_email || '',
-                primary_contact: profile.phone_number || '',
-                address_line: ba.line || (typeof profile.billing_address === 'string' ? profile.billing_address : ''),
-                town: ba.town || '',
+                name: profile.name || acc.name || '',
+                secondary_contact: phone.secondary || info.secondary_contact || '',
+                description: profile.description || info.description || '',
+                support_email: contact.email || info.contact_email || '',
+                primary_contact: phone.primary || info.phone_number || '',
+                address_line: ba.line1 || ba.line || '',
+                town: ba.city || ba.town || '',
                 city: ba.city || '',
-                country: ba.country || settings?.account?.country_code || ''
+                country: ba.country || acc.country_code || ''
             };
 
             setFormData(newValues);
@@ -184,22 +189,27 @@ function SettingsContent() {
         }
         setIsSaving(true);
         try {
-            const { error } = await supabase.rpc('update_organizer_settings', {
+            const { error } = await supabase.rpc('update_account_settings', {
                 p_account_id: activeAccount.id,
                 p_display_name: formData.name,
                 p_info: {
-                    legal_name: formData.name,
-                    contact_email: formData.support_email,
-                    phone_number: formData.primary_contact,
-                    description: formData.description,
-                    secondary_contact: formData.secondary_contact,
-                },
-                p_billing_address: JSON.stringify({
-                    line: formData.address_line,
-                    town: formData.town,
-                    city: formData.city,
-                    country: formData.country
-                })
+                    profile: {
+                        name: formData.name,
+                        description: formData.description
+                    },
+                    contact: {
+                        email: formData.support_email,
+                        phone: {
+                            primary: formData.primary_contact,
+                            secondary: formData.secondary_contact
+                        }
+                    },
+                    billing_address: {
+                        line1: formData.address_line,
+                        city: formData.city,
+                        country: formData.country
+                    }
+                }
             });
 
             if (error) throw error;

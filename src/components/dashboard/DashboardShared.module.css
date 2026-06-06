@@ -381,6 +381,12 @@
     box-shadow: 0 0 0 2px rgba(32, 249, 40, 0.1);
 }
 
+.select option,
+.input option {
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+}
+
 .textarea {
     width: 100%;
     padding: 12px 14px;

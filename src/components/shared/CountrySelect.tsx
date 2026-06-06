@@ -55,7 +55,7 @@ export default function CountrySelect({
 
     return (
         <select
-            className={className || adminStyles.input}
+            className={className || adminStyles.select}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled || isLoading}
