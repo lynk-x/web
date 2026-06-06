@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -10,6 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { SupportTicket, SupportTicketMessage } from '@/lib/repositories/support.repository';
 
 export default function SupportDashboard() {
+    const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const supportRepo = useMemo(() => createSupportRepository(supabase), [supabase]);
     const { showToast } = useToast();
@@ -133,15 +135,34 @@ export default function SupportDashboard() {
 
     return (
         <div className={sharedStyles.container}>
-            <div className={sharedStyles.header} style={{ marginBottom: '24px' }}>
-                <PageHeader
-                    title="Help & Support"
-                    subtitle={selectedTicket ? "Ticket Details & Live Chat" : "Manage your support tickets and get assistance from our team."}
-                />
-                {!selectedTicket && (
-                    <button className={sharedStyles.btnPrimary} onClick={() => setIsModalOpen(true)}>
-                        + New Ticket
-                    </button>
+            <button 
+                className={styles.backBtn} 
+                onClick={() => router.back()} 
+                style={{ marginBottom: '-8px', alignSelf: 'flex-start' }}
+            >
+                &larr; Return to Dashboard
+            </button>
+            <div style={{ marginBottom: '24px' }}>
+                {selectedTicket ? (
+                    <PageHeader
+                        title={selectedTicket.subject}
+                        subtitle={`Ticket: ${selectedTicket.reference} • Status: ${selectedTicket.status.toUpperCase()}`}
+                        customAction={
+                            <button className={sharedStyles.btnSecondary} onClick={() => setSelectedTicket(null)}>
+                                &larr; Back to Tickets
+                            </button>
+                        }
+                    />
+                ) : (
+                    <PageHeader
+                        title="Help & Support"
+                        subtitle="Manage your support tickets and get assistance from our team."
+                        customAction={
+                            <button className={sharedStyles.btnPrimary} onClick={() => setIsModalOpen(true)}>
+                                + New Ticket
+                            </button>
+                        }
+                    />
                 )}
             </div>
 
@@ -149,22 +170,7 @@ export default function SupportDashboard() {
                 {selectedTicket ? (
                     // --- Chat View ---
                     <div className={styles.chatContainer}>
-                        <div className={styles.chatHeader}>
-                            <button className={styles.backBtn} onClick={() => setSelectedTicket(null)}>
-                                &larr; Back to Tickets
-                            </button>
-                            <div>
-                                <h2 className={styles.ticketTitle} style={{ fontSize: '18px' }}>{selectedTicket.subject}</h2>
-                                <div className={styles.ticketMeta}>
-                                    <span className={`${styles.statusBadge} ${styles['status_' + selectedTicket.status]}`}>
-                                        {selectedTicket.status}
-                                    </span>
-                                    <span className={styles.ticketRef}>{selectedTicket.reference}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.messagesList}>
+                        <div className={styles.messagesList} style={{ paddingTop: '8px' }}>
                             {isMessagesLoading ? (
                                 <div className={sharedStyles.loadingContainer}>Loading messages...</div>
                             ) : messages.length === 0 ? (
