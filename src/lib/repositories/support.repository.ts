@@ -27,10 +27,10 @@ export interface SupportTicket {
 export interface SupportTicketMessage {
     id: string;
     ticket_id: string;
-    author_id: string | null;
-    content: string;
-    attachments: any[];
-    is_internal: boolean;
+    sender_id: string | null;
+    message: string;
+    is_read: boolean;
+    metadata: Record<string, unknown>;
     created_at: string;
 }
 
@@ -106,16 +106,15 @@ export function createSupportRepository(client: DbClient) {
         /** Add a message to a ticket */
         async addMessage(
             ticketId: string,
-            content: string,
-            authorId?: string
+            message: string,
+            senderId?: string
         ): Promise<RepoResult<SupportTicketMessage>> {
             const { data, error } = await client
                 .from('support_ticket_messages')
                 .insert({
                     ticket_id: ticketId,
-                    content,
-                    author_id: authorId,
-                    is_internal: false
+                    message,
+                    sender_id: senderId
                 })
                 .select()
                 .single();

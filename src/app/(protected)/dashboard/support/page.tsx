@@ -101,8 +101,7 @@ export default function SupportDashboard() {
         if (error) {
             showToast('Failed to load messages', 'error');
         } else if (data) {
-            // Only show messages that are not internal
-            setMessages(data.filter(m => !m.is_internal));
+            setMessages(data);
         }
         setIsMessagesLoading(false);
     };
@@ -179,10 +178,10 @@ export default function SupportDashboard() {
                                 </div>
                             ) : (
                                 messages.map(msg => {
-                                    const isUser = msg.author_id === userId;
+                                    const isUser = msg.sender_id === userId;
                                     return (
                                         <div key={msg.id} className={`${styles.messageBubble} ${isUser ? styles.messageUser : styles.messageAdmin}`}>
-                                            <div>{msg.content}</div>
+                                            <div>{msg.message}</div>
                                             <span className={styles.messageTime}>
                                                 {isUser ? 'You' : 'Support Team'} &bull; {formatDate(msg.created_at)}
                                             </span>
