@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './page.module.css';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
 import { createClient } from '@/utils/supabase/client';
 import { createSupportRepository } from '@/lib/repositories';
 import { useToast } from '@/components/ui/Toast';
-import type { SupportTicket } from '@/lib/repositories/support.repository';
+import type { SupportTicket, SupportTicketMessage } from '@/lib/repositories/support.repository';
 
 export default function SupportDashboard() {
     const supabase = useMemo(() => createClient(), []);
@@ -16,6 +18,14 @@ export default function SupportDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [userId, setUserId] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string>('');
+
+    // Selected Ticket State (Chat View)
+    const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+    const [messages, setMessages] = useState<SupportTicketMessage[]>([]);
+    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+    const [newMessageContent, setNewMessageContent] = useState('');
+    const [isSendingMessage, setIsSendingMessage] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,6 +47,12 @@ export default function SupportDashboard() {
         };
         init();
     }, [supabase, supportRepo]);
+
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
 
     const fetchTickets = async (uid: string) => {
         setIsLoading(true);
@@ -69,8 +85,40 @@ export default function SupportDashboard() {
             setTickets([data, ...tickets]);
             setIsModalOpen(false);
             setNewTicket({ subject: '', message: '', priority: 'normal' });
+            
+            // Automatically insert the initial message so it shows in the chat view
+            await supportRepo.addMessage(data.id, newTicket.message, userId);
         }
         setIsSubmitting(false);
+    };
+
+    const handleTicketClick = async (ticket: SupportTicket) => {
+        setSelectedTicket(ticket);
+        setIsMessagesLoading(true);
+        const { data, error } = await supportRepo.getTicketMessages(ticket.id);
+        if (error) {
+            showToast('Failed to load messages', 'error');
+        } else if (data) {
+            // Only show messages that are not internal
+            setMessages(data.filter(m => !m.is_internal));
+        }
+        setIsMessagesLoading(false);
+    };
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedTicket || !newMessageContent.trim() || !userId) return;
+
+        setIsSendingMessage(true);
+        const { data, error } = await supportRepo.addMessage(selectedTicket.id, newMessageContent, userId);
+        
+        if (error) {
+            showToast('Failed to send message', 'error');
+        } else if (data) {
+            setMessages(prev => [...prev, data]);
+            setNewMessageContent('');
+        }
+        setIsSendingMessage(false);
     };
 
     const formatDate = (dateString: string) => {
@@ -84,67 +132,138 @@ export default function SupportDashboard() {
     };
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Help & Support</h1>
-                    <p className={styles.subtitle}>Manage your support tickets and get assistance from our team.</p>
-                </div>
-                <button className={styles.createBtn} onClick={() => setIsModalOpen(true)}>
-                    + New Ticket
-                </button>
+        <div className={sharedStyles.container}>
+            <div className={sharedStyles.header} style={{ marginBottom: '24px' }}>
+                <PageHeader
+                    title="Help & Support"
+                    subtitle={selectedTicket ? "Ticket Details & Live Chat" : "Manage your support tickets and get assistance from our team."}
+                />
+                {!selectedTicket && (
+                    <button className={sharedStyles.btnPrimary} onClick={() => setIsModalOpen(true)}>
+                        + New Ticket
+                    </button>
+                )}
             </div>
 
-            {isLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading tickets...</div>
-            ) : tickets.length === 0 ? (
-                <div style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--bg-surface)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
-                    <h3 style={{ margin: '0 0 8px 0', color: 'var(--text-primary)' }}>No Support Tickets</h3>
-                    <p style={{ margin: 0, color: 'var(--text-secondary)' }}>You haven't opened any support requests yet.</p>
-                </div>
-            ) : (
-                <div className={styles.grid}>
-                    {tickets.map(ticket => (
-                        <div key={ticket.id} className={styles.ticketCard} onClick={() => showToast('Ticket details view coming soon', 'info')}>
-                            <div className={styles.ticketHeader}>
-                                <div>
-                                    <h3 className={styles.ticketTitle}>{ticket.subject}</h3>
-                                    <span className={styles.ticketRef}>{ticket.reference}</span>
+            <div className={sharedStyles.pageCard}>
+                {selectedTicket ? (
+                    // --- Chat View ---
+                    <div className={styles.chatContainer}>
+                        <div className={styles.chatHeader}>
+                            <button className={styles.backBtn} onClick={() => setSelectedTicket(null)}>
+                                &larr; Back to Tickets
+                            </button>
+                            <div>
+                                <h2 className={styles.ticketTitle} style={{ fontSize: '18px' }}>{selectedTicket.subject}</h2>
+                                <div className={styles.ticketMeta}>
+                                    <span className={`${styles.statusBadge} ${styles['status_' + selectedTicket.status]}`}>
+                                        {selectedTicket.status}
+                                    </span>
+                                    <span className={styles.ticketRef}>{selectedTicket.reference}</span>
                                 </div>
-                                <span className={`${styles.statusBadge} ${styles['status_' + ticket.status]}`}>
-                                    {ticket.status}
-                                </span>
-                            </div>
-                            <div className={styles.ticketMeta}>
-                                <span>{formatDate(ticket.created_at)}</span>
-                                <span className={styles['priority_' + ticket.priority]}>
-                                    {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)} Priority
-                                </span>
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
+
+                        <div className={styles.messagesList}>
+                            {isMessagesLoading ? (
+                                <div className={sharedStyles.loadingContainer}>Loading messages...</div>
+                            ) : messages.length === 0 ? (
+                                <div className={sharedStyles.emptyState}>
+                                    <p>No messages yet. We'll respond shortly.</p>
+                                </div>
+                            ) : (
+                                messages.map(msg => {
+                                    const isUser = msg.author_id === userId;
+                                    return (
+                                        <div key={msg.id} className={`${styles.messageBubble} ${isUser ? styles.messageUser : styles.messageAdmin}`}>
+                                            <div>{msg.content}</div>
+                                            <span className={styles.messageTime}>
+                                                {isUser ? 'You' : 'Support Team'} &bull; {formatDate(msg.created_at)}
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
+                            <textarea 
+                                className={sharedStyles.input} 
+                                style={{ flex: 1, minHeight: '44px', maxHeight: '120px', resize: 'vertical' }}
+                                placeholder={selectedTicket.status === 'resolved' ? "Ticket resolved. You cannot reply." : "Type your message here..."}
+                                value={newMessageContent}
+                                onChange={e => setNewMessageContent(e.target.value)}
+                                disabled={selectedTicket.status === 'resolved'}
+                            />
+                            <button 
+                                type="submit" 
+                                className={styles.sendBtn} 
+                                disabled={isSendingMessage || !newMessageContent.trim() || selectedTicket.status === 'resolved'}
+                            >
+                                Send
+                            </button>
+                        </form>
+                    </div>
+                ) : (
+                    // --- List View ---
+                    <>
+                        {isLoading ? (
+                            <div className={sharedStyles.loadingContainer}>Loading tickets...</div>
+                        ) : tickets.length === 0 ? (
+                            <div className={sharedStyles.emptyState}>
+                                <h3>No Support Tickets</h3>
+                                <p>You haven't opened any support requests yet.</p>
+                                <button className={sharedStyles.btnSecondary} style={{ margin: '0 auto' }} onClick={() => setIsModalOpen(true)}>
+                                    Create a Ticket
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={styles.grid}>
+                                {tickets.map(ticket => (
+                                    <div key={ticket.id} className={styles.ticketCard} onClick={() => handleTicketClick(ticket)}>
+                                        <div className={styles.ticketHeader}>
+                                            <div>
+                                                <h3 className={styles.ticketTitle}>{ticket.subject}</h3>
+                                                <span className={styles.ticketRef}>{ticket.reference}</span>
+                                            </div>
+                                            <span className={`${styles.statusBadge} ${styles['status_' + ticket.status]}`}>
+                                                {ticket.status}
+                                            </span>
+                                        </div>
+                                        <div className={styles.ticketMeta}>
+                                            <span>{formatDate(ticket.created_at)}</span>
+                                            <span className={styles['priority_' + ticket.priority]}>
+                                                {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)} Priority
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
 
             {isModalOpen && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal}>
                         <h2 className={styles.modalTitle}>Create Support Ticket</h2>
-                        <form onSubmit={handleCreateTicket}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Subject</label>
+                        <form className={sharedStyles.form} onSubmit={handleCreateTicket}>
+                            <div className={sharedStyles.inputGroup}>
+                                <label className={sharedStyles.label}>Subject</label>
                                 <input 
                                     required
-                                    className={styles.input} 
+                                    className={sharedStyles.input} 
                                     placeholder="Brief summary of your issue"
                                     value={newTicket.subject}
                                     onChange={e => setNewTicket({...newTicket, subject: e.target.value})}
                                 />
                             </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Priority</label>
+                            <div className={sharedStyles.inputGroup}>
+                                <label className={sharedStyles.label}>Priority</label>
                                 <select 
-                                    className={styles.select}
+                                    className={sharedStyles.select}
                                     value={newTicket.priority}
                                     onChange={e => setNewTicket({...newTicket, priority: e.target.value as any})}
                                 >
@@ -154,19 +273,19 @@ export default function SupportDashboard() {
                                     <option value="urgent">Urgent - Platform outage / Security</option>
                                 </select>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Message</label>
+                            <div className={sharedStyles.inputGroup}>
+                                <label className={sharedStyles.label}>Message</label>
                                 <textarea 
                                     required
-                                    className={styles.textarea} 
+                                    className={sharedStyles.textarea} 
                                     placeholder="Please describe your issue in detail..."
                                     value={newTicket.message}
                                     onChange={e => setNewTicket({...newTicket, message: e.target.value})}
                                 />
                             </div>
                             <div className={styles.btnRow}>
-                                <button type="button" className={styles.cancelBtn} onClick={() => setIsModalOpen(false)}>Cancel</button>
-                                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                                <button type="button" className={sharedStyles.btnGhost} onClick={() => setIsModalOpen(false)}>Cancel</button>
+                                <button type="submit" className={sharedStyles.btnPrimary} disabled={isSubmitting}>
                                     {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
                                 </button>
                             </div>
