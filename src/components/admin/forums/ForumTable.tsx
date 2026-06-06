@@ -159,7 +159,7 @@ const ForumTable: React.FC<ForumTableProps> = ({
             {
                 label: 'View Forum',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                onClick: () => window.open(`https://app.lynk-x.app/f/${thread.id}`, '_blank'),
+                onClick: () => window.open(`https://app.lynk-x.app/forum/${thread.id}`, '_blank'),
             },
             {
                 label: 'Edit Forum',
