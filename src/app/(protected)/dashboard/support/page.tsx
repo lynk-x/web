@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
+import EmptyStateGuide from '@/components/dashboard/EmptyStateGuide';
+import Badge from '@/components/shared/Badge';
+import Button from '@/components/shared/Button';
+import Input from '@/components/shared/Input';
+import Textarea from '@/components/shared/Textarea';
+import Select from '@/components/shared/Select';
 import { createClient } from '@/utils/supabase/client';
 import { createSupportRepository } from '@/lib/repositories';
 import { useToast } from '@/components/ui/Toast';
@@ -152,9 +158,9 @@ export default function SupportDashboard() {
                         title="Help & Support"
                         subtitle="Manage your support tickets and get assistance from our team."
                         customAction={
-                            <button className={sharedStyles.btnPrimary} onClick={() => setIsModalOpen(true)}>
+                            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
                                 + New Ticket
-                            </button>
+                            </Button>
                         }
                     />
                 )}
@@ -226,13 +232,12 @@ export default function SupportDashboard() {
                         {isLoading ? (
                             <div className={sharedStyles.loadingContainer}>Loading tickets...</div>
                         ) : tickets.length === 0 ? (
-                            <div className={sharedStyles.emptyState}>
-                                <h3>No Support Tickets</h3>
-                                <p>You haven't opened any support requests yet.</p>
-                                <button className={sharedStyles.btnSecondary} style={{ margin: '0 auto' }} onClick={() => setIsModalOpen(true)}>
-                                    Create a Ticket
-                                </button>
-                            </div>
+                            <EmptyStateGuide 
+                                title="No Support Tickets"
+                                description="You haven't opened any support requests yet."
+                                actionLabel="Create a Ticket"
+                                actionOnClick={() => setIsModalOpen(true)}
+                            />
                         ) : (
                             <div className={styles.grid}>
                                 {tickets.map(ticket => (
@@ -242,9 +247,10 @@ export default function SupportDashboard() {
                                                 <h3 className={styles.ticketTitle}>{ticket.subject}</h3>
                                                 <span className={styles.ticketRef}>{ticket.reference}</span>
                                             </div>
-                                            <span className={`${styles.statusBadge} ${styles['status_' + ticket.status]}`}>
-                                                {ticket.status}
-                                            </span>
+                                            <Badge 
+                                                label={ticket.status} 
+                                                variant={ticket.status === 'resolved' ? 'success' : ticket.status === 'investigating' ? 'warning' : ticket.status === 'new' ? 'primary' : 'neutral'} 
+                                            />
                                         </div>
                                         <div className={styles.ticketMeta}>
                                             <span>{formatDate(ticket.created_at)}</span>
@@ -265,44 +271,37 @@ export default function SupportDashboard() {
                     <div className={styles.modal}>
                         <h2 className={styles.modalTitle}>Create Support Ticket</h2>
                         <form className={sharedStyles.form} onSubmit={handleCreateTicket}>
-                            <div className={sharedStyles.inputGroup}>
-                                <label className={sharedStyles.label}>Subject</label>
-                                <input 
-                                    required
-                                    className={sharedStyles.input} 
-                                    placeholder="Brief summary of your issue"
-                                    value={newTicket.subject}
-                                    onChange={e => setNewTicket({...newTicket, subject: e.target.value})}
-                                />
-                            </div>
-                            <div className={sharedStyles.inputGroup}>
-                                <label className={sharedStyles.label}>Priority</label>
-                                <select 
-                                    className={sharedStyles.select}
-                                    value={newTicket.priority}
-                                    onChange={e => setNewTicket({...newTicket, priority: e.target.value as any})}
-                                >
-                                    <option value="low">Low - General Question</option>
-                                    <option value="normal">Normal - Issue / Bug</option>
-                                    <option value="high">High - Blocking my work</option>
-                                    <option value="urgent">Urgent - Platform outage / Security</option>
-                                </select>
-                            </div>
-                            <div className={sharedStyles.inputGroup}>
-                                <label className={sharedStyles.label}>Message</label>
-                                <textarea 
-                                    required
-                                    className={sharedStyles.textarea} 
-                                    placeholder="Please describe your issue in detail..."
-                                    value={newTicket.message}
-                                    onChange={e => setNewTicket({...newTicket, message: e.target.value})}
-                                />
-                            </div>
+                            <Input 
+                                required
+                                label="Subject"
+                                placeholder="Brief summary of your issue"
+                                value={newTicket.subject}
+                                onChange={e => setNewTicket({...newTicket, subject: e.target.value})}
+                            />
+                            <Select
+                                label="Priority"
+                                value={newTicket.priority}
+                                onChange={e => setNewTicket({...newTicket, priority: e.target.value as any})}
+                                options={[
+                                    { value: 'low', label: 'Low - General Question' },
+                                    { value: 'normal', label: 'Normal - Issue / Bug' },
+                                    { value: 'high', label: 'High - Blocking my work' },
+                                    { value: 'urgent', label: 'Urgent - Platform outage / Security' }
+                                ]}
+                            />
+                            <Textarea 
+                                required
+                                label="Message"
+                                placeholder="Please describe your issue in detail..."
+                                value={newTicket.message}
+                                onChange={e => setNewTicket({...newTicket, message: e.target.value})}
+                                style={{ minHeight: '100px' }}
+                            />
                             <div className={styles.btnRow}>
-                                <button type="button" className={sharedStyles.btnGhost} onClick={() => setIsModalOpen(false)}>Cancel</button>
-                                <button type="submit" className={sharedStyles.btnPrimary} disabled={isSubmitting}>
-                                    {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
-                                </button>
+                                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                                <Button type="submit" variant="primary" disabled={isSubmitting} isLoading={isSubmitting}>
+                                    Submit Ticket
+                                </Button>
                             </div>
                         </form>
                     </div>

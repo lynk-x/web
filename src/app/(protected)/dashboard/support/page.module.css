@@ -47,19 +47,6 @@
     color: var(--text-secondary);
 }
 
-.statusBadge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.status_new { background: #E3F2FD; color: #1976D2; }
-.status_investigating { background: #FFF3E0; color: #F57C00; }
-.status_resolved { background: #E8F5E9; color: #388E3C; }
-.status_dismissed { background: #F5F5F5; color: #757575; }
-
 .priority_high, .priority_urgent { color: #D32F2F; font-weight: 600; }
 
 .modalOverlay {
