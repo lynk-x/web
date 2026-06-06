@@ -49,18 +49,7 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
     /** Column definitions for the invoice table. */
     const columns: Column<Invoice>[] = [
         {
-            header: 'Date',
-            width: '120px',
-            render: (invoice) => <div>{invoice.date}</div>,
-        },
-        {
-            header: 'Reference',
-            width: '140px',
-            cellStyle: { fontFamily: 'var(--font-mono, monospace)', fontSize: '0.875rem' },
-            render: (invoice) => <span>{invoice.reference || '—'}</span>,
-        },
-        {
-            header: 'Description / Campaign',
+            header: 'Campaign',
             render: (invoice) => (
                 <div style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
                     {invoice.campaign_title || 'General Wallet Transaction'}
@@ -68,21 +57,32 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
             ),
         },
         {
+            header: 'Reference',
+            width: '240px',
+            cellStyle: { fontFamily: 'var(--font-mono, monospace)', fontSize: '0.875rem' },
+            render: (invoice) => <span>{invoice.reference || '—'}</span>,
+        },
+        {
             header: 'Currency',
-            width: '90px',
+            width: '220px',
             cellStyle: { color: 'var(--color-utility-secondaryText)' },
             render: (invoice) => <div>{invoice.currency || 'USD'}</div>,
         },
         {
             header: 'Amount',
-            width: '120px',
+            width: '220px',
             headerStyle: { textAlign: 'right' },
             cellStyle: { textAlign: 'right', fontWeight: 500 },
             render: (invoice) => <div>{invoice.amount}</div>,
         },
         {
+            header: 'Date',
+            width: '220px',
+            render: (invoice) => <div>{invoice.date}</div>,
+        },
+        {
             header: 'Status',
-            width: '120px',
+            width: '220px',
             render: (invoice) => (
                 <Badge
                     label={formatString(invoice.status)}

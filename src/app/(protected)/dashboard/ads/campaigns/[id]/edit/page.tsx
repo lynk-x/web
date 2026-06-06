@@ -24,11 +24,10 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
             }
             setIsLoading(true);
             const { data, error } = await supabase
-                .schema('advertising' as any)
                 .from('campaigns')
                 .select(`
                     *,
-                    ad_media:media (call_to_action, url, is_primary, media_type),
+                    ad_media:ad_media (call_to_action, url, is_primary, media_type:type),
                     ad_campaign_regions:campaign_regions (country_code),
                     campaign_tags (tag_id)
                 `)
@@ -42,12 +41,11 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 return;
             }
 
-            // Since campaign_tags only returns tag_id, we need to fetch the tag slugs from identity.tags
+            // Since campaign_tags only returns tag_id, we need to fetch the tag slugs from tags proxy view
             const tagIds = (data.campaign_tags as any[])?.map(ct => ct.tag_id) || [];
             let tagNames: string[] = [];
             if (tagIds.length > 0) {
                 const { data: tagsData } = await supabase
-                    .schema('identity' as any)
                     .from('tags')
                     .select('slug')
                     .in('id', tagIds);

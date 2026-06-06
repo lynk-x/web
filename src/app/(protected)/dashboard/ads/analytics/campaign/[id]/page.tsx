@@ -26,7 +26,6 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
         try {
             // Get Campaign Title
             const { data: campaignData } = await supabase
-                .schema('advertising' as any)
                 .from('campaigns')
                 .select('title')
                 .eq('id', id)
