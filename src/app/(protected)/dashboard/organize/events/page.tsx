@@ -76,6 +76,7 @@ export default function OrganizerEventsPage() {
                 is_private: boolean;
                 currency: string;
                 created_at: string;
+                forum_id: string | null;
             }
 
             const formattedEvents: OrganizerEvent[] = (data.items || []).map((e: EventItem) => ({
@@ -93,7 +94,8 @@ export default function OrganizerEventsPage() {
                 eventReference: e.event_reference,
                 isPrivate: e.is_private,
                 currency: e.currency,
-                createdAt: e.created_at
+                createdAt: e.created_at,
+                forum_id: e.forum_id || undefined
             }));
 
             setEvents(formattedEvents);
