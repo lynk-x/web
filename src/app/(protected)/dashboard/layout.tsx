@@ -8,6 +8,7 @@
 import Sidebar from '@/components/dashboard/Sidebar';
 import MobileNudge from '@/components/dashboard/MobileNudge';
 import InactivityGuard from '@/components/dashboard/InactivityGuard';
+import SupportFAB from '@/components/dashboard/SupportFAB';
 import '@/theme/dashboard.css';
 import styles from './layout.module.css';
 import { Metadata } from 'next';
@@ -29,6 +30,7 @@ export default function DashboardLayout({
                 <main className={`${styles.main} dashboard-scroll`}>
                     {children}
                 </main>
+                <SupportFAB />
             </div>
         </InactivityGuard>
     );
