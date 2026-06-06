@@ -136,21 +136,16 @@ export default function SupportDashboard() {
         <div className={sharedStyles.container}>
             <button 
                 className={styles.backBtn} 
-                onClick={() => router.back()} 
+                onClick={() => selectedTicket ? setSelectedTicket(null) : router.back()} 
                 style={{ marginBottom: '-8px', alignSelf: 'flex-start' }}
             >
-                &larr; Return to Dashboard
+                &larr; {selectedTicket ? "Back to Tickets" : "Return to Dashboard"}
             </button>
             <div style={{ marginBottom: '24px' }}>
                 {selectedTicket ? (
                     <PageHeader
                         title={selectedTicket.subject}
                         subtitle={`Ticket: ${selectedTicket.reference} • Status: ${selectedTicket.status.toUpperCase()}`}
-                        customAction={
-                            <button className={sharedStyles.btnSecondary} onClick={() => setSelectedTicket(null)}>
-                                &larr; Back to Tickets
-                            </button>
-                        }
                     />
                 ) : (
                     <PageHeader
@@ -191,6 +186,21 @@ export default function SupportDashboard() {
                             )}
                             <div ref={messagesEndRef} />
                         </div>
+
+                        {selectedTicket.status !== 'resolved' && (
+                            <div className={styles.choiceChipsContainer}>
+                                {["Thank you!", "I still need help.", "Can you provide more details?", "This issue is resolved."].map((reply, i) => (
+                                    <button 
+                                        key={i} 
+                                        type="button"
+                                        className={styles.choiceChip}
+                                        onClick={() => setNewMessageContent(reply)}
+                                    >
+                                        {reply}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
                             <textarea 
