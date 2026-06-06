@@ -303,11 +303,10 @@ const CheckoutView: React.FC = () => {
                 const { data: anonData } = await supabase.auth.signInAnonymously();
                 user = anonData.user;
                 if (user) {
-                    await supabase.from('user_profile').upsert({
-                        id: user.id,
+                    await supabase.from('user_profile').update({
                         email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
                         phone_number: formData.phone.trim(),
-                    }, { onConflict: 'id' });
+                    }).eq('id', user.id);
                 }
             }
             if (!user) throw new Error('Could not establish session');

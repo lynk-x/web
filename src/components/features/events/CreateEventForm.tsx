@@ -139,22 +139,28 @@ const CreateEventForm = () => {
 
             // 2. Handle Tags (Upsert approach)
             if (tags.length > 0) {
-                // First, ensure all tags exist in the tags table (or get their IDs)
-                for (const tagName of tags) {
-                    const slug = tagName.toLowerCase().replace(/\s+/g, '-');
-                    // We try to insert unique tags, on conflict we do nothing but we need the ID
-                    const { data: tagObj } = await supabase
-                        .from('tags')
-                        .upsert({ name: tagName, slug: slug }, { onConflict: 'slug' })
-                        .select('id')
-                        .single();
+                const tagsToResolve = tags.map(tag => ({
+                    name: tag,
+                    slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                    is_official: false
+                }));
+
+                const { data: resolvedTags, error: tagUpsertError } = await supabase
+                    .rpc('resolve_tags', { p_tags: tagsToResolve });
+
+                if (tagUpsertError) throw tagUpsertError;
+
+                if (resolvedTags && Array.isArray(resolvedTags)) {
+                    const eventTagsToInsert = resolvedTags.map((t: any) => ({
+                        event_id: event.id,
+                        tag_id: t.id
+                    }));
                     
-                    if (tagObj) {
-                        await supabase.from('event_tags').insert({
-                            event_id: event.id,
-                            tag_id: tagObj.id
-                        });
-                    }
+                    const { error: eventTagError } = await supabase
+                        .from('event_tags')
+                        .insert(eventTagsToInsert);
+                        
+                    if (eventTagError) console.error("Warning: Tag linking failed", eventTagError);
                 }
             }
 

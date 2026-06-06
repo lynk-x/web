@@ -131,12 +131,26 @@ export default function UserForm({
                     .maybeSingle();
 
                 if (memberData?.account_id) {
-                    await supabase.from('identity_verifications').upsert({
-                        account_id: memberData.account_id,
-                        kyc_tier: formData.kycTier,
-                        status: 'approved',
-                        verified_at: new Date().toISOString()
-                    }, { onConflict: 'account_id, kyc_tier' });
+                    const { data: existingKyc } = await supabase
+                        .from('identity_verifications')
+                        .select('id')
+                        .eq('account_id', memberData.account_id)
+                        .eq('kyc_tier', formData.kycTier)
+                        .maybeSingle();
+
+                    if (existingKyc) {
+                        await supabase.from('identity_verifications').update({
+                            status: 'approved',
+                            verified_at: new Date().toISOString()
+                        }).eq('id', existingKyc.id);
+                    } else {
+                        await supabase.from('identity_verifications').insert({
+                            account_id: memberData.account_id,
+                            kyc_tier: formData.kycTier,
+                            status: 'approved',
+                            verified_at: new Date().toISOString()
+                        });
+                    }
                 }
 
                 showToast('Account updated successfully!', 'success');

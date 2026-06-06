@@ -193,25 +193,39 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             }
 
             if (data.isPaid && data.tickets.length > 0) {
-                const ticketsToUpsert = data.tickets.map((t) => ({
-                    ...(t.id ? { id: t.id } : {}),
-                    event_id: eventId,
-                    event_created_at: eventCreatedAt,
-                    display_name: t.display_name,
-                    price: parseFloat(t.price),
-                    capacity: parseInt(t.capacity),
-                    max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : null,
-                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
-                    description: t.description || null,
-                    updated_at: new Date().toISOString()
-                }));
+                const ticketsToInsert = [];
+                
+                for (const t of data.tickets) {
+                    const ticketData = {
+                        event_id: eventId,
+                        event_created_at: eventCreatedAt,
+                        display_name: t.display_name,
+                        price: parseFloat(t.price),
+                        capacity: parseInt(t.capacity),
+                        max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : null,
+                        sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
+                        sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                        description: t.description || null,
+                        updated_at: new Date().toISOString()
+                    };
 
-                const { error: upsertError } = await supabase
-                    .from('ticket_tiers')
-                    .upsert(ticketsToUpsert);
+                    if (t.id) {
+                        const { error: updateError } = await supabase
+                            .from('ticket_tiers')
+                            .update(ticketData)
+                            .eq('id', t.id);
+                        if (updateError) throw updateError;
+                    } else {
+                        ticketsToInsert.push(ticketData);
+                    }
+                }
 
-                if (upsertError) throw upsertError;
+                if (ticketsToInsert.length > 0) {
+                    const { error: insertError } = await supabase
+                        .from('ticket_tiers')
+                        .insert(ticketsToInsert);
+                    if (insertError) throw insertError;
+                }
             }
 
             showToast('Event updated successfully!', 'success');

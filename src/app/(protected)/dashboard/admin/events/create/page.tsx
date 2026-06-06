@@ -109,14 +109,12 @@ export default function AdminCreateEventPage() {
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase
-                    .from('tags')
-                    .upsert(tagsToUpsert, { onConflict: 'slug' })
-                    .select('id');
+                    .rpc('resolve_tags', { p_tags: tagsToUpsert });
 
                 if (tagUpsertError) throw tagUpsertError;
 
-                if (resolvedTags) {
-                    const eventTagsToInsert = resolvedTags.map(tag => ({
+                if (resolvedTags && Array.isArray(resolvedTags)) {
+                    const eventTagsToInsert = resolvedTags.map((tag: any) => ({
                         event_id: newEvent.id,
                         event_created_at: newEvent.created_at,
                         tag_id: tag.id

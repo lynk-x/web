@@ -155,14 +155,27 @@ export function createNotificationsRepository(client: DbClient) {
             type: NotificationType,
             channels: { in_app?: boolean; push?: boolean; email?: boolean; marketing_consent?: boolean }
         ): Promise<RepoResult<null>> {
-            const { error } = await client
+            const { data: existing } = await client
                 .from('notification_preferences')
-                .upsert(
-                    { user_id: userId, type, ...channels },
-                    { onConflict: 'user_id,type' }
-                );
+                .select('user_id')
+                .eq('user_id', userId)
+                .eq('type', type)
+                .maybeSingle();
 
-            if (error) return { data: null, error: toError(error) };
+            if (existing) {
+                const { error } = await client
+                    .from('notification_preferences')
+                    .update({ ...channels })
+                    .eq('user_id', userId)
+                    .eq('type', type);
+                if (error) return { data: null, error: toError(error) };
+            } else {
+                const { error } = await client
+                    .from('notification_preferences')
+                    .insert({ user_id: userId, type, ...channels });
+                if (error) return { data: null, error: toError(error) };
+            }
+
             return { data: null, error: null };
         },
 
