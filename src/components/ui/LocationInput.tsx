@@ -97,13 +97,15 @@ export const LocationInput: React.FC<LocationInputProps> = ({
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (inputValue && inputValue !== value && isOpen) {
+            // Because onChange immediately updates the parent, value and inputValue 
+            // will match. We just need to check if the dropdown is open (user is typing).
+            if (inputValue && isOpen) {
                 fetchSuggestions(inputValue);
             }
         }, 400);
 
         return () => clearTimeout(timer);
-    }, [inputValue, value, isOpen, fetchSuggestions]);
+    }, [inputValue, isOpen, fetchSuggestions]);
 
     const handleSelect = async (suggestion: Suggestion) => {
         setInputValue(suggestion.place_name);
