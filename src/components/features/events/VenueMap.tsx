@@ -36,7 +36,7 @@ export const VenueMap: React.FC<VenueMapProps> = ({ lat, lng, className }) => {
                         'Content-Type': 'application/json',
                         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                     },
-                    body: JSON.stringify({ lat, lng, width: 600, height: 300, zoom: 12 })
+                    body: JSON.stringify({ lat, lng, width: 600, height: 400, zoom: 8 })
                 });
 
                 if (!response.ok) {
