@@ -27,13 +27,24 @@ export const VenueMap: React.FC<VenueMapProps> = ({ lat, lng, className }) => {
             setIsLoading(true);
             setError(null);
             try {
-                const { data, error: funcError } = await supabase.functions.invoke('venue-map', {
-                    body: { lat, lng, width: 600, height: 300, zoom: 15 }
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                
+                const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/venue-map`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({ lat, lng, width: 600, height: 300, zoom: 15 })
                 });
 
-                if (funcError) throw funcError;
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${await response.text()}`);
+                }
 
-                // The edge function returns the image blob
+                // The edge function returns the image blob directly
+                const data = await response.blob();
                 const url = URL.createObjectURL(data);
                 if (isMounted) setMapUrl(url);
             } catch (err) {

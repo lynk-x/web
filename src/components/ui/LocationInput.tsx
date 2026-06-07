@@ -109,6 +109,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
 
     const handleSelect = async (suggestion: Suggestion) => {
         setInputValue(suggestion.place_name);
+        setIsOpen(false); // Close immediately so the debouncer doesn't re-trigger
         setIsLoading(true);
         
         try {
@@ -126,7 +127,6 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             onChange(suggestion.place_name);
         } finally {
             setIsLoading(false);
-            setIsOpen(false);
         }
     };
 
