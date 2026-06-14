@@ -14,13 +14,15 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface EventSession {
     id: string;
-    event_id: string;
+    forum_id: string;
+    forum_created_at: string;
     title: string;
     description: string | null;
     starts_at: string;
     ends_at: string;
     location: any;
-    order_index: number;
+    sort_order: number;
+    speakers: string[];
     created_at: string;
 }
 
@@ -58,14 +60,41 @@ export default function EventSessionsPage() {
 
             if (eventData) setEventTitle(eventData.title);
 
-            const { data, error } = await supabase
-                .from('event_sessions')
-                .select('*')
+            // Fetch the forum associated with this event
+            const { data: forumData, error: forumError } = await supabase
+                .from('forums')
+                .select('id, created_at')
                 .eq('event_id', eventId)
-                .order('order_index', { ascending: true });
+                .single();
+
+            if (forumError || !forumData) {
+                setSessions([]);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('forum_sessions')
+                .select('*')
+                .eq('forum_id', forumData.id)
+                .order('sort_order', { ascending: true });
 
             if (error) throw error;
-            setSessions(data || []);
+
+            const mapped: EventSession[] = (data || []).map((s: any) => ({
+                id: s.id,
+                forum_id: s.forum_id,
+                forum_created_at: s.forum_created_at,
+                title: s.info?.title || 'Untitled Session',
+                description: s.info?.description || null,
+                starts_at: s.starts_at,
+                ends_at: s.ends_at,
+                location: s.info?.room ? { venue: s.info.room } : null,
+                sort_order: s.sort_order ?? 0,
+                speakers: s.info?.speakers || [],
+                created_at: s.created_at,
+            }));
+
+            setSessions(mapped);
         } catch (e: unknown) {
             showToast('Failed to load sessions', 'error');
         } finally {
@@ -103,26 +132,41 @@ export default function EventSessionsPage() {
 
         setIsSaving(true);
         try {
+            // Fetch the forum associated with this event
+            const { data: forumData, error: forumError } = await supabase
+                .from('forums')
+                .select('id, created_at')
+                .eq('event_id', eventId)
+                .single();
+
+            if (forumError || !forumData) {
+                throw new Error('No forum found for this event.');
+            }
+
             const payload = {
-                event_id: eventId,
-                title: title.trim(),
-                description: description.trim() || null,
+                forum_id: forumData.id,
+                forum_created_at: forumData.created_at,
                 starts_at: new Date(startsAt).toISOString(),
                 ends_at: new Date(endsAt).toISOString(),
-                location: venue.trim() ? { venue: venue.trim() } : null,
-                order_index: editingSession?.order_index ?? sessions.length,
+                sort_order: editingSession?.sort_order ?? sessions.length,
+                info: {
+                    title: title.trim(),
+                    description: description.trim() || null,
+                    room: venue.trim() || null,
+                    speakers: editingSession?.speakers || [],
+                }
             };
 
             if (editingSession) {
                 const { error } = await supabase
-                    .from('event_sessions')
+                    .from('forum_sessions')
                     .update(payload)
                     .eq('id', editingSession.id);
                 if (error) throw error;
                 showToast('Session updated', 'success');
             } else {
                 const { error } = await supabase
-                    .from('event_sessions')
+                    .from('forum_sessions')
                     .insert(payload);
                 if (error) throw error;
                 showToast('Session created', 'success');
@@ -141,7 +185,7 @@ export default function EventSessionsPage() {
         if (!await confirm('Delete this session?')) return;
         try {
             const { error } = await supabase
-                .from('event_sessions')
+                .from('forum_sessions')
                 .delete()
                 .eq('id', sessionId);
             if (error) throw error;
