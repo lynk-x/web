@@ -19,9 +19,10 @@ export function useCountries() {
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
-                    .from('countries')
+                    .schema('api')
+                    .from('v1_countries')
                     .select('code, display_name')
-                    .eq('status', 'approved')
+                    .eq('is_active', true)
                     .order('display_name');
 
                 if (error) throw error;

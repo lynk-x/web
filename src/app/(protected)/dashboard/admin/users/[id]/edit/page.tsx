@@ -22,7 +22,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
-                    .from('user_profile')
+                    .schema('api')
+                    .from('v1_profiles')
                     .select('id, full_name, user_name, email, role, status, bio, country_code, kyc_tier')
                     .eq('id', id)
                     .single();

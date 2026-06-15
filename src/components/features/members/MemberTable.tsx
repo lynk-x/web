@@ -59,9 +59,10 @@ export default function MemberTable() {
         setIsLoading(true);
 
         try {
-            // Fetch Active Members First (from the secure view vw_account_members)
+            // Fetch Active Members First (from the secure view api.v1_account_members)
             const { data: memberData, error: memberError } = await supabase
-                .from('vw_account_members')
+                .schema('api')
+                .from('v1_account_members')
                 .select('*')
                 .eq('account_id', activeAccount.id);
 
@@ -69,7 +70,8 @@ export default function MemberTable() {
 
             // Fetch Pending Invitations
             const { data: inviteData, error: inviteError } = await supabase
-                .from('account_invitations')
+                .schema('api')
+                .from('v1_account_invitations')
                 .select('id, invitee_email, role_slug, created_at')
                 .eq('account_id', activeAccount.id)
                 .is('accepted_at', null);

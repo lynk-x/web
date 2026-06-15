@@ -20,9 +20,10 @@ export function useCurrencies() {
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
-                    .from('countries')
+                    .schema('api')
+                    .from('v1_countries')
                     .select('currency, display_name')
-                    .eq('status', 'approved')
+                    .eq('is_active', true)
                     .order('currency');
 
                 if (error) throw error;

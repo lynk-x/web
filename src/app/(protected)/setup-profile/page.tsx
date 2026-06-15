@@ -102,7 +102,8 @@ export default function ProfileSetupPage() {
 
         try {
             const { error: updateError } = await supabase
-                .from('user_profile')
+                .schema('api')
+                .from('v1_profiles')
                 .update({
                     full_name: fullName.trim(),
                     user_name: userName.trim(),

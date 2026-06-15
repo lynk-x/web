@@ -25,7 +25,8 @@ export function createUsersRepository(client: DbClient) {
         /** Fetch a single user's profile by their auth UID. Returns null when the row is not found. */
         async getProfile(userId: string): Promise<RepoResult<UserProfile | null>> {
             const { data, error } = await client
-                .from('user_profile')
+                .schema('api')
+                .from('v1_profiles')
                 .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
                 .eq('id', userId)
                 .maybeSingle();
@@ -46,7 +47,8 @@ export function createUsersRepository(client: DbClient) {
             const ids = Array.from(new Set(userIds));
 
             const { data, error } = await client
-                .from('user_profile')
+                .schema('api')
+                .from('v1_profiles')
                 .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
                 .in('id', ids);
 

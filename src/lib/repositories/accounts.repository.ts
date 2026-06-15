@@ -212,7 +212,8 @@ export function createAccountsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('account_invitations')
+                .schema('api')
+                .from('v1_account_invitations')
                 .select('id, account_id, invitee_email, invitee_phone, role_slug, accepted_at, expires_at, created_at')
                 .eq('account_id', accountId)
                 .order('created_at', { ascending: false })

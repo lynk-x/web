@@ -93,7 +93,8 @@ const CheckoutView: React.FC = () => {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user && !user.is_anonymous) {
                     const { data: profile } = await supabase
-                        .from('user_profile')
+                        .schema('api')
+                        .from('v1_profiles')
                         .select('full_name, email, phone_number')
                         .eq('id', user.id)
                         .maybeSingle();
@@ -303,7 +304,7 @@ const CheckoutView: React.FC = () => {
                 const { data: anonData } = await supabase.auth.signInAnonymously();
                 user = anonData.user;
                 if (user) {
-                    await supabase.from('user_profile').update({
+                    await supabase.schema('api').from('v1_profiles').update({
                         email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
                         phone_number: formData.phone.trim(),
                     }).eq('id', user.id);

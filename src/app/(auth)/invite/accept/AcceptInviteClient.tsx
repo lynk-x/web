@@ -35,10 +35,10 @@ export default function AcceptInviteClient({ token }: { token: string }) {
 
         try {
             // Just check if the token exists to show who invited them. We do this securely by not exposing raw data.
-            // actually, just let them accept it straight via RPC or we can get basic info if we join
             const { data, error: fetchErr } = await supabase
-                .from("account_invitations")
-                .select("id, account_id, invitee_email, role_slug, accepted_at, expires_at, accounts!account_id(display_name, slug), inviter:invited_by(full_name, user_name)")
+                .schema('api')
+                .from("v1_account_invitations")
+                .select("id, account_id, invitee_email, role_slug, accepted_at, expires_at, account_display_name, account_slug, inviter_full_name, inviter_user_name")
                 .eq("token", token)
                 .single();
 
@@ -60,7 +60,19 @@ export default function AcceptInviteClient({ token }: { token: string }) {
                 throw new Error(`This invite was sent to ${data.invitee_email}, but you are logged in as ${user.email}.`);
             }
 
-            setInviteDetails(data);
+            const mappedData = {
+                ...data,
+                accounts: {
+                    display_name: data.account_display_name,
+                    slug: data.account_slug
+                },
+                inviter: {
+                    full_name: data.inviter_full_name,
+                    user_name: data.inviter_user_name
+                }
+            };
+
+            setInviteDetails(mappedData);
         } catch (err: unknown) {
             setError(getErrorMessage(err) || "Invalid invitation.");
         } finally {

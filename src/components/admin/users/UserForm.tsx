@@ -109,7 +109,8 @@ export default function UserForm({
             
             if (isEditing) {
                 const { error: profileError } = await supabase
-                    .from('user_profile')
+                    .schema('api')
+                    .from('v1_profiles')
                     .update({
                         full_name: sanitizedName,
                         email: sanitizedEmail,
@@ -124,7 +125,8 @@ export default function UserForm({
                 // Update KYC Tier via identity_verifications
                 // We need to find the primary account first
                 const { data: memberData } = await supabase
-                    .from('account_members')
+                    .schema('api')
+                    .from('v1_account_memberships')
                     .select('account_id')
                     .eq('user_id', formData.id)
                     .eq('is_primary', true)
@@ -167,7 +169,8 @@ export default function UserForm({
 
                 // Set initial KYC tier via identity_verifications
                 const { data: memberData } = await supabase
-                    .from('account_members')
+                    .schema('api')
+                    .from('v1_account_memberships')
                     .select('account_id')
                     .eq('user_id', userId)
                     .eq('is_primary', true)
