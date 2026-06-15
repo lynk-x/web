@@ -18,7 +18,8 @@ export default async function PrivacyPage() {
     const supabase = await createClient();
 
     const { data: doc } = await supabase
-        .from('legal_documents')
+        .schema('api')
+        .from('v1_legal_documents')
         .select('*')
         .eq('slug', 'privacy_policy')
         .eq('is_active', true)

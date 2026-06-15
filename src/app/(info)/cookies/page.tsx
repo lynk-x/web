@@ -19,7 +19,8 @@ export default async function CookiePolicyPage() {
     const supabase = await createClient();
 
     const { data: doc } = await supabase
-        .from('legal_documents')
+        .schema('api')
+        .from('v1_legal_documents')
         .select('*')
         .eq('slug', 'cookie_policy')
         .eq('is_active', true)

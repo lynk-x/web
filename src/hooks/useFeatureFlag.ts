@@ -18,7 +18,8 @@ export function useFeatureFlag(key: string): { enabled: boolean | null; isLoadin
         const check = async () => {
             try {
                 const { data } = await supabase
-                    .from('feature_flags')
+                    .schema('api')
+                    .from('v1_feature_flags')
                     .select('is_enabled')
                     .eq('key', key)
                     .single();

@@ -54,7 +54,8 @@ export default function DashboardOverview() {
                         p_account_id: activeAccount.id
                     }),
                     supabase
-                        .from('spotlights')
+                        .schema('api')
+                        .from('v1_spotlights')
                         .select('*')
                         .in('target', ['all', 'organize_dashboard'])
                         .eq('is_active', true)

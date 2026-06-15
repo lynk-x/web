@@ -34,7 +34,8 @@ export default function EditBannerPage() {
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
-                    .from('system_banners')
+                    .schema('api')
+                    .from('v1_banners')
                     .select('*')
                     .eq('id', id)
                     .single();
@@ -75,18 +76,19 @@ export default function EditBannerPage() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase
-                .from('system_banners')
-                .update({
+            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+                p_tab: 'banners',
+                p_id: id,
+                p_data: {
                     title,
-                    content,
+                    body: content,
                     type,
-                    is_active: isActive,
+                    status: isActive ? 'approved' : 'draft',
                     starts_at: new Date(startsAt).toISOString(),
                     ends_at: endsAt ? new Date(endsAt).toISOString() : null,
                     action_url: actionUrl || null
-                })
-                .eq('id', id);
+                }
+            });
 
             if (error) throw error;
 

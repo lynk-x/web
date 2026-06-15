@@ -155,7 +155,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch all feature flags. */
         async getFeatureFlags(): Promise<RepoResult<FeatureFlag[]>> {
             const { data, error } = await client
-                .from('feature_flags')
+                .schema('api')
+                .from('v1_feature_flags')
                 .select('key, is_enabled, description');
 
             if (error) return { data: null, error: toError(error) };
@@ -165,7 +166,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch a single system config value by key. */
         async getSystemConfig(key: string): Promise<RepoResult<SystemConfigEntry>> {
             const { data, error } = await client
-                .from('system_config')
+                .schema('api')
+                .from('v1_system_config')
                 .select('key, value, data_type')
                 .eq('key', key)
                 .single();
@@ -177,7 +179,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch all system config entries. */
         async getAllSystemConfig(): Promise<RepoResult<SystemConfigEntry[]>> {
             const { data, error } = await client
-                .from('system_config')
+                .schema('api')
+                .from('v1_system_config')
                 .select('key, value, data_type')
                 .order('key', { ascending: true });
 
@@ -188,7 +191,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch the active version of a legal document by its slug. */
         async getLegalDocument(slug: LegalDocumentSlug | string): Promise<RepoResult<LegalDocument | null>> {
             const { data, error } = await client
-                .from('legal_documents')
+                .schema('api')
+                .from('v1_legal_documents')
                 .select('id, slug, version, title, content, is_active, effective_date')
                 .eq('slug', slug)
                 .eq('is_active', true)
@@ -209,7 +213,8 @@ export function createReferenceRepository(client: DbClient) {
             const targets = target === 'all' ? ['all'] : [target, 'all'];
 
             const { data, error } = await client
-                .from('system_banners')
+                .schema('api')
+                .from('v1_banners')
                 .select('id, title, content, type, target, is_active, starts_at, ends_at, action_url')
                 .eq('is_active', true)
                 .in('target', targets)
@@ -223,7 +228,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch spotlights for a given target surface. */
         async getSpotlights(target: Spotlight['target']): Promise<RepoResult<Spotlight[]>> {
             const { data, error } = await client
-                .from('spotlights')
+                .schema('api')
+                .from('v1_spotlights')
                 .select('id, title, subtitle, target, display_order, cta_text, redirect_to, background_url, is_active')
                 .eq('is_active', true)
                 .in('target', [target, 'all'])

@@ -48,7 +48,8 @@ export function createSupportRepository(client: DbClient) {
             }
         ): Promise<RepoResult<SupportTicket>> {
             const { data: ticket, error } = await client
-                .from('support_tickets')
+                .schema('api')
+                .from('v1_support_tickets')
                 .insert(data)
                 .select()
                 .single();
@@ -67,7 +68,8 @@ export function createSupportRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             let query = client
-                .from('support_tickets')
+                .schema('api')
+                .from('v1_support_tickets')
                 .select('*', { count: opts?.withCount ? 'exact' : undefined })
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
@@ -82,7 +84,8 @@ export function createSupportRepository(client: DbClient) {
         /** Get a single ticket by id */
         async getTicket(ticketId: string): Promise<RepoResult<SupportTicket>> {
             const { data, error } = await client
-                .from('support_tickets')
+                .schema('api')
+                .from('v1_support_tickets')
                 .select('*')
                 .eq('id', ticketId)
                 .single();
@@ -94,7 +97,8 @@ export function createSupportRepository(client: DbClient) {
         /** Get all messages for a ticket */
         async getTicketMessages(ticketId: string): Promise<RepoResult<SupportTicketMessage[]>> {
             const { data, error } = await client
-                .from('support_ticket_messages')
+                .schema('api')
+                .from('v1_support_ticket_messages')
                 .select('*')
                 .eq('ticket_id', ticketId)
                 .order('created_at', { ascending: true });
@@ -110,7 +114,8 @@ export function createSupportRepository(client: DbClient) {
             senderId?: string
         ): Promise<RepoResult<SupportTicketMessage>> {
             const { data, error } = await client
-                .from('support_ticket_messages')
+                .schema('api')
+                .from('v1_support_ticket_messages')
                 .insert({
                     ticket_id: ticketId,
                     message,

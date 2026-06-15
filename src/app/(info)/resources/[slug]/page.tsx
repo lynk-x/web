@@ -17,7 +17,8 @@ export async function generateMetadata(
     const supabase = await createClient();
 
     const { data: page } = await supabase
-        .from('cms_pages')
+        .schema('api')
+        .from('v1_cms_pages')
         .select('title, content')
         .eq('slug', slug)
         .eq('status', 'published')
@@ -40,7 +41,8 @@ export default async function ResourcePage({ params }: Props) {
     const supabase = await createClient();
 
     const { data: page } = await supabase
-        .from('cms_pages')
+        .schema('api')
+        .from('v1_cms_pages')
         .select('*')
         .eq('slug', slug)
         .eq('status', 'published')

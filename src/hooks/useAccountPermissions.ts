@@ -49,7 +49,8 @@ export function useAccountPermissions(accountId: string | null | undefined): Use
             }
             // Resolve role separately — cheaper than joining in the RPC.
             const { data: member } = await supabase
-                .from('account_members')
+                .schema('api')
+                .from('v1_account_memberships')
                 .select('role_slug')
                 .eq('account_id', accountId)
                 .maybeSingle();

@@ -17,7 +17,8 @@ export default async function RefundPolicyPage() {
     const supabase = await createClient();
 
     const { data: doc } = await supabase
-        .from('legal_documents')
+        .schema('api')
+        .from('v1_legal_documents')
         .select('*')
         .eq('slug', 'refund_policy')
         .eq('is_active', true)

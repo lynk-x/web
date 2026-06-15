@@ -43,9 +43,9 @@ export default function CreateSpotlightPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('spotlights')
-                .insert([{
+            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+                p_tab: 'spotlights',
+                p_data: {
                     title,
                     subtitle: subtitle || null,
                     target,
@@ -54,7 +54,8 @@ export default function CreateSpotlightPage() {
                     redirect_to: redirectTo || null,
                     background_url: backgroundUrl || null,
                     is_active: isActive
-                }]);
+                }
+            });
 
             if (error) throw error;
 

@@ -18,7 +18,8 @@ export default async function ResourceIndex() {
     const supabase = await createClient();
 
     const { data: resources } = await supabase
-        .from('cms_pages')
+        .schema('api')
+        .from('v1_cms_pages')
         .select('title, slug, content')
         .eq('status', 'published')
         .order('created_at', { ascending: false });

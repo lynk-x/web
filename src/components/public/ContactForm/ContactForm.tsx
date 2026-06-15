@@ -34,7 +34,8 @@ export default function ContactForm() {
         
         try {
             const { error } = await supabase
-                .from('support_tickets')
+                .schema('api')
+                .from('v1_support_tickets')
                 .insert({
                     user_id: user?.id,
                     full_name: formData.name,

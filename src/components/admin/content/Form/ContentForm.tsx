@@ -127,18 +127,12 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
             };
 
             let error;
-            if (isEditing && initialData?.id) {
-                const res = await supabase
-                    .from('cms_pages')
-                    .update(payload)
-                    .eq('id', initialData.id);
-                error = res.error;
-            } else {
-                const res = await supabase
-                    .from('cms_pages')
-                    .insert([payload]);
-                error = res.error;
-            }
+            const res = await supabase.rpc('admin_upsert_comms_item', {
+                p_tab: 'content',
+                p_id: isEditing ? initialData?.id : null,
+                p_data: payload
+            });
+            error = res.error;
 
             if (error) throw error;
 

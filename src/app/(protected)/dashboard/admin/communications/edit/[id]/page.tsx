@@ -25,7 +25,8 @@ export default function AdminEditContentPage() {
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
-                    .from('cms_pages')
+                    .schema('api')
+                    .from('v1_cms_pages')
                     .select('*')
                     .eq('id', id)
                     .single();

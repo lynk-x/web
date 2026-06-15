@@ -46,23 +46,17 @@ export default function NewLegalVersionPage() {
 
         setIsLoading(true);
         try {
-            if (is_active) {
-                await supabase
-                    .from('legal_documents')
-                    .update({ is_active: false })
-                    .eq('type', type);
-            }
-
-            const { error } = await supabase
-                .from('legal_documents')
-                .insert([{
+            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+                p_tab: 'legal',
+                p_data: {
+                    slug: type,
                     title,
                     content,
                     version,
-                    type,
                     is_active,
                     effective_date: new Date(effective_date).toISOString()
-                }]);
+                }
+            });
 
             if (error) throw error;
 

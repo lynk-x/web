@@ -18,7 +18,8 @@ export default async function TermsPage() {
     const supabase = await createClient();
 
     const { data: doc } = await supabase
-        .from('legal_documents')
+        .schema('api')
+        .from('v1_legal_documents')
         .select('*')
         .eq('slug', 'terms_of_service')
         .eq('is_active', true)

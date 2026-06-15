@@ -36,7 +36,8 @@ export default function EditSpotlightPage() {
             setIsLoading(true);
             try {
                 const { data, error } = await supabase
-                    .from('spotlights')
+                    .schema('api')
+                    .from('v1_spotlights')
                     .select('*')
                     .eq('id', id)
                     .single();
@@ -78,9 +79,10 @@ export default function EditSpotlightPage() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase
-                .from('spotlights')
-                .update({
+            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+                p_tab: 'spotlights',
+                p_id: id,
+                p_data: {
                     title,
                     subtitle: subtitle || null,
                     target,
@@ -88,10 +90,9 @@ export default function EditSpotlightPage() {
                     cta_text: ctaText || null,
                     redirect_to: redirectTo || null,
                     background_url: backgroundUrl || null,
-                    is_active: isActive,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', id);
+                    is_active: isActive
+                }
+            });
 
             if (error) throw error;
 
