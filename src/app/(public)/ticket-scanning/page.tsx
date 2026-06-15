@@ -99,7 +99,8 @@ export default function TicketScanningPage() {
             try {
                 // Determine accounts where user is owner, admin, or scanner
                 const { data: memberships } = await supabase
-                    .from('account_members')
+                    .schema('api' as any)
+                    .from('v1_account_memberships')
                     .select('account_id')
                     .eq('user_id', authedUser.id)
                     .in('role_slug', ['owner', 'admin', 'staff']);
