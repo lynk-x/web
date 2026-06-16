@@ -13,6 +13,11 @@ export default function SupportFAB() {
         return null;
     }
 
+    // Do not show FAB on the dashboard root page (workspace picker)
+    if (pathname === '/dashboard') {
+        return null;
+    }
+
     const handleClick = () => {
         router.push('/dashboard/support');
     };

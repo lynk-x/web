@@ -45,7 +45,6 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
                 // Now get attendees via RPC
                 const { data, error } = await supabase
-                    .schema('api' as any)
                     .rpc('get_organizer_attendees', {
                         p_account_id: activeAccount?.id || eventData.account_id,
                         p_event_id: id,
@@ -129,6 +128,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 title="Attendee List"
                 subtitle="Manage registrations and check-ins for this event."
                 backLabel="Back to Event"
+                hideDivider
                 primaryAction={{
                     label: 'Export CSV',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,

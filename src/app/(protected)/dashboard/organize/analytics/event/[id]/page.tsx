@@ -43,7 +43,7 @@ export default function EventInsightsPage() {
                 .from('events')
                 .select(`
                     id, title, starts_at, status,
-                    ticket_tiers(name, price, capacity, tickets_sold)
+                    ticket_tiers(display_name, price, capacity, tickets_sold)
                 `)
                 .eq('id', id)
                 .maybeSingle();
@@ -67,8 +67,8 @@ export default function EventInsightsPage() {
                     totalRevenue += sold * (t.price || 0);
                     totalCapacity += cap;
 
-                    if (sold > 0) slices.push({ name: t.name, value: sold });
-                    capData.push({ name: t.name, sold, capacity: cap });
+                    if (sold > 0) slices.push({ name: t.display_name, value: sold });
+                    capData.push({ name: t.display_name, sold, capacity: cap });
                 });
 
                 setTierData(slices);

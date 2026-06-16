@@ -100,6 +100,7 @@
     flex-direction: column;
     gap: 4px;
     overflow: hidden;
+    justify-content: center;
 }
 
 .orgName {
