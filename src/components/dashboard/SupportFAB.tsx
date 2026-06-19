@@ -18,6 +18,11 @@ export default function SupportFAB() {
         return null;
     }
 
+    // Do not show FAB on system and admin dashboards
+    if (pathname.startsWith('/dashboard/system') || pathname.startsWith('/dashboard/admin')) {
+        return null;
+    }
+
     const handleClick = () => {
         router.push('/dashboard/support');
     };

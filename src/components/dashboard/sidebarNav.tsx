@@ -336,22 +336,34 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                         </svg>
                     )
                 },
+                {
+                    name: 'Identity & Access (IAM)',
+                    href: '/dashboard/system/iam',
+                    icon: (
+                        <svg {...svgProps}>
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M12 13c-2 0-3 1-3 2v1h6v-1c0-1-1-2-3-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
             ]
         },
         {
             title: 'Global Registries',
             items: [
                 {
-                    name: 'System Registry', href: '/dashboard/system/registry', icon: (
+                    name: 'Registry', href: '/dashboard/system/registry', icon: (
                         <svg {...svgProps}>
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
                 {
-                    name: 'Global Compliance', href: '/dashboard/system/compliance', icon: (
+                    name: 'Compliance', href: '/dashboard/system/compliance', icon: (
                         <svg {...svgProps}>
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="m9 11 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
@@ -369,7 +381,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Operations & Controls',
             items: [
                 {
-                    name: 'Settings & Flags', href: '/dashboard/system/settings', icon: (
+                    name: 'Configurations', href: '/dashboard/system/settings', icon: (
                         <svg {...svgProps}>
                             <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -377,7 +389,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Jobs & Operations', href: '/dashboard/system/operations', icon: (
+                    name: 'Activity', href: '/dashboard/system/operations', icon: (
                         <svg {...svgProps}>
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Jobs & Operations control dashboard.
+ * System Activity control dashboard.
  * Provides system-wide audit logging and asynchronous job queue monitoring.
  */
 
@@ -138,7 +138,7 @@ function JobsOperationsContent() {
     return (
         <div className={adminStyles.container}>
             <PageHeader 
-                title="Jobs & Operations"
+                title="Activity"
                 subtitle="Monitor global platform audit logs and track cron asynchronous job queue execution status."
             />
 
