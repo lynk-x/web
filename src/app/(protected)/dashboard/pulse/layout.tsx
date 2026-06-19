@@ -10,7 +10,7 @@ export default function PulseLayout({ children }: { children: React.ReactNode })
     return (
         <AccountGuard 
             allowedTypes={['pulse_user']}
-            allowedRoles={['owner', 'member', 'tester', 'guest']}
+            allowedRoles={['owner', 'member', 'tester']}
         >
             {children}
         </AccountGuard>

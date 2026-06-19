@@ -10,7 +10,7 @@ export default function OrganizeLayout({ children }: { children: React.ReactNode
     return (
         <AccountGuard 
             allowedTypes={['organizer']}
-            allowedRoles={['owner', 'member', 'tester', 'guest']}
+            allowedRoles={['owner', 'member', 'tester']}
         >
             {children}
         </AccountGuard>

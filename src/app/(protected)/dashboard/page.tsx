@@ -22,7 +22,7 @@ function DashboardRoot() {
         if (a.type === 'platform' || a.type === 'system') {
             return ['super_admin', 'admin', 'support_agent', 'moderator', 'reviewer'].includes(a.role);
         }
-        return ['owner', 'member', 'tester', 'guest'].includes(a.role);
+        return ['owner', 'member', 'tester'].includes(a.role);
     });
 
     const displayAccounts = typeParam

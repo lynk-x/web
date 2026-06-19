@@ -10,9 +10,6 @@ import type { DashboardMode } from '@/types/shared';
 import OrganizationSwitcher from './OrganizationSwitcher';
 import { useAuth } from '@/context/AuthContext';
 
-import { useOrganization } from '@/context/OrganizationContext';
-import { useAccountPermissions } from '@/hooks/useAccountPermissions';
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
@@ -29,8 +26,6 @@ import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 const Sidebar = () => {
     const pathname = usePathname();
     const { user } = useAuth();
-    const { activeAccount } = useOrganization();
-    const { can, loading: permissionsLoading } = useAccountPermissions(activeAccount?.id);
 
     const mode = useMemo<DashboardMode>(() => {
         const segments = pathname.split('/');
@@ -47,15 +42,10 @@ const Sidebar = () => {
         return modeMap[modeSegment] || 'events';
     }, [pathname]);
 
-    const filteredNavItems = useMemo(() => {
+    const navItems = useMemo(() => {
         if (!navGroups[mode]) return [];
-        return navGroups[mode]
-            .flatMap(group => group.items)
-            .filter(item => {
-                if (!item.permission) return true;
-                return can(item.permission);
-            });
-    }, [mode, can]);
+        return navGroups[mode].flatMap(group => group.items);
+    }, [mode]);
 
     const isUnverified = user && !user.email_confirmed_at;
 
@@ -102,27 +92,21 @@ const Sidebar = () => {
             {/* Navigation Links */}
             <nav className={styles.nav}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
-                    {permissionsLoading ? (
-                        Array.from({ length: 4 }).map((_, idx) => (
-                            <div key={idx} className={styles.skeletonItem} />
-                        ))
-                    ) : (
-                        filteredNavItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                                >
-                                    <span style={{ color: 'inherit', display: 'flex', alignItems: 'center' }}>
-                                        {item.icon}
-                                    </span>
-                                    <span>{item.name}</span>
-                                </Link>
-                            );
-                        })
-                    )}
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                            >
+                                <span style={{ color: 'inherit', display: 'flex', alignItems: 'center' }}>
+                                    {item.icon}
+                                </span>
+                                <span>{item.name}</span>
+                            </Link>
+                        );
+                    })}
                 </div>
             </nav>
 

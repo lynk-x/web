@@ -93,7 +93,7 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                 if (a.type === 'platform' || a.type === 'system') {
                                     return ['super_admin', 'admin', 'support_agent', 'moderator', 'reviewer'].includes(a.role);
                                 }
-                                return ['owner', 'member', 'tester', 'guest'].includes(a.role);
+                                return ['owner', 'member', 'tester'].includes(a.role);
                             })
                             .filter(a => {
                                 if (filterMode === 'ads') return a.type === 'advertiser';
