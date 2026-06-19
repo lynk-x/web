@@ -16,6 +16,8 @@ export interface NavItem {
     href: string;
     /** 20×20 SVG icon element. */
     icon: React.ReactNode;
+    /** Optional permission slug required to see this item. */
+    permission?: string;
 }
 
 /** A group of navigation items with an optional title. */
@@ -64,7 +66,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Management',
             items: [
                 {
-                    name: 'Events', href: '/dashboard/organize/events', icon: (
+                    name: 'Events', href: '/dashboard/organize/events', permission: 'can_view_events', icon: (
                         <svg {...svgProps}>
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -74,7 +76,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Revenue', href: '/dashboard/organize/revenue', icon: (
+                    name: 'Revenue', href: '/dashboard/organize/revenue', permission: 'can_view_finance', icon: (
                         <svg {...svgProps}>
                             <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -87,7 +89,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Intelligence',
             items: [
                 {
-                    name: 'Analytics', href: '/dashboard/organize/analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/organize/analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
                             <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -100,7 +102,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Configuration',
             items: [
                 {
-                    name: 'Settings', href: '/dashboard/organize/settings', icon: (
+                    name: 'Settings', href: '/dashboard/organize/settings', permission: 'can_manage_roles', icon: (
                         <svg {...svgProps}>
                             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -128,14 +130,14 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Advertising',
             items: [
                 {
-                    name: 'Campaigns', href: '/dashboard/ads/campaigns', icon: (
+                    name: 'Campaigns', href: '/dashboard/ads/campaigns', permission: 'can_manage_ad_campaigns', icon: (
                         <svg {...svgProps}>
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
                 {
-                    name: 'Analytics', href: '/dashboard/ads/analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/ads/analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
                             <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -148,7 +150,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Finance',
             items: [
                 {
-                    name: 'Finance', href: '/dashboard/ads/finance', icon: (
+                    name: 'Finance', href: '/dashboard/ads/finance', permission: 'can_view_finance', icon: (
                         <svg {...svgProps}>
                             <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -162,7 +164,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Configuration',
             items: [
                 {
-                    name: 'Settings', href: '/dashboard/ads/settings', icon: (
+                    name: 'Settings', href: '/dashboard/ads/settings', permission: 'can_manage_members', icon: (
                         <svg {...svgProps}>
                             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -187,7 +189,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Identity', href: '/dashboard/admin/users', icon: (
+                    name: 'Identity', href: '/dashboard/admin/users', permission: 'can_manage_kyc', icon: (
                         <svg {...svgProps}>
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -197,7 +199,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Events', href: '/dashboard/admin/events', icon: (
+                    name: 'Events', href: '/dashboard/admin/events', permission: 'can_verify_content', icon: (
                         <svg {...svgProps}>
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -207,21 +209,21 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Forums', href: '/dashboard/admin/forums', icon: (
+                    name: 'Forums', href: '/dashboard/admin/forums', permission: 'can_manage_forum', icon: (
                         <svg {...svgProps}>
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
                 {
-                    name: 'Campaigns', href: '/dashboard/admin/campaigns', icon: (
+                    name: 'Campaigns', href: '/dashboard/admin/campaigns', permission: 'can_manage_ad_campaigns', icon: (
                         <svg {...svgProps}>
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
                 {
-                    name: 'Finance', href: '/dashboard/admin/finance', icon: (
+                    name: 'Finance', href: '/dashboard/admin/finance', permission: 'can_view_finance', icon: (
                         <svg {...svgProps}>
                             <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -229,7 +231,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Support', href: '/dashboard/admin/support', icon: (
+                    name: 'Support', href: '/dashboard/admin/support', permission: 'can_view_support', icon: (
                         <svg {...svgProps}>
                             <path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -237,7 +239,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Analytics', href: '/dashboard/admin/analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/admin/analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
                             <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -246,7 +248,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Settings', href: '/dashboard/admin/settings', icon: (
+                    name: 'Settings', href: '/dashboard/admin/settings', permission: 'can_manage_roles', icon: (
                         <svg {...svgProps}>
                             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -262,7 +264,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
         {
             items: [
                 {
-                    name: 'Overview', href: '/dashboard/pulse', icon: (
+                    name: 'Overview', href: '/dashboard/pulse', permission: 'read:community_pulse', icon: (
                         <svg {...svgProps}>
                             <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -274,7 +276,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Discovery',
             items: [
                 {
-                    name: 'Explorer', href: '/dashboard/pulse/explorer', icon: (
+                    name: 'Explorer', href: '/dashboard/pulse/explorer', permission: 'read:community_pulse', icon: (
                         <svg {...svgProps}>
                             <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -282,7 +284,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Audience', href: '/dashboard/pulse/audience', icon: (
+                    name: 'Audience', href: '/dashboard/pulse/audience', permission: 'read:community_pulse', icon: (
                         <svg {...svgProps}>
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -297,7 +299,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Data & Exports',
             items: [
                 {
-                    name: 'Reports', href: '/dashboard/pulse/reports', icon: (
+                    name: 'Reports', href: '/dashboard/pulse/reports', permission: 'read:community_pulse', icon: (
                         <svg {...svgProps}>
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -313,7 +315,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Configuration',
             items: [
                 {
-                    name: 'Settings', href: '/dashboard/pulse/settings', icon: (
+                    name: 'Settings', href: '/dashboard/pulse/settings', permission: 'can_manage_members', icon: (
                         <svg {...svgProps}>
                             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>

@@ -31,6 +31,17 @@ export default function SystemAdminClientLayout({ children }: { children: React.
             return;
         }
 
+        // Only super Admin has access to system dashboard
+        if (activeAccount?.role !== 'super_admin') {
+            const isAdminRole = ['admin', 'support_agent', 'moderator', 'reviewer'].includes(activeAccount?.role || '');
+            if (isAdminRole) {
+                router.replace('/dashboard/admin');
+            } else {
+                router.replace('/dashboard');
+            }
+            return;
+        }
+
         // Assert allowed_country_code is NULL/undefined for Global Admins.
         // If they have a set country code (e.g. 'KE'), they are a Local Admin.
         const hasLocalCountryScope = Boolean(activeAccount?.country_code);
@@ -50,7 +61,7 @@ export default function SystemAdminClientLayout({ children }: { children: React.
     }
 
     return (
-        <AccountGuard allowedTypes={['platform', 'system']}>
+        <AccountGuard allowedTypes={['platform', 'system']} allowedRoles={['super_admin']}>
             {children}
         </AccountGuard>
     );

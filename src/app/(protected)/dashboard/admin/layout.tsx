@@ -7,5 +7,12 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    return <AccountGuard allowedTypes={['platform']}>{children}</AccountGuard>;
+    return (
+        <AccountGuard 
+            allowedTypes={['platform']}
+            allowedRoles={['super_admin', 'admin', 'support_agent', 'moderator', 'reviewer']}
+        >
+            {children}
+        </AccountGuard>
+    );
 }

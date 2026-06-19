@@ -8,13 +8,15 @@ type AccountType = Account['type'];
 
 interface AccountGuardProps {
     allowedTypes: AccountType[];
+    allowedRoles?: string[];
     children: React.ReactNode;
 }
 
-export default function AccountGuard({ allowedTypes, children }: AccountGuardProps) {
+export default function AccountGuard({ allowedTypes, allowedRoles, children }: AccountGuardProps) {
     // Memoize the allowedTypes array so its reference is stable across renders
     const types = useMemo<AccountType[]>(() => allowedTypes, [allowedTypes]);
-    const { isChecking, isAuthorized } = useAccountTypeGuard(types);
+    const roles = useMemo<string[] | undefined>(() => allowedRoles, [allowedRoles]);
+    const { isChecking, isAuthorized } = useAccountTypeGuard(types, roles);
 
     // Render nothing while the account type is being verified to avoid
     // a flash of protected content before the redirect fires.

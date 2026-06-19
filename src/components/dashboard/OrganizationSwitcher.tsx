@@ -88,7 +88,13 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                     <div className={styles.accountList}>
                         {/* Business Accounts Section - Filtered by current mode */}
                         {accounts
-                            .filter(a => a.type !== 'attendee')
+                            .filter(a => {
+                                if (a.type === 'attendee') return false;
+                                if (a.type === 'platform' || a.type === 'system') {
+                                    return ['super_admin', 'admin', 'support_agent', 'moderator', 'reviewer'].includes(a.role);
+                                }
+                                return ['owner', 'member', 'tester', 'guest'].includes(a.role);
+                            })
                             .filter(a => {
                                 if (filterMode === 'ads') return a.type === 'advertiser';
                                 if (filterMode === 'system') return a.type === 'platform' || a.type === 'system';
@@ -103,10 +109,19 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                     setActiveAccountId(account.id);
                                     setIsOpen(false);
                                     // Ensure we go to the correct root if switching types
-                                    if (account.type === 'advertiser') router.push('/dashboard/ads');
-                                    else if (filterMode === 'system' && (account.type === 'platform' || account.type === 'system')) router.push('/dashboard/system');
-                                    else if (account.type === 'system') router.push('/dashboard/system');
-                                    else if (account.type === 'organizer' || account.type === 'platform') router.push('/dashboard/organize');
+                                    if (account.type === 'advertiser') {
+                                        router.push('/dashboard/ads');
+                                    } else if (account.type === 'pulse_user') {
+                                        router.push('/dashboard/pulse');
+                                    } else if (account.type === 'platform' || account.type === 'system') {
+                                        if (account.role === 'super_admin') {
+                                            router.push('/dashboard/system');
+                                        } else {
+                                            router.push('/dashboard/admin');
+                                        }
+                                    } else {
+                                        router.push('/dashboard/organize');
+                                    }
                                 }}
                             >
                                 <div className={styles.avatarSmall}>

@@ -16,8 +16,15 @@ function DashboardRoot() {
     // ?type=organizer|advertiser — set by the drawer to pre-filter the workspace list
     const typeParam = searchParams.get('type') as 'organizer' | 'advertiser' | null;
 
-    // Non-attendee accounts, optionally filtered by the type the user arrived from
-    const businessAccounts = allAccounts.filter(a => a.type !== 'attendee');
+    // Non-attendee accounts filtered by valid role templates, optionally filtered by typeParam
+    const businessAccounts = allAccounts.filter(a => {
+        if (a.type === 'attendee') return false;
+        if (a.type === 'platform' || a.type === 'system') {
+            return ['super_admin', 'admin', 'support_agent', 'moderator', 'reviewer'].includes(a.role);
+        }
+        return ['owner', 'member', 'tester', 'guest'].includes(a.role);
+    });
+
     const displayAccounts = typeParam
         ? businessAccounts.filter(a => a.type === typeParam)
         : businessAccounts;
@@ -25,8 +32,8 @@ function DashboardRoot() {
     const handleSelectWorkspace = useCallback((account: any) => {
         setIsRedirecting(true);
         setActiveAccountId(account.id);
-        const path = account.type === 'platform'
-            ? '/dashboard/admin'
+        const path = (account.type === 'platform' || account.type === 'system')
+            ? (account.role === 'super_admin' ? '/dashboard/system' : '/dashboard/admin')
             : account.type === 'pulse_user'
                 ? '/dashboard/pulse'
                 : account.type === 'advertiser'
