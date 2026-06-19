@@ -337,7 +337,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Identity & Access (IAM)',
+                    name: 'Identity & Access',
                     href: '/dashboard/system/iam',
                     icon: (
                         <svg {...svgProps}>

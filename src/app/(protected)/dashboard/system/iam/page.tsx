@@ -13,10 +13,11 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
+import DataTable from '@/components/shared/DataTable';
+import Badge from '@/components/shared/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import { createBrowserClient } from '@supabase/ssr';
 import { useDebounce } from '@/hooks/useDebounce';
 
 interface AdminUser {
@@ -51,17 +52,7 @@ function IAMContent() {
     const supabase = useMemo(() => createClient(), []);
 
     // Custom API schema client for IAM RPCs
-    const supabaseApi = useMemo(() => {
-        return createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-            {
-                db: {
-                    schema: 'api'
-                }
-            }
-        );
-    }, []);
+    const supabaseApi = useMemo(() => createClient('api'), []);
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'users');
     const [searchTerm, setSearchTerm] = useState('');
@@ -282,6 +273,191 @@ function IAMContent() {
         );
     }, [adminUsers, debouncedSearch]);
 
+    // Filtering roles based on search term
+    const filteredRoles = useMemo(() => {
+        return roles.filter(r => 
+            r.display_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            r.role_slug?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            r.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        );
+    }, [roles, debouncedSearch]);
+
+    // Filtering permissions based on search term
+    const filteredPermissions = useMemo(() => {
+        return permissions.filter(p => 
+            p.slug?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            p.category?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            p.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        );
+    }, [permissions, debouncedSearch]);
+
+    // Map adminUsers to have a standard ID property for DataTable
+    const mappedAdminUsers = useMemo(() => {
+        return filteredUsers.map(u => ({
+            ...u,
+            id: u.user_id
+        }));
+    }, [filteredUsers]);
+
+    // Map permissions to have a standard ID property for DataTable
+    const mappedPermissions = useMemo(() => {
+        return filteredPermissions.map(p => ({
+            ...p,
+            id: p.slug
+        }));
+    }, [filteredPermissions]);
+
+    // Columns config for Administrators Table
+    const userColumns = useMemo(() => [
+        {
+            header: 'Administrator',
+            render: (user: AdminUser) => (
+                <div style={{ fontWeight: 500 }}>
+                    {user.full_name || 'N/A'}
+                    {user.user_name && (
+                        <span style={{ display: 'block', fontSize: '12px', opacity: 0.6 }}>
+                            @{user.user_name}
+                        </span>
+                    )}
+                </div>
+            )
+        },
+        {
+            header: 'Email',
+            render: (user: AdminUser) => user.email
+        },
+        {
+            header: 'Role',
+            render: (user: AdminUser) => (
+                <span className={adminStyles.badge} style={{ textTransform: 'capitalize' }}>
+                    {user.role_slug.replace(/_/g, ' ')}
+                </span>
+            )
+        },
+        {
+            header: 'Joined At',
+            render: (user: AdminUser) => new Date(user.joined_at).toLocaleDateString()
+        }
+    ], []);
+
+    const getUserActions = useCallback((user: AdminUser) => [
+        {
+            label: isActionLoading === user.user_id ? 'Revoking...' : 'Revoke Access',
+            onClick: () => handleRemoveAdmin(user.user_id),
+            disabled: isActionLoading === user.user_id,
+            variant: 'danger' as const
+        }
+    ], [isActionLoading, handleRemoveAdmin]);
+
+    // Columns config for Roles Table
+    const roleColumns = useMemo(() => [
+        {
+            header: 'Role Name',
+            render: (role: AccountRole) => (
+                <div style={{ fontWeight: 500 }}>{role.display_name}</div>
+            )
+        },
+        {
+            header: 'Role Slug',
+            render: (role: AccountRole) => <code>{role.role_slug}</code>
+        },
+        {
+            header: 'Description',
+            render: (role: AccountRole) => (
+                <div style={{ opacity: 0.8, maxWidth: '400px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                    {role.description || 'No description provided.'}
+                </div>
+            )
+        }
+    ], []);
+
+    const getRoleActions = useCallback((role: AccountRole) => [
+        {
+            label: 'Edit details',
+            onClick: () => {
+                setEditingRole(role);
+                setRoleForm({
+                    display_name: role.display_name,
+                    description: role.description || ''
+                });
+                setIsRoleModalOpen(true);
+            }
+        }
+    ], []);
+
+    // Columns config for Permissions Table
+    const permissionColumns = useMemo(() => [
+        {
+            header: 'Permission Slug',
+            render: (perm: AccountPermission) => <code>{perm.slug}</code>
+        },
+        {
+            header: 'Category',
+            render: (perm: AccountPermission) => (
+                <Badge variant="subtle" label={perm.category.toUpperCase()} />
+            )
+        },
+        {
+            header: 'Description',
+            render: (perm: AccountPermission) => (
+                <div style={{ opacity: 0.8, maxWidth: '500px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                    {perm.description}
+                </div>
+            )
+        }
+    ], []);
+
+    // Columns config for Permissions Matrix
+    const matrixColumns = useMemo(() => {
+        const cols = [
+            {
+                header: 'Permission & Scope',
+                render: (perm: AccountPermission) => (
+                    <div>
+                        <div style={{ fontWeight: 500, fontSize: '13px' }}>{perm.slug.replace(/_/g, ' ')}</div>
+                        <div style={{ fontSize: '11px', opacity: 0.6 }}>{perm.description}</div>
+                    </div>
+                ),
+                width: '300px'
+            },
+            {
+                header: 'Category',
+                render: (perm: AccountPermission) => (
+                    <Badge variant="subtle" label={perm.category.toUpperCase()} />
+                ),
+                width: '150px'
+            }
+        ];
+
+        roles.forEach(role => {
+            cols.push({
+                header: role.display_name,
+                render: (perm: AccountPermission) => {
+                    const isChecked = !!rolePermissions[role.role_slug]?.has(perm.slug);
+                    const isLocked = (role.role_slug === 'super_admin' || role.role_slug === 'owner') && perm.slug === 'can_manage_roles';
+                    
+                    return (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <input
+                                type="checkbox"
+                                checked={isChecked}
+                                disabled={isLocked}
+                                onChange={() => handleTogglePermission(role.role_slug, perm.slug)}
+                                style={{ 
+                                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                                    transform: 'scale(1.2)'
+                                }}
+                            />
+                        </div>
+                    );
+                },
+                width: '120px'
+            });
+        });
+
+        return cols;
+    }, [roles, rolePermissions, handleTogglePermission]);
+
     return (
         <div className={sharedStyles.container}>
             <PageHeader 
@@ -300,7 +476,8 @@ function IAMContent() {
                     <TabsList>
                         <TabsTrigger value="users">Administrators</TabsTrigger>
                         <TabsTrigger value="roles">Roles</TabsTrigger>
-                        <TabsTrigger value="matrix">Permissions Matrix</TabsTrigger>
+                        <TabsTrigger value="permissions">Permissions</TabsTrigger>
+                        <TabsTrigger value="matrix">Role</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -312,173 +489,57 @@ function IAMContent() {
                     </div>
                 </div>
 
-                {/* Tab 1: Admin Users */}
-                <TabsContent value="users">
-                    <div className={adminStyles.tableContainer}>
-                        <table className={adminStyles.table}>
-                            <thead>
-                                <tr>
-                                    <th>Administrator</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Joined At</th>
-                                    <th style={{ textAlign: 'right' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={5} className={adminStyles.loading}>Loading system administrators...</td>
-                                    </tr>
-                                ) : filteredUsers.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className={adminStyles.emptyState}>No administrators found matching the search criteria.</td>
-                                    </tr>
-                                ) : (
-                                    filteredUsers.map(user => (
-                                        <tr key={user.user_id}>
-                                            <td style={{ fontWeight: 500 }}>
-                                                {user.full_name || 'N/A'}
-                                                {user.user_name && (
-                                                    <span style={{ display: 'block', fontSize: '12px', opacity: 0.6 }}>
-                                                        @{user.user_name}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td>{user.email}</td>
-                                            <td>
-                                                <span className={adminStyles.badge} style={{ textTransform: 'capitalize' }}>
-                                                    {user.role_slug.replace(/_/g, ' ')}
-                                                </span>
-                                            </td>
-                                            <td>{new Date(user.joined_at).toLocaleDateString()}</td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <button
-                                                    className={adminStyles.btnDanger}
-                                                    disabled={isActionLoading === user.user_id}
-                                                    onClick={() => handleRemoveAdmin(user.user_id)}
-                                                    style={{ padding: '4px 8px', fontSize: '12px' }}
-                                                >
-                                                    {isActionLoading === user.user_id ? 'Revoking...' : 'Revoke Access'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </TabsContent>
+                <div style={{ marginTop: '24px' }}>
+                    {/* Tab 1: Admin Users */}
+                    <TabsContent value="users">
+                        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
+                            <DataTable
+                                data={mappedAdminUsers}
+                                columns={userColumns}
+                                getActions={getUserActions}
+                                isLoading={isLoading}
+                                emptyMessage="No administrators found matching the search criteria."
+                            />
+                        </div>
+                    </TabsContent>
 
-                {/* Tab 2: Roles */}
-                <TabsContent value="roles">
-                    <div className={adminStyles.tableContainer}>
-                        <table className={adminStyles.table}>
-                            <thead>
-                                <tr>
-                                    <th>Role Name</th>
-                                    <th>Role Slug</th>
-                                    <th>Description</th>
-                                    <th style={{ textAlign: 'right' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={4} className={adminStyles.loading}>Loading roles...</td>
-                                    </tr>
-                                ) : roles.map(role => (
-                                    <tr key={role.id}>
-                                        <td style={{ fontWeight: 500 }}>{role.display_name}</td>
-                                        <td><code>{role.role_slug}</code></td>
-                                        <td style={{ opacity: 0.8, maxWidth: '300px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                                            {role.description || 'No description provided.'}
-                                        </td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            <button
-                                                className={adminStyles.btnSecondary}
-                                                onClick={() => {
-                                                    setEditingRole(role);
-                                                    setRoleForm({
-                                                        display_name: role.display_name,
-                                                        description: role.description || ''
-                                                    });
-                                                    setIsRoleModalOpen(true);
-                                                }}
-                                                style={{ padding: '4px 8px', fontSize: '12px' }}
-                                            >
-                                                Edit details
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </TabsContent>
+                    {/* Tab 2: Roles */}
+                    <TabsContent value="roles">
+                        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
+                            <DataTable
+                                data={filteredRoles}
+                                columns={roleColumns}
+                                getActions={getRoleActions}
+                                isLoading={isLoading}
+                                emptyMessage="No roles configured."
+                            />
+                        </div>
+                    </TabsContent>
 
-                {/* Tab 3: Permissions Matrix */}
-                <TabsContent value="matrix">
-                    <div className={adminStyles.tableContainer} style={{ overflowX: 'auto' }}>
-                        <table className={adminStyles.table} style={{ minWidth: '800px' }}>
-                            <thead>
-                                <tr>
-                                    <th style={{ minWidth: '250px' }}>Permission & Scope</th>
-                                    {roles.map(role => (
-                                        <th key={role.id} style={{ textAlign: 'center', fontSize: '12px' }}>
-                                            {role.display_name}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={roles.length + 1} className={adminStyles.loading}>Loading matrix data...</td>
-                                    </tr>
-                                ) : (
-                                    Object.keys(groupedPermissions).map(category => (
-                                        <>
-                                            <tr key={category} style={{ background: 'rgba(255, 255, 255, 0.05)', fontWeight: 'bold' }}>
-                                                <td colSpan={roles.length + 1} style={{ textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em', color: 'var(--primary-color)' }}>
-                                                    {category}
-                                                </td>
-                                            </tr>
-                                            {groupedPermissions[category].map(perm => (
-                                                <tr key={perm.slug}>
-                                                    <td style={{ verticalAlign: 'middle' }}>
-                                                        <div style={{ fontWeight: 500, fontSize: '13px' }}>{perm.slug.replace(/_/g, ' ')}</div>
-                                                        <div style={{ fontSize: '11px', opacity: 0.6 }}>{perm.description}</div>
-                                                    </td>
-                                                    {roles.map(role => {
-                                                        const isChecked = !!rolePermissions[role.role_slug]?.has(perm.slug);
-                                                        // Prevent removing full permissions from owner/super_admin to avoid lockout
-                                                        const isLocked = (role.role_slug === 'super_admin' || role.role_slug === 'owner') && perm.slug === 'can_manage_roles';
-                                                        
-                                                        return (
-                                                            <td key={role.id} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isChecked}
-                                                                    disabled={isLocked}
-                                                                    onChange={() => handleTogglePermission(role.role_slug, perm.slug)}
-                                                                    style={{ 
-                                                                        cursor: isLocked ? 'not-allowed' : 'pointer',
-                                                                        transform: 'scale(1.2)'
-                                                                    }}
-                                                                />
-                                                            </td>
-                                                        );
-                                                    })}
-                                                </tr>
-                                            ))}
-                                        </>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </TabsContent>
+                    {/* Tab 3: Permissions List */}
+                    <TabsContent value="permissions">
+                        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
+                            <DataTable
+                                data={mappedPermissions}
+                                columns={permissionColumns}
+                                isLoading={isLoading}
+                                emptyMessage="No permissions found."
+                            />
+                        </div>
+                    </TabsContent>
+
+                    {/* Tab 4: Permissions Matrix */}
+                    <TabsContent value="matrix">
+                        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
+                            <DataTable
+                                data={mappedPermissions}
+                                columns={matrixColumns}
+                                isLoading={isLoading}
+                                emptyMessage="No permissions matrix data found."
+                            />
+                        </div>
+                    </TabsContent>
+                </div>
             </Tabs>
 
             {/* Modal: Invite / Add Admin */}
