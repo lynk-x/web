@@ -246,7 +246,8 @@ export function createFinanceRepository(client: DbClient) {
         /** Fetch all FX rates (rate_to_base relative to USD). */
         async getFxRates(): Promise<RepoResult<FxRate[]>> {
             const { data, error } = await client
-                .from('fx_rates')
+                .schema('api')
+                .from('v1_fx_rates')
                 .select('currency, rate_to_base, updated_at')
                 .order('currency', { ascending: true });
 

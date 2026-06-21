@@ -337,7 +337,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Identity & Access',
+                    name: 'IAM',
                     href: '/dashboard/system/iam',
                     icon: (
                         <svg {...svgProps}>
@@ -360,18 +360,18 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Compliance', href: '/dashboard/system/compliance', icon: (
+                    name: 'Finance', href: '/dashboard/system/finance', icon: (
                         <svg {...svgProps}>
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="m9 11 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
+                            <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" strokeWidth="2" />
                         </svg>
                     )
                 },
                 {
-                    name: 'Finance & Gateways', href: '/dashboard/system/finance', icon: (
+                    name: 'Compliance', href: '/dashboard/system/compliance', icon: (
                         <svg {...svgProps}>
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
-                            <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" strokeWidth="2" />
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="m9 11 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },

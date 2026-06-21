@@ -62,7 +62,7 @@ function GlobalFinanceContent() {
         setIsLoading(true);
         try {
             if (activeTab === 'fx-rates') {
-                const { data, error } = await supabase.from('fx_rates').select('*').order('currency');
+                const { data, error } = await supabase.schema('api' as any).from('v1_fx_rates').select('*').order('currency');
                 if (error) throw error;
                 setFxRates(data || []);
             } else if (activeTab === 'billing-constants') {
@@ -135,7 +135,7 @@ function GlobalFinanceContent() {
     return (
         <div className={sharedStyles.container}>
             <PageHeader
-                title="Global Finance & Gateways"
+                title="Global Finance"
                 subtitle="Configure foreign exchange currency markets, payment networks, and subscription plans."
             />
 

@@ -38,7 +38,7 @@ export async function GET() {
 
   // ── 1. DB connectivity ────────────────────────────────────────────────────
   try {
-    const { error } = await supabase.from('fx_rates').select('id').limit(1);
+    const { error } = await supabase.schema('api' as any).from('v1_fx_rates').select('currency').limit(1);
     checks.db = error ? { ok: false, detail: error.message } : { ok: true };
   } catch (e: unknown) {
     checks.db = { ok: false, detail: e instanceof Error ? e.message : 'unreachable' };

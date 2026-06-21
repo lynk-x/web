@@ -453,8 +453,15 @@ export default function AdminEventsPage() {
 
         showToast(`Updating ${selectedForumIds.size} forums...`, 'info');
         try {
+            const ids = Array.from(selectedForumIds);
+            const createdAts = ids.map(id => {
+                const ev = events.find(e => e.forum_id === id);
+                return ev?.createdAt || new Date().toISOString();
+            });
+
             const { error } = await supabase.rpc('bulk_update_forum_status', {
-                p_forum_ids: Array.from(selectedForumIds),
+                p_forum_ids: ids,
+                p_forum_created_ats: createdAts,
                 p_status: newStatus
             });
 
