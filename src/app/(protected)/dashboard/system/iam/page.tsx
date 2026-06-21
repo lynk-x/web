@@ -163,8 +163,8 @@ function IAMContent() {
         setIsLoading(true);
         try {
             // Fetch Roles
-            const { data: rolesData, error: rolesError } = await supabase
-                .from('account_roles')
+            const { data: rolesData, error: rolesError } = await supabaseApi
+                .from('v1_account_roles')
                 .select('*')
                 .order('display_name');
             if (rolesError) throw rolesError;
@@ -174,8 +174,8 @@ function IAMContent() {
             }
 
             // Fetch Permissions
-            const { data: permsData, error: permsError } = await supabase
-                .from('account_permissions')
+            const { data: permsData, error: permsError } = await supabaseApi
+                .from('v1_account_permissions')
                 .select('*')
                 .order('category', { ascending: true })
                 .order('slug', { ascending: true });
@@ -183,8 +183,8 @@ function IAMContent() {
             setPermissions(permsData || []);
 
             // Fetch mappings
-            const { data: mappingData, error: mappingError } = await supabase
-                .from('account_role_permissions')
+            const { data: mappingData, error: mappingError } = await supabaseApi
+                .from('v1_account_role_permissions')
                 .select('role_id, permission_slug');
             if (mappingError) throw mappingError;
 
@@ -208,7 +208,7 @@ function IAMContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabaseApi, showToast]);
 
     useEffect(() => {
         fetchIAMData();
