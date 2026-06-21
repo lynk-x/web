@@ -18,6 +18,8 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
 
     const [data, setData] = useState<PlatformPaymentProvider[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const [isEditing, setIsEditing] = useState<PlatformPaymentProvider | null>(null);
     const [editForm, setEditForm] = useState({
@@ -47,6 +49,10 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     const handleSave = async () => {
         if (!isEditing) return;
@@ -96,6 +102,8 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     };
 
     const filteredData = data.filter(p => p.display_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+    const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const columns = [
         {
@@ -164,78 +172,79 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             
-            <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
-                <DataTable
-                    data={filteredData}
-                    columns={columns}
-                    getActions={getActions}
-                    isLoading={isLoading}
-                    emptyMessage="No payment providers configured."
-                />
+            <DataTable
+                data={paginatedData}
+                columns={columns}
+                getActions={getActions}
+                isLoading={isLoading}
+                emptyMessage="No payment providers configured."
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
-                <Modal
-                    isOpen={!!isEditing}
-                    onClose={() => setIsEditing(null)}
-                    title="Edit Payment Provider"
-                    footer={
-                        <>
-                            <button className={adminStyles.btnSecondary} onClick={() => setIsEditing(null)}>Cancel</button>
-                            <button className={adminStyles.btnPrimary} onClick={handleSave} disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Changes'}
-                            </button>
-                        </>
-                    }
-                >
-                    {isEditing && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                <div>
-                                    <label className={adminStyles.label}>Provider Name</label>
-                                    <input className={adminStyles.input} value={isEditing.display_name} disabled style={{ opacity: 0.6 }} />
-                                </div>
-                                <div>
-                                    <label className={adminStyles.label}>Environment</label>
-                                    <select
-                                        className={adminStyles.input}
-                                        value={editForm.environment}
-                                        onChange={e => setEditForm({ ...editForm, environment: e.target.value })}
-                                    >
-                                        <option value="sandbox">Sandbox (Testing)</option>
-                                        <option value="live">Live (Production)</option>
-                                    </select>
-                                </div>
+            <Modal
+                isOpen={!!isEditing}
+                onClose={() => setIsEditing(null)}
+                title="Edit Payment Provider"
+                footer={
+                    <>
+                        <button className={adminStyles.btnSecondary} onClick={() => setIsEditing(null)}>Cancel</button>
+                        <button className={adminStyles.btnPrimary} onClick={handleSave} disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </>
+                }
+            >
+                {isEditing && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                                <label className={adminStyles.label}>Provider Name</label>
+                                <input className={adminStyles.input} value={isEditing.display_name} disabled style={{ opacity: 0.6 }} />
                             </div>
                             <div>
-                                <label className={adminStyles.label}>Processing Fee (%)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
+                                <label className={adminStyles.label}>Environment</label>
+                                <select
                                     className={adminStyles.input}
-                                    value={editForm.processing_fee_percent}
-                                    onChange={e => setEditForm(prev => ({ ...prev, processing_fee_percent: Number(e.target.value) }))}
-                                />
-                            </div>
-                            <div>
-                                <label className={adminStyles.label}>Configuration JSON</label>
-                                <textarea
-                                    className={adminStyles.input}
-                                    style={{ height: '100px', fontFamily: 'monospace', fontSize: '12px' }}
-                                    value={JSON.stringify(editForm.config, null, 2)}
-                                    onChange={e => {
-                                        try {
-                                            const parsed = JSON.parse(e.target.value);
-                                            setEditForm({ ...editForm, config: parsed });
-                                        } catch (err) {
-                                            // Handle invalid JSON silently or with local error state
-                                        }
-                                    }}
-                                    placeholder='{ "apiKey": "..." }'
-                                />
+                                    value={editForm.environment}
+                                    onChange={e => setEditForm({ ...editForm, environment: e.target.value })}
+                                >
+                                    <option value="sandbox">Sandbox (Testing)</option>
+                                    <option value="live">Live (Production)</option>
+                                </select>
                             </div>
                         </div>
-                    )}
-                </Modal>
-            </div>
+                        <div>
+                            <label className={adminStyles.label}>Processing Fee (%)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className={adminStyles.input}
+                                value={editForm.processing_fee_percent}
+                                onChange={e => setEditForm(prev => ({ ...prev, processing_fee_percent: Number(e.target.value) }))}
+                            />
+                        </div>
+                        <div>
+                            <label className={adminStyles.label}>Configuration JSON</label>
+                            <textarea
+                                className={adminStyles.input}
+                                style={{ height: '100px', fontFamily: 'monospace', fontSize: '12px' }}
+                                value={JSON.stringify(editForm.config, null, 2)}
+                                onChange={e => {
+                                    try {
+                                        const parsed = JSON.parse(e.target.value);
+                                        setEditForm({ ...editForm, config: parsed });
+                                    } catch (err) {
+                                        // Handle invalid JSON silently or with local error state
+                                    }
+                                }}
+                                placeholder='{ "apiKey": "..." }'
+                            />
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

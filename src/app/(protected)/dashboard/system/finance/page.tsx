@@ -49,6 +49,10 @@ function GlobalFinanceContent() {
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [isSyncingFX, setIsSyncingFX] = useState(false);
 
+    const [fxCurrentPage, setFxCurrentPage] = useState(1);
+    const [plansCurrentPage, setPlansCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const debouncedSearch = useDebounce(searchTerm, 300);
 
     const handleTabChange = (value: string) => {
@@ -81,6 +85,11 @@ function GlobalFinanceContent() {
         fetchData();
     }, [activeTab, debouncedSearch, fetchData]);
 
+    useEffect(() => {
+        setFxCurrentPage(1);
+        setPlansCurrentPage(1);
+    }, [activeTab, debouncedSearch]);
+
     const handleSyncFX = async () => {
         setIsSyncingFX(true);
         showToast('Syncing with global rates...', 'info');
@@ -101,6 +110,13 @@ function GlobalFinanceContent() {
         p.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const filteredRates = fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()));
+    const fxTotalPages = Math.max(1, Math.ceil(filteredRates.length / itemsPerPage));
+    const paginatedRates = filteredRates.slice((fxCurrentPage - 1) * itemsPerPage, fxCurrentPage * itemsPerPage);
+
+    const plansTotalPages = Math.max(1, Math.ceil(filteredPlans.length / itemsPerPage));
+    const paginatedPlans = filteredPlans.slice((plansCurrentPage - 1) * itemsPerPage, plansCurrentPage * itemsPerPage);
 
     const planColumns = [
         {
@@ -173,9 +189,12 @@ function GlobalFinanceContent() {
                 <div style={{ marginTop: '24px' }}>
                     <TabsContent value="fx-rates">
                         <FXRateTable
-                            data={fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()))}
+                            data={paginatedRates}
                             isLoading={isLoading}
                             onUpdate={fetchData}
+                            currentPage={fxCurrentPage}
+                            totalPages={fxTotalPages}
+                            onPageChange={setFxCurrentPage}
                         />
                     </TabsContent>
 
@@ -184,14 +203,15 @@ function GlobalFinanceContent() {
                     </TabsContent>
 
                     <TabsContent value="billing-constants">
-                        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
-                            <DataTable
-                                data={filteredPlans}
-                                columns={planColumns}
-                                isLoading={isLoading}
-                                emptyMessage="No subscription plans configured."
-                            />
-                        </div>
+                        <DataTable
+                            data={paginatedPlans}
+                            columns={planColumns}
+                            isLoading={isLoading}
+                            emptyMessage="No subscription plans configured."
+                            currentPage={plansCurrentPage}
+                            totalPages={plansTotalPages}
+                            onPageChange={setPlansCurrentPage}
+                        />
                     </TabsContent>
                 </div>
             </Tabs>

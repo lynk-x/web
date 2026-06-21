@@ -44,6 +44,9 @@ function GlobalComplianceContent() {
         is_inclusive: true
     });
 
+    const [taxCurrentPage, setTaxCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const debouncedSearch = useDebounce(searchTerm, 300);
 
     const handleTabChange = (value: string) => {
@@ -79,12 +82,20 @@ function GlobalComplianceContent() {
     }, [activeTab, debouncedSearch, fetchData]);
 
     useEffect(() => {
+        setTaxCurrentPage(1);
+    }, [activeTab, debouncedSearch]);
+
+    useEffect(() => {
         const fetchCountries = async () => {
             const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
             if (data) setCountries(data.map((c: any) => ({ code: c.code, name: c.display_name })));
         };
         fetchCountries();
     }, [supabase]);
+
+    const filteredTaxRates = taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const taxTotalPages = Math.max(1, Math.ceil(filteredTaxRates.length / itemsPerPage));
+    const paginatedTaxRates = filteredTaxRates.slice((taxCurrentPage - 1) * itemsPerPage, taxCurrentPage * itemsPerPage);
 
     const handleSaveTaxRate = async () => {
         try {
@@ -145,9 +156,12 @@ function GlobalComplianceContent() {
 
                 <TabsContent value="tax-rates">
                     <TaxRateTable
-                        data={taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()))}
+                        data={paginatedTaxRates}
                         isLoading={isLoading}
                         onUpdate={fetchData}
+                        currentPage={taxCurrentPage}
+                        totalPages={taxTotalPages}
+                        onPageChange={setTaxCurrentPage}
                         onEdit={(rate) => {
                             setEditingTaxRate(rate);
                             setTaxForm({

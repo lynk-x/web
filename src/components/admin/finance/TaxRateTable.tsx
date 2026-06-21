@@ -15,9 +15,20 @@ interface TaxRateTableProps {
     isLoading?: boolean;
     onUpdate?: () => void;
     onEdit?: (rate: TaxRate) => void;
+    currentPage?: number;
+    totalPages?: number;
+    onPageChange?: (page: number) => void;
 }
 
-const TaxRateTable: React.FC<TaxRateTableProps> = ({ data, isLoading, onUpdate, onEdit }) => {
+const TaxRateTable: React.FC<TaxRateTableProps> = ({
+    data,
+    isLoading,
+    onUpdate,
+    onEdit,
+    currentPage = 1,
+    totalPages = 1,
+    onPageChange,
+}) => {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
@@ -83,6 +94,9 @@ const TaxRateTable: React.FC<TaxRateTableProps> = ({ data, isLoading, onUpdate, 
             getActions={getActions}
             isLoading={isLoading}
             emptyMessage="No tax configurations found."
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
         />
     );
 };

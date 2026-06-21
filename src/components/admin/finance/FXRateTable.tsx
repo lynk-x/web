@@ -11,9 +11,19 @@ interface FXRateTableProps {
     data: FXRate[];
     isLoading?: boolean;
     onUpdate?: () => void;
+    currentPage?: number;
+    totalPages?: number;
+    onPageChange?: (page: number) => void;
 }
 
-const FXRateTable: React.FC<FXRateTableProps> = ({ data, isLoading, onUpdate }) => {
+const FXRateTable: React.FC<FXRateTableProps> = ({
+    data,
+    isLoading,
+    onUpdate,
+    currentPage = 1,
+    totalPages = 1,
+    onPageChange,
+}) => {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
@@ -43,6 +53,9 @@ const FXRateTable: React.FC<FXRateTableProps> = ({ data, isLoading, onUpdate }) 
             columns={columns}
             isLoading={isLoading}
             emptyMessage="No exchange rates available."
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
         />
     );
 };
