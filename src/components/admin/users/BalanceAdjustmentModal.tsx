@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Modal from '../../shared/Modal';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -18,7 +18,7 @@ const BalanceAdjustmentModal: React.FC<BalanceAdjustmentModalProps> = ({
     onClose,
     onSuccess,
 }) => {
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     

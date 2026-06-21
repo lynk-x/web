@@ -78,7 +78,8 @@ const EventReportsSection = ({ eventId }: { eventId: string }) => {
 };
 
 export default function AdminEventsPage() {
-    const supabase = useMemo(() => createClient(), []);
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const publicSupabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { executeAction } = useModerationAction();
@@ -276,11 +277,11 @@ export default function AdminEventsPage() {
     }, [supabase, debouncedSearch, statusFilter, forumStatusFilter, startDate, endDate, resolvedCountryFilter, currentPage, showToast]);
 
     const fetchCountries = useCallback(async () => {
-        const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
+        const { data } = await publicSupabase.from('countries').select('code, display_name').order('display_name');
         if (data) {
             setCountries(data.map(c => ({ code: c.code, name: c.display_name })));
         }
-    }, [supabase]);
+    }, [publicSupabase]);
 
     useEffect(() => {
         fetchCountries();
@@ -336,7 +337,7 @@ export default function AdminEventsPage() {
         if (!await confirm(`Are you sure you want to approve this payout for ${payout.recipient}? This will initiate disbursement.`)) return;
         
         try {
-            const { data, error } = await supabase.functions.invoke('payout-fulfillment', {
+            const { data, error } = await publicSupabase.functions.invoke('payout-fulfillment', {
                 body: { payout_id: payout.id }
             });
             

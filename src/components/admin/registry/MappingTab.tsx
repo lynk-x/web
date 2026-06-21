@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import { useToast } from '@/components/ui/Toast';
@@ -36,7 +36,7 @@ interface EventMapping {
 export default function MappingTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: MappingTabProps) {
     const { showToast } = useToast();
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [categoryMappings, setCategoryMappings] = useState<CategoryMapping[]>([]);
     const [eventMappings, setEventMappings] = useState<EventMapping[]>([]);
@@ -141,12 +141,32 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
         }
     ];
 
+    const handleDeleteMapping = async (id: string) => {
+        setIsLoading(true);
+        try {
+            const { error } = await supabase.rpc('admin_manage_registry_item', {
+                p_tab: activeSubTab === 'category' ? 'mappings_category' : 'mappings_event',
+                p_action: 'delete',
+                p_id: id
+            });
+
+            if (error) throw error;
+
+            showToast('Mapping removed successfully', 'success');
+            fetchMappings();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || "Failed to delete mapping.", 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const getActions = (item: any): ActionItem[] => [
         {
             label: 'Remove Mapping',
             variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            onClick: () => showToast('Removal coming soon', 'info'),
+            onClick: () => handleDeleteMapping(item.id),
         }
     ];
 

@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -13,7 +13,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 export default function CreateDisclaimerPage() {
     const router = useRouter();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -30,11 +30,15 @@ export default function CreateDisclaimerPage() {
 
     useEffect(() => {
         const fetchTags = async () => {
-            const { data } = await supabase.from('tags').select('id, name').order('name');
+            const { data, error } = await supabase.rpc('get_admin_registry_data', { p_tab: 'tags' });
+            if (error) {
+                showToast(getErrorMessage(error), 'error');
+                return;
+            }
             if (data) setTags(data);
         };
         fetchTags();
-    }, [supabase]);
+    }, [supabase, showToast]);
 
     const handleSave = async () => {
         if (!formData.title || !formData.content || !formData.tag_id) {
@@ -44,13 +48,10 @@ export default function CreateDisclaimerPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('disclaimers')
-                .insert([{
-                    ...formData,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }]);
+            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                p_tab: 'disclaimers',
+                p_data: formData
+            });
 
             if (error) throw error;
 

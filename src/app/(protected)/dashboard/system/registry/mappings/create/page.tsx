@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -14,7 +14,8 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 export default function CreateMappingPage() {
     const router = useRouter();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const publicClient = useMemo(() => createClient(), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [mappingType, setMappingType] = useState<'category' | 'event'>('category');
@@ -34,16 +35,19 @@ export default function CreateMappingPage() {
     useEffect(() => {
         const loadRefs = async () => {
             const [tagsRes, catsRes, evtsRes] = await Promise.all([
-                supabase.from('tags').select('id, name').order('name'),
-                supabase.from('event_categories').select('id, name').order('name'),
-                supabase.from('events').select('id, title').order('created_at', { ascending: false }).limit(100)
+                supabase.rpc('get_admin_registry_data', { p_tab: 'tags' }),
+                supabase.rpc('get_admin_registry_data', { p_tab: 'event_categories' }),
+                publicClient.from('events').select('id, title').order('created_at', { ascending: false }).limit(100)
             ]);
+            if (tagsRes.error) showToast(getErrorMessage(tagsRes.error), 'error');
+            if (catsRes.error) showToast(getErrorMessage(catsRes.error), 'error');
+            if (evtsRes.error) showToast(getErrorMessage(evtsRes.error), 'error');
             if (tagsRes.data) setTags(tagsRes.data);
             if (catsRes.data) setCategories(catsRes.data);
             if (evtsRes.data) setEvents(evtsRes.data);
         };
         loadRefs();
-    }, [supabase]);
+    }, [supabase, publicClient, showToast]);
 
     const handleSave = async () => {
         if (!formData.tag_id || (mappingType === 'category' && !formData.category_id) || (mappingType === 'event' && !formData.event_id)) {
@@ -54,21 +58,23 @@ export default function CreateMappingPage() {
         setIsLoading(true);
         try {
             if (mappingType === 'category') {
-                const { error } = await supabase
-                    .from('category_tags')
-                    .insert([{
+                const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                    p_tab: 'mappings_category',
+                    p_data: {
                         category_id: formData.category_id,
                         tag_id: formData.tag_id,
                         is_primary: formData.is_primary
-                    }]);
+                    }
+                });
                 if (error) throw error;
             } else {
-                const { error } = await supabase
-                    .from('event_tags')
-                    .insert([{
+                const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                    p_tab: 'mappings_event',
+                    p_data: {
                         event_id: formData.event_id,
                         tag_id: formData.tag_id
-                    }]);
+                    }
+                });
                 if (error) throw error;
             }
 

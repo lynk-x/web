@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -13,7 +13,7 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 export default function CreateTagPage() {
     const router = useRouter();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);

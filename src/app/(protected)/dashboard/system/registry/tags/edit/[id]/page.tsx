@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -14,7 +14,7 @@ export default function EditTagPage() {
     const router = useRouter();
     const params = useParams();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -32,27 +32,28 @@ export default function EditTagPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch Types
-                const { data: types } = await supabase.from('tag_types').select('id').eq('is_active', true);
-                if (types) setTagTypes(types);
+                // Fetch Types and Tag using RPCs
+                const [typesRes, tagsRes] = await Promise.all([
+                    supabase.rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
+                    supabase.rpc('get_admin_registry_data', { p_tab: 'tags' })
+                ]);
 
-                // Fetch Tag
-                const { data: tag, error } = await supabase
-                    .from('tags')
-                    .select('*')
-                    .eq('id', params.id)
-                    .single();
+                if (typesRes.error) throw typesRes.error;
+                if (tagsRes.error) throw tagsRes.error;
 
-                if (error) throw error;
-                if (tag) {
-                    setFormData({
-                        name: tag.name,
-                        slug: tag.slug,
-                        type_id: tag.type_id || '',
-                        is_official: tag.is_official,
-                        is_active: tag.is_active
-                    });
-                }
+                const activeTypes = (typesRes.data || []).filter((t: any) => t.is_active);
+                setTagTypes(activeTypes);
+
+                const tag = (tagsRes.data || []).find((t: any) => t.id === params.id);
+                if (!tag) throw new Error('Tag not found');
+
+                setFormData({
+                    name: tag.name,
+                    slug: tag.slug,
+                    type_id: tag.type_id || '',
+                    is_official: tag.is_official,
+                    is_active: tag.is_active
+                });
             } catch (error: unknown) {
                 showToast(getErrorMessage(error), 'error');
             } finally {
@@ -65,13 +66,10 @@ export default function EditTagPage() {
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('tags')
-                .update({
-                    ...formData,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', params.id);
+            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                p_tab: 'tags',
+                p_data: formData
+            });
 
             if (error) throw error;
 

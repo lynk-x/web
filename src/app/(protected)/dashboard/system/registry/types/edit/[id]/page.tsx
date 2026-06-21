@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -14,7 +14,7 @@ export default function EditTagTypePage() {
     const router = useRouter();
     const params = useParams();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -28,19 +28,16 @@ export default function EditTagTypePage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('tag_types')
-                    .select('*')
-                    .eq('id', params.id)
-                    .single();
+                const { data, error } = await supabase.rpc('get_admin_registry_data', { p_tab: 'tag_types' });
 
                 if (error) throw error;
-                if (data) {
-                    setFormData({
-                        description: data.description || '',
-                        is_active: data.is_active
-                    });
-                }
+                const type = (data || []).find((t: any) => t.id === params.id);
+                if (!type) throw new Error('Tag type not found');
+
+                setFormData({
+                    description: type.description || '',
+                    is_active: type.is_active
+                });
             } catch (error: unknown) {
                 showToast(getErrorMessage(error), 'error');
             } finally {
@@ -53,13 +50,13 @@ export default function EditTagTypePage() {
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('tag_types')
-                .update({
-                    ...formData,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', params.id);
+            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                p_tab: 'tag_types',
+                p_data: {
+                    id: params.id,
+                    ...formData
+                }
+            });
 
             if (error) throw error;
 

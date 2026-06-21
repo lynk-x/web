@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -14,7 +14,7 @@ export default function EditDisclaimerPage() {
     const router = useRouter();
     const params = useParams();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -32,36 +32,46 @@ export default function EditDisclaimerPage() {
 
     useEffect(() => {
         const load = async () => {
-            const [tagsRes, ruleRes] = await Promise.all([
-                supabase.from('tags').select('id, name').order('name'),
-                supabase.from('disclaimers').select('*').eq('id', params.id).single()
-            ]);
+            try {
+                const [tagsRes, ruleRes] = await Promise.all([
+                    supabase.rpc('get_admin_registry_data', { p_tab: 'tags' }),
+                    supabase.rpc('get_admin_registry_data', { p_tab: 'disclaimers' })
+                ]);
 
-            if (tagsRes.data) setTags(tagsRes.data);
-            if (ruleRes.data) {
+                if (tagsRes.error) throw tagsRes.error;
+                if (ruleRes.error) throw ruleRes.error;
+
+                if (tagsRes.data) setTags(tagsRes.data);
+                
+                const rule = (ruleRes.data || []).find((r: any) => r.id === params.id);
+                if (!rule) throw new Error('Compliance rule not found');
+
                 setFormData({
-                    title: ruleRes.data.title,
-                    content: ruleRes.data.content,
-                    tag_id: ruleRes.data.tag_id,
-                    effective_date: ruleRes.data.effective_date.split('T')[0],
-                    is_active: ruleRes.data.is_active
+                    title: rule.title,
+                    content: rule.content,
+                    tag_id: rule.tag_id,
+                    effective_date: rule.effective_date ? rule.effective_date.split('T')[0] : '',
+                    is_active: rule.is_active
                 });
+            } catch (error: unknown) {
+                showToast(getErrorMessage(error), 'error');
+            } finally {
+                setIsFetching(false);
             }
-            setIsFetching(false);
         };
         load();
-    }, [supabase, params.id]);
+    }, [supabase, params.id, showToast]);
 
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('disclaimers')
-                .update({
-                    ...formData,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', params.id);
+            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                p_tab: 'disclaimers',
+                p_data: {
+                    id: params.id,
+                    ...formData
+                }
+            });
 
             if (error) throw error;
 

@@ -64,7 +64,7 @@ interface EventLocation {
 }
 
 export default function AdminMap() {
-    const supabase = useMemo(() => createClient(), []);
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
     const [isMounted, setIsMounted] = useState(false);
     const [zoom, setZoom] = useState(6);
     const [locations, setLocations] = useState<EventLocation[]>([]);

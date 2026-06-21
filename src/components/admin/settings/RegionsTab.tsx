@@ -32,7 +32,7 @@ export default function RegionsTab({
     searchTerm?: string;
     statusFilter?: string;
 }) {
-    const supabase = useMemo(() => createClient(), []);
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
     const { showToast } = useToast();
 
     const [countries, setCountries] = useState<Country[]>([]);

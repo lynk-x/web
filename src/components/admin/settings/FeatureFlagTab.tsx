@@ -30,7 +30,7 @@ export default function FeatureFlagTab({
 }) {
     const router = useRouter();
     const { showToast } = useToast();
-    const supabase = useMemo(() => createClient(), []);
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
     const [isLoading, setIsLoading] = useState(true);

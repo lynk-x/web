@@ -1,5 +1,5 @@
 import { getErrorMessage } from '@/utils/error';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
@@ -30,7 +30,7 @@ interface DisclaimerTableProps {
 export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearchTerm }: DisclaimerTableProps) {
     const { showToast } = useToast();
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [disclaimers, setDisclaimers] = useState<Disclaimer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -133,6 +133,23 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
         }
     ];
 
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this disclaimer?')) return;
+        try {
+            const { error } = await supabase.rpc('admin_manage_registry_item', {
+                p_tab: 'disclaimers',
+                p_action: 'delete',
+                p_id: id
+            });
+
+            if (error) throw error;
+            showToast('Disclaimer deleted successfully', 'success');
+            fetchDisclaimers();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to delete disclaimer', 'error');
+        }
+    };
+
     const getActions = (d: Disclaimer): ActionItem[] => [
         {
             label: 'Edit Disclaimer',
@@ -143,13 +160,57 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
             label: 'Delete',
             variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            onClick: () => showToast('Delete coming soon', 'info')
+            onClick: () => handleDelete(d.id)
         }
     ];
 
     const bulkActions: BulkAction[] = [
-        { label: 'Activate Selected', onClick: () => { showToast('Activated', 'success'); setSelectedIds(new Set()); }, variant: 'success' as const },
-        { label: 'Deactivate Selected', onClick: () => { showToast('Deactivated', 'warning'); setSelectedIds(new Set()); }, variant: 'danger' as const }
+        {
+            label: 'Activate Selected',
+            onClick: async () => {
+                const ids = Array.from(selectedIds);
+                const results = await Promise.all(ids.map(id =>
+                    supabase.rpc('admin_manage_registry_item', {
+                        p_tab: 'disclaimers',
+                        p_action: 'toggle',
+                        p_id: id,
+                        p_params: { is_active: true }
+                    })
+                ));
+                const errors = results.filter(r => r.error);
+                if (errors.length === 0) {
+                    showToast('Activated selected disclaimers', 'success');
+                    fetchDisclaimers();
+                    setSelectedIds(new Set());
+                } else {
+                    showToast('Some updates failed', 'error');
+                }
+            },
+            variant: 'success' as const
+        },
+        {
+            label: 'Deactivate Selected',
+            onClick: async () => {
+                const ids = Array.from(selectedIds);
+                const results = await Promise.all(ids.map(id =>
+                    supabase.rpc('admin_manage_registry_item', {
+                        p_tab: 'disclaimers',
+                        p_action: 'toggle',
+                        p_id: id,
+                        p_params: { is_active: false }
+                    })
+                ));
+                const errors = results.filter(r => r.error);
+                if (errors.length === 0) {
+                    showToast('Deactivated selected disclaimers', 'warning');
+                    fetchDisclaimers();
+                    setSelectedIds(new Set());
+                } else {
+                    showToast('Some updates failed', 'error');
+                }
+            },
+            variant: 'danger' as const
+        }
     ];
 
     const paginated = filtered.slice(

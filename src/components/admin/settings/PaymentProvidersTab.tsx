@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable from '@/components/shared/DataTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Badge from '@/components/shared/Badge';
@@ -14,7 +14,7 @@ import type { PlatformPaymentProvider } from '@/types/admin';
 
 export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: string }) {
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [data, setData] = useState<PlatformPaymentProvider[]>([]);
     const [isLoading, setIsLoading] = useState(true);

@@ -35,7 +35,7 @@ export default function ConfigTab({
 }) {
     const { showToast } = useToast();
     const router = useRouter();
-    const supabase = useMemo(() => createClient(), []);
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [configs, setConfigs] = useState<SystemConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);

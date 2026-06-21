@@ -89,7 +89,7 @@ function IAMContent() {
     const supabase = useMemo(() => createClient(), []);
 
     // Custom API schema client for IAM RPCs
-    const supabaseApi = useMemo(() => createClient('api'), []);
+    const supabaseApi = useMemo(() => createClient().schema('api' as any), []);
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'accounts');
     const [searchTerm, setSearchTerm] = useState('');

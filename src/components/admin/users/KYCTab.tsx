@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/utils/error';
@@ -21,7 +21,7 @@ interface KYCTabProps {
 }
 
 const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilter }) => {
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();

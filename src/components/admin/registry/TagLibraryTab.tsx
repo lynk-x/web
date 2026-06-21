@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Toggle from '@/components/shared/Toggle';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -37,7 +37,7 @@ interface Tag {
 export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: TagLibraryTabProps) {
     const { showToast } = useToast();
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [tagTypes, setTagTypes] = useState<TagType[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);

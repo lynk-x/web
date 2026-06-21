@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -13,7 +13,7 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 export default function CreateTagTypePage() {
     const router = useRouter();
     const { showToast } = useToast();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient().schema('api' as any), []);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -32,14 +32,14 @@ export default function CreateTagTypePage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('tag_types')
-                .insert([{
-                    ...formData,
+            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                p_tab: 'tag_types',
+                p_data: {
                     id: formData.id.toLowerCase().replace(/\s+/g, '_'),
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }]);
+                    description: formData.description,
+                    is_active: formData.is_active
+                }
+            });
 
             if (error) throw error;
 
