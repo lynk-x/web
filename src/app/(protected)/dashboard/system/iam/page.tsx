@@ -18,16 +18,11 @@ import Badge from '@/components/shared/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import { useDebounce } from '@/hooks/useDebounce';
+import AccountTable from '@/components/admin/users/AccountTable';
+import type { AdminAccount } from '@/types/admin';
 
-interface AdminUser {
-    user_id: string;
-    full_name: string;
-    user_name: string;
-    email: string;
-    role_slug: string;
-    joined_at: string;
-}
 
 interface AccountRole {
     id: string;
@@ -54,25 +49,22 @@ function IAMContent() {
     // Custom API schema client for IAM RPCs
     const supabaseApi = useMemo(() => createClient('api'), []);
 
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'users');
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'accounts');
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearch = useDebounce(searchTerm, 300);
 
     // States
-    const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+    const [accounts, setAccounts] = useState<AdminAccount[]>([]);
+    const [accountsPage, setAccountsPage] = useState(1);
+    const [accountsTotalCount, setAccountsTotalCount] = useState(0);
+    const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+    const [accountType, setAccountType] = useState('all');
+
     const [roles, setRoles] = useState<AccountRole[]>([]);
     const [permissions, setPermissions] = useState<AccountPermission[]>([]);
     const [rolePermissions, setRolePermissions] = useState<{ [roleSlug: string]: Set<string> }>({});
     
     const [isLoading, setIsLoading] = useState(true);
-    const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
-
-    // Modals
-    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-    const [inviteForm, setInviteForm] = useState({
-        email: '',
-        role_slug: 'admin'
-    });
 
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<AccountRole | null>(null);
@@ -81,32 +73,51 @@ function IAMContent() {
         description: ''
     });
 
+    // Selected permissions for bulk actions
+    const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
+
+    // States for assigning/revoking permission to/from a specific role
+    const [isAssignPermModalOpen, setIsAssignPermModalOpen] = useState(false);
+    const [selectedPerm, setSelectedPerm] = useState<AccountPermission | null>(null);
+    const [targetRoleSlug, setTargetRoleSlug] = useState('');
+
     const handleTabChange = (value: string) => {
         setActiveTab(value);
+        setSelectedPermissions(new Set()); // Reset selections when switching tabs
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', value);
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    // Load directory of platform admin users
-    const fetchAdminUsers = useCallback(async () => {
+    // Load directory of platform accounts
+    const fetchAccounts = useCallback(async () => {
+        setIsLoadingAccounts(true);
         try {
-            const { data, error } = await supabaseApi.rpc('get_system_admin_users');
+            const { data, error } = await supabaseApi.rpc('get_admin_accounts', {
+                p_search: debouncedSearch.trim(),
+                p_type: accountType,
+                p_status: 'all',
+                p_country_code: 'all',
+                p_offset: (accountsPage - 1) * 10,
+                p_limit: 10
+            });
+
             if (error) throw error;
-            setAdminUsers(data || []);
-        } catch (error) {
-            console.error('Error fetching admin users:', error);
-            showToast(getErrorMessage(error) || 'Failed to load system administrators', 'error');
+
+            setAccounts(data || []);
+            setAccountsTotalCount(data?.[0]?.total_count || 0);
+        } catch (err: unknown) {
+            console.error('Error fetching accounts:', err);
+            showToast('Failed to load accounts database.', 'error');
+        } finally {
+            setIsLoadingAccounts(false);
         }
-    }, [supabaseApi, showToast]);
+    }, [supabaseApi, showToast, debouncedSearch, accountType, accountsPage]);
 
     // Load global roles and permissions matrix
     const fetchIAMData = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch active admin users
-            await fetchAdminUsers();
-
             // Fetch Roles
             const { data: rolesData, error: rolesError } = await supabase
                 .from('account_roles')
@@ -150,53 +161,21 @@ function IAMContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, fetchAdminUsers, showToast]);
+    }, [supabase, showToast]);
 
     useEffect(() => {
         fetchIAMData();
     }, [fetchIAMData]);
 
-    // Invite new Admin
-    const handleInviteAdmin = async () => {
-        if (!inviteForm.email) {
-            showToast('Email is required', 'error');
-            return;
-        }
-        setIsLoading(true);
-        try {
-            const { error } = await supabaseApi.rpc('assign_system_admin_role', {
-                p_email: inviteForm.email,
-                p_role_slug: inviteForm.role_slug
-            });
-            if (error) throw error;
-            showToast('System administrator added successfully', 'success');
-            setIsInviteModalOpen(false);
-            setInviteForm({ email: '', role_slug: 'admin' });
-            await fetchAdminUsers();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to invite system admin', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    useEffect(() => {
+        setAccountsPage(1);
+    }, [debouncedSearch]);
 
-    // Revoke administrative access
-    const handleRemoveAdmin = async (userId: string) => {
-        if (!confirm('Are you sure you want to revoke administrative access for this user?')) return;
-        setIsActionLoading(userId);
-        try {
-            const { error } = await supabaseApi.rpc('remove_system_admin', {
-                p_user_id: userId
-            });
-            if (error) throw error;
-            showToast('Administrative access revoked', 'success');
-            await fetchAdminUsers();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to revoke access', 'error');
-        } finally {
-            setIsActionLoading(null);
+    useEffect(() => {
+        if (activeTab === 'accounts') {
+            fetchAccounts();
         }
-    };
+    }, [activeTab, fetchAccounts]);
 
     // Toggle single permission in role-permissions matrix
     const handleTogglePermission = async (roleSlug: string, permSlug: string) => {
@@ -233,14 +212,11 @@ function IAMContent() {
         if (!editingRole) return;
         setIsLoading(true);
         try {
-            const { error } = await supabase
-                .from('account_roles')
-                .update({
-                    display_name: roleForm.display_name,
-                    description: roleForm.description,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', editingRole.id);
+            const { error } = await supabaseApi.rpc('update_role_details', {
+                p_role_id: editingRole.id,
+                p_display_name: roleForm.display_name,
+                p_description: roleForm.description
+            });
             if (error) throw error;
             showToast('Role updated successfully', 'success');
             setIsRoleModalOpen(false);
@@ -249,6 +225,119 @@ function IAMContent() {
             showToast(getErrorMessage(error) || 'Failed to update role', 'error');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // Delete custom role
+    const handleDeleteRole = useCallback(async (role: AccountRole) => {
+        if (!window.confirm(`Are you sure you want to delete the role "${role.display_name}"? This action cannot be undone.`)) {
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const { error } = await supabaseApi.rpc('delete_custom_role', {
+                p_role_id: role.id
+            });
+            if (error) throw error;
+            showToast('Role deleted successfully', 'success');
+            await fetchIAMData();
+        } catch (error) {
+            showToast(getErrorMessage(error) || 'Failed to delete role', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabaseApi, showToast, fetchIAMData]);
+
+    // Handle single permission assign/revoke to/from a role
+    const handlePermissionRoleAction = async (action: 'assign' | 'revoke') => {
+        if (!selectedPerm || !targetRoleSlug) return;
+        setIsLoading(true);
+        try {
+            const currentPerms = new Set(rolePermissions[targetRoleSlug] || []);
+            if (action === 'assign') {
+                currentPerms.add(selectedPerm.slug);
+            } else {
+                currentPerms.delete(selectedPerm.slug);
+            }
+
+            const { error } = await supabaseApi.rpc('update_role_permissions', {
+                p_role_slug: targetRoleSlug,
+                p_permission_slugs: Array.from(currentPerms)
+            });
+            if (error) throw error;
+            
+            showToast(`Permission "${selectedPerm.slug}" successfully ${action === 'assign' ? 'assigned to' : 'revoked from'} role "${targetRoleSlug}"`, 'success');
+            setIsAssignPermModalOpen(false);
+            await fetchIAMData();
+        } catch (error) {
+            showToast(getErrorMessage(error) || 'Failed to update permission mapping', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Bulk assign selected permissions to all roles
+    const handleBulkAssign = async () => {
+        if (selectedPermissions.size === 0) return;
+        const count = selectedPermissions.size;
+        if (!window.confirm(`Are you sure you want to assign the ${count} selected permissions to ALL roles?`)) {
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const { error } = await supabaseApi.rpc('bulk_assign_permissions_to_all_roles', {
+                p_permission_slugs: Array.from(selectedPermissions)
+            });
+            if (error) throw error;
+            showToast(`Successfully assigned ${count} permissions to all roles`, 'success');
+            setSelectedPermissions(new Set());
+            await fetchIAMData();
+        } catch (error) {
+            showToast(getErrorMessage(error) || 'Failed to assign bulk permissions', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Bulk revoke selected permissions from all roles
+    const handleBulkRevoke = async () => {
+        if (selectedPermissions.size === 0) return;
+        const count = selectedPermissions.size;
+        if (!window.confirm(`Are you sure you want to revoke the ${count} selected permissions from ALL roles?`)) {
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const { error } = await supabaseApi.rpc('bulk_revoke_permissions_from_all_roles', {
+                p_permission_slugs: Array.from(selectedPermissions)
+            });
+            if (error) throw error;
+            showToast(`Successfully revoked ${count} permissions from all roles`, 'success');
+            setSelectedPermissions(new Set());
+            await fetchIAMData();
+        } catch (error) {
+            showToast(getErrorMessage(error) || 'Failed to revoke bulk permissions', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Selection handlers for permissions table
+    const handleSelectPermission = (id: string) => {
+        const next = new Set(selectedPermissions);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        setSelectedPermissions(next);
+    };
+
+    const handleSelectAllPermissions = () => {
+        if (selectedPermissions.size === mappedPermissions.length) {
+            setSelectedPermissions(new Set());
+        } else {
+            setSelectedPermissions(new Set(mappedPermissions.map(p => p.id)));
         }
     };
 
@@ -263,15 +352,6 @@ function IAMContent() {
         });
         return groups;
     }, [permissions]);
-
-    // Filtering users based on search term
-    const filteredUsers = useMemo(() => {
-        return adminUsers.filter(u => 
-            u.full_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            u.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            u.role_slug?.toLowerCase().includes(debouncedSearch.toLowerCase())
-        );
-    }, [adminUsers, debouncedSearch]);
 
     // Filtering roles based on search term
     const filteredRoles = useMemo(() => {
@@ -291,14 +371,6 @@ function IAMContent() {
         );
     }, [permissions, debouncedSearch]);
 
-    // Map adminUsers to have a standard ID property for DataTable
-    const mappedAdminUsers = useMemo(() => {
-        return filteredUsers.map(u => ({
-            ...u,
-            id: u.user_id
-        }));
-    }, [filteredUsers]);
-
     // Map permissions to have a standard ID property for DataTable
     const mappedPermissions = useMemo(() => {
         return filteredPermissions.map(p => ({
@@ -307,59 +379,17 @@ function IAMContent() {
         }));
     }, [filteredPermissions]);
 
-    // Columns config for Administrators Table
-    const userColumns = useMemo(() => [
-        {
-            header: 'Administrator',
-            render: (user: AdminUser) => (
-                <div style={{ fontWeight: 500 }}>
-                    {user.full_name || 'N/A'}
-                    {user.user_name && (
-                        <span style={{ display: 'block', fontSize: '12px', opacity: 0.6 }}>
-                            @{user.user_name}
-                        </span>
-                    )}
-                </div>
-            )
-        },
-        {
-            header: 'Email',
-            render: (user: AdminUser) => user.email
-        },
-        {
-            header: 'Role',
-            render: (user: AdminUser) => (
-                <span className={adminStyles.badge} style={{ textTransform: 'capitalize' }}>
-                    {user.role_slug.replace(/_/g, ' ')}
-                </span>
-            )
-        },
-        {
-            header: 'Joined At',
-            render: (user: AdminUser) => new Date(user.joined_at).toLocaleDateString()
-        }
-    ], []);
-
-    const getUserActions = useCallback((user: AdminUser) => [
-        {
-            label: isActionLoading === user.user_id ? 'Revoking...' : 'Revoke Access',
-            onClick: () => handleRemoveAdmin(user.user_id),
-            disabled: isActionLoading === user.user_id,
-            variant: 'danger' as const
-        }
-    ], [isActionLoading, handleRemoveAdmin]);
-
     // Columns config for Roles Table
     const roleColumns = useMemo(() => [
+        {
+            header: 'Role Slug',
+            render: (role: AccountRole) => <code>{role.role_slug}</code>
+        },
         {
             header: 'Role Name',
             render: (role: AccountRole) => (
                 <div style={{ fontWeight: 500 }}>{role.display_name}</div>
             )
-        },
-        {
-            header: 'Role Slug',
-            render: (role: AccountRole) => <code>{role.role_slug}</code>
         },
         {
             header: 'Description',
@@ -371,19 +401,56 @@ function IAMContent() {
         }
     ], []);
 
-    const getRoleActions = useCallback((role: AccountRole) => [
+    const getRoleActions = useCallback((role: AccountRole) => {
+        const actions = [
+            {
+                label: 'Edit details',
+                onClick: () => {
+                    setEditingRole(role);
+                    setRoleForm({
+                        display_name: role.display_name,
+                        description: role.description || ''
+                    });
+                    setIsRoleModalOpen(true);
+                }
+            }
+        ];
+
+        const isSystemRole = ['super_admin', 'admin', 'moderator', 'reviewer', 'support_agent', 'owner', 'member'].includes(role.role_slug);
+        if (!isSystemRole) {
+            actions.push({
+                label: 'Delete role',
+                onClick: () => handleDeleteRole(role)
+            });
+        }
+
+        return actions;
+    }, [handleDeleteRole]);
+
+    const getPermissionActions = useCallback((perm: AccountPermission) => [
         {
-            label: 'Edit details',
+            label: 'Filter in matrix',
             onClick: () => {
-                setEditingRole(role);
-                setRoleForm({
-                    display_name: role.display_name,
-                    description: role.description || ''
-                });
-                setIsRoleModalOpen(true);
+                setSearchTerm(perm.slug);
+                setActiveTab('matrix');
+            }
+        },
+        {
+            label: 'Copy slug',
+            onClick: () => {
+                navigator.clipboard.writeText(perm.slug);
+                showToast('Permission slug copied to clipboard', 'success');
+            }
+        },
+        {
+            label: 'Assign/Revoke for role...',
+            onClick: () => {
+                setSelectedPerm(perm);
+                setTargetRoleSlug(roles[0]?.role_slug || '');
+                setIsAssignPermModalOpen(true);
             }
         }
-    ], []);
+    ], [showToast, roles]);
 
     // Columns config for Permissions Table
     const permissionColumns = useMemo(() => [
@@ -419,13 +486,6 @@ function IAMContent() {
                     </div>
                 ),
                 width: '300px'
-            },
-            {
-                header: 'Category',
-                render: (perm: AccountPermission) => (
-                    <Badge variant="subtle" label={perm.category.toUpperCase()} />
-                ),
-                width: '150px'
             }
         ];
 
@@ -458,47 +518,62 @@ function IAMContent() {
         return cols;
     }, [roles, rolePermissions, handleTogglePermission]);
 
+    const accountsTotalPages = Math.ceil(accountsTotalCount / 10);
+
     return (
         <div className={sharedStyles.container}>
             <PageHeader 
                 title="Identity & Access (IAM)"
-                subtitle="Manage platform-level system administrators, global roles and secure access permissions."
+                subtitle="Manage platform-level system roles, accounts, and granular security permissions."
             />
 
             <TableToolbar 
-                searchPlaceholder="Search administrators or roles..."
+                searchPlaceholder="Search accounts, roles or permissions..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            />
+            >
+                {activeTab === 'accounts' && (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {[
+                            { value: 'all', label: 'All Accounts' },
+                            { value: 'platform', label: 'Platform' },
+                            { value: 'organizer', label: 'Organizer' },
+                            { value: 'advertiser', label: 'Advertiser' },
+                            { value: 'pulse_user', label: 'Pulse User' }
+                        ].map((chip) => (
+                            <button
+                                key={chip.value}
+                                className={accountType === chip.value ? adminStyles.chipActive : adminStyles.chip}
+                                onClick={() => setAccountType(chip.value)}
+                            >
+                                {chip.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none', marginTop: '16px' }}>
                     <TabsList>
-                        <TabsTrigger value="users">Administrators</TabsTrigger>
+                        <TabsTrigger value="accounts">Accounts</TabsTrigger>
                         <TabsTrigger value="roles">Roles</TabsTrigger>
                         <TabsTrigger value="permissions">Permissions</TabsTrigger>
-                        <TabsTrigger value="matrix">Role</TabsTrigger>
+                        <TabsTrigger value="matrix">Role Permissions</TabsTrigger>
                     </TabsList>
-
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        {activeTab === 'users' && (
-                            <button className={adminStyles.btnPrimary} onClick={() => setIsInviteModalOpen(true)}>
-                                + Invite Administrator
-                            </button>
-                        )}
-                    </div>
                 </div>
 
                 <div style={{ marginTop: '24px' }}>
-                    {/* Tab 1: Admin Users */}
-                    <TabsContent value="users">
+                    {/* Tab 1: Accounts */}
+                    <TabsContent value="accounts">
                         <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
-                            <DataTable
-                                data={mappedAdminUsers}
-                                columns={userColumns}
-                                getActions={getUserActions}
-                                isLoading={isLoading}
-                                emptyMessage="No administrators found matching the search criteria."
+                            <AccountTable 
+                                accounts={accounts}
+                                isLoading={isLoadingAccounts}
+                                currentPage={accountsPage}
+                                totalPages={accountsTotalPages}
+                                onPageChange={setAccountsPage}
+                                onRefresh={fetchAccounts}
                             />
                         </div>
                     </TabsContent>
@@ -518,10 +593,24 @@ function IAMContent() {
 
                     {/* Tab 3: Permissions List */}
                     <TabsContent value="permissions">
+                        {selectedPermissions.size > 0 && (
+                            <BulkActionsBar
+                                selectedCount={selectedPermissions.size}
+                                onCancel={() => setSelectedPermissions(new Set())}
+                                actions={[
+                                    { label: 'Assign Selected to All Roles', onClick: handleBulkAssign, variant: 'success' },
+                                    { label: 'Revoke Selected from All Roles', onClick: handleBulkRevoke, variant: 'danger' }
+                                ]}
+                            />
+                        )}
                         <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                             <DataTable
                                 data={mappedPermissions}
                                 columns={permissionColumns}
+                                getActions={getPermissionActions}
+                                selectedIds={selectedPermissions}
+                                onSelect={handleSelectPermission}
+                                onSelectAll={handleSelectAllPermissions}
                                 isLoading={isLoading}
                                 emptyMessage="No permissions found."
                             />
@@ -541,51 +630,6 @@ function IAMContent() {
                     </TabsContent>
                 </div>
             </Tabs>
-
-            {/* Modal: Invite / Add Admin */}
-            <Modal
-                isOpen={isInviteModalOpen}
-                onClose={() => setIsInviteModalOpen(false)}
-                title="Add System Administrator"
-                footer={
-                    <>
-                        <button className={adminStyles.btnSecondary} onClick={() => setIsInviteModalOpen(false)}>Cancel</button>
-                        <button className={adminStyles.btnPrimary} onClick={handleInviteAdmin}>Grant Access</button>
-                    </>
-                }
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div>
-                        <label className={adminStyles.label}>User Email Address</label>
-                        <input
-                            type="email"
-                            className={adminStyles.input}
-                            placeholder="e.g. administrator@lynk-x.com"
-                            value={inviteForm.email}
-                            onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
-                        />
-                        <span style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px', display: 'block' }}>
-                            The user must have an existing profile registered under this email address on the platform.
-                        </span>
-                    </div>
-
-                    <div>
-                        <label className={adminStyles.label}>Administrative Role</label>
-                        <select
-                            className={adminStyles.select}
-                            style={{ width: '100%' }}
-                            value={inviteForm.role_slug}
-                            onChange={e => setInviteForm({ ...inviteForm, role_slug: e.target.value })}
-                        >
-                            <option value="admin">Admin</option>
-                            <option value="super_admin">Super Admin</option>
-                            <option value="moderator">Moderator</option>
-                            <option value="reviewer">Reviewer</option>
-                            <option value="support_agent">Support Agent</option>
-                        </select>
-                    </div>
-                </div>
-            </Modal>
 
             {/* Modal: Edit Role Details */}
             <Modal
@@ -619,6 +663,86 @@ function IAMContent() {
                         />
                     </div>
                 </div>
+            </Modal>
+
+            {/* Modal: Assign/Revoke Permission for Role */}
+            <Modal
+                isOpen={isAssignPermModalOpen}
+                onClose={() => setIsAssignPermModalOpen(false)}
+                title="Manage Role Permission Assignment"
+                footer={
+                    <>
+                        <button className={adminStyles.btnSecondary} onClick={() => setIsAssignPermModalOpen(false)}>
+                            Cancel
+                        </button>
+                        {targetRoleSlug && rolePermissions[targetRoleSlug]?.has(selectedPerm?.slug || '') ? (
+                            <button 
+                                className={adminStyles.btnSecondary} 
+                                style={{ borderColor: 'var(--color-status-error)', color: 'var(--color-status-error)' }}
+                                onClick={() => handlePermissionRoleAction('revoke')}
+                            >
+                                Revoke from Role
+                            </button>
+                        ) : (
+                            <button 
+                                className={adminStyles.btnPrimary} 
+                                onClick={() => handlePermissionRoleAction('assign')}
+                            >
+                                Assign to Role
+                            </button>
+                        )}
+                    </>
+                }
+            >
+                {selectedPerm && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                            <span style={{ fontSize: '12px', textTransform: 'uppercase', opacity: 0.5, fontWeight: 600 }}>Permission Slug</span>
+                            <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                                {selectedPerm.slug}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span style={{ fontSize: '12px', textTransform: 'uppercase', opacity: 0.5, fontWeight: 600 }}>Description</span>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '14px', opacity: 0.8 }}>
+                                {selectedPerm.description}
+                            </p>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--color-interface-outline)', paddingTop: '16px' }}>
+                            <label className={adminStyles.label} style={{ marginBottom: '8px', display: 'block' }}>Target Role</label>
+                            <select
+                                className={adminStyles.input}
+                                style={{ width: '100%', padding: '10px', background: 'var(--color-background-surface)', color: 'var(--color-text-primary)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
+                                value={targetRoleSlug}
+                                onChange={e => setTargetRoleSlug(e.target.value)}
+                            >
+                                {roles.map(r => (
+                                    <option key={r.id} value={r.role_slug}>
+                                        {r.display_name} ({r.role_slug})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px dashed var(--color-interface-outline)' }}>
+                            <div style={{
+                                width: '10px', 
+                                height: '10px', 
+                                borderRadius: '50%', 
+                                backgroundColor: targetRoleSlug && rolePermissions[targetRoleSlug]?.has(selectedPerm.slug) ? 'var(--color-status-success)' : 'rgba(255, 255, 255, 0.2)'
+                            }} />
+                            <span style={{ fontSize: '13px', opacity: 0.8 }}>
+                                {targetRoleSlug && rolePermissions[targetRoleSlug]?.has(selectedPerm.slug) ? (
+                                    <>Role <strong>{targetRoleSlug}</strong> currently has this permission.</>
+                                ) : (
+                                    <>Role <strong>{targetRoleSlug}</strong> does not have this permission.</>
+                                )}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </div>
     );
