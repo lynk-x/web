@@ -22,13 +22,14 @@ import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import { useDebounce } from '@/hooks/useDebounce';
 import AccountTable from '@/components/admin/users/AccountTable';
 import type { AdminAccount } from '@/types/admin';
-
+import type { BadgeVariant } from '@/types/shared';
 
 interface AccountRole {
     id: string;
     role_slug: string;
     display_name: string;
     description: string;
+    status?: string;
 }
 
 interface AccountPermission {
@@ -36,6 +37,47 @@ interface AccountPermission {
     category: string;
     description: string;
 }
+
+interface ToggleSwitchProps {
+    checked: boolean;
+    onChange: () => void;
+    disabled?: boolean;
+}
+
+const ToggleSwitch = ({ checked, onChange, disabled }: ToggleSwitchProps) => (
+    <button
+        type="button"
+        disabled={disabled}
+        onClick={onChange}
+        style={{
+            position: 'relative',
+            width: '40px',
+            height: '22px',
+            borderRadius: '11px',
+            backgroundColor: checked ? 'var(--color-status-success, #10b981)' : 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--color-interface-outline)',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            transition: 'background-color 0.2s',
+            opacity: disabled ? 0.5 : 1,
+            padding: 0,
+            flexShrink: 0
+        }}
+    >
+        <span
+            style={{
+                position: 'absolute',
+                top: '2px',
+                left: checked ? '20px' : '2px',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#ffffff',
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+            }}
+        />
+    </button>
+);
 
 function IAMContent() {
     const { showToast } = useToast();
@@ -81,6 +123,8 @@ function IAMContent() {
     const [selectedPerm, setSelectedPerm] = useState<AccountPermission | null>(null);
     const [targetRoleSlug, setTargetRoleSlug] = useState('');
 
+    const [matrixActiveRoleSlug, setMatrixActiveRoleSlug] = useState<string>('');
+
     const handleTabChange = (value: string) => {
         setActiveTab(value);
         setSelectedPermissions(new Set()); // Reset selections when switching tabs
@@ -105,7 +149,7 @@ function IAMContent() {
             if (error) throw error;
 
             setAccounts(data || []);
-            setAccountsTotalCount(data?.[0]?.total_count || 0);
+            setAccountsTotalCount(data?.[0]?.total_count ? Number(data[0].total_count) : 0);
         } catch (err: unknown) {
             console.error('Error fetching accounts:', err);
             showToast('Failed to load accounts database.', 'error');
@@ -125,6 +169,9 @@ function IAMContent() {
                 .order('display_name');
             if (rolesError) throw rolesError;
             setRoles(rolesData || []);
+            if (rolesData && rolesData.length > 0) {
+                setMatrixActiveRoleSlug(prev => prev || rolesData[0].role_slug);
+            }
 
             // Fetch Permissions
             const { data: permsData, error: permsError } = await supabase
@@ -398,6 +445,31 @@ function IAMContent() {
                     {role.description || 'No description provided.'}
                 </div>
             )
+        },
+        {
+            header: 'Status',
+            render: (role: AccountRole) => {
+                const getStatusVariant = (status: string): BadgeVariant => {
+                    switch (status) {
+                        case 'approved': return 'success';
+                        case 'pending':
+                        case 'under_review':
+                        case 'appealed': return 'warning';
+                        case 'rejected':
+                        case 'flagged':
+                        case 'expired': return 'error';
+                        default: return 'neutral';
+                    }
+                };
+                const statusLabel = role.status ? role.status.replace(/_/g, ' ').toUpperCase() : 'APPROVED';
+                return (
+                    <Badge 
+                        label={statusLabel} 
+                        variant={getStatusVariant(role.status || 'approved')} 
+                        showDot 
+                    />
+                );
+            }
         }
     ], []);
 
@@ -459,12 +531,6 @@ function IAMContent() {
             render: (perm: AccountPermission) => <code>{perm.slug}</code>
         },
         {
-            header: 'Category',
-            render: (perm: AccountPermission) => (
-                <Badge variant="subtle" label={perm.category.toUpperCase()} />
-            )
-        },
-        {
             header: 'Description',
             render: (perm: AccountPermission) => (
                 <div style={{ opacity: 0.8, maxWidth: '500px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
@@ -473,50 +539,6 @@ function IAMContent() {
             )
         }
     ], []);
-
-    // Columns config for Permissions Matrix
-    const matrixColumns = useMemo(() => {
-        const cols = [
-            {
-                header: 'Permission & Scope',
-                render: (perm: AccountPermission) => (
-                    <div>
-                        <div style={{ fontWeight: 500, fontSize: '13px' }}>{perm.slug.replace(/_/g, ' ')}</div>
-                        <div style={{ fontSize: '11px', opacity: 0.6 }}>{perm.description}</div>
-                    </div>
-                ),
-                width: '300px'
-            }
-        ];
-
-        roles.forEach(role => {
-            cols.push({
-                header: role.display_name,
-                render: (perm: AccountPermission) => {
-                    const isChecked = !!rolePermissions[role.role_slug]?.has(perm.slug);
-                    const isLocked = (role.role_slug === 'super_admin' || role.role_slug === 'owner') && perm.slug === 'can_manage_roles';
-                    
-                    return (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <input
-                                type="checkbox"
-                                checked={isChecked}
-                                disabled={isLocked}
-                                onChange={() => handleTogglePermission(role.role_slug, perm.slug)}
-                                style={{ 
-                                    cursor: isLocked ? 'not-allowed' : 'pointer',
-                                    transform: 'scale(1.2)'
-                                }}
-                            />
-                        </div>
-                    );
-                },
-                width: '120px'
-            });
-        });
-
-        return cols;
-    }, [roles, rolePermissions, handleTogglePermission]);
 
     const accountsTotalPages = Math.ceil(accountsTotalCount / 10);
 
@@ -619,13 +641,134 @@ function IAMContent() {
 
                     {/* Tab 4: Permissions Matrix */}
                     <TabsContent value="matrix">
-                        <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
-                            <DataTable
-                                data={mappedPermissions}
-                                columns={matrixColumns}
-                                isLoading={isLoading}
-                                emptyMessage="No permissions matrix data found."
-                            />
+                        <div style={{ display: 'flex', gap: '32px', minHeight: '550px', flexDirection: 'row', flexWrap: 'wrap' }}>
+                            {/* Left Column: Roles list */}
+                            <div style={{
+                                flex: '1 1 260px',
+                                maxWidth: '320px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                borderRight: '1px solid var(--color-interface-outline)',
+                                paddingRight: '24px'
+                            }}>
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary)', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                                    System Roles
+                                </div>
+                                {roles.map(role => {
+                                    const isActive = matrixActiveRoleSlug === role.role_slug;
+                                    const activeCount = rolePermissions[role.role_slug]?.size || 0;
+                                    return (
+                                        <button
+                                            key={role.id}
+                                            type="button"
+                                            onClick={() => setMatrixActiveRoleSlug(role.role_slug)}
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'flex-start',
+                                                padding: '12px 16px',
+                                                borderRadius: '8px',
+                                                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+                                                border: isActive ? '1px solid var(--color-interface-outline)' : '1px solid transparent',
+                                                cursor: 'pointer',
+                                                textAlign: 'left',
+                                                width: '100%',
+                                                transition: 'background-color 0.2s, border-color 0.2s'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                                <span style={{ fontWeight: isActive ? 600 : 500, fontSize: '14px', color: 'var(--color-text-primary)' }}>
+                                                    {role.display_name}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '11px',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    backgroundColor: isActive ? 'var(--color-status-success)' : 'rgba(255, 255, 255, 0.08)',
+                                                    color: isActive ? '#000000' : 'var(--color-text-primary)',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {activeCount} perms
+                                                </span>
+                                            </div>
+                                            <span style={{ fontSize: '11px', opacity: 0.6, marginTop: '4px', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%' }}>
+                                                {role.role_slug}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Right Column: Grouped permissions with toggle switches */}
+                            <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                {matrixActiveRoleSlug ? (
+                                    <>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
+                                            <div>
+                                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                                                    {roles.find(r => r.role_slug === matrixActiveRoleSlug)?.display_name} Permissions
+                                                </h3>
+                                                <p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.6 }}>
+                                                    Configure granular access control permissions for this administrative tier.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                            {Object.keys(groupedPermissions).map(category => {
+                                                const catPerms = groupedPermissions[category];
+                                                return (
+                                                    <div key={category} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary)', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                            {category} ({catPerms.filter(p => rolePermissions[matrixActiveRoleSlug]?.has(p.slug)).length} / {catPerms.length} Active)
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            {catPerms.map(perm => {
+                                                                const isChecked = !!rolePermissions[matrixActiveRoleSlug]?.has(perm.slug);
+                                                                const isLocked = (matrixActiveRoleSlug === 'super_admin' || matrixActiveRoleSlug === 'owner') && perm.slug === 'can_manage_roles';
+                                                                return (
+                                                                    <div
+                                                                        key={perm.slug}
+                                                                        style={{
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center',
+                                                                            padding: '12px 16px',
+                                                                            borderRadius: '8px',
+                                                                            backgroundColor: 'rgba(255, 255, 255, 0.01)',
+                                                                            border: '1px solid var(--color-interface-outline)',
+                                                                            transition: 'background-color 0.2s'
+                                                                        }}
+                                                                    >
+                                                                        <div style={{ paddingRight: '16px' }}>
+                                                                            <code style={{ fontSize: '12px', color: 'var(--color-status-success)' }}>
+                                                                                {perm.slug}
+                                                                            </code>
+                                                                            <p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.7 }}>
+                                                                                {perm.description}
+                                                                            </p>
+                                                                        </div>
+                                                                        <ToggleSwitch
+                                                                            checked={isChecked}
+                                                                            disabled={isLocked}
+                                                                            onChange={() => handleTogglePermission(matrixActiveRoleSlug, perm.slug)}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', opacity: 0.5 }}>
+                                        Select a role from the sidebar to configure permissions.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </TabsContent>
                 </div>

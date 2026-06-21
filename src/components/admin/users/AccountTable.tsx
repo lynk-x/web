@@ -106,21 +106,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 </div>
             ),
         },
-        {
-            header: 'Balances',
-            render: (acc) => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontSize: '11px', opacity: 0.5, width: '35px' }}>CASH:</span>
-                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{formatCurrency(acc.cash_balance)}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontSize: '11px', opacity: 0.5, width: '35px' }}>PROMO:</span>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--brand-primary)' }}>{formatCurrency(acc.credit_balance)}</span>
-                    </div>
-                </div>
-            ),
-        },
+
         {
             header: 'Status',
             render: (acc) => (
