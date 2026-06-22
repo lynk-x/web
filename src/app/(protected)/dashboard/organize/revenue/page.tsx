@@ -95,7 +95,7 @@ function RevenueContent() {
     const fetchSummary = useCallback(async () => {
         if (!activeAccount) return;
         try {
-            const { data, error } = await supabase.rpc('get_organizer_revenue_summary', {
+            const { data, error } = await supabase.schema('api').rpc('get_organizer_revenue_summary', {
                 p_account_id: activeAccount.id,
             });
             if (error) throw error;
@@ -117,7 +117,7 @@ function RevenueContent() {
         if (!activeAccount) return;
         setIsPayoutsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_organizer_payouts', {
+            const { data, error } = await supabase.schema('api').rpc('get_organizer_payouts', {
                 p_account_id: activeAccount.id,
                 p_status:     payoutStatusFilter === 'all' ? undefined : payoutStatusFilter,
                 p_start_date: startDate ? new Date(startDate).toISOString() : undefined,
@@ -142,7 +142,7 @@ function RevenueContent() {
         if (!activeAccount) return;
         setIsRefundsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_organizer_refund_requests', {
+            const { data, error } = await supabase.schema('api').rpc('get_organizer_refund_requests', {
                 p_account_id: activeAccount.id,
                 p_status:     refundStatusFilter === 'all' ? undefined : refundStatusFilter,
                 p_start_date: startDate ? new Date(startDate).toISOString() : undefined,
