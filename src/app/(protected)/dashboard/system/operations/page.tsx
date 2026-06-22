@@ -41,7 +41,7 @@ function JobsOperationsContent() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [stats, setStats] = useState<any>(null);
-    const itemsPerPage = 20;
+    const itemsPerPage = 10;
 
     const handleTabChange = (value: string) => {
         setActiveTab(value);

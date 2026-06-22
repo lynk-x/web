@@ -153,6 +153,11 @@
     cursor: pointer;
 }
 
+.select-base option {
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+}
+
 .input-base:focus, .select-base:focus, .textarea-base:focus {
     border-color: var(--color-brand-primary);
     background-color: var(--color-interface-surface);

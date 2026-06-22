@@ -247,6 +247,11 @@
     transition: all 0.2s;
 }
 
+.select option, .input option {
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
+}
+
 .select:focus {
     border-color: var(--color-brand-primary);
     box-shadow: 0 0 0 2px rgba(32, 249, 40, 0.1);
@@ -336,6 +341,11 @@
     cursor: pointer;
     line-height: 1.2;
     min-width: 120px;
+}
+
+.filterSelect option {
+    background-color: var(--color-interface-surface);
+    color: var(--color-utility-primaryText);
 }
 
 .filterSelect:focus {

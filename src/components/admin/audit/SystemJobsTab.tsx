@@ -24,7 +24,7 @@ const SystemJobsTab: React.FC<SystemJobsTabProps> = ({ statusFilter }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
 
-    const itemsPerPage = 50;
+    const itemsPerPage = 10;
 
     const fetchJobs = useCallback(async () => {
         setIsLoading(true);
