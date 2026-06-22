@@ -96,7 +96,7 @@ export function createUsersRepository(client: DbClient) {
 
         /** Register or refresh the user's push notification device token. */
         async registerDevice(fcmToken: string, deviceInfo: Record<string, unknown>): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('register_user_device', {
+            const { error } = await client.schema('api').rpc('register_user_device', {
                 p_fcm_token: fcmToken,
                 p_info: deviceInfo,
             });
