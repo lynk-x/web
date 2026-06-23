@@ -88,12 +88,16 @@ export default function PaymentMethodsManager({ accountId }: Props) {
 
     // Close the dropdown menu if user clicks anywhere else
     useEffect(() => {
-        const handleOutsideClick = () => {
+        const handleOutsideClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-dropdown-trigger]') || target.closest('[data-dropdown-menu]')) {
+                return;
+            }
             setActiveMenuId(null);
         };
-        document.addEventListener('click', handleOutsideClick);
+        document.addEventListener('mousedown', handleOutsideClick);
         return () => {
-            document.removeEventListener('click', handleOutsideClick);
+            document.removeEventListener('mousedown', handleOutsideClick);
         };
     }, []);
 
@@ -284,6 +288,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                             </div>
                             <div style={{ position: 'relative' }}>
                                 <button
+                                    data-dropdown-trigger="true"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setActiveMenuId(activeMenuId === method.id ? null : method.id);
@@ -312,13 +317,15 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                                 </button>
 
                                 {activeMenuId === method.id && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        right: 0,
-                                        top: '100%',
-                                        marginTop: '8px',
-                                        backgroundColor: '#1a1c23',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                    <div 
+                                        data-dropdown-menu="true"
+                                        style={{
+                                            position: 'absolute',
+                                            right: 0,
+                                            top: '100%',
+                                            marginTop: '8px',
+                                            backgroundColor: '#1a1c23',
+                                            border: '1px solid rgba(255,255,255,0.1)',
                                         borderRadius: '8px',
                                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                                         zIndex: 100,
