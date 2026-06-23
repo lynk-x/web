@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -24,6 +25,7 @@ import type { AccountWallet } from '@/types/organize';
 
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
+    const { user, isLoading: authLoading } = useAuth();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const searchParams = useSearchParams();
@@ -111,7 +113,7 @@ function AdsSettingsContent() {
     }, [searchParams]);
 
     const fetchData = useCallback(async () => {
-        if (!activeAccount) return;
+        if (!activeAccount || !user) return;
         setIsLoading(true);
         try {
             const { data, error } = await supabase.rpc('get_account_settings', {
@@ -150,13 +152,13 @@ function AdsSettingsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, user, supabase, showToast]);
 
     useEffect(() => {
-        if (!isOrgLoading && activeAccount) {
+        if (!isOrgLoading && activeAccount && user && !authLoading) {
             fetchData();
         }
-    }, [isOrgLoading, activeAccount, fetchData]);
+    }, [isOrgLoading, activeAccount, user, authLoading, fetchData]);
 
     const handleTabChange = (newTab: string) => {
         if (isDirty && activeTab !== newTab) {

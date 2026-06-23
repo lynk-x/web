@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'rea
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { sanitizeInput } from '@/utils/sanitization';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
@@ -29,6 +30,7 @@ import type { AccountWallet } from '@/types/organize';
 function SettingsContent() {
     const { showToast } = useToast();
     const { activeAccount, refreshAccounts } = useOrganization();
+    const { user, isLoading: authLoading } = useAuth();
     const supabase = useMemo(() => createClient(), []);
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -135,7 +137,7 @@ function SettingsContent() {
 
 
     const fetchData = useCallback(async () => {
-        if (!activeAccount) return;
+        if (!activeAccount || !user) return;
         setIsLoading(true);
         try {
             const { data: settings, error } = await supabase.rpc('get_account_settings', {
@@ -174,13 +176,13 @@ function SettingsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, user, supabase, showToast]);
 
     useEffect(() => {
-        if (activeAccount) {
+        if (activeAccount && user && !authLoading) {
             fetchData();
         }
-    }, [activeAccount, fetchData]);
+    }, [activeAccount, user, authLoading, fetchData]);
 
     const isDirty = useMemo(() => {
         if (!activeAccount) return false;

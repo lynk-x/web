@@ -77,11 +77,14 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             render: (campaign) => <Badge label={formatString(campaign.type)} variant="subtle" />,
         },
         {
-            header: 'Spend',
+            header: 'Budget',
             render: (campaign) => (
-                <div className={styles.metrics}>
-                    <span className={styles.metricValue}>
-                        ${campaign.spent_amount.toLocaleString()} / ${campaign.total_budget.toLocaleString()}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontWeight: 600 }}>
+                        ${campaign.total_budget.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '12px', opacity: 0.6 }}>
+                        ${campaign.spent_amount.toLocaleString()} spent
                     </span>
                 </div>
             ),

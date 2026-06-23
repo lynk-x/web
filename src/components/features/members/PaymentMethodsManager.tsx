@@ -29,6 +29,13 @@ export default function PaymentMethodsManager({ accountId }: Props) {
     const [newMethod, setNewMethod] = useState({ provider: 'mpesa', identity: '' });
     const [isSaving, setIsSaving] = useState(false);
 
+    // Dropdown state for "More" menu
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+    // Edit modal states
+    const [editingMethod, setEditingMethod] = useState<AccountPaymentMethod | null>(null);
+    const [editForm, setEditForm] = useState({ provider: 'mpesa', identity: '', label: '' });
+
     const [methodToDelete, setMethodToDelete] = useState<AccountPaymentMethod | null>(null);
     const [providers, setProviders] = useState<any[]>([]);
 
@@ -78,6 +85,17 @@ export default function PaymentMethodsManager({ accountId }: Props) {
         fetchMethods();
         fetchProviders();
     }, [fetchMethods, fetchProviders]);
+
+    // Close the dropdown menu if user clicks anywhere else
+    useEffect(() => {
+        const handleOutsideClick = () => {
+            setActiveMenuId(null);
+        };
+        document.addEventListener('click', handleOutsideClick);
+        return () => {
+            document.removeEventListener('click', handleOutsideClick);
+        };
+    }, []);
 
     const handleAddMethod = async () => {
         if (!newMethod.identity.trim()) {
@@ -156,6 +174,66 @@ export default function PaymentMethodsManager({ accountId }: Props) {
         }
     };
 
+    /**
+     * Prepopulates the edit form fields and opens the edit modal.
+     */
+    const handleStartEdit = (method: AccountPaymentMethod) => {
+        setEditingMethod(method);
+        setEditForm({
+            provider: method.provider,
+            identity: '', // Remains blank unless the user intentionally overwrites it
+            label: method.metadata?.label || ''
+        });
+        setActiveMenuId(null);
+    };
+
+    /**
+     * Saves changes to the payout method, supporting renaming labels and updating write-only identity info.
+     */
+    const handleSaveEdit = async () => {
+        if (!editingMethod) return;
+
+        setIsSaving(true);
+        try {
+            const selectedProvider = providers.find(p => p.provider_name === editForm.provider);
+            if (!selectedProvider) throw new Error('Provider not found.');
+
+            const updateData: any = {
+                provider_id: selectedProvider.id,
+                metadata: {
+                    ...editingMethod.metadata,
+                    label: editForm.label.trim() || `${selectedProvider.display_name} payout destination`
+                }
+            };
+
+            // Only update identity if a new non-empty value was provided (encrypted at rest by DB trigger)
+            if (editForm.identity.trim()) {
+                updateData.provider_identity = editForm.identity.trim();
+                // Set default label automatically if they didn't input one
+                if (!editForm.label.trim()) {
+                    updateData.metadata.label = editForm.provider === 'mpesa'
+                        ? `M-Pesa (${editForm.identity.trim().slice(-4)})`
+                        : `${selectedProvider.display_name} payout destination`;
+                }
+            }
+
+            const { error } = await supabase
+                .from('account_payment_methods')
+                .update(updateData)
+                .eq('id', editingMethod.id);
+
+            if (error) throw error;
+
+            showToast('Payout destination updated successfully.', 'success', 'Success');
+            setEditingMethod(null);
+            fetchMethods();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update payout destination.', 'error', 'Error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     if (isLoading) {
         return <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading payment methods...</div>;
     }
@@ -204,22 +282,115 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                {hasManageBilling && !method.is_primary && (
-                                    <button className={adminStyles.btnSecondary} onClick={() => handleSetPrimary(method)}>
-                                        Set as Primary
-                                    </button>
-                                )}
-                                {hasManageBilling && (
-                                    <button
-                                        onClick={() => setMethodToDelete(method)}
-                                        style={{
-                                            background: 'transparent', border: 'none', color: '#ff4d4f', cursor: 'pointer',
-                                            padding: '8px', borderRadius: '8px'
-                                        }}
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMenuId(activeMenuId === method.id ? null : method.id);
+                                    }}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#ffffff',
+                                        cursor: 'pointer',
+                                        padding: '8px',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        opacity: 0.7,
+                                        transition: 'opacity 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="1.5"></circle>
+                                        <circle cx="12" cy="5" r="1.5"></circle>
+                                        <circle cx="12" cy="19" r="1.5"></circle>
+                                    </svg>
+                                </button>
+
+                                {activeMenuId === method.id && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        right: 0,
+                                        top: '100%',
+                                        marginTop: '8px',
+                                        backgroundColor: '#1a1c23',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                        zIndex: 100,
+                                        minWidth: '150px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <button
+                                            onClick={() => handleStartEdit(method)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px 16px',
+                                                textAlign: 'left',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: '#ffffff',
+                                                cursor: 'pointer',
+                                                fontSize: '14px',
+                                                transition: 'background 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+                                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                        >
+                                            Edit
+                                        </button>
+                                        {hasManageBilling && !method.is_primary && (
+                                            <button
+                                                onClick={() => {
+                                                    handleSetPrimary(method);
+                                                    setActiveMenuId(null);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '10px 16px',
+                                                    textAlign: 'left',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: '#ffffff',
+                                                    cursor: 'pointer',
+                                                    fontSize: '14px',
+                                                    transition: 'background 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+                                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                            >
+                                                Set as Primary
+                                            </button>
+                                        )}
+                                        {hasManageBilling && (
+                                            <button
+                                                onClick={() => {
+                                                    setMethodToDelete(method);
+                                                    setActiveMenuId(null);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '10px 16px',
+                                                    textAlign: 'left',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: '#ff4d4f',
+                                                    cursor: 'pointer',
+                                                    fontSize: '14px',
+                                                    transition: 'background 0.2s',
+                                                    borderTop: '1px solid rgba(255,255,255,0.05)'
+                                                }}
+                                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+                                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -265,6 +436,59 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                         />
                         <p style={{ fontSize: '12px', opacity: 0.6, marginTop: '6px', margin: 0 }}>
                             This information is encrypted at rest. Must match the destination precisely.
+                        </p>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={!!editingMethod}
+                onClose={() => setEditingMethod(null)}
+                title="Edit Payout Destination"
+                footer={
+                    <>
+                        <button className={adminStyles.btnSecondary} onClick={() => setEditingMethod(null)}>Cancel</button>
+                        <button className={adminStyles.btnPrimary} onClick={handleSaveEdit} disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label className={adminStyles.label}>Provider / Route</label>
+                        <select
+                            className={adminStyles.select}
+                            style={{ width: '100%' }}
+                            value={editForm.provider}
+                            onChange={(e) => setEditForm({ ...editForm, provider: e.target.value })}
+                        >
+                            {providers.map(p => (
+                                <option key={p.provider_name} value={p.provider_name}>{p.display_name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className={adminStyles.label}>Label / Friendly Name</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Primary M-Pesa account"
+                            className={adminStyles.input}
+                            value={editForm.label}
+                            onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className={adminStyles.label}>New Account Identity (Optional)</label>
+                        <input
+                            type="text"
+                            placeholder="Leave blank to keep existing encrypted identity"
+                            className={adminStyles.input}
+                            value={editForm.identity}
+                            onChange={(e) => setEditForm({ ...editForm, identity: e.target.value })}
+                        />
+                        <p style={{ fontSize: '12px', opacity: 0.6, marginTop: '6px', margin: 0 }}>
+                            For security, the existing identity is encrypted at rest and cannot be displayed. Fill this in only if you want to replace it.
                         </p>
                     </div>
                 </div>

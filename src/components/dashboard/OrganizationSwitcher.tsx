@@ -71,7 +71,9 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                     </div>
                     <div className={styles.textContainer}>
                         <span className={styles.accountName}>{activeAccount.name}</span>
-                        <span className={styles.accountRole}>{activeAccount.role}</span>
+                        <span className={styles.accountRole}>
+                            {activeAccount.role ? activeAccount.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                        </span>
                     </div>
                 </div>
                 <svg className={`${styles.chevron} ${isOpen ? styles.open : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -133,10 +135,13 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
                                 </div>
                                 <div className={styles.textContainer}>
                                     <span className={styles.accountName}>{account.name}</span>
-                                    {account.id === activeAccount.id && (
-                                        <svg className={styles.checkIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    )}
+                                    <span className={styles.accountRole}>
+                                        {account.role ? account.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                                    </span>
                                 </div>
+                                {account.id === activeAccount.id && (
+                                    <svg className={styles.checkIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                )}
                             </button>
                         ))}
 
