@@ -9,6 +9,7 @@ import Button from '@/components/shared/Button';
 import WalletsTable from './WalletsTable';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { AccountWallet } from '@/types/organize';
+import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 
 interface WalletManagerProps {
     accountId: string;
@@ -20,6 +21,9 @@ interface WalletManagerProps {
 export default function WalletManager({ accountId, wallets, isLoading, onRefresh }: WalletManagerProps) {
     const { showToast } = useToast();
     const supabase = createClient();
+
+    const { can } = useAccountPermissions(accountId);
+    const hasManageBilling = can('can_manage_billing');
 
     const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
     const [newWalletCurrency, setNewWalletCurrency] = useState('USD');
@@ -48,7 +52,9 @@ export default function WalletManager({ accountId, wallets, isLoading, onRefresh
         <div className={adminStyles.pageCard}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Account Wallets</h2>
-                <Button variant="secondary" onClick={() => setIsAddWalletOpen(true)}>Add Wallet</Button>
+                {hasManageBilling && (
+                    <Button variant="secondary" onClick={() => setIsAddWalletOpen(true)}>Add Wallet</Button>
+                )}
             </div>
             
             <WalletsTable 

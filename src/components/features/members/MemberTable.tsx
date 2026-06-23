@@ -12,6 +12,7 @@ import { createClient } from '@/utils/supabase/client';
 import { formatDate } from '@/utils/format';
 import { sanitizeInput } from '@/utils/sanitization';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 
 
 export interface AccountMember {
@@ -43,6 +44,9 @@ export default function MemberTable() {
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
+
+    const { can } = useAccountPermissions(activeAccount?.id);
+    const hasManageMembers = can('can_manage_members');
 
     const [members, setMembers] = useState<AccountMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -294,6 +298,7 @@ export default function MemberTable() {
     ];
 
     const getActions = (member: AccountMember): ActionItem[] => {
+        if (!hasManageMembers) return [];
         const actions: ActionItem[] = [];
 
         if (member.isPending) {
@@ -329,42 +334,46 @@ export default function MemberTable() {
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, marginBottom: '4px', color: 'white' }}>Team Management</h2>
                     <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>Invite collaborators and manage access levels for your organization.</p>
                 </div>
-                <button
-                    onClick={() => setIsInviteModalOpen(true)}
-                    style={{
-                        background: 'white', color: 'black', border: 'none',
-                        padding: '10px 16px', borderRadius: '8px', fontWeight: 600,
-                        display: 'flex', alignItems: 'center', cursor: 'pointer', transition: 'box-shadow 0.2s'
-                    }}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="8.5" cy="7" r="4"></circle>
-                        <line x1="20" y1="8" x2="20" y2="14"></line>
-                        <line x1="23" y1="11" x2="17" y2="11"></line>
-                    </svg>
-                    Invite Member
-                </button>
+                {hasManageMembers && (
+                    <button
+                        onClick={() => setIsInviteModalOpen(true)}
+                        style={{
+                            background: 'white', color: 'black', border: 'none',
+                            padding: '10px 16px', borderRadius: '8px', fontWeight: 600,
+                            display: 'flex', alignItems: 'center', cursor: 'pointer', transition: 'box-shadow 0.2s'
+                        }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <line x1="20" y1="8" x2="20" y2="14"></line>
+                            <line x1="23" y1="11" x2="17" y2="11"></line>
+                        </svg>
+                        Invite Member
+                    </button>
+                )}
             </div>
 
             {isLoading ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'gray' }}>Loading team members...</div>
             ) : (
                 <>
-                    <BulkActionsBar
-                        selectedCount={selectedIds.size}
-                        onCancel={() => setSelectedIds(new Set())}
-                        actions={[
-                            { label: 'Remove/Revoke Selected', onClick: handleBulkRemove, variant: 'danger' }
-                        ]}
-                    />
+                    {hasManageMembers && (
+                        <BulkActionsBar
+                            selectedCount={selectedIds.size}
+                            onCancel={() => setSelectedIds(new Set())}
+                            actions={[
+                                { label: 'Remove/Revoke Selected', onClick: handleBulkRemove, variant: 'danger' }
+                            ]}
+                        />
+                    )}
                     <DataTable<AccountMember>
                         data={members}
                         columns={columns}
-                        getActions={getActions}
-                        selectedIds={selectedIds}
-                        onSelect={handleSelect}
-                        onSelectAll={handleSelectAll}
+                        getActions={hasManageMembers ? getActions : undefined}
+                        selectedIds={hasManageMembers ? selectedIds : undefined}
+                        onSelect={hasManageMembers ? handleSelect : undefined}
+                        onSelectAll={hasManageMembers ? handleSelectAll : undefined}
                         emptyMessage="No team members or pending invites found."
                     />
                 </>

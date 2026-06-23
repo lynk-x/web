@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { sanitizeInput } from '@/utils/sanitization';
+import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import MemberTable from '@/components/features/members/MemberTable';
 import { MfaManager } from '@/components/MfaManager';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
@@ -33,6 +34,8 @@ function SettingsContent() {
     const router = useRouter();
     const pathname = usePathname();
 
+    const { can, isOwner, loading: permissionsLoading } = useAccountPermissions(activeAccount?.id);
+
     const initialTab = (searchParams.get('tab') as string) || 'account';
     const [activeTab, setActiveTab] = useState<'account' | 'team' | 'billing' | 'danger-zone'>(
         (['account', 'team', 'billing', 'danger-zone'] as string[]).includes(initialTab) ? initialTab as 'account' | 'team' | 'billing' | 'danger-zone' : 'account'
@@ -45,6 +48,15 @@ function SettingsContent() {
             setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (permissionsLoading) return;
+        if (activeTab === 'team' && !can('can_manage_members')) {
+            setActiveTab('account');
+        } else if (activeTab === 'billing' && !can('can_view_finance') && !can('can_manage_billing')) {
+            setActiveTab('account');
+        }
+    }, [activeTab, permissionsLoading, can]);
 
 
     const handleTabChange = (newTab: string) => {
@@ -277,18 +289,22 @@ function SettingsContent() {
             <PageHeader
                 title="Organizer Settings"
                 subtitle="Configure your organization profile, team members and advertising preferences."
-                actionLabel={isSaving ? "Saving..." : "Save Settings"}
-                onActionClick={handleSave}
-                actionIcon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>}
+                actionLabel={can('manage_settings') ? (isSaving ? "Saving..." : "Save Settings") : undefined}
+                onActionClick={can('manage_settings') ? handleSave : undefined}
+                actionIcon={can('manage_settings') ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg> : undefined}
                 actionClassName="tour-settings-save"
             />
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className={adminStyles.tabsHeaderRow}>
-                    <TabsList>
+                    <TabsList className="tour-settings-tabs">
                         <TabsTrigger value="account">Account</TabsTrigger>
-                        <TabsTrigger value="team">Team Members</TabsTrigger>
-                        <TabsTrigger value="billing">Billing & Wallet</TabsTrigger>
+                        {(permissionsLoading || can('can_manage_members')) && (
+                            <TabsTrigger value="team">Team Members</TabsTrigger>
+                        )}
+                        {(permissionsLoading || can('can_view_finance') || can('can_manage_billing')) && (
+                            <TabsTrigger value="billing">Billing & Wallet</TabsTrigger>
+                        )}
                         <TabsTrigger value="danger-zone">Danger Zone</TabsTrigger>
                     </TabsList>
                 </div>
@@ -301,43 +317,65 @@ function SettingsContent() {
                                     <KycStatusCard accountId={activeAccount.id} />
                                 </div>
                             )}
+                            {!permissionsLoading && !can('manage_settings') && (
+                                <div style={{
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                    borderRadius: '8px',
+                                    padding: '12px 16px',
+                                    marginBottom: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    color: '#ef4444',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                    <span>You do not have permission to modify this organization's profile settings.</span>
+                                </div>
+                            )}
                             <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
                             <div className={adminStyles.formGrid}>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Organization Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Events" />
+                                    <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Events" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input type="email" name="support_email" value={formData.support_email} onChange={handleInputChange} placeholder="support@organization.com" />
+                                    <Input type="email" name="support_email" value={formData.support_email} onChange={handleInputChange} placeholder="support@organization.com" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Primary Contact <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input name="primary_contact" value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." />
+                                    <Input name="primary_contact" value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Secondary Contact</label>
-                                    <Input name="secondary_contact" value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" />
+                                    <Input name="secondary_contact" value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" disabled={!can('manage_settings')} />
                                 </div>
                                 <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Address Line</label>
-                                    <Input name="address_line" value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" />
+                                    <Input name="address_line" value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Town</label>
-                                    <Input name="town" value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" />
+                                    <Input name="town" value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>City <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" />
+                                    <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Country <span className={adminStyles.requiredIndicator}>*Required</span></label>
                                     <CountrySelect 
                                         value={formData.country} 
                                         onChange={(val) => setFormData(prev => ({ ...prev, country: val }))} 
+                                        disabled={!can('manage_settings')}
                                     />
                                 </div>
                             </div>
@@ -345,29 +383,41 @@ function SettingsContent() {
                     </TabsContent>
 
                     <TabsContent value="team">
-                        <div className={adminStyles.pageCard}>
-                            <MemberTable />
-                        </div>
+                        {can('can_manage_members') ? (
+                            <div className={adminStyles.pageCard}>
+                                <MemberTable />
+                            </div>
+                        ) : (
+                            <div className={adminStyles.pageCard} style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>
+                                Access Denied: You do not have permission to manage team members.
+                            </div>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="billing">
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                            <div className={adminStyles.pageCard}>
-                                <h2 className={adminStyles.sectionTitle}>Payment Methods</h2>
-                                {activeAccount ? (
-                                    <PaymentMethodsManager accountId={activeAccount.id} />
-                                ) : (
-                                    <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
-                                )}
-                            </div>
+                        {can('can_view_finance') || can('can_manage_billing') ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                <div className={adminStyles.pageCard}>
+                                    <h2 className={adminStyles.sectionTitle}>Payment Methods</h2>
+                                    {activeAccount ? (
+                                        <PaymentMethodsManager accountId={activeAccount.id} />
+                                    ) : (
+                                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Select an organization to manage payment methods.</div>
+                                    )}
+                                </div>
 
-                            <WalletManager 
-                                accountId={activeAccount?.id || ''} 
-                                wallets={wallets} 
-                                isLoading={isLoading} 
-                                onRefresh={fetchData} 
-                            />
-                        </div>
+                                <WalletManager 
+                                    accountId={activeAccount?.id || ''} 
+                                    wallets={wallets} 
+                                    isLoading={isLoading} 
+                                    onRefresh={fetchData} 
+                                />
+                            </div>
+                        ) : (
+                            <div className={adminStyles.pageCard} style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>
+                                Access Denied: You do not have permission to view billing & wallets.
+                            </div>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="danger-zone">
@@ -432,7 +482,14 @@ function SettingsContent() {
                                         </p>
                                     </div>
                                     <div style={{ flexShrink: 0 }}>
-                                        <Button variant="danger" onClick={() => setIsDeleteModalOpen(true)}>Deactivate Account</Button>
+                                        <Button 
+                                            variant="danger" 
+                                            onClick={() => setIsDeleteModalOpen(true)}
+                                            disabled={!isOwner}
+                                            title={!isOwner ? "Only the organization owner can deactivate this account." : undefined}
+                                        >
+                                            Deactivate Account
+                                        </Button>
                                     </div>
                                 </div>
                             </div>

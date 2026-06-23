@@ -9,6 +9,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/shared/Modal';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import Badge from '@/components/shared/Badge';
+import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 
 interface Props {
     accountId: string;
@@ -17,6 +18,10 @@ interface Props {
 export default function PaymentMethodsManager({ accountId }: Props) {
     const { showToast } = useToast();
     const supabase = createClient();
+    
+    const { can, loading: permissionsLoading } = useAccountPermissions(accountId);
+    const hasManageBilling = can('can_manage_billing');
+
     const [methods, setMethods] = useState<AccountPaymentMethod[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -162,9 +167,11 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                     <h2 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 8px 0' }}>Payout Methods</h2>
                     <p style={{ margin: 0, fontSize: '14px', opacity: 0.7 }}>Manage where funds from ticket sales and sponsorships are sent.</p>
                 </div>
-                <button className={adminStyles.btnPrimary} onClick={() => setIsAddModalOpen(true)}>
-                    + Add New Destination
-                </button>
+                {hasManageBilling && (
+                    <button className={adminStyles.btnPrimary} onClick={() => setIsAddModalOpen(true)}>
+                        + Add New Destination
+                    </button>
+                )}
             </div>
 
             {methods.length === 0 ? (
@@ -198,20 +205,22 @@ export default function PaymentMethodsManager({ accountId }: Props) {
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                {!method.is_primary && (
+                                {hasManageBilling && !method.is_primary && (
                                     <button className={adminStyles.btnSecondary} onClick={() => handleSetPrimary(method)}>
                                         Set as Primary
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => setMethodToDelete(method)}
-                                    style={{
-                                        background: 'transparent', border: 'none', color: '#ff4d4f', cursor: 'pointer',
-                                        padding: '8px', borderRadius: '8px'
-                                    }}
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </button>
+                                {hasManageBilling && (
+                                    <button
+                                        onClick={() => setMethodToDelete(method)}
+                                        style={{
+                                            background: 'transparent', border: 'none', color: '#ff4d4f', cursor: 'pointer',
+                                            padding: '8px', borderRadius: '8px'
+                                        }}
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

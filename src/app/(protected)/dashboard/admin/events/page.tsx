@@ -361,7 +361,7 @@ export default function AdminEventsPage() {
         try {
             if (isBulk) {
                 const selectedPayoutsList = payouts.filter(p => selectedPayoutIds.has(p.id));
-                const { error } = await supabase.rpc('bulk_reject_payouts', {
+                const { error } = await supabase.schema('api').rpc('bulk_reject_payouts', {
                     p_payout_ids: Array.from(selectedPayoutIds),
                     p_created_at_list: selectedPayoutsList.map(p => p.createdAt),
                     p_reason: reason
@@ -369,7 +369,7 @@ export default function AdminEventsPage() {
                 if (error) throw error;
                 setSelectedPayoutIds(new Set());
             } else if (pendingRejectPayout) {
-                const { error } = await supabase.rpc('reject_payout', {
+                const { error } = await supabase.schema('api').rpc('reject_payout', {
                     p_payout_id: pendingRejectPayout.id,
                     p_created_at: pendingRejectPayout.createdAt,
                     p_reason: reason
@@ -837,7 +837,7 @@ export default function AdminEventsPage() {
                                 onClick: async () => {
                                     if (!await confirm(`Approve ${selectedPayoutIds.size} payouts?`)) return;
                                     try {
-                                        const { error } = await supabase.rpc('bulk_approve_payouts', {
+                                        const { error } = await supabase.schema('api').rpc('bulk_approve_payouts', {
                                             p_payout_ids: Array.from(selectedPayoutIds)
                                         });
                                         if (error) throw error;
