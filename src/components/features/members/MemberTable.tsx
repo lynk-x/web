@@ -63,10 +63,10 @@ export default function MemberTable() {
         setIsLoading(true);
 
         try {
-            // Fetch Active Members First (from the secure view api.v1_account_members)
+            // Fetch Active Members First (from the secure view api.v1_account_memberships)
             const { data: memberData, error: memberError } = await supabase
                 .schema('api')
-                .from('v1_account_members')
+                .from('v1_account_memberships')
                 .select('*')
                 .eq('account_id', activeAccount.id);
 

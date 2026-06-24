@@ -95,7 +95,7 @@ export default function AdminDashboard() {
             // Count local administration team members
             const { count: team } = await supabase
                 .schema('api' as any)
-                .from('v1_account_members')
+                .from('v1_account_memberships')
                 .select('*', { count: 'exact', head: true })
                 .eq('account_id', activeAccount.id);
 
