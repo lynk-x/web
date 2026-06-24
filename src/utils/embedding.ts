@@ -1,7 +1,7 @@
 let extractorPipeline: any = null;
 
 /**
- * Generates a 384-dimensional vector embedding for an event using the Xenova paraphrase-multilingual-MiniLM-L12-v2 model.
+ * Generates a 384-dimensional vector embedding for an event using the IBM Granite multilingual embedding model.
  * Dynamic imports are used to avoid Next.js Server-Side Rendering (SSR) issues.
  */
 export async function generateEventEmbedding(
@@ -14,12 +14,12 @@ export async function generateEventEmbedding(
 
   try {
     if (!extractorPipeline) {
-      const { pipeline, env } = await import('@xenova/transformers');
+      const { pipeline, env } = await import('@huggingface/transformers');
       
       // Ensure we load models from the Hugging Face CDN
       env.allowLocalModels = false;
       
-      extractorPipeline = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+      extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
     }
 
     // Construct the semantic text string matching the server schema
@@ -32,8 +32,8 @@ export async function generateEventEmbedding(
     
     const textToEmbed = inputParts.join('. ').slice(0, 10000);
 
-    // Run inference (mean pooling, normalized vector output)
-    const output = await extractorPipeline(textToEmbed, { pooling: 'mean', normalize: true });
+    // Run inference (CLS pooling, normalized vector output)
+    const output = await extractorPipeline(textToEmbed, { pooling: 'cls', normalize: true });
     return Array.from(output.data);
   } catch (error) {
     console.error('[Embedding] Failed to generate embedding client-side:', error);
@@ -42,7 +42,7 @@ export async function generateEventEmbedding(
 }
 
 /**
- * Generates a 384-dimensional vector embedding for an ad campaign using the Xenova model.
+ * Generates a 384-dimensional vector embedding for an ad campaign using the IBM Granite multilingual embedding model.
  */
 export async function generateCampaignEmbedding(
   title: string,
@@ -54,9 +54,9 @@ export async function generateCampaignEmbedding(
 
   try {
     if (!extractorPipeline) {
-      const { pipeline, env } = await import('@xenova/transformers');
+      const { pipeline, env } = await import('@huggingface/transformers');
       env.allowLocalModels = false;
-      extractorPipeline = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+      extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
     }
 
     const inputParts = [
@@ -71,7 +71,7 @@ export async function generateCampaignEmbedding(
     }
     
     const textToEmbed = inputParts.join('. ').slice(0, 10000);
-    const output = await extractorPipeline(textToEmbed, { pooling: 'mean', normalize: true });
+    const output = await extractorPipeline(textToEmbed, { pooling: 'cls', normalize: true });
     return Array.from(output.data);
   } catch (error) {
     console.error('[Embedding] Failed to generate campaign embedding client-side:', error);
@@ -80,7 +80,7 @@ export async function generateCampaignEmbedding(
 }
 
 /**
- * Generates a 384-dimensional vector embedding for a tag using the Xenova model.
+ * Generates a 384-dimensional vector embedding for a tag using the IBM Granite multilingual embedding model.
  */
 export async function generateTagEmbedding(
   name: string,
@@ -90,16 +90,16 @@ export async function generateTagEmbedding(
 
   try {
     if (!extractorPipeline) {
-      const { pipeline, env } = await import('@xenova/transformers');
+      const { pipeline, env } = await import('@huggingface/transformers');
       env.allowLocalModels = false;
-      extractorPipeline = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+      extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
     }
 
     const inputParts = [`Tag: ${name}`];
     if (typeId) inputParts.push(`Type: ${typeId}`);
     
     const textToEmbed = inputParts.join('. ').slice(0, 10000);
-    const output = await extractorPipeline(textToEmbed, { pooling: 'mean', normalize: true });
+    const output = await extractorPipeline(textToEmbed, { pooling: 'cls', normalize: true });
     return Array.from(output.data);
   } catch (error) {
     console.error('[Embedding] Failed to generate tag embedding client-side:', error);
@@ -108,7 +108,7 @@ export async function generateTagEmbedding(
 }
 
 /**
- * Generates a 384-dimensional vector embedding for a topic using the Xenova model.
+ * Generates a 384-dimensional vector embedding for a topic using the IBM Granite multilingual embedding model.
  */
 export async function generateTopicEmbedding(
   displayName: string,
@@ -119,9 +119,9 @@ export async function generateTopicEmbedding(
 
   try {
     if (!extractorPipeline) {
-      const { pipeline, env } = await import('@xenova/transformers');
+      const { pipeline, env } = await import('@huggingface/transformers');
       env.allowLocalModels = false;
-      extractorPipeline = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+      extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
     }
 
     const inputParts = [`Topic: ${displayName}`];
@@ -129,7 +129,7 @@ export async function generateTopicEmbedding(
     if (keywords && keywords.length > 0) inputParts.push(`Keywords: ${keywords.join(', ')}`);
     
     const textToEmbed = inputParts.join('. ').slice(0, 10000);
-    const output = await extractorPipeline(textToEmbed, { pooling: 'mean', normalize: true });
+    const output = await extractorPipeline(textToEmbed, { pooling: 'cls', normalize: true });
     return Array.from(output.data);
   } catch (error) {
     console.error('[Embedding] Failed to generate topic embedding client-side:', error);

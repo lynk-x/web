@@ -52,16 +52,16 @@ let extractorPipeline = null;
 
 async function getExtractor() {
   if (!extractorPipeline) {
-    const { pipeline, env } = await import('@xenova/transformers');
+    const { pipeline, env } = await import('@huggingface/transformers');
     env.allowLocalModels = false;
-    extractorPipeline = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+    extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
   }
   return extractorPipeline;
 }
 
 async function generateEmbedding(text) {
   const extractor = await getExtractor();
-  const output = await extractor(text, { pooling: 'mean', normalize: true });
+  const output = await extractor(text, { pooling: 'cls', normalize: true });
   return Array.from(output.data);
 }
 
