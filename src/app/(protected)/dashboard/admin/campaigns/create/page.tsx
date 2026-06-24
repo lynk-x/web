@@ -10,12 +10,14 @@ import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/Cre
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { generateCampaignEmbedding } from '@/utils/embedding';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 export default function CreateCampaignPage() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const router = useRouter();
     const { activeAccount } = useOrganization();
+    const { enabled: isEmbedEnabled } = useFeatureFlag('enable_client_embeddings');
 
     const [accountId, setAccountId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,9 +42,9 @@ export default function CreateCampaignPage() {
 
             if (error) throw error;
 
-            // Generate and save campaign embedding client-side
+            // Generate and save campaign embedding client-side (only if feature flag is enabled)
             const campaignId = (data as any)?.campaign_id;
-            if (campaignId) {
+            if (campaignId && isEmbedEnabled === true) {
                 try {
                     const vector = await generateCampaignEmbedding(
                         formData.title,

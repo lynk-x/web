@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { generateTagEmbedding } from '@/utils/embedding';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 import { sanitizeInput } from '@/utils/sanitization';
 import SubPageHeader from '@/components/shared/SubPageHeader';
@@ -16,6 +17,7 @@ export default function CreateTagPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const { enabled: isEmbedEnabled } = useFeatureFlag('enable_client_embeddings');
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -53,7 +55,7 @@ export default function CreateTagPage() {
             if (error) throw error;
 
             const tagId = (data as any)?.id;
-            if (tagId) {
+            if (tagId && isEmbedEnabled === true) {
                 try {
                     const vector = await generateTagEmbedding(formData.name, formData.type_id);
                     if (vector && vector.length > 0) {
