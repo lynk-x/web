@@ -1,5 +1,6 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
+import { generateEventEmbedding } from '@/utils/embedding';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './CreateEventForm.module.css';
@@ -115,6 +116,24 @@ const CreateEventForm = () => {
 
         setIsSubmitting(true);
         try {
+            // Generate client-side multilingual embedding for event search alignment
+            let embedding: number[] | null = null;
+            try {
+                const categoryObj = realCategories.find(c => c.id === category);
+                const categoryName = categoryObj ? categoryObj.display_name : undefined;
+                const vector = await generateEventEmbedding(
+                    title,
+                    description,
+                    location ? location : undefined,
+                    categoryName
+                );
+                if (vector && vector.length === 384) {
+                    embedding = vector;
+                }
+            } catch (err) {
+                console.error('Failed to generate client embedding for event:', err);
+            }
+
             // 1. Insert Event
             const { data: event, error: eventError } = await supabase
                 .from('events')
@@ -130,7 +149,8 @@ const CreateEventForm = () => {
                     location: !isOnline ? { name: location } : null,
                     is_private: isPrivate,
                     currency: activeAccount.wallet_currency || 'KES',
-                    status: 'published' // Default to published for now
+                    status: 'published', // Default to published for now
+                    embedding
                 })
                 .select()
                 .single();

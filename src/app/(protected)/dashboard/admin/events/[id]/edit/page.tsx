@@ -1,5 +1,6 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
+import { generateEventEmbedding } from '@/utils/embedding';
 
 import { useEffect, useState, use, useMemo } from 'react';
 import EventForm from '@/components/features/events/EventForm';
@@ -169,6 +170,39 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 .eq('created_at', eventCreatedAt);
 
             if (eventError) throw eventError;
+
+            // Update Event Embedding (Client-side vector sync)
+            try {
+                let categoryName: string | undefined;
+                if (data.category) {
+                    const { data: catData } = await supabase
+                        .from('event_categories')
+                        .select('display_name')
+                        .eq('id', data.category)
+                        .maybeSingle();
+                    if (catData) {
+                        categoryName = catData.display_name;
+                    }
+                }
+
+                const vector = await generateEventEmbedding(
+                    data.title,
+                    data.description,
+                    data.location || undefined,
+                    categoryName
+                );
+                if (vector && vector.length === 384) {
+                    const { error: embedError } = await supabase
+                        .from('events')
+                        .update({ embedding: vector })
+                        .eq('id', eventId);
+                    if (embedError) {
+                        console.error('Failed to update event embedding in database:', embedError);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to generate client embedding for event edit:', err);
+            }
 
             // 4. Update Tickets
             const incomingIds = data.tickets.map(t => t.id).filter(id => id);

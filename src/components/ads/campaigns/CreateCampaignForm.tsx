@@ -13,6 +13,8 @@ import { useCountries, Country } from '@/hooks/useCountries';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { createReferenceRepository } from '@/lib/repositories';
+import { generateCampaignEmbedding } from '@/utils/embedding';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -685,6 +687,30 @@ export default function CreateCampaignForm({
             });
 
             if (error) throw error;
+
+            // Generate and update campaign embedding client-side
+            const campaignId = (data as any)?.campaign_id;
+            if (campaignId) {
+                try {
+                    const vector = await generateCampaignEmbedding(
+                        formData.title,
+                        formData.description,
+                        formData.target_tags,
+                        formData.target_countries
+                    );
+                    if (vector && vector.length > 0) {
+                        const { error: embedError } = await createClient('advertising')
+                            .from('campaigns')
+                            .update({ embedding: vector })
+                            .eq('id', campaignId);
+                        if (embedError) {
+                            console.error('[Embedding] Failed to save campaign embedding:', embedError);
+                        }
+                    }
+                } catch (embedErr) {
+                    console.error('[Embedding] Failed to generate/save campaign embedding:', embedErr);
+                }
+            }
 
             showToast(isEditing ? 'Campaign updated successfully!' : 'Campaign submitted for approval!', 'success');
             onDirtyChange?.(false);

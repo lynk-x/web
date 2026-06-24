@@ -5,6 +5,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
+import { generateTagEmbedding } from '@/utils/embedding';
+
 import { sanitizeInput } from '@/utils/sanitization';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
@@ -43,12 +45,30 @@ export default function CreateTagPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+            const { data, error } = await supabase.rpc('admin_upsert_registry_item', {
                 p_tab: 'tags',
                 p_data: formData
             });
 
             if (error) throw error;
+
+            const tagId = (data as any)?.id;
+            if (tagId) {
+                try {
+                    const vector = await generateTagEmbedding(formData.name, formData.type_id);
+                    if (vector && vector.length > 0) {
+                        const { error: embedError } = await createClient('identity')
+                            .from('tags')
+                            .update({ embedding: vector })
+                            .eq('id', tagId);
+                        if (embedError) {
+                            console.error('[Embedding] Failed to save tag embedding:', embedError);
+                        }
+                    }
+                } catch (embedErr) {
+                    console.error('[Embedding] Failed to generate/save tag embedding:', embedErr);
+                }
+            }
 
             showToast('Tag created successfully', 'success');
             router.push('/dashboard/system/registry');

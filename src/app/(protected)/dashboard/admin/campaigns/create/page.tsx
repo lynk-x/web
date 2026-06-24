@@ -9,6 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import { generateCampaignEmbedding } from '@/utils/embedding';
 
 export default function CreateCampaignPage() {
     const supabase = useMemo(() => createClient(), []);
@@ -28,7 +29,7 @@ export default function CreateCampaignPage() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.rpc('admin_create_campaign', {
+            const { data, error } = await supabase.rpc('admin_create_campaign', {
                 p_account_id: resolvedAccountId,
                 p_title: formData.title,
                 p_type: formData.type,
@@ -38,6 +39,31 @@ export default function CreateCampaignPage() {
             });
 
             if (error) throw error;
+
+            // Generate and save campaign embedding client-side
+            const campaignId = (data as any)?.campaign_id;
+            if (campaignId) {
+                try {
+                    const vector = await generateCampaignEmbedding(
+                        formData.title,
+                        formData.description,
+                        formData.target_tags,
+                        formData.target_countries
+                    );
+                    if (vector && vector.length > 0) {
+                        const { error: embedError } = await createClient('advertising')
+                            .from('campaigns')
+                            .update({ embedding: vector })
+                            .eq('id', campaignId);
+                        if (embedError) {
+                            console.error('[Embedding] Failed to save campaign embedding:', embedError);
+                        }
+                    }
+                } catch (embedErr) {
+                    console.error('[Embedding] Failed to generate/save campaign embedding:', embedErr);
+                }
+            }
+
             showToast('Campaign created successfully', 'success');
             router.push('/dashboard/admin/campaigns');
         } catch (err: any) {
