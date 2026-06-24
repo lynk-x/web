@@ -79,6 +79,7 @@ export default function CreateEventPage() {
                 p_data: {
                     title: data.title,
                     description: data.description,
+                    category_id: data.category || null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
                     timezone: data.timezone || null,
