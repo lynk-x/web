@@ -64,27 +64,33 @@ export default async function EventPage({ params }: { params: { reference: strin
         .order('price', { ascending: true });
 
     // Fetch active disclaimers linked to this event via its tags.
-    // Path: event_tags → tags → disclaimers (is_active = true, effective_date <= now)
-    const { data: disclaimerRows } = await supabase
+    // Step 1: get tag_ids for this event
+    const { data: eventTagRows } = await supabase
         .from('event_tags')
-        .select(`
-            tag:tags!tag_id(
-                disclaimers(id, title, content, is_active, effective_date)
-            )
-        `)
+        .select('tag_id')
         .eq('event_id', rawEvent.id);
 
-    // Flatten nested join and deduplicate by disclaimer id
-    const seen = new Set<string>();
-    const disclaimers = (disclaimerRows || [])
-        .flatMap((row: any) => row.tag?.disclaimers || [])
-        .filter((d: any) => {
-            if (!d.is_active || seen.has(d.id)) return false;
-            if (d.effective_date && new Date(d.effective_date) > new Date()) return false;
-            seen.add(d.id);
-            return true;
-        })
-        .map((d: any) => ({ id: d.id, title: d.title, content: d.content }));
+    const tagIds = eventTagRows?.map((r: any) => r.tag_id).filter(Boolean) || [];
+
+    let disclaimers: any[] = [];
+    if (tagIds.length > 0) {
+        // Step 2: fetch approved, effective disclaimers matching those tags
+        const { data: disclaimerRows } = await supabase
+            .from('disclaimers')
+            .select('id, title, content, is_active, effective_date')
+            .in('tag_id', tagIds)
+            .eq('is_active', true)
+            .lte('effective_date', new Date().toISOString())
+            .order('effective_date', { ascending: false });
+
+        if (disclaimerRows && disclaimerRows.length > 0) {
+            disclaimers = disclaimerRows.map((d: any) => ({
+                id: d.id,
+                title: d.title,
+                content: d.content,
+            }));
+        }
+    }
 
     // Determine if the event is sold out across all tiers
     const tiers = ticketTiers || [];
