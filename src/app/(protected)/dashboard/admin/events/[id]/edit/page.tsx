@@ -78,7 +78,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-                const isPaid = tiers && tiers.length > 0;
+                const isPaid = tiers ? tiers.length > 0 : false;
 
                 const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => ({
                     id: t.id,

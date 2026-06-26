@@ -64,7 +64,7 @@ export default function EditEventPage() {
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-                const isPaid = tiers && tiers.length > 0;
+                const isPaid = tiers ? tiers.length > 0 : false;
 
                 const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => {
                     const tz = event.timezone || 'UTC';
