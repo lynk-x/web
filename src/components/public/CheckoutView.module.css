@@ -462,6 +462,32 @@
     cursor: pointer;
     font-size: 14px;
 }
+
+.primaryBtn {
+    width: 100%;
+    max-width: 320px;
+    background-color: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primaryBtn:active {
+    opacity: 0.8;
+}
+
+.primaryBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 /* Waterfall Styles */
 .waterfallContainer {
     margin-top: var(--spacing-lg);
