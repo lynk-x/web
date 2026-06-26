@@ -399,7 +399,16 @@ const CheckoutView: React.FC = () => {
 
         } catch (err: unknown) {
             console.error('Payment error:', err);
-            setPaymentError(getErrorMessage(err) || 'Payment failed to initiate.');
+            let errorMessage = getErrorMessage(err) || 'Payment failed to initiate.';
+            
+            // Improve error message for common edge function failures
+            if (errorMessage.toLowerCase().includes('failed to send') || errorMessage.toLowerCase().includes('network')) {
+                errorMessage = 'Unable to reach the payment service. Please check your internet connection and try again.';
+            } else if (errorMessage.toLowerCase().includes('function') && errorMessage.toLowerCase().includes('not found')) {
+                errorMessage = 'Payment service is not configured. Please contact support.';
+            }
+            
+            setPaymentError(errorMessage);
             setIsSubmitting(false);
         }
     };
