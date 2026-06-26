@@ -716,6 +716,13 @@ const CheckoutView: React.FC = () => {
                         </p>
                         <p className={styles.helperText}>Waiting for confirmation...</p>
                         <button
+                            className={styles.primaryBtn}
+                            disabled={manualConfirming}
+                            onClick={handleManualConfirm}
+                        >
+                            {manualConfirming ? 'Checking...' : "I've completed payment"}
+                        </button>
+                        <button
                             className={styles.cancelBtn}
                             onClick={() => {
                                 sessionStorage.removeItem('lynk-x-payment');
@@ -724,13 +731,6 @@ const CheckoutView: React.FC = () => {
                             }}
                         >
                             Cancel Payment
-                        </button>
-                        <button
-                            className={styles.primaryBtn}
-                            disabled={manualConfirming}
-                            onClick={handleManualConfirm}
-                        >
-                            {manualConfirming ? 'Checking...' : "I've completed payment"}
                         </button>
                     </div>
                 </div>
