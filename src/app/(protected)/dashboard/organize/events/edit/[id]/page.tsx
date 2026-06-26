@@ -64,9 +64,9 @@ export default function EditEventPage() {
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-                const isPaid = event.ticket_tiers && event.ticket_tiers.length > 0;
+                const isPaid = tiers && tiers.length > 0;
 
-                const mappedTickets: OrganizerEventTicket[] = (event.ticket_tiers || []).map((t: any) => {
+                const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => {
                     const tz = event.timezone || 'UTC';
                     const formatDateLocal = (d: Date) => {
                         const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d).split('-');
@@ -98,7 +98,7 @@ export default function EditEventPage() {
                     startTime: formatTime(startDt),
                     endDate: formatDate(endDt),
                     endTime: formatTime(endDt),
-                    isPrivate: event.is_private,
+                    isPrivate: event.is_private ?? false,
                     isPaid,
                     currency: 'KES',
                     tickets: mappedTickets,

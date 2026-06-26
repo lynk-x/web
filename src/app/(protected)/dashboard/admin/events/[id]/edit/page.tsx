@@ -78,9 +78,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-                const isPaid = event.ticket_tiers && event.ticket_tiers.length > 0;
+                const isPaid = tiers && tiers.length > 0;
 
-                const mappedTickets: OrganizerEventTicket[] = (event.ticket_tiers || []).map((t: any) => ({
+                const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => ({
                     id: t.id,
                     display_name: t.display_name,
                     price: t.price.toString(),
@@ -104,7 +104,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     startTime: formatTime(startDt),
                     endDate: formatDate(endDt),
                     endTime: formatTime(endDt),
-                    isPrivate: event.is_private,
+                    isPrivate: event.is_private ?? false,
                     isPaid,
                     tickets: mappedTickets,
                     currency: event.currency || 'KES'
