@@ -301,13 +301,20 @@ const CheckoutView: React.FC = () => {
             // Step 1: Resolve user session
             let { data: { user } } = await supabase.auth.getUser();
             if (!user || user.is_anonymous) {
-                const { data: anonData } = await supabase.auth.signInAnonymously();
+                const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+                if (anonError || !anonData.user) {
+                    throw new Error(anonError?.message || 'Anonymous sign-in failed. Please enable anonymous authentication in your Supabase project settings or sign in with a registered account.');
+                }
                 user = anonData.user;
                 if (user) {
-                    await supabase.schema('api').from('v1_profiles').update({
-                        email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
-                        phone_number: formData.phone.trim(),
-                    }).eq('id', user.id);
+                    try {
+                        await supabase.schema('api').from('v1_profiles').update({
+                            email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
+                            phone_number: formData.phone.trim(),
+                        }).eq('id', user.id);
+                    } catch (profileErr) {
+                        console.warn('Profile update failed (non-blocking):', profileErr);
+                    }
                 }
             }
             if (!user) throw new Error('Could not establish session');
