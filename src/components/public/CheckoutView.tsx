@@ -36,6 +36,9 @@ const CheckoutView: React.FC = () => {
         base_fee_usd: number;
     }>>([]);
 
+    // Manual confirmation state
+    const [manualConfirming, setManualConfirming] = useState(false);
+
     // Reservation state — set once tickets are locked, before payment is initiated
     const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
     const [reservationSecondsLeft, setReservationSecondsLeft] = useState(0);
@@ -413,6 +416,43 @@ const CheckoutView: React.FC = () => {
         }
     };
 
+    const handleManualConfirm = async () => {
+        if (!currentCheckoutId) return;
+        setManualConfirming(true);
+        setPaymentError('');
+
+        try {
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('status, reason')
+                .eq('provider_ref', currentCheckoutId)
+                .single();
+
+            if (error || !data) {
+                setPaymentError('Payment not found. Please wait a moment and try again, or contact support if you were debited.');
+                return;
+            }
+
+            if (data.status === 'completed' && data.reason === 'ticket_sale') {
+                sessionStorage.removeItem('lynk-x-payment');
+                setPaymentStatus('completed');
+                clearCart();
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}`);
+            } else if (data.status === 'pending') {
+                setPaymentError('Payment is still processing. Please wait for the confirmation SMS from M-Pesa and try again shortly.');
+            } else if (data.status === 'failed' || data.status === 'cancelled') {
+                sessionStorage.removeItem('lynk-x-payment');
+                setPaymentStatus('failed');
+                setPaymentError(`Payment was ${data.status}. Please try again or use a different payment number.`);
+                setIsSubmitting(false);
+            }
+        } catch {
+            setPaymentError('Unable to verify payment status. Please try again or contact support.');
+        } finally {
+            setManualConfirming(false);
+        }
+    };
+
     // ── Empty cart ────────────────────────────────────────────────────────────
     if (items.length === 0 && !isLoading) {
         return (
@@ -684,6 +724,13 @@ const CheckoutView: React.FC = () => {
                             }}
                         >
                             Cancel Payment
+                        </button>
+                        <button
+                            className={styles.primaryBtn}
+                            disabled={manualConfirming}
+                            onClick={handleManualConfirm}
+                        >
+                            {manualConfirming ? 'Checking...' : "I've completed payment"}
                         </button>
                     </div>
                 </div>
