@@ -35,19 +35,24 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             if (!eventId) return;
 
             try {
-                // Fetch event and ticket tiers (Admin can see all)
+                // Fetch event
                 const { data: event, error: eventError } = await supabase
                     .from('events')
                     .select(`
                         id, title, description, category_id, is_online, is_private,
                         location, coordinates, starts_at, ends_at, media,
-                        account_id, currency, created_at,
-                        ticket_tiers (
-                            id, display_name, price, capacity, description, sales_start, sales_end, max_per_order
-                        )
+                        account_id, currency, created_at
                     `)
                     .eq('id', eventId)
                     .single();
+
+                if (eventError) throw eventError;
+
+                // Fetch ticket tiers separately
+                const { data: tiers } = await supabase
+                    .from('ticket_tiers')
+                    .select('id, display_name, price, capacity, description, sales_start, sales_end, max_per_order')
+                    .eq('event_id', eventId);
 
                 if (eventError) throw eventError;
 
@@ -216,10 +221,10 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
 
             if (idsToDelete.length > 0) {
-                const { error: deleteError } = await supabase
-                    .from('ticket_tiers')
-                    .delete()
-                    .in('id', idsToDelete);
+                    const { error: deleteError } = await supabase
+                        .from('ticket_tiers')
+                        .delete()
+                        .in('id', idsToDelete);
 
                 if (deleteError) {
                     throw new Error("Cannot delete ticket tiers that already have sales attached to them.");
@@ -244,10 +249,10 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     };
 
                     if (t.id) {
-                        const { error: updateError } = await supabase
-                            .from('ticket_tiers')
-                            .update(ticketData)
-                            .eq('id', t.id);
+                            const { error: updateError } = await supabase
+                                .from('ticket_tiers')
+                                .update(ticketData)
+                                .eq('id', t.id);
                         if (updateError) throw updateError;
                     } else {
                         ticketsToInsert.push(ticketData);
@@ -255,9 +260,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                 }
 
                 if (ticketsToInsert.length > 0) {
-                    const { error: insertError } = await supabase
-                        .from('ticket_tiers')
-                        .insert(ticketsToInsert);
+                        const { error: insertError } = await supabase
+                            .from('ticket_tiers')
+                            .insert(ticketsToInsert);
                     if (insertError) throw insertError;
                 }
             }

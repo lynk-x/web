@@ -33,15 +33,12 @@ export default function EditEventPage() {
             }
 
             try {
-                // Fetch event and ticket tiers
+                // Fetch event
                 const { data: event, error: eventError } = await supabase
                     .from('events')
                     .select(`
                         id, created_at, title, description, category_id, is_online, is_private, 
                         location, starts_at, ends_at, media, timezone,
-                        ticket_tiers (
-                            id, display_name, price, capacity, description, sales_start, sales_end, max_per_order
-                        ),
                         event_tags (
                             tags (id, name)
                         )
@@ -49,6 +46,14 @@ export default function EditEventPage() {
                     .eq('id', eventId)
                     .eq('account_id', activeAccount.id)
                     .single();
+
+                if (eventError) throw eventError;
+
+                // Fetch ticket tiers separately
+                const { data: tiers } = await supabase
+                    .from('ticket_tiers')
+                    .select('id, display_name, price, capacity, description, sales_start, sales_end, max_per_order')
+                    .eq('event_id', eventId);
 
                 if (eventError) throw eventError;
 

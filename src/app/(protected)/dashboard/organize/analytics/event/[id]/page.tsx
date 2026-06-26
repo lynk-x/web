@@ -48,8 +48,6 @@ export default function EventInsightsPage() {
                 .eq('id', id)
                 .maybeSingle();
 
-            if (evErr) throw evErr;
-
             if (eventData) {
                 setEventTitle(eventData.title);
                 const tiers = eventData.ticket_tiers || [];

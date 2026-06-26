@@ -56,10 +56,10 @@ export default async function EventPage({ params }: { params: { reference: strin
 
     // Fetch ticket tiers (includes sold-out detection)
     const { data: ticketTiers } = await supabase
-        .from('ticket_tiers')
+        .schema('api')
+        .from('v1_ticket_tiers')
         .select('id, display_name, description, price, capacity, tickets_sold')
         .eq('event_id', rawEvent.id)
-        .is('deleted_at', null)
         .eq('is_hidden', false)
         .order('price', { ascending: true });
 
