@@ -28,20 +28,35 @@ export default function CreateEventPage() {
             // 1. Upload Thumbnail Image
             if (file) {
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `${activeAccount.id}/${fileName}`; // Organize by account in bucket
+                const fileName = `${activeAccount.id}_${Date.now()}.${fileExt}`;
 
-                const { error: uploadError } = await supabase.storage
-                    .from('events')
-                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+                const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                    body: {
+                        action: 'upload',
+                        folder: 'events',
+                        filename: fileName,
+                        contentType: file.type,
+                        mediaType: 'image',
+                    }
+                });
 
-                if (uploadError) throw uploadError;
+                if (signError || !signData?.uploadUrl) {
+                    throw new Error(signError?.message || 'Failed to get upload URL');
+                }
 
-                const { data: publicUrlData } = supabase.storage
-                    .from('events')
-                    .getPublicUrl(filePath);
+                const putResponse = await fetch(signData.uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': file.type,
+                    },
+                    body: file,
+                });
 
-                uploadedThumbnailUrl = publicUrlData.publicUrl;
+                if (!putResponse.ok) {
+                    throw new Error('Failed to upload thumbnail to R2');
+                }
+
+                uploadedThumbnailUrl = signData.fileUrl;
             }
 
             // 2. Parse DateTimes — convert to UTC relative to the event's selected timezone.

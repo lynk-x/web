@@ -652,15 +652,38 @@ export default function CreateCampaignForm({
                 };
                 
                 const ext = c.file.name.split('.').pop();
-                const path = `${activeAccount.id}/ads/${Date.now()}_creative_${idx}.${ext}`;
-                const { error } = await supabase.storage.from('ad_media').upload(path, c.file);
-                if (error) throw error;
-                const { data } = supabase.storage.from('ad_media').getPublicUrl(path);
+                const filename = `${activeAccount.id}_${Date.now()}_creative_${idx}.${ext}`;
+
+                const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                    body: {
+                        action: 'upload',
+                        folder: 'ad_media',
+                        filename,
+                        contentType: c.file.type,
+                        mediaType: c.mediaType || 'image',
+                    }
+                });
+
+                if (signError || !signData?.uploadUrl) {
+                    throw new Error(signError?.message || 'Failed to get upload URL');
+                }
+
+                const putResponse = await fetch(signData.uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': c.file.type,
+                    },
+                    body: c.file,
+                });
+
+                if (!putResponse.ok) {
+                    throw new Error('Failed to upload creative to R2');
+                }
                 
                 return {
                     media_type: c.mediaType || 'image',
                     call_to_action: c.headline,
-                    url: data.publicUrl,
+                    url: signData.fileUrl,
                     is_primary: idx === 0
                 };
             }));

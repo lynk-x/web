@@ -70,21 +70,35 @@ export default function ProfileSetupPage() {
 
         try {
             const fileExt = file.name.split('.').pop();
-            const fileName = `avatar.${fileExt}`;
-            // Path: /{user_id}/{filename} — required by the avatars bucket RLS policy
-            const filePath = `${user.id}/${fileName}`;
+            const fileName = `${user.id}_avatar.${fileExt}`;
 
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file, { upsert: true });
+            const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                body: {
+                    action: 'upload',
+                    folder: 'avatars',
+                    filename: fileName,
+                    contentType: file.type,
+                    mediaType: 'image',
+                }
+            });
 
-            if (uploadError) throw uploadError;
+            if (signError || !signData?.uploadUrl) {
+                throw new Error(signError?.message || 'Failed to get upload URL');
+            }
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
+            const putResponse = await fetch(signData.uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type,
+                },
+                body: file,
+            });
 
-            setAvatarUrl(publicUrl);
+            if (!putResponse.ok) {
+                throw new Error('Failed to upload avatar to R2');
+            }
+
+            setAvatarUrl(signData.fileUrl);
         } catch (err: unknown) {
             setError('Failed to upload image. Please try again.');
         }

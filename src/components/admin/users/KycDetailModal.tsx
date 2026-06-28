@@ -32,11 +32,19 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
         const fetchImages = async () => {
             if (!verification?.uploaded_documents?.length) return;
 
-            const { data, error } = await supabase.storage
-                .from('kyc-documents')
-                .createSignedUrls(verification.uploaded_documents, 3600);
+            const { data, error } = await supabase.functions.invoke('media-signer', {
+                body: {
+                    action: 'sign_read_batch',
+                    fileKeys: verification.uploaded_documents
+                }
+            });
 
-            if (data) setSignedUrls(data.filter(d => d.signedUrl).map(d => d.signedUrl!));
+            if (data?.signedUrls) {
+                const urls = verification.uploaded_documents
+                    .map(key => data.signedUrls[key])
+                    .filter(Boolean);
+                setSignedUrls(urls);
+            }
         };
 
         if (isOpen && verification) {

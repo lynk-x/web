@@ -131,20 +131,35 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             // 1. Upload Thumbnail Image (If new file provided)
             if (file) {
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                const filePath = `events/${resolvedAccountId}/${fileName}`;
+                const fileName = `${resolvedAccountId}_${Date.now()}.${fileExt}`;
 
-                const { error: uploadError } = await supabase.storage
-                    .from('media')
-                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+                const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                    body: {
+                        action: 'upload',
+                        folder: 'events',
+                        filename: fileName,
+                        contentType: file.type,
+                        mediaType: 'image',
+                    }
+                });
 
-                if (uploadError) throw uploadError;
+                if (signError || !signData?.uploadUrl) {
+                    throw new Error(signError?.message || 'Failed to get upload URL');
+                }
 
-                const { data: publicUrlData } = supabase.storage
-                    .from('media')
-                    .getPublicUrl(filePath);
+                const putResponse = await fetch(signData.uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': file.type,
+                    },
+                    body: file,
+                });
 
-                uploadedThumbnailUrl = publicUrlData.publicUrl;
+                if (!putResponse.ok) {
+                    throw new Error('Failed to upload thumbnail to R2');
+                }
+
+                uploadedThumbnailUrl = signData.fileUrl;
             }
 
             // 2. Parse DateTimes

@@ -38,10 +38,18 @@ export default function AccountGovernanceDrawer({ account, onClose }: AccountGov
             setVerification(data);
 
             if (data?.uploaded_documents?.length) {
-                const { data: urls } = await supabase.storage
-                    .from('kyc-documents')
-                    .createSignedUrls(data.uploaded_documents, 3600);
-                if (urls) setSignedUrls(urls.filter(d => d.signedUrl).map(d => d.signedUrl!));
+                const { data: signRes } = await supabase.functions.invoke('media-signer', {
+                    body: {
+                        action: 'sign_read_batch',
+                        fileKeys: data.uploaded_documents
+                    }
+                });
+                if (signRes?.signedUrls) {
+                    const urls = data.uploaded_documents
+                        .map((key: string) => signRes.signedUrls[key])
+                        .filter(Boolean);
+                    setSignedUrls(urls);
+                }
             }
         } catch (err) {
             console.error('Failed to fetch verification:', err);

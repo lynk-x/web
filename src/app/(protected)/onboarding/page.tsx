@@ -87,13 +87,35 @@ function OnboardingFlow() {
                 return;
             }
             const fileExt = file.name.split('.').pop();
-            const filePath = `${user.id}/org-logo.${fileExt}`;
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file, { upsert: true });
-            if (uploadError) throw uploadError;
-            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-            setLogoUrl(publicUrl);
+            const fileName = `${user.id}_org-logo.${fileExt}`;
+
+            const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                body: {
+                    action: 'upload',
+                    folder: 'avatars',
+                    filename: fileName,
+                    contentType: file.type,
+                    mediaType: 'image',
+                }
+            });
+
+            if (signError || !signData?.uploadUrl) {
+                throw new Error(signError?.message || 'Failed to get upload URL');
+            }
+
+            const putResponse = await fetch(signData.uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type,
+                },
+                body: file,
+            });
+
+            if (!putResponse.ok) {
+                throw new Error('Failed to upload logo to R2');
+            }
+
+            setLogoUrl(signData.fileUrl);
         } catch {
             setError('Failed to upload logo.');
         } finally {
@@ -182,16 +204,34 @@ function OnboardingFlow() {
                     for (const item of files) {
                         const fileExt = item.file.name.split('.').pop();
                         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                        const { error: uploadError } = await supabase.storage
-                            .from('accounts')
-                            .upload(`${accountId}/kyc/${req.id}/${fileName}`, item.file);
-                        
-                        if (!uploadError) {
-                            const { data: { publicUrl } } = supabase.storage
-                                .from('accounts')
-                                .getPublicUrl(`${accountId}/kyc/${req.id}/${fileName}`);
-                            uploadedPaths.push(publicUrl);
+
+                        const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                            body: {
+                                action: 'upload',
+                                folder: 'accounts',
+                                filename: fileName,
+                                contentType: item.file.type,
+                                mediaType: 'image',
+                            }
+                        });
+
+                        if (signError || !signData?.uploadUrl) {
+                            throw new Error(signError?.message || 'Failed to get upload URL');
                         }
+
+                        const putResponse = await fetch(signData.uploadUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': item.file.type,
+                            },
+                            body: item.file,
+                        });
+
+                        if (!putResponse.ok) {
+                            throw new Error('Failed to upload KYC document to R2');
+                        }
+
+                        uploadedPaths.push(signData.fileKey);
                     }
 
                     if (uploadedPaths.length > 0) {
