@@ -49,24 +49,47 @@ export default function AdAssetsTab() {
     const fetchAssets = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('ad_media')
-                .select('*, campaign:ad_campaigns!campaign_id(title, type, status, reference)')
+            const { data: mediaData, error: mediaError } = await supabase
+                .schema('api')
+                .from('v1_ad_media')
+                .select('*')
                 .order('created_at', { ascending: false });
-            if (error) throw error;
-            setAssets((data || []).map((a: any) => ({
-                id: a.id,
-                campaign_id: a.campaign_id,
-                campaign_title: a.campaign?.title ?? 'Unknown Campaign',
-                campaign_ref: a.campaign?.reference ?? 'N/A',
-                campaign_type: a.campaign?.type ?? '—',
-                campaign_status: a.campaign?.status ?? '—',
-                media_type: a.media_type,
-                call_to_action: a.call_to_action,
-                url: a.url,
-                is_primary: a.is_primary,
-                created_at: a.created_at,
-            })));
+            if (mediaError) throw mediaError;
+
+            // Fetch campaign titles/metadata
+            const campaignIds = Array.from(new Set((mediaData || []).map((m: any) => m.campaign_id)));
+            let campaignsMap: Record<string, any> = {};
+
+            if (campaignIds.length > 0) {
+                const { data: campaignData, error: campaignError } = await supabase
+                    .schema('api')
+                    .from('v1_ad_campaigns')
+                    .select('id, title, type, status, reference')
+                    .in('id', campaignIds);
+                if (campaignError) throw campaignError;
+
+                campaignsMap = (campaignData || []).reduce((acc: any, c: any) => {
+                    acc[c.id] = c;
+                    return acc;
+                }, {});
+            }
+
+            setAssets((mediaData || []).map((a: any) => {
+                const campaign = campaignsMap[a.campaign_id];
+                return {
+                    id: a.id,
+                    campaign_id: a.campaign_id,
+                    campaign_title: campaign?.title ?? 'Unknown Campaign',
+                    campaign_ref: campaign?.reference ?? 'N/A',
+                    campaign_type: campaign?.type ?? '—',
+                    campaign_status: campaign?.status ?? '—',
+                    media_type: a.media_type,
+                    call_to_action: a.call_to_action,
+                    url: a.url,
+                    is_primary: a.is_primary,
+                    created_at: a.created_at,
+                };
+            }));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load ad assets', 'error');
         } finally {

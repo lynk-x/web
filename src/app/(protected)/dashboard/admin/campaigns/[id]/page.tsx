@@ -26,9 +26,10 @@ export default function AdminCampaignDetailPage() {
         const fetchCampaign = async () => {
             setIsLoading(true);
             try {
-                // Fetch campaign data
+                // Fetch campaign data from api.v1_ad_campaigns
                 const query = supabase
-                    .from('ad_campaigns')
+                    .schema('api')
+                    .from('v1_ad_campaigns')
                     .select(`
                         id,
                         reference,
@@ -40,8 +41,7 @@ export default function AdminCampaignDetailPage() {
                         start_at,
                         end_at,
                         account_id,
-                        created_at,
-                        accounts: account_id (display_name)
+                        created_at
                     `)
                     .eq('id', id);
 
@@ -52,6 +52,14 @@ export default function AdminCampaignDetailPage() {
                 const { data, error } = await query.single();
 
                 if (error) throw error;
+
+                // Fetch account display name from api.v1_accounts
+                const { data: accountData } = await supabase
+                    .schema('api')
+                    .from('v1_accounts')
+                    .select('display_name')
+                    .eq('id', data.account_id)
+                    .single();
 
                 // Fetch performance stats separately to avoid complex join issues in the same query
                 const { data: perfData } = await supabase
@@ -67,7 +75,7 @@ export default function AdminCampaignDetailPage() {
                     createdAt: data.created_at,
                     campaignRef: data.reference,
                     name: data.title,
-                    client: (data.accounts as any)?.display_name || 'Unknown Client',
+                    client: accountData?.display_name || 'Unknown Client',
                     adType: data.type,
                     budget: parseFloat(data.total_budget),
                     spend: parseFloat(data.spent_amount) || parseFloat(perf.total_spend) || 0,
@@ -91,7 +99,7 @@ export default function AdminCampaignDetailPage() {
     const handleStatusChange = async (campaignId: string, newStatus: string) => {
         try {
             const { error } = await supabase
-                .from('ad_campaigns')
+                .from('campaigns')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('id', campaignId)
                 .eq('created_at', campaign?.createdAt);

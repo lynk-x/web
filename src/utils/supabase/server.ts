@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 export async function createClient() {
     const cookieStore = await cookies()
 
-    return createServerClient(
+    const client = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         {
@@ -26,4 +26,15 @@ export async function createClient() {
             },
         }
     )
+
+    // Automatically route v1_ views to the api schema
+    const originalFrom = client.from.bind(client);
+    client.from = function(relation: string) {
+        if (relation.startsWith('v1_')) {
+            return client.schema('api').from(relation);
+        }
+        return originalFrom(relation);
+    };
+
+    return client;
 }

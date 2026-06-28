@@ -45,14 +45,23 @@ export default function CampaignAssetsPage() {
         if (!campaignId) return;
         setIsLoading(true);
         try {
-            const campaignQuery = supabase.from('ad_campaigns').select('title, created_at').eq('id', campaignId);
+            const campaignQuery = supabase
+                .schema('api')
+                .from('v1_ad_campaigns')
+                .select('title, created_at')
+                .eq('id', campaignId);
             if (campaignCreatedAt) {
                 campaignQuery.eq('created_at', campaignCreatedAt);
             }
 
             const [campaignRes, assetsRes] = await Promise.all([
                 campaignQuery.single(),
-                supabase.from('ad_media').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
+                supabase
+                    .schema('api')
+                    .from('v1_ad_media')
+                    .select('*')
+                    .eq('campaign_id', campaignId)
+                    .order('created_at', { ascending: false }),
             ]);
             if (campaignRes.data) setCampaignTitle(campaignRes.data.title);
             if (assetsRes.error) throw assetsRes.error;

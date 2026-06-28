@@ -85,6 +85,7 @@ export function createEventsRepository(client: DbClient) {
         /** Fetch a single event by ID. */
         async findById(eventId: string): Promise<RepoResult<EventRow>> {
             const { data, error } = await client
+                .schema('api')
                 .from('v1_events')
                 .select('*')
                 .eq('id', eventId)
@@ -102,6 +103,7 @@ export function createEventsRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             const { data, error, count } = await client
+                .schema('api')
                 .from('v1_events')
                 .select(
                     'id, account_id, title, status, start_datetime, end_datetime, timezone, location, media, category_id, category_name, is_private, is_featured, is_online, currency, total_capacity, reference, created_at, updated_at',
@@ -123,6 +125,7 @@ export function createEventsRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
+                .schema('api')
                 .from('v1_events')
                 .select(
                     'id, account_id, title, description, start_datetime, end_datetime, timezone, location, media, category_id, category_name, currency, is_featured, is_online',
@@ -253,7 +256,8 @@ export function createEventsRepository(client: DbClient) {
         /** Fetch all ticket tiers for an event. */
         async getTiers(eventId: string): Promise<RepoResult<TicketTier[]>> {
             const { data, error } = await client
-                .from('ticket_tiers')
+                .schema('api')
+                .from('v1_ticket_tiers')
                 .select('id, event_id, display_name, description, price, capacity, tickets_sold, tickets_reserved, sales_start, sales_end, min_per_order, max_per_order, is_hidden, deleted_at, created_at, updated_at')
                 .eq('event_id', eventId)
                 .is('deleted_at', null)
@@ -326,7 +330,8 @@ export function createEventsRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('event_waitlists')
+                .schema('api')
+                .from('v1_ticket_waitlists')
                 .select('id, event_id, user_id, ticket_tier_id, status, position, invited_at, expires_at, created_at')
                 .eq('event_id', eventId)
                 .order('position', { ascending: true })

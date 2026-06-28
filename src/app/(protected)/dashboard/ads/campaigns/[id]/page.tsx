@@ -98,13 +98,15 @@ export default function CampaignDetailPage() {
         try {
             const [campRes, variantRes] = await Promise.all([
                 supabase
-                    .from('ad_campaigns')
+                    .schema('api')
+                    .from('v1_ad_campaigns')
                     .select('*')
                     .eq('id', id)
                     .eq('account_id', activeAccount.id)
                     .maybeSingle(),
                 supabase
-                    .from('ad_media')
+                    .schema('api')
+                    .from('v1_ad_media')
                     .select('id, url, media_type, call_to_action, is_primary, is_hidden, impressions_count, clicks_count')
                     .eq('campaign_id', id)
                     .order('is_primary', { ascending: false })
@@ -165,7 +167,7 @@ export default function CampaignDetailPage() {
         if (!campaign) return;
         try {
             const { error } = await supabase
-                .from('ad_campaigns')
+                .from('campaigns')
                 .update({ status: newStatus })
                 .eq('id', campaign.id);
             if (error) throw error;

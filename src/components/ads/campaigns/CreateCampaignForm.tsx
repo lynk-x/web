@@ -165,9 +165,9 @@ export default function CreateCampaignForm({
         const fetchTags = async () => {
             // Fetch official/popular tags for suggestions
             const { data: tData } = await supabase
-                .from('tags')
+                .schema('api')
+                .from('v1_tags')
                 .select('name')
-                .eq('status', 'approved')
                 .order('use_count', { ascending: false })
                 .limit(30);
             if (tData) setTagSuggestions(tData.map(t => t.name));

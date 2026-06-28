@@ -21,7 +21,7 @@ export interface AdCampaign {
     total_budget: number;
     daily_limit?: number;
     spent_amount: number;
-    target_url?: string;
+    destination_url?: string;
     target_event_id?: string;
     target_country_code?: string;
     total_impressions: number;
@@ -70,13 +70,13 @@ export function createAdsRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .from('ad_campaigns')
+                .schema('api')
+                .from('v1_ad_campaigns')
                 .select(
-                    'id, account_id, title, description, type, status, start_at, end_at, total_budget, daily_limit, spent_amount, target_url, target_event_id, target_country_code, total_impressions, total_clicks, reference, created_at',
+                    'id, account_id, title, description, type, status, start_at, end_at, total_budget, daily_limit, spent_amount, destination_url, target_event_id, target_country_code, total_impressions, total_clicks, reference, created_at',
                     selectOpts
                 )
                 .eq('account_id', accountId)
-                .is('deleted_at', null)
                 .order('created_at', { ascending: false })
                 .range(from, from + size - 1);
 
@@ -90,7 +90,8 @@ export function createAdsRepository(client: DbClient) {
         /** Fetch a single campaign by ID. */
         async findById(campaignId: string): Promise<RepoResult<AdCampaign | null>> {
             const { data, error } = await client
-                .from('ad_campaigns')
+                .schema('api')
+                .from('v1_ad_campaigns')
                 .select('*')
                 .eq('id', campaignId)
                 .maybeSingle();
@@ -109,12 +110,12 @@ export function createAdsRepository(client: DbClient) {
             endAt: string;
             totalBudget: number;
             dailyLimit?: number;
-            targetUrl?: string;
+            destinationUrl?: string;
             targetEventId?: string;
             targetCountryCode?: string;
         }): Promise<RepoResult<AdCampaign>> {
             const { data, error } = await client
-                .from('ad_campaigns')
+                .from('campaigns')
                 .insert({
                     account_id: params.accountId,
                     title: params.title,
@@ -124,7 +125,7 @@ export function createAdsRepository(client: DbClient) {
                     end_at: params.endAt,
                     total_budget: params.totalBudget,
                     daily_limit: params.dailyLimit,
-                    target_url: params.targetUrl,
+                    destination_url: params.destinationUrl,
                     target_event_id: params.targetEventId,
                     target_country_code: params.targetCountryCode,
                     status: 'draft',
@@ -137,9 +138,9 @@ export function createAdsRepository(client: DbClient) {
         },
 
         /** Update a campaign's fields. */
-        async update(campaignId: string, fields: Partial<Pick<AdCampaign, 'title' | 'description' | 'start_at' | 'end_at' | 'total_budget' | 'daily_limit' | 'target_url' | 'target_event_id' | 'target_country_code'>>): Promise<RepoResult<AdCampaign>> {
+        async update(campaignId: string, fields: Partial<Pick<AdCampaign, 'title' | 'description' | 'start_at' | 'end_at' | 'total_budget' | 'daily_limit' | 'destination_url' | 'target_event_id' | 'target_country_code'>>): Promise<RepoResult<AdCampaign>> {
             const { data, error } = await client
-                .from('ad_campaigns')
+                .from('campaigns')
                 .update(fields)
                 .eq('id', campaignId)
                 .select()
@@ -151,12 +152,10 @@ export function createAdsRepository(client: DbClient) {
 
         /**
          * Change a campaign's status.
-         * NOTE: There is no DB-level state machine — flipping `paused → active` from the
-         * client could bypass billing checks. Wrap this behind an RPC once one exists.
          */
         async updateStatus(campaignId: string, status: CampaignStatus): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('ad_campaigns')
+                .from('campaigns')
                 .update({ status })
                 .eq('id', campaignId);
 
@@ -167,7 +166,8 @@ export function createAdsRepository(client: DbClient) {
         /** Fetch all creative assets for a campaign. */
         async getMedia(campaignId: string): Promise<RepoResult<AdMedia[]>> {
             const { data, error } = await client
-                .from('ad_media')
+                .schema('api')
+                .from('v1_ad_media')
                 .select('id, campaign_id, media_type, url, call_to_action, is_primary, is_hidden, metadata, impressions_count, clicks_count, created_at')
                 .eq('campaign_id', campaignId)
                 .eq('is_hidden', false)
@@ -180,7 +180,8 @@ export function createAdsRepository(client: DbClient) {
         /** Fetch per-country bid modifiers for a campaign. */
         async getRegions(campaignId: string): Promise<RepoResult<AdCampaignRegion[]>> {
             const { data, error } = await client
-                .from('ad_campaign_regions')
+                .schema('api')
+                .from('v1_ad_campaign_regions')
                 .select('campaign_id, country_code, bid_modifier')
                 .eq('campaign_id', campaignId);
 
@@ -202,7 +203,7 @@ export function createAdsRepository(client: DbClient) {
         },
 
         /**
-         * Log an ad impression or click. Wraps `log_ad_interaction` RPC, which takes a single jsonb payload
+         * Log an ad interaction or click. Wraps `log_ad_interaction` RPC, which takes a single jsonb payload
          * and pushes it onto the `ad_interactions` PGMQ queue for async processing.
          */
         async logInteraction(params: {
