@@ -32,7 +32,7 @@ export default function AdsBillingPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_advertiser_billing_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_advertiser_billing_data', {
                 p_account_id: activeAccount.id,
                 p_limit: itemsPerPage,
                 p_offset: (currentPage - 1) * itemsPerPage

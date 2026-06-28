@@ -240,7 +240,7 @@ export function createAccountsRepository(client: DbClient) {
             phone?: string;
             roleSlug: string;
         }): Promise<RepoResult<{ invitation_id: string; token: string }>> {
-            const { data, error } = await client.rpc('create_account_invitation', {
+            const { data, error } = await client.schema('api').rpc('create_account_invitation', {
                 p_account_id: params.accountId,
                 p_invitee_email: params.email ?? null,
                 p_invitee_phone: params.phone ?? null,
@@ -253,7 +253,7 @@ export function createAccountsRepository(client: DbClient) {
 
         /** Revoke a pending invitation. Wraps `revoke_account_invitation` RPC. */
         async revokeInvitation(invitationId: string): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('revoke_account_invitation', {
+            const { error } = await client.schema('api').rpc('revoke_account_invitation', {
                 p_invitation_id: invitationId,
             });
 
@@ -267,7 +267,7 @@ export function createAccountsRepository(client: DbClient) {
          * recorded on the invitation row (verified server-side).
          */
         async acceptInvitation(token: string): Promise<RepoResult<{ account_id: string }>> {
-            const { data, error } = await client.rpc('accept_account_invitation', {
+            const { data, error } = await client.schema('api').rpc('accept_account_invitation', {
                 p_token: token,
             });
 
@@ -282,7 +282,7 @@ export function createAccountsRepository(client: DbClient) {
             accountType?: 'organizer' | 'advertiser';
             countryCode?: string;
         }): Promise<RepoResult<{ account_id: string }>> {
-            const { data, error } = await client.rpc('create_organization_account', {
+            const { data, error } = await client.schema('api').rpc('create_organization_account', {
                 p_org_name: params.orgName,
                 p_contact_email: params.contactEmail ?? null,
                 p_account_type: params.accountType ?? 'organizer',

@@ -57,7 +57,7 @@ function SupportContent() {
     const fetchSummary = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('admin_stat_summary');
+            const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
             if (!error && data) setSummary(data);
         } finally {
             setIsLoading(false);

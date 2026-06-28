@@ -94,7 +94,7 @@ function GlobalFinanceContent() {
         setIsSyncingFX(true);
         showToast('Syncing with global rates...', 'info');
         try {
-            const { error } = await supabase.rpc('sync_fx_rates');
+            const { error } = await supabase.schema('api').rpc('sync_fx_rates');
             if (error) throw error;
             showToast('FX rates synchronized successfully.', 'success');
             fetchData();

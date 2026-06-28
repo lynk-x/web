@@ -11,7 +11,7 @@ export async function processAccountRecovery(email: string, recoveryCode: string
         const supabase = createAdminClient();
 
         // 1. Verify the recovery code cryptographically
-        const { data: isValid, error: rpcError } = await supabase.rpc('verify_recovery_code', {
+        const { data: isValid, error: rpcError } = await supabase.schema('api').rpc('verify_recovery_code', {
             p_email: email.trim(),
             p_recovery_code: recoveryCode.trim()
         });

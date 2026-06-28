@@ -45,7 +45,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
                 // Now get attendees via RPC
                 const { data, error } = await supabase
-                    .rpc('get_organizer_attendees', {
+                    .schema('api').rpc('get_organizer_attendees', {
                         p_account_id: activeAccount?.id || eventData.account_id,
                         p_event_id: id,
                         p_created_at: eventData.created_at,

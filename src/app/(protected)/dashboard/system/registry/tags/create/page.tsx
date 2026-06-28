@@ -33,7 +33,7 @@ export default function CreateTagPage() {
 
     useEffect(() => {
         const fetchTypes = async () => {
-            const { data, error } = await supabase.rpc('get_admin_registry_data', { p_tab: 'tag_types' });
+            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tag_types' });
             if (data) setTagTypes(data.filter((t: any) => t.is_active));
         };
         fetchTypes();
@@ -47,7 +47,7 @@ export default function CreateTagPage() {
 
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('admin_upsert_registry_item', {
+            const { data, error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
                 p_tab: 'tags',
                 p_data: formData
             });

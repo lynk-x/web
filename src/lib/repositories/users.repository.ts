@@ -58,7 +58,7 @@ export function createUsersRepository(client: DbClient) {
 
         /** Switch the active organizational tenant workspace. Wraps `set_active_account` RPC. */
         async setActiveAccount(accountId: string): Promise<RepoResult<{ success: boolean; active_account_id: string }>> {
-            const { data, error } = await client.rpc('set_active_account', {
+            const { data, error } = await client.schema('api').rpc('set_active_account', {
                 p_account_id: accountId,
             });
 
@@ -68,7 +68,7 @@ export function createUsersRepository(client: DbClient) {
 
         /** Check whether a username is available. Wraps `is_username_available` RPC. */
         async isUsernameAvailable(username: string): Promise<RepoResult<boolean>> {
-            const { data, error } = await client.rpc('is_username_available', {
+            const { data, error } = await client.schema('api').rpc('is_username_available', {
                 username_to_check: username,
             });
 
@@ -83,7 +83,7 @@ export function createUsersRepository(client: DbClient) {
             info?: Record<string, any>;
             countryCode?: string;
         }): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('update_profile', {
+            const { error } = await client.schema('api').rpc('update_profile', {
                 p_full_name: params.fullName ?? null,
                 p_avatar_url: params.avatarUrl ?? null,
                 p_info: params.info ?? null,

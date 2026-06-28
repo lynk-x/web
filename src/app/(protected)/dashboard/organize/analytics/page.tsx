@@ -44,7 +44,7 @@ export default async function Page() {
             await queryClient.prefetchQuery({
                 queryKey: ['organizer-performance-metrics', account.account_id, '30'],
                 queryFn: async () => {
-                    const { data: metrics, error } = await supabase.rpc('get_organizer_performance_metrics', {
+                    const { data: metrics, error } = await supabase.schema('api').rpc('get_organizer_performance_metrics', {
                         p_account_id: account.account_id,
                         p_days: 30
                     });

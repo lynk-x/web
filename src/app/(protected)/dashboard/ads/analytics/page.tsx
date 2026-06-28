@@ -46,7 +46,7 @@ function AnalyticsContent() {
             if (startDate) params.p_start_date = startDate;
             if (endDate) params.p_end_date = endDate;
             
-            const { data, error } = await supabase.rpc('get_campaigns_performance_summary', params);
+            const { data, error } = await supabase.schema('api').rpc('get_campaigns_performance_summary', params);
 
             if (error) throw error;
 

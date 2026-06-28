@@ -100,7 +100,7 @@ export default function WalletPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_organizer_wallet_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_organizer_wallet_data', {
                 p_account_id: activeAccount.id
             });
 
@@ -132,7 +132,7 @@ export default function WalletPage() {
 
         setIsSubmitting(true);
         try {
-            const { data, error } = await supabase.rpc('initiate_wallet_topup', {
+            const { data, error } = await supabase.schema('api').rpc('initiate_wallet_topup', {
                 p_account_id: activeAccount!.id,
                 p_amount: numAmount,
                 p_currency: currency,

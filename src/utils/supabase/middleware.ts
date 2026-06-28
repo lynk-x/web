@@ -46,7 +46,7 @@ export async function updateSession(request: NextRequest) {
     if (user && pathname.startsWith('/dashboard/admin')) {
         // Use the built-in RPC for a clean, server-side admin check.
         // This avoids complex join syntax issues in the middleware.
-        const { data: isAdmin, error } = await supabase.rpc('is_system_admin')
+        const { data: isAdmin, error } = await supabase.schema('api').rpc('is_system_admin')
 
         if (error) {
             console.error('[Middleware] Admin RPC check error:', error)

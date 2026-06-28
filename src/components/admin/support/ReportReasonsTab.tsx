@@ -41,7 +41,7 @@ export default function ReportReasonsTab() {
     const fetchReasons = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_support_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_support_data', {
                 p_tab: 'reasons'
             });
             if (error) throw error;
@@ -57,7 +57,7 @@ export default function ReportReasonsTab() {
 
     const handleToggle = async (reason: ReportReason) => {
         try {
-            const { error } = await supabase.rpc('admin_update_support_status', {
+            const { error } = await supabase.schema('api').rpc('admin_update_support_status', {
                 p_tab: 'reasons',
                 p_id: reason.id,
                 p_status: !reason.is_active ? 'active' : 'inactive'

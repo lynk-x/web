@@ -109,7 +109,7 @@ export default function AdminCreateEventPage() {
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase
-                    .rpc('resolve_tags', { p_tags: tagsToUpsert });
+                    .schema('api').rpc('resolve_tags', { p_tags: tagsToUpsert });
 
                 if (tagUpsertError) throw tagUpsertError;
 

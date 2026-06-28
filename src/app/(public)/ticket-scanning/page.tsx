@@ -192,7 +192,7 @@ export default function TicketScanningPage() {
         }
 
         try {
-            const { data, error } = await supabase.rpc('verify_and_use_ticket', {
+            const { data, error } = await supabase.schema('api').rpc('verify_and_use_ticket', {
                 p_ticket_code: code.trim(),
                 p_event_id: selectedEventId,
                 p_scanner_pin: isPinLogin ? enteredPin : null
@@ -269,7 +269,7 @@ export default function TicketScanningPage() {
                         setIsProcessing(true);
                         setPinError('');
                         try {
-                            const { data, error } = await supabase.rpc('get_event_by_pin', { p_pin: enteredPin.trim() });
+                            const { data, error } = await supabase.schema('api').rpc('get_event_by_pin', { p_pin: enteredPin.trim() });
                             if (error || !data || data.length === 0) {
                                 setPinError('Invalid or expired PIN.');
                             } else {

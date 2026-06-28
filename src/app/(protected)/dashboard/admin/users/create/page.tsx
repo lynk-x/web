@@ -36,7 +36,7 @@ export default function CreateAccountPage() {
         setIsSubmitting(true);
 
         try {
-            const { error } = await supabase.rpc('admin_create_account', {
+            const { error } = await supabase.schema('api').rpc('admin_create_account', {
                 p_display_name: formData.display_name,
                 p_type: formData.type,
                 p_owner_email: formData.owner_email,

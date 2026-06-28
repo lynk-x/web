@@ -55,7 +55,7 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
     const fetchMappings = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_registry_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', {
                 p_tab: activeSubTab === 'category' ? 'mappings_category' : 'mappings_event'
             });
 
@@ -144,7 +144,7 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
     const handleDeleteMapping = async (id: string) => {
         setIsLoading(true);
         try {
-            const { error } = await supabase.rpc('admin_manage_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
                 p_tab: activeSubTab === 'category' ? 'mappings_category' : 'mappings_event',
                 p_action: 'delete',
                 p_id: id

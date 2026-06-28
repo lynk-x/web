@@ -72,7 +72,7 @@ export default function CreateEventPage() {
             const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 
             // 3. Upsert Event & Tiers via Atomic RPC
-            const { data: rpcResult, error: rpcError } = await supabase.rpc('upsert_organizer_event', {
+            const { data: rpcResult, error: rpcError } = await supabase.schema('api').rpc('upsert_organizer_event', {
                 p_account_id: activeAccount.id,
                 p_event_id: null, // New event
                 p_created_at: null,

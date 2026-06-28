@@ -108,7 +108,7 @@ export default function EventRefundsPage() {
         setIsProcessing(true);
         showToast(`Approving ${selectedIds.size} refunds...`, 'info');
         try {
-            const { data, error } = await supabase.rpc('bulk_approve_refund_requests', {
+            const { data, error } = await supabase.schema('api').rpc('bulk_approve_refund_requests', {
                 p_request_ids: Array.from(selectedIds)
             });
             if (error) throw error;

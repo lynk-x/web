@@ -85,7 +85,7 @@ function AdsSettingsContent() {
     const handleGenerateRecoveryCode = async () => {
         setIsGeneratingRecovery(true);
         try {
-            const { data, error } = await supabase.rpc('generate_recovery_code');
+            const { data, error } = await supabase.schema('api').rpc('generate_recovery_code');
             if (error) throw error;
             setRecoveryCode(data);
             setHasRecoveryCode(true);
@@ -116,7 +116,7 @@ function AdsSettingsContent() {
         if (!activeAccount || !user) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_account_settings', {
+            const { data, error } = await supabase.schema('api').rpc('get_account_settings', {
                 p_account_id: activeAccount.id
             });
 
@@ -145,7 +145,7 @@ function AdsSettingsContent() {
             setInitialFormData(newValues);
             setWallets((data.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
 
-            const { data: hasCode } = await supabase.rpc('has_recovery_code');
+            const { data: hasCode } = await supabase.schema('api').rpc('has_recovery_code');
             setHasRecoveryCode(!!hasCode);
         } catch (err) {
             showToast(getErrorMessage(err) || 'Failed to sync your account settings.', 'error');
@@ -189,7 +189,7 @@ function AdsSettingsContent() {
         }
         setIsSaving(true);
         try {
-            const { error } = await supabase.rpc('update_account_settings', {
+            const { error } = await supabase.schema('api').rpc('update_account_settings', {
                 p_account_id: activeAccount.id,
                 p_display_name: formData.name,
                 p_info: {
@@ -228,13 +228,13 @@ function AdsSettingsContent() {
         if (!activeAccount) return;
         setIsDeactivating(true);
         try {
-            const { error: accountError } = await supabase.rpc('deactivate_ads_account', {
+            const { error: accountError } = await supabase.schema('api').rpc('deactivate_ads_account', {
                 p_account_id: activeAccount.id
             });
             if (accountError) throw accountError;
 
             // 2. Shred the entire user data (GDPR Compliance)
-            const { error: shredError } = await supabase.rpc('shred_user_data');
+            const { error: shredError } = await supabase.schema('api').rpc('shred_user_data');
             if (shredError) throw shredError;
 
             showToast('Account deactivated and personal data shredded.', 'success');

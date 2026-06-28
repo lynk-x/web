@@ -77,7 +77,7 @@ export default function AdminMap() {
         async function fetchLocations() {
             try {
                 setIsLoading(true);
-                const { data, error: queryError } = await supabase.rpc('get_admin_events', {
+                const { data, error: queryError } = await supabase.schema('api').rpc('get_admin_events', {
                     p_status: 'published',
                     p_limit: 1000 // Get all for map
                 });

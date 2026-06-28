@@ -23,7 +23,7 @@ export default function TicketingTab({ eventId }: TicketingTabProps) {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const { data: result, error } = await supabase.rpc('get_admin_event_ticketing_data', {
+                const { data: result, error } = await supabase.schema('api').rpc('get_admin_event_ticketing_data', {
                     p_event_id: eventId
                 });
                 if (error) throw error;

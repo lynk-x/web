@@ -178,7 +178,7 @@ const UserTable: React.FC<UserTableProps> = ({
                 const newStatus = user.status === 'active' ? 'temporarily_suspended' : 'active';
                 showToast(`Updating ${user.name} status...`, 'info');
                 try {
-                    const { error } = await supabase.rpc('bulk_update_user_status', {
+                    const { error } = await supabase.schema('api').rpc('bulk_update_user_status', {
                         p_user_ids: [user.id],
                         p_status: newStatus
                     });
@@ -196,7 +196,7 @@ const UserTable: React.FC<UserTableProps> = ({
             onClick: async () => {
                 if (!confirm('Are you sure you want to PERMANENTLY lock this account?')) return;
                 try {
-                    const { error } = await supabase.rpc('bulk_update_user_status', {
+                    const { error } = await supabase.schema('api').rpc('bulk_update_user_status', {
                         p_user_ids: [user.id],
                         p_status: 'permanently_suspended'
                     });

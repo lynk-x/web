@@ -22,7 +22,7 @@ export default function MarketExplorer({ accountId, searchTerm }: { accountId: s
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
-        const { data: overview, error } = await supabase.rpc('get_pulse_dashboard_overview', {
+        const { data: overview, error } = await supabase.schema('api').rpc('get_pulse_dashboard_overview', {
             p_account_id: accountId
         });
         

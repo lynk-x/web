@@ -38,8 +38,8 @@ export default function EditTagPage() {
             try {
                 // Fetch Types and Tag using RPCs
                 const [typesRes, tagsRes] = await Promise.all([
-                    supabase.rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
-                    supabase.rpc('get_admin_registry_data', { p_tab: 'tags' })
+                    supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
+                    supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' })
                 ]);
 
                 if (typesRes.error) throw typesRes.error;
@@ -70,7 +70,7 @@ export default function EditTagPage() {
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('admin_upsert_registry_item', {
+            const { data, error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
                 p_tab: 'tags',
                 p_data: formData
             });

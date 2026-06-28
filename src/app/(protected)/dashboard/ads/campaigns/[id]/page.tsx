@@ -132,7 +132,7 @@ export default function CampaignDetailPage() {
         if (!id) return;
         setIsAnalyticsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_campaign_performance_metrics', {
+            const { data, error } = await supabase.schema('api').rpc('get_campaign_performance_metrics', {
                 p_campaign_id: id,
                 p_days: timeRange
             });

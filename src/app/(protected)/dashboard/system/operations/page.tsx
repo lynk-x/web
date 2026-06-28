@@ -53,7 +53,7 @@ function JobsOperationsContent() {
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_audit_logs', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_audit_logs', {
                 p_params: {
                     action: actionFilter,
                     limit: itemsPerPage,
@@ -88,7 +88,7 @@ function JobsOperationsContent() {
             setTotalCount(data.total_count || 0);
 
             // Populate action-type filter dropdown
-            const { data: actions } = await supabase.rpc('get_unique_audit_actions');
+            const { data: actions } = await supabase.schema('api').rpc('get_unique_audit_actions');
             if (actions) {
                 setActionTypes(actions);
             }
@@ -102,7 +102,7 @@ function JobsOperationsContent() {
     const fetchStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_audit_stats');
+            const { data, error } = await supabase.schema('api').rpc('get_admin_audit_stats');
             if (error) throw error;
             setStats(data);
         } catch (err: any) {

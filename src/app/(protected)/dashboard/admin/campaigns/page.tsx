@@ -70,14 +70,14 @@ function CampaignsContent() {
     const itemsPerPage = 10;
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.rpc('admin_stat_summary');
+        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
         if (!error && data) {
             setSummary(data);
         }
     }, [supabase]);
 
     const fetchCampaignPerf = useCallback(async () => {
-        const { data, error } = await supabase.rpc('get_admin_ad_performance', {
+        const { data, error } = await supabase.schema('api').rpc('get_admin_ad_performance', {
             p_country_code: resolvedCountryFilter
         });
 
@@ -109,7 +109,7 @@ function CampaignsContent() {
         
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_campaigns', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_campaigns', {
                 p_search: debouncedSearch,
                 p_status: statusFilter,
                 p_type: adTypeFilter,
@@ -177,7 +177,7 @@ function CampaignsContent() {
                 const moderationId = campaign.moderationId;
                 if (!moderationId) throw new Error(`No moderation record found for ${campaign.name}.`);
 
-                return supabase.rpc('moderate_item', {
+                return supabase.schema('api').rpc('moderate_item', {
                     p_moderation_id: moderationId,
                     p_status: newStatus === 'active' ? 'approved' : 'rejected',
                     p_reason: reason || 'Status updated via Admin Campaigns dashboard.'
@@ -202,7 +202,7 @@ function CampaignsContent() {
                 const moderationId = campaign.moderationId;
                 if (!moderationId) throw new Error('Moderation record missing.');
 
-                return supabase.rpc('moderate_item', {
+                return supabase.schema('api').rpc('moderate_item', {
                     p_moderation_id: moderationId,
                     p_status: isFlagging ? 'flagged' : 'pending_review',
                     p_reason: `${isFlagging ? 'Flagged' : 'Unflagged'} via Admin Campaigns dashboard.`
@@ -273,7 +273,7 @@ function CampaignsContent() {
                 return;
             }
 
-            const { error } = await supabase.rpc('bulk_moderate_items', {
+            const { error } = await supabase.schema('api').rpc('bulk_moderate_items', {
                 p_moderation_ids: moderationIds,
                 p_status: newStatus === 'active' ? 'approved' : 'rejected',
                 p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
@@ -295,7 +295,7 @@ function CampaignsContent() {
         showToast(`Deleting ${selectedCampaignIds.size} campaigns...`, 'info');
 
         try {
-            const { error } = await supabase.rpc('bulk_delete_campaigns', {
+            const { error } = await supabase.schema('api').rpc('bulk_delete_campaigns', {
                 p_ids: Array.from(selectedCampaignIds),
                 p_created_ats: campaigns
                     .filter(c => selectedCampaignIds.has(c.id))

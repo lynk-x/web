@@ -39,7 +39,7 @@ export default function AnalyticsClient() {
         ['organizer-performance-metrics', activeAccount?.id, timeRange],
         async (supabase) => {
             if (!activeAccount?.id) return { insights: [], timeSeries: [] };
-            const { data: metrics, error } = await supabase.rpc('get_organizer_performance_metrics', {
+            const { data: metrics, error } = await supabase.schema('api').rpc('get_organizer_performance_metrics', {
                 p_account_id: activeAccount.id,
                 p_days: parseInt(timeRange, 10)
             });

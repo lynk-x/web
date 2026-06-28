@@ -33,7 +33,7 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data: res, error } = await supabase.rpc('get_admin_settings_data', {
+            const { data: res, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
                 p_tab: 'payment_providers'
             });
             if (error) throw error;
@@ -58,7 +58,7 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
         if (!isEditing) return;
         setIsSaving(true);
         try {
-            const { error } = await supabase.rpc('admin_manage_settings_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
                 p_tab: 'payment_providers',
                 p_action: 'update',
                 p_id: isEditing.id,
@@ -86,7 +86,7 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     const toggleActiveStatus = async (provider: PlatformPaymentProvider) => {
         const newStatus = !provider.is_active;
         try {
-            const { error } = await supabase.rpc('admin_manage_settings_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
                 p_tab: 'payment_providers',
                 p_action: 'toggle',
                 p_id: provider.id,

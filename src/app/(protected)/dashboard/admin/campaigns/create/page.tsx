@@ -31,7 +31,7 @@ export default function CreateCampaignPage() {
 
         setIsSubmitting(true);
         try {
-            const { data, error } = await supabase.rpc('admin_create_campaign', {
+            const { data, error } = await supabase.schema('api').rpc('admin_create_campaign', {
                 p_account_id: resolvedAccountId,
                 p_title: formData.title,
                 p_type: formData.type,

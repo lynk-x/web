@@ -41,7 +41,7 @@ export function useAccountPermissions(accountId: string | null | undefined): Use
         setLoading(true);
         try {
             const supabase = createClient();
-            const { data, error } = await supabase.rpc('get_my_account_permissions', {
+            const { data, error } = await supabase.schema('api').rpc('get_my_account_permissions', {
                 p_account_id: accountId,
             });
             if (!error && Array.isArray(data)) {

@@ -51,7 +51,7 @@ export default function OrganizerEventsPage() {
         if (!activeAccount) return;
         setIsLoadingEvents(true);
         try {
-            const { data, error } = await supabase.rpc('get_organizer_events', {
+            const { data, error } = await supabase.schema('api').rpc('get_organizer_events', {
                 p_account_id: activeAccount.id,
                 p_params: {
                     search: searchTerm,
@@ -150,7 +150,7 @@ export default function OrganizerEventsPage() {
     const handleDuplicate = async (event: OrganizerEvent) => {
         showToast('Cloning event...', 'info');
         try {
-            const { data: newId, error } = await supabase.rpc('duplicate_event', {
+            const { data: newId, error } = await supabase.schema('api').rpc('duplicate_event', {
                 p_event_id: event.id,
                 p_created_at: event.createdAt
             });
@@ -171,7 +171,7 @@ export default function OrganizerEventsPage() {
             const ids = selectedEvents.map(e => e.id);
             const createdAts = selectedEvents.map(e => e.createdAt);
 
-            const { data, error } = await supabase.rpc('bulk_duplicate_events', {
+            const { data, error } = await supabase.schema('api').rpc('bulk_duplicate_events', {
                 p_event_ids: ids,
                 p_created_ats: createdAts
             });
@@ -213,7 +213,7 @@ export default function OrganizerEventsPage() {
 
             // Call RPC for each partition group
             for (const [createdAt, ids] of Object.entries(groups)) {
-                const { error } = await supabase.rpc('bulk_update_events_status', {
+                const { error } = await supabase.schema('api').rpc('bulk_update_events_status', {
                     p_account_id: activeAccount.id,
                     p_event_ids: ids,
                     p_created_at: createdAt,
@@ -306,7 +306,7 @@ export default function OrganizerEventsPage() {
 
             // Call RPC for each partition group
             for (const [createdAt, ids] of Object.entries(groups)) {
-                const { error } = await supabase.rpc('bulk_delete_events', {
+                const { error } = await supabase.schema('api').rpc('bulk_delete_events', {
                     p_account_id: activeAccount.id,
                     p_event_ids: ids,
                     p_created_at: createdAt
@@ -332,7 +332,7 @@ export default function OrganizerEventsPage() {
         if (!cancelTarget || !activeAccount) return;
 
         try {
-            const { error } = await supabase.rpc('cancel_event_full', {
+            const { error } = await supabase.schema('api').rpc('cancel_event_full', {
                 p_account_id: activeAccount.id,
                 p_event_id: cancelTarget.event.id,
                 p_created_at: cancelTarget.event.createdAt,
@@ -361,7 +361,7 @@ export default function OrganizerEventsPage() {
             return;
         }
         try {
-            const { error } = await supabase.rpc('bulk_update_events_status', {
+            const { error } = await supabase.schema('api').rpc('bulk_update_events_status', {
                 p_account_id: activeAccount.id,
                 p_event_ids: [event.id],
                 p_created_at: event.createdAt,

@@ -62,7 +62,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 }
                 if (categoryId) params.p_category = categoryId;
 
-                const { data, error } = await supabase.rpc('search_events', params);
+                const { data, error } = await supabase.schema('api').rpc('search_events', params);
                 if (error) throw error;
 
                 let mapped: Event[] = (data ?? []).map((r: any) => ({

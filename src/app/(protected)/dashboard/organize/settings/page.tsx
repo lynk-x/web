@@ -122,7 +122,7 @@ function SettingsContent() {
     const handleGenerateRecoveryCode = async () => {
         setIsGeneratingRecovery(true);
         try {
-            const { data, error } = await supabase.rpc('generate_recovery_code');
+            const { data, error } = await supabase.schema('api').rpc('generate_recovery_code');
             if (error) throw error;
             setRecoveryCode(data);
             setHasRecoveryCode(true);
@@ -140,7 +140,7 @@ function SettingsContent() {
         if (!activeAccount || !user) return;
         setIsLoading(true);
         try {
-            const { data: settings, error } = await supabase.rpc('get_account_settings', {
+            const { data: settings, error } = await supabase.schema('api').rpc('get_account_settings', {
                 p_account_id: activeAccount.id
             });
 
@@ -169,7 +169,7 @@ function SettingsContent() {
             setInitialFormData(newValues);
             setWallets((settings?.wallets || []).map((w: AccountWallet) => ({ ...w, id: w.currency })));
 
-            const { data: hasCode } = await supabase.rpc('has_recovery_code');
+            const { data: hasCode } = await supabase.schema('api').rpc('has_recovery_code');
             setHasRecoveryCode(!!hasCode);
         } catch (err) {
             showToast(getErrorMessage(err) || 'Failed to sync organization settings.', 'error');
@@ -203,7 +203,7 @@ function SettingsContent() {
         }
         setIsSaving(true);
         try {
-            const { error } = await supabase.rpc('update_account_settings', {
+            const { error } = await supabase.schema('api').rpc('update_account_settings', {
                 p_account_id: activeAccount.id,
                 p_display_name: formData.name,
                 p_info: {
@@ -252,7 +252,7 @@ function SettingsContent() {
             if (accountError) throw accountError;
 
             // 2. Shred the entire user data (GDPR Compliance)
-            const { error: shredError } = await supabase.rpc('shred_user_data');
+            const { error: shredError } = await supabase.schema('api').rpc('shred_user_data');
             if (shredError) throw shredError;
 
             showToast('Account successfully deactivated and data shredded.', 'success');

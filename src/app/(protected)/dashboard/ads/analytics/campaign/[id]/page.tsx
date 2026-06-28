@@ -40,7 +40,7 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
             d.setDate(d.getDate() - 30);
             const startDate = d.toISOString().split('T')[0];
 
-            const { data, error } = await supabase.rpc('get_ads_performance_metrics', {
+            const { data, error } = await supabase.schema('api').rpc('get_ads_performance_metrics', {
                 p_account_id: activeAccount.id,
                 p_start_date: startDate,
                 p_end_date: endDate,

@@ -34,8 +34,8 @@ export default function EditDisclaimerPage() {
         const load = async () => {
             try {
                 const [tagsRes, ruleRes] = await Promise.all([
-                    supabase.rpc('get_admin_registry_data', { p_tab: 'tags' }),
-                    supabase.rpc('get_admin_registry_data', { p_tab: 'disclaimers' })
+                    supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' }),
+                    supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'disclaimers' })
                 ]);
 
                 if (tagsRes.error) throw tagsRes.error;
@@ -65,7 +65,7 @@ export default function EditDisclaimerPage() {
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
                 p_tab: 'disclaimers',
                 p_data: {
                     id: params.id,

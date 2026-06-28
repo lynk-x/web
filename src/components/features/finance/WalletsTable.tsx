@@ -64,7 +64,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
         }
         if (activeModal === 'history' && accountId && selectedWallet) {
             setIsHistoryLoading(true);
-            supabase.rpc('get_organizer_transactions', {
+            supabase.schema('api').rpc('get_organizer_transactions', {
                 p_account_id: accountId,
                 p_limit: 50,
                 p_offset: 0
@@ -92,7 +92,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
         setIsWithdrawing(true);
         try {
-            const { error } = await supabase.rpc('request_account_payout', {
+            const { error } = await supabase.schema('api').rpc('request_account_payout', {
                 p_account_id: accountId,
                 p_amount: Number(withdrawAmount),
                 p_payout_method_id: selectedPayoutMethod,
@@ -126,7 +126,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
         setIsToppingUp(true);
         try {
-            const { error } = await supabase.rpc('initiate_wallet_topup', {
+            const { error } = await supabase.schema('api').rpc('initiate_wallet_topup', {
                 p_account_id: accountId,
                 p_amount: Number(topupAmount),
                 p_currency: selectedWallet.currency,
@@ -157,7 +157,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
         setIsTransferring(true);
         try {
-            const { error } = await supabase.rpc('transfer_wallet_funds', {
+            const { error } = await supabase.schema('api').rpc('transfer_wallet_funds', {
                 p_account_id: accountId,
                 p_amount: Number(transferAmount),
                 p_from_currency: selectedWallet.currency,

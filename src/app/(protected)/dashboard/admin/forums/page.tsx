@@ -65,7 +65,7 @@ function ForumsContent() {
         const fetchForumsData = async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'forums' });
+                const { data, error } = await supabase.schema('api').rpc('get_advanced_analytics', { p_category: 'forums' });
                 if (error) throw error;
 
                 const rows: any[] = data || [];
@@ -155,7 +155,7 @@ function ForumsContent() {
     const handleUpdateStatus = async (newStatus: string) => {
         const count = selectedThreadIds.size;
         await executeAction(
-            () => supabase.rpc('bulk_update_forum_status', {
+            () => supabase.schema('api').rpc('bulk_update_forum_status', {
                 p_forum_ids: Array.from(selectedThreadIds),
                 p_forum_created_ats: allForums
                     .filter(f => selectedThreadIds.has(f.id))
@@ -178,7 +178,7 @@ function ForumsContent() {
     const handleBulkDelete = async () => {
         if (!await confirm(`Are you sure? This will delete ${selectedThreadIds.size} forums. This action cannot be undone.`)) return;
         await executeAction(
-            () => supabase.rpc('bulk_update_forum_status', {
+            () => supabase.schema('api').rpc('bulk_update_forum_status', {
                 p_forum_ids: Array.from(selectedThreadIds),
                 p_forum_created_ats: allForums
                     .filter(f => selectedThreadIds.has(f.id))
@@ -200,7 +200,7 @@ function ForumsContent() {
 
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
         await executeAction(
-            () => supabase.rpc('bulk_update_forum_status', {
+            () => supabase.schema('api').rpc('bulk_update_forum_status', {
                 p_forum_ids: [id],
                 p_forum_created_ats: [threads.find(t => t.id === id)?.createdAt],
                 p_status: newStatus
@@ -395,7 +395,7 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
             variant: 'success',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>,
             onClick: () => executeAction(
-                () => supabase.rpc('moderate_report', { 
+                () => supabase.schema('api').rpc('moderate_report', { 
                     p_report_id: report.id, 
                     p_report_created_at: report.createdAt,
                     p_status: 'resolved' 
@@ -412,7 +412,7 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
             variant: 'danger',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
             onClick: () => executeAction(
-                () => supabase.rpc('moderate_report', { 
+                () => supabase.schema('api').rpc('moderate_report', { 
                     p_report_id: report.id, 
                     p_report_created_at: report.createdAt,
                     p_status: 'dismissed' 

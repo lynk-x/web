@@ -128,7 +128,7 @@ export default function CheckInLogsPage() {
         if (!manualCode.trim()) return;
         setIsVerifying(true);
         try {
-            const { data, error } = await supabase.rpc('verify_and_use_ticket', {
+            const { data, error } = await supabase.schema('api').rpc('verify_and_use_ticket', {
                 p_ticket_code: manualCode.trim(),
                 p_event_id: eventId
             });
@@ -156,7 +156,7 @@ export default function CheckInLogsPage() {
         setIsVerifying(true);
         showToast(`Checking in ${selectedIds.size} attendees...`, 'info');
         try {
-            const { data, error } = await supabase.rpc('bulk_check_in_tickets', {
+            const { data, error } = await supabase.schema('api').rpc('bulk_check_in_tickets', {
                 p_ticket_ids: Array.from(selectedIds)
             });
             if (error) throw error;

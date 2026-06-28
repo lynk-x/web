@@ -39,7 +39,7 @@ export default function AdminModerationPage() {
     const [selectedEntry, setSelectedEntry] = useState<ModerationEntry | null>(null);
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.rpc('admin_stat_summary');
+        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
         if (error) {
             return;
         }
@@ -111,7 +111,7 @@ export default function AdminModerationPage() {
     const handleApprove = async (entry: ModerationEntry) => {
         showToast(`Approving ${entry.item_type}...`, 'info');
         try {
-            const { error } = await supabase.rpc('moderate_item', {
+            const { error } = await supabase.schema('api').rpc('moderate_item', {
                 p_moderation_id: entry.id,
                 p_status: 'approved',
                 p_reason: 'Approved via Admin Moderation Dashboard.'
@@ -137,7 +137,7 @@ export default function AdminModerationPage() {
 
         showToast(`Rejecting ${selectedEntry.item_type}...`, 'info');
         try {
-            const { error } = await supabase.rpc('moderate_item', {
+            const { error } = await supabase.schema('api').rpc('moderate_item', {
                 p_moderation_id: selectedEntry.id,
                 p_status: 'rejected',
                 p_reason: reason
@@ -176,7 +176,7 @@ export default function AdminModerationPage() {
         showToast(`Approving ${selectedIds.size} items...`, 'info');
         try {
             const ids = Array.from(selectedIds);
-            const { error } = await supabase.rpc('bulk_moderate_items', {
+            const { error } = await supabase.schema('api').rpc('bulk_moderate_items', {
                 p_moderation_ids: ids,
                 p_status: 'approved',
                 p_reason: 'Bulk approved via Admin Moderation Dashboard.'
@@ -204,7 +204,7 @@ export default function AdminModerationPage() {
         const ids = Array.from(selectedIds);
         showToast(`Rejecting ${ids.length} items...`, 'info');
         try {
-            const { error } = await supabase.rpc('bulk_moderate_items', {
+            const { error } = await supabase.schema('api').rpc('bulk_moderate_items', {
                 p_moderation_ids: ids,
                 p_status: 'rejected',
                 p_reason: reason

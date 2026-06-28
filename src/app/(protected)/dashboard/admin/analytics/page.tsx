@@ -78,7 +78,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
         ['admin-analytics-demographics', countryFilter],
         async (supabase) => {
             try {
-                const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'demographics' });
+                const { data: res, error } = await supabase.schema('api').rpc('get_advanced_analytics', { p_category: 'demographics' });
                 if (error) throw error;
                 return (res as DemographicData | null) || { age_gender: [], geo: [] };
             } catch (err) {
@@ -138,7 +138,7 @@ function RevenueTab({ countryFilter }: { countryFilter: string }) {
         ['admin-analytics-revenue', countryFilter],
         async (supabase) => {
             try {
-                const { data: res, error } = await supabase.rpc('get_advanced_analytics', { p_category: 'revenue' });
+                const { data: res, error } = await supabase.schema('api').rpc('get_advanced_analytics', { p_category: 'revenue' });
                 if (error) throw error;
                 return (res as RevenueData | null) || { wallet_gross: 0, streams: [], ledger: [] };
             } catch (err) {

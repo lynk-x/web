@@ -33,7 +33,7 @@ export default function CampaignsPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_advertiser_campaigns', {
+            const { data, error } = await supabase.schema('api').rpc('get_advertiser_campaigns', {
                 p_account_id: activeAccount.id,
                 p_params: {
                     search: searchTerm || null,
@@ -123,7 +123,7 @@ export default function CampaignsPage() {
                 .filter(c => selectedIds.has(c.id))
                 .map(c => ({ id: c.id, created_at: c.created_at }));
 
-            const { error } = await supabase.rpc('bulk_toggle_campaigns', {
+            const { error } = await supabase.schema('api').rpc('bulk_toggle_campaigns', {
                 p_account_id: activeAccount.id,
                 p_campaigns: selectedCampaigns,
                 p_status: 'paused'
@@ -146,7 +146,7 @@ export default function CampaignsPage() {
                 .filter(c => selectedIds.has(c.id))
                 .map(c => ({ id: c.id, created_at: c.created_at }));
 
-            const { error } = await supabase.rpc('bulk_delete_campaigns', {
+            const { error } = await supabase.schema('api').rpc('bulk_delete_campaigns', {
                 p_account_id: activeAccount.id,
                 p_campaigns: selectedCampaigns
             });
@@ -163,7 +163,7 @@ export default function CampaignsPage() {
     const handleDuplicate = async (id: string) => {
         showToast('Cloning campaign...', 'info');
         try {
-            const { error } = await supabase.rpc('duplicate_ad_campaign', {
+            const { error } = await supabase.schema('api').rpc('duplicate_ad_campaign', {
                 p_campaign_id: id
             });
             if (error) throw error;
@@ -178,7 +178,7 @@ export default function CampaignsPage() {
         if (selectedIds.size === 0) return;
         showToast(`Cloning ${selectedIds.size} campaigns...`, 'info');
         try {
-            const { data, error } = await supabase.rpc('bulk_duplicate_ad_campaigns', {
+            const { data, error } = await supabase.schema('api').rpc('bulk_duplicate_ad_campaigns', {
                 p_campaign_ids: Array.from(selectedIds)
             });
             if (error) throw error;
@@ -205,7 +205,7 @@ export default function CampaignsPage() {
         const label = newStatus === 'paused' ? 'Pausing' : 'Activating';
         showToast(`${label} campaign...`, 'info');
         try {
-            const { error } = await supabase.rpc('bulk_toggle_campaigns', {
+            const { error } = await supabase.schema('api').rpc('bulk_toggle_campaigns', {
                 p_account_id: activeAccount.id,
                 p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }],
                 p_status: newStatus
@@ -226,7 +226,7 @@ export default function CampaignsPage() {
 
         showToast(`Archiving "${title}"...`, 'info');
         try {
-            const { error } = await supabase.rpc('bulk_delete_campaigns', {
+            const { error } = await supabase.schema('api').rpc('bulk_delete_campaigns', {
                 p_account_id: activeAccount.id,
                 p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }]
             });

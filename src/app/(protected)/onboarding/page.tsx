@@ -109,7 +109,7 @@ function OnboardingFlow() {
         setLoading(true);
         setError(null);
         try {
-            const { data, error: fetchError } = await supabase.rpc('get_kyc_requirements', {
+            const { data, error: fetchError } = await supabase.schema('api').rpc('get_kyc_requirements', {
                 p_country_code: country,
                 p_account_type: accountType
             });
@@ -143,7 +143,7 @@ function OnboardingFlow() {
         setError(null);
 
         try {
-            const { data: accountId, error: rpcError } = await supabase.rpc('create_organization_account', {
+            const { data: accountId, error: rpcError } = await supabase.schema('api').rpc('create_organization_account', {
                 p_org_name: cleanName,
                 p_account_type: accountType,
                 p_country_code: country || null,
@@ -163,7 +163,7 @@ function OnboardingFlow() {
                     if (updateError) console.error('Branding metadata update failed (non-fatal):', updateError);
                 }
                 if (cleanDesc) {
-                    const { error: rpcUpdateError } = await supabase.rpc('update_account_settings', {
+                    const { error: rpcUpdateError } = await supabase.schema('api').rpc('update_account_settings', {
                         p_account_id: accountId,
                         p_display_name: null,
                         p_info: { description: cleanDesc }
@@ -195,7 +195,7 @@ function OnboardingFlow() {
                     }
 
                     if (uploadedPaths.length > 0) {
-                        await supabase.rpc('submit_identity_verification', {
+                        await supabase.schema('api').rpc('submit_identity_verification', {
                             p_account_id: accountId,
                             p_document_type: (req.subtype || req.id) as any, // Cast to kyc_document_type
                             p_uploaded_docs: uploadedPaths,
@@ -206,7 +206,7 @@ function OnboardingFlow() {
                     const textValue = kycTextData[req.id];
                     if (!textValue || textValue.trim() === '') continue;
 
-                    await supabase.rpc('submit_identity_verification', {
+                    await supabase.schema('api').rpc('submit_identity_verification', {
                         p_account_id: accountId,
                         p_document_type: (req.subtype || req.id) as any,
                         p_uploaded_docs: [],

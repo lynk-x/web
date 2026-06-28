@@ -50,7 +50,7 @@ export default function DashboardOverview() {
             try {
                 // Fetch consolidated stats and spotlights in parallel
                 const [statsRes, spotlightsRes] = await Promise.all([
-                    supabase.rpc('get_organizer_dashboard_stats', {
+                    supabase.schema('api').rpc('get_organizer_dashboard_stats', {
                         p_account_id: activeAccount.id
                     }),
                     supabase

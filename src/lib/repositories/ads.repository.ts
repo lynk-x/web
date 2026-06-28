@@ -194,7 +194,7 @@ export function createAdsRepository(client: DbClient) {
          * The RPC accepts a country-code array and returns a row per country.
          */
         async getBidSuggestions(countryCodes: string[]): Promise<RepoResult<BidSuggestion[]>> {
-            const { data, error } = await client.rpc('get_market_bid_suggestion', {
+            const { data, error } = await client.schema('api').rpc('get_market_bid_suggestion', {
                 p_country_codes: countryCodes,
             });
 
@@ -212,7 +212,7 @@ export function createAdsRepository(client: DbClient) {
             userId?: string;
             metadata?: Record<string, unknown>;
         }): Promise<RepoResult<null>> {
-            const { error } = await client.rpc('log_ad_interaction', {
+            const { error } = await client.schema('api').rpc('log_ad_interaction', {
                 p_payload: {
                     campaign_id: params.campaignId,
                     interaction_type: params.interactionType,

@@ -140,7 +140,7 @@ export default function AdminEventsPage() {
     }, [activeAccount, payoutCountryFilter]);
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.rpc('admin_stat_summary');
+        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
         if (!error && data) {
             setSummary(data);
         }
@@ -149,7 +149,7 @@ export default function AdminEventsPage() {
     const fetchPayouts = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_payouts', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_payouts', {
                 p_search: debouncedSearch,
                 p_start_date: startDate ? new Date(startDate).toISOString() : null,
                 p_end_date: endDate ? new Date(endDate).toISOString() : null,
@@ -191,7 +191,7 @@ export default function AdminEventsPage() {
     const fetchResales = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_ticket_resales', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_ticket_resales', {
                 p_search: debouncedSearch,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
@@ -212,7 +212,7 @@ export default function AdminEventsPage() {
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_events', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_events', {
                 p_search: debouncedSearch,
                 p_status: statusFilter,
                 p_forum_status: forumStatusFilter,
@@ -400,7 +400,7 @@ export default function AdminEventsPage() {
         });
 
         await executeAction(
-            () => supabase.rpc('bulk_moderate_events', {
+            () => supabase.schema('api').rpc('bulk_moderate_events', {
                 p_event_ids: ids,
                 p_created_ats: createdAts,
                 p_status: newStatus,
@@ -426,7 +426,7 @@ export default function AdminEventsPage() {
                 const ids = Array.from(selectedEventIds);
                 const results = await Promise.all(ids.map(id => {
                     const ev = events.find(e => e.id === id);
-                    return supabase.rpc('admin_manage_event', {
+                    return supabase.schema('api').rpc('admin_manage_event', {
                         p_action: 'delete',
                         p_id: id,
                         p_created_at: ev?.createdAt || null
@@ -459,7 +459,7 @@ export default function AdminEventsPage() {
                 return ev?.createdAt || new Date().toISOString();
             });
 
-            const { error } = await supabase.rpc('bulk_update_forum_status', {
+            const { error } = await supabase.schema('api').rpc('bulk_update_forum_status', {
                 p_forum_ids: ids,
                 p_forum_created_ats: createdAts,
                 p_status: newStatus
@@ -492,7 +492,7 @@ export default function AdminEventsPage() {
         }
 
         await executeAction(
-            () => supabase.rpc('bulk_moderate_events', {
+            () => supabase.schema('api').rpc('bulk_moderate_events', {
                 p_event_ids: [event.id],
                 p_created_ats: [event.createdAt],
                 p_status: newStatus,
@@ -513,7 +513,7 @@ export default function AdminEventsPage() {
     const handleSingleDelete = async (event: Event) => {
         if (!await confirm(`Delete "${event.title}"?`, { title: 'Delete Event', confirmLabel: 'Delete' })) return;
         await executeAction(
-            () => supabase.rpc('admin_manage_event', {
+            () => supabase.schema('api').rpc('admin_manage_event', {
                 p_action: 'delete',
                 p_id: event.id,
                 p_created_at: event.createdAt
@@ -752,7 +752,7 @@ export default function AdminEventsPage() {
                             }
                         }}
                         onStatusChange={async (id, status) => {
-                            const { error } = await supabase.rpc('admin_manage_forum', {
+                            const { error } = await supabase.schema('api').rpc('admin_manage_forum', {
                                 p_forum_id: id,
                                 p_action: 'update_status',
                                 p_payload: { status }

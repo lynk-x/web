@@ -41,7 +41,7 @@ export default function ProfileSetupPage() {
             if (trimmedName.length >= 3 && trimmedName !== profile?.user_name) {
                 setIsCheckingUsername(true);
                 try {
-                    const { data, error: rpcError } = await supabase.rpc('is_username_available', {
+                    const { data, error: rpcError } = await supabase.schema('api').rpc('is_username_available', {
                         username_to_check: trimmedName
                     });
                     if (rpcError) throw rpcError;

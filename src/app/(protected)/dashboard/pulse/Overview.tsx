@@ -92,7 +92,7 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
         const fetchOverview = async () => {
             setIsLoadingData(true);
             const supabase = createClient();
-            const { data } = await supabase.rpc('get_pulse_dashboard_overview', {
+            const { data } = await supabase.schema('api').rpc('get_pulse_dashboard_overview', {
                 p_account_id: activeAccount.id
             });
             setOverviewData(data);

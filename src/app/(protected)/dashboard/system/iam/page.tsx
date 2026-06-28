@@ -137,7 +137,7 @@ function IAMContent() {
     const fetchAccounts = useCallback(async () => {
         setIsLoadingAccounts(true);
         try {
-            const { data, error } = await supabaseApi.rpc('get_admin_accounts', {
+            const { data, error } = await supabaseApi.schema('api').rpc('get_admin_accounts', {
                 p_search: debouncedSearch.trim(),
                 p_type: accountType,
                 p_status: 'all',
@@ -241,7 +241,7 @@ function IAMContent() {
         }));
 
         try {
-            const { error } = await supabaseApi.rpc('update_role_permissions', {
+            const { error } = await supabaseApi.schema('api').rpc('update_role_permissions', {
                 p_role_slug: roleSlug,
                 p_permission_slugs: Array.from(currentPerms)
             });
@@ -259,7 +259,7 @@ function IAMContent() {
         if (!editingRole) return;
         setIsLoading(true);
         try {
-            const { error } = await supabaseApi.rpc('update_role_details', {
+            const { error } = await supabaseApi.schema('api').rpc('update_role_details', {
                 p_role_id: editingRole.id,
                 p_display_name: roleForm.display_name,
                 p_description: roleForm.description
@@ -282,7 +282,7 @@ function IAMContent() {
         }
         setIsLoading(true);
         try {
-            const { error } = await supabaseApi.rpc('delete_custom_role', {
+            const { error } = await supabaseApi.schema('api').rpc('delete_custom_role', {
                 p_role_id: role.id
             });
             if (error) throw error;
@@ -307,7 +307,7 @@ function IAMContent() {
                 currentPerms.delete(selectedPerm.slug);
             }
 
-            const { error } = await supabaseApi.rpc('update_role_permissions', {
+            const { error } = await supabaseApi.schema('api').rpc('update_role_permissions', {
                 p_role_slug: targetRoleSlug,
                 p_permission_slugs: Array.from(currentPerms)
             });
@@ -332,7 +332,7 @@ function IAMContent() {
         }
         setIsLoading(true);
         try {
-            const { error } = await supabaseApi.rpc('bulk_assign_permissions_to_all_roles', {
+            const { error } = await supabaseApi.schema('api').rpc('bulk_assign_permissions_to_all_roles', {
                 p_permission_slugs: Array.from(selectedPermissions)
             });
             if (error) throw error;
@@ -355,7 +355,7 @@ function IAMContent() {
         }
         setIsLoading(true);
         try {
-            const { error } = await supabaseApi.rpc('bulk_revoke_permissions_from_all_roles', {
+            const { error } = await supabaseApi.schema('api').rpc('bulk_revoke_permissions_from_all_roles', {
                 p_permission_slugs: Array.from(selectedPermissions)
             });
             if (error) throw error;

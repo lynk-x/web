@@ -63,7 +63,7 @@ export async function GET() {
   // ── 3. pg_cron last-run timestamps ───────────────────────────────────────
   try {
     const { data, error } = await supabase
-      .rpc('get_cron_health', { p_job_names: MONITORED_CRONS });
+      .schema('api').rpc('get_cron_health', { p_job_names: MONITORED_CRONS });
 
     if (error) throw error;
 
@@ -84,7 +84,7 @@ export async function GET() {
   for (const p of DEFAULT_PARTITIONS) {
     try {
       const { data, error } = await supabase
-        .rpc('get_default_partition_count', { p_schema: p.schema, p_table: p.table });
+        .schema('api').rpc('get_default_partition_count', { p_schema: p.schema, p_table: p.table });
       if (error) throw error;
       const rowCount = Number(data ?? 0);
       if (rowCount > 0) partitionIssues.push(`${p.schema}.${p.table}: ${rowCount} rows`);

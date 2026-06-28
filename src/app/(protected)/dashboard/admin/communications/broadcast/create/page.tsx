@@ -41,7 +41,7 @@ export default function CreateBroadcastPage() {
         try {
             const providedTokens = fcmTokens.trim().split('\n').map(t => t.trim()).filter(Boolean);
             
-            const { data, error } = await supabase.rpc('admin_send_broadcast', {
+            const { data, error } = await supabase.schema('api').rpc('admin_send_broadcast', {
                 p_subject: subject,
                 p_message: message,
                 p_type: notificationType,

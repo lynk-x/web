@@ -31,7 +31,7 @@ export default function ReviewQueueTab({
         setIsLoading(true);
         try {
             const offset = (currentPage - 1) * itemsPerPage;
-            const { data, error } = await supabase.rpc('get_admin_support_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_support_data', {
                 p_tab: 'queue',
                 p_params: {
                     search: searchQuery,
@@ -66,7 +66,7 @@ export default function ReviewQueueTab({
 
     const handleModerate = async (entry: ModerationEntry, status: string) => {
         try {
-            const { error } = await supabase.rpc('moderate_item', {
+            const { error } = await supabase.schema('api').rpc('moderate_item', {
                 p_moderation_id: entry.id,
                 p_status: status,
                 p_reason: 'Reviewed via administrative dashboard'

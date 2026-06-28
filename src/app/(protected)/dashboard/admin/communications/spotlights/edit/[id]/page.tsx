@@ -79,7 +79,7 @@ export default function EditSpotlightPage() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
                 p_tab: 'spotlights',
                 p_id: id,
                 p_data: {

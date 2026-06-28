@@ -35,7 +35,7 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
             if (accountError) throw accountError;
 
             // 2. Shred the entire user data (GDPR Compliance)
-            const { error: shredError } = await supabase.rpc('shred_user_data');
+            const { error: shredError } = await supabase.schema('api').rpc('shred_user_data');
             if (shredError) throw shredError;
 
             showToast('Account successfully deactivated and data shredded.', 'success');

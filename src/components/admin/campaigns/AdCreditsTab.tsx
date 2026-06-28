@@ -201,7 +201,7 @@ export default function AdCreditsTab({
 
         setIsBulkLoading(true);
         try {
-            const { error } = await supabase.rpc('bulk_manage_ad_credits', {
+            const { error } = await supabase.schema('api').rpc('bulk_manage_ad_credits', {
                 p_credit_ids: Array.from(selectedIds),
                 p_action: action,
                 p_params: params

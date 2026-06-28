@@ -127,7 +127,7 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
             };
 
             let error;
-            const res = await supabase.rpc('admin_upsert_comms_item', {
+            const res = await supabase.schema('api').rpc('admin_upsert_comms_item', {
                 p_tab: 'content',
                 p_id: isEditing ? initialData?.id : null,
                 p_data: payload

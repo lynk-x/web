@@ -170,7 +170,7 @@ function FinanceContent() {
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('admin_stat_summary');
+            const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
             if (error) throw error;
     
             setGlobalStats({
@@ -199,7 +199,7 @@ function FinanceContent() {
             if (activeTab === 'transactions') {
                 let p_category = categoryFilter;
 
-                const { data, error } = await supabase.rpc('get_admin_transactions', {
+                const { data, error } = await supabase.schema('api').rpc('get_admin_transactions', {
                     p_search: debouncedSearch,
                     p_category: p_category,
                     p_start_date: startDate ? new Date(startDate).toISOString() : null,
@@ -241,7 +241,7 @@ function FinanceContent() {
                     createdAt: tx.created_at
                 })));
             } else if (activeTab === 'subscriptions') {
-                const { data, error } = await supabase.rpc('get_admin_subscriptions', {
+                const { data, error } = await supabase.schema('api').rpc('get_admin_subscriptions', {
                     p_search: debouncedSearch,
                     p_status: categoryFilter, // Reuse categoryFilter for status
                     p_country_code: resolvedCountryFilter,
@@ -260,7 +260,7 @@ function FinanceContent() {
                 })));
                 setTotalCount(data?.[0]?.total_count || 0);
             } else if (activeTab === 'wallets') {
-                const { data, error } = await supabase.rpc('get_admin_wallets', {
+                const { data, error } = await supabase.schema('api').rpc('get_admin_wallets', {
                     p_search: debouncedSearch,
                     p_status: categoryFilter,
                     p_country_code: resolvedCountryFilter,
@@ -413,7 +413,7 @@ function FinanceContent() {
         
         showToast('Cancelling subscription...', 'info');
         try {
-            const { error } = await supabase.rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true });
+            const { error } = await supabase.schema('api').rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true });
             if (error) throw error;
             showToast('Subscription cancelled.', 'success');
             fetchData();
@@ -425,7 +425,7 @@ function FinanceContent() {
     const handleResendInvoice = async (id: string) => {
         showToast('Resending latest invoice...', 'info');
         try {
-            const { error } = await supabase.rpc('admin_resend_invoice', { p_subscription_id: id });
+            const { error } = await supabase.schema('api').rpc('admin_resend_invoice', { p_subscription_id: id });
             if (error) throw error;
             showToast('Success: Latest invoice resent to the customer.', 'success');
         } catch (err: unknown) {
@@ -448,7 +448,7 @@ function FinanceContent() {
 
         showToast(`Migrating subscription to ${newPlanId}...`, 'info');
         try {
-            const { error } = await supabase.rpc('admin_change_subscription_plan', { 
+            const { error } = await supabase.schema('api').rpc('admin_change_subscription_plan', { 
                 p_subscription_id: selectedSub.id, 
                 p_new_plan_id: newPlanId 
             });
@@ -497,7 +497,7 @@ function FinanceContent() {
         setShowAdjustWalletModal(false);
         showToast('Adjusting wallet balance…', 'info');
         try {
-            const { error } = await supabase.rpc('admin_adjust_wallet_balance', {
+            const { error } = await supabase.schema('api').rpc('admin_adjust_wallet_balance', {
                 p_account_id: accountId,
                 p_currency: currency,
                 p_amount: amount,
@@ -594,7 +594,7 @@ function FinanceContent() {
                     const ids = Array.from(selectedSubIds);
                     const results = await Promise.all(
                         ids.map((id: string) =>
-                            supabase.rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true })
+                            supabase.schema('api').rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true })
                         )
                     );
                     const failures = results.filter(r => r.error);

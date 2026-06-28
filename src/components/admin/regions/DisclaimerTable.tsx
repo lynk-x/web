@@ -48,7 +48,7 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
     const fetchDisclaimers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_registry_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', {
                 p_tab: 'disclaimers'
             });
 
@@ -67,7 +67,7 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
 
     const handleToggle = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
                 p_tab: 'disclaimers',
                 p_action: 'toggle',
                 p_id: id,
@@ -136,7 +136,7 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this disclaimer?')) return;
         try {
-            const { error } = await supabase.rpc('admin_manage_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
                 p_tab: 'disclaimers',
                 p_action: 'delete',
                 p_id: id
@@ -170,7 +170,7 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
             onClick: async () => {
                 const ids = Array.from(selectedIds);
                 const results = await Promise.all(ids.map(id =>
-                    supabase.rpc('admin_manage_registry_item', {
+                    supabase.schema('api').rpc('admin_manage_registry_item', {
                         p_tab: 'disclaimers',
                         p_action: 'toggle',
                         p_id: id,
@@ -193,7 +193,7 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
             onClick: async () => {
                 const ids = Array.from(selectedIds);
                 const results = await Promise.all(ids.map(id =>
-                    supabase.rpc('admin_manage_registry_item', {
+                    supabase.schema('api').rpc('admin_manage_registry_item', {
                         p_tab: 'disclaimers',
                         p_action: 'toggle',
                         p_id: id,

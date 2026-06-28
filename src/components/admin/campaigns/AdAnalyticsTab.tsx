@@ -39,7 +39,7 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_advertiser_analytics', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_advertiser_analytics', {
                 p_search: search,
                 p_country_code: countryCode,
                 p_offset: (currentPage - 1) * itemsPerPage,

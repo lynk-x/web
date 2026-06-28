@@ -45,7 +45,7 @@ export default function AdsDashboard() {
             if (!activeAccount) return;
             setIsLoading(true);
             try {
-                const { data, error } = await supabase.rpc('get_ads_dashboard_stats', { 
+                const { data, error } = await supabase.schema('api').rpc('get_ads_dashboard_stats', { 
                     p_account_id: activeAccount.id 
                 });
 

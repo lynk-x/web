@@ -168,7 +168,7 @@ export default function EditEventPage() {
             const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 
             // 3. Upsert Event & Tiers via Atomic RPC
-            const { error: rpcError } = await supabase.rpc('upsert_organizer_event', {
+            const { error: rpcError } = await supabase.schema('api').rpc('upsert_organizer_event', {
                 p_account_id: activeAccount.id,
                 p_event_id: eventId,
                 p_created_at: eventCreatedAt,
@@ -244,7 +244,7 @@ export default function EditEventPage() {
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase
-                    .rpc('resolve_tags', { p_tags: tagsToUpsert });
+                    .schema('api').rpc('resolve_tags', { p_tags: tagsToUpsert });
 
                 if (tagUpsertError) throw tagUpsertError;
 

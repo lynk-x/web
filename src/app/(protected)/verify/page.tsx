@@ -40,7 +40,7 @@ function VerifyFlow() {
             const fetchRequirements = async () => {
                 setIsFetchingReqs(true);
                 try {
-                    const { data, error: fetchError } = await supabase.rpc('get_kyc_requirements', {
+                    const { data, error: fetchError } = await supabase.schema('api').rpc('get_kyc_requirements', {
                         p_country_code: activeAccount.country_code || 'KE', // Fallback to KE if null
                         p_account_type: activeAccount.type
                     });
@@ -113,7 +113,7 @@ function VerifyFlow() {
                     }
 
                     if (uploadedPaths.length > 0) {
-                        await supabase.rpc('submit_identity_verification', {
+                        await supabase.schema('api').rpc('submit_identity_verification', {
                             p_account_id: accountId,
                             p_document_type: (req.subtype || req.id) as any, // Cast to kyc_document_type
                             p_uploaded_docs: uploadedPaths,
@@ -124,7 +124,7 @@ function VerifyFlow() {
                     const textValue = kycTextData[req.id];
                     if (!textValue || textValue.trim() === '') continue;
 
-                    await supabase.rpc('submit_identity_verification', {
+                    await supabase.schema('api').rpc('submit_identity_verification', {
                         p_account_id: accountId,
                         p_document_type: (req.subtype || req.id) as any,
                         p_uploaded_docs: [],

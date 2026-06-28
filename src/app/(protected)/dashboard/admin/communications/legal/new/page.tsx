@@ -46,7 +46,7 @@ export default function NewLegalVersionPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
                 p_tab: 'legal',
                 p_data: {
                     slug: type,

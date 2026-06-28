@@ -21,7 +21,7 @@ export default function AudienceInsights({ accountId }: { accountId: string }) {
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
-        const { data: insights, error } = await supabase.rpc('get_pulse_audience_insights', {
+        const { data: insights, error } = await supabase.schema('api').rpc('get_pulse_audience_insights', {
             p_account_id: accountId
         });
         if (error) console.error("Error fetching audience insights:", error);

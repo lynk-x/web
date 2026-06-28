@@ -84,7 +84,7 @@ export default function AcceptInviteClient({ token }: { token: string }) {
         setIsAccepting(true);
         setError(null);
         try {
-            const { error } = await supabase.rpc("accept_account_invitation", {
+            const { error } = await supabase.schema('api').rpc("accept_account_invitation", {
                 p_token: token,
             });
 

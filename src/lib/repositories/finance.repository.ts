@@ -178,7 +178,7 @@ export function createFinanceRepository(client: DbClient) {
             payoutMethodId: string;
             currency: string;
         }): Promise<RepoResult<RequestPayoutResult>> {
-            const { data, error } = await client.rpc('request_account_payout', {
+            const { data, error } = await client.schema('api').rpc('request_account_payout', {
                 p_account_id: params.accountId,
                 p_amount: params.amount,
                 p_payout_method_id: params.payoutMethodId,
@@ -214,7 +214,7 @@ export function createFinanceRepository(client: DbClient) {
             providerName: string;
             payerIdentity: string;
         }): Promise<RepoResult<{ top_up_id: string; provider_ref: string | null }>> {
-            const { data, error } = await client.rpc('initiate_wallet_topup', {
+            const { data, error } = await client.schema('api').rpc('initiate_wallet_topup', {
                 p_account_id: params.accountId,
                 p_amount: params.amount,
                 p_currency: params.currency,
@@ -322,7 +322,7 @@ export function createFinanceRepository(client: DbClient) {
             refundId: string,
             status: 'approved' | 'rejected'
         ): Promise<RepoResult<Record<string, unknown>>> {
-            const { data, error } = await client.rpc('approve_organizer_refund_request', {
+            const { data, error } = await client.schema('api').rpc('approve_organizer_refund_request', {
                 p_refund_id: refundId,
                 p_status: status,
             });
@@ -334,7 +334,7 @@ export function createFinanceRepository(client: DbClient) {
         async retryPayout(
             payoutId: string
         ): Promise<RepoResult<Record<string, unknown>>> {
-            const { data, error } = await client.rpc('retry_payout', {
+            const { data, error } = await client.schema('api').rpc('retry_payout', {
                 p_payout_id: payoutId,
             });
             if (error) return { data: null, error: toError(error) };

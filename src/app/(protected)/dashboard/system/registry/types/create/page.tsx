@@ -32,7 +32,7 @@ export default function CreateTagTypePage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.rpc('admin_upsert_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
                 p_tab: 'tag_types',
                 p_data: {
                     id: formData.id.toLowerCase().replace(/\s+/g, '_'),

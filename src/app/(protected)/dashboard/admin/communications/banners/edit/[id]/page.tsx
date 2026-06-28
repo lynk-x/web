@@ -76,7 +76,7 @@ export default function EditBannerPage() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.rpc('admin_upsert_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
                 p_tab: 'banners',
                 p_id: id,
                 p_data: {

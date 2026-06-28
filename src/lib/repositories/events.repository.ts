@@ -149,7 +149,7 @@ export function createEventsRepository(client: DbClient) {
          * RPC returns a TABLE (id, title) — Supabase represents this as an array.
          */
         async findByPin(pin: string): Promise<RepoResult<{ id: string; title: string }>> {
-            const { data, error } = await client.rpc('get_event_by_pin', { p_pin: pin });
+            const { data, error } = await client.schema('api').rpc('get_event_by_pin', { p_pin: pin });
 
             if (error) return { data: null, error: toError(error) };
             const row = Array.isArray(data) ? data[0] : data;
@@ -245,7 +245,7 @@ export function createEventsRepository(client: DbClient) {
 
         /** Fetch analytics for a single event. Wraps `get_event_analytics` RPC. */
         async getAnalytics(eventId: string): Promise<RepoResult<EventAnalytics>> {
-            const { data, error } = await client.rpc('get_event_analytics', {
+            const { data, error } = await client.schema('api').rpc('get_event_analytics', {
                 p_event_id: eventId,
             });
 

@@ -58,7 +58,7 @@ export default function ConfigTab({
     const fetchConfigs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_settings_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
                 p_tab: 'config'
             });
 
@@ -77,7 +77,7 @@ export default function ConfigTab({
 
     const handleToggleConfig = async (key: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_settings_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
                 p_tab: 'config',
                 p_action: 'toggle',
                 p_id: key,
@@ -128,7 +128,7 @@ export default function ConfigTab({
 
         setIsSaving(true);
         try {
-            const { error } = await supabase.rpc('admin_manage_settings_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
                 p_tab: 'config',
                 p_action: 'upsert',
                 p_id: formValues.key,
@@ -190,7 +190,7 @@ export default function ConfigTab({
             onClick: async () => {
                 const keys = Array.from(selectedConfigKeys);
                 const results = await Promise.all(keys.map(key => 
-                    supabase.rpc('admin_manage_settings_item', {
+                    supabase.schema('api').rpc('admin_manage_settings_item', {
                         p_tab: 'config',
                         p_action: 'toggle',
                         p_id: key,
@@ -214,7 +214,7 @@ export default function ConfigTab({
             onClick: async () => {
                 const keys = Array.from(selectedConfigKeys);
                 const results = await Promise.all(keys.map(key => 
-                    supabase.rpc('admin_manage_settings_item', {
+                    supabase.schema('api').rpc('admin_manage_settings_item', {
                         p_tab: 'config',
                         p_action: 'toggle',
                         p_id: key,

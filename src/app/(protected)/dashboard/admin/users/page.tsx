@@ -57,14 +57,14 @@ function AccountsContent() {
     const activeCountry = activeAccount?.country_code || 'KE';
 
     const fetchSummary = useCallback(async () => {
-        const { data, error } = await supabase.rpc('admin_stat_summary');
+        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
         if (!error && data) setSummary(data);
     }, [supabase]);
 
     const fetchAccounts = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_accounts', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_accounts', {
                 p_search: debouncedSearch.trim(),
                 p_type: typeFilter,
                 p_status: statusFilter,
@@ -107,7 +107,7 @@ function AccountsContent() {
 
         showToast(`Updating ${selectedIds.size} accounts...`, 'info');
         try {
-            const { error } = await supabase.rpc('bulk_update_account_status', {
+            const { error } = await supabase.schema('api').rpc('bulk_update_account_status', {
                 p_account_ids: Array.from(selectedIds),
                 p_status: newStatus,
                 p_reason: `Bulk ${actionLabel} via Admin Identity Dashboard.`

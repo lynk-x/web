@@ -112,7 +112,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             const isFirst = methods.length === 0;
 
             // Use RPC instead of direct insert to handle provider name to ID mapping
-            const { data: methodId, error: rpcError } = await supabase.rpc('add_payout_method', {
+            const { data: methodId, error: rpcError } = await supabase.schema('api').rpc('add_payout_method', {
                 p_provider_name: newMethod.provider,
                 p_identity: newMethod.identity,
                 p_label: newMethod.provider === 'mpesa' ? `M-Pesa (${newMethod.identity.slice(-4)})` : undefined

@@ -57,8 +57,8 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
         setIsLoading(true);
         try {
             const [typesRes, tagsRes] = await Promise.all([
-                supabase.rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
-                supabase.rpc('get_admin_registry_data', { p_tab: 'tags' })
+                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
+                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' })
             ]);
 
             if (typesRes.error) throw typesRes.error;
@@ -79,7 +79,7 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
 
     const handleToggleTag = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
                 p_tab: 'tags',
                 p_action: 'toggle',
                 p_id: id,
@@ -96,7 +96,7 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
 
     const handleToggleType = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_registry_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
                 p_tab: 'tag_types',
                 p_action: 'toggle',
                 p_id: id,

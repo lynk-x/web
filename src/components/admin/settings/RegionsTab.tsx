@@ -55,7 +55,7 @@ export default function RegionsTab({
     const fetchCountries = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_settings_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
                 p_tab: 'regions'
             });
             if (error) throw error;
@@ -87,7 +87,7 @@ export default function RegionsTab({
 
     const handleToggleCountry = async (code: string, current: boolean) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_settings_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
                 p_tab: 'regions',
                 p_action: 'toggle',
                 p_id: code,
@@ -116,7 +116,7 @@ export default function RegionsTab({
                 }
             };
 
-            const { error } = await supabase.rpc('admin_manage_settings_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
                 p_tab: 'regions',
                 p_action: 'update',
                 p_id: isEditing.code,

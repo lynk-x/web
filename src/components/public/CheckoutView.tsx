@@ -111,7 +111,7 @@ const CheckoutView: React.FC = () => {
                     }
                 }
                 // 3. Fetch available payment providers based on event currency
-                const { data: providers } = await supabase.rpc('get_available_payment_providers', {
+                const { data: providers } = await supabase.schema('api').rpc('get_available_payment_providers', {
                     p_currency: currency
                 });
                 if (providers && providers.length > 0) {
@@ -327,7 +327,7 @@ const CheckoutView: React.FC = () => {
             // failure on item 2 doesn't leave item 1 locked without payment.
             const reservations: Array<{ tierId: string; reservationId: string }> = [];
             for (const item of items) {
-                const { data: resId, error: reserveError } = await supabase.rpc('lock_tickets_for_checkout', {
+                const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
                     p_tier_id: item.tierId,
                     p_quantity: item.quantity,
                 });
@@ -342,7 +342,7 @@ const CheckoutView: React.FC = () => {
 
             // Step 2: Handle zero-cost checkout vs STK Push
             if (total === 0) {
-                const { data: result, error: purchaseError } = await supabase.rpc('bulk_purchase_tickets', {
+                const { data: result, error: purchaseError } = await supabase.schema('api').rpc('bulk_purchase_tickets', {
                     p_items: items.map(i => ({
                         event_id: i.eventId,
                         tier_id: i.tierId,

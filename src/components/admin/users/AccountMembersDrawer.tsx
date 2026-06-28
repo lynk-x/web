@@ -38,7 +38,7 @@ export default function AccountMembersDrawer({ account, onClose }: AccountMember
         if (!account) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_account_members', {
+            const { data, error } = await supabase.schema('api').rpc('get_account_members', {
                 p_account_id: account.id
             });
 

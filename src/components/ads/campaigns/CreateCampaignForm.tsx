@@ -213,7 +213,7 @@ export default function CreateCampaignForm({
         }
 
         const fetchMarketData = async () => {
-            const { data, error } = await supabase.rpc('get_market_bid_suggestion', {
+            const { data, error } = await supabase.schema('api').rpc('get_market_bid_suggestion', {
                 p_country_codes: formData.target_countries
             });
             if (!error && data) {
@@ -666,7 +666,7 @@ export default function CreateCampaignForm({
             }));
 
             // 2. Submit to RPC for atomic persistence
-            const { data, error } = await supabase.rpc('upsert_advertiser_campaign', {
+            const { data, error } = await supabase.schema('api').rpc('upsert_advertiser_campaign', {
                 p_account_id: activeAccount.id,
                 p_campaign_id: isEditing ? formData.id : null,
                 p_created_at: formData.created_at || null,

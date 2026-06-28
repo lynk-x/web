@@ -41,7 +41,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
     const fetchQueue = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_kyc_queue', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_kyc_queue', {
                 p_params: {
                     status: statusFilter,
                     search: debouncedSearch,
@@ -74,7 +74,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
 
     const handleManageRequest = async (id: string, action: string, reason?: string) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_kyc_request', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_kyc_request', {
                 p_action: action,
                 p_id: id,
                 p_params: reason ? { reason } : {}
@@ -108,7 +108,7 @@ const KYCTab: React.FC<KYCTabProps> = ({ searchTerm, onSearchChange, statusFilte
 
         setIsBulkLoading(true);
         try {
-            const { error } = await supabase.rpc('bulk_update_kyc_status', {
+            const { error } = await supabase.schema('api').rpc('bulk_update_kyc_status', {
                 p_verification_ids: Array.from(selectedIds),
                 p_new_status: action === 'approve' ? 'approved' : 'rejected',
                 p_rejection_reason: reason || null

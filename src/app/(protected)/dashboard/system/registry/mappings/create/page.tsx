@@ -35,8 +35,8 @@ export default function CreateMappingPage() {
     useEffect(() => {
         const loadRefs = async () => {
             const [tagsRes, catsRes, evtsRes] = await Promise.all([
-                supabase.rpc('get_admin_registry_data', { p_tab: 'tags' }),
-                supabase.rpc('get_admin_registry_data', { p_tab: 'event_categories' }),
+                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' }),
+                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'event_categories' }),
                 publicClient.from('events').select('id, title').order('created_at', { ascending: false }).limit(100)
             ]);
             if (tagsRes.error) showToast(getErrorMessage(tagsRes.error), 'error');
@@ -58,7 +58,7 @@ export default function CreateMappingPage() {
         setIsLoading(true);
         try {
             if (mappingType === 'category') {
-                const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
                     p_tab: 'mappings_category',
                     p_data: {
                         category_id: formData.category_id,
@@ -68,7 +68,7 @@ export default function CreateMappingPage() {
                 });
                 if (error) throw error;
             } else {
-                const { error } = await supabase.rpc('admin_upsert_registry_item', {
+                const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
                     p_tab: 'mappings_event',
                     p_data: {
                         event_id: formData.event_id,

@@ -86,11 +86,11 @@ function CommunicationsContent() {
             };
 
             const [spotlightsRes, broadcastRes, bannerRes, contentRes, legalRes] = await Promise.all([
-                supabase.rpc('get_admin_comms_data', { p_tab: 'spotlights' }),
-                supabase.rpc('get_admin_comms_data', { p_tab: 'broadcast', p_params: { search: searchTerm } }),
-                supabase.rpc('get_admin_comms_data', { p_tab: 'banners' }),
-                supabase.rpc('get_admin_comms_data', { p_tab: 'content', p_params: cmsParams }),
-                supabase.rpc('get_admin_comms_data', { p_tab: 'legal', p_params: legalParams })
+                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'spotlights' }),
+                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'broadcast', p_params: { search: searchTerm } }),
+                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'banners' }),
+                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'content', p_params: cmsParams }),
+                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'legal', p_params: legalParams })
             ]);
 
             if (contentRes.data) {
@@ -129,7 +129,7 @@ function CommunicationsContent() {
 
     // Fetch platform-wide published pages count once
     useEffect(() => {
-        supabase.rpc('get_admin_comms_data', { p_tab: 'content', p_params: { status: 'published', limit: 1 } })
+        supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'content', p_params: { status: 'published', limit: 1 } })
             .then(({ data }) => { if (data?.total !== undefined) setPublishedPagesCount(data.total); });
     }, [supabase]);
 
@@ -147,7 +147,7 @@ function CommunicationsContent() {
 
     const handleToggleLegalActive = async (doc: LegalDocument) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
                 p_tab: 'legal',
                 p_action: 'toggle',
                 p_id: doc.id,
@@ -202,10 +202,10 @@ function CommunicationsContent() {
                 // For now, let's use the manage RPC in a loop or implement bulk delete in backend.
                 // Hardening: Moving to secure RPC for all deletions.
                 for (const id of ids) {
-                    await supabase.rpc('admin_manage_comms_item', { p_tab: 'content', p_action: 'delete', p_id: id });
+                    await supabase.schema('api').rpc('admin_manage_comms_item', { p_tab: 'content', p_action: 'delete', p_id: id });
                 }
             } else {
-                await supabase.rpc('admin_manage_comms_item', {
+                await supabase.schema('api').rpc('admin_manage_comms_item', {
                     p_tab: 'content',
                     p_action: 'bulk_status',
                     p_id: null,
@@ -352,7 +352,7 @@ function CommunicationsContent() {
 
     const handleToggleBanner = async (banner: SystemBanner) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
                 p_tab: 'banners',
                 p_action: 'toggle',
                 p_id: banner.id,
@@ -369,7 +369,7 @@ function CommunicationsContent() {
     const handleDeleteBanner = async (id: string) => {
         if (!await confirm('Are you sure you want to delete this banner?')) return;
         try {
-            const { error } = await supabase.rpc('admin_manage_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
                 p_tab: 'banners',
                 p_action: 'delete',
                 p_id: id
@@ -385,7 +385,7 @@ function CommunicationsContent() {
     // ─── Spotlight Logic ───
     const handleToggleSpotlight = async (spotlight: Spotlight) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
                 p_tab: 'spotlights',
                 p_action: 'toggle',
                 p_id: spotlight.id,
@@ -402,7 +402,7 @@ function CommunicationsContent() {
     const handleDeleteSpotlight = async (id: string) => {
         if (!await confirm('Are you sure you want to delete this spotlight?')) return;
         try {
-            const { error } = await supabase.rpc('admin_manage_comms_item', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
                 p_tab: 'spotlights',
                 p_action: 'delete',
                 p_id: id

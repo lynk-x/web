@@ -61,7 +61,7 @@ export default function AccountGovernanceDrawer({ account, onClose }: AccountGov
         if (!verification) return;
         setIsLoading(true);
         try {
-            const { error } = await supabase.rpc('moderate_kyc_verification', {
+            const { error } = await supabase.schema('api').rpc('moderate_kyc_verification', {
                 p_verification_id: verification.id,
                 p_status: status,
                 p_reason: reason

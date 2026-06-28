@@ -166,7 +166,7 @@ const CreateEventForm = () => {
                 }));
 
                 const { data: resolvedTags, error: tagUpsertError } = await supabase
-                    .rpc('resolve_tags', { p_tags: tagsToResolve });
+                    .schema('api').rpc('resolve_tags', { p_tags: tagsToResolve });
 
                 if (tagUpsertError) throw tagUpsertError;
 

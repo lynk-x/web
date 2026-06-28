@@ -142,7 +142,7 @@ export default function MemberTable() {
 
         setIsInviting(true);
         try {
-            const { error } = await supabase.rpc('create_account_invitation', {
+            const { error } = await supabase.schema('api').rpc('create_account_invitation', {
                 p_account_id: activeAccount.id,
                 p_invitee_email: inviteEmail.toLowerCase(),
                 p_role_slug: inviteRole
@@ -165,7 +165,7 @@ export default function MemberTable() {
     // Row Actions
     const handleRevokeInvite = async (invitationId: string) => {
         try {
-            const { error } = await supabase.rpc('revoke_account_invitation', {
+            const { error } = await supabase.schema('api').rpc('revoke_account_invitation', {
                 p_invitation_id: invitationId
             });
             if (error) throw error;
@@ -181,7 +181,7 @@ export default function MemberTable() {
         if (!await confirm("Are you sure you want to remove this member's access? This action cannot be undone.")) return;
         
         try {
-            const { error } = await supabase.rpc('bulk_remove_account_members', {
+            const { error } = await supabase.schema('api').rpc('bulk_remove_account_members', {
                 p_account_id: activeAccount.id,
                 p_user_ids: [userId]
             });
@@ -208,7 +208,7 @@ export default function MemberTable() {
         }
 
         try {
-            const { error } = await supabase.rpc('update_organizer_member_role', {
+            const { error } = await supabase.schema('api').rpc('update_organizer_member_role', {
                 p_account_id: activeAccount.id,
                 p_user_id: userId,
                 p_new_role: newRole.toLowerCase()
@@ -238,14 +238,14 @@ export default function MemberTable() {
             const results = [];
 
             if (memberUserIds.length > 0) {
-                results.push(supabase.rpc('bulk_remove_account_members', {
+                results.push(supabase.schema('api').rpc('bulk_remove_account_members', {
                     p_account_id: activeAccount.id,
                     p_user_ids: memberUserIds
                 }));
             }
 
             if (inviteIds.length > 0) {
-                results.push(supabase.rpc('bulk_revoke_account_invitations', {
+                results.push(supabase.schema('api').rpc('bulk_revoke_account_invitations', {
                     p_invitation_ids: inviteIds
                 }));
             }

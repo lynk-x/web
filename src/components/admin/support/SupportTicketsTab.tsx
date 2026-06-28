@@ -59,7 +59,7 @@ export default function SupportTicketsTab({
         setIsLoading(true);
         try {
             const offset = (currentPage - 1) * itemsPerPage;
-            const { data, error } = await supabase.rpc('get_admin_support_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_support_data', {
                 p_tab: 'tickets',
                 p_params: {
                     search: searchQuery,
@@ -104,7 +104,7 @@ export default function SupportTicketsTab({
 
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
-            const { error } = await supabase.rpc('admin_update_support_status', {
+            const { error } = await supabase.schema('api').rpc('admin_update_support_status', {
                 p_tab: 'feedback', // RPC uses 'feedback' case for tickets too
                 p_id: id,
                 p_status: newStatus

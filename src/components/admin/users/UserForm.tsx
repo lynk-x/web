@@ -157,7 +157,7 @@ export default function UserForm({
 
                 showToast('Account updated successfully!', 'success');
             } else {
-                const { data: userId, error: createError } = await supabase.rpc('admin_create_user', {
+                const { data: userId, error: createError } = await supabase.schema('api').rpc('admin_create_user', {
                     p_email: sanitizedEmail,
                     p_full_name: sanitizedName,
                     p_user_name: sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),

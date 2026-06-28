@@ -76,7 +76,7 @@ function SettingsContent() {
         setIsLoading(true);
         try {
             // Retrieve using generic account settings RPC
-            const { data, error } = await supabase.rpc('get_account_settings', {
+            const { data, error } = await supabase.schema('api').rpc('get_account_settings', {
                 p_account_id: activeAccount.id
             });
 
@@ -135,7 +135,7 @@ function SettingsContent() {
         }
         setIsSaving(true);
         try {
-            const { error } = await supabase.rpc('update_account_settings', {
+            const { error } = await supabase.schema('api').rpc('update_account_settings', {
                 p_account_id: activeAccount.id,
                 p_display_name: formData.name,
                 p_info: {

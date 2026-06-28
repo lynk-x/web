@@ -33,7 +33,7 @@ export default function WalletManager({ accountId, wallets, isLoading, onRefresh
         if (!accountId) return;
         setIsAddingWallet(true);
         try {
-            const { error } = await supabase.rpc('create_wallet', {
+            const { error } = await supabase.schema('api').rpc('create_wallet', {
                 p_currency: newWalletCurrency,
                 p_account_id: accountId
             });

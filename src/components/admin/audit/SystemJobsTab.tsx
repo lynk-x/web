@@ -29,7 +29,7 @@ const SystemJobsTab: React.FC<SystemJobsTabProps> = ({ statusFilter }) => {
     const fetchJobs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_admin_system_jobs', {
+            const { data, error } = await supabase.schema('api').rpc('get_admin_system_jobs', {
                 p_params: {
                     status: statusFilter,
                     limit: itemsPerPage,
@@ -54,7 +54,7 @@ const SystemJobsTab: React.FC<SystemJobsTabProps> = ({ statusFilter }) => {
 
     const handleAction = async (id: string, action: string) => {
         try {
-            const { error } = await supabase.rpc('admin_manage_system_job', {
+            const { error } = await supabase.schema('api').rpc('admin_manage_system_job', {
                 p_action: action,
                 p_id: id
             });

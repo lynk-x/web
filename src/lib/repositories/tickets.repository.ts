@@ -179,7 +179,7 @@ export function createTicketsRepository(client: DbClient) {
             scannerPin?: string;
             eventCreatedAt?: string;
         }): Promise<RepoResult<TicketVerificationResult>> {
-            const { data, error } = await client.rpc('verify_and_use_ticket', {
+            const { data, error } = await client.schema('api').rpc('verify_and_use_ticket', {
                 p_ticket_code: params.ticketCode,
                 p_event_id: params.eventId,
                 p_scanner_pin: params.scannerPin ?? null,

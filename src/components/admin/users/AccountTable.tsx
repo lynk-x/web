@@ -150,7 +150,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 showToast(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}ing ${acc.display_name}...`, 'info');
                 
                 try {
-                    const { error } = await supabase.rpc('bulk_update_account_status', {
+                    const { error } = await supabase.schema('api').rpc('bulk_update_account_status', {
                         p_account_ids: [acc.id],
                         p_status: newStatus,
                         p_reason: `Account ${actionLabel}d via Admin Registry.`
@@ -176,7 +176,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 showToast(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}ing ${acc.display_name}...`, 'info');
                 
                 try {
-                    const { error } = await supabase.rpc('bulk_update_account_status', {
+                    const { error } = await supabase.schema('api').rpc('bulk_update_account_status', {
                         p_account_ids: [acc.id],
                         p_status: newStatus,
                         p_reason: `Account ${actionLabel}ed via Admin Registry.`
