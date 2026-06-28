@@ -28,7 +28,7 @@ export type TicketStatus = 'valid' | 'used' | 'transferred' | 'refunded' | 'canc
 export type RefundStatus = 'pending' | 'approved' | 'rejected' | 'processed';
 
 /** Matches `kyc_status` enum */
-export type KycStatus = 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended';
+export type KycStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
 /** Matches `transaction_reason` enum */
 export type TransactionReason =

@@ -25,7 +25,7 @@ interface KycVerificationTableProps {
 const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'approved': return 'success';
-        case 'pending': case 'submitted': return 'warning';
+        case 'pending': return 'warning';
         case 'rejected': case 'suspended': return 'error';
         case 'expired': return 'neutral';
         default: return 'neutral';
@@ -95,7 +95,7 @@ const KycVerificationTable: React.FC<KycVerificationTableProps> = ({
             }
         ];
 
-        if (v.status === 'pending' || v.status === 'submitted') {
+        if (v.status === 'pending') {
             actions.push(
                 {
                     label: 'Approve',

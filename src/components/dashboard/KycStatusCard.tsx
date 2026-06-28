@@ -8,7 +8,7 @@ interface KycStatusCardProps {
     accountId: string;
 }
 
-type KycStatus = 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended' | 'expired';
+type KycStatus = 'pending' | 'approved' | 'rejected' | 'suspended' | 'expired';
 
 export default function KycStatusCard({ accountId }: KycStatusCardProps) {
     const supabase = createClient();
@@ -40,9 +40,7 @@ export default function KycStatusCard({ accountId }: KycStatusCardProps) {
         switch (status) {
             case 'approved': return { color: '#20F928', bg: 'rgba(32, 249, 40, 0.1)', text: 'Verified' };
             case 'rejected': return { color: '#FF5252', bg: 'rgba(255, 82, 82, 0.1)', text: 'Rejected' };
-            case 'submitted': return { color: '#F9C920', bg: 'rgba(249, 201, 32, 0.1)', text: 'Pending Review' };
-            case 'none': 
-            case 'pending':
+            case 'pending': return { color: '#F9C920', bg: 'rgba(249, 201, 32, 0.1)', text: 'Pending Review' };
             default: return { color: 'rgba(255, 255, 255, 0.4)', bg: 'rgba(255, 255, 255, 0.05)', text: 'Not Verified' };
         }
     };

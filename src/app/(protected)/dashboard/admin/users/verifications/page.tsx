@@ -139,7 +139,7 @@ function KycVerificationsContent() {
                 <FilterChips
                     options={[
                         { value: 'pending', label: 'Pending' },
-                        { value: 'submitted', label: 'Submitted' },
+                        { value: 'pending', label: 'Submitted' },
                         { value: 'approved', label: 'Approved' },
                         { value: 'rejected', label: 'Rejected' },
                         { value: 'suspended', label: 'Suspended' },

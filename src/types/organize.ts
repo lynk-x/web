@@ -126,7 +126,7 @@ export interface Payout {
     /** Set when status transitions to 'completed' or 'failed'. From `payouts.processed_at`. */
     processedAt?: string;
     /** From accounts.kyc_status - pending | submitted | approved | rejected | suspended */
-    kyc_status?: 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended';
+    kyc_status?: 'pending' | 'approved' | 'rejected' | 'suspended';
     /** The verification tier of the account: tier_1_basic | tier_2_verified | tier_3_advanced */
     kyc_tier?: 'tier_1_basic' | 'tier_2_verified' | 'tier_3_advanced';
     /** Aligned to kyc_status logic: approved accounts are verified */

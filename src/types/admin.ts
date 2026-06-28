@@ -345,7 +345,7 @@ export interface KycVerification {
     document_type: 'national_id' | 'passport' | 'alien_card' | 'incorporation_cert' | 'utility_bill';
     uploaded_documents: string[]; // URLs/Paths
     pii_data: Record<string, any>;
-    status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'suspended' | 'expired';
+    status: 'pending' | 'approved' | 'rejected' | 'suspended' | 'expired';
     rejection_reason?: string;
     verified_at?: string;
     expires_at?: string;
