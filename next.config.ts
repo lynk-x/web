@@ -13,7 +13,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.gstatic.com https://apis.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://api.qrserver.com",
+      "img-src 'self' data: blob: https://cdn.lynk-x.app https://*.supabase.co https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://api.qrserver.com",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://fcm.googleapis.com",
       "frame-ancestors 'none'",
     ].join('; '),
@@ -31,12 +31,12 @@ const nextConfig: NextConfig = {
         ];
     },
     images: {
+        loader: 'custom',
+        loaderFile: './src/utils/imageLoader.ts',
         remotePatterns: [
             {
                 protocol: 'https',
-                hostname: '*.supabase.co',
-                port: '',
-                pathname: '/storage/v1/object/public/**',
+                hostname: 'cdn.lynk-x.app',
             },
         ],
     },
