@@ -54,7 +54,16 @@ function AccountsContent() {
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 20;
 
-    const activeCountry = activeAccount?.country_code || 'KE';
+    const resolvedCountryFilter = useMemo(() => {
+        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
+            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
+            if (proxyCode) return proxyCode;
+        }
+        if (activeAccount?.country_code) {
+            return activeAccount.country_code;
+        }
+        return 'all';
+    }, [activeAccount]);
 
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
@@ -68,7 +77,7 @@ function AccountsContent() {
                 p_search: debouncedSearch.trim(),
                 p_type: typeFilter,
                 p_status: statusFilter,
-                p_country_code: activeCountry,
+                p_country_code: resolvedCountryFilter,
                 p_offset: (currentPage - 1) * itemsPerPage,
                 p_limit: itemsPerPage
             });
@@ -82,7 +91,7 @@ function AccountsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, activeCountry, currentPage]);
+    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, resolvedCountryFilter, currentPage]);
 
     useEffect(() => {
         fetchAccounts();
@@ -95,7 +104,7 @@ function AccountsContent() {
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, typeFilter, statusFilter, activeCountry, startDate, endDate]);
+    }, [debouncedSearch, typeFilter, statusFilter, resolvedCountryFilter, startDate, endDate]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 

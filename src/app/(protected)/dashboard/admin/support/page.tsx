@@ -31,11 +31,11 @@ function SupportContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = (searchParams.get('tab') as SupportTab) || 'queue';
+    const initialTab = (searchParams.get('tab') as SupportTab) || 'tickets';
     const [activeTab, setActiveTab] = useState<SupportTab>(
-        (initialTab && ['queue', 'tickets'].includes(initialTab))
+        (initialTab && ['tickets', 'queue'].includes(initialTab))
             ? initialTab
-            : 'queue'
+            : 'tickets'
     );
     const [isLoading, setIsLoading] = useState(true);
 

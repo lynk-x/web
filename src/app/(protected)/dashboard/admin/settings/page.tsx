@@ -220,7 +220,7 @@ function SettingsContent() {
 
                             <div className={localStyles.formGrid || adminStyles.formGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                                 <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Admin Name</label>
+                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Account Name</label>
                                     <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. Kenya Admin Office" />
                                 </div>
                                 <div className={localStyles.inputGroup}>
