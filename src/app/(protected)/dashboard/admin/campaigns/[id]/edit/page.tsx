@@ -215,7 +215,9 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
         <div className={styles.container}>
             <header className={styles.header}>
                 <div>
-                    <BackButton label="Back to Campaigns" />
+                    <div style={{ marginBottom: '16px' }}>
+                        <BackButton label="Back to Campaigns" />
+                    </div>
                     <h1 className={styles.title}>Edit Campaign (Admin)</h1>
                     <p className={styles.subtitle}>Update details and creative assets for this client campaign.</p>
                 </div>

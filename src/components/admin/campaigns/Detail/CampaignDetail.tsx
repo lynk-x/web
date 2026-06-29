@@ -101,11 +101,6 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                     <div className={styles.section}>
                         <h2 className={styles.sectionTitle}>Campaign Summary</h2>
                         <div className={styles.summaryCard}>
-                            <div className={styles.summaryRow}>
-                                <span className={styles.summaryLabel}>Campaign Title</span>
-                                <div className={styles.summaryValue}>{campaign.name}</div>
-                            </div>
-                            
                             {campaign.description && (
                                 <div className={styles.summaryRow}>
                                     <span className={styles.summaryLabel}>Description</span>

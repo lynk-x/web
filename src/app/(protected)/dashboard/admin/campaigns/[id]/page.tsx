@@ -180,7 +180,9 @@ export default function AdminCampaignDetailPage() {
         <div className={styles.container}>
             <header className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <BackButton />
+                    <div style={{ marginBottom: '16px' }}>
+                        <BackButton />
+                    </div>
                     <h1 className={styles.title}>{campaign.name}</h1>
                     <p className={adminStyles.subtitle}>Detailed oversight for {campaign.client}'s campaign.</p>
                 </div>

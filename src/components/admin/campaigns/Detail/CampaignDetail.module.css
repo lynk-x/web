@@ -299,8 +299,8 @@
 }
 
 .summaryCard {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
     border-radius: 12px;
     padding: 24px;
     display: flex;
@@ -312,7 +312,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--color-interface-outline);
     padding-top: 20px;
 }
 
@@ -337,8 +337,8 @@
 }
 
 .timelineCard {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
     border-radius: 12px;
     padding: 20px;
     display: flex;
@@ -372,7 +372,7 @@
 
 .progressBarFill {
     height: 100%;
-    background: linear-gradient(90deg, var(--color-brand-primary) 0%, #00d2ff 100%);
+    background: var(--color-brand-primary);
     border-radius: 4px;
     transition: width 0.3s ease;
 }
