@@ -1,36 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import { useCountries } from '@/hooks/useCountries';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 import { useOrganization } from '@/context/OrganizationContext';
+import { 
+    AreaChart, Area, 
+    BarChart, Bar, 
+    PieChart, Pie, Cell, 
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from 'recharts';
 
-type Tab = 'demographics' | 'events' | 'advertising' | 'community' | 'revenue';
-
-interface BarRowProps {
-    label: string;
-    count: number | string;
-    pct: number;
-    color?: string;
-}
-
-function BarRow({ label, count, pct, color }: BarRowProps) {
-    return (
-        <div className={styles.barRow}>
-            <span className={styles.barLabel} title={label}>{label}</span>
-            <div className={styles.barTrack}>
-                <div className={styles.barFill} style={{ width: `${pct}%`, background: color ?? 'var(--color-brand-primary)' }} />
-            </div>
-            <span className={styles.barValue}>{count.toLocaleString()}</span>
-        </div>
-    );
-}
+type Tab = 'demographics' | 'events' | 'advertising' | 'community' | 'finance';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -53,12 +39,6 @@ interface DemographicData {
     account_types: AccountTypeRow[];
     account_creation: AccountCreationRow[];
     churn_risk?: ChurnRiskRow[];
-}
-
-interface GeoRow {
-    country: string;
-    account_role: string;
-    user_count: number;
 }
 
 interface RevenueBreakdownRow {
@@ -161,6 +141,72 @@ interface CommunityData {
     by_media: ForumLeaderboardRow[];
 }
 
+// ─── Constants & Common Helpers ────────────────────────────────────────────────
+
+const CHART_COLORS = {
+    primary: 'var(--color-brand-primary, #6c63ff)',
+    blue: '#3b82f6',
+    green: '#10b981',
+    orange: '#f59e0b',
+    purple: '#a855f7',
+    red: '#ef4444',
+    pink: '#ec4899',
+    indigo: '#6366f1',
+    teal: '#14b8a6'
+};
+
+const PIE_PALETTES = {
+    accounts: [CHART_COLORS.primary, CHART_COLORS.blue, CHART_COLORS.green],
+    churn: [CHART_COLORS.green, CHART_COLORS.orange, CHART_COLORS.red],
+    formats: [CHART_COLORS.primary, CHART_COLORS.blue],
+    privacy: [CHART_COLORS.green, CHART_COLORS.orange],
+    ads: [CHART_COLORS.primary, CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.purple],
+    providers: [CHART_COLORS.green, CHART_COLORS.blue, CHART_COLORS.orange, CHART_COLORS.purple, CHART_COLORS.pink]
+};
+
+const formatLabel = (val: string) => {
+    return val.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
+const formatCurrency = (val: number) => {
+    return '$' + Number(val).toLocaleString(undefined, { maximumFractionDigits: 0 });
+};
+
+const formatXAxisDate = (tickItem: string) => {
+    try {
+        return new Date(tickItem).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch {
+        return tickItem;
+    }
+};
+
+const renderTooltipContent = (props: any) => {
+    const { active, payload, label } = props;
+    if (active && payload && payload.length) {
+        return (
+            <div style={{
+                background: 'var(--color-bg-surface-secondary, #1a1a24)',
+                border: '1px solid var(--color-border-primary, rgba(255,255,255,0.08))',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                color: '#fff',
+                fontSize: '13px'
+            }}>
+                <p style={{ margin: 0, fontWeight: 'bold', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>
+                    {label ? formatXAxisDate(label) : ''}
+                </p>
+                {payload.map((pld: any, index: number) => (
+                    <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: pld.color || pld.fill }} />
+                        <span>{pld.name}: {pld.value.toLocaleString()}</span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return null;
+};
+
 // ─── Tab Components ─────────────────────────────────────────────────────────
 
 function DemographicTab({ countryFilter }: { countryFilter: string }) {
@@ -182,207 +228,103 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
 
     if (isLoading) return <div className={styles.loading}>Loading Demographics...</div>;
 
+    const accountTypes = (data?.account_types || []).map(t => ({
+        name: formatLabel(t.account_type),
+        value: t.count
+    }));
+
+    const churnData = (data?.churn_risk || []).map(c => ({
+        name: c.status === 'active' ? 'Active (Last 7d)' : c.status === 'lapsing' ? 'Lapsing (8-30d)' : 'Inactive (>30d)',
+        value: c.count
+    }));
+
+    const accountCreation = data?.account_creation || [];
+
     return (
         <div className={styles.tabContent}>
-            <div className={styles.statsGrid}>
+            <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Account Type Distribution</h3>
-                    {(() => {
-                        const types = data?.account_types || [];
-                        const maxVal = Math.max(...types.map(t => t.count), 1);
-                        return types.map((r, i) => (
-                            <BarRow 
-                                key={`${r.account_type}-${i}`} 
-                                label={r.account_type.toUpperCase()} 
-                                count={r.count} 
-                                pct={(r.count / maxVal) * 100} 
-                            />
-                        ));
-                    })()}
+                    {accountTypes.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={accountTypes}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={85}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {accountTypes.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_PALETTES.accounts[index % PIE_PALETTES.accounts.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No account type data available</div>
+                    )}
                 </div>
+
                 <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Account Creation Trend (Last 30 Days)</h3>
-                    {(() => {
-                        const trend = data?.account_creation || [];
-                        const maxVal = Math.max(...trend.map(t => t.count), 1);
-                        return trend.map((r, i) => (
-                            <BarRow 
-                                key={`${r.day}-${i}`} 
-                                label={new Date(r.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} 
-                                count={r.count} 
-                                pct={(r.count / maxVal) * 100} 
-                                color="#6c63ff"
-                            />
-                        ));
-                    })()}
-                </div>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>User Engagement</h3>
-                    {(() => {
-                        const churnData = data?.churn_risk || [];
-                        const total = churnData.reduce((acc, c) => acc + c.count, 0) || 1;
-                        
-                        const statusConfig: Record<string, { label: string; color: string }> = {
-                            active: { label: 'Active (Last 7d)', color: 'var(--color-brand-primary)' },
-                            lapsing: { label: 'Lapsing (8-30d)', color: '#f59e0b' },
-                            inactive: { label: 'Inactive (>30d)', color: '#ef4444' }
-                        };
-                        
-                        const statuses = ['active', 'lapsing', 'inactive'];
-                        
-                        return statuses.map((status) => {
-                            const found = churnData.find(c => c.status === status);
-                            const count = found ? found.count : 0;
-                            const pct = Math.round((count / total) * 100);
-                            const config = statusConfig[status];
-                            
-                            return (
-                                <BarRow 
-                                    key={status} 
-                                    label={config.label} 
-                                    count={count} 
-                                    pct={pct} 
-                                    color={config.color}
-                                />
-                            );
-                        });
-                    })()}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-
-
-function RevenueTab({ countryFilter }: { countryFilter: string }) {
-    const { data, isLoading } = useSupabaseQuery<RevenueData>(
-        ['admin-analytics-revenue', countryFilter],
-        async (supabase) => {
-            try {
-                const { data: res, error } = await supabase.schema('api').rpc('get_admin_analytics', { 
-                    p_category: 'revenue',
-                    p_params: { country_code: countryFilter }
-                });
-                if (error) throw error;
-                return (res as any as RevenueData | null) || { 
-                    by_reason: [], 
-                    by_provider: [], 
-                    subscriptions_by_plan: [], 
-                    subscriptions_by_status: [] 
-                };
-            } catch (err) {
-                throw err;
-            }
-        }
-    );
-
-    if (isLoading) return <div className={styles.loading}>Loading Revenue...</div>;
-
-    const byReason = data?.by_reason || [];
-    const byProvider = data?.by_provider || [];
-    const subscriptionsByPlan = data?.subscriptions_by_plan || [];
-    const subscriptionsByStatus = data?.subscriptions_by_status || [];
-
-    const totalGross = byReason.reduce((acc, r) => acc + Number(r.gross_amount), 0);
-    const totalFees = byReason.reduce((acc, r) => acc + Number(r.fee_amount), 0);
-    const totalTxCount = byReason.reduce((acc, r) => acc + r.count, 0);
-    const activeSubs = subscriptionsByPlan.reduce((acc, s) => acc + s.count, 0);
-
-    const maxReasonVolume = Math.max(...byReason.map(r => Number(r.gross_amount)), 1);
-    const maxProviderVolume = Math.max(...byProvider.map(p => Number(p.gross_amount)), 1);
-    const maxSubPlanVolume = Math.max(...subscriptionsByPlan.map(s => Number(s.gross_amount)), 1);
-    const maxSubStatusCount = Math.max(...subscriptionsByStatus.map(s => s.count), 1);
-
-    const formatLabel = (val: string) => {
-        return val.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    };
-
-    return (
-        <div className={styles.tabContent}>
-            <div className={styles.statsGrid}>
-                <StatCard 
-                    label="Gross Transaction Volume" 
-                    value={`$${totalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                    change="Platform Gross" 
-                    trend="positive" 
-                />
-                <StatCard 
-                    label="Net Platform Revenue" 
-                    value={`$${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                    change="Fees Collected" 
-                    trend="positive" 
-                />
-                <StatCard 
-                    label="Total Payments" 
-                    value={totalTxCount.toLocaleString()} 
-                    change="Successful Transactions" 
-                    trend="neutral" 
-                />
-                <StatCard 
-                    label="Active Subscriptions" 
-                    value={activeSubs.toLocaleString()} 
-                    change="Premium accounts" 
-                    trend="positive" 
-                />
-            </div>
-
-            <div className={styles.splitRow} style={{ marginTop: '24px' }}>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Transactions by Reason</h3>
-                    {byReason.map((r, i) => (
-                        <BarRow 
-                            key={`${r.reason}-${i}`} 
-                            label={formatLabel(r.reason)} 
-                            count={`$${Number(r.gross_amount).toLocaleString(undefined, { maximumFractionDigits: 0 })} (${r.count})`} 
-                            pct={(Number(r.gross_amount) / maxReasonVolume) * 100} 
-                            color="var(--color-brand-primary)"
-                        />
-                    ))}
-                    {byReason.length === 0 && <div className={styles.loading}>No transaction reason data available</div>}
-                </div>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Transactions by Payment Provider</h3>
-                    {byProvider.map((p, i) => (
-                        <BarRow 
-                            key={`${p.provider_name}-${i}`} 
-                            label={p.provider_name} 
-                            count={`$${Number(p.gross_amount).toLocaleString(undefined, { maximumFractionDigits: 0 })} (${p.count})`} 
-                            pct={(Number(p.gross_amount) / maxProviderVolume) * 100} 
-                            color="#10b981"
-                        />
-                    ))}
-                    {byProvider.length === 0 && <div className={styles.loading}>No payment provider data available</div>}
+                    <h3 className={styles.cardTitle}>User Engagement (Churn Risk)</h3>
+                    {churnData.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={churnData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={85}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {churnData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_PALETTES.churn[index % PIE_PALETTES.churn.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No engagement data available</div>
+                    )}
                 </div>
             </div>
 
-            <div className={styles.splitRow} style={{ marginTop: '24px' }}>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Subscriptions by Plan</h3>
-                    {subscriptionsByPlan.map((s, i) => (
-                        <BarRow 
-                            key={`${s.plan_id}-${i}`} 
-                            label={formatLabel(s.plan_id)} 
-                            count={`$${Number(s.gross_amount).toLocaleString(undefined, { maximumFractionDigits: 0 })} (${s.count})`} 
-                            pct={(Number(s.gross_amount) / maxSubPlanVolume) * 100} 
-                            color="#3b82f6"
-                        />
-                    ))}
-                    {subscriptionsByPlan.length === 0 && <div className={styles.loading}>No subscription plan data available</div>}
-                </div>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Subscription Status Distribution</h3>
-                    {subscriptionsByStatus.map((s, i) => (
-                        <BarRow 
-                            key={`${s.status}-${i}`} 
-                            label={formatLabel(s.status)} 
-                            count={s.count} 
-                            pct={(s.count / maxSubStatusCount) * 100} 
-                            color="#a855f7"
-                        />
-                    ))}
-                    {subscriptionsByStatus.length === 0 && <div className={styles.loading}>No subscription status data available</div>}
-                </div>
+            <div className={styles.card} style={{ marginTop: '24px' }}>
+                <h3 className={styles.cardTitle}>Account Creation Trend (Last 30 Days)</h3>
+                {accountCreation.length > 0 ? (
+                    <div style={{ width: '100%', height: 280 }}>
+                        <ResponsiveContainer>
+                            <AreaChart data={accountCreation} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorSignup" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="day" tickFormatter={formatXAxisDate} stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
+                                <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
+                                <Tooltip content={renderTooltipContent} />
+                                <Area type="monotone" dataKey="count" name="Accounts Created" stroke={CHART_COLORS.primary} fillOpacity={1} fill="url(#colorSignup)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className={styles.loading}>No creation trend data available</div>
+                )}
             </div>
         </div>
     );
@@ -413,79 +355,145 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
 
     if (isLoading) return <div className={styles.loading}>Loading Events...</div>;
 
-    const timeline = data?.timeline || [];
     const formats = data?.formats || { physical: 0, online: 0 };
+    const formatData = [
+        { name: 'Physical', value: formats.physical },
+        { name: 'Online / Virtual', value: formats.online }
+    ];
+
     const privacy = data?.privacy || { public: 0, private: 0 };
-    const categories = data?.categories || [];
-    const tags = data?.tags || [];
+    const privacyData = [
+        { name: 'Public', value: privacy.public },
+        { name: 'Private / Invite-Only', value: privacy.private }
+    ];
 
-    const totalFormats = formats.physical + formats.online || 1;
-    const physicalPct = Math.round((formats.physical / totalFormats) * 100);
-    const onlinePct = Math.round((formats.online / totalFormats) * 100);
+    const categories = (data?.categories || []).slice(0, 5).map(c => ({
+        name: c.category,
+        count: c.count
+    }));
 
-    const totalPrivacy = privacy.public + privacy.private || 1;
-    const publicPct = Math.round((privacy.public / totalPrivacy) * 100);
-    const privatePct = Math.round((privacy.private / totalPrivacy) * 100);
+    const tags = (data?.tags || []).slice(0, 5).map(t => ({
+        name: `#${t.tag}`,
+        count: t.count
+    }));
 
-    const maxTimeline = Math.max(...timeline.map(t => t.count), 1);
-    const maxCategory = Math.max(...categories.map(c => c.count), 1);
-    const maxTag = Math.max(...tags.map(t => t.count), 1);
+    const timeline = data?.timeline || [];
 
     return (
         <div className={styles.tabContent}>
             <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Event Formats</h3>
-                    <BarRow label="Physical" count={formats.physical} pct={physicalPct} color="var(--color-brand-primary)" />
-                    <BarRow label="Online / Virtual" count={formats.online} pct={onlinePct} color="#3b82f6" />
+                    <div style={{ width: '100%', height: 220 }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={formatData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={75}
+                                    paddingAngle={4}
+                                    dataKey="value"
+                                >
+                                    {formatData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={PIE_PALETTES.formats[index % PIE_PALETTES.formats.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Event Privacy</h3>
-                    <BarRow label="Public" count={privacy.public} pct={publicPct} color="#10b981" />
-                    <BarRow label="Private / Invite-Only" count={privacy.private} pct={privatePct} color="#f59e0b" />
+                    <div style={{ width: '100%', height: 220 }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={privacyData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={75}
+                                    paddingAngle={4}
+                                    dataKey="value"
+                                >
+                                    {privacyData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={PIE_PALETTES.privacy[index % PIE_PALETTES.privacy.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
             <div className={styles.splitRow} style={{ marginTop: '24px' }}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Top Event Categories</h3>
-                    {categories.slice(0, 5).map((c, i) => (
-                        <BarRow 
-                            key={`${c.category}-${i}`} 
-                            label={c.category} 
-                            count={c.count} 
-                            pct={(c.count / maxCategory) * 100} 
-                        />
-                    ))}
-                    {categories.length === 0 && <div className={styles.loading}>No category data available</div>}
+                    {categories.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={categories} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip />
+                                    <Bar dataKey="count" name="Events" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No category data available</div>
+                    )}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Trending Event Tags</h3>
-                    {tags.slice(0, 5).map((t, i) => (
-                        <BarRow 
-                            key={`${t.tag}-${i}`} 
-                            label={`#${t.tag}`} 
-                            count={t.count} 
-                            pct={(t.count / maxTag) * 100} 
-                            color="#a855f7"
-                        />
-                    ))}
-                    {tags.length === 0 && <div className={styles.loading}>No tag data available</div>}
+                    {tags.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={tags} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip />
+                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No tag data available</div>
+                    )}
                 </div>
             </div>
 
             <div className={styles.card} style={{ marginTop: '24px' }}>
                 <h3 className={styles.cardTitle}>Event Creation Velocity (Last 30 Days)</h3>
-                {timeline.map((t, i) => (
-                    <BarRow 
-                        key={`${t.day}-${i}`} 
-                        label={new Date(t.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} 
-                        count={t.count} 
-                        pct={(t.count / maxTimeline) * 100} 
-                        color="#6c63ff"
-                    />
-                ))}
-                {timeline.length === 0 && <div className={styles.loading}>No timeline data available</div>}
+                {timeline.length > 0 ? (
+                    <div style={{ width: '100%', height: 260 }}>
+                        <ResponsiveContainer>
+                            <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={CHART_COLORS.indigo} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={CHART_COLORS.indigo} stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="day" tickFormatter={formatXAxisDate} stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
+                                <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
+                                <Tooltip content={renderTooltipContent} />
+                                <Area type="monotone" dataKey="count" name="Events Created" stroke={CHART_COLORS.indigo} fillOpacity={1} fill="url(#colorEvents)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className={styles.loading}>No timeline data available</div>
+                )}
             </div>
         </div>
     );
@@ -515,15 +523,15 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
     if (isLoading) return <div className={styles.loading}>Loading Advertising...</div>;
 
     const timeline = data?.timeline || [];
-    const adTypes = data?.ad_types || [];
+    const adTypes = (data?.ad_types || []).map(t => ({
+        name: formatLabel(t.ad_type),
+        value: t.count
+    }));
     const engagement = data?.engagement || { total_impressions: 0, total_clicks: 0, total_spent: 0, total_budget: 0 };
 
     const ctr = engagement.total_impressions > 0 
         ? (engagement.total_clicks / engagement.total_impressions) * 100 
         : 0;
-
-    const maxTimeline = Math.max(...timeline.map(t => t.count), 1);
-    const maxAdType = Math.max(...adTypes.map(t => t.count), 1);
 
     return (
         <div className={styles.tabContent}>
@@ -537,28 +545,55 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
             <div className={styles.splitRow} style={{ marginTop: '24px' }}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Ad Type Distribution</h3>
-                    {adTypes.map((t, i) => (
-                        <BarRow 
-                            key={`${t.ad_type}-${i}`} 
-                            label={t.ad_type.toUpperCase()} 
-                            count={t.count} 
-                            pct={(t.count / maxAdType) * 100} 
-                        />
-                    ))}
-                    {adTypes.length === 0 && <div className={styles.loading}>No ad type data available</div>}
+                    {adTypes.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={adTypes}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={55}
+                                        outerRadius={80}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {adTypes.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_PALETTES.ads[index % PIE_PALETTES.ads.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No ad type data available</div>
+                    )}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Active Campaign Creation Timeline</h3>
-                    {timeline.map((t, i) => (
-                        <BarRow 
-                            key={`${t.day}-${i}`} 
-                            label={new Date(t.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} 
-                            count={t.count} 
-                            pct={(t.count / maxTimeline) * 100} 
-                            color="#10b981"
-                        />
-                    ))}
-                    {timeline.length === 0 && <div className={styles.loading}>No timeline data available</div>}
+                    {timeline.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorAds" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                    <XAxis dataKey="day" tickFormatter={formatXAxisDate} stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip content={renderTooltipContent} />
+                                    <Area type="monotone" dataKey="count" name="Campaigns" stroke={CHART_COLORS.green} fillOpacity={1} fill="url(#colorAds)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No timeline data available</div>
+                    )}
                 </div>
             </div>
         </div>
@@ -588,56 +623,216 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
 
     if (isLoading) return <div className={styles.loading}>Loading Community...</div>;
 
-    const byMembers = data?.by_members || [];
-    const byMessages = data?.by_messages || [];
-    const byMedia = data?.by_media || [];
-
-    const maxMembers = Math.max(...byMembers.map(f => f.count), 1);
-    const maxMessages = Math.max(...byMessages.map(f => f.count), 1);
-    const maxMedia = Math.max(...byMedia.map(f => f.count), 1);
+    const byMembers = (data?.by_members || []).slice(0, 5);
+    const byMessages = (data?.by_messages || []).slice(0, 5);
+    const byMedia = (data?.by_media || []).slice(0, 5);
 
     return (
         <div className={styles.tabContent}>
             <div className={styles.card}>
                 <h3 className={styles.cardTitle}>Top Forums by Member Count</h3>
-                {byMembers.map((f, i) => (
-                    <BarRow 
-                        key={`${f.forum_id}-${i}`} 
-                        label={f.title} 
-                        count={f.count} 
-                        pct={(f.count / maxMembers) * 100} 
-                        color="var(--color-brand-primary)"
-                    />
-                ))}
-                {byMembers.length === 0 && <div className={styles.loading}>No forum member data available</div>}
+                {byMembers.length > 0 ? (
+                    <div style={{ width: '100%', height: 260 }}>
+                        <ResponsiveContainer>
+                            <BarChart data={byMembers} layout="vertical" margin={{ top: 10, right: 10, left: 50, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                <Tooltip />
+                                <Bar dataKey="count" name="Members" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className={styles.loading}>No forum member data available</div>
+                )}
             </div>
 
             <div className={styles.splitRow} style={{ marginTop: '24px' }}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Top Forums by Message Volume</h3>
-                    {byMessages.map((f, i) => (
-                        <BarRow 
-                            key={`${f.forum_id}-${i}`} 
-                            label={f.title} 
-                            count={f.count} 
-                            pct={(f.count / maxMessages) * 100} 
-                            color="#10b981"
-                        />
-                    ))}
-                    {byMessages.length === 0 && <div className={styles.loading}>No message volume data available</div>}
+                    {byMessages.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={byMessages} layout="vertical" margin={{ top: 10, right: 10, left: 50, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip />
+                                    <Bar dataKey="count" name="Messages" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No message volume data available</div>
+                    )}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Top Forums by Shared Media</h3>
-                    {byMedia.map((f, i) => (
-                        <BarRow 
-                            key={`${f.forum_id}-${i}`} 
-                            label={f.title} 
-                            count={f.count} 
-                            pct={(f.count / maxMedia) * 100} 
-                            color="#a855f7"
-                        />
-                    ))}
-                    {byMedia.length === 0 && <div className={styles.loading}>No shared media data available</div>}
+                    {byMedia.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={byMedia} layout="vertical" margin={{ top: 10, right: 10, left: 50, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip />
+                                    <Bar dataKey="count" name="Media Files" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No shared media data available</div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function FinanceTab({ countryFilter }: { countryFilter: string }) {
+    const { data, isLoading } = useSupabaseQuery<RevenueData>(
+        ['admin-analytics-finance', countryFilter],
+        async (supabase) => {
+            try {
+                const { data: res, error } = await supabase.schema('api').rpc('get_admin_analytics', { 
+                    p_category: 'revenue',
+                    p_params: { country_code: countryFilter }
+                });
+                if (error) throw error;
+                return (res as any as RevenueData | null) || { 
+                    by_reason: [], 
+                    by_provider: [], 
+                    subscriptions_by_plan: [], 
+                    subscriptions_by_status: [] 
+                };
+            } catch (err) {
+                throw err;
+            }
+        }
+    );
+
+    if (isLoading) return <div className={styles.loading}>Loading Finance...</div>;
+
+    const byReason = (data?.by_reason || []).map(r => ({
+        name: formatLabel(r.reason),
+        amount: Number(r.gross_amount),
+        count: r.count
+    }));
+
+    const byProvider = (data?.by_provider || []).map(p => ({
+        name: p.provider_name,
+        value: Number(p.gross_amount)
+    }));
+
+    const subscriptionsByPlan = (data?.subscriptions_by_plan || []).map(s => ({
+        name: formatLabel(s.plan_id),
+        amount: Number(s.gross_amount),
+        count: s.count
+    }));
+
+    const subscriptionsByStatus = (data?.subscriptions_by_status || []).map(s => ({
+        name: formatLabel(s.status),
+        value: s.count
+    }));
+
+    return (
+        <div className={styles.tabContent}>
+            <div className={styles.splitRow}>
+                <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>Transactions by Reason</h3>
+                    {byReason.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={byReason} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
+                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} />
+                                    <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No transaction data available</div>
+                    )}
+                </div>
+                <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>Transactions by Payment Provider</h3>
+                    {byProvider.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={byProvider}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={55}
+                                        outerRadius={80}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {byProvider.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_PALETTES.providers[index % PIE_PALETTES.providers.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No provider data available</div>
+                    )}
+                </div>
+            </div>
+
+            <div className={styles.splitRow} style={{ marginTop: '24px' }}>
+                <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>Subscriptions by Plan</h3>
+                    {subscriptionsByPlan.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={subscriptionsByPlan} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
+                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Volume']} />
+                                    <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.blue} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No subscription plan data available</div>
+                    )}
+                </div>
+                <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>Subscription Status Distribution</h3>
+                    {subscriptionsByStatus.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={subscriptionsByStatus}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={55}
+                                        outerRadius={80}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {subscriptionsByStatus.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_PALETTES.churn[index % PIE_PALETTES.churn.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No subscription status data available</div>
+                    )}
                 </div>
             </div>
         </div>
@@ -655,7 +850,7 @@ function AnalyticsContent() {
 
     const initialTab = (searchParams.get('tab') as string) || 'demographics';
     const [activeTab, setActiveTab] = useState<Tab>(
-        (['demographics', 'events', 'advertising', 'community', 'revenue'].includes(initialTab) ? initialTab as Tab : 'demographics')
+        (['demographics', 'events', 'advertising', 'community', 'finance'].includes(initialTab) ? initialTab as Tab : 'demographics')
     );
 
     // Lock local territory analytics to the active administrator's country_code
@@ -664,7 +859,7 @@ function AnalyticsContent() {
 
     useEffect(() => {
         const tab = searchParams.get('tab') as Tab;
-        if (tab && ['demographics', 'events', 'advertising', 'community', 'revenue'].includes(tab)) {
+        if (tab && ['demographics', 'events', 'advertising', 'community', 'finance'].includes(tab)) {
             setActiveTab(tab as typeof activeTab);
         }
     }, [searchParams]);
@@ -686,7 +881,7 @@ function AnalyticsContent() {
                             <TabsTrigger value="events">Events</TabsTrigger>
                             <TabsTrigger value="advertising">Advertising</TabsTrigger>
                             <TabsTrigger value="community">Community</TabsTrigger>
-                            <TabsTrigger value="revenue">Revenue</TabsTrigger>
+                            <TabsTrigger value="finance">Finance</TabsTrigger>
                         </TabsList>
                     </div>
                 </Tabs>
@@ -696,7 +891,7 @@ function AnalyticsContent() {
             {activeTab === 'events' && <EventTab countryFilter={countryFilter} />}
             {activeTab === 'advertising' && <AdvertisingTab countryFilter={countryFilter} />}
             {activeTab === 'community' && <CommunityTab countryFilter={countryFilter} />}
-            {activeTab === 'revenue' && <RevenueTab countryFilter={countryFilter} />}
+            {activeTab === 'finance' && <FinanceTab countryFilter={countryFilter} />}
         </div>
     );
 }
