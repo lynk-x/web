@@ -507,7 +507,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <Tooltip {...TOOLTIP_STYLE} />
-                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -676,27 +676,10 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
     }));
 
     return (
+
         <div className={styles.tabContent}>
             <div className={styles.splitRow}>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Transactions by Reason</h3>
-                    {byReason.length > 0 ? (
-                        <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
-                                <BarChart data={byReason} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
-                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
-                                    <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    ) : (
-                        <div className={styles.loading}>No transaction data available</div>
-                    )}
-                </div>
-                <div className={styles.card}>
+            <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Transactions by Payment Provider</h3>
                     {byProvider.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
@@ -722,6 +705,25 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                         </div>
                     ) : (
                         <div className={styles.loading}>No provider data available</div>
+                    )}
+                </div>
+
+                <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>Transactions by Reason</h3>
+                    {byReason.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
+                            <ResponsiveContainer>
+                                <BarChart data={byReason} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
+                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
+                                    <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className={styles.loading}>No transaction data available</div>
                     )}
                 </div>
             </div>
