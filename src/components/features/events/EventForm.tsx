@@ -120,6 +120,20 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         }
     };
 
+    const handlePrevTab = () => {
+        const currentIndex = TABS.indexOf(activeTab);
+        if (currentIndex > 0) {
+            handleTabSwitch(TABS[currentIndex - 1]);
+        }
+    };
+
+    const handleNextTab = () => {
+        const currentIndex = TABS.indexOf(activeTab);
+        if (currentIndex < TABS.length - 1) {
+            handleTabSwitch(TABS[currentIndex + 1]);
+        }
+    };
+
     const renderTab = (id: EventFormTab, label: string) => {
         const hasError = (
             (id === 'cover' && errors.thumbnailUrl) ||
@@ -196,14 +210,38 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
             </header>
 
             {/* Tab Navigation */}
-            <div className={`${styles.tabs} tour-form-tabs`}>
-                {renderTab('cover', 'Cover Image')}
-                {renderTab('basics', 'Basics')}
-                {renderTab('category', 'Category')}
-                {renderTab('time', 'Time')}
-                {renderTab('place', 'Place')}
-                {renderTab('tickets', 'Tickets')}
-                {renderTab('settings', 'Settings')}
+            <div className={styles.tabsContainer}>
+                <div className={`${styles.tabs} tour-form-tabs`}>
+                    {renderTab('cover', 'Cover Image')}
+                    {renderTab('basics', 'Basics')}
+                    {renderTab('category', 'Category')}
+                    {renderTab('time', 'Time')}
+                    {renderTab('place', 'Place')}
+                    {renderTab('tickets', 'Tickets')}
+                    {renderTab('settings', 'Settings')}
+                </div>
+                <div className={styles.tabNavArrows}>
+                    <button 
+                        type="button" 
+                        className={styles.tabArrowBtn} 
+                        onClick={handlePrevTab} 
+                        disabled={activeTab === TABS[0]}
+                        title="Previous Section"
+                        aria-label="Previous Section"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button 
+                        type="button" 
+                        className={styles.tabArrowBtn} 
+                        onClick={handleNextTab} 
+                        disabled={activeTab === TABS[TABS.length - 1]}
+                        title="Next Section"
+                        aria-label="Next Section"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
             </div>
 
             <div className={styles.formColumn} ref={formRef}>
