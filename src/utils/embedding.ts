@@ -1,4 +1,37 @@
 let extractorPipeline: any = null;
+let preloadPromise: Promise<void> | null = null;
+
+/**
+ * Triggers loading/downloading the embedding model pipeline in the background.
+ */
+export async function preloadEmbeddingModel(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  
+  if (preloadPromise) {
+    return preloadPromise;
+  }
+
+  preloadPromise = (async () => {
+    try {
+      if (!extractorPipeline) {
+        console.log('[Embedding] Preloading model...');
+        const { pipeline, env } = await import('@huggingface/transformers');
+        
+        // Ensure we load models from the Hugging Face CDN
+        env.allowLocalModels = false;
+        
+        extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
+        console.log('[Embedding] Model preloaded successfully.');
+      }
+    } catch (error) {
+      console.error('[Embedding] Failed to preload embedding model:', error);
+      // Reset promise to allow retrying if it failed
+      preloadPromise = null;
+    }
+  })();
+
+  return preloadPromise;
+}
 
 /**
  * Generates a 384-dimensional vector embedding for an event using the IBM Granite multilingual embedding model.

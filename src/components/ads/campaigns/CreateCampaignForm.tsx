@@ -13,7 +13,7 @@ import { useCountries, Country } from '@/hooks/useCountries';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { createReferenceRepository } from '@/lib/repositories';
-import { generateCampaignEmbedding } from '@/utils/embedding';
+import { generateCampaignEmbedding, preloadEmbeddingModel } from '@/utils/embedding';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -88,6 +88,10 @@ export default function CreateCampaignForm({
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
+
+    useEffect(() => {
+        preloadEmbeddingModel();
+    }, []);
 
     // ── UI State ──────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'review'>('details');

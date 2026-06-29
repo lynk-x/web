@@ -25,6 +25,7 @@ import { TimePicker } from '@/components/ui/TimePicker';
 import { LocationInput } from '@/components/ui/LocationInput';
 import { VenueMap } from '@/components/features/events/VenueMap';
 import ImageCropperModal from '@/components/shared/ImageCropperModal';
+import { preloadEmbeddingModel } from '@/utils/embedding';
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -44,6 +45,10 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const { confirm: confirmModal, ConfirmDialog } = useConfirmModal();
+
+    useEffect(() => {
+        preloadEmbeddingModel();
+    }, []);
     const {
         formData, errors, loading, activeTab, setActiveTab,
         isDraftLoaded, isDirty,
