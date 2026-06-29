@@ -65,7 +65,7 @@ function ForumsContent() {
         const fetchForumsData = async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase.schema('api').rpc('get_advanced_analytics', { p_category: 'forums' });
+                const { data, error } = await supabase.schema('api').rpc('get_admin_analytics', { p_category: 'forums' });
                 if (error) throw error;
 
                 const rows: any[] = data || [];

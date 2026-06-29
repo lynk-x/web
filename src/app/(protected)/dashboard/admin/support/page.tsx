@@ -127,21 +127,11 @@ function SupportContent() {
             <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as SupportTab)} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
-                        <TabsTrigger value="queue">Review Queue</TabsTrigger>
                         <TabsTrigger value="tickets">Support Tickets</TabsTrigger>
+                        <TabsTrigger value="queue">Review Queue</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        {activeTab === 'queue' && (
-                            <FilterChips
-                                options={['all', 'pending_review', 'approved', 'rejected', 'flagged', 'appealed', 'resolved'].map(s => ({ 
-                                    value: s, 
-                                    label: s === 'all' ? 'All' : s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') 
-                                }))}
-                                currentValue={queueStatusFilter}
-                                onChange={setQueueStatusFilter}
-                            />
-                        )}
                         {activeTab === 'tickets' && (
                             <FilterChips
                                 options={['all', 'new', 'investigating', 'resolved', 'dismissed'].map(s => ({ 
@@ -152,12 +142,18 @@ function SupportContent() {
                                 onChange={setFeedbackStatusFilter}
                             />
                         )}
+                        {activeTab === 'queue' && (
+                            <FilterChips
+                                options={['all', 'pending_review', 'approved', 'rejected', 'flagged', 'appealed', 'resolved'].map(s => ({ 
+                                    value: s, 
+                                    label: s === 'all' ? 'All' : s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') 
+                                }))}
+                                currentValue={queueStatusFilter}
+                                onChange={setQueueStatusFilter}
+                            />
+                        )}
                     </div>
                 </div>
-
-                <TabsContent value="queue">
-                    <ReviewQueueTab searchQuery={searchTerm} statusFilter={queueStatusFilter} startDate={startDate} endDate={endDate} />
-                </TabsContent>
 
                 <TabsContent value="tickets">
                     <SupportTicketsTab 
@@ -166,6 +162,10 @@ function SupportContent() {
                         startDate={startDate}
                         endDate={endDate}
                     />
+                </TabsContent>
+
+                <TabsContent value="queue">
+                    <ReviewQueueTab searchQuery={searchTerm} statusFilter={queueStatusFilter} startDate={startDate} endDate={endDate} />
                 </TabsContent>
             </Tabs>
 

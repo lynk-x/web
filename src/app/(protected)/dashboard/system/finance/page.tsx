@@ -152,7 +152,7 @@ function GlobalFinanceContent() {
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Global Finance"
-                subtitle="Configure foreign exchange currency markets, payment networks, and subscription plans."
+                subtitle="Configure foreign exchange currency markets, payment networks and subscription plans."
             />
 
             <TableToolbar
