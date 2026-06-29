@@ -206,6 +206,24 @@ const renderTooltipContent = (props: any) => {
     return null;
 };
 
+function EmptyState({ message, height = 240 }: { message: string; height?: number }) {
+    return (
+        <div style={{ 
+            height, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            opacity: 0.5, 
+            fontSize: '14px',
+            border: '1px dashed rgba(255, 255, 255, 0.08)',
+            borderRadius: '8px',
+            color: 'var(--color-text-secondary, #a1a1aa)'
+        }}>
+            {message}
+        </div>
+    );
+}
+
 // ─── Tab Components ─────────────────────────────────────────────────────────
 
 function DemographicTab({ countryFilter }: { countryFilter: string }) {
@@ -246,7 +264,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>Account Type Distribution</h3>
                     {accountTypes.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <PieChart>
                                     <Pie
                                         data={accountTypes}
@@ -267,7 +285,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No account type data available</div>
+                        <EmptyState message="No account type data available" height={240} />
                     )}
                 </div>
 
@@ -275,7 +293,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>User Engagement (Churn Risk)</h3>
                     {churnData.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <PieChart>
                                     <Pie
                                         data={churnData}
@@ -296,7 +314,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No engagement data available</div>
+                        <EmptyState message="No engagement data available" height={240} />
                     )}
                 </div>
             </div>
@@ -305,7 +323,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                 <h3 className={styles.cardTitle}>Account Creation Trend (Last 30 Days)</h3>
                 {accountCreation.length > 0 ? (
                     <div style={{ width: '100%', height: 280 }}>
-                        <ResponsiveContainer>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <AreaChart data={accountCreation} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorSignup" x1="0" y1="0" x2="0" y2="1">
@@ -322,7 +340,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className={styles.loading}>No creation trend data available</div>
+                    <EmptyState message="No creation trend data available" height={280} />
                 )}
             </div>
         </div>
@@ -371,7 +389,7 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>Top Event Categories</h3>
                     {categories.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={categories} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
@@ -382,25 +400,25 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No category data available</div>
+                        <EmptyState message="No category data available" height={240} />
                     )}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Trending Event Tags</h3>
                     {tags.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={tags} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <Tooltip {...TOOLTIP_STYLE} />
-                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No tag data available</div>
+                        <EmptyState message="No tag data available" height={240} />
                     )}
                 </div>
             </div>
@@ -409,7 +427,7 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                 <h3 className={styles.cardTitle}>Event Creation Velocity (Last 30 Days)</h3>
                 {timeline.length > 0 ? (
                     <div style={{ width: '100%', height: 260 }}>
-                        <ResponsiveContainer>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
@@ -426,7 +444,7 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className={styles.loading}>No timeline data available</div>
+                    <EmptyState message="No timeline data available" height={260} />
                 )}
             </div>
         </div>
@@ -473,7 +491,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>Ad Type Distribution</h3>
                     {adTypes.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <PieChart>
                                     <Pie
                                         data={adTypes}
@@ -494,25 +512,25 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No ad type data available</div>
+                        <EmptyState message="No ad type data available" height={240} />
                     )}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Trending Campaign Tags</h3>
                     {tags.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={tags} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <Tooltip {...TOOLTIP_STYLE} />
-                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No tag data available</div>
+                        <EmptyState message="No tag data available" height={240} />
                     )}
                 </div>
             </div>
@@ -521,7 +539,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                 <h3 className={styles.cardTitle}>Active Campaign Creation Timeline</h3>
                 {timeline.length > 0 ? (
                     <div style={{ width: '100%', height: 260 }}>
-                        <ResponsiveContainer>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorAds" x1="0" y1="0" x2="0" y2="1">
@@ -538,7 +556,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className={styles.loading}>No timeline data available</div>
+                    <EmptyState message="No timeline data available" height={260} />
                 )}
             </div>
         </div>
@@ -578,7 +596,7 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                 <h3 className={styles.cardTitle}>Top Forums by Member Count</h3>
                 {byMembers.length > 0 ? (
                     <div style={{ width: '100%', height: 260 }}>
-                        <ResponsiveContainer>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={byMembers} layout="vertical" margin={{ top: 10, right: 10, left: 50, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                 <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
@@ -589,7 +607,7 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className={styles.loading}>No forum member data available</div>
+                    <EmptyState message="No forum member data available" height={260} />
                 )}
             </div>
 
@@ -598,36 +616,36 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>Top Forums by Message Volume</h3>
                     {byMessages.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={byMessages} layout="vertical" margin={{ top: 10, right: 10, left: 50, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <Tooltip {...TOOLTIP_STYLE} />
-                                    <Bar dataKey="count" name="Messages" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Messages" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No message volume data available</div>
+                        <EmptyState message="No message volume data available" height={240} />
                     )}
                 </div>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Top Forums by Shared Media</h3>
                     {byMedia.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={byMedia} layout="vertical" margin={{ top: 10, right: 10, left: 50, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <Tooltip {...TOOLTIP_STYLE} />
-                                    <Bar dataKey="count" name="Media Files" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Media Files" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No shared media data available</div>
+                        <EmptyState message="No shared media data available" height={240} />
                     )}
                 </div>
             </div>
@@ -683,7 +701,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>Transactions by Payment Provider</h3>
                     {byProvider.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <PieChart>
                                     <Pie
                                         data={byProvider}
@@ -704,7 +722,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No provider data available</div>
+                        <EmptyState message="No provider data available" height={240} />
                     )}
                 </div>
 
@@ -712,7 +730,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                     <h3 className={styles.cardTitle}>Transactions by Reason</h3>
                     {byReason.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={byReason} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
@@ -723,7 +741,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No transaction data available</div>
+                        <EmptyState message="No transaction data available" height={240} />
                     )}
                 </div>
             </div>
@@ -732,18 +750,18 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                 <h3 className={styles.cardTitle}>Subscriptions by Plan</h3>
                 {subscriptionsByPlan.length > 0 ? (
                     <div style={{ width: '100%', height: 260 }}>
-                        <ResponsiveContainer>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={subscriptionsByPlan} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                 <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
                                 <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                 <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Volume']} {...TOOLTIP_STYLE} />
-                                <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.blue} radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className={styles.loading}>No subscription plan data available</div>
+                    <EmptyState message="No subscription plan data available" height={260} />
                 )}
             </div>
         </div>

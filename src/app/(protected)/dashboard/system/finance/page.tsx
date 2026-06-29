@@ -143,7 +143,7 @@ function GlobalFinanceContent() {
         {
             header: 'Status',
             render: (plan: SubscriptionPlan) => (
-                <Badge variant={plan.status === 'active' ? 'success' : 'warning'} label={plan.status} />
+                <Badge variant={plan.status === 'approved' ? 'success' : 'warning'} label={plan.status} />
             )
         }
     ];

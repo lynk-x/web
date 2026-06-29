@@ -158,7 +158,7 @@ function FinanceContent() {
             const { data, error } = await supabase
                 .from('subscription_plans')
                 .select('id, display_name, product_type')
-                .eq('status', 'active')
+                .eq('status', 'approved')
                 .order('display_name');
             if (error) throw error;
             setSubscriptionPlans((data || []) as any);

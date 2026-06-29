@@ -86,7 +86,11 @@ export default function SubscriptionPlansPage() {
                 .order('created_at');
 
             if (error) throw error;
-            setPlans(data || []);
+            const mappedPlans = (data || []).map((plan: any) => ({
+                ...plan,
+                is_active: plan.status === 'approved'
+            }));
+            setPlans(mappedPlans);
         } catch (e: unknown) {
             showToast('Failed to load subscription plans', 'error');
         } finally {
@@ -154,7 +158,7 @@ export default function SubscriptionPlansPage() {
                 product_type: productType,
                 pulse_tier: productType === 'business_pulse' ? pulseTier : null,
                 interval,
-                is_active: isActive,
+                status: isActive ? 'approved' : 'pending',
                 metadata: {
                     // Legacy support for older components
                     features: allFeatures
@@ -259,7 +263,7 @@ export default function SubscriptionPlansPage() {
         try {
             const { error } = await supabase
                 .from('subscription_plans')
-                .update({ is_active: !plan.is_active })
+                .update({ status: plan.is_active ? 'pending' : 'approved' })
                 .eq('id', plan.id);
             if (error) throw error;
             showToast(`Plan ${plan.is_active ? 'deactivated' : 'activated'}`, 'success');
