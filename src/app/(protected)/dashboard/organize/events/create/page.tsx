@@ -116,6 +116,7 @@ export default function CreateEventPage() {
 
             if (rpcError) throw rpcError;
             const newEventId = rpcResult.event_id;
+            const newEventCreatedAt = rpcResult.created_at;
 
             // 5. Link Tags
             if (data.tags.length > 0 && newEventId) {
@@ -152,6 +153,7 @@ export default function CreateEventPage() {
                 if (resolvedTags.length > 0) {
                     const eventTagsToInsert = resolvedTags.map(tag => ({
                         event_id: newEventId,
+                        event_created_at: newEventCreatedAt,
                         tag_id: tag.id
                     }));
 

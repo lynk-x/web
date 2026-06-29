@@ -266,6 +266,7 @@ export default function EditEventPage() {
                 if (resolvedTags && Array.isArray(resolvedTags)) {
                     const eventTagsToInsert = resolvedTags.map((tag: any) => ({
                         event_id: eventId,
+                        event_created_at: eventCreatedAt,
                         tag_id: tag.id
                     }));
 

@@ -173,6 +173,7 @@ const CreateEventForm = () => {
                 if (resolvedTags && Array.isArray(resolvedTags)) {
                     const eventTagsToInsert = resolvedTags.map((t: any) => ({
                         event_id: event.id,
+                        event_created_at: event.created_at,
                         tag_id: t.id
                     }));
                     
