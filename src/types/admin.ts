@@ -44,6 +44,13 @@ export interface Campaign {
     metadata?: Record<string, any>;
     /** Partition key for advertising.campaigns */
     createdAt: string;
+    description?: string;
+    targetTags?: string[];
+    targetCountries?: string[];
+    destinationUrl?: string;
+    mediaUrl?: string;
+    mediaType?: string;
+    callToAction?: string;
 }
 
 /** A log entry for a sent broadcast notification. */
