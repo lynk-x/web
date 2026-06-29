@@ -61,31 +61,15 @@ interface SubscriptionPlanRow {
     gross_amount: number;
 }
 
-interface SubscriptionStatusRow {
-    status: string;
-    count: number;
-}
-
 interface RevenueData {
     by_reason: RevenueBreakdownRow[];
     by_provider: ProviderBreakdownRow[];
     subscriptions_by_plan: SubscriptionPlanRow[];
-    subscriptions_by_status: SubscriptionStatusRow[];
 }
 
 interface EventTimelineRow {
     day: string;
     count: number;
-}
-
-interface EventFormats {
-    physical: number;
-    online: number;
-}
-
-interface EventPrivacy {
-    public: number;
-    private: number;
 }
 
 interface EventCategoryRow {
@@ -100,8 +84,6 @@ interface EventTagRow {
 
 interface EventData {
     timeline: EventTimelineRow[];
-    formats: EventFormats;
-    privacy: EventPrivacy;
     categories: EventCategoryRow[];
     tags: EventTagRow[];
 }
@@ -116,17 +98,15 @@ interface AdTypeRow {
     count: number;
 }
 
-interface AdEngagement {
-    total_impressions: number;
-    total_clicks: number;
-    total_spent: number;
-    total_budget: number;
+interface AdTagRow {
+    tag: string;
+    count: number;
 }
 
 interface AdvertisingData {
     timeline: AdTimelineRow[];
     ad_types: AdTypeRow[];
-    engagement: AdEngagement;
+    tags: AdTagRow[];
 }
 
 interface ForumLeaderboardRow {
@@ -164,6 +144,24 @@ const PIE_PALETTES = {
     providers: [CHART_COLORS.green, CHART_COLORS.blue, CHART_COLORS.orange, CHART_COLORS.purple, CHART_COLORS.pink]
 };
 
+const TOOLTIP_STYLE = {
+    contentStyle: {
+        backgroundColor: 'rgba(19, 19, 26, 0.95)',
+        borderColor: 'var(--color-interface-outline, rgba(255,255,255,0.08))',
+        borderRadius: '8px',
+        color: '#fff',
+        fontSize: '13px',
+        backdropFilter: 'blur(8px)'
+    },
+    itemStyle: {
+        color: '#fff'
+    },
+    labelStyle: {
+        color: 'rgba(255,255,255,0.6)',
+        fontWeight: 'bold'
+    }
+};
+
 const formatLabel = (val: string) => {
     return val.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
@@ -185,12 +183,13 @@ const renderTooltipContent = (props: any) => {
     if (active && payload && payload.length) {
         return (
             <div style={{
-                background: 'var(--color-bg-surface-secondary, #1a1a24)',
-                border: '1px solid var(--color-border-primary, rgba(255,255,255,0.08))',
+                background: 'rgba(19, 19, 26, 0.95)',
+                border: '1px solid var(--color-interface-outline, rgba(255,255,255,0.08))',
                 borderRadius: '8px',
                 padding: '8px 12px',
                 color: '#fff',
-                fontSize: '13px'
+                fontSize: '13px',
+                backdropFilter: 'blur(8px)'
             }}>
                 <p style={{ margin: 0, fontWeight: 'bold', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>
                     {label ? formatXAxisDate(label) : ''}
@@ -262,7 +261,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                                             <Cell key={`cell-${index}`} fill={PIE_PALETTES.accounts[index % PIE_PALETTES.accounts.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -291,7 +290,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                                             <Cell key={`cell-${index}`} fill={PIE_PALETTES.churn[index % PIE_PALETTES.churn.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -342,8 +341,6 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                 if (error) throw error;
                 return (res as any as EventData | null) || { 
                     timeline: [], 
-                    formats: { physical: 0, online: 0 }, 
-                    privacy: { public: 0, private: 0 }, 
                     categories: [], 
                     tags: [] 
                 };
@@ -354,18 +351,6 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
     );
 
     if (isLoading) return <div className={styles.loading}>Loading Events...</div>;
-
-    const formats = data?.formats || { physical: 0, online: 0 };
-    const formatData = [
-        { name: 'Physical', value: formats.physical },
-        { name: 'Online / Virtual', value: formats.online }
-    ];
-
-    const privacy = data?.privacy || { public: 0, private: 0 };
-    const privacyData = [
-        { name: 'Public', value: privacy.public },
-        { name: 'Private / Invite-Only', value: privacy.private }
-    ];
 
     const categories = (data?.categories || []).slice(0, 5).map(c => ({
         name: c.category,
@@ -383,57 +368,6 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
         <div className={styles.tabContent}>
             <div className={styles.splitRow}>
                 <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Event Formats</h3>
-                    <div style={{ width: '100%', height: 220 }}>
-                        <ResponsiveContainer>
-                            <PieChart>
-                                <Pie
-                                    data={formatData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={75}
-                                    paddingAngle={4}
-                                    dataKey="value"
-                                >
-                                    {formatData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={PIE_PALETTES.formats[index % PIE_PALETTES.formats.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Event Privacy</h3>
-                    <div style={{ width: '100%', height: 220 }}>
-                        <ResponsiveContainer>
-                            <PieChart>
-                                <Pie
-                                    data={privacyData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={75}
-                                    paddingAngle={4}
-                                    dataKey="value"
-                                >
-                                    {privacyData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={PIE_PALETTES.privacy[index % PIE_PALETTES.privacy.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
-            <div className={styles.splitRow} style={{ marginTop: '24px' }}>
-                <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Top Event Categories</h3>
                     {categories.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
@@ -442,7 +376,7 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Bar dataKey="count" name="Events" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -460,7 +394,7 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Bar dataKey="count" name="Uses" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -479,15 +413,15 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                             <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={CHART_COLORS.indigo} stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor={CHART_COLORS.indigo} stopOpacity={0}/>
+                                        <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                                 <XAxis dataKey="day" tickFormatter={formatXAxisDate} stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
                                 <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
                                 <Tooltip content={renderTooltipContent} />
-                                <Area type="monotone" dataKey="count" name="Events Created" stroke={CHART_COLORS.indigo} fillOpacity={1} fill="url(#colorEvents)" />
+                                <Area type="monotone" dataKey="count" name="Events Created" stroke={CHART_COLORS.primary} fillOpacity={1} fill="url(#colorEvents)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -512,7 +446,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                 return (res as any as AdvertisingData | null) || { 
                     timeline: [], 
                     ad_types: [], 
-                    engagement: { total_impressions: 0, total_clicks: 0, total_spent: 0, total_budget: 0 } 
+                    tags: [] 
                 };
             } catch (err) {
                 throw err;
@@ -527,22 +461,14 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
         name: formatLabel(t.ad_type),
         value: t.count
     }));
-    const engagement = data?.engagement || { total_impressions: 0, total_clicks: 0, total_spent: 0, total_budget: 0 };
-
-    const ctr = engagement.total_impressions > 0 
-        ? (engagement.total_clicks / engagement.total_impressions) * 100 
-        : 0;
+    const tags = (data?.tags || []).slice(0, 5).map(t => ({
+        name: `#${t.tag}`,
+        count: t.count
+    }));
 
     return (
         <div className={styles.tabContent}>
-            <div className={styles.statsGrid}>
-                <StatCard label="Total Impressions" value={engagement.total_impressions.toLocaleString()} change="Across all campaigns" trend="neutral" />
-                <StatCard label="Total Clicks" value={engagement.total_clicks.toLocaleString()} change="Across all campaigns" trend="neutral" />
-                <StatCard label="Average CTR" value={`${ctr.toFixed(3)}%`} change="Click-Through Rate" trend="positive" />
-                <StatCard label="Ad Spend" value={`KES ${engagement.total_spent.toLocaleString()}`} change={`of KES ${engagement.total_budget.toLocaleString()} budget`} trend="neutral" />
-            </div>
-
-            <div className={styles.splitRow} style={{ marginTop: '24px' }}>
+            <div className={styles.splitRow}>
                 <div className={styles.card}>
                     <h3 className={styles.cardTitle}>Ad Type Distribution</h3>
                     {adTypes.length > 0 ? (
@@ -562,7 +488,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                                             <Cell key={`cell-${index}`} fill={PIE_PALETTES.ads[index % PIE_PALETTES.ads.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -572,29 +498,48 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                     )}
                 </div>
                 <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Active Campaign Creation Timeline</h3>
-                    {timeline.length > 0 ? (
+                    <h3 className={styles.cardTitle}>Trending Campaign Tags</h3>
+                    {tags.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
                             <ResponsiveContainer>
-                                <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorAds" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                    <XAxis dataKey="day" tickFormatter={formatXAxisDate} stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip content={renderTooltipContent} />
-                                    <Area type="monotone" dataKey="count" name="Campaigns" stroke={CHART_COLORS.green} fillOpacity={1} fill="url(#colorAds)" />
-                                </AreaChart>
+                                <BarChart data={tags} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                    <Tooltip {...TOOLTIP_STYLE} />
+                                    <Bar dataKey="count" name="Uses" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <div className={styles.loading}>No timeline data available</div>
+                        <div className={styles.loading}>No tag data available</div>
                     )}
                 </div>
+            </div>
+
+            <div className={styles.card} style={{ marginTop: '24px' }}>
+                <h3 className={styles.cardTitle}>Active Campaign Creation Timeline</h3>
+                {timeline.length > 0 ? (
+                    <div style={{ width: '100%', height: 260 }}>
+                        <ResponsiveContainer>
+                            <AreaChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorAds" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="day" tickFormatter={formatXAxisDate} stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                <Tooltip content={renderTooltipContent} />
+                                <Area type="monotone" dataKey="count" name="Campaigns" stroke={CHART_COLORS.primary} fillOpacity={1} fill="url(#colorAds)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className={styles.loading}>No timeline data available</div>
+                )}
             </div>
         </div>
     );
@@ -638,7 +583,7 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                 <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                 <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                <Tooltip />
+                                <Tooltip {...TOOLTIP_STYLE} />
                                 <Bar dataKey="count" name="Members" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -658,7 +603,7 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Bar dataKey="count" name="Messages" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -676,7 +621,7 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
                                     <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip />
+                                    <Tooltip {...TOOLTIP_STYLE} />
                                     <Bar dataKey="count" name="Media Files" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -703,8 +648,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                 return (res as any as RevenueData | null) || { 
                     by_reason: [], 
                     by_provider: [], 
-                    subscriptions_by_plan: [], 
-                    subscriptions_by_status: [] 
+                    subscriptions_by_plan: [] 
                 };
             } catch (err) {
                 throw err;
@@ -731,11 +675,6 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
         count: s.count
     }));
 
-    const subscriptionsByStatus = (data?.subscriptions_by_status || []).map(s => ({
-        name: formatLabel(s.status),
-        value: s.count
-    }));
-
     return (
         <div className={styles.tabContent}>
             <div className={styles.splitRow}>
@@ -748,7 +687,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} />
+                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
                                     <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -776,7 +715,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                                             <Cell key={`cell-${index}`} fill={PIE_PALETTES.providers[index % PIE_PALETTES.providers.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} />
+                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -787,53 +726,23 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                 </div>
             </div>
 
-            <div className={styles.splitRow} style={{ marginTop: '24px' }}>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Subscriptions by Plan</h3>
-                    {subscriptionsByPlan.length > 0 ? (
-                        <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
-                                <BarChart data={subscriptionsByPlan} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
-                                    <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Volume']} />
-                                    <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.blue} radius={[0, 4, 4, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    ) : (
-                        <div className={styles.loading}>No subscription plan data available</div>
-                    )}
-                </div>
-                <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Subscription Status Distribution</h3>
-                    {subscriptionsByStatus.length > 0 ? (
-                        <div style={{ width: '100%', height: 240 }}>
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Pie
-                                        data={subscriptionsByStatus}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={55}
-                                        outerRadius={80}
-                                        paddingAngle={4}
-                                        dataKey="value"
-                                    >
-                                        {subscriptionsByStatus.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={PIE_PALETTES.churn[index % PIE_PALETTES.churn.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    ) : (
-                        <div className={styles.loading}>No subscription status data available</div>
-                    )}
-                </div>
+            <div className={styles.card} style={{ marginTop: '24px' }}>
+                <h3 className={styles.cardTitle}>Subscriptions by Plan</h3>
+                {subscriptionsByPlan.length > 0 ? (
+                    <div style={{ width: '100%', height: 260 }}>
+                        <ResponsiveContainer>
+                            <BarChart data={subscriptionsByPlan} layout="vertical" margin={{ top: 10, right: 10, left: 40, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
+                                <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
+                                <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Volume']} {...TOOLTIP_STYLE} />
+                                <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.blue} radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className={styles.loading}>No subscription plan data available</div>
+                )}
             </div>
         </div>
     );
