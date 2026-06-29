@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
 import BackButton from '@/components/shared/BackButton';
 import styles from '../../page.module.css';
@@ -9,6 +10,8 @@ import { useOrganization } from '@/context/OrganizationContext';
 
 export default function EditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const searchParams = useSearchParams();
+    const createdAt = searchParams.get('createdAt');
     const supabase = useMemo(() => createClient(), []);
     const { activeAccount } = useOrganization();
 
@@ -23,7 +26,8 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 return;
             }
             setIsLoading(true);
-            const { data, error } = await supabase
+            
+            let query = supabase
                 .from('campaigns')
                 .select(`
                     *,
@@ -32,8 +36,13 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                     campaign_tags (tag_id)
                 `)
                 .eq('id', id)
-                .eq('account_id', activeAccount.id)
-                .single();
+                .eq('account_id', activeAccount.id);
+
+            if (createdAt) {
+                query = query.eq('created_at', createdAt);
+            }
+
+            const { data, error } = await query.single();
 
             if (error || !data) {
                 setNotFound(true);

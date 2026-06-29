@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
 import BackButton from '@/components/shared/BackButton';
 import styles from '../../page.module.css';
@@ -12,6 +13,8 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminEditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const searchParams = useSearchParams();
+    const createdAt = searchParams.get('createdAt');
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const router = useRouter();
@@ -24,7 +27,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
     useEffect(() => {
         const fetchCampaign = async () => {
             setIsLoading(true);
-            const { data, error } = await supabase
+            let query = supabase
                 .from('campaigns')
                 .select(`
                     *,
@@ -32,8 +35,13 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                     ad_campaign_regions:campaign_regions (country_code),
                     campaign_tags (tag_id)
                 `)
-                .eq('id', id)
-                .single();
+                .eq('id', id);
+
+            if (createdAt) {
+                query = query.eq('created_at', createdAt);
+            }
+
+            const { data, error } = await query.single();
 
             if (error || !data) {
                 setNotFound(true);
