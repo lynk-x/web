@@ -66,7 +66,7 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                             alt="Lynk-X" 
                             width={110} 
                             height={28} 
-                            style={{ objectFit: 'contain' }}
+                            style={{ objectFit: 'cover' }}
                             priority 
                         />
                     </div>
@@ -177,7 +177,7 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                     {/* Verification Note */}
                     <div className={styles.noteBox}>
                         <p className={styles.noteText}>
-                            <strong>Security Note:</strong> This is a system-generated financial settlement statement. Funds are transferred securely using cryptographic ledger entries to the verified organizer wallet. If you have questions regarding this settlement, please contact support@lynk-x.com with reference <strong>{payout.reference || payout.id}</strong>.
+                            <strong>Security Note:</strong> This is a system-generated financial settlement statement. Funds are transferred securely using internal entries to the verified organizer wallet. If you have questions regarding this settlement, please contact support@lynk-x.com with reference <strong>{payout.reference || payout.id}</strong>.
                         </p>
                     </div>
                 </div>

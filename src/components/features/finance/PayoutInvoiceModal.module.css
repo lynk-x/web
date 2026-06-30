@@ -55,6 +55,9 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
+    background: #121212;
+    padding: 6px 12px;
+    border-radius: 6px;
 }
 
 .brandLogo {
@@ -415,6 +418,14 @@
     .brandX, .refNo {
         color: #000 !important;
         text-shadow: none !important;
+    }
+    .brand {
+        background: #121212 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 6px 12px !important;
+        border-radius: 6px !important;
+        display: inline-flex !important;
     }
     .closeBtn, .footer {
         display: none !important;
