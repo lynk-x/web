@@ -3,7 +3,6 @@
 import { use, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
-import BackButton from '@/components/shared/BackButton';
 import styles from '../../page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -231,20 +230,13 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <div style={{ marginBottom: '16px' }}>
-                        <BackButton label="Back to Campaigns" />
-                    </div>
-                    <h1 className={styles.title}>Edit Campaign (Admin)</h1>
-                    <p className={styles.subtitle}>Update details and creative assets for this client campaign.</p>
-                </div>
-            </header>
-
             <CreateCampaignForm 
                 initialData={campaign} 
                 isEditing={true} 
                 onSubmit={handleAdminSubmit}
+                pageTitle="Edit Campaign (Admin)"
+                pageSubtitle="Update details and creative assets for this client campaign."
+                backLabel="Back to Campaigns"
             />
         </div>
     );

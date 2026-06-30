@@ -7,7 +7,6 @@ import { useToast } from '@/components/ui/Toast';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import { useOrganization } from '@/context/OrganizationContext';
 import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
-import SubPageHeader from '@/components/shared/SubPageHeader';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { generateCampaignEmbedding } from '@/utils/embedding';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
@@ -20,7 +19,6 @@ export default function CreateCampaignPage() {
     const { enabled: isEmbedEnabled } = useFeatureFlag('enable_client_embeddings');
 
     const [accountId, setAccountId] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleAdminSubmit = async (formData: CampaignData) => {
         const resolvedAccountId = accountId || activeAccount?.id;
@@ -29,7 +27,6 @@ export default function CreateCampaignPage() {
             return;
         }
 
-        setIsSubmitting(true);
         try {
             const { data, error } = await supabase.schema('api').rpc('admin_create_campaign', {
                 p_account_id: resolvedAccountId,
@@ -70,30 +67,27 @@ export default function CreateCampaignPage() {
             router.push('/dashboard/admin/campaigns');
         } catch (err: any) {
             showToast(err.message || 'Failed to create campaign', 'error');
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
-                title="Create Campaign"
-                subtitle="Provision a new advertising campaign for an account"
+            <CreateCampaignForm 
+                onSubmit={handleAdminSubmit}
+                pageTitle="Create Campaign"
+                pageSubtitle="Provision a new advertising campaign for an account"
                 backLabel="Back to Campaigns"
-            />
-
-            <AccountSearchInput
-                value={accountId}
-                onChange={setAccountId}
-                label="Advertiser Account"
-                placeholder="Search accounts by name or reference…"
-                countryCode={activeAccount?.country_code || null}
-            />
-
-            <div className={adminStyles.pageCard}>
-                <CreateCampaignForm onSubmit={handleAdminSubmit} />
-            </div>
+            >
+                <div style={{ marginBottom: '24px' }}>
+                    <AccountSearchInput
+                        value={accountId}
+                        onChange={setAccountId}
+                        label="Advertiser Account"
+                        placeholder="Search accounts by name or reference…"
+                        countryCode={activeAccount?.country_code || null}
+                    />
+                </div>
+            </CreateCampaignForm>
         </div>
     );
 }

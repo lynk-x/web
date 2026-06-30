@@ -3,7 +3,6 @@
 import { use, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
-import BackButton from '@/components/shared/BackButton';
 import styles from '../../page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -123,15 +122,13 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <BackButton label="Back to Campaigns" />
-                    <h1 className={styles.title}>Edit Campaign</h1>
-                    <p className={styles.subtitle}>Update your campaign details and creative.</p>
-                </div>
-            </header>
-
-            <CreateCampaignForm initialData={campaign} isEditing={true} />
+            <CreateCampaignForm 
+                initialData={campaign} 
+                isEditing={true}
+                pageTitle="Edit Campaign"
+                pageSubtitle="Update your campaign details and creative."
+                backLabel="Back to Campaigns"
+            />
         </div>
     );
 }

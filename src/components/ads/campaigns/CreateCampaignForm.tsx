@@ -14,6 +14,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { createReferenceRepository } from '@/lib/repositories';
 import { generateCampaignEmbedding, preloadEmbeddingModel } from '@/utils/embedding';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,9 +63,14 @@ interface CreateCampaignFormProps {
     onDirtyChange?: (isDirty: boolean) => void;
     /** When provided, the form delegates submission to this callback instead of its internal RPC logic.
      *  Receives the current form data and the editing flag. */
-    onSubmit?: (formData: CampaignData, isEditing: boolean) => Promise<void>;
+    onSubmit?: (formData: CampaignData, isEditing: boolean, status?: 'draft' | 'pending_approval') => Promise<void>;
     /** When provided, seeds the initial account_id in the form data (admin reuse). */
     initialAccountId?: string;
+    pageTitle?: string;
+    pageSubtitle?: string;
+    backLabel?: string;
+    backHref?: string;
+    children?: React.ReactNode;
 }
 
 
@@ -83,6 +89,11 @@ export default function CreateCampaignForm({
     onDirtyChange,
     onSubmit,
     initialAccountId,
+    pageTitle,
+    pageSubtitle,
+    backLabel,
+    backHref,
+    children
 }: CreateCampaignFormProps) {
     const router = useRouter();
     const { showToast } = useToast();
@@ -288,8 +299,11 @@ export default function CreateCampaignForm({
     };
 
     // ── Dirty Check ───────────────────────────────────────────────────────────
+    const isDirty = useMemo(() => {
+        return JSON.stringify(formData) !== JSON.stringify(defaultData);
+    }, [formData, defaultData]);
+
     useEffect(() => {
-        const isDirty = JSON.stringify(formData) !== JSON.stringify(defaultData);
         onDirtyChange?.(isDirty);
 
         if (isDirty) {
@@ -309,7 +323,7 @@ export default function CreateCampaignForm({
 
             return () => window.removeEventListener('beforeunload', handleBeforeUnload);
         }
-    }, [formData, onDirtyChange, isEditing, defaultData]);
+    }, [isDirty, onDirtyChange, isEditing, formData.title]);
 
     /**
      * Live validation for campaign dates.
@@ -521,6 +535,20 @@ export default function CreateCampaignForm({
         return timeline;
     }, [formData.start_at, formData.end_at]);
 
+    const suggestiveHeadlines = useMemo(() => {
+        const list = [
+            "Limited Time Offer!",
+            "Join the Community",
+            "Exclusive Access",
+            "Don't Miss Out!",
+        ];
+        if (formData.title) {
+            list.unshift(`Join ${formData.title}!`);
+            list.unshift(`Discover ${formData.title}`);
+        }
+        return Array.from(new Set(list)).slice(0, 5);
+    }, [formData.title]);
+
     // ── Validation ────────────────────────────────────────────────────────────
     const validateTab = (tab: string): boolean => {
         setFormError('');
@@ -637,10 +665,21 @@ export default function CreateCampaignForm({
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent, forceStatus?: 'draft' | 'pending_approval') => {
+        if (e) e.preventDefault();
         setFormError('');
-        if (onSubmit) { await onSubmit(formData, isEditing); return; }
+        
+        const targetStatus = forceStatus || (isEditing ? undefined : 'pending_approval');
+
+        if (onSubmit) { 
+            setIsSubmitting(true);
+            try {
+                await onSubmit(formData, isEditing, targetStatus); 
+            } finally {
+                setIsSubmitting(false);
+            }
+            return; 
+        }
         if (!activeAccount) { showToast('Please select an active account first.', 'error'); return; }
         if (!validateForm()) { showToast('Please review the form for errors.', 'error'); return; }
 
@@ -706,7 +745,8 @@ export default function CreateCampaignForm({
                     max_bid_amount: parseFloat(formData.max_bid_amount),
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
-                    destination_url: formData.destination_url
+                    destination_url: formData.destination_url,
+                    ...(targetStatus ? { status: targetStatus } : {})
                 },
                 p_regions: formData.target_countries,
                 p_tags: formData.target_tags,
@@ -763,6 +803,27 @@ export default function CreateCampaignForm({
 
         return (
             <>
+                <SubPageHeader
+                    title={pageTitle || (isEditing ? "Edit Campaign" : "Create New Campaign")}
+                    subtitle={pageSubtitle || (isEditing ? "Update your campaign details and creative." : "Set up a new ad campaign to reach more users.")}
+                    backLabel={backLabel || "Back to Campaigns"}
+                    backHref={backHref}
+                    isDirty={isDirty}
+                    primaryAction={{
+                        label: isEditing ? 'Save Changes' : 'Launch Campaign',
+                        type: 'submit',
+                        formId: 'campaign-form',
+                        isLoading: isSubmitting
+                    }}
+                    secondaryAction={!isEditing ? {
+                        label: 'Save Draft',
+                        onClick: () => handleSubmit(undefined, 'draft'),
+                        isLoading: isSubmitting
+                    } : undefined}
+                />
+
+                {children}
+
                 <div className={adminStyles.subPageGrid}>
 
                     {/* ── Left: Form ─────────────────────────────────────────── */}
@@ -770,19 +831,51 @@ export default function CreateCampaignForm({
                         <div className={`${adminStyles.pageCard} tour-ads-form-container`} style={{ padding: '0' }}>
 
                             {/* Tab Nav */}
-                            <div className={`${styles.tabs} tour-ads-form-tabs`} style={{ padding: '0 24px' }}>
-                                {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
-                                    <div
-                                        key={tab}
-                                        className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-ads-tab-${tab}`}
-                                        onClick={() => handleTabSwitch(tab)}
+                            <div className={styles.tabsContainer} style={{ padding: '0 24px' }}>
+                                <div className={`${styles.tabs} tour-ads-form-tabs`}>
+                                    {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
+                                        <div
+                                            key={tab}
+                                            className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-ads-tab-${tab}`}
+                                            onClick={() => handleTabSwitch(tab)}
+                                        >
+                                            {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className={styles.tabNavArrows}>
+                                    <button 
+                                        type="button" 
+                                        className={styles.tabArrowBtn} 
+                                        onClick={() => {
+                                            const flow = ['details', 'targeting', 'creative', 'review'];
+                                            const idx = flow.indexOf(activeTab);
+                                            if (idx > 0) handleTabSwitch(flow[idx - 1] as any);
+                                        }} 
+                                        disabled={activeTab === 'details'}
+                                        title="Previous Section"
+                                        aria-label="Previous Section"
                                     >
-                                        {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
-                                    </div>
-                                ))}
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className={styles.tabArrowBtn} 
+                                        onClick={() => {
+                                            const flow = ['details', 'targeting', 'creative', 'review'];
+                                            const idx = flow.indexOf(activeTab);
+                                            if (idx < flow.length - 1) handleTabSwitch(flow[idx + 1] as any);
+                                        }} 
+                                        disabled={activeTab === 'review'}
+                                        title="Next Section"
+                                        aria-label="Next Section"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </button>
+                                </div>
                             </div>
 
-                            <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+                            <form id="campaign-form" onSubmit={(e) => handleSubmit(e)} style={{ padding: '24px' }}>
 
                                 {/* ── Tab: Campaign Details ── */}
                                 {activeTab === 'details' && (
@@ -1134,6 +1227,23 @@ export default function CreateCampaignForm({
                                                     value={activeCreative.headline}
                                                     onChange={(e) => updateCreative(activeCreativeIdx, { headline: e.target.value })}
                                                 />
+                                                <div className={styles.tagSuggestions} style={{ marginTop: '6px' }}>
+                                                    {suggestiveHeadlines.map((chip) => (
+                                                        <button
+                                                            key={chip}
+                                                            type="button"
+                                                            className={styles.tagSuggestion}
+                                                            style={{
+                                                                borderColor: activeCreative.headline === chip ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.12)',
+                                                                color: activeCreative.headline === chip ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.7)',
+                                                                background: activeCreative.headline === chip ? 'rgba(32, 249, 40, 0.06)' : 'transparent',
+                                                            }}
+                                                            onClick={() => updateCreative(activeCreativeIdx, { headline: chip })}
+                                                        >
+                                                            {chip}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                                 {errors[`creative.${activeCreativeIdx}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.headline`]}</p>}
                                             </div>
 
@@ -1197,9 +1307,6 @@ export default function CreateCampaignForm({
                                                 <label>Budget</label>
                                                 <div>
                                                     USD {formData.total_budget} Total (USD {formData.max_bid_amount} Max Bid)
-                                                    {formatLocal(formData.total_budget) && (
-                                                        <div style={{ fontSize: '11px', opacity: 0.6 }}>Approx. {formatLocal(formData.total_budget)}</div>
-                                                    )}
                                                 </div>
                                             </div>
                                             <div className={styles.reviewItem}>
@@ -1223,43 +1330,15 @@ export default function CreateCampaignForm({
                                         <div className={styles.launchNote}>
                                             By launching, your campaign will be submitted for admin approval before going live.
                                         </div>
+
+                                        {formError && (
+                                            <div style={{ color: 'var(--color-interface-error)', width: '100%', marginTop: '16px', fontSize: '13px' }}>
+                                                {formError}
+                                            </div>
+                                        )}
+
                                     </div>
                                 )}
-
-                                {/* Action Buttons */}
-                                <div className={`${styles.actions} tour-ads-form-actions`}>
-                                    {formError && (
-                                        <div style={{ color: 'var(--color-interface-error)', width: '100%', marginBottom: '16px', fontSize: '13px', textAlign: 'center' }}>
-                                            {formError}
-                                        </div>
-                                    )}
-                                    <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'space-between' }}>
-                                        <div>
-                                            {activeTab !== 'details' && (
-                                                <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => {
-                                                    const flow = ['details', 'targeting', 'creative', 'review'];
-                                                    const idx = flow.indexOf(activeTab);
-                                                    if (idx > 0) handleTabSwitch(flow[idx - 1] as any);
-                                                }}>Back</button>
-                                            )}
-                                        </div>
-                                        <div>
-                                            {activeTab !== 'review' ? (
-                                                <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
-                                                    const flow = ['details', 'targeting', 'creative', 'review'];
-                                                    const idx = flow.indexOf(activeTab);
-                                                    if (idx < flow.length - 1) handleTabSwitch(flow[idx + 1] as any);
-                                                }}>
-                                                    Next →
-                                                </button>
-                                            ) : (
-                                                <button type="submit" disabled={isSubmitting} className={`${styles.btn} ${styles.btnPrimary}`}>
-                                                    {isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Launch Campaign')}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
                             </form>
                         </div>
                     </div>
