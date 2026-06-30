@@ -14,7 +14,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live https://*.vercel.live",
       "font-src 'self' https://fonts.gstatic.com https://vercel.live https://*.vercel.live",
       "img-src 'self' data: blob: https://cdn.lynk-x.app https://*.supabase.co https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://api.qrserver.com https://vercel.live https://*.vercel.live https://vercel.com https://*.vercel.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://fcm.googleapis.com https://vercel.live https://*.vercel.live wss://*.vercel.live https://*.vercel.com https://*.r2.cloudflarestorage.com https://cdn.lynk-x.app https://huggingface.co https://*.huggingface.co https://*.cdn.hf.co https://cdn.jsdelivr.net",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://fcm.googleapis.com https://vercel.live https://*.vercel.live wss://*.vercel.live https://*.vercel.com https://*.r2.cloudflarestorage.com https://cdn.lynk-x.app https://huggingface.co https://*.huggingface.co https://*.cdn.hf.co https://cdn.jsdelivr.net https://fonts.gstatic.com",
       "frame-src 'self' https://vercel.live https://*.vercel.live",
       "frame-ancestors 'none'",
     ].join('; '),
