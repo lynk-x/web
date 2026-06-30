@@ -130,7 +130,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         fetchInvoice();
     }, [id, supabase, activeAccount]);
 
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        const originalTitle = document.title;
+        document.title = `Lynk-X_Invoice_INV-${invoice?.id || id.slice(0, 8).toUpperCase()}`;
+        window.print();
+        document.title = originalTitle;
+    };
 
     if (isLoading && !activeAccount) {
         return (

@@ -15,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
                 '/verify-success/', 
                 '/callback/', 
                 '/update-password/',
-                '/ticket-scanning/',
                 '/invite/'
             ],
         },

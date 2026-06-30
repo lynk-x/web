@@ -123,7 +123,12 @@ function AdminInvoiceContent() {
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
     const { enabled: isPdfExportEnabled } = useFeatureFlag('enable_invoice_pdf_export');
 
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        const originalTitle = document.title;
+        document.title = `Lynk-X_Invoice_INV-${tx?.referenceId || id.slice(0, 8).toUpperCase()}`;
+        window.print();
+        document.title = originalTitle;
+    };
 
     const handleDownloadPDF = async () => {
         if (!tx) return;

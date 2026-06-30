@@ -57,8 +57,8 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
                 const mapped: Attendee[] = (data?.items || []).map((row: any) => ({
                     id: row.ticket_id,
-                    name: row.full_name || row.user_name || 'Anonymous',
-                    email: row.email || 'No email',
+                    name: row.full_name || 'Anonymous',
+                    username: row.user_name || '',
                     tierName: row.tier_name,
                     purchaseDate: new Date(row.created_at).toLocaleDateString(),
                     status: row.status,
@@ -79,7 +79,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
     // Filter Logic
     const filteredAttendees = attendees.filter(a => {
         const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (a.username && a.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
             a.ticketCode.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -140,7 +140,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
             />
 
             <TableToolbar
-                searchPlaceholder="Search by name, email or order ID..."
+                searchPlaceholder="Search by name, username or order ID..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >

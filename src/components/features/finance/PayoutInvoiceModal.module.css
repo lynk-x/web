@@ -39,7 +39,7 @@
     }
 }
 
-.printHeader {
+.printHeader, .printFooter {
     display: none;
 }
 
@@ -386,6 +386,9 @@
 
 /* Print Styles */
 @media print {
+    @page {
+        margin: 0;
+    }
     body * {
         visibility: hidden;
     }
@@ -408,6 +411,7 @@
         width: 100% !important;
         max-width: 100% !important;
         color: #000 !important;
+        padding: 1.6cm !important;
         position: absolute;
         top: 0;
         left: 0;
@@ -431,8 +435,9 @@
         display: none !important;
     }
     .printHeader {
-        display: block;
-        text-align: center;
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
         margin-bottom: 20px;
         border-bottom: 2px solid #000;
         padding-bottom: 10px;
@@ -442,6 +447,22 @@
         font-weight: 800;
         margin: 0;
         color: #000;
+    }
+    .printHeaderCategory {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .printFooter {
+        display: flex !important;
+        justify-content: space-between;
+        font-size: 10px;
+        color: #666 !important;
+        border-top: 1px solid #dee2e6;
+        padding-top: 10px;
+        margin-top: 30px;
     }
     .header {
         border-bottom: 1px dashed #000 !important;

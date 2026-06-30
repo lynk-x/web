@@ -106,10 +106,6 @@ export function MfaManager() {
         }
     };
 
-    if (isLoading && !isEnrolling) {
-        return <div style={{ opacity: 0.7 }}>Loading security settings...</div>;
-    }
-
     if (isEnrolling && qrCodeSvg) {
         return (
             <div>
@@ -146,16 +142,18 @@ export function MfaManager() {
                     Two-Factor Authentication (MFA)
                 </h3>
                 <p style={{ margin: 0, fontSize: '14px', opacity: 0.8, color: 'var(--color-text-primary)' }}>
-                    {isMfaEnabled 
-                        ? 'Your account is currently protected by an authenticator app.'
-                        : 'Add an extra layer of security to your account using a time-based authenticator app.'}
+                    {isLoading 
+                        ? 'Checking two-factor authentication status...'
+                        : isMfaEnabled 
+                            ? 'Your account is currently protected by an authenticator app.'
+                            : 'Add an extra layer of security to your account using a time-based authenticator app.'}
                 </p>
             </div>
             <div style={{ flexShrink: 0 }}>
                 {isMfaEnabled ? (
                     <Button variant="danger" onClick={handleDisableMfa} isLoading={isLoading}>Disable 2FA</Button>
                 ) : (
-                    <Button variant="secondary" onClick={handleEnableMfa} isLoading={isEnrolling}>Enable 2FA</Button>
+                    <Button variant="secondary" onClick={handleEnableMfa} isLoading={isEnrolling || isLoading}>Enable 2FA</Button>
                 )}
             </div>
         </div>

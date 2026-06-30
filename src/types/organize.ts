@@ -223,7 +223,7 @@ export interface OrganizerEventTicket {
 export interface Attendee {
     id: string;
     name: string;
-    email: string;
+    username?: string;
     /** From `ticket_tiers.name` */
     tierName: string; // Matches display_name in DB
     purchaseDate: string;

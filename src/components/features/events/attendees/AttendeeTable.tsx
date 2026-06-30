@@ -46,7 +46,9 @@ const AttendeeTable: React.FC<AttendeeTableProps> = ({
             render: (attendee) => (
                 <div>
                     <div style={{ fontWeight: 600 }}>{attendee.name}</div>
-                    <div style={{ fontSize: '12px', opacity: 0.6 }}>{attendee.email}</div>
+                    {attendee.username && (
+                        <div style={{ fontSize: '12px', opacity: 0.6 }}>@{attendee.username}</div>
+                    )}
                 </div>
             ),
         },
@@ -82,11 +84,6 @@ const AttendeeTable: React.FC<AttendeeTableProps> = ({
                 const action = attendee.status === 'used' ? 'Unmarked' : 'Checked in';
                 showToast(`${action} ${attendee.name}`, 'success');
             },
-        },
-        {
-            label: 'Contact Attendee',
-            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>,
-            onClick: () => showToast(`Opening email composer for ${attendee.name}...`, 'info'),
         },
         {
             label: 'Cancel Ticket',

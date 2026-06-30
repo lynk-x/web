@@ -46,7 +46,11 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
     if (!isOpen || !payout) return null;
 
     const handlePrint = () => {
+        const originalTitle = document.title;
+        const ref = payout.reference || `PAY-${payout.id.slice(0, 8).toUpperCase()}`;
+        document.title = `Lynk-X_Settlement_Receipt_${ref}`;
         window.print();
+        document.title = originalTitle;
     };
 
     const displayDate = formatDate(payout.processedAt || payout.requestedAt || new Date().toISOString());
@@ -57,6 +61,7 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                 {/* Print Header (Only visible in print mode) */}
                 <div className={styles.printHeader}>
                     <h1>LYNK-X SETTLEMENT RECEIPT</h1>
+                    <span className={styles.printHeaderCategory}>Organizer Dashboard</span>
                 </div>
 
                 <div className={styles.header}>
@@ -179,6 +184,12 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                         <p className={styles.noteText}>
                             <strong>Security Note:</strong> This is a system-generated financial settlement statement. Funds are transferred securely using internal entries to the verified organizer wallet. If you have questions regarding this settlement, please contact support@lynk-x.com with reference <strong>{payout.reference || payout.id}</strong>.
                         </p>
+                    </div>
+
+                    {/* Print Footer (Only visible in print mode) */}
+                    <div className={styles.printFooter}>
+                        <span>Lynk-X Settlement Receipt</span>
+                        <span>Page 1 of 1</span>
                     </div>
                 </div>
 
