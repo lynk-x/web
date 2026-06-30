@@ -1191,7 +1191,7 @@ export default function CreateCampaignForm({
                                 {/* ── Tab: Creative ── */}
                                 {activeTab === 'creative' && (
                                     <div className={styles.formSection}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <h3 style={{ margin: 0, fontSize: '16px' }}>Ad Creatives</h3>
                                                 <p style={{ margin: '4px 0 0', fontSize: '13px', opacity: 0.6 }}>Add up to 3 variants for A/B rotation</p>
@@ -1206,7 +1206,7 @@ export default function CreateCampaignForm({
                                         {/* Variant Tabs */}
                                         <div className={styles.creativeTabs}>
                                             {formData.creatives.map((_, i) => (
-                                                <div key={i} className={`${styles.creativeTab} ${activeCreativeIdx === i ? styles.activeCreativeTab : ''}`} onClick={() => setActiveCreativeIdx(i)}>
+                                                <div key={i} className={`${styles.creativeTab} ${activeCreativeIdx === i ? styles.creativeTabActive : ''}`} onClick={() => setActiveCreativeIdx(i)}>
                                                     {i === 0 ? 'Primary' : `Variant ${String.fromCharCode(64 + i + 1)}`}
                                                     {i > 0 && (
                                                         <span className={styles.removeCreative} onClick={(e) => { e.stopPropagation(); removeCreative(i); }}>×</span>
@@ -1227,22 +1227,43 @@ export default function CreateCampaignForm({
                                                     value={activeCreative.headline}
                                                     onChange={(e) => updateCreative(activeCreativeIdx, { headline: e.target.value })}
                                                 />
-                                                <div className={styles.tagSuggestions} style={{ marginTop: '6px' }}>
-                                                    {suggestiveHeadlines.map((chip) => (
-                                                        <button
-                                                            key={chip}
-                                                            type="button"
-                                                            className={styles.tagSuggestion}
-                                                            style={{
-                                                                borderColor: activeCreative.headline === chip ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.12)',
-                                                                color: activeCreative.headline === chip ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.7)',
-                                                                background: activeCreative.headline === chip ? 'rgba(32, 249, 40, 0.06)' : 'transparent',
-                                                            }}
-                                                            onClick={() => updateCreative(activeCreativeIdx, { headline: chip })}
-                                                        >
-                                                            {chip}
-                                                        </button>
-                                                    ))}
+                                                <div className={styles.tagSuggestions} style={{ marginTop: '10px' }}>
+                                                    {suggestiveHeadlines.map((chip) => {
+                                                        const isSelected = activeCreative.headline === chip;
+                                                        return (
+                                                            <button
+                                                                key={chip}
+                                                                type="button"
+                                                                onClick={() => updateCreative(activeCreativeIdx, { headline: chip })}
+                                                                style={{
+                                                                    padding: '4px 12px',
+                                                                    fontSize: '12px',
+                                                                    borderRadius: '16px',
+                                                                    border: '1px solid',
+                                                                    borderColor: isSelected ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.1)',
+                                                                    background: isSelected ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.02)',
+                                                                    color: isSelected ? '#000' : 'rgba(255, 255, 255, 0.7)',
+                                                                    fontWeight: isSelected ? '700' : 'normal',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s ease'
+                                                                }}
+                                                                onMouseEnter={e => {
+                                                                    if (!isSelected) {
+                                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                                                        e.currentTarget.style.color = '#fff';
+                                                                    }
+                                                                }}
+                                                                onMouseLeave={e => {
+                                                                    if (!isSelected) {
+                                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                                                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {chip}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                                 {errors[`creative.${activeCreativeIdx}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.headline`]}</p>}
                                             </div>

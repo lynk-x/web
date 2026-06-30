@@ -29,12 +29,11 @@
 }
 
 .tabArrowBtn {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--color-interface-outline);
+    background: transparent;
+    border: none;
     color: var(--color-utility-primaryText);
     width: 32px;
     height: 32px;
-    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -43,15 +42,12 @@
 }
 
 .tabArrowBtn:hover:not(:disabled) {
-    background: rgba(32, 249, 40, 0.1);
-    border-color: var(--color-brand-primary);
     color: var(--color-brand-primary);
 }
 
 .tabArrowBtn:disabled {
     opacity: 0.25;
     cursor: not-allowed;
-    border-color: rgba(255, 255, 255, 0.05);
     color: var(--color-utility-primaryText);
 }
 
@@ -946,6 +942,12 @@
 
 .discardBtn:hover {
     background: rgba(255, 255, 255, 0.05);
+}
+
+.creativeWorkspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
 }
 
 @keyframes slideDown {
