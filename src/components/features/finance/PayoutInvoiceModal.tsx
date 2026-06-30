@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
+import Image from 'next/image';
 import styles from './PayoutInvoiceModal.module.css';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -60,8 +61,14 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
 
                 <div className={styles.header}>
                     <div className={styles.brand}>
-                        <span className={styles.brandLogo}>⚡</span>
-                        <span className={styles.brandName}>LYNK<span className={styles.brandX}>X</span></span>
+                        <Image 
+                            src="/lynk-x_combined_logo.svg" 
+                            alt="Lynk-X" 
+                            width={110} 
+                            height={28} 
+                            style={{ objectFit: 'contain' }}
+                            priority 
+                        />
                     </div>
                     <div className={styles.meta}>
                         <span className={styles.invoiceLabel}>SETTLEMENT RECEIPT</span>

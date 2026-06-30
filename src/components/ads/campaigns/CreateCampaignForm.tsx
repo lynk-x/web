@@ -1337,7 +1337,7 @@ export default function CreateCampaignForm({
                                             <div className={styles.reviewItem}>
                                                 <label>Targeting</label>
                                                 <div>
-                                                    {formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Worldwide'}
+                                                    {formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Anywhere'}
                                                     {formData.target_tags.length > 0 && ` • ${formData.target_tags.join(', ')}`}
                                                 </div>
                                             </div>
