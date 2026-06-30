@@ -167,7 +167,7 @@ export default function CampaignDetailPage() {
         if (!campaign) return;
         try {
             const { error } = await supabase
-                .from('campaigns')
+                .from('v1_ad_campaigns')
                 .update({ status: newStatus })
                 .eq('id', campaign.id);
             if (error) throw error;

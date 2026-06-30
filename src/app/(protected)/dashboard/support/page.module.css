@@ -20,6 +20,12 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+.divider {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 0;
+}
+
 .ticketHeader {
     display: flex;
     justify-content: space-between;

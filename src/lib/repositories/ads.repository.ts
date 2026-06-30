@@ -115,7 +115,8 @@ export function createAdsRepository(client: DbClient) {
             targetCountryCode?: string;
         }): Promise<RepoResult<AdCampaign>> {
             const { data, error } = await client
-                .from('campaigns')
+                .schema('api')
+                .from('v1_ad_campaigns')
                 .insert({
                     account_id: params.accountId,
                     title: params.title,
@@ -140,7 +141,8 @@ export function createAdsRepository(client: DbClient) {
         /** Update a campaign's fields. */
         async update(campaignId: string, fields: Partial<Pick<AdCampaign, 'title' | 'description' | 'start_at' | 'end_at' | 'total_budget' | 'daily_limit' | 'destination_url' | 'target_event_id' | 'target_country_code'>>): Promise<RepoResult<AdCampaign>> {
             const { data, error } = await client
-                .from('campaigns')
+                .schema('api')
+                .from('v1_ad_campaigns')
                 .update(fields)
                 .eq('id', campaignId)
                 .select()
@@ -155,7 +157,8 @@ export function createAdsRepository(client: DbClient) {
          */
         async updateStatus(campaignId: string, status: CampaignStatus): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('campaigns')
+                .schema('api')
+                .from('v1_ad_campaigns')
                 .update({ status })
                 .eq('id', campaignId);
 

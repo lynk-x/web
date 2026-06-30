@@ -6,6 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import PayoutTable from '@/components/features/finance/PayoutTable';
 import RefundTable, { type Refund } from '@/components/features/finance/RefundTable';
+import PayoutInvoiceModal from '@/components/features/finance/PayoutInvoiceModal';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -38,6 +39,7 @@ function RevenueContent() {
 
     const [isSummaryLoading, setIsSummaryLoading] = useState(true);
     const [wallets, setWallets] = useState<AccountWallet[]>([]);
+    const [selectedPayoutForInvoice, setSelectedPayoutForInvoice] = useState<Payout | null>(null);
     const [stats, setStats] = useState({
         grossRevenue: 0,
         availableBalance: 0,
@@ -336,6 +338,7 @@ function RevenueContent() {
                         totalPages={Math.ceil(totalPayouts / itemsPerPage)}
                         onPageChange={setPayoutsPage}
                         isLoading={isPayoutsLoading}
+                        onViewInvoice={setSelectedPayoutForInvoice}
                     />
                 ) : (
                     <RefundTable
@@ -377,6 +380,13 @@ function RevenueContent() {
                         content: 'Monitor your available balance and funds currently held in escrow until your events are successfully completed.',
                     },
                 ]}
+            />
+
+            <PayoutInvoiceModal
+                isOpen={!!selectedPayoutForInvoice}
+                onClose={() => setSelectedPayoutForInvoice(null)}
+                payout={selectedPayoutForInvoice}
+                accountName={activeAccount?.name}
             />
         </div>
     );

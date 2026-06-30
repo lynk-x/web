@@ -221,7 +221,7 @@ function CampaignsContent() {
         showToast(`Saving changes...`, 'info');
         try {
             const { error } = await supabase
-                .from('campaigns')
+                .from('v1_ad_campaigns')
                 .update({
                     title: updates.name,
                     total_budget: updates.budget,
@@ -245,7 +245,7 @@ function CampaignsContent() {
         showToast(`Deleting ${campaign.name}...`, 'info');
         try {
             const { error } = await supabase
-                .from('campaigns')
+                .from('v1_ad_campaigns')
                 .update({ deleted_at: new Date().toISOString() })
                 .eq('id', campaign.id)
                 .eq('created_at', campaign.createdAt);

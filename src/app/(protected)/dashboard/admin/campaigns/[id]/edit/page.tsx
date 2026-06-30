@@ -28,54 +28,64 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
         const fetchCampaign = async () => {
             setIsLoading(true);
             let query = supabase
-                .from('campaigns')
-                .select(`
-                    *,
-                    ad_media:ad_media (call_to_action, url, is_primary, media_type:type),
-                    ad_campaign_regions:campaign_regions (country_code),
-                    campaign_tags (tag_id)
-                `)
+                .from('v1_ad_campaigns')
+                .select('*')
                 .eq('id', id);
 
             if (createdAt) {
                 query = query.eq('created_at', createdAt);
             }
 
-            const { data, error } = await query.single();
+            const { data: campaignData, error: campaignError } = await query.single();
 
-            if (error || !data) {
+            if (campaignError || !campaignData) {
                 setNotFound(true);
                 setIsLoading(false);
                 return;
             }
 
-            // Since campaign_tags only returns tag_id, we need to fetch the tag slugs from tags proxy view
-            const tagIds = (data.campaign_tags as any[])?.map(ct => ct.tag_id) || [];
+            // Fetch related media, regions, and tags in parallel from api.v1_ views
+            const [mediaRes, regionsRes, tagsRes] = await Promise.all([
+                supabase
+                    .from('v1_ad_media')
+                    .select('call_to_action, url, is_primary, media_type')
+                    .eq('campaign_id', id),
+                supabase
+                    .from('v1_ad_campaign_regions')
+                    .select('country_code')
+                    .eq('campaign_id', id),
+                supabase
+                    .from('v1_ad_campaign_tags')
+                    .select('tag_id')
+                    .eq('campaign_id', id)
+            ]);
+
+            const assets = mediaRes.data || [];
+            const regions = regionsRes.data || [];
+            const tagIds = tagsRes.data?.map(ct => ct.tag_id) || [];
+            
             let tagNames: string[] = [];
             if (tagIds.length > 0) {
                 const { data: tagsData } = await supabase
-                    .from('tags')
+                    .from('v1_tags')
                     .select('slug')
                     .in('id', tagIds);
                 tagNames = tagsData?.map(t => t.slug) || [];
             }
 
-            const assets = (data.ad_media as any[]) || [];
-            const regions = (data.ad_campaign_regions as any[]) || [];
-
             setCampaign({
-                id: data.id,
-                title: data.title,
-                description: data.description || '',
-                type: data.type,
-                total_budget: String(data.total_budget),
-                daily_limit: data.daily_limit != null ? String(data.daily_limit) : '',
-                max_bid_amount: data.max_bid_amount != null ? String(data.max_bid_amount) : '0.01',
-                start_at: data.start_at ? data.start_at.slice(0, 10) : '',
-                end_at: data.end_at ? data.end_at.slice(0, 10) : '',
-                destination_url: data.destination_url || '',
-                created_at: data.created_at,
-                target_event_id: data.target_event_id || '',
+                id: campaignData.id,
+                title: campaignData.title,
+                description: campaignData.description || '',
+                type: campaignData.type,
+                total_budget: String(campaignData.total_budget),
+                daily_limit: campaignData.daily_limit != null ? String(campaignData.daily_limit) : '',
+                max_bid_amount: campaignData.max_bid_amount != null ? String(campaignData.max_bid_amount) : '0.01',
+                start_at: campaignData.start_at ? campaignData.start_at.slice(0, 10) : '',
+                end_at: campaignData.end_at ? campaignData.end_at.slice(0, 10) : '',
+                destination_url: campaignData.destination_url || '',
+                created_at: campaignData.created_at,
+                target_event_id: campaignData.target_event_id || '',
                 target_countries: regions.map(r => r.country_code),
                 target_tags: tagNames,
                 creatives: assets.map(a => ({
@@ -86,13 +96,13 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                 })),
                 adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
                 adImageUrl: assets.find(a => a.is_primary)?.url || '',
-                account_id: data.account_id
+                account_id: campaignData.account_id
             });
             setIsLoading(false);
         };
 
         fetchCampaign();
-    }, [id, supabase]);
+    }, [id, supabase, createdAt]);
 
     const handleAdminSubmit = async (formData: CampaignData, isEditing: boolean) => {
         setIsSubmitting(true);
@@ -179,7 +189,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                     );
                     if (vector && vector.length > 0) {
                         const { error: embedError } = await supabase
-                            .from('campaigns')
+                            .from('v1_ad_campaigns')
                             .update({ embedding: vector })
                             .eq('id', campaignId);
                         if (embedError) {

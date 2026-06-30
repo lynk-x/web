@@ -1,0 +1,473 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--spacing-md);
+}
+
+.modal {
+    background: rgba(18, 18, 18, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(0, 242, 254, 0.05);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    animation: modalAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.printHeader {
+    display: none;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.brandLogo {
+    font-size: 20px;
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brandName {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: #fff;
+}
+
+.brandX {
+    color: #00f2fe;
+    text-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+}
+
+.meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: var(--spacing-xl);
+}
+
+.invoiceLabel {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.refNo {
+    font-family: var(--font-mono, monospace);
+    font-size: 14px;
+    font-weight: 600;
+    color: #00f2fe;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeBtn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.body {
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+/* Status Banner */
+.statusBanner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.statusInfo, .dateInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dateInfo {
+    align-items: flex-end;
+}
+
+.statusLabel, .dateLabel {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dateValue {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Details Grid */
+.detailsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+}
+
+@media (max-width: 500px) {
+    .detailsGrid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+}
+
+.detailsBlock {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: var(--spacing-md);
+}
+
+.blockTitle {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+}
+
+.payeeName {
+    font-weight: 600;
+    font-size: 14px;
+    color: #fff;
+    margin: 0;
+}
+
+.payeeSub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 2px 0 0 0;
+}
+
+.walletLabel {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0 2px 0;
+}
+
+.walletAddress {
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    color: #fff;
+    word-break: break-all;
+    margin: 0;
+}
+
+.paymentType {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 4px 0 0 0;
+}
+
+.receiptDivider {
+    height: 1px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    margin: var(--spacing-xs) 0;
+}
+
+/* Itemized Table */
+.tableContainer {
+    width: 100%;
+}
+
+.itemTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.itemTable th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.4);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.itemTable td {
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    vertical-align: top;
+}
+
+.itemName {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.itemDesc {
+    display: block;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 2px;
+}
+
+.textRight {
+    text-align: right;
+}
+
+.itemTable td.textRight {
+    font-family: var(--font-mono, monospace);
+    font-weight: 600;
+    font-size: 13px;
+    color: #fff;
+}
+
+/* Total Section */
+.totalSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    align-self: flex-end;
+    width: 100%;
+    max-width: 320px;
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: var(--spacing-md);
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.totalRow span:last-child {
+    font-family: var(--font-mono, monospace);
+}
+
+.grandTotal {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: var(--spacing-sm);
+    margin-top: 4px;
+    color: #fff;
+    font-weight: 700;
+}
+
+.totalAmount {
+    color: #00f2fe;
+    font-size: 16px;
+    text-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+}
+
+/* Note Box */
+.noteBox {
+    background: rgba(0, 242, 254, 0.02);
+    border: 1px solid rgba(0, 242, 254, 0.08);
+    border-radius: 10px;
+    padding: var(--spacing-md);
+}
+
+.noteText {
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+}
+
+.noteText strong {
+    color: #fff;
+}
+
+/* Footer */
+.footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 0 0 16px 16px;
+}
+
+.printBtn, .closeActionBtn {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.printBtn {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    border: none;
+    color: #000;
+}
+
+.printBtn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.closeActionBtn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.closeActionBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Print Styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .overlay, .overlay * {
+        visibility: visible;
+    }
+    .overlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff !important;
+        padding: 0;
+        backdrop-filter: none;
+    }
+    .modal {
+        border: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        color: #000 !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    .brandName, .payeeName, .walletAddress, .itemName, .totalAmount, .noteText strong {
+        color: #000 !important;
+    }
+    .brandX, .refNo {
+        color: #000 !important;
+        text-shadow: none !important;
+    }
+    .closeBtn, .footer {
+        display: none !important;
+    }
+    .printHeader {
+        display: block;
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+    }
+    .printHeader h1 {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 0;
+        color: #000;
+    }
+    .header {
+        border-bottom: 1px dashed #000 !important;
+    }
+    .statusBanner {
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        color: #000 !important;
+    }
+    .statusLabel, .dateLabel, .blockTitle, .walletLabel, .itemTable th, .itemDesc, .totalRow {
+        color: #495057 !important;
+    }
+    .detailsBlock {
+        background: #fff !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .receiptDivider {
+        border-top: 1px dashed #000 !important;
+    }
+    .itemTable td {
+        border-bottom: 1px solid #dee2e6 !important;
+        color: #000 !important;
+    }
+    .itemTable td.textRight {
+        color: #000 !important;
+    }
+    .totalSection {
+        border: 1px solid #dee2e6 !important;
+        background: #fff !important;
+    }
+    .grandTotal {
+        border-top: 1px solid #000 !important;
+    }
+    .noteBox {
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .noteText {
+        color: #495057 !important;
+    }
+}

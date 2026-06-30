@@ -252,6 +252,7 @@ export default function SupportDashboard() {
                                                 variant={ticket.status === 'resolved' ? 'success' : ticket.status === 'investigating' ? 'warning' : ticket.status === 'new' ? 'primary' : 'neutral'} 
                                             />
                                         </div>
+                                        <hr className={styles.divider} />
                                         <div className={styles.ticketMeta}>
                                             <span>{formatDate(ticket.created_at)}</span>
                                             <span className={styles['priority_' + ticket.priority]}>

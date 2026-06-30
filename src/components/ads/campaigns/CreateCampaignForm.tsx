@@ -726,8 +726,8 @@ export default function CreateCampaignForm({
                         formData.target_countries
                     );
                     if (vector && vector.length > 0) {
-                        const { error: embedError } = await createClient('advertising')
-                            .from('campaigns')
+                        const { error: embedError } = await supabase
+                            .from('v1_ad_campaigns')
                             .update({ embedding: vector })
                             .eq('id', campaignId);
                         if (embedError) {

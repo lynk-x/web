@@ -13,6 +13,8 @@ import { formatDate } from '@/utils/format';
 import { sanitizeInput } from '@/utils/sanitization';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter, usePathname } from 'next/navigation';
 
 
 export interface AccountMember {
@@ -44,6 +46,9 @@ export default function MemberTable() {
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
+    const { user } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
 
     const { can } = useAccountPermissions(activeAccount?.id);
     const hasManageMembers = can('can_manage_members');
@@ -298,28 +303,40 @@ export default function MemberTable() {
     ];
 
     const getActions = (member: AccountMember): ActionItem[] => {
-        if (!hasManageMembers) return [];
         const actions: ActionItem[] = [];
 
-        if (member.isPending) {
+        // Add 'Edit Profile' if this row is the current user
+        if (user && member.userId === user.id) {
             actions.push({
-                label: 'Revoke Invite',
-                variant: 'danger' as const,
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                onClick: () => handleRevokeInvite(member.id)
+                label: 'Edit Profile',
+                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+                onClick: () => {
+                    router.replace(`${pathname}?tab=account`);
+                }
             });
-        } else if (member.role !== 'owner') {
-            actions.push({
-                label: 'Change Role',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>,
-                onClick: () => handleRoleChange(member.userId!, member.role)
-            });
-            actions.push({
-                label: 'Remove Member',
-                variant: 'danger' as const,
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                onClick: () => handleRemoveMember(member.userId!)
-            });
+        }
+
+        if (hasManageMembers) {
+            if (member.isPending) {
+                actions.push({
+                    label: 'Revoke Invite',
+                    variant: 'danger' as const,
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                    onClick: () => handleRevokeInvite(member.id)
+                });
+            } else if (member.role !== 'owner') {
+                actions.push({
+                    label: 'Change Role',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>,
+                    onClick: () => handleRoleChange(member.userId!, member.role)
+                });
+                actions.push({
+                    label: 'Remove Member',
+                    variant: 'danger' as const,
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                    onClick: () => handleRemoveMember(member.userId!)
+                });
+            }
         }
 
         return actions;
@@ -370,7 +387,7 @@ export default function MemberTable() {
                     <DataTable<AccountMember>
                         data={members}
                         columns={columns}
-                        getActions={hasManageMembers ? getActions : undefined}
+                        getActions={getActions}
                         selectedIds={hasManageMembers ? selectedIds : undefined}
                         onSelect={hasManageMembers ? handleSelect : undefined}
                         onSelectAll={hasManageMembers ? handleSelectAll : undefined}

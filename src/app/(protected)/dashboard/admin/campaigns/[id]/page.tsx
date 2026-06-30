@@ -103,7 +103,7 @@ export default function AdminCampaignDetailPage() {
                 let tagNames: string[] = [];
                 if (tagIds.length > 0) {
                     const { data: tagsInfo } = await supabase
-                        .from('tags')
+                        .from('v1_tags')
                         .select('slug')
                         .in('id', tagIds);
                     tagNames = tagsInfo?.map(t => t.slug) || [];
@@ -155,7 +155,7 @@ export default function AdminCampaignDetailPage() {
     const handleStatusChange = async (campaignId: string, newStatus: string) => {
         try {
             const { error } = await supabase
-                .from('campaigns')
+                .from('v1_ad_campaigns')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('id', campaignId)
                 .eq('created_at', campaign?.createdAt);

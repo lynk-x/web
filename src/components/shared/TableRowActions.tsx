@@ -18,6 +18,10 @@ const TableRowActions: React.FC<TableRowActionsProps> = ({ actions }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    if (!actions || actions.length === 0) {
+        return null;
+    }
+
     // Close menu when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {

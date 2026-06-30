@@ -14,14 +14,12 @@ export async function preloadEmbeddingModel(): Promise<void> {
   preloadPromise = (async () => {
     try {
       if (!extractorPipeline) {
-        console.log('[Embedding] Preloading model...');
         const { pipeline, env } = await import('@huggingface/transformers');
         
         // Ensure we load models from the Hugging Face CDN
         env.allowLocalModels = false;
         
         extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
-        console.log('[Embedding] Model preloaded successfully.');
       }
     } catch (error) {
       console.error('[Embedding] Failed to preload embedding model:', error);

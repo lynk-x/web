@@ -88,6 +88,33 @@ const getStatusVariant = (status: string): BadgeVariant => {
     }
 };
 
+/**
+ * Resolves the environment-aware URL for a forum.
+ */
+const getForumUrl = (forumId: string): string => {
+    const customPwaUrl = process.env.NEXT_PUBLIC_PWA_URL;
+    if (customPwaUrl) {
+        if (customPwaUrl.startsWith('/')) {
+            return `${customPwaUrl.replace(/\/$/, '')}/${forumId}`;
+        }
+        return `${customPwaUrl.replace(/\/$/, '')}/forum/${forumId}`;
+    }
+
+    if (typeof window !== 'undefined') {
+        const host = window.location.host;
+
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+            return `http://localhost:8080/forum/${forumId}`;
+        }
+
+        if (host === 'lynk-x.app' || host === 'www.lynk-x.app') {
+            return `https://app.lynk-x.app/forum/${forumId}`;
+        }
+    }
+
+    return `https://app.lynk-x.app/forum/${forumId}`;
+};
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
@@ -207,13 +234,6 @@ export default function EventTable(props: EventTableProps) {
                 });
             }
 
-            if (onDuplicate) {
-                actions.push({
-                    label: 'Duplicate Event',
-                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-                    onClick: () => onDuplicate(event)
-                });
-            }
 
 
             actions.push({
@@ -233,7 +253,7 @@ export default function EventTable(props: EventTableProps) {
                 actions.push({
                     label: 'Go to Forum',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-                    onClick: () => window.open(`https://app.lynk-x.app/forum/${event.forum_id}`, '_blank')
+                    onClick: () => window.open(getForumUrl(event.forum_id!), '_blank')
                 });
             }
 
@@ -369,7 +389,7 @@ export default function EventTable(props: EventTableProps) {
             actions.push({
                 label: 'Visit Forum',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-                onClick: () => window.open(`https://app.lynk-x.app/forum/${event.forum_id}`, '_blank')
+                onClick: () => window.open(getForumUrl(event.forum_id!), '_blank')
             });
         }
 
@@ -380,15 +400,6 @@ export default function EventTable(props: EventTableProps) {
                 onClick: () => orgProps.onEdit!(event),
             });
         }
-
-        if (orgProps.onDuplicate) {
-            actions.push({
-                label: 'Duplicate Event',
-                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-                onClick: () => orgProps.onDuplicate!(event),
-            });
-        }
-
 
         actions.push({
             label: 'Attendee List',
