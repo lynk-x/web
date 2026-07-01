@@ -1,4 +1,4 @@
-import { getMessaging, getToken, onTokenRefresh, Messaging } from 'firebase/messaging';
+import { getMessaging, getToken, Messaging } from 'firebase/messaging';
 import { app } from '@/lib/firebase';
 
 type DeviceInfo = Record<string, unknown>;
@@ -25,16 +25,9 @@ class PushNotificationService {
       if (token) {
         await this.registerToken(token);
       }
-
-      if (this.messaging) {
-        onTokenRefresh(this.messaging, async (newToken) => {
-          if (newToken) {
-            await this.registerToken(newToken);
-          }
-        });
-      }
     } catch (error) {
       console.error('[Push] Initialization failed:', error);
+      this.initialized = false;
     }
   }
 
@@ -64,7 +57,7 @@ class PushNotificationService {
 
   private async registerToken(token: string) {
     try {
-      const deviceInfo: DeviceInfo = {
+      const deviceInfo: Record<string, unknown> = {
         platform: 'web',
         user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       };
@@ -93,6 +86,10 @@ class PushNotificationService {
     try {
       const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
       if (!vapidKey) return;
+
+      if (!('Notification' in window) || Notification.permission === 'denied') {
+        return;
+      }
 
       const token = await getToken(this.messaging, { vapidKey });
       if (!token) return;

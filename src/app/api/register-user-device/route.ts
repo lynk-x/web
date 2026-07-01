@@ -58,11 +58,13 @@ export async function DELETE(request: Request) {
   }
 
   const { error } = await supabase
-    .schema('identity')
-    .rpc('revoke_user_devices', { p_user_id: user.id });
+    .from('user_devices')
+    .delete()
+    .eq('fcm_token', token)
+    .eq('user_id', user.id);
 
   if (error) {
-    console.error('[API] revoke_user_devices failed:', error);
+    console.error('[API] remove_user_device failed:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

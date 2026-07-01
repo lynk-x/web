@@ -116,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             mounted = false;
             clearTimeout(timeout);
             subscription.unsubscribe();
+            pushNotificationService.cleanup();
         };
     }, []);
 
@@ -125,7 +126,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = async () => {
         setIsLoading(true);
         try {
-            await pushNotificationService.removeToken();
             await supabase.auth.signOut();
             localStorage.removeItem('lynks_active_account_id');
             router.push('/');
