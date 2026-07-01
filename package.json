@@ -23,6 +23,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "@huggingface/transformers": "^3.4.1",
     "dompurify": "^3.3.3",
+    "firebase": "^11.0.0",
     "framer-motion": "^12.34.0",
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",

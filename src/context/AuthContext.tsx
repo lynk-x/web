@@ -18,6 +18,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { createUsersRepository } from '@/lib/repositories';
+import { pushNotificationService } from '@/lib/services/push-notification-service';
 import type { User } from '@supabase/supabase-js';
 
 /** Module-level singleton — one client per browser tab. */
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (mounted) setIsLoading(false);
         }, 5000);
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (!mounted) return;
 
             clearTimeout(timeout);
@@ -78,8 +79,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(newUser);
             setIsLoading(false);
 
-            // Fetch profile in the background — don't block the loading state on it.
-            if (newUser) {
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                if (newUser) {
+                    setIsLoadingProfile(true);
+                    fetchProfile(newUser.id).then((profileData) => {
+                        if (mounted) {
+                            setProfile(profileData);
+                            setIsLoadingProfile(false);
+                        }
+                    });
+                    pushNotificationService.init().catch((error) => {
+                        console.error('[AuthContext] Push init failed:', error);
+                    });
+                }
+            } else if (event === 'SIGNED_OUT') {
+                setProfile(null);
+                setIsLoadingProfile(false);
+                pushNotificationService.removeToken().catch((error) => {
+                    console.error('[AuthContext] Push removal failed:', error);
+                });
+            } else if (newUser) {
                 setIsLoadingProfile(true);
                 fetchProfile(newUser.id).then((profileData) => {
                     if (mounted) {
@@ -106,8 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = async () => {
         setIsLoading(true);
         try {
+            await pushNotificationService.removeToken();
             await supabase.auth.signOut();
-            // Clear account-related local storage if relevant
             localStorage.removeItem('lynks_active_account_id');
             router.push('/');
         } catch (error) {
