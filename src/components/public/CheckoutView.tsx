@@ -11,7 +11,8 @@ import Skeleton from './Skeleton';
 import CheckoutErrorView from './CheckoutErrorView';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/components/ui/Toast';
-import { validateKenyanPhone } from '@/utils/phone';
+import { validateKenyanPhone, normalizeToE164 } from '@/utils/phone';
+import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
 
 /**
  * CheckoutView — Guest-first ticket purchase flow.
@@ -54,6 +55,14 @@ const CheckoutView: React.FC = () => {
     });
     const [formErrors, setFormErrors] = useState({
         email: '', phone: '', mpesaNumber: ''
+    });
+    // Dial-code country for the contact phone field only — the M-Pesa payment
+    // phone field stays a single Kenya-only input, deliberately not linked to
+    // this (payment phone and the ticket-linking/contact phone must stay
+    // independent, so paying with someone else's M-Pesa number never affects
+    // whose account the tickets are findable under).
+    const [contactPhoneCountry, setContactPhoneCountry] = useState<DialCodeCountry>({
+        code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
     });
 
     // Platform commission (5% of subtotal)
@@ -289,8 +298,8 @@ const CheckoutView: React.FC = () => {
         const errs = { email: '', phone: '', mpesaNumber: '' };
         let ok = true;
 
-        // Phone Number is required
-        if (!formData.phone.trim() || !/^\+?[0-9\s]{6,15}$/.test(formData.phone)) {
+        // Phone Number is required and must match the selected country's digit count
+        if (!formData.phone.trim() || !normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined)) {
             errs.phone = 'Please enter a valid phone number'; ok = false;
         }
 
@@ -315,6 +324,12 @@ const CheckoutView: React.FC = () => {
         setPaymentError('');
         setIsSubmitting(true);
 
+        // Canonical E.164 form of the contact phone — this, not the raw input,
+        // is what gets written to identity.user_profile.phone_number, so it
+        // stays in the same shape the PWA's phone+OTP login normalizes to.
+        // validateForm already confirmed this succeeds before we get here.
+        const normalizedContactPhone = normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined)!;
+
         try {
             // Step 1: Resolve user session
             let { data: { user } } = await supabase.auth.getUser();
@@ -328,7 +343,7 @@ const CheckoutView: React.FC = () => {
                     try {
                         await supabase.schema('api').from('v1_profiles').update({
                             email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
-                            phone_number: formData.phone.trim(),
+                            phone_number: normalizedContactPhone,
                         }).eq('id', user.id);
                     } catch (profileErr) {
                         console.warn('Profile update failed (non-blocking):', profileErr);
@@ -394,7 +409,7 @@ const CheckoutView: React.FC = () => {
                         metadata: {
                             user_id: user.id,
                             email: formData.email.trim() || null,
-                            phone: formData.phone.trim(),
+                            phone: normalizedContactPhone,
                             items: items.map(i => ({
                                 event_id: i.eventId,
                                 tier_id: i.tierId,
@@ -615,7 +630,14 @@ const CheckoutView: React.FC = () => {
                                 <>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Phone Number</label>
-                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="+254 700 000 000" autoFocus />
+                                        <div className={styles.row}>
+                                            <CountryPhoneSelect
+                                                value={contactPhoneCountry.code}
+                                                onChange={setContactPhoneCountry}
+                                                className={styles.select}
+                                            />
+                                            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="700 000 000" autoFocus />
+                                        </div>
                                         {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
