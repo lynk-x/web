@@ -54,11 +54,15 @@ export default async function EventPage({ params }: { params: { reference: strin
         return <EventNotFoundView />;
     }
 
-    // Fetch ticket tiers (includes sold-out detection)
+    // Fetch ticket tiers (includes sold-out detection). tickets_available is
+    // server-computed as capacity - tickets_sold - tickets_reserved, matching
+    // what the checkout RPCs actually enforce — deriving it client-side from
+    // tickets_sold alone (the old approach) ignored in-flight reservations and
+    // could show availability that other buyers already have locked.
     const { data: ticketTiers } = await supabase
         .schema('api')
         .from('v1_ticket_tiers')
-        .select('id, display_name, description, price, capacity, tickets_sold')
+        .select('id, display_name, description, price, capacity, tickets_sold, tickets_available')
         .eq('event_id', rawEvent.id)
         .eq('is_hidden', false)
         .order('price', { ascending: true });
@@ -95,7 +99,7 @@ export default async function EventPage({ params }: { params: { reference: strin
     // Determine if the event is sold out across all tiers
     const tiers = ticketTiers || [];
     const isSoldOut = tiers.length > 0 && tiers.every(
-        (t: any) => t.capacity !== null && (t.tickets_sold ?? 0) >= t.capacity
+        (t: any) => t.capacity !== null && (t.tickets_available ?? 0) <= 0
     );
 
     const event: Event = {

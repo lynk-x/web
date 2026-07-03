@@ -39,6 +39,11 @@ const CheckoutView: React.FC = () => {
     // Manual confirmation state
     const [manualConfirming, setManualConfirming] = useState(false);
 
+    // Set when the realtime payment-status channel drops mid-wait — the payment
+    // may still complete server-side, so this nudges toward manual confirmation
+    // rather than treating it as a failure.
+    const [realtimeDisrupted, setRealtimeDisrupted] = useState(false);
+
     // Reservation state — set once tickets are locked, before payment is initiated
     const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
     const [reservationSecondsLeft, setReservationSecondsLeft] = useState(0);
@@ -174,7 +179,17 @@ const CheckoutView: React.FC = () => {
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                // If the realtime socket drops mid-wait, the payment can still succeed
+                // server-side — we just won't hear about it automatically anymore. Nudge
+                // the user toward the manual "I've completed payment" button rather than
+                // leaving them staring at a spinner with no signal anything's wrong.
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    setRealtimeDisrupted(true);
+                } else if (status === 'SUBSCRIBED') {
+                    setRealtimeDisrupted(false);
+                }
+            });
 
         return () => {
             clearTimeout(timeoutId);
@@ -323,8 +338,10 @@ const CheckoutView: React.FC = () => {
             if (!user) throw new Error('Could not establish session');
             
             // Step 1.5: Reserve all cart items before initiating payment.
-            // lock_tickets_for_checkout is atomic per tier — run sequentially so a
-            // failure on item 2 doesn't leave item 1 locked without payment.
+            // lock_tickets_for_checkout is atomic per tier — run sequentially so we
+            // can roll back any already-acquired reservations if a later tier fails
+            // (e.g. it sold out mid-checkout), instead of leaving them locked against
+            // the same user until the 2-minute cron sweep reclaims them.
             const reservations: Array<{ tierId: string; reservationId: string }> = [];
             for (const item of items) {
                 const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
@@ -332,6 +349,9 @@ const CheckoutView: React.FC = () => {
                     p_quantity: item.quantity,
                 });
                 if (reserveError) {
+                    await Promise.all(reservations.map(r =>
+                        supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
+                    ));
                     throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
                 }
                 reservations.push({ tierId: item.tierId, reservationId: resId as string });
@@ -392,6 +412,7 @@ const CheckoutView: React.FC = () => {
 
                 setCurrentCheckoutId(data.checkoutRequestId);
                 setPaymentStatus('waiting');
+                setRealtimeDisrupted(false);
                 sessionStorage.setItem('lynk-x-payment', JSON.stringify({
                     checkoutId: data.checkoutRequestId,
                 }));
@@ -715,6 +736,11 @@ const CheckoutView: React.FC = () => {
                             Please enter your M-Pesa PIN to complete the purchase.
                         </p>
                         <p className={styles.helperText}>Waiting for confirmation...</p>
+                        {realtimeDisrupted && (
+                            <p style={{ fontSize: '13px', color: 'var(--color-interface-error)', margin: '0 0 8px', textAlign: 'center' }}>
+                                Live status updates were interrupted. If you&apos;ve completed payment on your phone, tap the button below to confirm.
+                            </p>
+                        )}
                         <button
                             className={styles.primaryBtn}
                             disabled={manualConfirming}

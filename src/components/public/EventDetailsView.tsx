@@ -300,7 +300,10 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             <p>No tickets currently available for this event.</p>
                         ) : (
                             ticketTiers.map(tier => {
-                                const tierRemaining = tier.capacity !== null ? Math.max(0, tier.capacity - (tier.tickets_sold ?? 0)) : Infinity;
+                                // tickets_available is server-computed as capacity - tickets_sold -
+                                // tickets_reserved, so it reflects tickets other buyers currently have
+                                // locked in checkout — not just what's already sold.
+                                const tierRemaining = tier.capacity !== null ? Math.max(0, tier.tickets_available ?? 0) : Infinity;
                                 const isTierSoldOut = tier.capacity !== null && tierRemaining === 0;
                                 return (
                                 <motion.div
@@ -346,11 +349,11 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                                     <span className={styles.qtyValue}>{quantity}</span>
                                                     <button
                                                         onClick={() => {
-                                                            const remaining = tier.capacity !== null ? Math.max(0, tier.capacity - (tier.tickets_sold ?? 0)) : Infinity;
+                                                            const remaining = tier.capacity !== null ? Math.max(0, tier.tickets_available ?? 0) : Infinity;
                                                             setQuantity(q => q < remaining ? q + 1 : q);
                                                         }}
                                                         className={styles.qtyBtn}
-                                                        disabled={tier.capacity !== null && quantity >= Math.max(0, tier.capacity - (tier.tickets_sold ?? 0))}
+                                                        disabled={tier.capacity !== null && quantity >= Math.max(0, tier.tickets_available ?? 0)}
                                                     >+</button>
                                                 </div>
                                             )}
