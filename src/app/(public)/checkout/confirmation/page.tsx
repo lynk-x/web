@@ -19,6 +19,7 @@ const ConfirmationContent = () => {
     // event before rendering success.
     const [verifyState, setVerifyState] = useState<'checking' | 'verified' | 'unverified'>('checking');
     const [ticketCount, setTicketCount] = useState(0);
+    const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -37,6 +38,22 @@ const ConfirmationContent = () => {
                 if (!error && row && row.ticket_count > 0) {
                     setTicketCount(row.ticket_count);
                     setVerifyState('verified');
+
+                    // Mint a signed claim-link token for the PWA bridge so tickets
+                    // from this (possibly anonymous) checkout session can be
+                    // attached to whatever session opens the link later, without
+                    // relying on phone-number matching. Falls back to the plain
+                    // event bridge (no claim) if minting fails for any reason —
+                    // the user can still recover via phone-OTP inside the PWA.
+                    const orderIds: string[] = row.order_ids || [];
+                    if (orderIds.length > 0) {
+                        const { data: token, error: mintError } = await supabase
+                            .schema('api')
+                            .rpc('mint_claim_token', { p_order_id: orderIds[0] });
+                        if (!mintError && token) {
+                            setBridgeUrl(`https://app.lynk-x.app/auth/bridge?claim=${encodeURIComponent(token)}`);
+                        }
+                    }
                 } else {
                     setVerifyState('unverified');
                 }
@@ -94,7 +111,7 @@ const ConfirmationContent = () => {
                 </div>
 
                 <div className={styles.actionGroup}>
-                    <Link href={`https://app.lynk-x.app/auth/bridge?event_id=${encodeURIComponent(eventId)}`} className={styles.primaryBtn}>
+                    <Link href={bridgeUrl || `https://app.lynk-x.app/auth/bridge?event_id=${encodeURIComponent(eventId)}`} className={styles.primaryBtn}>
                         <span className={styles.btnText}>Enter Event Forum</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
