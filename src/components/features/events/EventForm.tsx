@@ -23,7 +23,6 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { LocationInput } from '@/components/ui/LocationInput';
-import { VenueMap } from '@/components/features/events/VenueMap';
 import ImageCropperModal from '@/components/shared/ImageCropperModal';
 import { preloadEmbeddingModel } from '@/utils/embedding';
 
@@ -535,12 +534,6 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                             placeholder="e.g. 123 Event St, Nairobi"
                                             className={errors.location ? styles.inputError : ''}
                                         />
-                                        {!formData.isOnline && formData.coordinates && (
-                                            <VenueMap 
-                                                lat={formData.coordinates[1]} 
-                                                lng={formData.coordinates[0]} 
-                                            />
-                                        )}
                                     </>
                                 )}
                                 <p className={styles.errorMessage}>{errors.location}</p>
