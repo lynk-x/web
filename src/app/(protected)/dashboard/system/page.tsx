@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import WorldClock from '@/components/admin/overview/WorldClock';
+import WorldClock from '@/components/system/overview/WorldClock';
 
 // Dynamically import the Live Activity Map to prevent server-side rendering issues
 const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), { ssr: false });

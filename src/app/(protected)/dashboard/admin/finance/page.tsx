@@ -267,7 +267,11 @@ function FinanceContent() {
                     p_min_amount: minAmount ? parseFloat(minAmount) : null,
                     p_max_amount: maxAmount ? parseFloat(maxAmount) : null,
                     p_offset: (currentPage - 1) * itemsPerPage,
-                    p_limit: itemsPerPage
+                    p_limit: itemsPerPage,
+                    // Exclude the country's own platform fee-collection wallet —
+                    // that's a system wallet, not a tenant's, and belongs on
+                    // /dashboard/system/finance's dedicated Platform Wallets tab.
+                    p_account_type: 'tenant'
                 });
 
                 if (error) throw error;

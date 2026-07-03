@@ -61,6 +61,7 @@ export default function WalletTable({
             case 'organizer': return 'info';
             case 'user': return 'neutral';
             case 'service_provider': return 'success';
+            case 'platform': return 'warning';
             default: return 'subtle';
         }
     };

@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
-import RegionsTab from '@/components/admin/settings/RegionsTab';
+import RegionsTab from '@/components/system/settings/RegionsTab';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
