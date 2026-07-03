@@ -629,15 +629,16 @@ const CheckoutView: React.FC = () => {
                             ) : (
                                 <>
                                     <div className={styles.formGroup}>
+                                        <label className={styles.label}>Country</label>
+                                        <CountryPhoneSelect
+                                            value={contactPhoneCountry.code}
+                                            onChange={setContactPhoneCountry}
+                                            className={styles.select}
+                                        />
+                                    </div>
+                                    <div className={styles.formGroup}>
                                         <label className={styles.label}>Phone Number</label>
-                                        <div className={styles.row}>
-                                            <CountryPhoneSelect
-                                                value={contactPhoneCountry.code}
-                                                onChange={setContactPhoneCountry}
-                                                className={styles.select}
-                                            />
-                                            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="700 000 000" autoFocus />
-                                        </div>
+                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="700 000 000" autoFocus />
                                         {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
                                     </div>
                                     <div className={styles.formGroup}>
