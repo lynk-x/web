@@ -21,6 +21,7 @@ import { createClient } from '@/utils/supabase/client';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import { useDebounce } from '@/hooks/useDebounce';
 import AccountTable from '@/components/admin/users/AccountTable';
+import Toggle from '@/components/shared/Toggle';
 import type { AdminAccount } from '@/types/admin';
 import type { BadgeVariant } from '@/types/shared';
 
@@ -37,47 +38,6 @@ interface AccountPermission {
     category: string;
     description: string;
 }
-
-interface ToggleSwitchProps {
-    checked: boolean;
-    onChange: () => void;
-    disabled?: boolean;
-}
-
-const ToggleSwitch = ({ checked, onChange, disabled }: ToggleSwitchProps) => (
-    <button
-        type="button"
-        disabled={disabled}
-        onClick={onChange}
-        style={{
-            position: 'relative',
-            width: '40px',
-            height: '22px',
-            borderRadius: '11px',
-            backgroundColor: checked ? 'var(--color-status-success, #10b981)' : 'rgba(255, 255, 255, 0.1)',
-            border: '1px solid var(--color-interface-outline)',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.2s',
-            opacity: disabled ? 0.5 : 1,
-            padding: 0,
-            flexShrink: 0
-        }}
-    >
-        <span
-            style={{
-                position: 'absolute',
-                top: '2px',
-                left: checked ? '20px' : '2px',
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                backgroundColor: '#ffffff',
-                transition: 'left 0.2s',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-            }}
-        />
-    </button>
-);
 
 function IAMContent() {
     const { showToast } = useToast();
@@ -669,8 +629,8 @@ function IAMContent() {
                                                 alignItems: 'flex-start',
                                                 padding: '12px 16px',
                                                 borderRadius: '8px',
-                                                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
-                                                border: isActive ? '1px solid var(--color-interface-outline)' : '1px solid transparent',
+                                                backgroundColor: 'var(--color-interface-surface)',
+                                                border: isActive ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-interface-outline)',
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
                                                 width: '100%',
@@ -685,7 +645,7 @@ function IAMContent() {
                                                     fontSize: '11px',
                                                     padding: '2px 6px',
                                                     borderRadius: '4px',
-                                                    backgroundColor: isActive ? 'var(--color-status-success)' : 'rgba(255, 255, 255, 0.08)',
+                                                    backgroundColor: isActive ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.08)',
                                                     color: isActive ? '#000000' : 'var(--color-text-primary)',
                                                     fontWeight: 600
                                                 }}>
@@ -736,7 +696,7 @@ function IAMContent() {
                                                                             alignItems: 'center',
                                                                             padding: '12px 16px',
                                                                             borderRadius: '8px',
-                                                                            backgroundColor: 'rgba(255, 255, 255, 0.01)',
+                                                                            backgroundColor: 'var(--color-interface-surface)',
                                                                             border: '1px solid var(--color-interface-outline)',
                                                                             transition: 'background-color 0.2s'
                                                                         }}
@@ -749,8 +709,8 @@ function IAMContent() {
                                                                                 {perm.description}
                                                                             </p>
                                                                         </div>
-                                                                        <ToggleSwitch
-                                                                            checked={isChecked}
+                                                                        <Toggle
+                                                                            enabled={isChecked}
                                                                             disabled={isLocked}
                                                                             onChange={() => handleTogglePermission(matrixActiveRoleSlug, perm.slug)}
                                                                         />

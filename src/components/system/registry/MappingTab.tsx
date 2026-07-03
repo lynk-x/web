@@ -169,8 +169,8 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
                                     alignItems: 'flex-start',
                                     padding: '12px 16px',
                                     borderRadius: '8px',
-                                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
-                                    border: isActive ? '1px solid var(--color-interface-outline)' : '1px solid transparent',
+                                    backgroundColor: 'var(--color-interface-surface)',
+                                    border: isActive ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-interface-outline)',
                                     cursor: 'pointer',
                                     textAlign: 'left',
                                     width: '100%',
@@ -185,7 +185,7 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
                                         fontSize: '11px',
                                         padding: '2px 6px',
                                         borderRadius: '4px',
-                                        backgroundColor: isActive ? 'var(--color-status-success)' : 'rgba(255, 255, 255, 0.08)',
+                                        backgroundColor: isActive ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.08)',
                                         color: isActive ? '#000000' : 'var(--color-text-primary)',
                                         fontWeight: 600
                                     }}>
@@ -235,7 +235,7 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
                                                                 alignItems: 'center',
                                                                 padding: '12px 16px',
                                                                 borderRadius: '8px',
-                                                                backgroundColor: 'rgba(255, 255, 255, 0.01)',
+                                                                backgroundColor: 'var(--color-interface-surface)',
                                                                 border: '1px solid var(--color-interface-outline)',
                                                                 transition: 'background-color 0.2s'
                                                             }}
