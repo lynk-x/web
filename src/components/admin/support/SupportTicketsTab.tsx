@@ -12,6 +12,7 @@ interface SupportTicket {
     reference: string;
     submitter: string | null;
     email: string;
+    phone: string | null;
     subject: string;
     message: string;
     priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -86,6 +87,7 @@ export default function SupportTicketsTab({
                 reference: t.reference,
                 submitter: t.full_name || t.submitter_username || null,
                 email: t.email,
+                phone: t.phone ?? null,
                 subject: t.subject,
                 message: t.message,
                 priority: t.priority,
@@ -133,7 +135,7 @@ export default function SupportTicketsTab({
             render: (t) => (
                 <div>
                     <div style={{ fontSize: '13px', fontWeight: 500 }}>{t.submitter ?? 'Guest'}</div>
-                    <div style={{ fontSize: '11px', opacity: 0.5 }}>{t.email}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.5 }}>{t.phone || t.email}</div>
                 </div>
             ),
         },
