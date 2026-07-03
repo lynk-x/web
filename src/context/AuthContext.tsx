@@ -116,7 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             mounted = false;
             clearTimeout(timeout);
             subscription.unsubscribe();
-            pushNotificationService.cleanup();
         };
     }, []);
 
