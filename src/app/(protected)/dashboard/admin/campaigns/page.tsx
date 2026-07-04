@@ -218,18 +218,19 @@ function CampaignsContent() {
 
     const handleSaveCampaign = async (campaignId: string, updates: any) => {
         if (!campaignId) return;
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+
         showToast(`Saving changes...`, 'info');
         try {
-            const { error } = await supabase
-                .from('v1_ad_campaigns')
-                .update({
-                    title: updates.name,
-                    total_budget: updates.budget,
-                    start_at: updates.startDate,
-                    end_at: updates.endDate,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', campaignId);
+            const { error } = await supabase.schema('api').rpc('admin_update_campaign', {
+                p_campaign_id: campaignId,
+                p_created_at: campaign.createdAt,
+                p_title: updates.name,
+                p_total_budget: updates.budget,
+                p_start_at: updates.startDate,
+                p_end_at: updates.endDate
+            });
 
             if (error) throw error;
 
@@ -244,11 +245,10 @@ function CampaignsContent() {
         if (!await confirm(`Are you sure you want to delete ${campaign.name}?`)) return;
         showToast(`Deleting ${campaign.name}...`, 'info');
         try {
-            const { error } = await supabase
-                .from('v1_ad_campaigns')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', campaign.id)
-                .eq('created_at', campaign.createdAt);
+            const { error } = await supabase.schema('api').rpc('admin_bulk_delete_campaigns', {
+                p_ids: [campaign.id],
+                p_created_ats: [campaign.createdAt]
+            });
 
             if (error) throw error;
 
@@ -295,7 +295,7 @@ function CampaignsContent() {
         showToast(`Deleting ${selectedCampaignIds.size} campaigns...`, 'info');
 
         try {
-            const { error } = await supabase.schema('api').rpc('bulk_delete_campaigns', {
+            const { error } = await supabase.schema('api').rpc('admin_bulk_delete_campaigns', {
                 p_ids: Array.from(selectedCampaignIds),
                 p_created_ats: campaigns
                     .filter(c => selectedCampaignIds.has(c.id))

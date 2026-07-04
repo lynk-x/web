@@ -30,8 +30,6 @@ import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
 import ReportTable from '@/components/admin/moderation/ReportTable';
 import TicketingTab from '@/components/admin/events/ticketing/TicketingTab';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
-import TicketResaleTable from '@/components/admin/events/TicketResaleTable';
-import type { TicketResale } from '@/types/organize';
 import { formatRelativeTime, formatCurrency } from '@/utils/format';
 
 // --- Local Components ---
@@ -103,8 +101,6 @@ export default function AdminEventsPage() {
 
     // Payouts State
     const [payouts, setPayouts] = useState<Payout[]>([]);
-    const [resales, setResales] = useState<TicketResale[]>([]);
-    const [selectedResaleIds, setSelectedResaleIds] = useState<Set<string>>(new Set());
     const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
     const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
     const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
@@ -188,27 +184,6 @@ export default function AdminEventsPage() {
         }
     }, [supabase, debouncedSearch, startDate, endDate, resolvedPayoutCountryFilter, currentPage, showToast]);
 
-    const fetchResales = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_ticket_resales', {
-                p_search: debouncedSearch,
-                p_offset: (currentPage - 1) * itemsPerPage,
-                p_limit: itemsPerPage
-            });
-
-            if (error) throw error;
-            
-            setTotalCount(data?.[0]?.total_count || 0);
-            setResales(data || []);
-            setSelectedResaleIds(new Set());
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [supabase, debouncedSearch, currentPage, showToast]);
-
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -290,8 +265,7 @@ export default function AdminEventsPage() {
     useEffect(() => {
         if (activeTab === 'events') fetchEvents();
         else if (activeTab === 'payouts') fetchPayouts();
-        else if (activeTab === 'ticketing') fetchResales();
-    }, [activeTab, fetchEvents, fetchPayouts, fetchResales]);
+    }, [activeTab, fetchEvents, fetchPayouts]);
 
     useEffect(() => {
         fetchDashboardSummary();
@@ -761,68 +735,6 @@ export default function AdminEventsPage() {
                             else {
                                 showToast('Forum status updated.', 'success');
                                 fetchEvents();
-                            }
-                        }}
-                    />
-                </TabsContent>
-
-                <TabsContent value="ticketing">
-                    <BulkActionsBar
-                        selectedCount={selectedResaleIds.size}
-                        actions={[
-                            {
-                                label: 'Flag for Investigation',
-                                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>,
-                                onClick: async () => {
-                                    if (await confirm(`Flag ${selectedResaleIds.size} listings for investigation?`)) {
-                                        showToast(`${selectedResaleIds.size} listings flagged and hidden.`, 'success');
-                                        setSelectedResaleIds(new Set());
-                                        fetchResales();
-                                    }
-                                },
-                                variant: 'danger'
-                            },
-                            {
-                                label: 'Export Audit Log',
-                                icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-                                onClick: () => {
-                                    const selected = resales.filter(r => selectedResaleIds.has(r.id));
-                                    exportToCSV(selected, `ticket_resales_audit_${new Date().toISOString().slice(0, 10)}`);
-                                    showToast('Audit log exported.', 'success');
-                                }
-                            }
-                        ]}
-                        onCancel={() => setSelectedResaleIds(new Set())}
-                        itemTypeLabel="listings"
-                    />
-
-                    <TicketResaleTable
-                        resales={resales}
-                        isLoading={isLoading}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        onViewTicket={(r) => {
-                            showToast(`Viewing ticket ${r.ticket_reference}`, 'info');
-                        }}
-                        onFlagListing={async (r) => {
-                            if (await confirm(`Flag listing ${r.reference} for investigation?`)) {
-                                showToast('Listing flagged and hidden from marketplace.', 'success');
-                                fetchResales();
-                            }
-                        }}
-                        selectedIds={selectedResaleIds}
-                        onSelect={(id: string) => {
-                            const next = new Set(selectedResaleIds);
-                            if (next.has(id)) next.delete(id);
-                            else next.add(id);
-                            setSelectedResaleIds(next);
-                        }}
-                        onSelectAll={() => {
-                            if (selectedResaleIds.size === resales.length) {
-                                setSelectedResaleIds(new Set());
-                            } else {
-                                setSelectedResaleIds(new Set(resales.map(r => r.id)));
                             }
                         }}
                     />

@@ -426,17 +426,6 @@ function FinanceContent() {
         }
     };
 
-    const handleResendInvoice = async (id: string) => {
-        showToast('Resending latest invoice...', 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_resend_invoice', { p_subscription_id: id });
-            if (error) throw error;
-            showToast('Success: Latest invoice resent to the customer.', 'success');
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
-    };
-
     const handleOpenPlanModal = (sub: Subscription) => {
         setSelectedSub(sub);
         setNewPlanId(sub.plan_id);
@@ -476,11 +465,11 @@ function FinanceContent() {
 
         showToast(`${currentStatus === 'active' ? 'Freezing' : 'Unfreezing'} wallet...`, 'info');
         try {
-            const { error } = await supabase
-                .from('account_wallets')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq('account_id', accountId)
-                .eq('currency', currency);
+            const { error } = await supabase.schema('api').rpc('admin_set_wallet_status', {
+                p_account_id: accountId,
+                p_currency: currency,
+                p_status: newStatus
+            });
             if (error) throw error;
             showToast(`Wallet ${newStatus}.`, 'success');
             fetchData();
@@ -792,7 +781,6 @@ function FinanceContent() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                         onCancel={handleCancelSubscription}
-                        onResendInvoice={handleResendInvoice}
                         onChangePlan={(id) => {
                             const sub = subscriptions.find(s => s.id === id);
                             if (sub) handleOpenPlanModal(sub);
