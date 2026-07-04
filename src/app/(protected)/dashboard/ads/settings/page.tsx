@@ -22,6 +22,7 @@ import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
 import Textarea from '@/components/shared/Textarea';
 import type { AccountWallet } from '@/types/organize';
+import Spinner from '@/components/shared/Spinner';
 
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
@@ -488,7 +489,7 @@ function AdsSettingsContent() {
 
 export default function AdsSettingsPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading Settings...</div>}>
+        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}><Spinner label="Loading settings..." /></div>}>
             <AdsSettingsContent />
         </Suspense>
     );

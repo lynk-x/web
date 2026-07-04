@@ -14,6 +14,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import AdsPerformanceTable, { CampaignPerformance } from '@/components/ads/analytics/AdsPerformanceTable';
+import Spinner from '@/components/shared/Spinner';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -254,7 +255,7 @@ function AnalyticsContent() {
 
 export default function AnalyticsPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading Analytics...</div>}>
+        <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center' }}><Spinner label="Loading analytics..." /></div>}>
             <AnalyticsContent />
         </Suspense>
     );

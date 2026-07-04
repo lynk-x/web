@@ -9,6 +9,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import BackButton from '@/components/shared/BackButton';
 import PageHeader from '@/components/dashboard/PageHeader';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import Spinner from '@/components/shared/Spinner';
 
 export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -26,7 +27,8 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
         try {
             // Get Campaign Title
             const { data: campaignData } = await supabase
-                .from('campaigns')
+                .schema('api')
+                .from('v1_ad_campaigns')
                 .select('title')
                 .eq('id', id)
                 .eq('account_id', activeAccount.id)
@@ -81,8 +83,8 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
 
     if (isLoading) {
         return (
-            <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                Loading analytics...
+            <div style={{ padding: '60px', textAlign: 'center' }}>
+                <Spinner label="Loading analytics..." />
             </div>
         );
     }

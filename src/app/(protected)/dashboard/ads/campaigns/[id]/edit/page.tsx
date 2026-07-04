@@ -6,6 +6,7 @@ import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/Cre
 import styles from '../../page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
+import Spinner from '@/components/shared/Spinner';
 
 export default function EditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -105,8 +106,8 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
 
     if (isLoading) {
         return (
-            <div className={styles.container} style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                Loading campaign...
+            <div className={styles.container} style={{ padding: '60px', textAlign: 'center' }}>
+                <Spinner label="Loading campaign..." />
             </div>
         );
     }

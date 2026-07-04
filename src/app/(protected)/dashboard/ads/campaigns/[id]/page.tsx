@@ -18,6 +18,8 @@ import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
+import Spinner from '@/components/shared/Spinner';
+import EmptyState from '@/components/shared/EmptyState';
 
 const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
     draft: { label: 'Draft', variant: 'subtle' },
@@ -129,12 +131,18 @@ export default function CampaignDetailPage() {
     }, [id, activeAccount, supabase, showToast, router]);
 
     const fetchAnalytics = useCallback(async () => {
-        if (!id) return;
+        if (!id || !activeAccount) return;
         setIsAnalyticsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_campaign_performance_metrics', {
-                p_campaign_id: id,
-                p_days: timeRange
+            const end = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - timeRange);
+
+            const { data, error } = await supabase.schema('api').rpc('get_ads_performance_metrics', {
+                p_account_id: activeAccount.id,
+                p_start_date: start.toISOString().split('T')[0],
+                p_end_date: end.toISOString().split('T')[0],
+                p_campaign_id: id
             });
 
             if (error) throw error;
@@ -158,18 +166,19 @@ export default function CampaignDetailPage() {
         } finally {
             setIsAnalyticsLoading(false);
         }
-    }, [id, supabase, timeRange, showToast]);
+    }, [id, activeAccount, supabase, timeRange, showToast]);
 
     useEffect(() => { fetchCampaign(); }, [fetchCampaign]);
     useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
 
     const handleStatusChange = async (newStatus: 'active' | 'paused') => {
-        if (!campaign) return;
+        if (!campaign || !activeAccount) return;
         try {
-            const { error } = await supabase
-                .from('v1_ad_campaigns')
-                .update({ status: newStatus })
-                .eq('id', campaign.id);
+            const { error } = await supabase.schema('api').rpc('bulk_toggle_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }],
+                p_status: newStatus
+            });
             if (error) throw error;
             showToast(`Campaign ${newStatus === 'paused' ? 'paused' : 'activated'}.`, 'success');
             fetchCampaign();
@@ -181,9 +190,13 @@ export default function CampaignDetailPage() {
     if (isLoading || !campaign) {
         return (
             <div className={adminStyles.container}>
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                    {isLoading ? 'Loading campaign...' : 'Campaign not found.'}
-                </div>
+                {isLoading ? (
+                    <div style={{ padding: '60px', textAlign: 'center' }}>
+                        <Spinner label="Loading campaign..." />
+                    </div>
+                ) : (
+                    <EmptyState message="Campaign not found." />
+                )}
             </div>
         );
     }

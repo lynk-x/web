@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
+import Spinner from '@/components/shared/Spinner';
 
 // Types
 interface InvoiceItem {
@@ -139,7 +140,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
     if (isLoading && !activeAccount) {
         return (
-            <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading invoice...</div>
+            <div style={{ padding: '60px', textAlign: 'center' }}><Spinner label="Loading invoice..." /></div>
         );
     }
 

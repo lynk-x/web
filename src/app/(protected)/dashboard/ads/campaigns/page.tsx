@@ -161,10 +161,15 @@ export default function CampaignsPage() {
     };
 
     const handleDuplicate = async (id: string) => {
+        if (!activeAccount) return;
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+
         showToast('Cloning campaign...', 'info');
         try {
-            const { error } = await supabase.schema('api').rpc('duplicate_ad_campaign', {
-                p_campaign_id: id
+            const { error } = await supabase.schema('api').rpc('bulk_duplicate_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }]
             });
             if (error) throw error;
             showToast('Campaign duplicated to draft.', 'success');
@@ -175,11 +180,16 @@ export default function CampaignsPage() {
     };
 
     const handleBulkDuplicate = async () => {
-        if (selectedIds.size === 0) return;
+        if (!activeAccount || selectedIds.size === 0) return;
         showToast(`Cloning ${selectedIds.size} campaigns...`, 'info');
         try {
-            const { data, error } = await supabase.schema('api').rpc('bulk_duplicate_ad_campaigns', {
-                p_campaign_ids: Array.from(selectedIds)
+            const selectedCampaigns = campaigns
+                .filter(c => selectedIds.has(c.id))
+                .map(c => ({ id: c.id, created_at: c.created_at }));
+
+            const { data, error } = await supabase.schema('api').rpc('bulk_duplicate_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: selectedCampaigns
             });
             if (error) throw error;
             showToast(`Batch duplication complete: ${data.processed_count} campaigns added to drafts.`, 'success');

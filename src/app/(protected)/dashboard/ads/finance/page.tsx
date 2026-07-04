@@ -115,8 +115,7 @@ export default function AdsBillingPage() {
     const currency = 'USD';
 
     const handleExport = () => {
-        showToast('Generating financial report...', 'info');
-        // Logic to generate/download report
+        window.print();
     };
 
     return (

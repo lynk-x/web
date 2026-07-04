@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
+import Spinner from '@/components/shared/Spinner';
 
 export default function AddPaymentMethodPage() {
     const { activeAccount, isLoading } = useOrganization();
@@ -16,8 +17,8 @@ export default function AddPaymentMethodPage() {
     if (isLoading && !activeAccount) {
         return (
             <div className={adminStyles.container}>
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                    Loading account...
+                <div style={{ padding: '60px', textAlign: 'center' }}>
+                    <Spinner label="Loading account..." />
                 </div>
             </div>
         );
