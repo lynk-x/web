@@ -550,54 +550,6 @@ export default function CreateCampaignForm({
     }, [formData.title]);
 
     // ── Validation ────────────────────────────────────────────────────────────
-    const validateTab = (tab: string): boolean => {
-        setFormError('');
-        const newErrors: Record<string, string> = {};
-
-        if (tab === 'details') {
-            if (!formData.title.trim()) newErrors.title = 'Campaign title is required.';
-            
-            const budget = parseFloat(formData.total_budget);
-            if (isNaN(budget) || budget <= 0) newErrors.total_budget = 'Valid positive total budget is required.';
-
-            const bid = parseFloat(formData.max_bid_amount);
-            if (isNaN(bid) || bid <= 0) {
-                newErrors.max_bid_amount = 'Valid positive max bid is required.';
-            } else if (!isNaN(budget) && bid > budget) {
-                newErrors.max_bid_amount = `Max bid ($${bid}) cannot exceed total budget ($${budget}).`;
-            }
-
-            if (!formData.start_at) newErrors.start_at = 'Start date is required.';
-            if (!formData.end_at) newErrors.end_at = 'End date is required.';
-        }
-
-        if (tab === 'targeting') {
-            const url = formData.destination_url.trim();
-            if (!url) {
-                newErrors.destination_url = 'Destination URL is required.';
-            } else if (!url.startsWith('https://')) {
-                newErrors.destination_url = 'A secure destination URL (https://...) is required.';
-            } else {
-                try {
-                    new URL(url);
-                } catch {
-                    newErrors.destination_url = 'Destination URL is not in a valid format.';
-                }
-            }
-        }
-
-        if (tab === 'creative') {
-            const primaryCreative = formData.creatives[0];
-            if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Ad headline is required.';
-            if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
-                newErrors['creative.0.asset'] = 'An ad asset is required.';
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     const validateForm = (): boolean => {
         setFormError('');
         const newErrors: Record<string, string> = {};
@@ -645,22 +597,7 @@ export default function CreateCampaignForm({
     };
 
     const handleTabSwitch = (target: 'details' | 'targeting' | 'creative' | 'review') => {
-        const order = ['details', 'targeting', 'creative', 'review'];
-        const currentIndex = order.indexOf(activeTab);
-        const targetIndex = order.indexOf(target);
-
-        // Always allow backward navigation
-        if (targetIndex <= currentIndex) {
-            setActiveTab(target);
-            return;
-        }
-
-        // Validate current tab before moving forward
-        if (validateTab(activeTab)) {
-            setActiveTab(target);
-        } else {
-            showToast('Please review the errors on this tab before continuing.', 'warning');
-        }
+        setActiveTab(target);
     };
 
     // ── Submit ────────────────────────────────────────────────────────────────

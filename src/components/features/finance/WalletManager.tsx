@@ -67,11 +67,6 @@ export default function WalletManager({ accountId, wallets, isLoading, onRefresh
                 )}
             </div>
 
-            {hasManageBilling && !isKycApproved && (
-                <p style={{ fontSize: 13, opacity: 0.7, margin: '0 0 16px' }}>
-                    Complete KYC verification above before creating a payout wallet.
-                </p>
-            )}
 
             <WalletsTable
                 data={wallets} 

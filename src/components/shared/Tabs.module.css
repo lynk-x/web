@@ -40,3 +40,8 @@
     height: 2px;
     background-color: var(--color-brand-primary);
 }
+
+.tabError {
+    color: var(--color-interface-error);
+    opacity: 1;
+}

@@ -65,7 +65,6 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
         handleAddTag, handleRemoveTag, handleTagKeyDown,
         handleTicketChange, addTicket, removeTicket,
         handleSubmit, discardDraft,
-        validateTab,
         setFormData,
         isCropperOpen, pendingImage, handleCropComplete, handleCloseCropper,
     } = useEventForm({ initialData, isEditMode, onSubmit });
@@ -110,21 +109,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const TABS: EventFormTab[] = ['cover', 'basics', 'category', 'time', 'place', 'tickets', 'settings'];
 
     const handleTabSwitch = (target: EventFormTab) => {
-        const currentIndex = TABS.indexOf(activeTab);
-        const targetIndex = TABS.indexOf(target);
-
-        // Allow moving backward freely
-        if (targetIndex <= currentIndex) {
-            setActiveTab(target);
-            return;
-        }
-
-        // Validate current tab before moving forward
-        if (validateTab(activeTab)) {
-            setActiveTab(target);
-        } else {
-            showToast('Please complete the required fields on this tab before continuing.', 'warning');
-        }
+        setActiveTab(target);
     };
 
     const handlePrevTab = () => {

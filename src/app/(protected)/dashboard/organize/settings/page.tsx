@@ -16,9 +16,11 @@ import WalletManager from '@/components/features/finance/WalletManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/shared/Modal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import tabStyles from '@/components/shared/Tabs.module.css';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import KycStatusCard from '@/components/dashboard/KycStatusCard';
+import { useOrganizerOnboarding } from '@/hooks/useOrganizerOnboarding';
 import ProductTour from '@/components/dashboard/ProductTour';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
@@ -37,6 +39,7 @@ function SettingsContent() {
     const pathname = usePathname();
 
     const { can, isOwner, loading: permissionsLoading } = useAccountPermissions(activeAccount?.id);
+    const { status: onboardingStatus } = useOrganizerOnboarding(activeAccount?.id);
 
     const initialTab = (searchParams.get('tab') as string) || 'account';
     const [activeTab, setActiveTab] = useState<'account' | 'team' | 'billing' | 'danger-zone'>(
@@ -300,12 +303,22 @@ function SettingsContent() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList className="tour-settings-tabs">
-                        <TabsTrigger value="account">Account</TabsTrigger>
+                        <TabsTrigger
+                            value="account"
+                            className={onboardingStatus && (!onboardingStatus.account_details_complete || onboardingStatus.kyc_status !== 'approved') ? tabStyles.tabError : undefined}
+                        >
+                            Account
+                        </TabsTrigger>
                         {(permissionsLoading || can('can_manage_members')) && (
                             <TabsTrigger value="team">Team Members</TabsTrigger>
                         )}
                         {(permissionsLoading || can('can_view_finance') || can('can_manage_billing')) && (
-                            <TabsTrigger value="billing">Billing & Wallet</TabsTrigger>
+                            <TabsTrigger
+                                value="billing"
+                                className={onboardingStatus && !onboardingStatus.wallet_exists ? tabStyles.tabError : undefined}
+                            >
+                                Billing & Wallet
+                            </TabsTrigger>
                         )}
                         <TabsTrigger value="danger-zone">Danger Zone</TabsTrigger>
                     </TabsList>
