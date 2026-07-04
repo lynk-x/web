@@ -10,6 +10,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
+import Spinner from '@/components/shared/Spinner';
 import type { BadgeVariant } from '@/types/shared';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import ProductTour from '@/components/dashboard/ProductTour';
@@ -171,7 +172,7 @@ export default function WalletPage() {
             />
 
             {isLoading ? (
-                <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
+                <div className={adminStyles.loadingContainer}><Spinner /></div>
             ) : (
                 <>
                     {/* Balance cards */}

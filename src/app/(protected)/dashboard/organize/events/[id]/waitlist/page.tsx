@@ -9,6 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { formatDate } from '@/utils/format';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
+import Spinner from '@/components/shared/Spinner';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -69,7 +70,7 @@ export default function EventWaitlistPage() {
 
             setEntries(waitlistRes.data || []);
         } catch (e: unknown) {
-            showToast('Failed to load waitlist', 'error');
+            showToast(getErrorMessage(e) || 'Failed to load waitlist', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -123,7 +124,7 @@ export default function EventWaitlistPage() {
             showToast(`${pendingEntries.length} invitations sent`, 'success');
             fetchData();
         } catch (e: unknown) {
-            showToast('Failed to invite all', 'error');
+            showToast(getErrorMessage(e) || 'Failed to invite all', 'error');
         }
     };
 
@@ -138,7 +139,7 @@ export default function EventWaitlistPage() {
             showToast('Entry removed', 'success');
             fetchData();
         } catch (e: unknown) {
-            showToast('Failed to remove entry', 'error');
+            showToast(getErrorMessage(e) || 'Failed to remove entry', 'error');
         }
     };
 
@@ -180,7 +181,7 @@ export default function EventWaitlistPage() {
             </div>
 
             {isLoading ? (
-                <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
+                <div className={adminStyles.loadingContainer}><Spinner /></div>
             ) : filtered.length === 0 ? (
                 <div className={adminStyles.emptyState}>
                     <p>{filterStatus === 'all' ? 'No one on the waitlist yet.' : `No ${filterStatus} entries.`}</p>

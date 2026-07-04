@@ -7,7 +7,7 @@
  * /dashboard/admin/analytics page (api.get_admin_analytics).
  */
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, type CSSProperties } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -15,6 +15,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
+import EmptyState from '@/components/shared/EmptyState';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 import {
     AreaChart, Area,
@@ -22,7 +23,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
-type Tab = 'search' | 'demographics' | 'advertising';
+type Tab = 'search' | 'demographics' | 'events' | 'forums' | 'advertising';
 
 // ─── Interfaces ─────────────────────────────────────────────────────────────
 
@@ -58,6 +59,51 @@ interface DemographicsData {
     by_age_gender: AgeGenderRow[];
 }
 
+interface EventPerformanceRow {
+    id: string;
+    event_title: string;
+    account_name: string;
+    status: string;
+    starts_at?: string;
+    attendee_count: number;
+    revenue: number | null;
+    reports_count: number;
+}
+
+interface EventsData {
+    top_events: EventPerformanceRow[];
+    flagged_events: EventPerformanceRow[];
+}
+
+interface ActiveForumRow {
+    id: string;
+    event_title: string;
+    status: string;
+    last_activity_at: string | null;
+    activity_count: number;
+    announcements_count: number;
+    live_chats_count: number;
+    channels_count: number;
+    media_count: number;
+    member_count: number;
+    active_members_24h: number;
+}
+
+interface FlaggedForumRow {
+    id: string;
+    event_title: string;
+    status: string;
+    member_count: number;
+    reports_count: number;
+    escalated_reports_count: number;
+    oldest_report_at: string | null;
+}
+
+interface ForumsData {
+    most_active: ActiveForumRow[];
+    flagged_forums: FlaggedForumRow[];
+}
+
 interface AdDailyRow {
     day: string;
     campaign_type: string;
@@ -89,6 +135,15 @@ const CHART_COLORS = {
     orange: '#f59e0b',
 };
 
+// Matches DataTable's .tableContainer so charts and tables share one
+// surface/border/radius across the page instead of charts floating bare.
+const CHART_CONTAINER_STYLE: CSSProperties = {
+    backgroundColor: 'var(--color-interface-surface)',
+    border: '1px solid var(--color-interface-outline)',
+    borderRadius: 'var(--radius-xl)',
+    padding: '20px 16px 12px'
+};
+
 const TOOLTIP_STYLE = {
     contentStyle: {
         backgroundColor: 'rgba(19, 19, 26, 0.95)',
@@ -101,24 +156,6 @@ const TOOLTIP_STYLE = {
     itemStyle: { color: '#fff' },
     labelStyle: { color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' as const }
 };
-
-function EmptyState({ message, height = 240 }: { message: string; height?: number }) {
-    return (
-        <div style={{
-            height,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: 0.5,
-            fontSize: '14px',
-            border: '1px dashed rgba(255, 255, 255, 0.08)',
-            borderRadius: '8px',
-            color: 'var(--color-text-secondary, #a1a1aa)'
-        }}>
-            {message}
-        </div>
-    );
-}
 
 // ─── Tab Components ─────────────────────────────────────────────────────────
 
@@ -195,25 +232,112 @@ function DemographicsTab() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Users by Country</h3>
-                {isLoading ? (
-                    <EmptyState message="Loading..." />
-                ) : geoChartData.length === 0 ? (
-                    <EmptyState message="No demographic data available." />
-                ) : (
-                    <ResponsiveContainer width="100%" height={320}>
-                        <BarChart data={geoChartData} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                            <XAxis type="number" stroke="rgba(255,255,255,0.4)" fontSize={12} />
-                            <YAxis type="category" dataKey="country" stroke="rgba(255,255,255,0.4)" fontSize={12} width={60} />
-                            <Tooltip {...TOOLTIP_STYLE} />
-                            <Bar dataKey="count" name="Users" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                )}
+                <div style={CHART_CONTAINER_STYLE}>
+                    {isLoading ? (
+                        <EmptyState message="Loading..." height={320} />
+                    ) : geoChartData.length === 0 ? (
+                        <EmptyState message="No demographic data available." height={320} />
+                    ) : (
+                        <ResponsiveContainer width="100%" height={320}>
+                            <BarChart data={geoChartData} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                <XAxis type="number" stroke="rgba(255,255,255,0.4)" fontSize={12} />
+                                <YAxis type="category" dataKey="country" stroke="rgba(255,255,255,0.4)" fontSize={12} width={60} />
+                                <Tooltip {...TOOLTIP_STYLE} />
+                                <Bar dataKey="count" name="Users" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    )}
+                </div>
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Age &amp; Gender Breakdown</h3>
                 <DataTable data={(data?.by_age_gender ?? []).map((r, i) => ({ ...r, id: `${r.country}-${r.gender}-${r.account_role}-${r.age_bucket}-${i}` }))} columns={ageColumns} isLoading={isLoading} emptyMessage="No age/gender data available." />
+            </div>
+        </div>
+    );
+}
+
+function EventsTab() {
+    const { data, isLoading } = useSupabaseQuery<EventsData>(
+        ['system-analytics-events'],
+        async (supabase) => {
+            const { data: res, error } = await supabase.schema('api').rpc('get_system_analytics', {
+                p_category: 'events'
+            });
+            if (error) throw error;
+            return (res as any as EventsData | null) || { top_events: [], flagged_events: [] };
+        }
+    );
+
+    const topColumns: Column<EventPerformanceRow>[] = [
+        { header: 'Event', render: (r) => <div style={{ fontWeight: 600 }}>{r.event_title}</div> },
+        { header: 'Organizer', render: (r) => r.account_name },
+        { header: 'Status', render: (r) => <Badge label={r.status} variant={r.status === 'published' ? 'success' : 'neutral'} /> },
+        { header: 'Attendees', render: (r) => r.attendee_count.toLocaleString() },
+        { header: 'Revenue', render: (r) => r.revenue != null ? `$${Number(r.revenue).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—' }
+    ];
+
+    const flaggedColumns: Column<EventPerformanceRow>[] = [
+        { header: 'Event', render: (r) => <div style={{ fontWeight: 600 }}>{r.event_title}</div> },
+        { header: 'Organizer', render: (r) => r.account_name },
+        { header: 'Status', render: (r) => <Badge label={r.status} variant="neutral" /> },
+        { header: 'Pending Reports', render: (r) => <Badge label={String(r.reports_count)} variant="error" /> }
+    ];
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Top Events by Attendance</h3>
+                <DataTable data={(data?.top_events ?? []).map(r => ({ ...r, id: r.id }))} columns={topColumns} isLoading={isLoading} emptyMessage="No event performance data available." />
+            </div>
+            <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Flagged Events (pending reports)</h3>
+                <DataTable data={(data?.flagged_events ?? []).map(r => ({ ...r, id: r.id }))} columns={flaggedColumns} isLoading={isLoading} emptyMessage="No flagged events." />
+            </div>
+        </div>
+    );
+}
+
+function ForumsTab() {
+    const { data, isLoading } = useSupabaseQuery<ForumsData>(
+        ['system-analytics-forums'],
+        async (supabase) => {
+            const { data: res, error } = await supabase.schema('api').rpc('get_system_analytics', {
+                p_category: 'forums'
+            });
+            if (error) throw error;
+            return (res as any as ForumsData | null) || { most_active: [], flagged_forums: [] };
+        }
+    );
+
+    const activeColumns: Column<ActiveForumRow>[] = [
+        { header: 'Event', render: (r) => <div style={{ fontWeight: 600 }}>{r.event_title}</div> },
+        { header: 'Status', render: (r) => <Badge label={r.status} variant={r.status === 'active' ? 'success' : 'neutral'} /> },
+        { header: 'Messages', render: (r) => (r.announcements_count + r.live_chats_count).toLocaleString() },
+        { header: 'Members', render: (r) => r.member_count.toLocaleString() },
+        { header: 'Active (24h)', render: (r) => r.active_members_24h.toLocaleString() },
+        { header: 'Last Activity', render: (r) => r.last_activity_at ? new Date(r.last_activity_at).toLocaleDateString() : '—' }
+    ];
+
+    const flaggedColumns: Column<FlaggedForumRow>[] = [
+        { header: 'Event', render: (r) => <div style={{ fontWeight: 600 }}>{r.event_title}</div> },
+        { header: 'Status', render: (r) => <Badge label={r.status} variant="neutral" /> },
+        { header: 'Members', render: (r) => r.member_count.toLocaleString() },
+        { header: 'Reports', render: (r) => <Badge label={String(r.reports_count)} variant={r.escalated_reports_count > 0 ? 'error' : 'warning'} /> },
+        { header: 'Escalated', render: (r) => r.escalated_reports_count },
+        { header: 'Oldest Pending', render: (r) => r.oldest_report_at ? new Date(r.oldest_report_at).toLocaleDateString() : '—' }
+    ];
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
+            <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Most Active Forums</h3>
+                <DataTable data={(data?.most_active ?? []).map(r => ({ ...r, id: r.id }))} columns={activeColumns} isLoading={isLoading} emptyMessage="No forum activity data available." />
+            </div>
+            <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Flagged Forums (pending reports)</h3>
+                <DataTable data={(data?.flagged_forums ?? []).map(r => ({ ...r, id: r.id }))} columns={flaggedColumns} isLoading={isLoading} emptyMessage="No flagged forums." />
             </div>
         </div>
     );
@@ -255,28 +379,30 @@ function AdvertisingTab() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Impressions &amp; Clicks (90 days)</h3>
-                {isLoading ? (
-                    <EmptyState message="Loading..." />
-                ) : trendData.length === 0 ? (
-                    <EmptyState message="No ad activity in the last 90 days." />
-                ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                        <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                            <XAxis dataKey="day" stroke="rgba(255,255,255,0.4)" fontSize={12} />
-                            <YAxis stroke="rgba(255,255,255,0.4)" fontSize={12} />
-                            <Tooltip {...TOOLTIP_STYLE} />
-                            <Area type="monotone" dataKey="impressions" name="Impressions" stroke={CHART_COLORS.primary} fillOpacity={1} fill="url(#colorImpressions)" />
-                            <Area type="monotone" dataKey="clicks" name="Clicks" stroke={CHART_COLORS.orange} fillOpacity={0} />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                )}
+                <div style={CHART_CONTAINER_STYLE}>
+                    {isLoading ? (
+                        <EmptyState message="Loading..." height={280} />
+                    ) : trendData.length === 0 ? (
+                        <EmptyState message="No ad activity in the last 90 days." height={280} />
+                    ) : (
+                        <ResponsiveContainer width="100%" height={280}>
+                            <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="day" stroke="rgba(255,255,255,0.4)" fontSize={12} />
+                                <YAxis stroke="rgba(255,255,255,0.4)" fontSize={12} />
+                                <Tooltip {...TOOLTIP_STYLE} />
+                                <Area type="monotone" dataKey="impressions" name="Impressions" stroke={CHART_COLORS.primary} fillOpacity={1} fill="url(#colorImpressions)" />
+                                <Area type="monotone" dataKey="clicks" name="Clicks" stroke={CHART_COLORS.orange} fillOpacity={0} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    )}
+                </div>
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Top Campaigns by Spend</h3>
@@ -288,7 +414,7 @@ function AdvertisingTab() {
 
 // ─── Page Shell ─────────────────────────────────────────────────────────────
 
-const VALID_TABS: Tab[] = ['search', 'demographics', 'advertising'];
+const VALID_TABS: Tab[] = ['search', 'demographics', 'events', 'forums', 'advertising'];
 
 function AnalyticsContent() {
     const searchParams = useSearchParams();
@@ -321,6 +447,8 @@ function AnalyticsContent() {
                     <TabsList>
                         <TabsTrigger value="search">Search Insights</TabsTrigger>
                         <TabsTrigger value="demographics">Demographics</TabsTrigger>
+                        <TabsTrigger value="events">Events</TabsTrigger>
+                        <TabsTrigger value="forums">Forums</TabsTrigger>
                         <TabsTrigger value="advertising">Advertising</TabsTrigger>
                     </TabsList>
                 </div>
@@ -328,6 +456,8 @@ function AnalyticsContent() {
 
             {activeTab === 'search' && <SearchTab />}
             {activeTab === 'demographics' && <DemographicsTab />}
+            {activeTab === 'events' && <EventsTab />}
+            {activeTab === 'forums' && <ForumsTab />}
             {activeTab === 'advertising' && <AdvertisingTab />}
         </div>
     );

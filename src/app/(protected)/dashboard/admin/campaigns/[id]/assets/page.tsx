@@ -4,8 +4,7 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
-import adminStyles from '../../../page.module.css';
-import Link from 'next/link';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -115,27 +114,23 @@ export default function CampaignAssetsPage() {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div style={{ flex: '1 1 auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <Link href="/dashboard/admin/campaigns" className={styles.backLink}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                            Back to Campaigns
-                        </Link>
-                    </div>
-                    <h1 className={adminStyles.title}>{campaignTitle || 'Ad Assets'}</h1>
-                    <p className={adminStyles.subtitle}>Review and manage creative assets for this campaign.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className={adminStyles.btnPrimary} onClick={showAllHidden} disabled={isLoading || !assets.some(a => a.is_hidden)}>
+            <SubPageHeader
+                title={campaignTitle || 'Ad Assets'}
+                subtitle="Review and manage creative assets for this campaign."
+                backHref="/dashboard/admin/campaigns"
+                backLabel="Back to Campaigns"
+                primaryAction={{
+                    label: 'Show All Hidden',
+                    onClick: showAllHidden,
+                    disabled: isLoading || !assets.some(a => a.is_hidden),
+                    icon: (
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
-                        Show All Hidden
-                    </button>
-                </div>
-            </header>
+                    )
+                }}
+            />
 
             {isLoading ? (
                 <div style={{ textAlign: 'center', padding: 48, opacity: 0.5 }}>Loading assets...</div>

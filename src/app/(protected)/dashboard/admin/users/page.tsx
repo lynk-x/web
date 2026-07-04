@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
@@ -87,7 +88,7 @@ function AccountsContent() {
             setAccounts(data || []);
             setTotalCount(data?.[0]?.total_count || 0);
         } catch (err: unknown) {
-            showToast('Failed to load accounts database.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to load accounts database.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -129,7 +130,7 @@ function AccountsContent() {
             fetchSummary();
             setSelectedIds(new Set());
         } catch (err) {
-            showToast('Failed to perform bulk update.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to perform bulk update.', 'error');
         }
     };
 

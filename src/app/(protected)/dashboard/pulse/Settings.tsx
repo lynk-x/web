@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
@@ -44,8 +45,8 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
             // Log them out and redirect home since their identity is now destroyed
             await supabase.auth.signOut();
             router.push('/');
-        } catch (err: any) {
-            showToast(err.message || 'Failed to deactivate account.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to deactivate account.', 'error');
         } finally {
             setIsDeleting(false);
         }

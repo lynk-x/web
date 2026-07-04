@@ -10,6 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 import { LegalDocument, SystemBanner, BroadcastLog, Spotlight } from '@/types/admin';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 // ...
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -117,7 +118,7 @@ function CommunicationsContent() {
             if (spotlightsRes.data) setSpotlights(spotlightsRes.data);
 
         } catch (error) {
-            showToast('Failed to load some data', 'error');
+            showToast(getErrorMessage(error) || 'Failed to load some data', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -418,12 +419,10 @@ function CommunicationsContent() {
     return (
         <div className={adminStyles.container}>
             {ConfirmDialog}
-            <header className={adminStyles.header}>
-                <div>
-                    <h1 className={adminStyles.title}>Communications</h1>
-                    <p className={adminStyles.subtitle}>Manage platform content, spotlights and notifications.</p>
-                </div>
-            </header>
+            <PageHeader
+                title="Communications"
+                subtitle="Manage platform content, spotlights and notifications."
+            />
 
             <div className={adminStyles.statsGrid}>
                 <StatCard 

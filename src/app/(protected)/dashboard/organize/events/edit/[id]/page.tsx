@@ -108,7 +108,7 @@ export default function EditEventPage() {
 
             } catch (error: unknown) {
                 console.error("Error fetching event:", error);
-                showToast("Failed to load event data. It may not exist or belong to your organization.", "error");
+                showToast(getErrorMessage(error) || "Failed to load event data. It may not exist or belong to your organization.", "error");
                 router.push('/dashboard/organize/events');
             } finally {
                 setIsLoading(false);

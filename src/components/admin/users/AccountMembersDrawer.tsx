@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { useEffect, useState, useMemo } from 'react';
 import styles from './AccountMembersDrawer.module.css';
 import { AdminAccount } from '@/types/admin';
@@ -44,8 +45,8 @@ export default function AccountMembersDrawer({ account, onClose }: AccountMember
 
             if (error) throw error;
             setMembers(data || []);
-        } catch (err: any) {
-            showToast(err.message || "Failed to load members", "error");
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to load members", "error");
         } finally {
             setIsLoading(false);
         }

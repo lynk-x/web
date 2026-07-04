@@ -1,0 +1,26 @@
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+    opacity: 0.5;
+    gap: 8px;
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+}
+
+.message {
+    font-size: 14px;
+}
+
+.action {
+    margin-top: 4px;
+    opacity: 1;
+}

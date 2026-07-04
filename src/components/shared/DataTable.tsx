@@ -5,6 +5,7 @@ import styles from './DataTable.module.css';
 import TableCheckbox from './TableCheckbox';
 import TableRowActions from './TableRowActions';
 import Pagination from './Pagination';
+import Spinner from './Spinner';
 import { useTableSelection } from '@/hooks/useTableSelection';
 import type { ActionItem } from '@/types/shared';
 
@@ -124,10 +125,7 @@ function DataTable<T extends { id: string | number }>({
                     {isLoading && (
                         <tr>
                             <td colSpan={totalColumns} className={styles.emptyState} style={{ opacity: 0.5 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                    <svg className={styles.spinner} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                                    Loading data...
-                                </div>
+                                <Spinner size={16} label="Loading data..." />
                             </td>
                         </tr>
                     )}

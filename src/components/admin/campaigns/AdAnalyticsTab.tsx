@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect, useCallback } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -49,8 +50,8 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
             if (error) throw error;
             setData(data || []);
             setTotalCount(data?.[0]?.total_count || 0);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to load analytics', 'error');
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to load analytics', 'error');
         } finally {
             setIsLoading(false);
         }

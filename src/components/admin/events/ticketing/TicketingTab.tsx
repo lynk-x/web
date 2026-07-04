@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { useEffect, useState, useMemo } from 'react';
 import styles from './TicketingTab.module.css';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
@@ -28,8 +29,8 @@ export default function TicketingTab({ eventId }: TicketingTabProps) {
                 });
                 if (error) throw error;
                 setData(result);
-            } catch (err: any) {
-                showToast(err.message || "Failed to load ticketing data", "error");
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err) || "Failed to load ticketing data", "error");
             } finally {
                 setIsLoading(false);
             }

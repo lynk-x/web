@@ -17,6 +17,7 @@ import DataTable from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { createClient } from '@/utils/supabase/client';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -41,10 +42,11 @@ interface AccountPermission {
 
 function IAMContent() {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    
+
     // Default schema client for standard tables
     const supabase = useMemo(() => createClient(), []);
 
@@ -116,7 +118,7 @@ function IAMContent() {
             setAccountsTotalCount(data?.[0]?.total_count ? Number(data[0].total_count) : 0);
         } catch (err: unknown) {
             console.error('Error fetching accounts:', err);
-            showToast('Failed to load accounts database.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to load accounts database.', 'error');
         } finally {
             setIsLoadingAccounts(false);
         }
@@ -241,7 +243,10 @@ function IAMContent() {
 
     // Delete custom role
     const handleDeleteRole = useCallback(async (role: AccountRole) => {
-        if (!window.confirm(`Are you sure you want to delete the role "${role.display_name}"? This action cannot be undone.`)) {
+        if (!await confirm(`Delete the role "${role.display_name}"? This action cannot be undone.`, {
+            title: 'Delete Role',
+            confirmLabel: 'Delete'
+        })) {
             return;
         }
         setIsLoading(true);
@@ -257,7 +262,7 @@ function IAMContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabaseApi, showToast, fetchIAMData]);
+    }, [supabaseApi, showToast, fetchIAMData, confirm]);
 
     // Handle single permission assign/revoke to/from a role
     const handlePermissionRoleAction = async (action: 'assign' | 'revoke') => {
@@ -291,7 +296,10 @@ function IAMContent() {
     const handleBulkAssign = async () => {
         if (selectedPermissions.size === 0) return;
         const count = selectedPermissions.size;
-        if (!window.confirm(`Are you sure you want to assign the ${count} selected permissions to ALL roles?`)) {
+        if (!await confirm(`Assign the ${count} selected permissions to ALL roles?`, {
+            title: 'Bulk Assign Permissions',
+            confirmLabel: 'Assign'
+        })) {
             return;
         }
         setIsLoading(true);
@@ -314,7 +322,10 @@ function IAMContent() {
     const handleBulkRevoke = async () => {
         if (selectedPermissions.size === 0) return;
         const count = selectedPermissions.size;
-        if (!window.confirm(`Are you sure you want to revoke the ${count} selected permissions from ALL roles?`)) {
+        if (!await confirm(`Revoke the ${count} selected permissions from ALL roles?`, {
+            title: 'Bulk Revoke Permissions',
+            confirmLabel: 'Revoke'
+        })) {
             return;
         }
         setIsLoading(true);
@@ -831,6 +842,8 @@ function IAMContent() {
                     </div>
                 )}
             </Modal>
+
+            {ConfirmDialog}
         </div>
     );
 }

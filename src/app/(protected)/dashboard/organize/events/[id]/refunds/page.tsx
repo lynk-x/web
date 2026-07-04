@@ -11,6 +11,7 @@ import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
+import Spinner from '@/components/shared/Spinner';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 
@@ -193,7 +194,7 @@ export default function EventRefundsPage() {
             />
 
             {isLoading ? (
-                <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
+                <div className={adminStyles.loadingContainer}><Spinner /></div>
             ) : refunds.length === 0 ? (
                 <div className={adminStyles.emptyState}>
                     <p>No refund requests for this event.</p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { use, useState, useEffect, useMemo } from 'react';
 import UserForm, { UserFormData } from '@/components/admin/users/UserForm';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -41,7 +42,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     bio: data.bio
                 });
             } catch (err: unknown) {
-                showToast('Failed to load user data.', 'error');
+                showToast(getErrorMessage(err) || 'Failed to load user data.', 'error');
             } finally {
                 setIsLoading(false);
             }

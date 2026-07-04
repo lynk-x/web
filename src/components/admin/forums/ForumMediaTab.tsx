@@ -8,6 +8,7 @@ import { formatRelativeTime, formatFileSize } from '@/utils/format';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Badge from '@/components/shared/Badge';
+import Pagination from '@/components/shared/Pagination';
 import { ForumMedia } from '@/types/admin';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
@@ -202,29 +203,11 @@ export default function ForumMediaTab({ forumId }: { forumId?: string }) {
                         ))}
                     </div>
 
-                    {totalPages > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-                            <button 
-                                className={adminStyles.btnSecondary} 
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                style={{ padding: '8px 16px', fontSize: '13px' }}
-                            >
-                                Previous
-                            </button>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', opacity: 0.6 }}>
-                                Page {currentPage} of {totalPages}
-                            </div>
-                            <button 
-                                className={adminStyles.btnSecondary} 
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                style={{ padding: '8px 16px', fontSize: '13px' }}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    )}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
                 </>
             )}
         </div>

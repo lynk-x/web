@@ -8,6 +8,7 @@ import { formatDate } from '@/utils/format';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
+import Spinner from '@/components/shared/Spinner';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -92,7 +93,7 @@ export default function SubscriptionPlansPage() {
             }));
             setPlans(mappedPlans);
         } catch (e: unknown) {
-            showToast('Failed to load subscription plans', 'error');
+            showToast(getErrorMessage(e) || 'Failed to load subscription plans', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -108,7 +109,7 @@ export default function SubscriptionPlansPage() {
             if (error) throw error;
             setAllFeatures(data || []);
         } catch (e: unknown) {
-            showToast('Failed to load features', 'error');
+            showToast(getErrorMessage(e) || 'Failed to load features', 'error');
         }
     }, [supabase, showToast]);
 
@@ -255,7 +256,7 @@ export default function SubscriptionPlansPage() {
             showToast('Price deleted', 'success');
             fetchPlans();
         } catch (e: unknown) {
-            showToast('Failed to delete price', 'error');
+            showToast(getErrorMessage(e) || 'Failed to delete price', 'error');
         }
     };
 
@@ -269,7 +270,7 @@ export default function SubscriptionPlansPage() {
             showToast(`Plan ${plan.is_active ? 'deactivated' : 'activated'}`, 'success');
             fetchPlans();
         } catch (e: unknown) {
-            showToast('Failed to update plan', 'error');
+            showToast(getErrorMessage(e) || 'Failed to update plan', 'error');
         }
     };
 
@@ -284,7 +285,7 @@ export default function SubscriptionPlansPage() {
             />
 
             {isLoading ? (
-                <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
+                <div className={adminStyles.loadingContainer}><Spinner /></div>
             ) : plans.length === 0 ? (
                 <div className={adminStyles.emptyState}>
                     <p>No subscription plans configured yet.</p>

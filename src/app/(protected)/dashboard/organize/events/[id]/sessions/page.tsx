@@ -9,6 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { formatDate, formatTime } from '@/utils/format';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Modal from '@/components/shared/Modal';
+import Spinner from '@/components/shared/Spinner';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
@@ -96,7 +97,7 @@ export default function EventSessionsPage() {
 
             setSessions(mapped);
         } catch (e: unknown) {
-            showToast('Failed to load sessions', 'error');
+            showToast(getErrorMessage(e) || 'Failed to load sessions', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -192,7 +193,7 @@ export default function EventSessionsPage() {
             showToast('Session deleted', 'success');
             fetchSessions();
         } catch (e: unknown) {
-            showToast('Failed to delete session', 'error');
+            showToast(getErrorMessage(e) || 'Failed to delete session', 'error');
         }
     };
 
@@ -213,7 +214,7 @@ export default function EventSessionsPage() {
 
             {isLoading ? (
                 <div className={adminStyles.loadingContainer}>
-                    <div className={adminStyles.spinner} />
+                    <Spinner />
                 </div>
             ) : sessions.length === 0 ? (
                 <div className={adminStyles.emptyState}>

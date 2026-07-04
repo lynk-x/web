@@ -12,6 +12,7 @@ import AccountMembersDrawer from './AccountMembersDrawer';
 import AccountGovernanceDrawer from './AccountGovernanceDrawer';
 import { createClient } from '@/utils/supabase/client';
 import { getErrorMessage } from '@/utils/error';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ const UserTable: React.FC<UserTableProps> = ({
     view = 'accounts',
 }) => {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const supabase = React.useMemo(() => createClient(), []);
     const [selectedAccountForMembers, setSelectedAccountForMembers] = React.useState<any | null>(null);
@@ -194,7 +196,10 @@ const UserTable: React.FC<UserTableProps> = ({
             variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>,
             onClick: async () => {
-                if (!confirm('Are you sure you want to PERMANENTLY lock this account?')) return;
+                if (!await confirm('Permanently lock this account? This action cannot be undone.', {
+                    title: 'Lock Account',
+                    confirmLabel: 'Lock Account'
+                })) return;
                 try {
                     const { error } = await supabase.schema('api').rpc('bulk_update_user_status', {
                         p_user_ids: [user.id],
@@ -234,6 +239,8 @@ const UserTable: React.FC<UserTableProps> = ({
                 account={selectedAccountForGovernance}
                 onClose={() => setSelectedAccountForGovernance(null)}
             />
+
+            {ConfirmDialog}
         </>
     );
 };

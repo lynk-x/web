@@ -100,7 +100,7 @@ export default function CheckInLogsPage() {
 
         } catch (err) {
             console.error('Error fetching check-ins:', err);
-            showToast('Failed to load check-in logs', 'error');
+            showToast(getErrorMessage(err) || 'Failed to load check-in logs', 'error');
         } finally {
             setIsLoading(false);
         }

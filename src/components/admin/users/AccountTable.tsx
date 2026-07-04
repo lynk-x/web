@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React from 'react';
 import styles from './UserTable.module.css';
 import DataTable, { Column } from '../../shared/DataTable';
@@ -169,7 +170,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
                     showToast(`${acc.display_name} successfully ${actionLabel}d.`, 'success');
                     onRefresh?.();
                 } catch (err) {
-                    showToast(`Failed to ${actionLabel} account.`, 'error');
+                    showToast(getErrorMessage(err) || `Failed to ${actionLabel} account.`, 'error');
                 }
             },
         },
@@ -201,7 +202,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
                     showToast(`${acc.display_name} successfully ${actionLabel}ed.`, 'success');
                     onRefresh?.();
                 } catch (err) {
-                    showToast(`Failed to ${actionLabel} account.`, 'error');
+                    showToast(getErrorMessage(err) || `Failed to ${actionLabel} account.`, 'error');
                 }
             },
         },

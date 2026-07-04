@@ -844,8 +844,8 @@ export default function AdminEventsPage() {
                                         showToast('Bulk approval initiated.', 'success');
                                         fetchPayouts();
                                         setSelectedPayoutIds(new Set());
-                                    } catch (err: any) {
-                                        showToast(err.message, 'error');
+                                    } catch (err: unknown) {
+                                        showToast(getErrorMessage(err) || 'Failed to approve payouts.', 'error');
                                     }
                                 },
                                 variant: 'success'

@@ -11,6 +11,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
+import Spinner from '@/components/shared/Spinner';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -139,7 +140,7 @@ export default function EventSponsorshipsPage() {
 
         } catch (e: unknown) {
             console.error('Fetch error:', e);
-            showToast('Failed to load sponsorship data', 'error');
+            showToast(getErrorMessage(e) || 'Failed to load sponsorship data', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -246,7 +247,7 @@ export default function EventSponsorshipsPage() {
             showToast('Invitation revoked', 'success');
             fetchData();
         } catch (e: unknown) {
-            showToast('Failed to revoke invitation', 'error');
+            showToast(getErrorMessage(e) || 'Failed to revoke invitation', 'error');
         }
     };
 
@@ -374,7 +375,7 @@ export default function EventSponsorshipsPage() {
             </div>
 
             {isLoading ? (
-                <div className={adminStyles.loadingContainer}><div className={adminStyles.spinner} /></div>
+                <div className={adminStyles.loadingContainer}><Spinner /></div>
             ) : (
                 <>
                     {/* Sponsorship Tiers */}

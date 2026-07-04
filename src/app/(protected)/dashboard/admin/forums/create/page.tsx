@@ -59,7 +59,7 @@ export default function CreateForumPage() {
 
                 setEvents(eligible);
             } catch (err) {
-                showToast('Failed to load eligible events.', 'error');
+                showToast(getErrorMessage(err) || 'Failed to load eligible events.', 'error');
             } finally {
                 setIsLoadingEvents(false);
             }

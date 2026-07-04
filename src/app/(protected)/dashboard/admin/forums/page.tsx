@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import FilterChips from '@/components/shared/FilterChips';
@@ -80,7 +81,7 @@ function ForumsContent() {
 
                 setAllForums(rows);
             } catch (err) {
-                showToast('Failed to load forum management data.', 'error');
+                showToast(getErrorMessage(err) || 'Failed to load forum management data.', 'error');
             } finally {
                 setIsLoading(false);
             }
@@ -379,7 +380,7 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
                 reasonId: r.reason_id
             })));
         } catch (err: unknown) {
-            showToast('Failed to load reports', 'error');
+            showToast(getErrorMessage(err) || 'Failed to load reports', 'error');
         } finally {
             setIsLoading(false);
         }

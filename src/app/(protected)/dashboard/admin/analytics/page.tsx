@@ -9,6 +9,7 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 import { useOrganization } from '@/context/OrganizationContext';
+import SharedEmptyState from '@/components/shared/EmptyState';
 import { 
     AreaChart, Area, 
     BarChart, Bar, 
@@ -207,21 +208,7 @@ const renderTooltipContent = (props: any) => {
 };
 
 function EmptyState({ message, height = 240 }: { message: string; height?: number }) {
-    return (
-        <div style={{ 
-            height, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            opacity: 0.5, 
-            fontSize: '14px',
-            border: '1px dashed rgba(255, 255, 255, 0.08)',
-            borderRadius: '8px',
-            color: 'var(--color-text-secondary, #a1a1aa)'
-        }}>
-            {message}
-        </div>
-    );
+    return <SharedEmptyState message={message} height={height} />;
 }
 
 // ─── Tab Components ─────────────────────────────────────────────────────────

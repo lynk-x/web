@@ -10,6 +10,7 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import Toggle from '@/components/shared/Toggle';
 import { useRouter } from 'next/navigation';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface Disclaimer {
     id: string;
@@ -29,6 +30,7 @@ interface DisclaimerTableProps {
 
 export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearchTerm }: DisclaimerTableProps) {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
 
@@ -134,7 +136,10 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
     ];
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this disclaimer?')) return;
+        if (!await confirm('Delete this disclaimer? This action cannot be undone.', {
+            title: 'Delete Disclaimer',
+            confirmLabel: 'Delete'
+        })) return;
         try {
             const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
                 p_tab: 'disclaimers',
@@ -247,6 +252,8 @@ export default function DisclaimerTable({ hideToolbar, searchTerm: externalSearc
                 isLoading={isLoading}
                 emptyMessage="No disclaimers found."
             />
+
+            {ConfirmDialog}
         </div>
     );
 }

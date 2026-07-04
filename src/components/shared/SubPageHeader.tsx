@@ -4,11 +4,13 @@ import React from 'react';
 import styles from '@/components/dashboard/DashboardShared.module.css';
 import BackButton from '@/components/shared/BackButton';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
+import Spinner from '@/components/shared/Spinner';
 
 interface HeaderAction {
     label: string;
     onClick?: (e: React.FormEvent) => void;
     isLoading?: boolean;
+    disabled?: boolean;
     type?: 'button' | 'submit';
     formId?: string;
     icon?: React.ReactNode;
@@ -71,7 +73,7 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
                         form={secondaryAction.formId}
                         className={styles.btnSecondary}
                         onClick={secondaryAction.onClick ? (e) => secondaryAction.onClick!(e) : undefined}
-                        disabled={secondaryAction.isLoading}
+                        disabled={secondaryAction.isLoading || secondaryAction.disabled}
                     >
                         {secondaryAction.icon && (
                             <span style={{ display: 'flex', alignItems: 'center', opacity: secondaryAction.isLoading ? 0.5 : 1 }}>
@@ -88,11 +90,11 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
                         form={primaryAction.formId}
                         className={styles.btnPrimary}
                         onClick={primaryAction.onClick ? (e) => primaryAction.onClick!(e) : undefined}
-                        disabled={primaryAction.isLoading}
+                        disabled={primaryAction.isLoading || primaryAction.disabled}
                     >
                         {primaryAction.isLoading ? (
                             <>
-                                <svg className={styles.spinner} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                                <Spinner size={16} />
                                 {primaryAction.type === 'submit' ? 'Saving...' : 'Wait...'}
                             </>
                         ) : (

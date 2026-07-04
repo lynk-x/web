@@ -10,6 +10,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import Spinner from '@/components/shared/Spinner';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import type { OrganizerEventFormData, OrganizerEventTicket } from '@/types/organize';
@@ -293,7 +294,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     if (isLoading) {
         return (
             <div className={adminStyles.loadingContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
-                <div className={adminStyles.spinner} />
+                <Spinner />
             </div>
         );
     }

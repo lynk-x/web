@@ -65,7 +65,7 @@ export default function PromoCodeForm({
                 setEvents(eventsData || []);
             } catch (err: unknown) {
                 console.error('Error fetching form refs:', err);
-                showToast('Failed to load events.', 'error');
+                showToast(getErrorMessage(err) || 'Failed to load events.', 'error');
             } finally {
                 setIsLoadingRefs(false);
             }

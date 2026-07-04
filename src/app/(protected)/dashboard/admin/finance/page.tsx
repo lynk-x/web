@@ -185,7 +185,7 @@ function FinanceContent() {
                 mrr: data.finance.mrr
             });
         } catch (error: unknown) {
-            showToast('Failed to load financial aggregates.', 'error');
+            showToast(getErrorMessage(error) || 'Failed to load financial aggregates.', 'error');
         } finally {
             setIsStatsLoading(false);
         }

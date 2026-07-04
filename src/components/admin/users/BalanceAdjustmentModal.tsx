@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { useState, useMemo } from 'react';
 import Modal from '../../shared/Modal';
 import { createClient } from '@/utils/supabase/client';
@@ -59,8 +60,8 @@ const BalanceAdjustmentModal: React.FC<BalanceAdjustmentModalProps> = ({
             showToast(`Successfully ${action === 'add' ? 'added' : 'deducted'} ${balanceType} balance.`, 'success');
             onSuccess();
             onClose();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to adjust balance.', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to adjust balance.', 'error');
         } finally {
             setIsLoading(false);
         }

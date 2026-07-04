@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
@@ -65,8 +66,8 @@ export default function CreateCampaignPage() {
 
             showToast('Campaign created successfully', 'success');
             router.push('/dashboard/admin/campaigns');
-        } catch (err: any) {
-            showToast(err.message || 'Failed to create campaign', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to create campaign', 'error');
         }
     };
 

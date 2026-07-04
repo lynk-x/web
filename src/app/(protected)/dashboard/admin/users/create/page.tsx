@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
@@ -48,8 +49,8 @@ export default function CreateAccountPage() {
 
             showToast('Account created successfully', 'success');
             router.push('/dashboard/admin/users');
-        } catch (err: any) {
-            showToast(err.message || 'Failed to create account', 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to create account', 'error');
         } finally {
             setIsSubmitting(false);
         }

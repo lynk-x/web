@@ -1,11 +1,11 @@
 "use client";
 
+import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import CampaignDetail from '@/components/admin/campaigns/Detail/CampaignDetail';
-import BackButton from '@/components/shared/BackButton';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import styles from '../page.module.css';
-import adminStyles from '../../page.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { Campaign } from '@/types/admin';
@@ -142,7 +142,7 @@ export default function AdminCampaignDetailPage() {
                     callToAction: primaryMedia?.call_to_action || '',
                 });
             } catch (err) {
-                showToast('Campaign not found.', 'error');
+                showToast(getErrorMessage(err) || 'Campaign not found.', 'error');
                 router.push('/dashboard/admin/campaigns');
             } finally {
                 setIsLoading(false);
@@ -165,7 +165,7 @@ export default function AdminCampaignDetailPage() {
             showToast(`Campaign status updated to ${newStatus}`, 'success');
             setCampaign(prev => prev ? { ...prev, status: newStatus as 'draft' | 'active' | 'completed' | 'paused' | 'rejected' } : null);
         } catch (err) {
-            showToast('Failed to update status.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to update status.', 'error');
         }
     };
 
@@ -178,62 +178,20 @@ export default function AdminCampaignDetailPage() {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <div style={{ marginBottom: '16px' }}>
-                        <BackButton />
-                    </div>
-                    <h1 className={styles.title}>{campaign.name}</h1>
-                    <p className={adminStyles.subtitle}>Detailed oversight for {campaign.client}'s campaign.</p>
-                </div>
-                
-                {allCampaigns.length > 1 && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button
-                            className={adminStyles.btnSecondary}
-                            disabled={!prevCampaign}
-                            onClick={() => prevCampaign && router.push(`/dashboard/admin/campaigns/${prevCampaign.id}?createdAt=${prevCampaign.created_at}`)}
-                            style={{
-                                padding: '8px 12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                opacity: prevCampaign ? 1 : 0.4,
-                                cursor: prevCampaign ? 'pointer' : 'not-allowed',
-                                fontSize: '13px',
-                                height: '36px',
-                                borderRadius: '6px'
-                            }}
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
-                            Prev
-                        </button>
-                        <button
-                            className={adminStyles.btnSecondary}
-                            disabled={!nextCampaign}
-                            onClick={() => nextCampaign && router.push(`/dashboard/admin/campaigns/${nextCampaign.id}?createdAt=${nextCampaign.created_at}`)}
-                            style={{
-                                padding: '8px 12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                opacity: nextCampaign ? 1 : 0.4,
-                                cursor: nextCampaign ? 'pointer' : 'not-allowed',
-                                fontSize: '13px',
-                                height: '36px',
-                                borderRadius: '6px'
-                            }}
-                        >
-                            Next
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                        </button>
-                    </div>
-                )}
-            </header>
+            <SubPageHeader
+                title={campaign.name}
+                subtitle={`Detailed oversight for ${campaign.client}'s campaign.`}
+                secondaryAction={allCampaigns.length > 1 ? {
+                    label: 'Prev',
+                    onClick: () => { if (prevCampaign) router.push(`/dashboard/admin/campaigns/${prevCampaign.id}?createdAt=${prevCampaign.created_at}`); },
+                    disabled: !prevCampaign
+                } : undefined}
+                primaryAction={allCampaigns.length > 1 ? {
+                    label: 'Next',
+                    onClick: () => { if (nextCampaign) router.push(`/dashboard/admin/campaigns/${nextCampaign.id}?createdAt=${nextCampaign.created_at}`); },
+                    disabled: !nextCampaign
+                } : undefined}
+            />
 
             <CampaignDetail
                 campaign={campaign}

@@ -4,7 +4,7 @@ import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ContentForm from '@/components/admin/content/Form/ContentForm';
-import BackButton from '@/components/shared/BackButton';
+import SubPageHeader from '@/components/shared/SubPageHeader';
 import styles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -66,13 +66,12 @@ export default function AdminEditContentPage() {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div>
-                    <BackButton label="Back to Content" isDirty={isDirty} />
-                    <h1 className={styles.title}>Edit Content</h1>
-                    <p className={styles.subtitle}>Modifying: {item.title}</p>
-                </div>
-            </header>
+            <SubPageHeader
+                title="Edit Content"
+                subtitle={`Modifying: ${item.title}`}
+                backLabel="Back to Content"
+                isDirty={isDirty}
+            />
 
             <ContentForm initialData={item} isEditing={true} onDirtyChange={setIsDirty} />
         </div>
