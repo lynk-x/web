@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useOrganizerOnboarding } from '@/hooks/useOrganizerOnboarding';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { LocationInput } from '@/components/ui/LocationInput';
@@ -44,6 +45,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const { confirm: confirmModal, ConfirmDialog } = useConfirmModal();
+    const { status: onboardingStatus } = useOrganizerOnboarding(activeAccount?.id);
 
     useEffect(() => {
         preloadEmbeddingModel();
@@ -553,6 +555,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                         onAdd={addTicket}
                         onRemove={removeTicket}
                         onChange={handleTicketChange}
+                        onboardingStatus={onboardingStatus}
                     />
                 )}
 

@@ -13,6 +13,8 @@ import styles from './EventForm.module.css';
 import type { OrganizerEventTicket as Ticket } from '@/types/organize';
 import { useToast } from '@/components/ui/Toast';
 import { CurrencySelector } from '@/components/ui/CurrencySelector';
+import type { OrganizerOnboardingStatus } from '@/hooks/useOrganizerOnboarding';
+import OnboardingChecklist from './OnboardingChecklist';
 
 interface TicketTierManagerProps {
     tickets: Ticket[];
@@ -23,27 +25,37 @@ interface TicketTierManagerProps {
     onAdd: () => void;
     onRemove: (index: number) => void;
     onChange: (index: number, field: keyof Ticket, value: string | boolean) => void;
+    onboardingStatus?: OrganizerOnboardingStatus | null;
 }
 
 const TicketTierManager: React.FC<TicketTierManagerProps> = ({
-    tickets, currency, isPaid, onPaidChange, errors, onAdd, onRemove, onChange,
+    tickets, currency, isPaid, onPaidChange, errors, onAdd, onRemove, onChange, onboardingStatus,
 }) => {
     const { showToast } = useToast();
+    const canCreatePaidEvents = onboardingStatus?.can_create_paid_events ?? true;
 
     return (
         <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Tickets</h2>
 
+            {onboardingStatus && <OnboardingChecklist status={onboardingStatus} />}
+
             <div style={{ marginBottom: '32px', display: 'flex', gap: '24px', alignItems: 'center' }}>
                 <div className={styles.inputGroup}>
                     <label className={styles.label}>Is this event free?</label>
                     <div className={styles.toggleRow}>
-                        <label className={styles.checkboxLabel}>
-                            <input 
-                                type="checkbox" 
-                                className={styles.checkbox} 
-                                checked={!isPaid} 
-                                onChange={(e) => onPaidChange(!e.target.checked)} 
+                        <label className={styles.checkboxLabel} title={!canCreatePaidEvents ? 'Complete account verification to create paid tickets.' : undefined}>
+                            <input
+                                type="checkbox"
+                                className={styles.checkbox}
+                                checked={!isPaid}
+                                onChange={(e) => {
+                                    if (e.target.checked === false && !canCreatePaidEvents) {
+                                        showToast('Complete account verification before creating paid tickets.', 'warning');
+                                        return;
+                                    }
+                                    onPaidChange(!e.target.checked);
+                                }}
                             />
                             Yes, this event is free for all attendees
                         </label>
