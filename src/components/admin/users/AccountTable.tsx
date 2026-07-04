@@ -13,6 +13,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { AdminAccount } from '@/types/admin';
 import BalanceAdjustmentModal from './BalanceAdjustmentModal';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface AccountTableProps {
     accounts: AdminAccount[];
@@ -60,6 +61,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
 }) => {
     const supabase = React.useMemo(() => createClient(), []);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const [selectedAccountForMembers, setSelectedAccountForMembers] = React.useState<AdminAccount | null>(null);
     const [selectedAccountForGovernance, setSelectedAccountForGovernance] = React.useState<AdminAccount | null>(null);
@@ -146,7 +148,13 @@ const AccountTable: React.FC<AccountTableProps> = ({
             onClick: async () => {
                 const newStatus = acc.status === 'active' ? 'frozen' : 'active';
                 const actionLabel = acc.status === 'active' ? 'freeze' : 'unfreeze';
-                
+
+                if (!await confirm(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)} account "${acc.display_name}"?`, {
+                    title: `${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)} Account`,
+                    confirmLabel: actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1),
+                    variant: acc.status === 'active' ? 'danger' : 'default'
+                })) return;
+
                 showToast(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}ing ${acc.display_name}...`, 'info');
                 
                 try {
@@ -172,7 +180,13 @@ const AccountTable: React.FC<AccountTableProps> = ({
             onClick: async () => {
                 const newStatus = acc.status === 'active' ? 'temporarily_suspended' : 'active';
                 const actionLabel = acc.status === 'active' ? 'suspend' : 'unsuspend';
-                
+
+                if (!await confirm(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)} account "${acc.display_name}"?`, {
+                    title: `${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)} Account`,
+                    confirmLabel: actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1),
+                    variant: acc.status === 'active' ? 'danger' : 'default'
+                })) return;
+
                 showToast(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)}ing ${acc.display_name}...`, 'info');
                 
                 try {
@@ -230,6 +244,8 @@ const AccountTable: React.FC<AccountTableProps> = ({
                     onSuccess={() => onRefresh?.()}
                 />
             )}
+
+            {ConfirmDialog}
         </>
     );
 };

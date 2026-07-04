@@ -60,7 +60,6 @@ function IAMContent() {
     const [accountsPage, setAccountsPage] = useState(1);
     const [accountsTotalCount, setAccountsTotalCount] = useState(0);
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
-    const [accountType, setAccountType] = useState('all');
 
     const [roles, setRoles] = useState<AccountRole[]>([]);
     const [permissions, setPermissions] = useState<AccountPermission[]>([]);
@@ -99,11 +98,16 @@ function IAMContent() {
         try {
             const { data, error } = await supabaseApi.schema('api').rpc('get_admin_accounts', {
                 p_search: debouncedSearch.trim(),
-                p_type: accountType,
+                p_type: 'all',
                 p_status: 'all',
                 p_country_code: 'all',
                 p_offset: (accountsPage - 1) * 10,
-                p_limit: 10
+                p_limit: 10,
+                // Exclude the per-country platform fee-collection accounts —
+                // those aren't tenants to govern here, they're system
+                // accounts covered by /dashboard/system/finance's Platform
+                // Wallets tab. Same account_type split as get_admin_wallets.
+                p_account_type: 'tenant'
             });
 
             if (error) throw error;
@@ -116,7 +120,7 @@ function IAMContent() {
         } finally {
             setIsLoadingAccounts(false);
         }
-    }, [supabaseApi, showToast, debouncedSearch, accountType, accountsPage]);
+    }, [supabaseApi, showToast, debouncedSearch, accountsPage]);
 
     // Load global roles and permissions matrix
     const fetchIAMData = useCallback(async () => {
@@ -509,36 +513,16 @@ function IAMContent() {
                 subtitle="Manage platform-level system roles, accounts, and granular security permissions."
             />
 
-            <TableToolbar 
+            <TableToolbar
                 searchPlaceholder="Search accounts, roles or permissions..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            >
-                {activeTab === 'accounts' && (
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {[
-                            { value: 'all', label: 'All Accounts' },
-                            { value: 'platform', label: 'Platform' },
-                            { value: 'organizer', label: 'Organizer' },
-                            { value: 'advertiser', label: 'Advertiser' },
-                            { value: 'pulse_user', label: 'Pulse User' }
-                        ].map((chip) => (
-                            <button
-                                key={chip.value}
-                                className={accountType === chip.value ? adminStyles.chipActive : adminStyles.chip}
-                                onClick={() => setAccountType(chip.value)}
-                            >
-                                {chip.label}
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </TableToolbar>
+            />
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none', marginTop: '16px' }}>
                     <TabsList>
-                        <TabsTrigger value="accounts">Accounts</TabsTrigger>
+                        <TabsTrigger value="accounts">Platform Accounts</TabsTrigger>
                         <TabsTrigger value="roles">Roles</TabsTrigger>
                         <TabsTrigger value="permissions">Permissions</TabsTrigger>
                         <TabsTrigger value="matrix">Role Permissions</TabsTrigger>

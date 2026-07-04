@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import Badge from '@/components/shared/Badge';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface TagType {
     id: string;
@@ -36,6 +37,7 @@ interface Tag {
 
 export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: TagLibraryTabProps) {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
 
@@ -190,6 +192,30 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
         }
     ];
 
+    const handleDeleteTag = async (tag: Tag) => {
+        if (tag.use_count > 0) {
+            showToast(`Cannot delete "${tag.name}" — it's applied to ${tag.use_count} item${tag.use_count === 1 ? '' : 's'}. Remove those associations first.`, 'error');
+            return;
+        }
+        if (!await confirm(`Delete tag "${tag.name}"? This cannot be undone.`, {
+            title: 'Delete Tag',
+            confirmLabel: 'Delete'
+        })) return;
+
+        try {
+            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
+                p_tab: 'tags',
+                p_action: 'delete',
+                p_id: tag.id
+            });
+            if (error) throw error;
+            showToast(`Tag "${tag.name}" deleted`, 'success');
+            fetchData();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to delete tag.', 'error');
+        }
+    };
+
     const getTagActions = (tag: Tag): ActionItem[] => [
         {
             label: 'Edit Tag',
@@ -201,7 +227,7 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
             label: 'Delete Tag',
             variant: 'danger' as const,
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            onClick: () => showToast('Delete action coming soon', 'info'),
+            onClick: () => handleDeleteTag(tag),
         }
     ];
 
@@ -264,6 +290,8 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
                     />
                 </>
             )}
+
+            {ConfirmDialog}
         </div>
     );
 }

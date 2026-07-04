@@ -10,6 +10,7 @@ import { formatString, formatDate } from '@/utils/format';
 import type { SystemJob } from '@/types/admin';
 import TableToolbar from '@/components/shared/TableToolbar';
 import StatusFilterChips from '@/components/shared/FilterChips';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 interface SystemJobsTabProps {
     statusFilter: string;
@@ -18,7 +19,8 @@ interface SystemJobsTabProps {
 const SystemJobsTab: React.FC<SystemJobsTabProps> = ({ statusFilter }) => {
     const supabase = useMemo(() => createClient().schema('api' as any), []);
     const { showToast } = useToast();
-    
+    const { confirm, ConfirmDialog } = useConfirmModal();
+
     const [jobs, setJobs] = useState<SystemJob[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
@@ -132,11 +134,19 @@ const SystemJobsTab: React.FC<SystemJobsTabProps> = ({ statusFilter }) => {
                         label: 'Cancel Job',
                         icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>,
                         variant: 'danger',
-                        onClick: () => handleAction(j.id, 'cancel'),
+                        onClick: async () => {
+                            if (!await confirm(`Cancel job ${j.id.slice(0, 8)} (${formatString(j.queue_name)})? This cannot be undone.`, {
+                                title: 'Cancel Job',
+                                confirmLabel: 'Cancel Job'
+                            })) return;
+                            handleAction(j.id, 'cancel');
+                        },
                         disabled: j.status === 'completed' || j.status === 'cancelled'
                     }
                 ]}
             />
+
+            {ConfirmDialog}
         </div>
     );
 };
