@@ -26,7 +26,7 @@ export default function OnboardingBanner({ status }: OnboardingBannerProps) {
                 alignItems: 'flex-start',
                 gap: 16,
                 padding: '14px 16px',
-                margin: '16px 0',
+                margin: '4px 0',
                 borderRadius: 8,
                 background: 'var(--color-warning-subtle, #fef3c7)',
                 border: '1px solid var(--color-warning, #d97706)',

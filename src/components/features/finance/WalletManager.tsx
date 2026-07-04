@@ -10,6 +10,7 @@ import WalletsTable from './WalletsTable';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { AccountWallet } from '@/types/organize';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
+import { useOrganizerOnboarding } from '@/hooks/useOrganizerOnboarding';
 
 interface WalletManagerProps {
     accountId: string;
@@ -24,13 +25,15 @@ export default function WalletManager({ accountId, wallets, isLoading, onRefresh
 
     const { can } = useAccountPermissions(accountId);
     const hasManageBilling = can('can_manage_billing');
+    const { status: onboardingStatus } = useOrganizerOnboarding(accountId);
+    const isKycApproved = onboardingStatus?.kyc_status === 'approved';
 
     const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
     const [newWalletCurrency, setNewWalletCurrency] = useState('USD');
     const [isAddingWallet, setIsAddingWallet] = useState(false);
 
     const handleAddWallet = async () => {
-        if (!accountId) return;
+        if (!accountId || !isKycApproved) return;
         setIsAddingWallet(true);
         try {
             const { error } = await supabase.schema('api').rpc('create_wallet', {
@@ -53,11 +56,24 @@ export default function WalletManager({ accountId, wallets, isLoading, onRefresh
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Account Wallets</h2>
                 {hasManageBilling && (
-                    <Button variant="secondary" onClick={() => setIsAddWalletOpen(true)}>Add Wallet</Button>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setIsAddWalletOpen(true)}
+                        disabled={!isKycApproved}
+                        title={!isKycApproved ? 'Complete KYC verification before creating a wallet.' : undefined}
+                    >
+                        Add Wallet
+                    </Button>
                 )}
             </div>
-            
-            <WalletsTable 
+
+            {hasManageBilling && !isKycApproved && (
+                <p style={{ fontSize: 13, opacity: 0.7, margin: '0 0 16px' }}>
+                    Complete KYC verification above before creating a payout wallet.
+                </p>
+            )}
+
+            <WalletsTable
                 data={wallets} 
                 isLoading={isLoading} 
                 accountId={accountId} 
