@@ -37,6 +37,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     const [proximity, setProximity] = useState<[number, number] | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
+    const requestIdRef = useRef(0);
 
     // ── PROXIMITY BIASING ───────────────────────────────────────────────────
     useEffect(() => {
@@ -75,10 +76,11 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             return;
         }
 
+        const thisRequestId = ++requestIdRef.current;
         setIsLoading(true);
         try {
             const { data, error } = await supabase.functions.invoke('address-autocomplete', {
-                body: { 
+                body: {
                     query,
                     proximity_lng: proximity?.[0],
                     proximity_lat: proximity?.[1]
@@ -86,12 +88,16 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             });
 
             if (error) throw error;
+            // Ignore this response if a newer query has been issued since this one started —
+            // otherwise a slower older request can overwrite fresher suggestions (or the user
+            // can click a stale suggestion whose place_id no longer matches what's displayed).
+            if (thisRequestId !== requestIdRef.current) return;
             setSuggestions(data.suggestions || []);
             setIsOpen(true);
         } catch (err) {
             console.error('Autocomplete error:', err);
         } finally {
-            setIsLoading(false);
+            if (thisRequestId === requestIdRef.current) setIsLoading(false);
         }
     }, [supabase, proximity]);
 
@@ -108,6 +114,10 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     }, [inputValue, isOpen, fetchSuggestions]);
 
     const handleSelect = async (suggestion: Suggestion) => {
+        // Invalidate any in-flight autocomplete request so it can't overwrite
+        // the suggestions list (and be clicked again) after a selection is made.
+        requestIdRef.current++;
+        setSuggestions([]);
         setInputValue(suggestion.place_name);
         setIsOpen(false); // Close immediately so the debouncer doesn't re-trigger
         setIsLoading(true);

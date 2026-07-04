@@ -14,7 +14,6 @@ import type { OrganizerEventTicket as Ticket } from '@/types/organize';
 import { useToast } from '@/components/ui/Toast';
 import { CurrencySelector } from '@/components/ui/CurrencySelector';
 import type { OrganizerOnboardingStatus } from '@/hooks/useOrganizerOnboarding';
-import OnboardingChecklist from './OnboardingChecklist';
 
 interface TicketTierManagerProps {
     tickets: Ticket[];
@@ -37,8 +36,6 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
     return (
         <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Tickets</h2>
-
-            {onboardingStatus && <OnboardingChecklist status={onboardingStatus} />}
 
             <div style={{ marginBottom: '32px', display: 'flex', gap: '24px', alignItems: 'center' }}>
                 <div className={styles.inputGroup}>

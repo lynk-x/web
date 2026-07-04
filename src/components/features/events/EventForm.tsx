@@ -21,6 +21,7 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useOrganizerOnboarding } from '@/hooks/useOrganizerOnboarding';
+import OnboardingBanner from './OnboardingBanner';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { LocationInput } from '@/components/ui/LocationInput';
@@ -249,6 +250,8 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </button>
                 </div>
             </div>
+
+            {onboardingStatus && <OnboardingBanner status={onboardingStatus} />}
 
             <div className={styles.formColumn} ref={formRef}>
 
