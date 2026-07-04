@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useMemo, use } from 'react';
+import { useState, useEffect, useMemo, useCallback, use } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { exportToCSV } from '@/utils/export';
@@ -11,6 +11,8 @@ import AttendeeTable from '@/components/features/events/attendees/AttendeeTable'
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import FilterChips from '@/components/shared/FilterChips';
+import Spinner from '@/components/shared/Spinner';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import type { Attendee } from '@/types/organize';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -18,6 +20,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 export default function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
@@ -27,54 +30,58 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
+    const [eventMeta, setEventMeta] = useState<{ accountId: string; createdAt: string } | null>(null);
     const itemsPerPage = 10;
 
+    const fetchAttendees = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // First get event created_at and account_id
+            const { data: eventData, error: evErr } = await supabase
+                .from('events')
+                .select('created_at, account_id')
+                .eq('id', id)
+                .maybeSingle();
+
+            if (evErr) throw evErr;
+            if (!eventData) throw new Error('Event not found');
+
+            const resolvedAccountId = activeAccount?.id || eventData.account_id;
+            setEventMeta({ accountId: resolvedAccountId, createdAt: eventData.created_at });
+
+            // Now get attendees via RPC
+            const { data, error } = await supabase
+                .schema('api').rpc('get_organizer_attendees', {
+                    p_account_id: resolvedAccountId,
+                    p_event_id: id,
+                    p_created_at: eventData.created_at,
+                    p_limit: 10000,
+                    p_offset: 0
+                });
+
+            if (error) throw error;
+
+            const mapped: Attendee[] = (data?.items || []).map((row: any) => ({
+                id: row.ticket_id,
+                name: row.full_name || 'Anonymous',
+                username: row.user_name || '',
+                tierName: row.tier_name,
+                purchaseDate: new Date(row.created_at).toLocaleDateString(),
+                status: row.status,
+                ticketCode: row.ticket_code || 'N/A'
+            }));
+
+            setAttendees(mapped);
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to load attendees.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [id, supabase, showToast, activeAccount]);
+
     useEffect(() => {
-        const fetchAttendees = async () => {
-            setIsLoading(true);
-            try {
-                // First get event created_at and account_id
-                const { data: eventData, error: evErr } = await supabase
-                    .from('events')
-                    .select('created_at, account_id')
-                    .eq('id', id)
-                    .maybeSingle();
-
-                if (evErr) throw evErr;
-                if (!eventData) throw new Error('Event not found');
-
-                // Now get attendees via RPC
-                const { data, error } = await supabase
-                    .schema('api').rpc('get_organizer_attendees', {
-                        p_account_id: activeAccount?.id || eventData.account_id,
-                        p_event_id: id,
-                        p_created_at: eventData.created_at,
-                        p_limit: 10000,
-                        p_offset: 0
-                    });
-
-                if (error) throw error;
-
-                const mapped: Attendee[] = (data?.items || []).map((row: any) => ({
-                    id: row.ticket_id,
-                    name: row.full_name || 'Anonymous',
-                    username: row.user_name || '',
-                    tierName: row.tier_name,
-                    purchaseDate: new Date(row.created_at).toLocaleDateString(),
-                    status: row.status,
-                    ticketCode: row.ticket_code || 'N/A'
-                }));
-
-                setAttendees(mapped);
-            } catch (err: unknown) {
-                showToast(getErrorMessage(err) || 'Failed to load attendees.', 'error');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchAttendees();
-    }, [id, supabase, showToast]);
+    }, [fetchAttendees]);
 
     // Filter Logic
     const filteredAttendees = attendees.filter(a => {
@@ -112,13 +119,34 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
         }
     };
 
+    const handleBulkCheckIn = async () => {
+        if (!eventMeta || selectedIds.size === 0) return;
+        if (!await confirm(`Check in ${selectedIds.size} selected attendee${selectedIds.size === 1 ? '' : 's'}?`, {
+            title: 'Check-in Selected',
+            confirmLabel: 'Check In'
+        })) return;
+
+        showToast(`Checking in ${selectedIds.size} attendee${selectedIds.size === 1 ? '' : 's'}...`, 'info');
+        try {
+            const { error } = await supabase.schema('api').rpc('bulk_check_in_tickets', {
+                p_account_id: eventMeta.accountId,
+                p_event_id: id,
+                p_event_created_at: eventMeta.createdAt,
+                p_ticket_ids: Array.from(selectedIds)
+            });
+            if (error) throw error;
+            showToast('Attendees checked in successfully.', 'success');
+            setSelectedIds(new Set());
+            fetchAttendees();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to check in attendees.', 'error');
+        }
+    };
+
     const bulkActions: BulkAction[] = [
         {
             label: 'Check-in Selected',
-            onClick: () => {
-                showToast(`Checking in ${selectedIds.size} attendees...`, 'info');
-                setSelectedIds(new Set());
-            }
+            onClick: handleBulkCheckIn
         }
     ];
 
@@ -178,8 +206,8 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
             </div>
 
             {isLoading && (
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                    Loading attendees...
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+                    <Spinner label="Loading attendees..." />
                 </div>
             )}
             <ProductTour
@@ -204,6 +232,8 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                     }
                 ]}
             />
+
+            {ConfirmDialog}
         </div>
     );
 }

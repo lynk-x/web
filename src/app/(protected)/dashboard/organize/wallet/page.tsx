@@ -11,6 +11,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import Spinner from '@/components/shared/Spinner';
+import EmptyState from '@/components/shared/EmptyState';
 import type { BadgeVariant } from '@/types/shared';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import ProductTour from '@/components/dashboard/ProductTour';
@@ -243,9 +244,7 @@ export default function WalletPage() {
                     {/* Top-up history */}
                     <h3 className="tour-wallet-history" style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Top-up History</h3>
                     {topUps.length === 0 ? (
-                        <div className={adminStyles.emptyState}>
-                            <p>No top-ups yet.</p>
-                        </div>
+                        <EmptyState message="No top-ups yet." />
                     ) : (
                         <table className={adminStyles.table}>
                             <thead>

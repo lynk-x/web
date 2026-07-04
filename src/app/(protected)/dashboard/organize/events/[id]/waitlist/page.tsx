@@ -10,6 +10,7 @@ import { formatDate } from '@/utils/format';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import Spinner from '@/components/shared/Spinner';
+import EmptyState from '@/components/shared/EmptyState';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -43,6 +44,7 @@ export default function EventWaitlistPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [eventTitle, setEventTitle] = useState('');
+    const [eventCreatedAt, setEventCreatedAt] = useState<string | null>(null);
     const [entries, setEntries] = useState<WaitlistEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -54,18 +56,21 @@ export default function EventWaitlistPage() {
             const [eventRes, waitlistRes] = await Promise.all([
                 supabase
                     .from('events')
-                    .select('title')
+                    .select('title, created_at')
                     .eq('id', eventId)
                     .eq('account_id', activeAccount.id)
                     .single(),
                 supabase
-                    .from('event_waitlists')
+                    .from('ticket_waitlists')
                     .select('*, user_profile:user_id(full_name, user_name, email), ticket_tier:ticket_tier_id(name)')
                     .eq('event_id', eventId)
                     .order('position', { ascending: true }),
             ]);
 
-            if (eventRes.data) setEventTitle(eventRes.data.title);
+            if (eventRes.data) {
+                setEventTitle(eventRes.data.title);
+                setEventCreatedAt(eventRes.data.created_at);
+            }
             if (waitlistRes.error) throw waitlistRes.error;
 
             setEntries(waitlistRes.data || []);
@@ -79,16 +84,16 @@ export default function EventWaitlistPage() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const handleInvite = async (entryId: string) => {
+        if (!activeAccount || !eventCreatedAt) return;
+        const entry = entries.find(e => e.id === entryId);
+        if (!entry) return;
         try {
-            const { error } = await supabase
-                .from('event_waitlists')
-                .update({
-                    status: 'invited',
-                    invited_at: new Date().toISOString(),
-                    expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48h
-                })
-                .eq('id', entryId)
-                .eq('status', 'pending');
+            const { error } = await supabase.schema('api').rpc('bulk_invite_waitlist', {
+                p_account_id: activeAccount.id,
+                p_event_id: eventId,
+                p_event_created_at: eventCreatedAt,
+                p_user_ids: [entry.user_id],
+            });
 
             if (error) throw error;
             showToast('Invitation sent', 'success');
@@ -104,21 +109,16 @@ export default function EventWaitlistPage() {
             showToast('No pending entries to invite', 'error');
             return;
         }
+        if (!activeAccount || !eventCreatedAt) return;
         if (!await confirm(`Invite all ${pendingEntries.length} pending attendees?`)) return;
 
         try {
-            const now = new Date().toISOString();
-            const expires = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-
-            const { error } = await supabase
-                .from('event_waitlists')
-                .update({
-                    status: 'invited',
-                    invited_at: now,
-                    expires_at: expires,
-                })
-                .eq('event_id', eventId)
-                .eq('status', 'pending');
+            const { error } = await supabase.schema('api').rpc('bulk_invite_waitlist', {
+                p_account_id: activeAccount.id,
+                p_event_id: eventId,
+                p_event_created_at: eventCreatedAt,
+                p_user_ids: pendingEntries.map(e => e.user_id),
+            });
 
             if (error) throw error;
             showToast(`${pendingEntries.length} invitations sent`, 'success');
@@ -129,12 +129,13 @@ export default function EventWaitlistPage() {
     };
 
     const handleRemove = async (entryId: string) => {
+        if (!activeAccount) return;
         if (!await confirm('Remove this person from the waitlist?')) return;
         try {
-            const { error } = await supabase
-                .from('event_waitlists')
-                .delete()
-                .eq('id', entryId);
+            const { error } = await supabase.schema('api').rpc('organizer_remove_waitlist_entry', {
+                p_account_id: activeAccount.id,
+                p_waitlist_id: entryId,
+            });
             if (error) throw error;
             showToast('Entry removed', 'success');
             fetchData();
@@ -183,9 +184,7 @@ export default function EventWaitlistPage() {
             {isLoading ? (
                 <div className={adminStyles.loadingContainer}><Spinner /></div>
             ) : filtered.length === 0 ? (
-                <div className={adminStyles.emptyState}>
-                    <p>{filterStatus === 'all' ? 'No one on the waitlist yet.' : `No ${filterStatus} entries.`}</p>
-                </div>
+                <EmptyState message={filterStatus === 'all' ? 'No one on the waitlist yet.' : `No ${filterStatus} entries.`} />
             ) : (
                 <table className={adminStyles.table}>
                     <thead>

@@ -28,6 +28,7 @@ interface RefundTableProps {
     totalPages?: number;
     onPageChange?: (page: number) => void;
     isLoading?: boolean;
+    onStatusChange?: (refundId: string, status: 'approved' | 'rejected') => void;
 }
 
 const getRefundStatusVariant = (status: string): BadgeVariant => {
@@ -49,6 +50,7 @@ const RefundTable: React.FC<RefundTableProps> = ({
     totalPages = 1,
     onPageChange,
     isLoading = false,
+    onStatusChange,
 }) => {
     const { showToast } = useToast();
 
@@ -115,13 +117,13 @@ const RefundTable: React.FC<RefundTableProps> = ({
                       label: 'Approve',
                       variant: 'success' as const,
                       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                      onClick: () => showToast('Refund approval not yet available.', 'warning'),
+                      onClick: () => onStatusChange ? onStatusChange(refund.id, 'approved') : showToast('Refund approval not yet available.', 'warning'),
                   },
                   {
                       label: 'Reject',
                       variant: 'danger' as const,
                       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                      onClick: () => showToast('Refund rejection not yet available.', 'warning'),
+                      onClick: () => onStatusChange ? onStatusChange(refund.id, 'rejected') : showToast('Refund rejection not yet available.', 'warning'),
                   },
               ]
             : []),

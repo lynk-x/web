@@ -8,6 +8,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/shared/Spinner';
 
 import type { OrganizerEventFormData, OrganizerEventTicket } from '@/types/organize';
 
@@ -290,8 +291,8 @@ export default function EditEventPage() {
 
     if (isLoading && !activeAccount) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
-                <p>Loading event data...</p>
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+                <Spinner label="Loading event data..." />
             </div>
         );
     }

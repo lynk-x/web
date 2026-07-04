@@ -19,12 +19,14 @@ import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import type { AccountWallet, Payout } from '@/types/organize';
 
 type TabId = 'payouts' | 'refunds';
 
 function RevenueContent() {
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const searchParams = useSearchParams();
@@ -163,6 +165,25 @@ function RevenueContent() {
             setIsRefundsLoading(false);
         }
     }, [activeAccount, supabase, refundsPage, refundStatusFilter, startDate, endDate, showToast]);
+
+    const handleRefundStatusChange = async (refundId: string, status: 'approved' | 'rejected') => {
+        if (status === 'rejected' && !await confirm('Reject this refund request? This cannot be undone.', {
+            title: 'Reject Refund',
+            confirmLabel: 'Reject'
+        })) return;
+
+        try {
+            const { error } = await supabase.schema('api').rpc('approve_organizer_refund_request', {
+                p_refund_id: refundId,
+                p_status: status
+            });
+            if (error) throw error;
+            showToast(`Refund ${status}.`, 'success');
+            fetchRefunds();
+        } catch (err) {
+            showToast(getErrorMessage(err) || `Failed to ${status === 'approved' ? 'approve' : 'reject'} refund.`, 'error');
+        }
+    };
 
     /* ── Effects ─────────────────────────────────────────────────────────────── */
     useEffect(() => {
@@ -360,6 +381,7 @@ function RevenueContent() {
                         totalPages={Math.ceil(totalRefunds / itemsPerPage)}
                         onPageChange={setRefundsPage}
                         isLoading={isRefundsLoading}
+                        onStatusChange={handleRefundStatusChange}
                     />
                 )}
             </div>
@@ -388,6 +410,8 @@ function RevenueContent() {
                 payout={selectedPayoutForInvoice}
                 accountName={activeAccount?.name}
             />
+
+            {ConfirmDialog}
         </div>
     );
 }

@@ -15,6 +15,8 @@ import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
+import Spinner from '@/components/shared/Spinner';
+import EmptyState from '@/components/shared/EmptyState';
 
 interface TicketTier {
     id: string;
@@ -103,9 +105,13 @@ export default function EventDetailPage() {
     if (isLoading || !event) {
         return (
             <div className={adminStyles.container}>
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>
-                    {isLoading ? 'Loading event details...' : 'Event not found.'}
-                </div>
+                {isLoading ? (
+                    <div style={{ padding: '60px', textAlign: 'center' }}>
+                        <Spinner label="Loading event details..." />
+                    </div>
+                ) : (
+                    <EmptyState message="Event not found." />
+                )}
             </div>
         );
     }
