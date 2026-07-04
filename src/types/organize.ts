@@ -41,6 +41,8 @@ export interface OrganizerEvent {
     escalated_reports_count?: number;
     /** Partition key for events.events */
     createdAt: string;
+    /** True when this row came from the admin "Deleted" filter (events.deleted_at IS NOT NULL) */
+    isDeleted?: boolean;
 }
 
 /** A row in the organizer events (overview) table. */

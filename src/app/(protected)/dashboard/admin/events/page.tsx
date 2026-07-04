@@ -187,6 +187,36 @@ export default function AdminEventsPage() {
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         try {
+            if (statusFilter === 'deleted') {
+                const { data, error } = await supabase.schema('api').rpc('get_admin_deleted_events', {
+                    p_search: debouncedSearch,
+                    p_offset: (currentPage - 1) * itemsPerPage,
+                    p_limit: itemsPerPage
+                });
+
+                if (error) throw error;
+
+                setTotalCount(data?.[0]?.total_count || 0);
+
+                const mappedDeleted: Event[] = (data || []).map((e: any) => ({
+                    id: e.id,
+                    title: e.event_title,
+                    organizer: e.account_name || 'Unknown',
+                    date: formatDate(e.deleted_at),
+                    time: formatTime(e.deleted_at),
+                    location: '—',
+                    status: 'cancelled',
+                    attendees: 0,
+                    eventReference: e.reference,
+                    createdAt: e.created_at,
+                    isDeleted: true
+                }));
+
+                setEvents(mappedDeleted);
+                setThreads([]);
+                return;
+            }
+
             const { data, error } = await supabase.schema('api').rpc('get_admin_events', {
                 p_search: debouncedSearch,
                 p_status: statusFilter,
@@ -201,7 +231,7 @@ export default function AdminEventsPage() {
             if (error) throw error;
 
             setTotalCount(data?.[0]?.total_count || 0);
-            
+
             const mappedEvents: Event[] = (data || []).map((e: any) => ({
                 id: e.id,
                 title: e.event_title,
@@ -503,6 +533,25 @@ export default function AdminEventsPage() {
         );
     };
 
+    const handleRestoreEvent = async (event: Event) => {
+        if (!await confirm(`Restore "${event.title}"? It will return as a draft for re-review.`, { title: 'Restore Event', confirmLabel: 'Restore' })) return;
+        await executeAction(
+            () => supabase.schema('api').rpc('admin_manage_event', {
+                p_action: 'restore',
+                p_id: event.id,
+                p_created_at: event.createdAt
+            }),
+            {
+                loadingMessage: `Restoring ${event.title}...`,
+                successMessage: `${event.title} restored as a draft`,
+                onSuccess: () => {
+                    fetchEvents();
+                    fetchDashboardSummary();
+                }
+            }
+        );
+    };
+
     const bulkActions: BulkAction[] = [
         { label: 'Publish All', onClick: () => handleBulkStatusUpdate('published'), variant: 'success' },
         { label: 'Archive Selection', onClick: () => handleBulkStatusUpdate('archived') },
@@ -636,6 +685,7 @@ export default function AdminEventsPage() {
                                     { value: 'completed', label: 'Completed' },
                                     { value: 'cancelled', label: 'Cancelled' },
                                     { value: 'suspended', label: 'Suspended' },
+                                    { value: 'deleted', label: 'Deleted' },
                                 ]}
                                 currentValue={statusFilter}
                                 onChange={setStatusFilter}
@@ -672,6 +722,7 @@ export default function AdminEventsPage() {
                         }}
                         onStatusChange={handleSingleStatusUpdate}
                         onDelete={handleSingleDelete}
+                        onRestore={handleRestoreEvent}
                     />
                 </TabsContent>
 

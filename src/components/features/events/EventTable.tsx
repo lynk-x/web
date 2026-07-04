@@ -56,6 +56,7 @@ interface AdminModeProps extends SharedProps {
     onDelete?: (event: OrganizerEvent) => void;
     onDuplicate?: (event: OrganizerEvent) => void;
     onStatusChange?: (event: OrganizerEvent, newStatus: 'draft' | 'published' | 'active' | 'suspended' | 'rejected' | 'cancelled') => void;
+    onRestore?: (event: OrganizerEvent) => void;
 }
 
 interface OrganizerModeProps extends SharedProps {
@@ -277,7 +278,15 @@ export default function EventTable(props: EventTableProps) {
                 }
             }
 
-            if (adminProps.onDelete) {
+            if (event.isDeleted && adminProps.onRestore) {
+                actions.push({ divider: true } as ActionItem);
+                actions.push({
+                    label: 'Restore',
+                    variant: 'success' as const,
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>,
+                    onClick: () => adminProps.onRestore!(event)
+                });
+            } else if (adminProps.onDelete) {
                 actions.push({
                     label: 'Delete',
                     variant: 'danger' as const,

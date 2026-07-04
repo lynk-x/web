@@ -30,6 +30,7 @@ interface SubscriptionTableProps {
     onPageChange: (page: number) => void;
     onChangePlan?: (id: string) => void;
     onCancel?: (id: string) => void;
+    onReactivate?: (id: string) => void;
     selectedIds?: Set<string>;
     onSelect?: (id: string) => void;
     onSelectAll?: () => void;
@@ -43,6 +44,7 @@ export default function SubscriptionTable({
     onPageChange,
     onChangePlan,
     onCancel,
+    onReactivate,
     selectedIds,
     onSelect,
     onSelectAll,
@@ -117,6 +119,11 @@ export default function SubscriptionTable({
         if (['active', 'trialing', 'past_due', 'paused'].includes(row.status)) {
             actions.push({ divider: true });
             if (onCancel) actions.push({ label: 'Cancel Subscription', variant: 'danger', onClick: () => onCancel(row.id) });
+        }
+
+        if (row.status === 'cancelled') {
+            actions.push({ divider: true });
+            if (onReactivate) actions.push({ label: 'Reactivate Subscription', onClick: () => onReactivate(row.id) });
         }
 
         return actions;

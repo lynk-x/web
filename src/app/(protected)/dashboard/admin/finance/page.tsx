@@ -414,12 +414,26 @@ function FinanceContent() {
     // ── Subscription Management Handlers ─────────────────────────────────────
     const handleCancelSubscription = async (id: string) => {
         if (!await confirm('Are you sure you want to cancel this subscription? Immediate cancellation will terminate access.')) return;
-        
+
         showToast('Cancelling subscription...', 'info');
         try {
             const { error } = await supabase.schema('api').rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true });
             if (error) throw error;
             showToast('Subscription cancelled.', 'success');
+            fetchData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleReactivateSubscription = async (id: string) => {
+        if (!await confirm('Reactivate this subscription?')) return;
+
+        showToast('Reactivating subscription...', 'info');
+        try {
+            const { error } = await supabase.schema('api').rpc('admin_reactivate_subscription', { p_subscription_id: id });
+            if (error) throw error;
+            showToast('Subscription reactivated.', 'success');
             fetchData();
         } catch (err: unknown) {
             showToast(getErrorMessage(err), 'error');
@@ -781,6 +795,7 @@ function FinanceContent() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                         onCancel={handleCancelSubscription}
+                        onReactivate={handleReactivateSubscription}
                         onChangePlan={(id) => {
                             const sub = subscriptions.find(s => s.id === id);
                             if (sub) handleOpenPlanModal(sub);
