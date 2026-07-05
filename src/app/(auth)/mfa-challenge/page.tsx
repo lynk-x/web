@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { getSafeRedirect } from '@/utils/sanitization';
 import styles from '../login/page.module.css';
 
 export default function MfaChallengePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const next = searchParams.get('next') || '/dashboard';
+    // This page can be reached directly (not just via login's redirect), so
+    // `next` must be re-validated here rather than trusting the upstream check.
+    const next = getSafeRedirect(searchParams.get('next'), '/dashboard');
     const supabase = createClient();
 
     const [isLoading, setIsLoading] = useState(false);

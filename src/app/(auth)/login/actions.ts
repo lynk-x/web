@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
-import { sanitizeInput } from '@/utils/sanitization'
+import { sanitizeInput, getSafeRedirect } from '@/utils/sanitization'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -13,7 +13,7 @@ export async function login(formData: FormData) {
     const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
     // Honour the ?next= param so checkout and other gates land the user where they wanted.
-    const next = sanitizeInput((formData.get('next') as string) || '/dashboard')
+    const next = getSafeRedirect(sanitizeInput((formData.get('next') as string) || ''), '/dashboard')
 
     const { data, error } = await supabase.auth.signInWithPassword(
         phone ? { phone, password } : { email: email!, password }
@@ -43,7 +43,7 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
     const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
-    const next = sanitizeInput((formData.get('next') as string) || '/dashboard')
+    const next = getSafeRedirect(sanitizeInput((formData.get('next') as string) || ''), '/dashboard')
 
     const { error } = await supabase.auth.signUp(
         phone ? { phone, password } : { email: email!, password }

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { getSafeRedirect } from '@/utils/sanitization'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  
-  // Validate `next` starts with `/` to prevent open-redirect attacks.
-  const rawNext = searchParams.get('next') ?? ''
-  const next = rawNext.startsWith('/') ? rawNext : '/verify-success'
+
+  // Validate `next` to prevent open-redirect attacks (absolute URLs and
+  // protocol-relative //host URLs are rejected, not just non-'/'-prefixed ones).
+  const next = getSafeRedirect(searchParams.get('next'), '/verify-success')
 
   if (code) {
     const supabase = await createClient()

@@ -25,11 +25,18 @@ export async function processAccountRecovery(email: string, recoveryCode: string
             return { error: 'Invalid recovery code or email.' };
         }
 
-        // 2. If valid, generate a secure password reset (recovery) link
+        // 2. If valid, generate a secure password reset (recovery) link.
+        // redirectTo is client-supplied (JSON body) and Supabase's
+        // generateLink expects a full URL here rather than a relative path,
+        // so guard against an open redirect by requiring it to stay on this
+        // site's own origin instead of forwarding it unvalidated.
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+        const safeRedirectTo = redirectTo && siteUrl && redirectTo.startsWith(siteUrl) ? redirectTo : undefined;
+
         const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
             type: 'recovery',
             email: email.trim(),
-            options: redirectTo ? { redirectTo } : undefined,
+            options: safeRedirectTo ? { redirectTo: safeRedirectTo } : undefined,
         });
 
         if (linkError || !linkData?.properties?.action_link) {
