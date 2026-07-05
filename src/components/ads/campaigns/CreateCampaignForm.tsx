@@ -452,8 +452,9 @@ export default function CreateCampaignForm({
     const handleCropComplete = (croppedBlob: Blob, cropData?: any) => {
         if (pendingCreativeIdx === null) return;
         
-        const fileName = pendingMediaType === 'video' ? `creative_${pendingCreativeIdx}.mp4` : `creative_${pendingCreativeIdx}.jpg`;
-        const type = pendingMediaType === 'video' ? 'video/mp4' : 'image/jpeg';
+        // Image branch is already WEBP (getCroppedImg encodes as image/webp).
+        const fileName = pendingMediaType === 'video' ? `creative_${pendingCreativeIdx}.mp4` : `creative_${pendingCreativeIdx}.webp`;
+        const type = pendingMediaType === 'video' ? 'video/mp4' : 'image/webp';
         
         const file = new File([croppedBlob], fileName, { type });
         const url = URL.createObjectURL(croppedBlob);

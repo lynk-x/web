@@ -47,8 +47,9 @@
 }
 
 .thumbnail {
-    width: 48px;
+    width: 57px;
     height: 32px;
+    aspect-ratio: 16 / 9;
     background-color: var(--color-brand-secondary);
     border-radius: var(--radius-sm);
     background-size: cover;

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { convertImageToWebP } from '@/utils/imageConversion';
 import styles from './setup.module.css';
 
 export default function ProfileSetupPage() {
@@ -65,10 +66,11 @@ export default function ProfileSetupPage() {
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !user) return;
+        const rawFile = e.target.files?.[0];
+        if (!rawFile || !user) return;
 
         try {
+            const file = await convertImageToWebP(rawFile);
             const fileExt = file.name.split('.').pop();
             const fileName = `${user.id}_avatar.${fileExt}`;
 

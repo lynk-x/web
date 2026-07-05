@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
 import { sanitizeInput } from '@/utils/sanitization';
+import { convertImageToWebP } from '@/utils/imageConversion';
 import styles from './onboarding.module.css';
 import { useCountries } from '@/hooks/useCountries';
 
@@ -77,8 +78,8 @@ function OnboardingFlow() {
     }, [isLoadingCountries, countries, country]);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const rawFile = e.target.files?.[0];
+        if (!rawFile) return;
         setLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -86,6 +87,7 @@ function OnboardingFlow() {
                 router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
                 return;
             }
+            const file = await convertImageToWebP(rawFile);
             const fileExt = file.name.split('.').pop();
             const fileName = `${user.id}_org-logo.${fileExt}`;
 

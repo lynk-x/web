@@ -50,8 +50,8 @@ export function useEventFormMedia({ initialUrl = null, onUrlChange }: UseEventFo
     const handleCropComplete = async (croppedBlob: Blob) => {
         setIsLoadingMedia(true);
         
-        // Convert Blob to File
-        const file = new File([croppedBlob], 'event-cover.jpg', { type: 'image/jpeg' });
+        // Convert Blob to File (getCroppedImg already outputs image/webp)
+        const file = new File([croppedBlob], 'event-cover.webp', { type: 'image/webp' });
         setThumbnailFile(file);
 
         // Create preview URL
