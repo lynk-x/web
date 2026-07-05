@@ -81,7 +81,8 @@ export default function WalletPage() {
     const fetchProviders = useCallback(async () => {
         try {
             const { data } = await supabase
-                .from('platform_payment_providers')
+                .schema('api')
+                .from('v1_platform_payment_providers')
                 .select('*')
                 .eq('supports_inbound', true)
                 .order('display_name');

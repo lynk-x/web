@@ -67,7 +67,8 @@ export default function PaymentMethodsManager({ accountId }: Props) {
     const fetchProviders = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('platform_payment_providers')
+                .schema('api')
+                .from('v1_platform_payment_providers')
                 .select('*')
                 .eq('supports_outbound', true)
                 .order('display_name');

@@ -79,7 +79,8 @@ export default async function EventPage({ params }: { params: { reference: strin
     if (tagIds.length > 0) {
         // Step 2: fetch approved, effective disclaimers matching those tags
         const { data: disclaimerRows } = await supabase
-            .from('disclaimers')
+            .schema('api')
+            .from('v1_disclaimers')
             .select('id, title, content, is_active, effective_date')
             .in('tag_id', tagIds)
             .eq('is_active', true)
