@@ -98,18 +98,16 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 return;
             }
 
-            // Insert into event_waitlists.
-            // position is auto-derived from existing count + 1 on the DB side via trigger.
-            const { error } = await supabase.from('event_waitlists').insert({
-                event_id: event.id,
-                account_id: (event as any).account_id,
-                user_id: user.id,
-                // ticket_tier_id: null — joins the general waitlist, not tier-specific
+            // Joins via RPC rather than a raw table insert: join_waitlist() resolves the
+            // caller's account, validates the event/tier is actually sold out, and derives
+            // `position`/`event_created_at` server-side.
+            const { error } = await supabase.rpc('join_waitlist', {
+                p_event_id: event.id,
+                // p_ticket_tier_id: undefined — joins the general waitlist, not tier-specific
             });
 
             if (error) {
-                if (error.code === '23505') {
-                    // Unique constraint: user already on the waitlist
+                if (error.message?.includes('already on the waitlist')) {
                     setWaitlistStatus('joined');
                     return;
                 }

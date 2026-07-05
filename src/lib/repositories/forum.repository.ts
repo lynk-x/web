@@ -1,6 +1,6 @@
 /**
  * Forum repository — wraps queries against:
- *   forums, forum_channels, forum_members, forum_messages, forum_media, message_reactions
+ *   forums, forum_channels, forum_members, forum_messages, forum_media
  *
  * Used by the in-event community feature on both organizer and attendee surfaces.
  */
@@ -224,39 +224,6 @@ export function createForumRepository(client: DbClient) {
 
             if (error) return { data: null, error: toError(error) };
             return { data: data as ForumMedia[], error: null };
-        },
-
-        /**
-         * Add a reaction to a message. The composite FK to partitioned forum_messages
-         * requires `messageCreatedAt` (caller already has this from the message row).
-         */
-        async addReaction(params: {
-            messageId: string;
-            messageCreatedAt: string;
-            emojiCode: string;
-        }): Promise<RepoResult<null>> {
-            const { error } = await client
-                .from('message_reactions')
-                .insert({
-                    message_id: params.messageId,
-                    message_created_at: params.messageCreatedAt,
-                    emoji_code: params.emojiCode,
-                });
-
-            if (error) return { data: null, error: toError(error) };
-            return { data: null, error: null };
-        },
-
-        /** Remove a reaction by id (author of the reaction only — enforced by RLS). */
-        async removeReaction(reactionId: string, createdAt: string): Promise<RepoResult<null>> {
-            const { error } = await client
-                .from('message_reactions')
-                .delete()
-                .eq('id', reactionId)
-                .eq('created_at', createdAt);
-
-            if (error) return { data: null, error: toError(error) };
-            return { data: null, error: null };
         },
 
         /**

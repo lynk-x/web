@@ -30,7 +30,8 @@ const ModerationHistory: React.FC<ModerationHistoryProps> = ({ itemId, itemType 
     useEffect(() => {
         const fetchHistory = async () => {
             const { data, error } = await supabase
-                .from('moderation_reviews')
+                .schema('api')
+                .from('v1_moderation_queue')
                 .select('*')
                 .eq('item_id', itemId)
                 .eq('item_type', itemType)
@@ -68,15 +69,15 @@ const ModerationHistory: React.FC<ModerationHistoryProps> = ({ itemId, itemType 
                         <span style={{ fontSize: '12px', opacity: 0.5 }}>{formatDate(entry.created_at)}</span>
                     </div>
 
-                    {entry.reason && (
+                    {(entry.reason_label || entry.report_description) && (
                         <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5', opacity: 0.8 }}>
-                            {entry.reason}
+                            {entry.reason_label || entry.report_description}
                         </p>
                     )}
 
-                    {entry.metadata?.snapshot_version && (
+                    {entry.info?.snapshot_version && (
                         <div style={{ fontSize: '11px', opacity: 0.4, marginTop: '4px' }}>
-                            Captured Snapshot: {entry.metadata.snapshot_version}
+                            Captured Snapshot: {entry.info.snapshot_version}
                         </div>
                     )}
                 </div>
