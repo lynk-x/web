@@ -60,8 +60,7 @@ export default async function EventPage({ params }: { params: { reference: strin
     // tickets_sold alone (the old approach) ignored in-flight reservations and
     // could show availability that other buyers already have locked.
     const { data: ticketTiers } = await supabase
-        .schema('api')
-        .from('v1_ticket_tiers')
+        .from('event_ticket_tiers')
         .select('id, display_name, description, price, capacity, tickets_sold, tickets_available')
         .eq('event_id', rawEvent.id)
         .eq('is_hidden', false)
