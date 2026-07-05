@@ -153,6 +153,10 @@ export interface Payout {
     /** Partition key for finance.payouts */
     reporting_currency?: string;
     reporting_amount?: number;
+    /** Fee deducted from the settlement, from `payouts.fee` */
+    fee?: number;
+    /** Amount actually settled after fees, from `payouts.net_settlement` */
+    netSettlement?: number;
     createdAt: string;
 }
 

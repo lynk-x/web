@@ -5,7 +5,10 @@ import Image from 'next/image';
 import styles from './PayoutInvoiceModal.module.css';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { useFinancialDocumentDownload } from '@/hooks/useFinancialDocumentDownload';
+import { useToast } from '@/components/ui/Toast';
 import type { Payout } from '@/types/organize';
+import type { FinancialDocument } from '@/types/financialDocument';
 
 interface PayoutInvoiceModalProps {
     isOpen: boolean;
@@ -26,12 +29,40 @@ const getPayoutStatusVariant = (status: string): BadgeVariant => {
     }
 };
 
+function buildFinancialDocument(payout: Payout, accountName: string): FinancialDocument {
+    const fee = payout.fee || 0;
+    const total = payout.netSettlement ?? (payout.amount - fee);
+    const ref = payout.reference || `PAY-${payout.id.slice(0, 8).toUpperCase()}`;
+
+    return {
+        documentType: 'Settlement Receipt',
+        referenceId: ref,
+        date: formatDate(payout.processedAt || payout.requestedAt || new Date().toISOString()),
+        status: payout.status,
+        from: { name: 'Lynk-X', sub: 'Financial Operations, Nairobi, Kenya' },
+        to: { name: accountName, sub: 'Lynk-X Authorized Partner' },
+        eventTitle: payout.eventName,
+        lineItems: [{
+            description: `Ticket Revenue Settlement — Payout for Event: ${payout.eventName || 'System Adjustment'}`,
+            amount: formatCurrency(payout.amount, payout.currency),
+        }],
+        subtotal: formatCurrency(payout.amount, payout.currency),
+        fees: fee > 0 ? [{ label: 'Fees & Commissions', amount: formatCurrency(fee, payout.currency) }] : undefined,
+        total: formatCurrency(total, payout.currency),
+        currency: payout.currency || 'USD',
+        footerNote: `This is a system-generated financial settlement statement. Funds are transferred securely using internal entries to the verified organizer wallet. If you have questions regarding this settlement, please contact support@lynk-x.com with reference ${ref}.`,
+    };
+}
+
 const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
     isOpen,
     onClose,
     payout,
     accountName = 'Lynk-X Organizer',
 }) => {
+    const { download, isGenerating } = useFinancialDocumentDownload();
+    const { showToast } = useToast();
+
     // Close on Escape key
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,39 +76,32 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
 
     if (!isOpen || !payout) return null;
 
-    const handlePrint = () => {
-        const originalTitle = document.title;
-        const ref = payout.reference || `PAY-${payout.id.slice(0, 8).toUpperCase()}`;
-        document.title = `Lynk-X_Settlement_Receipt_${ref}`;
-        window.print();
-        document.title = originalTitle;
-    };
+    const doc = buildFinancialDocument(payout, accountName);
+    const fee = payout.fee || 0;
+    const total = payout.netSettlement ?? (payout.amount - fee);
 
-    const displayDate = formatDate(payout.processedAt || payout.requestedAt || new Date().toISOString());
+    const handleDownload = async () => {
+        const ok = await download(doc, `settlement-receipt-${doc.referenceId}.pdf`);
+        if (!ok) showToast('Failed to generate PDF.', 'error');
+    };
 
     return (
         <div className={styles.overlay} onClick={onClose}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                {/* Print Header (Only visible in print mode) */}
-                <div className={styles.printHeader}>
-                    <h1>LYNK-X SETTLEMENT RECEIPT</h1>
-                    <span className={styles.printHeaderCategory}>Organizer Dashboard</span>
-                </div>
-
                 <div className={styles.header}>
                     <div className={styles.brand}>
-                        <Image 
-                            src="/lynk-x_combined_logo.svg" 
-                            alt="Lynk-X" 
-                            width={110} 
-                            height={28} 
+                        <Image
+                            src="/lynk-x_combined_logo.svg"
+                            alt="Lynk-X"
+                            width={110}
+                            height={28}
                             style={{ objectFit: 'cover' }}
-                            priority 
+                            priority
                         />
                     </div>
                     <div className={styles.meta}>
                         <span className={styles.invoiceLabel}>SETTLEMENT RECEIPT</span>
-                        <span className={styles.refNo}>{payout.reference || `PAY-${payout.id.slice(0, 8).toUpperCase()}`}</span>
+                        <span className={styles.refNo}>{doc.referenceId}</span>
                     </div>
                     <button className={styles.closeBtn} onClick={onClose} aria-label="Close modal">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -96,7 +120,7 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                         </div>
                         <div className={styles.dateInfo}>
                             <span className={styles.dateLabel}>Date Settled</span>
-                            <span className={styles.dateValue}>{displayDate}</span>
+                            <span className={styles.dateValue}>{doc.date}</span>
                         </div>
                     </div>
 
@@ -119,7 +143,6 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Divider Line */}
                     <div className={styles.receiptDivider}></div>
 
                     {/* Itemized Table */}
@@ -141,24 +164,17 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                                         {formatCurrency(payout.amount, payout.currency)}
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td>
-                                        <span className={styles.itemName}>Platform Commission Fee</span>
-                                        <span className={styles.itemDesc}>Inclusive of standard service charges</span>
-                                    </td>
-                                    <td className={styles.textRight}>
-                                        {formatCurrency(0, payout.currency)}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span className={styles.itemName}>Payment Processing Fee</span>
-                                        <span className={styles.itemDesc}>Settlement transaction fee</span>
-                                    </td>
-                                    <td className={styles.textRight}>
-                                        {formatCurrency(0, payout.currency)}
-                                    </td>
-                                </tr>
+                                {fee > 0 && (
+                                    <tr>
+                                        <td>
+                                            <span className={styles.itemName}>Fees & Commissions</span>
+                                            <span className={styles.itemDesc}>Platform commission and processing fees</span>
+                                        </td>
+                                        <td className={styles.textRight}>
+                                            -{formatCurrency(fee, payout.currency)}
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -171,36 +187,28 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                         </div>
                         <div className={styles.totalRow}>
                             <span>Fees & Commissions</span>
-                            <span>{formatCurrency(0, payout.currency)}</span>
+                            <span>{formatCurrency(fee, payout.currency)}</span>
                         </div>
                         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
                             <span>Total Settled</span>
-                            <span className={styles.totalAmount}>{formatCurrency(payout.amount, payout.currency)}</span>
+                            <span className={styles.totalAmount}>{formatCurrency(total, payout.currency)}</span>
                         </div>
                     </div>
 
                     {/* Verification Note */}
                     <div className={styles.noteBox}>
                         <p className={styles.noteText}>
-                            <strong>Security Note:</strong> This is a system-generated financial settlement statement. Funds are transferred securely using internal entries to the verified organizer wallet. If you have questions regarding this settlement, please contact support@lynk-x.com with reference <strong>{payout.reference || payout.id}</strong>.
+                            <strong>Security Note:</strong> {doc.footerNote}
                         </p>
-                    </div>
-
-                    {/* Print Footer (Only visible in print mode) */}
-                    <div className={styles.printFooter}>
-                        <span>Lynk-X Settlement Receipt</span>
-                        <span>Page 1 of 1</span>
                     </div>
                 </div>
 
                 <div className={styles.footer}>
-                    <button className={styles.printBtn} onClick={handlePrint}>
+                    <button className={styles.printBtn} onClick={handleDownload} disabled={isGenerating}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                            <rect x="6" y="14" width="12" height="8"></rect>
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
-                        Print / Download PDF
+                        {isGenerating ? 'Generating...' : 'Download PDF'}
                     </button>
                     <button className={styles.closeActionBtn} onClick={onClose}>
                         Close

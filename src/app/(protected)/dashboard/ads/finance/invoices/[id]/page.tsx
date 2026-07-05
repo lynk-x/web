@@ -7,6 +7,9 @@ import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import Spinner from '@/components/shared/Spinner';
+import { useFinancialDocumentDownload } from '@/hooks/useFinancialDocumentDownload';
+import { useToast } from '@/components/ui/Toast';
+import type { FinancialDocument } from '@/types/financialDocument';
 
 // Types
 interface InvoiceItem {
@@ -131,11 +134,32 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         fetchInvoice();
     }, [id, supabase, activeAccount]);
 
-    const handlePrint = () => {
-        const originalTitle = document.title;
-        document.title = `Lynk-X_Invoice_INV-${invoice?.id || id.slice(0, 8).toUpperCase()}`;
-        window.print();
-        document.title = originalTitle;
+    const { download, isGenerating } = useFinancialDocumentDownload();
+    const { showToast } = useToast();
+
+    const handleDownload = async () => {
+        if (!invoice) return;
+        const doc: FinancialDocument = {
+            documentType: 'Invoice',
+            referenceId: `INV-${invoice.id}`,
+            date: invoice.date,
+            status: invoice.status,
+            from: { name: 'Lynk-X', sub: 'Lynk-X Ltd, Nairobi, Kenya' },
+            to: { name: invoice.billedTo.name, email: invoice.billedTo.email || undefined },
+            lineItems: invoice.items.map(item => ({
+                description: item.description,
+                quantity: item.quantity,
+                rate: item.rate,
+                amount: item.amount,
+            })),
+            subtotal: invoice.subtotal,
+            tax: invoice.tax,
+            total: invoice.total,
+            currency: invoice.currency,
+            footerNote: 'Thank you for your business! Reach out to support@lynk-x.com for any questions.',
+        };
+        const ok = await download(doc, `invoice-${invoice.id}.pdf`);
+        if (!ok) showToast('Failed to generate PDF.', 'error');
     };
 
     if (isLoading && !activeAccount) {
@@ -260,9 +284,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         Thank you for your business! Reach out to support@lynk-x.com for any questions.
                     </div>
                     <div className={styles.actions}>
-                        <button onClick={handlePrint} className={`${styles.btn} ${styles.btnPrint}`}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                            Print Invoice
+                        <button onClick={handleDownload} className={`${styles.btn} ${styles.btnPrint}`} disabled={isGenerating}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            {isGenerating ? 'Generating...' : 'Download PDF'}
                         </button>
                     </div>
                 </footer>

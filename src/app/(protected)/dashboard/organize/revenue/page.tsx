@@ -77,6 +77,8 @@ function RevenueContent() {
         wallet:        String(r.wallet_reference ?? ''),
         currency:      String(r.currency ?? r.wallet_currency ?? ''),
         amount:        Number(r.amount) || 0,
+        fee:           Number(r.fee) || 0,
+        netSettlement: r.net_settlement != null ? Number(r.net_settlement) : undefined,
         status:        (String(r.status ?? '') as Payout['status']),
         processedAt:   typeof r.processed_at === 'string' ? r.processed_at : undefined,
         requestedAt:   String(r.requested_at ?? ''),

@@ -9,8 +9,8 @@ import {
     StyleSheet,
     Font,
 } from '@react-pdf/renderer';
+import type { FinancialDocument } from '@/types/financialDocument';
 
-// Register a clean system font stack
 Font.registerHyphenationCallback(word => [word]);
 
 const palette = {
@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 48,
         backgroundColor: palette.white,
     },
-    // ── Header ──────────────────────────────────────────────
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -81,13 +80,11 @@ const styles = StyleSheet.create({
         fontFamily: 'Helvetica-Bold',
         textTransform: 'uppercase',
     },
-    // ── Divider ──────────────────────────────────────────────
     divider: {
         borderBottomWidth: 1,
         borderBottomColor: palette.border,
         marginBottom: 24,
     },
-    // ── Info grid ───────────────────────────────────────────
     infoGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -121,7 +118,6 @@ const styles = StyleSheet.create({
         fontSize: 9,
         color: palette.mid,
     },
-    // ── Table ───────────────────────────────────────────────
     tableHeader: {
         flexDirection: 'row',
         backgroundColor: palette.light,
@@ -146,7 +142,6 @@ const styles = StyleSheet.create({
     },
     colDesc: { flex: 1 },
     colAmt: { width: 100, textAlign: 'right' },
-    // ── Totals ──────────────────────────────────────────────
     totalsArea: {
         alignItems: 'flex-end',
         marginTop: 16,
@@ -172,7 +167,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: palette.brand,
     },
-    // ── Footer ──────────────────────────────────────────────
     footer: {
         position: 'absolute',
         bottom: 32,
@@ -190,111 +184,96 @@ const styles = StyleSheet.create({
     },
 });
 
-interface InvoicePDFProps {
-    id: string;
-    date: string;
-    referenceId: string;
-    status: string;
-    senderName: string;
-    recipientName: string;
-    eventTitle: string;
-    type: string;
-    description: string;
-    amount: number;
-    currency: string;
-    formattedAmount: string;
+interface FinancialDocumentPDFProps {
+    doc: FinancialDocument;
 }
 
-export default function InvoicePDF({
-    id,
-    date,
-    referenceId,
-    status,
-    senderName,
-    recipientName,
-    eventTitle,
-    type,
-    description,
-    formattedAmount,
-}: InvoicePDFProps) {
+export default function FinancialDocumentPDF({ doc }: FinancialDocumentPDFProps) {
+    const infoTitle = doc.documentType === 'Settlement Receipt' ? 'Settlement Details' : 'Billing Details';
+
     return (
-        <Document title={`Invoice ${referenceId}`} author="Lynk-X Financial Operations">
+        <Document title={`${doc.documentType} ${doc.referenceId}`} author="Lynk-X Financial Operations">
             <Page size="A4" style={styles.page}>
-                {/* Header */}
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.brandName}>LYNK-X</Text>
-                        <Text style={styles.brandSub}>Lynk-X Financial Operations{'\n'}Nairobi, Kenya</Text>
+                        <Text style={styles.brandSub}>{doc.from.name}{doc.from.sub ? `\n${doc.from.sub}` : ''}</Text>
                     </View>
                     <View>
-                        <Text style={styles.invoiceTitle}>Invoice</Text>
+                        <Text style={styles.invoiceTitle}>{doc.documentType}</Text>
                         <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>Invoice ID:</Text>
-                            <Text style={styles.metaValue}>{referenceId}</Text>
+                            <Text style={styles.metaLabel}>Reference:</Text>
+                            <Text style={styles.metaValue}>{doc.referenceId}</Text>
                         </View>
                         <View style={styles.metaRow}>
                             <Text style={styles.metaLabel}>Date:</Text>
-                            <Text>{date}</Text>
+                            <Text>{doc.date}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={styles.statusBadge}>{status.toUpperCase()}</Text>
+                            <Text style={styles.statusBadge}>{doc.status.toUpperCase()}</Text>
                         </View>
                     </View>
                 </View>
 
                 <View style={styles.divider} />
 
-                {/* Billing info */}
                 <View style={styles.infoGrid}>
                     <View style={styles.infoSection}>
-                        <Text style={styles.infoTitle}>Billing Details</Text>
+                        <Text style={styles.infoTitle}>{infoTitle}</Text>
                         <Text style={styles.infoText}>
-                            <Text style={styles.infoBold}>From: </Text>{senderName}{'\n'}
-                            <Text style={styles.infoBold}>To: </Text>{recipientName}{'\n'}
-                            {eventTitle ? <Text><Text style={styles.infoBold}>Event: </Text>{eventTitle}{'\n'}</Text> : null}
-                            <Text style={styles.infoBold}>Type: </Text>
-                            {type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            <Text style={styles.infoBold}>From: </Text>{doc.from.name}{'\n'}
+                            <Text style={styles.infoBold}>To: </Text>{doc.to.name}
+                            {doc.to.email ? <Text>{' '}({doc.to.email})</Text> : null}{'\n'}
+                            {doc.to.sub ? <Text>{doc.to.sub}{'\n'}</Text> : null}
+                            {doc.eventTitle ? <Text><Text style={styles.infoBold}>Event: </Text>{doc.eventTitle}{'\n'}</Text> : null}
                         </Text>
                     </View>
                     <View style={styles.infoSectionRight}>
                         <Text style={styles.infoTitle}>Reference</Text>
-                        <Text style={styles.infoText}>Platform Transaction ID:</Text>
-                        <Text style={styles.monoSmall}>{id}</Text>
+                        <Text style={styles.infoText}>Platform Reference:</Text>
+                        <Text style={styles.monoSmall}>{doc.referenceId}</Text>
                     </View>
                 </View>
 
-                {/* Line items table */}
                 <View style={styles.tableHeader}>
                     <Text style={[styles.tableHeaderText, styles.colDesc]}>Description</Text>
                     <Text style={[styles.tableHeaderText, styles.colAmt]}>Amount</Text>
                 </View>
-                <View style={styles.tableRow}>
-                    <Text style={[{ fontSize: 10 }, styles.colDesc]}>{description}</Text>
-                    <Text style={[{ fontSize: 10 }, styles.colAmt]}>{formattedAmount}</Text>
-                </View>
+                {doc.lineItems.map((item, index) => (
+                    <View style={styles.tableRow} key={index}>
+                        <Text style={[{ fontSize: 10 }, styles.colDesc]}>{item.description}</Text>
+                        <Text style={[{ fontSize: 10 }, styles.colAmt]}>{item.amount}</Text>
+                    </View>
+                ))}
 
-                {/* Totals */}
                 <View style={styles.totalsArea}>
                     <View style={styles.totalsTable}>
                         <View style={styles.totalRow}>
                             <Text style={{ color: palette.mid }}>Subtotal</Text>
-                            <Text>{formattedAmount}</Text>
+                            <Text>{doc.subtotal}</Text>
                         </View>
-                        <View style={styles.totalRow}>
-                            <Text style={{ color: palette.mid }}>Tax (0%)</Text>
-                            <Text>—</Text>
-                        </View>
+                        {doc.fees?.map((fee, index) => (
+                            <View style={styles.totalRow} key={index}>
+                                <Text style={{ color: palette.mid }}>{fee.label}</Text>
+                                <Text>{fee.amount}</Text>
+                            </View>
+                        ))}
+                        {doc.tax !== undefined && (
+                            <View style={styles.totalRow}>
+                                <Text style={{ color: palette.mid }}>Tax</Text>
+                                <Text>{doc.tax}</Text>
+                            </View>
+                        )}
                         <View style={styles.grandTotalRow}>
-                            <Text style={styles.grandTotalText}>Total Amount</Text>
-                            <Text style={styles.grandTotalText}>{formattedAmount}</Text>
+                            <Text style={styles.grandTotalText}>Total {doc.documentType === 'Settlement Receipt' ? 'Settled' : 'Due'}</Text>
+                            <Text style={styles.grandTotalText}>{doc.total}</Text>
                         </View>
                     </View>
                 </View>
 
-                {/* Footer */}
                 <View style={styles.footer} fixed>
                     <Text style={styles.footerText}>
-                        This is a system-generated document. For inquiries, contact finance@lynk-x.com.
+                        {doc.footerNote || 'This is a system-generated document. For inquiries, contact finance@lynk-x.com.'}
                     </Text>
                     <Text style={styles.footerText}>
                         Generated by Lynk-X Platform

@@ -8,9 +8,10 @@ import { useToast } from '@/components/ui/Toast';
 import BackButton from '@/components/shared/BackButton';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { useFinancialDocumentDownload } from '@/hooks/useFinancialDocumentDownload';
+import type { FinancialDocument } from '@/types/financialDocument';
 
-// PDF renderer is lazy-loaded in handleDownloadPDF
+// PDF renderer is lazy-loaded via useFinancialDocumentDownload
 
 interface TxDetail {
     id: string;
@@ -120,50 +121,28 @@ function AdminInvoiceContent() {
         fetchTransaction();
     }, [id, supabase, showToast, createdAt]);
 
-    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const { enabled: isPdfExportEnabled } = useFeatureFlag('enable_invoice_pdf_export');
-
-    const handlePrint = () => {
-        const originalTitle = document.title;
-        document.title = `Lynk-X_Invoice_INV-${tx?.referenceId || id.slice(0, 8).toUpperCase()}`;
-        window.print();
-        document.title = originalTitle;
-    };
+    const { download, isGenerating } = useFinancialDocumentDownload();
 
     const handleDownloadPDF = async () => {
         if (!tx) return;
-        setIsGeneratingPdf(true);
-        try {
-            const { pdf } = await import('@react-pdf/renderer');
-            const { default: InvoicePDFDoc } = await import('./InvoicePDF');
-            const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency });
-            const blob = await pdf(
-                <InvoicePDFDoc
-                    id={tx.id}
-                    date={tx.date}
-                    referenceId={tx.referenceId}
-                    status={tx.status}
-                    senderName={tx.senderName}
-                    recipientName={tx.recipientName}
-                    eventTitle={tx.eventTitle}
-                    type={tx.type}
-                    description={tx.description}
-                    amount={tx.amount}
-                    currency={tx.currency}
-                    formattedAmount={formatter.format(tx.amount)}
-                />
-            ).toBlob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `invoice-${tx.referenceId}.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch {
-            showToast('Failed to generate PDF.', 'error');
-        } finally {
-            setIsGeneratingPdf(false);
-        }
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency });
+        const doc: FinancialDocument = {
+            documentType: 'Invoice',
+            referenceId: tx.referenceId,
+            date: tx.date,
+            status: tx.status,
+            from: { name: 'Lynk-X', sub: 'Lynk-X Financial Operations, Nairobi, Kenya' },
+            to: { name: tx.recipientName },
+            eventTitle: tx.eventTitle || undefined,
+            lineItems: [{ description: tx.description, amount: formatter.format(tx.amount) }],
+            subtotal: formatter.format(tx.amount),
+            tax: formatter.format(0),
+            total: formatter.format(tx.amount),
+            currency: tx.currency,
+            footerNote: 'This is a system-generated document. For inquiries, contact finance@lynk-x.com.',
+        };
+        const ok = await download(doc, `invoice-${tx.referenceId}.pdf`);
+        if (!ok) showToast('Failed to generate PDF.', 'error');
     };
 
     if (isLoading) {
@@ -282,20 +261,14 @@ function AdminInvoiceContent() {
                         This is a system-generated document. For inquiries, contact finance@lynk-x.com.
                     </div>
                     <div className={styles.actions}>
-                        <button onClick={handlePrint} className={`${styles.btn} ${styles.btnPrint}`}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                            Print Invoice
+                        <button
+                            className={`${styles.btn} ${styles.btnDownload}`}
+                            onClick={handleDownloadPDF}
+                            disabled={isGenerating}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            {isGenerating ? 'Generating...' : 'Download PDF'}
                         </button>
-                        {isPdfExportEnabled && (
-                            <button
-                                className={`${styles.btn} ${styles.btnDownload}`}
-                                onClick={handleDownloadPDF}
-                                disabled={isGeneratingPdf}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-                            </button>
-                        )}
                     </div>
                 </footer>
             </div>
