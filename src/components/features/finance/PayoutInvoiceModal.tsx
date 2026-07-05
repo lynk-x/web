@@ -40,7 +40,7 @@ function buildFinancialDocument(payout: Payout, accountName: string): FinancialD
         date: formatDate(payout.processedAt || payout.requestedAt || new Date().toISOString()),
         status: payout.status,
         from: { name: 'Lynk-X', sub: 'Financial Operations, Nairobi, Kenya' },
-        to: { name: accountName, sub: 'Lynk-X Authorized Partner' },
+        to: { name: accountName },
         eventTitle: payout.eventName,
         lineItems: [{
             description: `Ticket Revenue Settlement — Payout for Event: ${payout.eventName || 'System Adjustment'}`,
@@ -130,7 +130,6 @@ const PayoutInvoiceModal: React.FC<PayoutInvoiceModalProps> = ({
                             <h3 className={styles.blockTitle}>Payee / Organizer</h3>
                             <div className={styles.blockContent}>
                                 <p className={styles.payeeName}>{accountName}</p>
-                                <p className={styles.payeeSub}>Lynk-X Authorized Partner</p>
                             </div>
                         </div>
                         <div className={styles.detailsBlock}>
