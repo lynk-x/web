@@ -180,8 +180,6 @@ export interface PerformanceEvent {
     totalRevenue: number;
     /** Estimated revenue after platform commission (95% of totalRevenue) */
     netRevenue: number;
-    /** Conversion rate string e.g. "4.2%" */
-    conversionRate: string;
     status: string;
 }
 

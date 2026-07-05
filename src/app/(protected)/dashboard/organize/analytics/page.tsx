@@ -14,7 +14,6 @@ interface PerformanceEvent {
     ticketsSold: number;
     totalRevenue: number;
     netRevenue: number;
-    conversionRate: string;
 }
 
 interface AnalyticsData {

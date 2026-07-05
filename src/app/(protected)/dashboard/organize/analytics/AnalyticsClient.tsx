@@ -73,7 +73,6 @@ export default function AnalyticsClient() {
                 tickets_sold: e.ticketsSold,
                 gross_revenue: e.totalRevenue,
                 net_revenue: e.netRevenue,
-                conversion_rate: e.conversionRate,
                 status: e.status,
             })),
             `analytics_report_${timeRange}days`
@@ -84,16 +83,8 @@ export default function AnalyticsClient() {
     const stats = useMemo(() => {
         const insights = data.insights || [];
         return {
-            topEvent: insights.length > 0 
-                ? insights.reduce((prev, curr) => (curr.ticketsSold > prev.ticketsSold ? curr : prev), insights[0]).event 
-                : '—',
+            totalEvents: insights.length,
             totalSold: insights.reduce((sum, e) => sum + e.ticketsSold, 0),
-            avgConversion: insights.length > 0
-                ? (insights.reduce((sum, e) => {
-                    const rate = parseFloat(e.conversionRate);
-                    return sum + (isNaN(rate) ? 0 : rate);
-                }, 0) / insights.length).toFixed(1) + '%'
-                : '0%'
         };
     }, [data.insights]);
 
@@ -109,8 +100,8 @@ export default function AnalyticsClient() {
 
             <div className={adminStyles.statsGrid}>
                 <StatCard
-                    label="Peak Performer"
-                    value={stats.topEvent}
+                    label="Total Events"
+                    value={stats.totalEvents.toLocaleString()}
                     isLoading={isLoading}
                     trend="positive"
                 />
@@ -119,11 +110,6 @@ export default function AnalyticsClient() {
                     value={stats.totalSold.toLocaleString()}
                     isLoading={isLoading}
                     trend="positive"
-                />
-                <StatCard
-                    label="Avg. Conversion"
-                    value={stats.avgConversion}
-                    isLoading={isLoading}
                 />
             </div>
 

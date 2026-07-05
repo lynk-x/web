@@ -63,10 +63,6 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             render: (item) => <span className={styles.money} style={{ fontWeight: 600, color: 'var(--color-brand-primary)' }}>{formatCurrency(item.netRevenue)}</span>,
         },
         {
-            header: 'Conversion',
-            render: (item) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{item.conversionRate}</div>,
-        },
-        {
             header: 'Status',
             render: (item) => <Badge label={item.status} variant={getStatusVariant(item.status)} showDot />,
         },
