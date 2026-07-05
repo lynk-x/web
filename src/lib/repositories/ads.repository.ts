@@ -206,22 +206,19 @@ export function createAdsRepository(client: DbClient) {
         },
 
         /**
-         * Log an ad interaction or click. Wraps `log_ad_interaction` RPC, which takes a single jsonb payload
-         * and pushes it onto the `ad_interactions` PGMQ queue for async processing.
+         * Log an ad interaction or click. Wraps `log_ad_interaction` RPC, which verifies the
+         * HMAC-signed serve token (from the matched ad's `metadata.serve_token`) and pushes the
+         * interaction onto the `ad_interactions` PGMQ queue for async billing.
+         * Requires an authenticated session; the RPC rejects anon callers.
          */
         async logInteraction(params: {
-            campaignId: string;
+            /** `metadata.serve_token` from the ad returned by `match_ad_campaigns`. */
+            serveToken: string;
             interactionType: 'impression' | 'click' | 'video_view_10' | 'visit_verified';
-            userId?: string;
-            metadata?: Record<string, unknown>;
         }): Promise<RepoResult<null>> {
             const { error } = await client.schema('api').rpc('log_ad_interaction', {
-                p_payload: {
-                    campaign_id: params.campaignId,
-                    interaction_type: params.interactionType,
-                    user_id: params.userId ?? null,
-                    metadata: params.metadata ?? {},
-                },
+                p_serve_token: params.serveToken,
+                p_interaction_type: params.interactionType,
             });
 
             if (error) return { data: null, error: toError(error) };
