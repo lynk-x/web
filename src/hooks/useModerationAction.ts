@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useCallback } from 'react';
-import { useToast } from '@/components/ui/Toast';
-import { getErrorMessage } from '@/utils/error';
+import { useCallback } from 'react';
+import { useAction } from '@/hooks/useAction';
 
 interface ModerationActionOptions {
     onSuccess?: () => void;
@@ -11,42 +10,22 @@ interface ModerationActionOptions {
 }
 
 /**
- * A hook for handling standardized moderation actions via Supabase RPCs.
- * Manages loading states, toast notifications, and error handling.
+ * Moderation-flavoured wrapper over useAction (kept for existing callers —
+ * prefer useAction directly in new code). Defaults a loading toast and
+ * generic success/error copy suited to approve/reject/resolve actions.
  */
 export function useModerationAction() {
-    const { showToast } = useToast();
-    const [isProcessing, setIsProcessing] = useState(false);
+    const { run, isProcessing } = useAction();
 
-    const executeAction = useCallback(async (
+    const executeAction = useCallback((
         actionFn: () => Promise<{ error: any }> | PromiseLike<{ error: any }>,
         options: ModerationActionOptions = {}
-    ) => {
-        const {
-            onSuccess,
-            successMessage = 'Action completed successfully',
-            loadingMessage = 'Processing action...'
-        } = options;
-
-        setIsProcessing(true);
-        if (loadingMessage) showToast(loadingMessage, 'info');
-
-        try {
-            const { error } = await actionFn();
-            
-            if (error) {
-                throw error;
-            }
-
-            showToast(successMessage, 'success');
-            onSuccess?.();
-        } catch (err) {
-            console.error('Moderation action failed:', err);
-            showToast(getErrorMessage(err) || 'Failed to complete action', 'error');
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [showToast]);
+    ) => run(actionFn, {
+        loadingMessage: options.loadingMessage ?? 'Processing action...',
+        successMessage: options.successMessage ?? 'Action completed successfully',
+        errorMessage: 'Failed to complete action',
+        onSuccess: options.onSuccess,
+    }), [run]);
 
     return {
         executeAction,

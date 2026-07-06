@@ -6,6 +6,7 @@
  */
 
 import { getErrorMessage } from '@/utils/error';
+import { useAction } from '@/hooks/useAction';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
@@ -42,6 +43,7 @@ interface AccountPermission {
 
 function IAMContent() {
     const { showToast } = useToast();
+    const { run: runAction } = useAction();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const router = useRouter();
     const pathname = usePathname();
@@ -206,39 +208,36 @@ function IAMContent() {
             [roleSlug]: currentPerms
         }));
 
-        try {
-            const { error } = await supabaseApi.schema('api').rpc('update_role_permissions', {
+        await runAction(
+            () => supabaseApi.schema('api').rpc('update_role_permissions', {
                 p_role_slug: roleSlug,
                 p_permission_slugs: Array.from(currentPerms)
-            });
-            if (error) throw error;
-            showToast(`Permissions updated for role ${roleSlug}`, 'success');
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to update permissions', 'error');
-            // Revert state on error
-            fetchIAMData();
-        }
+            }),
+            {
+                successMessage: `Permissions updated for role ${roleSlug}`,
+                errorMessage: 'Failed to update permissions',
+                onError: () => fetchIAMData() // revert optimistic state
+            }
+        );
     };
 
     // Save modified role details
     const handleSaveRole = async () => {
         if (!editingRole) return;
         setIsLoading(true);
-        try {
-            const { error } = await supabaseApi.schema('api').rpc('update_role_details', {
+        await runAction(
+            () => supabaseApi.schema('api').rpc('update_role_details', {
                 p_role_id: editingRole.id,
                 p_display_name: roleForm.display_name,
                 p_description: roleForm.description
-            });
-            if (error) throw error;
-            showToast('Role updated successfully', 'success');
-            setIsRoleModalOpen(false);
-            await fetchIAMData();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to update role', 'error');
-        } finally {
-            setIsLoading(false);
-        }
+            }),
+            {
+                successMessage: 'Role updated successfully',
+                errorMessage: 'Failed to update role',
+                onSuccess: async () => { setIsRoleModalOpen(false); await fetchIAMData(); },
+                onSettled: () => setIsLoading(false)
+            }
+        );
     };
 
     // Delete custom role
@@ -250,46 +249,42 @@ function IAMContent() {
             return;
         }
         setIsLoading(true);
-        try {
-            const { error } = await supabaseApi.schema('api').rpc('delete_custom_role', {
+        await runAction(
+            () => supabaseApi.schema('api').rpc('delete_custom_role', {
                 p_role_id: role.id
-            });
-            if (error) throw error;
-            showToast('Role deleted successfully', 'success');
-            await fetchIAMData();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to delete role', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [supabaseApi, showToast, fetchIAMData, confirm]);
+            }),
+            {
+                successMessage: 'Role deleted successfully',
+                errorMessage: 'Failed to delete role',
+                onSuccess: () => fetchIAMData(),
+                onSettled: () => setIsLoading(false)
+            }
+        );
+    }, [supabaseApi, runAction, fetchIAMData, confirm]);
 
     // Handle single permission assign/revoke to/from a role
     const handlePermissionRoleAction = async (action: 'assign' | 'revoke') => {
         if (!selectedPerm || !targetRoleSlug) return;
         setIsLoading(true);
-        try {
-            const currentPerms = new Set(rolePermissions[targetRoleSlug] || []);
-            if (action === 'assign') {
-                currentPerms.add(selectedPerm.slug);
-            } else {
-                currentPerms.delete(selectedPerm.slug);
-            }
+        const currentPerms = new Set(rolePermissions[targetRoleSlug] || []);
+        if (action === 'assign') {
+            currentPerms.add(selectedPerm.slug);
+        } else {
+            currentPerms.delete(selectedPerm.slug);
+        }
 
-            const { error } = await supabaseApi.schema('api').rpc('update_role_permissions', {
+        await runAction(
+            () => supabaseApi.schema('api').rpc('update_role_permissions', {
                 p_role_slug: targetRoleSlug,
                 p_permission_slugs: Array.from(currentPerms)
-            });
-            if (error) throw error;
-            
-            showToast(`Permission "${selectedPerm.slug}" successfully ${action === 'assign' ? 'assigned to' : 'revoked from'} role "${targetRoleSlug}"`, 'success');
-            setIsAssignPermModalOpen(false);
-            await fetchIAMData();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to update permission mapping', 'error');
-        } finally {
-            setIsLoading(false);
-        }
+            }),
+            {
+                successMessage: `Permission "${selectedPerm.slug}" successfully ${action === 'assign' ? 'assigned to' : 'revoked from'} role "${targetRoleSlug}"`,
+                errorMessage: 'Failed to update permission mapping',
+                onSuccess: async () => { setIsAssignPermModalOpen(false); await fetchIAMData(); },
+                onSettled: () => setIsLoading(false)
+            }
+        );
     };
 
     // Bulk assign selected permissions to all roles
@@ -303,19 +298,17 @@ function IAMContent() {
             return;
         }
         setIsLoading(true);
-        try {
-            const { error } = await supabaseApi.schema('api').rpc('bulk_assign_permissions_to_all_roles', {
+        await runAction(
+            () => supabaseApi.schema('api').rpc('bulk_assign_permissions_to_all_roles', {
                 p_permission_slugs: Array.from(selectedPermissions)
-            });
-            if (error) throw error;
-            showToast(`Successfully assigned ${count} permissions to all roles`, 'success');
-            setSelectedPermissions(new Set());
-            await fetchIAMData();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to assign bulk permissions', 'error');
-        } finally {
-            setIsLoading(false);
-        }
+            }),
+            {
+                successMessage: `Successfully assigned ${count} permissions to all roles`,
+                errorMessage: 'Failed to assign bulk permissions',
+                onSuccess: async () => { setSelectedPermissions(new Set()); await fetchIAMData(); },
+                onSettled: () => setIsLoading(false)
+            }
+        );
     };
 
     // Bulk revoke selected permissions from all roles
@@ -329,19 +322,17 @@ function IAMContent() {
             return;
         }
         setIsLoading(true);
-        try {
-            const { error } = await supabaseApi.schema('api').rpc('bulk_revoke_permissions_from_all_roles', {
+        await runAction(
+            () => supabaseApi.schema('api').rpc('bulk_revoke_permissions_from_all_roles', {
                 p_permission_slugs: Array.from(selectedPermissions)
-            });
-            if (error) throw error;
-            showToast(`Successfully revoked ${count} permissions from all roles`, 'success');
-            setSelectedPermissions(new Set());
-            await fetchIAMData();
-        } catch (error) {
-            showToast(getErrorMessage(error) || 'Failed to revoke bulk permissions', 'error');
-        } finally {
-            setIsLoading(false);
-        }
+            }),
+            {
+                successMessage: `Successfully revoked ${count} permissions from all roles`,
+                errorMessage: 'Failed to revoke bulk permissions',
+                onSuccess: async () => { setSelectedPermissions(new Set()); await fetchIAMData(); },
+                onSettled: () => setIsLoading(false)
+            }
+        );
     };
 
     // Selection handlers for permissions table

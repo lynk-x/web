@@ -3,6 +3,7 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { useAction } from '@/hooks/useAction';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import Link from 'next/link';
@@ -36,6 +37,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 function FinanceContent() {
     const { showToast } = useToast();
+    const { run: runAction } = useAction();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const router = useRouter();
@@ -415,29 +417,19 @@ function FinanceContent() {
     const handleCancelSubscription = async (id: string) => {
         if (!await confirm('Are you sure you want to cancel this subscription? Immediate cancellation will terminate access.')) return;
 
-        showToast('Cancelling subscription...', 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true });
-            if (error) throw error;
-            showToast('Subscription cancelled.', 'success');
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
+        await runAction(
+            () => supabase.schema('api').rpc('admin_cancel_subscription', { p_subscription_id: id, p_immediate: true }),
+            { loadingMessage: 'Cancelling subscription...', successMessage: 'Subscription cancelled.', onSuccess: fetchData }
+        );
     };
 
     const handleReactivateSubscription = async (id: string) => {
         if (!await confirm('Reactivate this subscription?')) return;
 
-        showToast('Reactivating subscription...', 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_reactivate_subscription', { p_subscription_id: id });
-            if (error) throw error;
-            showToast('Subscription reactivated.', 'success');
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
+        await runAction(
+            () => supabase.schema('api').rpc('admin_reactivate_subscription', { p_subscription_id: id }),
+            { loadingMessage: 'Reactivating subscription...', successMessage: 'Subscription reactivated.', onSuccess: fetchData }
+        );
     };
 
     const handleOpenPlanModal = (sub: Subscription) => {
@@ -453,19 +445,17 @@ function FinanceContent() {
             return;
         }
 
-        showToast(`Migrating subscription to ${newPlanId}...`, 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_change_subscription_plan', { 
-                p_subscription_id: selectedSub.id, 
-                p_new_plan_id: newPlanId 
-            });
-            if (error) throw error;
-            showToast('Plan migrated successfully.', 'success');
-            setIsPlanModalOpen(false);
-            fetchData();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
+        await runAction(
+            () => supabase.schema('api').rpc('admin_change_subscription_plan', {
+                p_subscription_id: selectedSub.id,
+                p_new_plan_id: newPlanId
+            }),
+            {
+                loadingMessage: `Migrating subscription to ${newPlanId}...`,
+                successMessage: 'Plan migrated successfully.',
+                onSuccess: () => { setIsPlanModalOpen(false); fetchData(); }
+            }
+        );
     };
 
     // ── Wallet Freeze / Unfreeze ────────────────────────────────────────────────
@@ -477,19 +467,18 @@ function FinanceContent() {
         const newStatus = currentStatus === 'active' ? 'frozen' : 'active';
         if (!await confirm(`Set wallet ${accountId.slice(0, 8)}…/${currency} to "${newStatus}"?`)) return;
 
-        showToast(`${currentStatus === 'active' ? 'Freezing' : 'Unfreezing'} wallet...`, 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_set_wallet_status', {
+        await runAction(
+            () => supabase.schema('api').rpc('admin_set_wallet_status', {
                 p_account_id: accountId,
                 p_currency: currency,
                 p_status: newStatus
-            });
-            if (error) throw error;
-            showToast(`Wallet ${newStatus}.`, 'success');
-            fetchData();
-        } catch (err) {
-            showToast(getErrorMessage(err), 'error');
-        }
+            }),
+            {
+                loadingMessage: `${currentStatus === 'active' ? 'Freezing' : 'Unfreezing'} wallet...`,
+                successMessage: `Wallet ${newStatus}.`,
+                onSuccess: fetchData
+            }
+        );
     };
 
     const handleAdjustWallet = async () => {
@@ -502,22 +491,21 @@ function FinanceContent() {
         const reason = adjustReason.trim() || 'admin_adjustment';
 
         setShowAdjustWalletModal(false);
-        showToast('Adjusting wallet balance…', 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_adjust_wallet_balance', {
+        await runAction(
+            () => supabase.schema('api').rpc('admin_adjust_wallet_balance', {
                 p_account_id: accountId,
                 p_currency: currency,
                 p_amount: amount,
                 p_balance_type: adjustBalanceType,
                 p_reason: reason,
                 p_notes: `admin_finance_page`
-            });
-            if (error) throw error;
-            showToast(`Wallet ${adjustBalanceType} adjusted by ${formatCurrency(amount, currency)}.`, 'success');
-            fetchData();
-        } catch (err) {
-            showToast(getErrorMessage(err), 'error');
-        }
+            }),
+            {
+                loadingMessage: 'Adjusting wallet balance…',
+                successMessage: `Wallet ${adjustBalanceType} adjusted by ${formatCurrency(amount, currency)}.`,
+                onSuccess: fetchData
+            }
+        );
     };
 
     const getBulkActions = (): BulkAction[] => {
@@ -526,35 +514,27 @@ function FinanceContent() {
                 {
                     label: 'Batch Deactivate',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
-                    onClick: async () => {
-                        showToast(`Deactivating ${selectedPromoIds.size} codes...`, 'info');
-                        try {
-                            const { error } = await supabase.from('promo_codes').update({ is_active: false }).in('id', Array.from(selectedPromoIds));
-                            if (error) throw error;
-                            showToast(`Successfully deactivated ${selectedPromoIds.size} codes.`, 'success');
-                            setSelectedPromoIds(new Set());
-                            fetchData();
-                        } catch (err: any) {
-                            showToast(getErrorMessage(err), 'error');
+                    onClick: () => runAction(
+                        () => supabase.from('promo_codes').update({ is_active: false }).in('id', Array.from(selectedPromoIds)),
+                        {
+                            loadingMessage: `Deactivating ${selectedPromoIds.size} codes...`,
+                            successMessage: `Successfully deactivated ${selectedPromoIds.size} codes.`,
+                            onSuccess: () => { setSelectedPromoIds(new Set()); fetchData(); }
                         }
-                    },
+                    ),
                     variant: 'danger'
                 },
                 {
                     label: 'Batch Activate',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
-                    onClick: async () => {
-                        showToast(`Activating ${selectedPromoIds.size} codes...`, 'info');
-                        try {
-                            const { error } = await supabase.from('promo_codes').update({ is_active: true }).in('id', Array.from(selectedPromoIds));
-                            if (error) throw error;
-                            showToast(`Successfully activated ${selectedPromoIds.size} codes.`, 'success');
-                            setSelectedPromoIds(new Set());
-                            fetchData();
-                        } catch (err: any) {
-                            showToast(getErrorMessage(err), 'error');
+                    onClick: () => runAction(
+                        () => supabase.from('promo_codes').update({ is_active: true }).in('id', Array.from(selectedPromoIds)),
+                        {
+                            loadingMessage: `Activating ${selectedPromoIds.size} codes...`,
+                            successMessage: `Successfully activated ${selectedPromoIds.size} codes.`,
+                            onSuccess: () => { setSelectedPromoIds(new Set()); fetchData(); }
                         }
-                    },
+                    ),
                     variant: 'success'
                 }
             ];
