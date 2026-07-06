@@ -37,27 +37,43 @@ export default function CreateForumPage() {
         const fetchEligibleEvents = async () => {
             setIsLoadingEvents(true);
             try {
-                // Fetch events that don't have a forum yet
-                // We do this by a left join where forum is null
-                const { data, error } = await supabase
-                    .from('events')
-                    .select('id, title, profiles!organizer_id(display_name), forums(id)')
-                    .filter('status', 'in', '("published","active")')
-                    .order('created_at', { ascending: false });
+                // Fetch events that don't have a forum yet. Events, forums and
+                // accounts live in separate schemas, so PostgREST can't embed
+                // them across the v1 views — three flat queries, joined here.
+                const [eventsRes, forumsRes] = await Promise.all([
+                    supabase
+                        .schema('api')
+                        .from('v1_events')
+                        .select('id, title, account_id')
+                        .in('status', ['published', 'active'])
+                        .order('created_at', { ascending: false }),
+                    supabase
+                        .schema('api')
+                        .from('v1_forums')
+                        .select('event_id'),
+                ]);
+                if (eventsRes.error) throw eventsRes.error;
+                if (forumsRes.error) throw forumsRes.error;
 
-                if (error) throw error;
+                const withForum = new Set((forumsRes.data || []).map((f: any) => f.event_id));
+                const candidates = (eventsRes.data || []).filter((e: any) => !withForum.has(e.id));
 
-                // Filter out events that already have a forum manually since Supabase 
-                // doesn't support "NOT EXISTS" well in simple client queries
-                const eligible = (data || [])
-                    .filter((e: any) => !e.forums || e.forums.length === 0)
-                    .map((e: any) => ({
-                        id: e.id,
-                        title: e.title,
-                        organizer: e.profiles?.display_name || 'Unknown Organizer'
-                    }));
+                const accountIds = [...new Set(candidates.map((e: any) => e.account_id))];
+                const organizerById = new Map<string, string>();
+                if (accountIds.length > 0) {
+                    const { data: accounts } = await supabase
+                        .schema('api')
+                        .from('v1_accounts')
+                        .select('id, display_name')
+                        .in('id', accountIds);
+                    (accounts || []).forEach((a: any) => organizerById.set(a.id, a.display_name));
+                }
 
-                setEvents(eligible);
+                setEvents(candidates.map((e: any) => ({
+                    id: e.id,
+                    title: e.title,
+                    organizer: organizerById.get(e.account_id) || 'Unknown Organizer'
+                })));
             } catch (err) {
                 showToast(getErrorMessage(err) || 'Failed to load eligible events.', 'error');
             } finally {

@@ -147,12 +147,14 @@ export default function AdminDashboard() {
 
             // B. Fetch recent event creations inside this country
             let eventQuery = supabase
-                .from('events')
+                .schema('api')
+                .from('v1_events')
                 .select('id, title, created_at')
                 .order('created_at', { ascending: false })
                 .limit(5);
             if (country !== 'all') {
-                eventQuery = eventQuery.eq('country_code', country);
+                // events carry their country inside the location jsonb
+                eventQuery = eventQuery.eq('location->>country', country);
             }
             const { data: recentEvents } = await eventQuery;
 

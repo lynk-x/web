@@ -76,14 +76,12 @@ export default function AdminCampaignDetailPage() {
                     .eq('id', data.account_id)
                     .single();
 
-                // Fetch performance stats separately to avoid complex join issues in the same query
-                const { data: perfData } = await supabase
-                    .from('mv_ad_campaign_performance')
-                    .select('*')
-                    .eq('campaign_id', id)
-                    .single();
+                const { data: perfRows } = await supabase
+                    .schema('api')
+                    .rpc('get_campaign_performance', { p_campaign_id: id });
 
-                const perf = perfData || { total_impressions: 0, total_clicks: 0, total_spend: 0 };
+                const perf = (Array.isArray(perfRows) ? perfRows[0] : perfRows)
+                    || { total_impressions: 0, total_clicks: 0, total_spend: 0 };
 
                 // Fetch target countries/regions
                 const { data: regionsData } = await supabase

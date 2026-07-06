@@ -213,7 +213,7 @@ export default function MemberTable() {
         }
 
         try {
-            const { error } = await supabase.schema('api').rpc('update_organizer_member_role', {
+            const { error } = await supabase.schema('api').rpc('update_account_member_role', {
                 p_account_id: activeAccount.id,
                 p_user_id: userId,
                 p_new_role: newRole.toLowerCase()

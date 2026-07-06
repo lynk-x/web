@@ -27,13 +27,12 @@ export default function ForumMediaTab({ forumId }: { forumId?: string }) {
     const fetchMedia = useCallback(async () => {
         setIsLoading(true);
         try {
+            // api.v1_forum_media denormalizes event title and uploader name
+            // (cross-schema embeds aren't possible through PostgREST views).
             let query = supabase
-                .from('forum_media')
-                .select(`
-                    *,
-                    forum:forums!forum_id(event:events!event_id(title)),
-                    uploader:user_profile!uploader_id(full_name)
-                `)
+                .schema('api')
+                .from('v1_forum_media')
+                .select('*')
                 .order('created_at', { ascending: false });
 
             if (forumId) {
@@ -47,14 +46,14 @@ export default function ForumMediaTab({ forumId }: { forumId?: string }) {
             setMedia((data || []).map((m: any) => ({
                 id: m.id,
                 forum_id: m.forum_id,
-                event_title: m.forum?.event?.title || 'Unknown Event',
-                uploader_name: m.uploader?.full_name || 'System',
+                event_title: m.event_title || 'Unknown Event',
+                uploader_name: m.uploader_name || 'System',
                 media_type: m.media_type,
-                url: m.url,
-                thumbnail_url: m.thumbnail_url,
+                url: m.media_url?.url ?? m.media_url?.original ?? null,
+                thumbnail_url: m.media_url?.thumbnail ?? null,
                 caption: m.caption,
-                mime_type: m.mime_type,
-                file_size: m.file_size,
+                mime_type: m.metadata?.mime_type ?? null,
+                file_size: m.metadata?.file_size ?? null,
                 is_approved: m.is_approved,
                 created_at: m.created_at,
             })));
@@ -74,9 +73,8 @@ export default function ForumMediaTab({ forumId }: { forumId?: string }) {
         
         try {
             const { error } = await supabase
-                .from('forum_media')
-                .delete()
-                .eq('id', id);
+                .schema('api')
+                .rpc('admin_delete_forum_media', { p_media_id: id });
 
             if (error) throw error;
             showToast('Media deleted', 'success');

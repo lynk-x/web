@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -15,12 +16,14 @@ const MONITORED_CRONS = [
   'refresh_mv_platform_overview',
 ];
 
-// DEFAULT partitions that must stay empty — rows here mean partman missed a period
+// DEFAULT partitions that must stay empty — rows here mean partman missed a period.
+// Schema-qualified with the real owning schemas (get_default_partition_count
+// silently returns 0 for schemas that don't exist, so wrong names pass green).
 const DEFAULT_PARTITIONS = [
-  { schema: 'transactions', table: 'transactions_default' },
-  { schema: 'tickets', table: 'tickets_default' },
-  { schema: 'system_jobs', table: 'system_jobs_default' },
-  { schema: 'audit_logs', table: 'audit_logs_default' },
+  { schema: 'finance', table: 'transactions_default' },
+  { schema: 'ticketing', table: 'tickets_default' },
+  { schema: 'infra', table: 'system_jobs_default' },
+  { schema: 'infra', table: 'audit_logs_default' },
 ];
 
 // DLQ depth threshold — alert if more than this many unresolved dead letters
@@ -33,6 +36,9 @@ interface Check {
 
 export async function GET() {
   const supabase = await createClient();
+  // Diagnostics RPCs (cron health, partition counts, DLQ depth) are gated to
+  // service_role — they run through the admin client, server-side only.
+  const admin = createAdminClient();
   const checks: Record<string, Check> = {};
   let healthy = true;
 
@@ -46,12 +52,11 @@ export async function GET() {
 
   // ── 2. Dead letter queue depth ────────────────────────────────────────────
   try {
-    const { count, error } = await supabase
-      .schema('internal' as any)
-      .from('dead_letter_queue')
-      .select('queue_name', { count: 'exact', head: true });
+    const { data, error } = await admin
+      .schema('api')
+      .rpc('get_dead_letter_queue_depth');
     if (error) throw error;
-    const depth = count ?? 0;
+    const depth = Number(data ?? 0);
     checks.dlq = {
       ok: depth <= DLQ_ALERT_THRESHOLD,
       detail: depth,
@@ -62,7 +67,7 @@ export async function GET() {
 
   // ── 3. pg_cron last-run timestamps ───────────────────────────────────────
   try {
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .schema('api').rpc('get_cron_health', { p_job_names: MONITORED_CRONS });
 
     if (error) throw error;
@@ -83,7 +88,7 @@ export async function GET() {
   const partitionIssues: string[] = [];
   for (const p of DEFAULT_PARTITIONS) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await admin
         .schema('api').rpc('get_default_partition_count', { p_schema: p.schema, p_table: p.table });
       if (error) throw error;
       const rowCount = Number(data ?? 0);

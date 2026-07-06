@@ -43,8 +43,9 @@ const EventReportsSection = ({ eventId }: { eventId: string }) => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .from('reports')
-                .select('*, reporter:user_profile!reporter_id(user_name), reason:report_reasons(display_name)')
+                .schema('api')
+                .from('v1_reports')
+                .select('*')
                 .eq('target_event_id', eventId);
 
             if (error) throw error;
@@ -53,10 +54,10 @@ const EventReportsSection = ({ eventId }: { eventId: string }) => {
                 id: r.id,
                 targetType: 'event',
                 targetId: r.target_event_id,
-                title: r.reason?.display_name || `Report #${r.id.slice(0, 8)}`,
+                title: r.reason_display_name || `Report #${r.id.slice(0, 8)}`,
                 description: r.info?.description || 'No description provided.',
                 date: new Date(r.created_at).toLocaleDateString(),
-                reporter: r.reporter?.user_name || 'Anonymous', 
+                reporter: r.reporter_username || 'Anonymous',
                 status: (r.status === 'under_investigation' ? 'investigating' : r.status) as Report['status'],
                 createdAt: r.created_at,
                 reasonId: r.reason_id

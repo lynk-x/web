@@ -361,8 +361,9 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .from('reports')
-                .select('*, reporter:user_profile!reporter_id(user_name)')
+                .schema('api')
+                .from('v1_reports')
+                .select('*')
                 .eq('target_event_id', eventId)
                 .order('created_at', { ascending: false });
 
@@ -375,7 +376,7 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
                 description: (r as any).info?.description || 'No description provided.',
                 date: new Date(r.created_at).toLocaleDateString(),
                 createdAt: r.created_at,
-                reporter: r.reporter?.user_name || 'Anonymous',
+                reporter: r.reporter_username || 'Anonymous',
                 status: r.status,
                 reasonId: r.reason_id
             })));

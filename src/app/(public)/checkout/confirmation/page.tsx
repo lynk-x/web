@@ -45,13 +45,21 @@ const ConfirmationContent = () => {
                     // relying on phone-number matching. Falls back to the plain
                     // event bridge (no claim) if minting fails for any reason —
                     // the user can still recover via phone-OTP inside the PWA.
+                    // A multi-tier cart creates one order per cart item, so a
+                    // token is minted per order and all of them ride the
+                    // bridge link (comma-separated; tokens contain no commas).
+                    // Claiming only the first order would strand the rest of
+                    // the tickets on the anonymous checkout session.
                     const orderIds: string[] = row.order_ids || [];
                     if (orderIds.length > 0) {
-                        const { data: token, error: mintError } = await supabase
-                            .schema('api')
-                            .rpc('mint_claim_token', { p_order_id: orderIds[0] });
-                        if (!mintError && token) {
-                            setBridgeUrl(`https://app.lynk-x.app/auth/bridge?claim=${encodeURIComponent(token)}`);
+                        const results = await Promise.all(orderIds.map(orderId =>
+                            supabase.schema('api').rpc('mint_claim_token', { p_order_id: orderId })
+                        ));
+                        const tokens = results
+                            .filter(r => !r.error && r.data)
+                            .map(r => r.data as string);
+                        if (tokens.length > 0) {
+                            setBridgeUrl(`https://app.lynk-x.app/auth/bridge?claim=${encodeURIComponent(tokens.join(','))}`);
                         }
                     }
                 } else {

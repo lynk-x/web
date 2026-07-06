@@ -13,14 +13,12 @@ export async function logAuditAction(
     const supabase = createClient();
 
     try {
-        const { error } = await supabase
-            .from('audit_logs')
-            .insert({
-                target_type: targetType,
-                target_id: targetId,
-                action: action,
-                details: details
-            });
+        const { error } = await supabase.schema('api').rpc('log_audit_event', {
+            p_target_type: targetType,
+            p_target_id: targetId,
+            p_action: action,
+            p_details: details,
+        });
 
         if (error) {
             console.error('Failed to write audit log:', error);

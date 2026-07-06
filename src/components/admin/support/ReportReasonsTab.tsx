@@ -45,7 +45,12 @@ export default function ReportReasonsTab() {
                 p_tab: 'reasons'
             });
             if (error) throw error;
-            setReasons(data || []);
+            // report_reasons carries an approval_status enum, not a boolean —
+            // map it onto the is_active flag this component works with.
+            setReasons((data || []).map((r: any) => ({
+                ...r,
+                is_active: r.status === 'approved',
+            })));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load report reasons', 'error');
         } finally {
@@ -57,10 +62,14 @@ export default function ReportReasonsTab() {
 
     const handleToggle = async (reason: ReportReason) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_update_support_status', {
-                p_tab: 'reasons',
+            // Reason ids are text slugs; admin_update_support_status takes a
+            // uuid p_id, so the upsert RPC is the only valid toggle path.
+            const { error } = await supabase.schema('api').rpc('admin_upsert_report_reason', {
                 p_id: reason.id,
-                p_status: !reason.is_active ? 'active' : 'inactive'
+                p_category: reason.category,
+                p_display_name: (reason as any).display_name || reason.id,
+                p_description: reason.description,
+                p_active: !reason.is_active
             });
             if (error) throw error;
             setReasons(prev => prev.map(r => r.id === reason.id ? { ...r, is_active: !reason.is_active } : r));
@@ -77,13 +86,14 @@ export default function ReportReasonsTab() {
         }
         setIsAdding(true);
         try {
-            // Reasons are currently in public schema, but we should eventually move to reports.
-            // For now, use direct insert but ensure system admin check is handled by RLS.
-            const { error } = await supabase.from('report_reasons').insert({
-                id: newId.trim().toLowerCase().replace(/\s+/g, '_'),
-                category: newCategory.trim(),
-                description: newDescription.trim() || null,
-                is_active: true,
+            // reports.report_reasons is not PostgREST-exposed and requires
+            // display_name; the admin upsert RPC handles both.
+            const { error } = await supabase.schema('api').rpc('admin_upsert_report_reason', {
+                p_id: newId.trim().toLowerCase().replace(/\s+/g, '_'),
+                p_category: newCategory.trim(),
+                p_display_name: newId.trim(),
+                p_description: newDescription.trim() || null,
+                p_active: true,
             });
             if (error) throw error;
             showToast('Report reason added.', 'success');
