@@ -357,7 +357,9 @@ function FinanceContent() {
             .channel('admin_finance_updates')
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'transactions', table: 'transactions' },
+                // 'finance' is the owning schema — 'transactions' was a
+                // nonexistent schema name, so this listener never fired.
+                { event: '*', schema: 'finance', table: 'transactions' },
                 () => {
                     fetchGlobalStatsRef.current();
                     if (activeTabRef.current === 'transactions') {
