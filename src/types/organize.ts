@@ -38,10 +38,7 @@ export interface OrganizerEvent {
     currency?: string;
     // Forum integration
     forum_id?: string;
-    forum_status?: string;
-    message_count?: number;
-    media_count?: number;
-    escalated_reports_count?: number;
+    forumReference?: string;
     /** Partition key for events.events */
     createdAt: string;
     /** True when this row came from the admin "Deleted" filter (events.deleted_at IS NOT NULL) */

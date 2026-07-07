@@ -50,13 +50,10 @@ export interface AnyEventRow {
     revenue?: number;
     currency?: string;
     forum_id?: string;
+    forumReference?: string;
     createdAt: string;
     organizer?: string;
     reportsCount?: number;
-    forum_status?: string;
-    message_count?: number;
-    media_count?: number;
-    escalated_reports_count?: number;
     isDeleted?: boolean;
     thumbnailUrl?: string;
     isPrivate?: boolean;
@@ -323,7 +320,7 @@ export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: E
                 actions.push({
                     label: 'Go to Forum',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-                    onClick: () => window.open(getForumUrl(event.eventReference || event.id), '_blank')
+                    onClick: () => window.open(getForumUrl(event.forumReference || event.forum_id || event.eventReference || event.id), '_blank')
                 });
             }
 
@@ -427,14 +424,6 @@ export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: E
             },
         },
         {
-            header: 'Revenue',
-            render: (event) => (
-                <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {formatCurrency(event.revenue ?? 0, event.currency)}
-                </div>
-            ),
-        },
-        {
             header: 'Status',
             render: (event) => (
                 <Badge label={formatString(event.status)} variant={getStatusVariant(event.status)} showDot />
@@ -456,7 +445,7 @@ export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: E
             actions.push({
                 label: 'Visit Forum',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-                onClick: () => window.open(getForumUrl(event.eventReference || (event as EventRow).reference || event.id), '_blank')
+                onClick: () => window.open(getForumUrl(event.forumReference || event.forum_id || event.eventReference || (event as EventRow).reference || event.id), '_blank')
             });
         }
 

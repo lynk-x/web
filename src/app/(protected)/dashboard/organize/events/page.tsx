@@ -80,6 +80,7 @@ export default function OrganizerEventsPage() {
                 currency: string;
                 created_at: string;
                 forum_id: string | null;
+                forum_reference: string | null;
                 min_price?: number;
                 max_price?: number;
             }
@@ -104,6 +105,7 @@ export default function OrganizerEventsPage() {
                 currency: e.currency,
                 createdAt: e.created_at,
                 forum_id: e.forum_id || undefined,
+                forumReference: e.forum_reference || undefined,
                 minPrice: e.min_price,
                 maxPrice: e.max_price
             }));

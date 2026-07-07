@@ -252,10 +252,7 @@ export default function AdminEventsPage() {
                 thumbnailUrl: e.thumbnail,
                 reportsCount: e.reports_count || 0,
                 forum_id: e.forum_id,
-                forum_status: e.forum_status,
-                message_count: e.message_count,
-                media_count: e.media_count,
-                escalated_reports_count: e.escalated_reports_count,
+                forumReference: e.forum_reference,
                 createdAt: e.created_at
             }));
 
