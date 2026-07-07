@@ -31,7 +31,36 @@ export type { EventRow };
 export type EventTableMode = 'admin' | 'organizer';
 
 /** Union of the two row types so the component can stay generic. */
-type AnyEventRow = OrganizerEvent | EventRow;
+/** Unified interface to prevent typescript lookup errors on union fields */
+export interface AnyEventRow {
+    id: string;
+    title?: string;
+    name?: string;
+    eventReference?: string;
+    reference?: string;
+    date: string;
+    endDate?: string;
+    time: string;
+    endTime?: string;
+    timezone?: string;
+    location?: string;
+    status: string;
+    attendees: number;
+    capacity?: number;
+    revenue?: number;
+    currency?: string;
+    forum_id?: string;
+    createdAt: string;
+    organizer?: string;
+    reportsCount?: number;
+    forum_status?: string;
+    message_count?: number;
+    media_count?: number;
+    escalated_reports_count?: number;
+    isDeleted?: boolean;
+    thumbnailUrl?: string;
+    isPrivate?: boolean;
+}
 
 // ─── Shared Props ─────────────────────────────────────────────────────────────
 
@@ -48,26 +77,26 @@ interface SharedProps {
 
 // ─── Mode-specific Props ──────────────────────────────────────────────────────
 
-interface AdminModeProps extends SharedProps {
+interface AdminModeProps<T> extends SharedProps {
     mode?: 'admin';
     /** Full admin event rows. */
-    events: OrganizerEvent[];
-    onEdit?: (event: OrganizerEvent) => void;
-    onDelete?: (event: OrganizerEvent) => void;
-    onDuplicate?: (event: OrganizerEvent) => void;
-    onStatusChange?: (event: OrganizerEvent, newStatus: 'draft' | 'published' | 'active' | 'suspended' | 'rejected' | 'cancelled') => void;
-    onRestore?: (event: OrganizerEvent) => void;
+    events: T[];
+    onEdit?: (event: T) => void;
+    onDelete?: (event: T) => void;
+    onDuplicate?: (event: T) => void;
+    onStatusChange?: (event: T, newStatus: 'draft' | 'published' | 'active' | 'suspended' | 'rejected' | 'cancelled') => void;
+    onRestore?: (event: T) => void;
 }
 
-interface OrganizerModeProps extends SharedProps {
+interface OrganizerModeProps<T> extends SharedProps {
     mode: 'organizer';
-    events: EventRow[];
-    onDuplicate?: (event: EventRow) => void;
-    onEdit?: (event: EventRow) => void;
-    onDelete?: (event: EventRow) => void;
+    events: T[];
+    onDuplicate?: (event: T) => void;
+    onEdit?: (event: T) => void;
+    onDelete?: (event: T) => void;
 }
 
-type EventTableProps = AdminModeProps | OrganizerModeProps;
+type EventTableProps<T extends AnyEventRow = AnyEventRow> = AdminModeProps<T> | OrganizerModeProps<T>;
 
 // ─── Variant Helpers ──────────────────────────────────────────────────────────
 
@@ -92,28 +121,29 @@ const getStatusVariant = (status: string): BadgeVariant => {
 /**
  * Resolves the environment-aware URL for a forum.
  */
-const getForumUrl = (forumId: string): string => {
+const getForumUrl = (reference: string): string => {
     const customPwaUrl = process.env.NEXT_PUBLIC_PWA_URL;
     if (customPwaUrl) {
-        if (customPwaUrl.startsWith('/')) {
-            return `${customPwaUrl.replace(/\/$/, '')}/${forumId}`;
+        const base = customPwaUrl.replace(/\/$/, '');
+        if (base.endsWith('/forum') || base.includes('/forum/')) {
+            return `${base}/${reference}`;
         }
-        return `${customPwaUrl.replace(/\/$/, '')}/forum/${forumId}`;
+        return `${base}/forum/${reference}`;
     }
 
     if (typeof window !== 'undefined') {
         const host = window.location.host;
 
         if (host.includes('localhost') || host.includes('127.0.0.1')) {
-            return `http://localhost:8080/forum/${forumId}`;
+            return `http://localhost:8080/forum/${reference}`;
         }
 
         if (host === 'lynk-x.app' || host === 'www.lynk-x.app') {
-            return `https://app.lynk-x.app/forum/${forumId}`;
+            return `https://app.lynk-x.app/forum/${reference}`;
         }
     }
 
-    return `https://app.lynk-x.app/forum/${forumId}`;
+    return `https://app.lynk-x.app/forum/${reference}`;
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -173,7 +203,7 @@ const renderSchedule = (event: AnyEventRow) => {
  * In `admin` mode: full OrganizerEvent rows, organizer name, report count, moderation actions.
  * In `organizer` mode: lightweight EventRow rows, revenue, capacity, quick edit shortcuts.
  */
-export default function EventTable(props: EventTableProps) {
+export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: EventTableProps<T>) {
     const { showToast } = useToast();
     const router = useRouter();
     const {
@@ -188,10 +218,10 @@ export default function EventTable(props: EventTableProps) {
     // ── Admin mode ────────────────────────────────────────────────────────────
 
     if (mode === 'admin') {
-        const adminProps = props as AdminModeProps;
-        const adminEvents = events as OrganizerEvent[];
+        const adminProps = props as AdminModeProps<T>;
+        const adminEvents = events as T[];
 
-        const columns: Column<OrganizerEvent>[] = [
+        const columns: Column<T>[] = [
             {
                 header: 'Reference',
                 render: (event) => (
@@ -238,11 +268,15 @@ export default function EventTable(props: EventTableProps) {
             },
             {
                 header: 'Capacity',
-                render: (event) => (
-                    <span style={{ fontSize: '13px', opacity: 0.85, fontWeight: 500 }}>
-                        {event.attendees} attendees
-                    </span>
-                ),
+                render: (event) => {
+                    const cap = event.capacity ?? 0;
+                    return (
+                        <div style={{ fontSize: '13px' }}>
+                            <span style={{ fontWeight: 600 }}>{event.attendees}</span>
+                            <span style={{ opacity: 0.5 }}> / {cap === 0 ? '∞' : cap}</span>
+                        </div>
+                    );
+                },
             },
             {
                 header: 'Status',
@@ -252,7 +286,7 @@ export default function EventTable(props: EventTableProps) {
             },
         ];
 
-        const getAdminActions = (event: OrganizerEvent): ActionItem[] => {
+        const getAdminActions = (event: T): ActionItem[] => {
             const actions: ActionItem[] = [];
 
             actions.push({
@@ -288,7 +322,7 @@ export default function EventTable(props: EventTableProps) {
                 actions.push({
                     label: 'Go to Forum',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-                    onClick: () => window.open(getForumUrl(event.forum_id!), '_blank')
+                    onClick: () => window.open(getForumUrl(event.eventReference || event.id), '_blank')
                 });
             }
 
@@ -333,7 +367,7 @@ export default function EventTable(props: EventTableProps) {
         };
 
         return (
-            <DataTable<OrganizerEvent>
+            <DataTable<T>
                 data={adminEvents}
                 columns={columns}
                 getActions={getAdminActions}
@@ -350,22 +384,22 @@ export default function EventTable(props: EventTableProps) {
         );
     }
 
-    // ── Organizer mode ────────────────────────────────────────────────────────
+    // ── Organizer Mode ────────────────────────────────────────────────────────
 
-    const orgEvents = events as EventRow[];
+    const orgEvents = events as T[];
 
-    const columns: Column<EventRow>[] = [
+    const columns: Column<T>[] = [
         {
             header: 'Reference',
             render: (event) => (
                 <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px', opacity: 0.8, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {event.reference || 'N/A'}
+                    {event.eventReference || (event as EventRow).reference || 'N/A'}
                 </span>
             ),
         },
         {
             header: 'Event Name',
-            render: (event) => <div style={{ fontWeight: 500 }}>{event.name}</div>,
+            render: (event) => <div style={{ fontWeight: 500 }}>{event.title || (event as EventRow).name}</div>,
         },
         {
             header: 'Date & Time',
@@ -381,18 +415,21 @@ export default function EventTable(props: EventTableProps) {
         },
         {
             header: 'Capacity',
-            render: (event) => (
-                <div style={{ fontSize: '13px' }}>
-                    <span style={{ fontWeight: 600 }}>{event.attendees}</span>
-                    <span style={{ opacity: 0.5 }}> / {event.capacity === 0 ? '∞' : event.capacity}</span>
-                </div>
-            ),
+            render: (event) => {
+                const cap = event.capacity ?? 0;
+                return (
+                    <div style={{ fontSize: '13px' }}>
+                        <span style={{ fontWeight: 600 }}>{event.attendees}</span>
+                        <span style={{ opacity: 0.5 }}> / {cap === 0 ? '∞' : cap}</span>
+                    </div>
+                );
+            },
         },
         {
             header: 'Revenue',
             render: (event) => (
                 <div style={{ fontWeight: 500, fontFamily: 'var(--font-mono, monospace)' }}>
-                    {formatCurrency(event.revenue, event.currency)}
+                    {formatCurrency(event.revenue ?? 0, event.currency)}
                 </div>
             ),
         },
@@ -404,21 +441,21 @@ export default function EventTable(props: EventTableProps) {
         },
     ];
 
-    const getOrganizerActions = (event: EventRow): ActionItem[] => {
-        const orgProps = props as OrganizerModeProps;
+    const getOrganizerActions = (event: T): ActionItem[] => {
+        const orgProps = props as OrganizerModeProps<T>;
         const actions: ActionItem[] = [];
 
         actions.push({
             label: 'View Event',
             icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-            onClick: () => router.push(`/event/${event.reference || event.id}`),
+            onClick: () => router.push(`/event/${event.eventReference || (event as EventRow).reference || event.id}`),
         });
 
         if (event.forum_id) {
             actions.push({
                 label: 'Visit Forum',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>,
-                onClick: () => window.open(getForumUrl(event.forum_id!), '_blank')
+                onClick: () => window.open(getForumUrl(event.eventReference || (event as EventRow).reference || event.id), '_blank')
             });
         }
 
@@ -455,7 +492,7 @@ export default function EventTable(props: EventTableProps) {
     };
 
     return (
-        <DataTable<EventRow>
+        <DataTable<T>
             data={orgEvents}
             columns={columns}
             getActions={getOrganizerActions}

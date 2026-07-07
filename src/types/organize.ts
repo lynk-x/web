@@ -27,6 +27,8 @@ export interface OrganizerEvent {
      */
     status: 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'cancelled' | 'postponed' | 'suspended' | 'rejected' | 'flagged';
     attendees: number;
+    capacity?: number;
+    revenue?: number;
     /** Unique share/lookup code — from `events.reference` column */
     eventReference?: string;
     /** Whether the event is private — from `events.is_private` column */

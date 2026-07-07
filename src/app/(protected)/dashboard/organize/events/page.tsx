@@ -72,6 +72,8 @@ export default function OrganizerEventsPage() {
                 location_name: string | null;
                 status: OrganizerEvent['status'];
                 attendees: number;
+                capacity: number;
+                revenue: number | string;
                 thumbnail_url: string | null;
                 event_reference: string;
                 is_private: boolean;
@@ -94,6 +96,8 @@ export default function OrganizerEventsPage() {
                 location: e.location_name || 'TBD',
                 status: e.status,
                 attendees: e.attendees,
+                capacity: e.capacity || 0,
+                revenue: Number(e.revenue) || 0,
                 thumbnailUrl: e.thumbnail_url,
                 eventReference: e.event_reference,
                 isPrivate: e.is_private,
@@ -439,6 +443,7 @@ export default function OrganizerEventsPage() {
 
             {/* Table */}
             <EventTable
+                mode="organizer"
                 events={paginatedEvents}
                 selectedIds={selectedIds}
                 onSelect={handleSelect}

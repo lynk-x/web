@@ -245,6 +245,8 @@ export default function AdminEventsPage() {
                 location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
                 status: e.status,
                 attendees: e.attendee_count || 0,
+                capacity: e.capacity || 0,
+                revenue: Number(e.revenue) || 0,
                 eventReference: e.reference,
                 isPrivate: e.is_private,
                 thumbnailUrl: e.thumbnail,
