@@ -390,7 +390,7 @@
 
     .title {
         font-size: 28px;
-    }
+    }}
 
 /* Empty State */
 .emptyStateContainer {
@@ -399,8 +399,9 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 20px;
+    padding: 40px var(--spacing-md);
     flex: 1;
+    min-height: 400px;
 }
 
 .emptyStateTitle {
@@ -415,5 +416,5 @@
     opacity: 0.7;
     font-size: 16px;
     max-width: 480px;
-}
+    line-height: 1.5;
 }

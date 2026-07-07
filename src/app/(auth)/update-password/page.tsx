@@ -109,8 +109,8 @@ export default function UpdatePasswordPage() {
                         required
                     />
 
-                    {error && <p style={{ color: '#ff4444', textAlign: 'center', fontSize: '0.875rem' }}>{error}</p>}
-                    {message && <p style={{ color: '#00FF00', textAlign: 'center', fontSize: '1rem', fontWeight: 'bold' }}>{message}</p>}
+                    {error && <p style={{ color: 'var(--color-interface-error)', textAlign: 'center', fontSize: '0.875rem' }}>{error}</p>}
+                    {message && <p style={{ color: 'var(--color-interface-success)', textAlign: 'center', fontSize: '1rem', fontWeight: 'bold' }}>{message}</p>}
 
                     <button type="submit" className={styles.sendBtn} disabled={isLoading}>
                         {isLoading ? 'Updating...' : 'Save Password'}

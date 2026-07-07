@@ -238,7 +238,7 @@ function AdsSettingsContent() {
             const { error: shredError } = await supabase.schema('api').rpc('shred_user_data');
             if (shredError) throw shredError;
 
-            showToast('Account deactivated and personal data shredded.', 'success');
+            showToast('Account deactivated successfully.', 'success');
             setIsDeactivateModalOpen(false);
             if (refreshAccounts) await refreshAccounts();
             

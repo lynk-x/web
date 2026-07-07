@@ -206,7 +206,8 @@ const UserTable: React.FC<UserTableProps> = ({
                         p_status: 'permanently_suspended'
                     });
                     if (error) throw error;
-                    showToast(`CRITICAL: Account ${user.id.slice(0, 8)} has been locked.`, 'success');
+                    // Lock is a destructive, irreversible action — use 'warning' not 'success'.
+                    showToast(`Account ${user.id.slice(0, 8)} has been permanently locked.`, 'warning');
                 } catch (err) {
                     showToast(getErrorMessage(err), 'error');
                 }

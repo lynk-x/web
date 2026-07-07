@@ -49,12 +49,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
-            <div className={styles.toastContainer}>
+            {/* aria-live ensures screen readers announce new toasts without requiring focus */}
+            <div
+                className={styles.toastContainer}
+                role="status"
+                aria-live="polite"
+                aria-atomic="false"
+            >
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
                         className={`${styles.toast} ${styles[toast.type]}`}
                         onClick={() => removeToast(toast.id)}
+                        role="alert"
+                        aria-label={toast.title ? `${toast.title}: ${toast.message}` : toast.message}
                     >
                         <div className={styles.icon}>
                             {toast.type === 'success' && (
@@ -85,7 +93,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                                 </svg>
                             )}
                         </div>
-                        <span className={styles.message}>{toast.message}</span>
+                        <div className={styles.content}>
+                            {/* Render the optional title if provided */}
+                            {toast.title && (
+                                <span className={styles.title}>{toast.title}</span>
+                            )}
+                            <span className={styles.message}>{toast.message}</span>
+                        </div>
                     </div>
                 ))}
             </div>

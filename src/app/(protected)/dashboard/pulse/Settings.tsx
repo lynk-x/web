@@ -39,7 +39,7 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
             const { error: shredError } = await supabase.schema('api').rpc('shred_user_data');
             if (shredError) throw shredError;
 
-            showToast('Account successfully deactivated and data shredded.', 'success');
+            showToast('Account deactivated successfully.', 'success');
             setIsDeleteModalOpen(false);
             
             // Log them out and redirect home since their identity is now destroyed

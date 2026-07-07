@@ -167,7 +167,9 @@ export default function EventRefundsPage() {
 
             if (error) throw error;
 
-            showToast(`Refund ${decision}`, 'success');
+            // Map DB enum values to human-readable labels and use the right toast type.
+            const decisionLabel = decision === 'approved' ? 'Refund approved.' : 'Refund rejected.';
+            showToast(decisionLabel, decision === 'approved' ? 'success' : 'warning');
             setSelectedRefund(null);
             fetchData();
         } catch (e: unknown) {

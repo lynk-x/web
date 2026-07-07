@@ -45,7 +45,7 @@ export default async function VerifySuccessPage(
           </>
         ) : (
           <>
-            <svg viewBox="0 0 24 24" width="64" height="64" stroke="#00FF00" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '24px' }}>
+            <svg viewBox="0 0 24 24" width="64" height="64" stroke="var(--color-interface-success)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '24px' }}>
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
               <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
@@ -70,7 +70,7 @@ export default async function VerifySuccessPage(
             transition: 'background-color 0.2s'
           }}
         >
-          {error ? 'Return to Home' : 'Return where you left'}
+          {error ? 'Return to Home' : 'Return to where you left off'}
         </Link>
       </div>
     </div>

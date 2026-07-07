@@ -27,8 +27,8 @@ export default function ForgotPasswordPage() {
                     We will send you an email with a link to reset your password, please enter the email associated with your account below.
                 </p>
 
-                {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '16px' }}>{error}</p>}
-                {message && <p style={{ color: '#00FF00', textAlign: 'center', marginBottom: '16px' }}>{message}</p>}
+                {error && <p style={{ color: 'var(--color-interface-error)', textAlign: 'center', marginBottom: '16px' }}>{error}</p>}
+                {message && <p style={{ color: 'var(--color-interface-success)', textAlign: 'center', marginBottom: '16px' }}>{message}</p>}
 
                 <form className={styles.form} action={resetPassword}>
                     <input

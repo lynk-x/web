@@ -144,8 +144,10 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
                 variant: 'success' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                 onClick: () => {
-                    showToast('Processing payout...', 'info');
-                    setTimeout(() => showToast('Payout processed successfully.', 'success'), 1500);
+                    // TODO: Wire up a real payout RPC (e.g. api.process_organizer_payout).
+                    // Do NOT simulate success with setTimeout — toast only after confirmed result.
+                    console.warn('Process Payout action is not yet connected to an API call.', tx.id);
+                    showToast('Payout processing not yet implemented.', 'info');
                 },
             });
         }
@@ -156,8 +158,10 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
                 variant: 'danger' as const,
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>,
                 onClick: () => {
-                    showToast('Initiating refund...', 'info');
-                    setTimeout(() => showToast('Refund processed.', 'warning'), 1500);
+                    // TODO: Wire up a real refund RPC (e.g. api.issue_ticket_refund).
+                    // Do NOT simulate outcome with setTimeout — toast only after confirmed result.
+                    console.warn('Issue Refund action is not yet connected to an API call.', tx.id);
+                    showToast('Refund issuance not yet implemented.', 'info');
                 },
             });
         }

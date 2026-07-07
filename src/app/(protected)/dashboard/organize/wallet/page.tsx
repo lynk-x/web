@@ -147,10 +147,13 @@ export default function WalletPage() {
 
             const paymentUrl = data?.payment_url;
             if (paymentUrl) {
+                // Payment URL received — open provider flow externally.
+                // Use 'info' since the payment is not yet complete, only initiated.
                 window.open(paymentUrl, '_blank');
-                showToast('Payment page opened. Complete the transaction there.', 'success');
+                showToast('Payment page opened. Complete the transaction there.', 'info');
             } else {
-                showToast('Top-up initiated', 'success');
+                // No payment URL — top-up queued; outcome is async.
+                showToast('Top-up initiated. Check your provider for confirmation.', 'info');
             }
 
             setIsModalOpen(false);
