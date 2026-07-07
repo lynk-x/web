@@ -78,6 +78,8 @@ export default function OrganizerEventsPage() {
                 currency: string;
                 created_at: string;
                 forum_id: string | null;
+                min_price?: number;
+                max_price?: number;
             }
 
             const formattedEvents: OrganizerEvent[] = (data.items || []).map((e: EventItem) => ({
@@ -97,7 +99,9 @@ export default function OrganizerEventsPage() {
                 isPrivate: e.is_private,
                 currency: e.currency,
                 createdAt: e.created_at,
-                forum_id: e.forum_id || undefined
+                forum_id: e.forum_id || undefined,
+                minPrice: e.min_price,
+                maxPrice: e.max_price
             }));
 
             setEvents(formattedEvents);

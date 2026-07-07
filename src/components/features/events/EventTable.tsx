@@ -138,32 +138,12 @@ const renderSchedule = (event: AnyEventRow) => {
     const tzAbbr = formatTimezone(event.timezone);
     const tzDisplay = tzAbbr ? ` ${tzAbbr}` : '';
 
-    if (isMultiDay) {
-        return (
-            <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>{event.date}</span>
-                        <span style={{ opacity: 0.6, fontSize: '11px' }}>@ {event.time}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.7 }}>
-                        <span style={{ fontSize: '11px', color: 'var(--color-brand-primary)' }}>→</span>
-                        <span style={{ fontWeight: 500 }}>{event.endDate}</span>
-                        <span style={{ fontSize: '11px' }}>@ {event.endTime || event.time}</span>
-                    </div>
-                    {tzDisplay && (
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-brand-primary)', opacity: 0.85, letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: '1px' }}>
-                            {tzAbbr}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
-            <div style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>{event.date}</div>
+            <div style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
+                {event.date}
+                {isMultiDay && ` — ${event.endDate}`}
+            </div>
             <div style={{ opacity: 0.8, fontSize: '12px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>
                     {event.time}
@@ -245,16 +225,23 @@ export default function EventTable(props: EventTableProps) {
                 ),
             },
             {
-                header: 'Schedule',
+                header: 'Date & Time',
                 render: (event) => renderSchedule(event),
             },
             {
-                header: 'Details',
+                header: 'Location',
                 render: (event) => (
-                    <div style={{ fontSize: '13px', opacity: 0.8 }}>
-                        <div>{event.location}</div>
-                        <div style={{ fontSize: '11px', opacity: 0.6 }}>{event.attendees} attendees</div>
-                    </div>
+                    <span style={{ fontSize: '13px', opacity: 0.85 }}>
+                        {event.location || 'TBD'}
+                    </span>
+                ),
+            },
+            {
+                header: 'Capacity',
+                render: (event) => (
+                    <span style={{ fontSize: '13px', opacity: 0.85, fontWeight: 500 }}>
+                        {event.attendees} attendees
+                    </span>
                 ),
             },
             {
@@ -381,7 +368,19 @@ export default function EventTable(props: EventTableProps) {
             render: (event) => <div style={{ fontWeight: 500 }}>{event.name}</div>,
         },
         {
-            header: 'Tickets',
+            header: 'Date & Time',
+            render: (event) => renderSchedule(event),
+        },
+        {
+            header: 'Location',
+            render: (event) => (
+                <span style={{ fontSize: '13px', opacity: 0.85 }}>
+                    {event.location || 'TBD'}
+                </span>
+            ),
+        },
+        {
+            header: 'Capacity',
             render: (event) => (
                 <div style={{ fontSize: '13px' }}>
                     <span style={{ fontWeight: 600 }}>{event.attendees}</span>
@@ -402,10 +401,6 @@ export default function EventTable(props: EventTableProps) {
             render: (event) => (
                 <Badge label={formatString(event.status)} variant={getStatusVariant(event.status)} showDot />
             ),
-        },
-        {
-            header: 'Schedule',
-            render: (event) => renderSchedule(event),
         },
     ];
 
