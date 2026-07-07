@@ -94,6 +94,7 @@ interface OrganizerModeProps<T> extends SharedProps {
     onDuplicate?: (event: T) => void;
     onEdit?: (event: T) => void;
     onDelete?: (event: T) => void;
+    onStatusChange?: (event: T, newStatus: string) => void;
 }
 
 type EventTableProps<T extends AnyEventRow = AnyEventRow> = AdminModeProps<T> | OrganizerModeProps<T>;
