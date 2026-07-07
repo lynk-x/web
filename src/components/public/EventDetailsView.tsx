@@ -34,7 +34,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const supabase = createClient();
     const { showToast } = useToast();
 
-    const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+    const [isAboutExpanded, setIsAboutExpanded] = useState(true);
     const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
