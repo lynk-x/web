@@ -27,7 +27,8 @@ export default function AccountGovernanceDrawer({ account, onClose }: AccountGov
         try {
             // Find the latest pending or approved verification for this user
             const { data, error } = await supabase
-                .from('identity_verifications')
+                .schema('api')
+                .from('v1_identity_verifications')
                 .select('*')
                 .eq('account_id', account.id) // In this context, User.id might be used as Account ID or we need to find primary account
                 .order('created_at', { ascending: false })

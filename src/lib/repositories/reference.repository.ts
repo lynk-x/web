@@ -132,7 +132,8 @@ export function createReferenceRepository(client: DbClient) {
         /** Fetch category→tag mappings. Used for tag suggestions within a category. */
         async getCategoryTags(): Promise<RepoResult<CategoryTag[]>> {
             const { data, error } = await client
-                .from('category_tags')
+                .schema('api')
+                .from('v1_category_tags')
                 .select('category_id, tag_id');
 
             if (error) return { data: null, error: toError(error) };

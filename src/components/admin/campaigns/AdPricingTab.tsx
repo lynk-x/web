@@ -44,7 +44,8 @@ export default function AdPricingTab() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .from('ad_pricing_config')
+                .schema('api')
+                .from('v1_ad_pricing_config')
                 .select('*')
                 .order('ad_type')
                 .order('interaction_type');
@@ -73,11 +74,11 @@ export default function AdPricingTab() {
             return;
         }
         try {
-            const { error } = await supabase
-                .from('ad_pricing_config')
-                .update({ base_price: parsed, updated_at: new Date().toISOString() })
-                .eq('ad_type', row.ad_type)
-                .eq('interaction_type', row.interaction_type);
+            const { error } = await supabase.schema('api').rpc('admin_update_ad_pricing', {
+                p_ad_type: row.ad_type,
+                p_interaction_type: row.interaction_type,
+                p_base_price: parsed,
+            });
             if (error) throw error;
             showToast(`Updated ${row.ad_type} / ${row.interaction_type} → $${parsed.toFixed(4)}`, 'success');
             setEditingId(null);

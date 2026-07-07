@@ -55,7 +55,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             try {
                 // Try wallet_top_ups first (billing page lists these as invoices)
                 const { data: topUp } = await supabase
-                    .from('wallet_top_ups')
+                    .schema('api')
+                    .from('v1_wallet_top_ups')
                     .select('id, amount, status, created_at, currency, provider_ref, metadata')
                     .eq('id', id)
                     .eq('account_id', activeAccount?.id)

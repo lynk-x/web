@@ -243,7 +243,8 @@ export default function CreateCampaignForm({
     useEffect(() => {
         const fetchPricing = async () => {
             const { data, error } = await supabase
-                .from('ad_pricing_config')
+                .schema('api')
+                .from('v1_ad_pricing_config')
                 .select('interaction_type, base_price')
                 .eq('ad_type', formData.type);
 

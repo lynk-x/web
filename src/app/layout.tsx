@@ -28,6 +28,28 @@ export const metadata: Metadata = {
   icons: {
     icon: "/lynk-x_logo.svg",
   },
+  openGraph: {
+    title: 'The Ultimate Event App',
+    description: "Experience the ultimate event app designed for seamless event interactions.",
+    url: 'https://lynk-x.app',
+    siteName: 'Lynk-X',
+    images: [
+      {
+        url: '/lynk-x-combined-logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Lynk-X Logo',
+      },
+    ],
+    locale: 'en_GB',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Ultimate Event App',
+    description: "Experience the ultimate event app designed for seamless event interactions.",
+    images: ['/lynk-x-combined-logo.png'],
+  },
 };
 
 export const viewport = {

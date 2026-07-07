@@ -54,7 +54,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
     useEffect(() => {
         if (activeModal === 'withdraw' && accountId) {
             // Fetch payout methods
-            supabase.schema('finance' as any).from('account_payment_methods').select('*').eq('account_id', accountId)
+            supabase.schema('api').from('v1_account_payment_methods').select('*').eq('account_id', accountId)
                 .then(({ data }) => setPayoutMethods(data || []));
         }
         if (activeModal === 'topup') {

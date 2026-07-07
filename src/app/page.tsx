@@ -27,7 +27,7 @@ export default async function Home() {
     // approved-only filtering is baked into api.v1_event_categories
     supabase.schema('api').from('v1_event_categories').select('id, display_name').order('display_name'),
     supabase.from('tags').select('id, name, type_id').eq('status', 'approved').order('name'),
-    supabase.from('category_tags').select('*')
+    supabase.schema('api').from('v1_category_tags').select('*')
   ]);
 
   if (eventsError || categoriesError || tagsError || categoryTagsError) {

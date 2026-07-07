@@ -142,7 +142,8 @@ export function createNotificationsRepository(client: DbClient) {
          */
         async getPreferences(userId: string): Promise<RepoResult<NotificationPreference[]>> {
             const { data, error } = await client
-                .from('notification_preferences')
+                .schema('api')
+                .from('v1_notification_preferences')
                 .select('user_id, type, in_app, push, email, marketing_consent')
                 .eq('user_id', userId);
 
@@ -161,7 +162,8 @@ export function createNotificationsRepository(client: DbClient) {
             channels: { in_app?: boolean; push?: boolean; email?: boolean; marketing_consent?: boolean }
         ): Promise<RepoResult<null>> {
             const { data: existing } = await client
-                .from('notification_preferences')
+                .schema('api')
+                .from('v1_notification_preferences')
                 .select('user_id')
                 .eq('user_id', userId)
                 .eq('type', type)
@@ -169,14 +171,16 @@ export function createNotificationsRepository(client: DbClient) {
 
             if (existing) {
                 const { error } = await client
-                    .from('notification_preferences')
+                    .schema('api')
+                    .from('v1_notification_preferences')
                     .update({ ...channels })
                     .eq('user_id', userId)
                     .eq('type', type);
                 if (error) return { data: null, error: toError(error) };
             } else {
                 const { error } = await client
-                    .from('notification_preferences')
+                    .schema('api')
+                    .from('v1_notification_preferences')
                     .insert({ user_id: userId, type, ...channels });
                 if (error) return { data: null, error: toError(error) };
             }

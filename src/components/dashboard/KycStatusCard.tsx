@@ -18,7 +18,8 @@ export default function KycStatusCard({ accountId }: KycStatusCardProps) {
     useEffect(() => {
         const fetchStatus = async () => {
             const { data, error } = await supabase
-                .from('identity_verifications')
+                .schema('api')
+                .from('v1_identity_verifications')
                 .select('status')
                 .eq('account_id', accountId)
                 .order('created_at', { ascending: false })

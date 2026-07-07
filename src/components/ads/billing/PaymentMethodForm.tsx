@@ -107,20 +107,15 @@ export default function PaymentMethodForm({ accountId, supabase, onSuccess, onCa
              * In production this form would tokenise the card via Stripe/Paystack first;
              * here we only persist presentation metadata (last4, expiry, holder name).
              */
-            const { error } = await supabase
-                .from('account_payment_methods')
-                .insert({
-                    account_id: accountId,
-                    type: 'card',
-                    label: `Card ending in ${last4}`,
-                    is_default: false,
-                    metadata: {
-                        last4,
-                        expiry: formData.expiryDate,
-                        cardholder_name: formData.cardName,
-                        billing_zip: formData.billingZip
-                    }
-                });
+            // Routed through the payout-method RPC (the old direct insert
+            // targeted columns that don't exist on the table). Requires a
+            // 'card' provider row in finance.platform_payment_providers;
+            // until one is seeded the RPC rejects with a clear error.
+            const { error } = await supabase.schema('api').rpc('add_payout_method', {
+                p_provider_name: 'card',
+                p_identity: last4,
+                p_label: `Card ending in ${last4}`,
+            });
 
             if (error) throw error;
 

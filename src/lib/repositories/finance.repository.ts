@@ -197,7 +197,8 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('wallet_top_ups')
+                .schema('api')
+                .from('v1_wallet_top_ups')
                 .select('id, account_id, provider_id, provider_ref, amount, currency, status, metadata, created_at, updated_at')
                 .eq('account_id', accountId)
                 .order('created_at', { ascending: false })
@@ -234,7 +235,8 @@ export function createFinanceRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('refund_requests')
+                .schema('api')
+                .from('v1_refund_requests')
                 .select('id, user_id, event_id, ticket_id, reason, amount, currency, status, processed_at, created_at')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })

@@ -42,20 +42,22 @@ export default function PaymentMethodsManager({ accountId }: Props) {
     const fetchMethods = useCallback(async () => {
         setIsLoading(true);
         try {
+            // v1 view denormalizes the provider name and omits the encrypted
+            // provider_identity column entirely.
             const { data, error } = await supabase
-                .from('account_payment_methods')
-                .select('*, provider:platform_payment_providers(provider_name)')
+                .schema('api')
+                .from('v1_account_payment_methods')
+                .select('*')
                 .eq('account_id', accountId)
                 .order('is_primary', { ascending: false });
 
             if (error) throw error;
-            
-            // Flatten the provider name from the join
+
             const flattenedData = (data || []).map((item: any) => ({
                 ...item,
-                provider: item.provider?.provider_name || 'unknown'
+                provider: item.provider_name || 'unknown'
             }));
-            
+
             setMethods(flattenedData);
         } catch (err: unknown) {
             showToast(getErrorMessage(err), 'error');
@@ -123,10 +125,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
 
             // If it's the first method, set it as primary
             if (isFirst && methodId) {
-                await supabase
-                    .from('account_payment_methods')
-                    .update({ is_primary: true })
-                    .eq('id', methodId);
+                await supabase.schema('api').rpc('set_primary_payout_method', { p_method_id: methodId });
             }
 
             showToast('New payout destination added successfully.', 'success', 'Success');
@@ -143,16 +142,10 @@ export default function PaymentMethodsManager({ accountId }: Props) {
 
     const handleSetPrimary = async (method: AccountPaymentMethod) => {
         try {
-            // Unset all first (ideally done via DB function, but fallback is double query)
-            await supabase
-                .from('account_payment_methods')
-                .update({ is_primary: false })
-                .eq('account_id', accountId);
-
+            // Atomic unset+set server-side.
             const { error } = await supabase
-                .from('account_payment_methods')
-                .update({ is_primary: true })
-                .eq('id', method.id);
+                .schema('api')
+                .rpc('set_primary_payout_method', { p_method_id: method.id });
 
             if (error) throw error;
             showToast('Default payout destination updated.', 'success', 'Success');
@@ -166,9 +159,8 @@ export default function PaymentMethodsManager({ accountId }: Props) {
         if (!methodToDelete) return;
         try {
             const { error } = await supabase
-                .from('account_payment_methods')
-                .delete()
-                .eq('id', methodToDelete.id);
+                .schema('api')
+                .rpc('delete_payout_method', { p_method_id: methodToDelete.id });
 
             if (error) throw error;
             showToast('Payout destination removed.', 'success', 'Success');
@@ -203,29 +195,22 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             const selectedProvider = providers.find(p => p.provider_name === editForm.provider);
             if (!selectedProvider) throw new Error('Provider not found.');
 
-            const updateData: any = {
-                provider_id: selectedProvider.id,
-                metadata: {
-                    ...editingMethod.metadata,
-                    label: editForm.label.trim() || `${selectedProvider.display_name} payout destination`
-                }
-            };
-
-            // Only update identity if a new non-empty value was provided (encrypted at rest by DB trigger)
-            if (editForm.identity.trim()) {
-                updateData.provider_identity = editForm.identity.trim();
-                // Set default label automatically if they didn't input one
-                if (!editForm.label.trim()) {
-                    updateData.metadata.label = editForm.provider === 'mpesa'
-                        ? `M-Pesa (${editForm.identity.trim().slice(-4)})`
-                        : `${selectedProvider.display_name} payout destination`;
-                }
+            const newIdentity = editForm.identity.trim() || null;
+            let label = editForm.label.trim() || `${selectedProvider.display_name} payout destination`;
+            if (newIdentity && !editForm.label.trim()) {
+                label = editForm.provider === 'mpesa'
+                    ? `M-Pesa (${newIdentity.slice(-4)})`
+                    : `${selectedProvider.display_name} payout destination`;
             }
 
-            const { error } = await supabase
-                .from('account_payment_methods')
-                .update(updateData)
-                .eq('id', editingMethod.id);
+            // Server-side update: re-encryption of the identity happens in the
+            // DB trigger; ownership/billing permission checked in the RPC.
+            const { error } = await supabase.schema('api').rpc('update_payout_method', {
+                p_method_id: editingMethod.id,
+                p_identity: newIdentity,
+                p_label: label,
+                p_provider_name: editForm.provider,
+            });
 
             if (error) throw error;
 

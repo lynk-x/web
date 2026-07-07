@@ -178,12 +178,12 @@ export function createAccountsRepository(client: DbClient) {
 
         /** Fetch all stored payment methods for an account, with provider names joined. */
         async getPaymentMethods(accountId: string): Promise<RepoResult<AccountPaymentMethod[]>> {
+            // v1 view denormalizes provider names and intentionally omits
+            // provider_identity — it's AES ciphertext, useless to clients.
             const { data, error } = await client
-                .from('account_payment_methods')
-                .select(`
-                    id, account_id, provider_id, provider_identity, is_primary, metadata, created_at, updated_at,
-                    platform_payment_providers:provider_id (provider_name, display_name)
-                `)
+                .schema('api')
+                .from('v1_account_payment_methods')
+                .select('id, account_id, provider_id, provider_name, provider_display_name, is_primary, metadata, created_at, updated_at')
                 .eq('account_id', accountId)
                 .order('is_primary', { ascending: false });
 
@@ -193,9 +193,9 @@ export function createAccountsRepository(client: DbClient) {
                 id: row.id,
                 account_id: row.account_id,
                 provider_id: row.provider_id,
-                provider_name: row.platform_payment_providers?.provider_name ?? '',
-                provider_display_name: row.platform_payment_providers?.display_name ?? '',
-                provider_identity: row.provider_identity,
+                provider_name: row.provider_name ?? '',
+                provider_display_name: row.provider_display_name ?? '',
+                provider_identity: '',
                 is_primary: row.is_primary,
                 metadata: row.metadata,
                 created_at: row.created_at,

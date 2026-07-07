@@ -66,8 +66,9 @@ export default function EventRefundsPage() {
                     .eq('account_id', activeAccount.id)
                     .single(),
                 supabase
-                    .from('refund_requests')
-                    .select('*, user_profile:user_id(full_name, user_name)')
+                    .schema('api')
+                    .from('v1_refund_requests')
+                    .select('*')
                     .eq('event_id', eventId)
                     .order('created_at', { ascending: false }),
             ]);
@@ -156,11 +157,13 @@ export default function EventRefundsPage() {
                 update.currency = eventCurrency;
             }
 
-            const { error } = await supabase
-                .from('refund_requests')
-                .update(update)
-                .eq('id', selectedRefund.id)
-                .eq('created_at', selectedRefund.created_at);
+            const { error } = await supabase.schema('api').rpc('decide_refund_request', {
+                p_refund_id: selectedRefund.id,
+                p_created_at: selectedRefund.created_at,
+                p_decision: decision,
+                p_amount: decision === 'approved' ? parseFloat(refundAmount) : null,
+                p_currency: decision === 'approved' ? eventCurrency : null,
+            });
 
             if (error) throw error;
 

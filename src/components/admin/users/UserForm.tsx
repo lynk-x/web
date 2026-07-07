@@ -133,26 +133,12 @@ export default function UserForm({
                     .maybeSingle();
 
                 if (memberData?.account_id) {
-                    const { data: existingKyc } = await supabase
-                        .from('identity_verifications')
-                        .select('id')
-                        .eq('account_id', memberData.account_id)
-                        .eq('kyc_tier', formData.kycTier)
-                        .maybeSingle();
-
-                    if (existingKyc) {
-                        await supabase.from('identity_verifications').update({
-                            status: 'approved',
-                            verified_at: new Date().toISOString()
-                        }).eq('id', existingKyc.id);
-                    } else {
-                        await supabase.from('identity_verifications').insert({
-                            account_id: memberData.account_id,
-                            kyc_tier: formData.kycTier,
-                            status: 'approved',
-                            verified_at: new Date().toISOString()
-                        });
-                    }
+                    // Upsert semantics (one row per account/tier) live in the RPC.
+                    await supabase.schema('api').rpc('admin_upsert_identity_verification', {
+                        p_account_id: memberData.account_id,
+                        p_kyc_tier: formData.kycTier,
+                        p_status: 'approved'
+                    });
                 }
 
                 showToast('Account updated successfully!', 'success');
@@ -177,11 +163,10 @@ export default function UserForm({
                     .maybeSingle();
 
                 if (memberData?.account_id) {
-                    await supabase.from('identity_verifications').insert({
-                        account_id: memberData.account_id,
-                        kyc_tier: formData.kycTier,
-                        status: 'approved',
-                        verified_at: new Date().toISOString()
+                    await supabase.schema('api').rpc('admin_upsert_identity_verification', {
+                        p_account_id: memberData.account_id,
+                        p_kyc_tier: formData.kycTier,
+                        p_status: 'approved'
                     });
                 }
 

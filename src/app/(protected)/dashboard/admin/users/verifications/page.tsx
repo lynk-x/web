@@ -40,12 +40,12 @@ function KycVerificationsContent() {
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
+            // v1 view denormalizes the KYC provider name and excludes the
+            // PII / document payload columns.
             let query = supabase
-                .from('identity_verifications')
-                .select(`
-                    *,
-                    provider:platform_kyc_providers(display_name)
-                `, { count: 'exact' });
+                .schema('api')
+                .from('v1_identity_verifications')
+                .select('*', { count: 'exact' });
 
             if (statusFilter !== 'all') {
                 query = query.eq('status', statusFilter);
@@ -71,7 +71,7 @@ function KycVerificationsContent() {
             const mapped: KycVerification[] = (data || []).map((v: any) => ({
                 ...v,
                 account_name: accountsMap.get(v.account_id) ?? 'Unknown',
-                provider_name: v.provider?.display_name
+                provider_name: v.provider_display_name
             }));
 
             setVerifications(mapped);
