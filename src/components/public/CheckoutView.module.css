@@ -259,8 +259,9 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 20px;
+    padding: 40px var(--spacing-md);
     flex: 1;
+    min-height: 400px;
 }
 
 .emptyStateTitle {

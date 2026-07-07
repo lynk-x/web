@@ -140,7 +140,12 @@
 }
 
 .emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     opacity: 0.5;
     margin-top: 40px;
+    gap: 8px;
 }
