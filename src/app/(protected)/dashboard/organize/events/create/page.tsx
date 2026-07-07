@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
+import { toUtcIso } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 import type { OrganizerEventFormData } from '@/types/organize';
@@ -60,29 +61,6 @@ export default function CreateEventPage() {
             }
 
             // 2. Parse DateTimes — convert to UTC relative to the event's selected timezone.
-            // Bug 25 fix: previously used new Date(`${date}T${time}`) which interpreted the
-            // string in the BROWSER's ambient timezone, wrong if the event is in a different zone.
-            const toUtcIso = (date: string, time: string, tz?: string): string => {
-                if (tz) {
-                    try {
-                        // Build a formatter that tells us the UTC offset for this zone at this moment
-                        const dtStr = `${date}T${time}:00`;
-                        // Parse as a local datetime in the target timezone via a trick:
-                        // format the desired datetime string as if it were in the target tz
-                        const zonedDate = new Date(
-                            new Date(dtStr).toLocaleString('en-US', { timeZone: tz })
-                        );
-                        const localDate = new Date(dtStr);
-                        const offset = localDate.getTime() - zonedDate.getTime();
-                        return new Date(localDate.getTime() + offset).toISOString();
-                    } catch {
-                        // Fall through to naive parse if timezone string is invalid
-                    }
-                }
-                // No timezone specified: interpret as the browser's local time (original behaviour)
-                return new Date(`${date}T${time}`).toISOString();
-            };
-
             const startDateTime = toUtcIso(data.startDate, data.startTime, data.timezone);
             const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 

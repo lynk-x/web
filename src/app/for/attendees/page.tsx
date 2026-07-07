@@ -155,7 +155,7 @@ export default function AttendeesLandingPage() {
                     <p className={styles.subtitle}>Join thousands of users discovering the best events in their city.</p>
                     <div className={styles.ctaBox}>
                         <Link href="/" className={styles.btnPrimary}>Start Exploring</Link>
-                        <Link href="/auth" className={styles.btnSecondary}>Join Lynk-X</Link>
+                        <a href="https://app.lynk-x.app" className={styles.btnSecondary}>Join Lynk-X</a>
                     </div>
                 </motion.section>
 

@@ -25,6 +25,50 @@ export function formatString(str: string): string {
  * @example formatCurrency(1234.5)   // "$1,234.50"
  * @example formatCurrency("500")    // "$500.00"
  */
+/**
+ * Converts a wall-clock date/time entered in a specific IANA timezone to a UTC ISO string.
+ *
+ * Uses `Intl.DateTimeFormat` to read the actual offset that `tz` observes at the given
+ * wall-clock instant (so DST transitions resolve correctly), instead of the previous
+ * `toLocaleString` round-trip which derived the offset via the browser's local timezone
+ * and could double up on DST across a transition boundary.
+ *
+ * @example toUtcIso('2026-03-08', '14:00', 'America/New_York') // DST-correct UTC instant
+ */
+export function toUtcIso(date: string, time: string, tz?: string): string {
+    if (!tz) {
+        // No timezone specified: interpret as the browser's local time (original behaviour).
+        return new Date(`${date}T${time}`).toISOString();
+    }
+
+    try {
+        // Treat the input as if it were UTC to get a reference instant, then measure how far
+        // that instant's wall-clock representation in `tz` differs from the intended wall clock.
+        const asUtc = new Date(`${date}T${time}:00Z`);
+
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hourCycle: 'h23',
+        }).formatToParts(asUtc);
+
+        const get = (type: string) => parts.find(p => p.type === type)?.value ?? '0';
+        const tzWallClock = Date.UTC(
+            Number(get('year')), Number(get('month')) - 1, Number(get('day')),
+            Number(get('hour')), Number(get('minute')), Number(get('second')),
+        );
+
+        // Difference between the intended wall clock and what `tz` shows for `asUtc`
+        // is exactly the offset needed to correct `asUtc` to the real UTC instant.
+        const diff = asUtc.getTime() - tzWallClock;
+        return new Date(asUtc.getTime() + diff).toISOString();
+    } catch {
+        // Fall through to naive parse if the timezone string is invalid.
+        return new Date(`${date}T${time}`).toISOString();
+    }
+}
+
 export function formatCurrency(amount: number | string, currency: string = 'USD'): string {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     return num.toLocaleString('en-US', { style: 'currency', currency });

@@ -8,6 +8,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
+import { toUtcIso } from '@/utils/format';
 import Spinner from '@/components/shared/Spinner';
 
 import type { OrganizerEventFormData, OrganizerEventTicket } from '@/types/organize';
@@ -163,23 +164,6 @@ export default function EditEventPage() {
             }
 
             // 2. Parse DateTimes — convert to UTC relative to the event's selected timezone.
-            const toUtcIso = (date: string, time: string, tz?: string): string => {
-                if (tz) {
-                    try {
-                        const dtStr = `${date}T${time}:00`;
-                        const zonedDate = new Date(
-                            new Date(dtStr).toLocaleString('en-US', { timeZone: tz })
-                        );
-                        const localDate = new Date(dtStr);
-                        const offset = localDate.getTime() - zonedDate.getTime();
-                        return new Date(localDate.getTime() + offset).toISOString();
-                    } catch {
-                        // Fall through
-                    }
-                }
-                return new Date(`${date}T${time}`).toISOString();
-            };
-
             const startDateTime = toUtcIso(data.startDate, data.startTime, data.timezone);
             const endDateTime = toUtcIso(data.endDate, data.endTime, data.timezone);
 

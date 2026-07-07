@@ -25,15 +25,12 @@ export async function GET(request: Request) {
 
       // Intelligent Redirection logic:
       // 1. If 'next' is provided and explicitly different from default, honor it (invites, resets).
-      // 2. If no 'next' (default), check if user is a new user with only an 'attendee' account.
-      // 3. If new, send to onboarding. Else, send to dashboard.
-      let finalRedirect = next
-      
-      if (next === '/verify-success' && user) {
-        finalRedirect = '/dashboard'
+      // 2. If no 'next' (default), this is a PWA attendee verifying their email — send them to the PWA.
+      if (next === '/verify-success') {
+        return NextResponse.redirect('https://app.lynk-x.app')
       }
 
-      return NextResponse.redirect(`${origin}${finalRedirect}`)
+      return NextResponse.redirect(`${origin}${next}`)
     } else {
       return NextResponse.redirect(`${origin}/verify-success?error=${encodeURIComponent(error.message)}`)
     }
