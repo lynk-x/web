@@ -130,19 +130,25 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const startDateStr = formatEventDate(start, tz);
     const startTimeStr = formatTimeInTimezone(start, tz);
     
-    let dateTimeDisplay = `${startDateStr} • ${startTimeStr}`;
+    let dateLabel = startDateStr;
+    let timeSublabel = startTimeStr;
     
     if (end) {
         const endDateStr = formatEventDate(end, tz);
         const endTimeStr = formatTimeInTimezone(end, tz);
         
         if (startDateStr === endDateStr) {
-            // Same day: Thursday 11th Mar, 2007 • 06:00 PM - 09:00 PM
-            dateTimeDisplay = `${startDateStr} • ${startTimeStr} - ${endTimeStr}`;
+            // Same day: e.g. Thursday 11th Mar, 2007 • 06:00 PM - 09:00 PM
+            timeSublabel = `${startTimeStr} - ${endTimeStr}`;
         } else {
-            // Different days: Thursday 11th Mar, 2007, 06:00 PM - Friday 12th Mar, 2007, 02:00 AM
-            dateTimeDisplay = `${startDateStr}, ${startTimeStr} - ${endDateStr}, ${endTimeStr}`;
+            // Different days
+            dateLabel = `${startDateStr} - ${endDateStr}`;
+            timeSublabel = `${startTimeStr} - ${endTimeStr}`;
         }
+    }
+    
+    if (tz) {
+        timeSublabel += ` (${tz})`;
     }
 
     const handleShare = async () => {
@@ -230,8 +236,37 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 <span className={styles.tag}>{event.category || 'Event'}</span>
                             </div>
                         </div>
-                        <p className={styles.date}>{dateTimeDisplay}</p>
-                        <p className={styles.location}>Location: {(event.location as any)?.name || 'TBD'}</p>
+                        <div className={styles.metaSection}>
+                            <div className={styles.metaItem}>
+                                <div className={styles.metaIcon}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
+                                <div className={styles.metaText}>
+                                    <span className={styles.metaLabel}>{dateLabel}</span>
+                                    <span className={styles.metaSublabel}>{timeSublabel}</span>
+                                </div>
+                            </div>
+
+                            <div className={styles.metaItem}>
+                                <div className={styles.metaIcon}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
+                                <div className={styles.metaText}>
+                                    <span className={styles.metaLabel}>{(event.location as any)?.name || 'TBD'}</span>
+                                    <span className={styles.metaSublabel}>
+                                        {[(event.location as any)?.city || (event.location as any)?.locality, (event.location as any)?.country].filter(Boolean).join(', ') || 'Venue location details'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
                         <div className={styles.sectionHeader} onClick={() => setIsAboutExpanded(!isAboutExpanded)}>
                             <h2 className={styles.sectionTitle}>About the event</h2>
