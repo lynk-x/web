@@ -106,24 +106,7 @@ const CheckoutView: React.FC = () => {
                 // 1. Service fee fetch removed as we use a flat 5% commission included in the price
 
 
-                // 2. Pre-fill contact form if user is already signed in
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user && !user.is_anonymous) {
-                    const { data: profile } = await supabase
-                        .schema('api')
-                        .from('v1_profiles')
-                        .select('full_name, email, phone_number')
-                        .eq('id', user.id)
-                        .maybeSingle();
-
-                    if (profile) {
-                        setFormData(prev => ({
-                            ...prev,
-                            email: profile.email || user.email || '',
-                            phone: profile.phone_number || '',
-                        }));
-                    }
-                }
+                // 2. Pre-fill contact form logic removed to keep checkout fully disconnected from active auth session.
                 // 3. Fetch available payment providers based on event currency
                 const { data: providers } = await supabase.schema('api').rpc('get_available_payment_providers', {
                     p_currency: currency
