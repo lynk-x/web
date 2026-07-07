@@ -229,7 +229,8 @@ const CheckoutView: React.FC = () => {
 
         try {
             const { data: promo, error } = await supabase
-                .from('promo_codes')
+                .schema('api')
+                .from('v1_promo_codes')
                 .select('id, type, value, max_uses, uses_count, valid_from, valid_until, is_active')
                 .eq('code', code)
                 .maybeSingle();

@@ -283,7 +283,7 @@ export default function AdminEventsPage() {
     }, [supabase, debouncedSearch, statusFilter, forumStatusFilter, startDate, endDate, resolvedCountryFilter, currentPage, showToast]);
 
     const fetchCountries = useCallback(async () => {
-        const { data } = await publicSupabase.from('countries').select('code, display_name').order('display_name');
+        const { data } = await publicSupabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
         if (data) {
             setCountries(data.map(c => ({ code: c.code, name: c.display_name })));
         }

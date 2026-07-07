@@ -15,7 +15,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { createUsersRepository } from '@/lib/repositories';
 import { pushNotificationService } from '@/lib/services/push-notification-service';
@@ -47,6 +47,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const pathname = usePathname();
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -118,6 +119,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             subscription.unsubscribe();
         };
     }, []);
+
+    // Sync auth session on routing to protected pages to resolve server-action redirect mismatches
+    useEffect(() => {
+        let mounted = true;
+        const checkSession = async () => {
+            if (!user) {
+                setIsLoading(true);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!mounted) return;
+                if (session?.user) {
+                    setUser(session.user);
+                    setIsLoadingProfile(true);
+                    const profileData = await fetchProfile(session.user.id);
+                    if (mounted) {
+                        setProfile(profileData);
+                        setIsLoadingProfile(false);
+                    }
+                }
+                setIsLoading(false);
+            }
+        };
+
+        const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile'];
+        const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+        if (isProtectedRoute && !user) {
+            checkSession();
+        }
+
+        return () => {
+            mounted = false;
+        };
+    }, [pathname, user]);
 
     /** Derived: true when the user has completed their profile setup. */
     const isProfileComplete = Boolean(profile?.full_name?.trim());

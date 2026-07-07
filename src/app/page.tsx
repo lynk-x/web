@@ -24,7 +24,8 @@ export default async function Home() {
       .eq('is_private', false)
       .order('starts_at', { ascending: true })
       .limit(50),
-    supabase.from('event_categories').select('id, display_name').eq('status', 'approved').order('display_name'),
+    // approved-only filtering is baked into api.v1_event_categories
+    supabase.schema('api').from('v1_event_categories').select('id, display_name').order('display_name'),
     supabase.from('tags').select('id, name, type_id').eq('status', 'approved').order('name'),
     supabase.from('category_tags').select('*')
   ]);

@@ -155,7 +155,8 @@ export function createFinanceRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .from('payouts')
+                .schema('api')
+                .from('v1_payouts')
                 .select(
                     'id, account_id, payout_method_id, reference, amount, fee, currency, net_disbursement, status, failure_reason, processed_at, created_at, updated_at',
                     selectOpts

@@ -76,7 +76,7 @@ interface CreateCampaignFormProps {
 
 interface MarketSuggestion {
     country_code: string;
-    suggested_bid: number;
+    suggested_modifier: number;
     competition_level: 'low' | 'normal' | 'medium' | 'high';
 }
 
@@ -1035,16 +1035,22 @@ export default function CreateCampaignForm({
                                                 <div className={styles.marketGrid}>
                                                     {marketSuggestions.map(s => {
                                                         const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
+                                                        const compLevel = s.competition_level || 'low';
+                                                        const badgeClass = styles['badge' + compLevel.charAt(0).toUpperCase() + compLevel.slice(1)] || styles.badgeNormal;
+                                                        
+                                                        const baseBid = parseFloat(formData.max_bid_amount) || 0.01;
+                                                        const suggestedBid = baseBid * (s.suggested_modifier || 1.0);
+                                                        
                                                         return (
                                                             <div key={s.country_code} className={styles.marketItem}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                     <span className={styles.marketCountry}>{name}</span>
-                                                                    <span className={`${styles.badge} ${styles['badge' + s.competition_level.charAt(0).toUpperCase() + s.competition_level.slice(1)]}`}>
-                                                                        {s.competition_level.toUpperCase()}
+                                                                    <span className={`${styles.badge} ${badgeClass}`}>
+                                                                        {compLevel.toUpperCase()}
                                                                     </span>
                                                                 </div>
-                                                                <div className={styles.marketMeta}>
-                                                                    Suggested Bid: ${s.suggested_bid.toFixed(2)}
+                                                                <div className={styles.marketNote}>
+                                                                    Suggested Bid: ${suggestedBid.toFixed(3)} (modifier: {(s.suggested_modifier || 1.0).toFixed(2)}x)
                                                                 </div>
                                                             </div>
                                                         );

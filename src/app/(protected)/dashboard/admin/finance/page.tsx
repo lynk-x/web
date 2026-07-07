@@ -555,17 +555,23 @@ function FinanceContent() {
                     onClick: async () => {
                         if (!await confirm(`${actionLabel} ${selectedWalletIds.size} wallets?`)) return;
                         showToast(`${actionLabel}…`, 'info');
-                        // Resolve composite selection keys to real wallet UUIDs
-                        const walletUuids = Array.from(selectedWalletIds)
-                            .map((key: string) => (wallets as any[]).find(w => `${w.account_id}_${w.currency}` === key)?.id)
-                            .filter(Boolean) as string[];
-                        if (walletUuids.length === 0) { showToast('No matching wallets found.', 'error'); return; }
-                        const { error } = await supabase
-                            .from('account_wallets')
-                            .update({ status: newStatus, updated_at: new Date().toISOString() })
-                            .in('id', walletUuids);
-                        if (error) { showToast(getErrorMessage(error), 'error'); return; }
-                        showToast(`${walletUuids.length} wallet(s) ${newStatus}.`, 'success');
+                        // Wallet status changes go through the admin RPC
+                        // (public.account_wallets is retired); selection keys
+                        // are account_id|currency composites already.
+                        const targets = Array.from(selectedWalletIds)
+                            .map((key: string) => (wallets as any[]).find(w => `${w.account_id}_${w.currency}` === key))
+                            .filter(Boolean) as { account_id: string; currency: string }[];
+                        if (targets.length === 0) { showToast('No matching wallets found.', 'error'); return; }
+                        const results = await Promise.all(targets.map(w =>
+                            supabase.schema('api').rpc('admin_set_wallet_status', {
+                                p_account_id: w.account_id,
+                                p_currency: w.currency,
+                                p_status: newStatus
+                            })
+                        ));
+                        const failed = results.filter(r => r.error);
+                        if (failed.length > 0) { showToast(getErrorMessage(failed[0].error), 'error'); return; }
+                        showToast(`${targets.length} wallet(s) ${newStatus}.`, 'success');
                         setSelectedWalletIds(new Set());
                         fetchData();
                     },

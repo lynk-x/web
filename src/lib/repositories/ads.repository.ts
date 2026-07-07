@@ -54,7 +54,7 @@ export interface AdCampaignRegion {
 export interface BidSuggestion {
     country_code: string;
     suggested_modifier: number;
-    competition_level: 'low' | 'medium' | 'high';
+    competition_level: 'low' | 'normal' | 'medium' | 'high';
 }
 
 export function createAdsRepository(client: DbClient) {

@@ -21,6 +21,7 @@ export interface SystemConfig {
     data_type: 'string' | 'boolean' | 'number' | 'json';
     description: string;
     is_active: boolean;
+    namespace?: string;
     updated_at: string;
 }
 
@@ -235,13 +236,31 @@ export default function ConfigTab({
         }
     ];
 
+    const getNamespaceBadgeVariant = (ns?: string): BadgeVariant => {
+        switch (ns?.toLowerCase()) {
+            case 'finance': return 'success';
+            case 'events': return 'primary';
+            case 'advertising': return 'info';
+            case 'community': return 'warning';
+            default: return 'neutral';
+        }
+    };
+
     const columns: Column<SystemConfig>[] = [
         {
             header: 'Config Key',
             render: (config) => (
                 <div>
-                    <div style={{ fontWeight: 600, fontSize: '14px', fontFamily: 'monospace' }}>{config.key}</div>
-                    <div style={{ fontSize: '12px', opacity: 0.6 }}>{config.description}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '14px', fontFamily: 'monospace' }}>{config.key}</span>
+                        {config.namespace && (
+                            <Badge 
+                                label={config.namespace.toUpperCase()} 
+                                variant={getNamespaceBadgeVariant(config.namespace)} 
+                            />
+                        )}
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '2px' }}>{config.description}</div>
                 </div>
             )
         },

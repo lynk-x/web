@@ -87,7 +87,7 @@ function GlobalComplianceContent() {
 
     useEffect(() => {
         const fetchCountries = async () => {
-            const { data } = await supabase.from('countries').select('code, display_name').order('display_name');
+            const { data } = await supabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
             if (data) setCountries(data.map((c: any) => ({ code: c.code, name: c.display_name })));
         };
         fetchCountries();

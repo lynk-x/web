@@ -52,7 +52,7 @@ const getStatusVariant = (status: Payout['status']): BadgeVariant => {
  *   requested → processing → completed / failed / rejected
  *
  * When wiring up:
- *   supabase.from('payouts')
+ *   supabase.schema('api').from('v1_payouts')
  *     .select('*, profile:profiles!profile_id(display_name)')
  *     .order('created_at', { ascending: false })
  */

@@ -220,7 +220,8 @@ export default function EditEventPage() {
                 let categoryName: string | undefined;
                 if (data.category) {
                     const { data: catData } = await supabase
-                        .from('event_categories')
+                        .schema('api')
+                        .from('v1_event_categories')
                         .select('display_name')
                         .eq('id', data.category)
                         .maybeSingle();

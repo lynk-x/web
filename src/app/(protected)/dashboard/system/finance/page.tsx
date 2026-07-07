@@ -150,11 +150,13 @@ function GlobalFinanceContent() {
 
         showToast(`${currentStatus === 'active' ? 'Freezing' : 'Unfreezing'} wallet...`, 'info');
         try {
-            const { error } = await supabase
-                .from('account_wallets')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq('account_id', accountId)
-                .eq('currency', currency);
+            // Wallet status changes go through the admin RPC
+            // (public.account_wallets is retired).
+            const { error } = await supabase.schema('api').rpc('admin_set_wallet_status', {
+                p_account_id: accountId,
+                p_currency: currency,
+                p_status: newStatus
+            });
             if (error) throw error;
             showToast(`Wallet ${newStatus}.`, 'success');
             fetchData();

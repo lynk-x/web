@@ -59,7 +59,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
         }
         if (activeModal === 'topup') {
             // Fetch top up providers
-            supabase.schema('finance' as any).from('platform_payment_providers').select('*').eq('is_active', true).eq('supports_inbound', true)
+            supabase.schema('api').from('v1_platform_payment_providers').select('id, provider_name, display_name').eq('status', 'approved').eq('supports_inbound', true)
                 .then(({ data }) => setTopupProviders(data || []));
         }
         if (activeModal === 'history' && accountId && selectedWallet) {
