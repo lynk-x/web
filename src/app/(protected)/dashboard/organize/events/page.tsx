@@ -68,6 +68,7 @@ export default function OrganizerEventsPage() {
                 title: string;
                 starts_at: string;
                 ends_at: string | null;
+                timezone: string;
                 location_name: string | null;
                 status: OrganizerEvent['status'];
                 attendees: number;
@@ -87,6 +88,7 @@ export default function OrganizerEventsPage() {
                 endDate: e.ends_at ? formatDate(e.ends_at) : undefined,
                 time: formatTime(e.starts_at),
                 endTime: e.ends_at ? formatTime(e.ends_at) : undefined,
+                timezone: e.timezone,
                 location: e.location_name || 'TBD',
                 status: e.status,
                 attendees: e.attendees,

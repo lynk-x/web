@@ -241,6 +241,7 @@ export default function AdminEventsPage() {
                 endDate: e.ends_at ? formatDate(e.ends_at) : undefined,
                 time: formatTime(e.starts_at),
                 endTime: e.ends_at ? formatTime(e.ends_at) : undefined,
+                timezone: e.timezone,
                 location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
                 status: e.status,
                 attendees: e.attendee_count || 0,

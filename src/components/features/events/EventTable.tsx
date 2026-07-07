@@ -118,6 +118,75 @@ const getForumUrl = (forumId: string): string => {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+/** Helper function to format timezone IANA code into short abbreviation (e.g. "Africa/Nairobi" -> "EAT") */
+const formatTimezone = (tz?: string): string => {
+    if (!tz) return '';
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            timeZoneName: 'short',
+        }).formatToParts(new Date());
+        const tzPart = parts.find(p => p.type === 'timeZoneName');
+        return tzPart ? tzPart.value : tz;
+    } catch {
+        return tz;
+    }
+};
+
+const renderSchedule = (event: AnyEventRow) => {
+    const isMultiDay = event.endDate && event.endDate !== event.date;
+    const tzAbbr = formatTimezone(event.timezone);
+    const tzDisplay = tzAbbr ? ` ${tzAbbr}` : '';
+
+    if (isMultiDay) {
+        return (
+            <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>{event.date}</span>
+                        <span style={{ opacity: 0.6, fontSize: '11px' }}>@ {event.time}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.7 }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-brand-primary)' }}>→</span>
+                        <span style={{ fontWeight: 500 }}>{event.endDate}</span>
+                        <span style={{ fontSize: '11px' }}>@ {event.endTime || event.time}</span>
+                    </div>
+                    {tzDisplay && (
+                        <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-brand-primary)', opacity: 0.85, letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: '1px' }}>
+                            {tzAbbr}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
+            <div style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>{event.date}</div>
+            <div style={{ opacity: 0.8, fontSize: '12px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>
+                    {event.time}
+                    {event.endTime && ` — ${event.endTime}`}
+                </span>
+                {tzDisplay && (
+                    <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: 600, 
+                        color: 'var(--color-brand-primary)', 
+                        background: 'rgba(var(--color-brand-primary-rgb, 124, 58, 237), 0.1)', 
+                        padding: '1px 5px', 
+                        borderRadius: '4px',
+                        letterSpacing: '0.5px'
+                    }}>
+                        {tzAbbr}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+};
+
 /**
  * Unified event management table for both admin and organizer contexts.
  *
@@ -176,30 +245,8 @@ export default function EventTable(props: EventTableProps) {
                 ),
             },
             {
-                header: 'Date',
-                render: (event) => (
-                    <div style={{ fontSize: '13px' }}>
-                        {event.date}
-                        {event.endDate && event.endDate !== event.date && (
-                            <span style={{ opacity: 0.6, display: 'block', fontSize: '11px' }}>
-                                → {event.endDate}
-                            </span>
-                        )}
-                    </div>
-                ),
-            },
-            {
-                header: 'Time',
-                render: (event) => (
-                    <div style={{ fontSize: '13px' }}>
-                        {event.time}
-                        {event.endTime && (
-                            <span style={{ opacity: 0.6, fontSize: '11px' }}>
-                                {' — '}{event.endTime}
-                            </span>
-                        )}
-                    </div>
-                ),
+                header: 'Schedule',
+                render: (event) => renderSchedule(event),
             },
             {
                 header: 'Details',
@@ -357,30 +404,8 @@ export default function EventTable(props: EventTableProps) {
             ),
         },
         {
-            header: 'Date',
-            render: (event) => (
-                <div style={{ fontSize: '13px' }}>
-                    {event.date}
-                    {event.endDate && event.endDate !== event.date && (
-                        <span style={{ opacity: 0.6, display: 'block', fontSize: '11px' }}>
-                            → {event.endDate}
-                        </span>
-                    )}
-                </div>
-            ),
-        },
-        {
-            header: 'Time',
-            render: (event) => (
-                <div style={{ fontSize: '13px' }}>
-                    {event.time}
-                    {event.endTime && (
-                        <span style={{ opacity: 0.6, fontSize: '11px' }}>
-                            {' — '}{event.endTime}
-                        </span>
-                    )}
-                </div>
-            ),
+            header: 'Schedule',
+            render: (event) => renderSchedule(event),
         },
     ];
 

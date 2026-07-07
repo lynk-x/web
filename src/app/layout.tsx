@@ -67,9 +67,32 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Define schema.org WebSite structured data (JSON-LD)
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': 'https://lynk-x.app',
+    'url': 'https://lynk-x.app',
+    'name': 'Lynk-X',
+    'description': 'Experience the ultimate event app designed for seamless event interactions.',
+    // TODO: Link Organization metadata once company entity details are finalized
+    /*
+    'publisher': {
+      '@type': 'Organization',
+      '@id': 'https://lynk-x.app/#organization',
+      'name': 'Lynk-X',
+      'logo': 'https://lynk-x.app/lynk-x-combined-logo.png',
+    }
+    */
+  };
+
   return (
     <html lang="en-GB" className={`${inter.variable} ${interTight.variable}`} suppressHydrationWarning>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
         <QueryProvider>
           <AuthProvider>
             <CartProvider>

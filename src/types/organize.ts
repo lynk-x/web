@@ -19,6 +19,7 @@ export interface OrganizerEvent {
     endDate?: string;
     time: string;
     endTime?: string;
+    timezone?: string;
     location: string;
     /**
      * Exhaustive alignment with `event_status` schema enum.
@@ -60,6 +61,7 @@ export interface EventRow {
     endDate?: string;
     time: string;
     endTime?: string;
+    timezone?: string;
     /** Unique share/lookup code — from `events.reference` column */
     reference?: string;
     currency?: string;

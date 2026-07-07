@@ -112,12 +112,56 @@ export default async function EventPage({ params }: { params: { reference: strin
         category: rawEvent.category,
     };
 
+    const eventImage = (rawEvent as any).cover_image_url || (event.media as any)?.thumbnail;
+    const eventSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'Event',
+        'name': event.title,
+        'description': event.description,
+        'startDate': event.start_datetime,
+        'endDate': event.end_datetime,
+        'eventStatus': 'https://schema.org/EventScheduled',
+        'eventAttendanceMode': (event as any).is_online ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+        'location': (event as any).is_online ? {
+            '@type': 'VirtualLocation',
+            'url': `https://lynk-x.app/event/${reference}`,
+        } : {
+            '@type': 'Place',
+            'name': (event.location as any)?.name || 'TBA',
+            'address': {
+                '@type': 'PostalAddress',
+                'addressLocality': (event.location as any)?.city || (event.location as any)?.locality || '',
+                'addressCountry': (event.location as any)?.country || '',
+            }
+        },
+        'image': eventImage ? [eventImage] : [],
+        'organizer': {
+            '@type': 'Organization',
+            'name': event.organizer_name || 'Lynk-X Organizer',
+            'url': 'https://lynk-x.app',
+        },
+        'offers': tiers.map((t: any) => ({
+            '@type': 'Offer',
+            'name': t.display_name,
+            'price': t.price,
+            'priceCurrency': event.currency || 'KES',
+            'availability': (t.tickets_available ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+            'url': `https://lynk-x.app/event/${reference}`,
+        })),
+    };
+
     return (
-        <EventDetailsView
-            event={event}
-            ticketTiers={tiers}
-            disclaimers={disclaimers}
-            isSoldOut={isSoldOut}
-        />
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+            />
+            <EventDetailsView
+                event={event}
+                ticketTiers={tiers}
+                disclaimers={disclaimers}
+                isSoldOut={isSoldOut}
+            />
+        </>
     );
 }
