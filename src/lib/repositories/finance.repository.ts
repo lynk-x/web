@@ -16,8 +16,6 @@ import type { PaymentStatus, PayoutStatus, TransactionReason } from '@/types/sta
  */
 export interface Transaction {
     id: string;
-    sender_id?: string | null;
-    recipient_id?: string | null;
     initiated_by?: string | null;
     recipient_account_id?: string | null;
     amount: number;
@@ -90,7 +88,7 @@ export interface FxRate {
 export interface TaxRate {
     id: string;
     country_code: string;
-    name: string;
+    display_name: string;
     rate_percent: number;
     is_inclusive: boolean;
     is_active: boolean;
@@ -112,10 +110,11 @@ export interface RequestPayoutResult {
 export function createFinanceRepository(client: DbClient) {
     return {
         /**
-         * Fetch transactions for an account. Filters across both directions:
-         *   - recipient_account_id (incoming to this account's wallet)
-         *   - any transaction the account's owner sent (best-effort; full coverage
-         *     would require a `senders_account_id` denormalization).
+         * Fetch transactions incoming to an account's wallet
+         * (recipient_account_id). NOTE: this previously also selected
+         * `sender_id`/`recipient_id`, columns that don't exist on
+         * finance.transactions — the query would have failed had this method
+         * ever actually been called.
          */
         async getTransactionsForAccount(
             accountId: string,
@@ -127,9 +126,10 @@ export function createFinanceRepository(client: DbClient) {
 
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
-                .from('transactions')
+                .schema('api')
+                .from('v1_transactions')
                 .select(
-                    'id, sender_id, recipient_id, initiated_by, recipient_account_id, amount, currency, platform_fee, platform_tax, net_amount, status, reason, category, reference, event_id, ticket_id, provider_id, provider_ref, created_at',
+                    'id, initiated_by, recipient_account_id, amount, currency, platform_fee, platform_tax, net_amount, status, reason, category, reference, event_id, ticket_id, provider_id, provider_ref, created_at',
                     selectOpts
                 )
                 .eq('recipient_account_id', accountId)
@@ -261,8 +261,9 @@ export function createFinanceRepository(client: DbClient) {
         /** Fetch active tax rates, optionally filtered by country. */
         async getTaxRates(countryCode?: string): Promise<RepoResult<TaxRate[]>> {
             let query = client
-                .from('tax_rates')
-                .select('id, country_code, name, rate_percent, is_inclusive, is_active, updated_at')
+                .schema('api')
+                .from('v1_tax_rates')
+                .select('id, country_code, display_name, rate_percent, is_inclusive, is_active, updated_at')
                 .eq('is_active', true);
 
             if (countryCode) query = query.eq('country_code', countryCode);

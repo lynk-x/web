@@ -32,11 +32,9 @@ import { formatCurrency } from '@/utils/format';
 interface SubscriptionPlan {
     id: string;
     display_name: string;
-    description: string;
     product_type: string;
     interval: string;
-    status: string;
-    created_at: string;
+    is_active: boolean;
 }
 
 function GlobalFinanceContent() {
@@ -103,7 +101,11 @@ function GlobalFinanceContent() {
                 if (error) throw error;
                 setFxRates(data || []);
             } else if (activeTab === 'billing-constants') {
-                const { data, error } = await supabase.from('subscription_plans').select('*').order('display_name');
+                const { data, error } = await supabase
+                    .schema('api')
+                    .from('v1_subscription_plans')
+                    .select('*')
+                    .order('display_name');
                 if (error) throw error;
                 setPlans(data || []);
             }
@@ -237,7 +239,7 @@ function GlobalFinanceContent() {
         {
             header: 'Status',
             render: (plan: SubscriptionPlan) => (
-                <Badge variant={plan.status === 'approved' ? 'success' : 'warning'} label={plan.status} />
+                <Badge variant={plan.is_active ? 'success' : 'warning'} label={plan.is_active ? 'approved' : 'pending'} />
             )
         }
     ];

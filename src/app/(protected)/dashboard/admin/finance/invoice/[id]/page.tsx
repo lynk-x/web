@@ -55,28 +55,20 @@ function AdminInvoiceContent() {
         const fetchTransaction = async () => {
             setIsLoading(true);
             try {
-                const query = supabase
-                    .from('transactions')
-                    .select(`
-                        id, amount, status, created_at, currency, reason, reference,
-                        event:events!event_id(title),
-                        initiator:user_profile!initiated_by(full_name, user_name),
-                        recipient_account:accounts!recipient_account_id(display_name)
-                    `)
-                    .eq('id', id);
-
-                if (createdAt) {
-                    query.eq('created_at', createdAt);
-                }
-
-                const { data, error } = await query.maybeSingle();
+                // Event/initiator/recipient names are resolved server-side —
+                // PostgREST can't embed across the events/identity schema
+                // split through a plain view. Visibility (own transaction,
+                // owning account, or admin) is enforced inside the RPC.
+                const { data, error } = await supabase
+                    .schema('api')
+                    .rpc('get_transaction_invoice', { p_transaction_id: id });
 
                 if (error || !data) {
                     setTx(null);
                     return;
                 }
 
-                interface SupabaseTx {
+                interface InvoiceRpcResult {
                     id: string;
                     amount: number;
                     status: string;
@@ -84,19 +76,12 @@ function AdminInvoiceContent() {
                     currency: string;
                     reason: string;
                     reference: string;
-                    event: { title: string }[] | { title: string } | null;
-                    initiator: { full_name: string; user_name: string }[] | { full_name: string; user_name: string } | null;
-                    recipient_account: { display_name: string }[] | { display_name: string } | null;
+                    event_title: string | null;
+                    initiator_full_name: string | null;
+                    initiator_user_name: string | null;
+                    recipient_account_display_name: string | null;
                 }
-                const d = data as unknown as SupabaseTx;
-                
-                // Helper to get first item if array, or the object itself
-                const getFirst = <T,>(val: T | T[] | null | undefined): T | null | undefined => 
-                    Array.isArray(val) ? val[0] : (val as T | null | undefined);
-                
-                const event = getFirst(d.event);
-                const initiator = getFirst(d.initiator);
-                const recipientAccount = getFirst(d.recipient_account);
+                const d = data as unknown as InvoiceRpcResult;
 
                 setTx({
                     id: d.id,
@@ -107,9 +92,9 @@ function AdminInvoiceContent() {
                     type: d.reason || 'transaction',
                     status: d.status,
                     referenceId: d.reference || `TXN-${d.id.slice(0, 8).toUpperCase()}`,
-                    senderName: initiator?.full_name || initiator?.user_name || 'Platform',
-                    recipientName: recipientAccount?.display_name || 'Platform',
-                    eventTitle: event?.title || '',
+                    senderName: d.initiator_full_name || d.initiator_user_name || 'Platform',
+                    recipientName: d.recipient_account_display_name || 'Platform',
+                    eventTitle: d.event_title || '',
                 });
             } catch (err: unknown) {
                 showToast(getErrorMessage(err) || 'Failed to load invoice', 'error');

@@ -460,7 +460,8 @@ const CheckoutView: React.FC = () => {
 
         try {
             const { data, error } = await supabase
-                .from('transactions')
+                .schema('api')
+                .from('v1_transactions')
                 .select('status, reason')
                 .eq('provider_ref', currentCheckoutId)
                 .single();

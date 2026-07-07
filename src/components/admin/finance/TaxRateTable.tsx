@@ -35,9 +35,8 @@ const TaxRateTable: React.FC<TaxRateTableProps> = ({
     const handleToggleStatus = async (rate: TaxRate) => {
         try {
             const { error } = await supabase
-                .from('tax_rates')
-                .update({ is_active: !rate.is_active, updated_at: new Date().toISOString() })
-                .eq('id', rate.id);
+                .schema('api')
+                .rpc('admin_set_tax_rate_status', { p_id: rate.id, p_is_active: !rate.is_active });
 
             if (error) throw error;
             showToast(`${rate.display_name} updated`, 'success');

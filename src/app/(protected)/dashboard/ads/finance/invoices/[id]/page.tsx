@@ -92,8 +92,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                 // Fallback: try transactions table (filter by recipient_account_id)
                 const { data, error } = await supabase
-                    .from('transactions')
-                    .select('id, amount, status, created_at, currency, reason, metadata')
+                    .schema('api')
+                    .from('v1_transactions')
+                    .select('id, amount, status, created_at, currency, reason')
                     .eq('id', id)
                     .eq('recipient_account_id', activeAccount?.id)
                     .maybeSingle();

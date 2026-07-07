@@ -60,14 +60,21 @@ function GlobalComplianceContent() {
         setIsLoading(true);
         try {
             if (activeTab === 'tax-rates') {
-                const { data, error } = await supabase.from('tax_rates').select(`
-                    *,
-                    country:countries(display_name)
-                `).order('display_name');
-                if (error) throw error;
-                setTaxRates((data || []).map(t => ({
+                // Country name is joined client-side: PostgREST can't embed
+                // finance.tax_rates -> infra.countries through a plain view.
+                const [ratesRes, countriesRes] = await Promise.all([
+                    supabase.schema('api').from('v1_tax_rates').select('*').order('display_name'),
+                    supabase.schema('api').from('v1_countries').select('code, display_name'),
+                ]);
+                if (ratesRes.error) throw ratesRes.error;
+                if (countriesRes.error) throw countriesRes.error;
+
+                const countryNameByCode = new Map(
+                    (countriesRes.data || []).map((c: any) => [c.code, c.display_name])
+                );
+                setTaxRates((ratesRes.data || []).map((t: any) => ({
                     ...t,
-                    country_name: t.country?.display_name || t.country_code
+                    country_name: countryNameByCode.get(t.country_code) || t.country_code
                 })));
             }
         } catch (error: unknown) {
@@ -99,21 +106,16 @@ function GlobalComplianceContent() {
 
     const handleSaveTaxRate = async () => {
         try {
-            const payload = {
-                ...taxForm,
-                rate_percent: Number(taxForm.rate_percent),
-                updated_at: new Date().toISOString()
-            };
-
-            if (editingTaxRate) {
-                const { error } = await supabase.from('tax_rates').update(payload).eq('id', editingTaxRate.id);
-                if (error) throw error;
-                showToast('Tax rate updated successfully', 'success');
-            } else {
-                const { error } = await supabase.from('tax_rates').insert([payload]);
-                if (error) throw error;
-                showToast('Tax rate created successfully', 'success');
-            }
+            const { error } = await supabase.schema('api').rpc('admin_upsert_tax_rate', {
+                p_id: editingTaxRate?.id ?? null,
+                p_country_code: taxForm.country_code,
+                p_applicable_reason: taxForm.applicable_reason,
+                p_display_name: taxForm.display_name,
+                p_rate_percent: Number(taxForm.rate_percent),
+                p_is_inclusive: taxForm.is_inclusive,
+            });
+            if (error) throw error;
+            showToast(editingTaxRate ? 'Tax rate updated successfully' : 'Tax rate created successfully', 'success');
             setIsTaxModalOpen(false);
             fetchData();
         } catch (error: unknown) {

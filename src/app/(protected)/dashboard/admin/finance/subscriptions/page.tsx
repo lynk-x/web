@@ -82,14 +82,13 @@ export default function SubscriptionPlansPage() {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .from('subscription_plans')
-                .select('*, subscription_prices(*), plan_features(feature_id)')
-                .order('created_at');
+                .schema('api')
+                .rpc('get_subscription_catalog');
 
             if (error) throw error;
-            const mappedPlans = (data || []).map((plan: any) => ({
+            const mappedPlans = ((data || []) as any[]).map((plan: any) => ({
                 ...plan,
-                is_active: plan.status === 'approved'
+                plan_features: (plan.plan_features || []).map((pf: any) => ({ feature_id: pf.feature_id })),
             }));
             setPlans(mappedPlans);
         } catch (e: unknown) {
@@ -102,7 +101,8 @@ export default function SubscriptionPlansPage() {
     const fetchFeatures = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('subscription_features')
+                .schema('api')
+                .from('v1_subscription_features')
                 .select('id, display_name, category')
                 .order('category', { ascending: true });
 
@@ -152,49 +152,18 @@ export default function SubscriptionPlansPage() {
 
         setIsSaving(true);
         try {
-            const planPayload = {
-                id: planId.trim(),
-                display_name: displayName.trim(),
-                description: description.trim() || null,
-                product_type: productType,
-                pulse_tier: productType === 'business_pulse' ? pulseTier : null,
-                interval,
-                status: isActive ? 'approved' : 'pending',
-                metadata: {
-                    // Legacy support for older components
-                    features: allFeatures
-                        .filter(f => selectedFeatureIds.includes(f.id))
-                        .map(f => f.display_name),
-                },
-            };
-
-            // 1. Save/Update Plan
-            if (editingPlan) {
-                const { id: _, ...updatePayload } = planPayload;
-                const { error } = await supabase
-                    .from('subscription_plans')
-                    .update(updatePayload)
-                    .eq('id', editingPlan.id);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('subscription_plans')
-                    .insert(planPayload);
-                if (error) throw error;
-            }
-
-            // 2. Sync Plan Features (Delete existing, insert new)
-            await supabase.from('plan_features').delete().eq('plan_id', planId);
-            
-            if (selectedFeatureIds.length > 0) {
-                const featureMappings = selectedFeatureIds.map(fid => ({
-                    plan_id: planId,
-                    feature_id: fid,
-                    feature_value: 'active'
-                }));
-                const { error: featErr } = await supabase.from('plan_features').insert(featureMappings);
-                if (featErr) throw featErr;
-            }
+            // Plan upsert + feature-mapping sync happen atomically server-side.
+            const { error } = await supabase.schema('api').rpc('admin_upsert_subscription_plan', {
+                p_id: planId.trim(),
+                p_display_name: displayName.trim(),
+                p_description: description.trim() || null,
+                p_product_type: productType,
+                p_interval: interval,
+                p_is_active: isActive,
+                p_pulse_tier: productType === 'business_pulse' ? pulseTier : null,
+                p_feature_ids: selectedFeatureIds,
+            });
+            if (error) throw error;
 
             showToast(editingPlan ? 'Plan updated' : 'Plan created', 'success');
             setIsModalOpen(false);
@@ -224,15 +193,13 @@ export default function SubscriptionPlansPage() {
 
         setIsSavingPrice(true);
         try {
-            const { error } = await supabase
-                .from('subscription_prices')
-                .insert({
-                    plan_id: pricePlanId,
-                    currency: priceCurrency || null,
-                    amount: numAmount,
-                    country_code: priceCountryCode.trim() || null,
-                    external_gateway_id: priceGatewayId.trim() || null,
-                });
+            const { error } = await supabase.schema('api').rpc('admin_add_subscription_price', {
+                p_plan_id: pricePlanId,
+                p_currency: priceCurrency || null,
+                p_amount: numAmount,
+                p_country_code: priceCountryCode.trim() || null,
+                p_external_gateway_id: priceGatewayId.trim() || null,
+            });
 
             if (error) throw error;
             showToast('Price added', 'success');
@@ -248,10 +215,9 @@ export default function SubscriptionPlansPage() {
     const handleDeletePrice = async (priceId: string) => {
         if (!await confirm('Delete this price tier?')) return;
         try {
-            const { error } = await supabase
-                .from('subscription_prices')
-                .delete()
-                .eq('id', priceId);
+            const { error } = await supabase.schema('api').rpc('admin_delete_subscription_price', {
+                p_price_id: priceId,
+            });
             if (error) throw error;
             showToast('Price deleted', 'success');
             fetchPlans();
@@ -262,10 +228,10 @@ export default function SubscriptionPlansPage() {
 
     const togglePlanActive = async (plan: SubscriptionPlan) => {
         try {
-            const { error } = await supabase
-                .from('subscription_plans')
-                .update({ status: plan.is_active ? 'pending' : 'approved' })
-                .eq('id', plan.id);
+            const { error } = await supabase.schema('api').rpc('admin_set_subscription_plan_status', {
+                p_id: plan.id,
+                p_is_active: !plan.is_active,
+            });
             if (error) throw error;
             showToast(`Plan ${plan.is_active ? 'deactivated' : 'activated'}`, 'success');
             fetchPlans();

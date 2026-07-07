@@ -59,10 +59,11 @@ export default function CreateTagPage() {
                 try {
                     const vector = await generateTagEmbedding(formData.name, formData.type_id);
                     if (vector && vector.length > 0) {
-                        const { error: embedError } = await createClient('identity')
-                            .from('tags')
-                            .update({ embedding: vector })
-                            .eq('id', tagId);
+                        // identity.tags is not PostgREST-exposed; this previously
+                        // called .schema('identity') directly, which always
+                        // failed silently (caught into a console.error).
+                        const { error: embedError } = await supabase
+                            .rpc('admin_save_tag_embedding', { p_tag_id: tagId, p_embedding: vector });
                         if (embedError) {
                             console.error('[Embedding] Failed to save tag embedding:', embedError);
                         }

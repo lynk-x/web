@@ -99,59 +99,25 @@ export default function PromoCodeForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         setIsSubmitting(true);
         try {
-            const payload = {
-                code: formData.code.toUpperCase().trim(),
-                type: formData.type,
-                value: formData.value,
-                max_uses: formData.max_uses,
-                one_per_user: formData.one_per_user,
-                valid_from: formData.valid_from ? new Date(formData.valid_from).toISOString() : null,
-                valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
-                is_active: formData.is_active,
-                updated_at: new Date().toISOString()
-            };
+            // Promo row + its single-event link are synced atomically server-side.
+            const { error } = await supabase.schema('api').rpc('admin_upsert_promo_code', {
+                p_id: isEditing ? formData.id : null,
+                p_code: formData.code.toUpperCase().trim(),
+                p_type: formData.type,
+                p_value: formData.value,
+                p_max_uses: formData.max_uses,
+                p_one_per_user: formData.one_per_user,
+                p_valid_from: formData.valid_from ? new Date(formData.valid_from).toISOString() : null,
+                p_valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
+                p_is_active: formData.is_active,
+                p_event_id: formData.event_id || null,
+            });
+            if (error) throw error;
 
-            let promoId = formData.id;
-
-            if (isEditing && promoId) {
-                const { error } = await supabase
-                    .from('promo_codes')
-                    .update(payload)
-                    .eq('id', promoId);
-                if (error) throw error;
-
-                // Sync event junction
-                await supabase.from('event_promos').delete().eq('promo_code_id', promoId);
-                if (formData.event_id) {
-                    await supabase.from('event_promos').insert({
-                        event_id: formData.event_id,
-                        promo_code_id: promoId
-                    });
-                }
-
-                showToast('Promo code updated!', 'success');
-            } else {
-                const { data, error } = await supabase
-                    .from('promo_codes')
-                    .insert([{ ...payload, uses_count: 0 }])
-                    .select('id')
-                    .single();
-                if (error) throw error;
-                
-                promoId = data.id;
-                if (formData.event_id) {
-                    await supabase.from('event_promos').insert({
-                        event_id: formData.event_id,
-                        promo_code_id: promoId
-                    });
-                }
-                
-                showToast('Promo code created!', 'success');
-            }
-
+            showToast(isEditing ? 'Promo code updated!' : 'Promo code created!', 'success');
             router.push('/dashboard/admin/finance?tab=promo-codes');
             router.refresh();
         } catch (error: unknown) {

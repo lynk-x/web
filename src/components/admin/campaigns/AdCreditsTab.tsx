@@ -92,9 +92,8 @@ export default function AdCreditsTab({
         setIsLoading(true);
         try {
             const { data: creditsData, error: creditsError } = await supabase
-                .from('ad_credits')
-                .select('*')
-                .order('created_at', { ascending: false });
+                .schema('api')
+                .rpc('get_ad_credits');
             if (creditsError) throw creditsError;
 
             const { data: accountsData } = await supabase
@@ -143,14 +142,14 @@ export default function AdCreditsTab({
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.from('ad_credits').insert({
-                account_id: issueAccountId,
-                currency: issueCurrency,
-                amount,
-                remaining: amount,
-                expires_at: issueExpiry || null,
-                metadata: {
-                    source: 'platform_grant',
+            const { error } = await supabase.schema('api').rpc('bulk_manage_ad_credits', {
+                p_credit_ids: [],
+                p_action: 'grant',
+                p_params: {
+                    account_id: issueAccountId,
+                    currency: issueCurrency,
+                    amount,
+                    expires_at: issueExpiry || null,
                     note: issueNote || null,
                 },
             });
@@ -173,9 +172,8 @@ export default function AdCreditsTab({
         })) return;
         try {
             const { error } = await supabase
-                .from('ad_credits')
-                .update({ revoked_at: new Date().toISOString() })
-                .eq('id', credit.id);
+                .schema('api')
+                .rpc('admin_revoke_ad_credit', { p_credit_id: credit.id });
             if (error) throw error;
             showToast('Credit revoked.', 'success');
             fetchCredits();

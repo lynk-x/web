@@ -120,38 +120,23 @@ export default function CreateEventPage() {
 
             // 5. Link Tags
             if (data.tags.length > 0 && newEventId) {
-                const tagsToUpsert = data.tags.map(tag => ({
+                const tagsToResolve = data.tags.map(tag => ({
                     name: tag,
                     slug: tag.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
                     is_official: false
                 }));
 
-                // Fetch existing tags first to avoid upsert RLS issues
-                const { data: existingTags, error: tagFetchError } = await supabase
-                    .from('tags')
-                    .select('id, slug')
-                    .in('slug', tagsToUpsert.map(t => t.slug));
+                // Find-or-create by slug happens server-side (identity.tags is
+                // admin-insert-only under RLS; this RPC is the sanctioned path
+                // for organizers to mint unofficial, user-submitted tags).
+                const { data: resolvedTags, error: resolveError } = await supabase
+                    .schema('api')
+                    .rpc('resolve_tags', { p_tags: tagsToResolve });
 
-                if (tagFetchError) throw tagFetchError;
+                if (resolveError) throw resolveError;
 
-                let resolvedTags = existingTags || [];
-                const existingSlugs = new Set(resolvedTags.map(t => t.slug));
-                const newTagsToCreate = tagsToUpsert.filter(t => !existingSlugs.has(t.slug));
-
-                // Attempt to create new tags if any, but don't crash if RLS blocks it
-                if (newTagsToCreate.length > 0) {
-                    const { data: createdTags } = await supabase
-                        .from('tags')
-                        .insert(newTagsToCreate)
-                        .select('id, slug');
-                    
-                    if (createdTags) {
-                        resolvedTags = [...resolvedTags, ...createdTags];
-                    }
-                }
-
-                if (resolvedTags.length > 0) {
-                    const eventTagsToInsert = resolvedTags.map(tag => ({
+                if (resolvedTags && resolvedTags.length > 0) {
+                    const eventTagsToInsert = resolvedTags.map((tag: { id: string }) => ({
                         event_id: newEventId,
                         event_created_at: newEventCreatedAt,
                         tag_id: tag.id

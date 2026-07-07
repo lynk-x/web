@@ -158,9 +158,9 @@ function FinanceContent() {
     const fetchSubscriptionPlans = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('subscription_plans')
+                .schema('api')
+                .from('v1_subscription_plans')
                 .select('id, display_name, product_type')
-                .eq('status', 'approved')
                 .order('display_name');
             if (error) throw error;
             setSubscriptionPlans((data || []) as any);
@@ -282,13 +282,9 @@ function FinanceContent() {
 
             } else if (activeTab === 'promo-codes') {
                 const { data, error } = await supabase
-                    .from('promo_codes')
-                    .select(`
-                        *,
-                        event_promos(
-                            event:events(title)
-                        )
-                    `)
+                    .schema('api')
+                    .from('v1_admin_promo_codes')
+                    .select('*')
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -301,35 +297,26 @@ function FinanceContent() {
                     max_uses: number;
                     is_active: boolean;
                     created_at: string;
-                    event_promos?: {
-                        event?: {
-                            title: string;
-                        };
-                    }[];
+                    event_title: string | null;
                 }
 
-                setPromoCodes((data || []).map((p: PromoRow) => {
-                    const eventTitles = (p.event_promos || [])
-                        .map((ep) => ep.event?.title)
-                        .filter(Boolean);
-                    
-                    return {
-                        id: p.id,
-                        code: p.code,
-                        type: p.type as any,
-                        value: p.value,
-                        uses_count: p.uses_count,
-                        max_uses: p.max_uses,
-                        is_active: p.is_active,
-                        event_title: eventTitles.length > 1 
-                            ? `${eventTitles[0]} (+${eventTitles.length - 1})`
-                            : eventTitles[0] || 'Global',
-                        created_at: p.created_at
-                    };
-                }));
+                // v1_admin_promo_codes denormalizes the single linked event's
+                // title (promo codes link to at most one event, per the form).
+                setPromoCodes((data || []).map((p: PromoRow) => ({
+                    id: p.id,
+                    code: p.code,
+                    type: p.type as any,
+                    value: p.value,
+                    uses_count: p.uses_count,
+                    max_uses: p.max_uses,
+                    is_active: p.is_active,
+                    event_title: p.event_title || 'Global',
+                    created_at: p.created_at
+                })));
             } else if (activeTab === 'tax-rates') {
                 const { data, error } = await supabase
-                    .from('tax_rates')
+                    .schema('api')
+                    .from('v1_tax_rates')
                     .select('*')
                     .order('created_at', { ascending: false });
 
@@ -517,7 +504,10 @@ function FinanceContent() {
                     label: 'Batch Deactivate',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>,
                     onClick: () => runAction(
-                        () => supabase.from('promo_codes').update({ is_active: false }).in('id', Array.from(selectedPromoIds)),
+                        () => supabase.schema('api').rpc('admin_set_promo_code_status', {
+                            p_ids: Array.from(selectedPromoIds),
+                            p_is_active: false,
+                        }),
                         {
                             loadingMessage: `Deactivating ${selectedPromoIds.size} codes...`,
                             successMessage: `Successfully deactivated ${selectedPromoIds.size} codes.`,
@@ -530,7 +520,10 @@ function FinanceContent() {
                     label: 'Batch Activate',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
                     onClick: () => runAction(
-                        () => supabase.from('promo_codes').update({ is_active: true }).in('id', Array.from(selectedPromoIds)),
+                        () => supabase.schema('api').rpc('admin_set_promo_code_status', {
+                            p_ids: Array.from(selectedPromoIds),
+                            p_is_active: true,
+                        }),
                         {
                             loadingMessage: `Activating ${selectedPromoIds.size} codes...`,
                             successMessage: `Successfully activated ${selectedPromoIds.size} codes.`,
