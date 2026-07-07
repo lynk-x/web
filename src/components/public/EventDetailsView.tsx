@@ -13,6 +13,7 @@ import { formatDateTimeInTimezone, formatEventDate, formatTime, formatTimeInTime
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 import { useToast } from '@/components/ui/Toast';
+import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 
 interface EventDetailsViewProps {
     event: Event;
@@ -23,12 +24,17 @@ interface EventDetailsViewProps {
     isSoldOut?: boolean;
 }
 
+const stripHtml = (html: string) => {
+    return html.replace(/<[^>]*>/g, '');
+};
+
 const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     event,
     ticketTiers = [],
     disclaimers = [],
     isSoldOut = false,
 }) => {
+    const plainText = stripHtml(event.description || '');
     const router = useRouter();
     const { addToCart } = useCart();
     const supabase = createClient();
@@ -262,7 +268,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 <div className={styles.metaText}>
                                     <span className={styles.metaLabel}>{(event.location as any)?.name || 'TBD'}</span>
                                     <span className={styles.metaSublabel}>
-                                        {[(event.location as any)?.city || (event.location as any)?.locality, (event.location as any)?.country].filter(Boolean).join(', ') || 'Venue location details'}
+                                        {(event as any).is_online ? 'Online Event' : 'Physical Event'}
                                     </span>
                                 </div>
                             </div>
@@ -282,13 +288,19 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 <path d="M6 9L12 15L18 9" stroke="var(--color-brand-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </div>
-                        {isAboutExpanded && (
-                            <p className={styles.readMore}>
-                                {event.description || 'No description available for this event.'}
+                        {isAboutExpanded ? (
+                            <div className={styles.readMore}>
+                                {event.description ? (
+                                    <RichTextRenderer content={event.description} />
+                                ) : (
+                                    'No description available for this event.'
+                                )}
+                            </div>
+                        ) : (
+                            <p className={styles.readMore} onClick={() => setIsAboutExpanded(true)}>
+                                {plainText.slice(0, 100)}{plainText.length > 100 ? '...' : ''}{' '}
+                                {plainText.length > 100 && <span className={styles.readMoreLink}>Read more</span>}
                             </p>
-                        )}
-                        {!isAboutExpanded && (
-                            <p className={styles.readMore}>{event.description?.slice(0, 100)}... Read more</p>
                         )}
 
                         <h2 className={styles.ticketSectionTitle}>Tickets</h2>

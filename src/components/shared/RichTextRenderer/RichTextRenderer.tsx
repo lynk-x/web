@@ -2,7 +2,7 @@
 
 import React from 'react';
 import DOMPurify from 'dompurify';
-import styles from './CmsRenderer.module.css';
+import styles from './RichTextRenderer.module.css';
 
 interface CmsSection {
     title: string;
@@ -13,16 +13,16 @@ interface CmsContent {
     sections: CmsSection[];
 }
 
-interface CmsRendererProps {
+interface RichTextRendererProps {
     content: string | CmsContent | any;
     className?: string;
 }
 
 /**
- * Universal component to render CMS content.
- * Supports both raw HTML strings (from Tiptap) and structured JSON sections.
+ * Universal component to render rich text/HTML content (e.g. from TipTap).
+ * Supports both raw HTML strings and structured JSON sections.
  */
-export default function CmsRenderer({ content, className = '' }: CmsRendererProps) {
+export default function RichTextRenderer({ content, className = '' }: RichTextRendererProps) {
     if (!content) {
         return (
             <div className={`${styles.prose} ${className}`}>

@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 import SubPageHeader from '@/components/shared/SubPageHeader';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Badge from '@/components/shared/Badge';
-import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import { formatDate } from '@/utils/format';
 import { DatePicker } from '@/components/ui/DatePicker';
 
@@ -181,7 +181,7 @@ export default function NewLegalVersionPage() {
                                         {type.replace('_', ' ')} • {version || 'Draft'}
                                         {effective_date && <div style={{ marginTop: '4px' }}>Effective: {formatDate(effective_date)}</div>}
                                     </div>
-                                    <CmsRenderer content={content} />
+                                    <RichTextRenderer content={content} />
                                 </div>
                             ) : (
                                 <div className={styles.emptyPreview}>

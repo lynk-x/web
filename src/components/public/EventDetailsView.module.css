@@ -171,10 +171,6 @@
     flex-direction: column;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-md);
-    background-color: rgba(255, 255, 255, 0.02);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-interface-outline);
 }
 
 .metaItem {
@@ -257,6 +253,13 @@
     color: var(--color-utility-primaryText);
     opacity: 0.8;
     margin-bottom: var(--spacing-xl);
+}
+
+.readMoreLink {
+    color: var(--color-brand-primary);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
 }
 
 .ticketSectionTitle {

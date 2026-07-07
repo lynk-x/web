@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import HomeLayout from "@/components/public/HomeLayout";
 import CookieConsentManager from "@/components/public/CookieConsentManager";
-import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -62,7 +62,7 @@ export default async function CookiePolicyPage() {
                     border: '1px solid var(--color-interface-outline)',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
                 }}>
-                    <CmsRenderer content={content} />
+                    <RichTextRenderer content={content} />
 
                     <div style={{
                         marginTop: '48px',

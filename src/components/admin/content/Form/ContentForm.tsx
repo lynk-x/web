@@ -8,7 +8,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import { createClient } from '@/utils/supabase/client';
 import { ContentItem } from '@/types/admin';
 import { useToast } from '@/components/ui/Toast';
-import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 
 interface ContentFormProps {
     initialData?: Partial<ContentItem>;
@@ -241,7 +241,7 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
                                 <div className={styles.previewMeta}>
                                     {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} • {formData.type}
                                 </div>
-                                <CmsRenderer content={formData.content} />
+                                <RichTextRenderer content={formData.content} />
                             </div>
                         ) : (
                             <div className={styles.emptyPreview}>

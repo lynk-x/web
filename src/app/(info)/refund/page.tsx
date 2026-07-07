@@ -1,6 +1,6 @@
 import HomeLayout from "@/components/public/HomeLayout";
 import { createClient } from '@/utils/supabase/server';
-import CmsRenderer from '@/components/shared/CmsRenderer/CmsRenderer';
+import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -60,7 +60,7 @@ export default async function RefundPolicyPage() {
                     border: '1px solid var(--color-interface-outline)',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
                 }}>
-                    <CmsRenderer content={content} />
+                    <RichTextRenderer content={content} />
                 </div>
             </div>
         </HomeLayout>
