@@ -69,7 +69,7 @@ export default function EditEventPage() {
                 const isPaid = tiers ? tiers.length > 0 : false;
 
                 const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => {
-                    const tz = event.timezone || 'UTC';
+                    const tz = event.timezone || 'Etc/UTC';
                     const formatDateLocal = (d: Date) => {
                         const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d).split('-');
                         return `${parts[0]}-${parts[1]}-${parts[2]}`;
@@ -104,7 +104,7 @@ export default function EditEventPage() {
                     isPaid,
                     currency: 'KES',
                     tickets: mappedTickets,
-                    timezone: event.timezone || 'UTC'
+                    timezone: event.timezone || 'Etc/UTC'
                 });
                 setEventCreatedAt(event.created_at);
 
@@ -178,7 +178,7 @@ export default function EditEventPage() {
                     category_id: data.category || null,
                     starts_at: startDateTime,
                     ends_at: endDateTime,
-                    timezone: data.timezone || 'UTC',
+                    timezone: data.timezone || 'Etc/UTC',
                     location: data.location ? { name: data.location } : null,
                     media: uploadedThumbnailUrl ? { thumbnail: uploadedThumbnailUrl } : {},
                     currency: 'KES', // Defaulting to KES as per initial state

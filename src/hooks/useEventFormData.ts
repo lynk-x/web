@@ -32,10 +32,10 @@ export const DEFAULT_FORM_DATA: EventData = {
     startTime: '',
     endDate: '',
     endTime: '',
-    timezone: 'UTC',
+    timezone: 'Etc/UTC',
     isPrivate: false,
     isPaid: true,
-    tickets: [{ display_name: 'General Admission', price: '0', capacity: '100' }],
+    tickets: [{ display_name: '', price: '', capacity: '' }],
     currency: 'USD',
 };
 
@@ -45,10 +45,19 @@ interface UseEventFormDataOptions {
 }
 
 export function useEventFormData({ initialData, isEditMode = false }: UseEventFormDataOptions) {
-    const [formData, setFormData] = useState<EventData>(() => ({
-        ...DEFAULT_FORM_DATA,
-        timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC'
-    }));
+    const [formData, setFormData] = useState<EventData>(() => {
+        let resolvedTz = 'Etc/UTC';
+        if (typeof Intl !== 'undefined') {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz && tz !== 'UTC') {
+                resolvedTz = tz;
+            }
+        }
+        return {
+            ...DEFAULT_FORM_DATA,
+            timezone: resolvedTz
+        };
+    });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<EventFormTab>('cover');

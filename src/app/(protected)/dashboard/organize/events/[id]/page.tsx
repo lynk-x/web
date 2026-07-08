@@ -223,7 +223,7 @@ export default function EventDetailPage() {
                     <DetailRow label="Visibility" value={event.is_private ? 'Private (invite only)' : 'Public'} />
                     <DetailRow label="Start" value={`${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`} />
                     <DetailRow label="End" value={event.ends_at ? `${formatDate(event.ends_at)} at ${formatTime(event.ends_at)}` : 'Not set'} />
-                    <DetailRow label="Timezone" value={event.timezone || 'UTC'} />
+                    <DetailRow label="Timezone" value={event.timezone || 'Etc/UTC'} />
                     <DetailRow label="Currency" value={event.currency} />
                     <DetailRow label="Created" value={formatDate(event.created_at)} />
                     {event.cancellation_reason && (

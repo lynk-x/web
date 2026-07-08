@@ -466,7 +466,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                                     value={formData.timezone}
                                     onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
                                 >
-                                    <option value="UTC">UTC (Universal Coordinated Time)</option>
+                                    <option value="Etc/UTC">UTC (Universal Coordinated Time)</option>
                                     <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
                                     <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
                                     <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
