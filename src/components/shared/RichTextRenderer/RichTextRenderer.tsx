@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizeRichText } from '@/utils/sanitization';
 import styles from './RichTextRenderer.module.css';
 
 interface CmsSection {
@@ -59,11 +59,14 @@ export default function RichTextRenderer({ content, className = '' }: RichTextRe
         );
     }
 
-    // Fallback to raw HTML string
+    // Fallback to raw HTML string with server-safe sanitization
+    const rawHtml = typeof content === 'string' ? content : JSON.stringify(content);
+    const sanitizedHtml = sanitizeRichText(rawHtml);
+
     return (
         <div
             className={`${styles.prose} ${className}`}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(typeof content === 'string' ? content : JSON.stringify(content)) }}
+            dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
     );
 }

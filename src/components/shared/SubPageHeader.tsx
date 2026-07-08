@@ -14,6 +14,7 @@ interface HeaderAction {
     type?: 'button' | 'submit';
     formId?: string;
     icon?: React.ReactNode;
+    className?: string;
 }
 
 interface SubPageHeaderProps extends React.PropsWithChildren<{
@@ -71,7 +72,7 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
                     <button
                         type={secondaryAction.type || 'button'}
                         form={secondaryAction.formId}
-                        className={styles.btnSecondary}
+                        className={`${styles.btnSecondary}${secondaryAction.className ? ` ${secondaryAction.className}` : ''}`}
                         onClick={secondaryAction.onClick ? (e) => secondaryAction.onClick!(e) : undefined}
                         disabled={secondaryAction.isLoading || secondaryAction.disabled}
                     >
@@ -88,7 +89,7 @@ const SubPageHeader: React.FC<SubPageHeaderProps> = ({
                     <button
                         type={primaryAction.type || 'button'}
                         form={primaryAction.formId}
-                        className={styles.btnPrimary}
+                        className={`${styles.btnPrimary}${primaryAction.className ? ` ${primaryAction.className}` : ''}`}
                         onClick={primaryAction.onClick ? (e) => primaryAction.onClick!(e) : undefined}
                         disabled={primaryAction.isLoading || primaryAction.disabled}
                     >

@@ -752,7 +752,8 @@ export default function CreateCampaignForm({
                         label: isEditing ? 'Save Changes' : 'Launch Campaign',
                         type: 'submit',
                         formId: 'campaign-form',
-                        isLoading: isSubmitting
+                        isLoading: isSubmitting,
+                        className: 'tour-ads-form-actions'
                     }}
                     secondaryAction={!isEditing ? {
                         label: 'Save Draft',

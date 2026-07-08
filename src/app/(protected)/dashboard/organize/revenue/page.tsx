@@ -262,7 +262,7 @@ function RevenueContent() {
             />
 
             {/* Stat Cards */}
-            <div className={styles.statsGrid}>
+            <div className={`tour-revenue-stats-grid ${styles.statsGrid}`}>
                 <StatCard
                     label="Gross Revenue"
                     value={formatCurrency(stats.grossRevenue)}
@@ -399,7 +399,7 @@ function RevenueContent() {
                         skipBeacon: true,
                     },
                     {
-                        target: '.stats-grid',
+                        target: '.tour-revenue-stats-grid',
                         title: 'Real-time Balances',
                         content: 'Monitor your available balance and funds currently held in escrow until your events are successfully completed.',
                     },

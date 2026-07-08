@@ -1,12 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import styles from './page.module.css';
 import { login, signup } from './actions';
+
+// useFormStatus only reports the pending state of the nearest ancestor
+// <form>, so this must be a child of it rather than read directly in
+// AuthPage — otherwise `pending` is always false.
+function SubmitButton({ isLoginDetail }: { isLoginDetail: boolean }) {
+    const { pending } = useFormStatus();
+    return (
+        <button type="submit" className={styles.signInBtn} disabled={pending} aria-busy={pending}>
+            {pending ? 'Please wait...' : (isLoginDetail ? 'Sign In' : 'Get Started')}
+        </button>
+    );
+}
 
 export default function AuthPage() {
     const searchParams = useSearchParams();
@@ -20,6 +33,7 @@ export default function AuthPage() {
     const [isLoginDetail, setIsLoginDetail] = useState(true);
     const [useEmail, setUseEmail] = useState(false);
     const [formError, setFormError] = useState<string | null>(serverError || null);
+    const [isOAuthPending, setIsOAuthPending] = useState(false);
 
     // Clear out errors when switching tabs
     useEffect(() => {
@@ -188,9 +202,7 @@ export default function AuthPage() {
                     {next && <input name="next" value={next} readOnly />}
                 </div>
 
-                <button type="submit" className={styles.signInBtn}>
-                    {isLoginDetail ? 'Sign In' : 'Get Started'}
-                </button>
+                <SubmitButton isLoginDetail={isLoginDetail} />
             </form>
 
             <div className={styles.divider}>Or sign in with</div>
@@ -198,14 +210,20 @@ export default function AuthPage() {
             <button
                 type="button"
                 className={styles.socialBtn}
+                disabled={isOAuthPending}
+                aria-busy={isOAuthPending}
                 onClick={async () => {
+                    setIsOAuthPending(true);
                     const supabase = createClient();
-                    await supabase.auth.signInWithOAuth({
+                    const { error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
                             redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
                         },
                     });
+                    // Only reset on error — success navigates away via redirect,
+                    // so there's no "pending" state left to clear in that case.
+                    if (error) setIsOAuthPending(false);
                 }}
             >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -214,7 +232,7 @@ export default function AuthPage() {
                     <path d="M5.84 14.11C5.61 13.43 5.49 12.72 5.49 12C5.49 11.28 5.61 10.57 5.84 9.89V7.05H2.18C1.43 8.55 1 10.22 1 12C1 13.78 1.43 15.45 2.18 16.95L5.84 14.11Z" fill="#FBBC05" />
                     <path d="M12 5.38C13.62 5.38 15.06 5.94 16.2 7.02L18.65 4.57C16.95 2.99 14.68 2 12 2C7.7 2 3.98 4.47 2.18 8.05L5.84 10.89C6.71 8.28 9.13 6.34 12 5.38Z" fill="#EA4335" />
                 </svg>
-                Continue with Google
+                {isOAuthPending ? 'Redirecting...' : 'Continue with Google'}
             </button>
 
             {isLoginDetail && (

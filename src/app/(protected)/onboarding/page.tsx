@@ -10,16 +10,60 @@ import { sanitizeInput } from '@/utils/sanitization';
 import { convertImageToWebP } from '@/utils/imageConversion';
 import styles from './onboarding.module.css';
 import { useCountries } from '@/hooks/useCountries';
+import {
+    KycRequirementsForm,
+    kycRequirementsSatisfied,
+    submitKycRequirements,
+    type KycRequirement,
+    type KycFileMap,
+    type KycTextMap,
+} from '@/components/features/kyc/KycRequirementsForm';
 
 type OnboardingStep = 'DETAILS' | 'VERIFICATION';
 type AccountType = 'organizer' | 'advertiser';
 
-interface KycRequirement {
-    id: string;
-    type: 'file' | 'text';
-    label: string;
-    subtype?: string;
-    mandatory: boolean;
+// Draft fields persisted across refresh/navigation. File selections (kycFiles)
+// are NOT persisted — File objects aren't serializable and re-picking a few
+// files is far cheaper than the alternative this replaces: re-running
+// create_organization_account (which has no dedupe guard, unlike
+// handle_new_user's own provisioning path) and creating a duplicate org.
+interface OnboardingDraft {
+    accountType: AccountType;
+    step: OnboardingStep;
+    orgName: string;
+    orgDesc: string;
+    country: string;
+    logoUrl: string | null;
+    accountId: string | null;
+}
+
+function draftKey(accountType: AccountType) {
+    return `lynkx_onboarding_draft_${accountType}`;
+}
+
+function loadDraft(accountType: AccountType): Partial<OnboardingDraft> | null {
+    try {
+        const raw = sessionStorage.getItem(draftKey(accountType));
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveDraft(accountType: AccountType, draft: OnboardingDraft) {
+    try {
+        sessionStorage.setItem(draftKey(accountType), JSON.stringify(draft));
+    } catch {
+        // Best-effort only — quota/private-mode failures shouldn't block onboarding.
+    }
+}
+
+function clearDraft(accountType: AccountType) {
+    try {
+        sessionStorage.removeItem(draftKey(accountType));
+    } catch {
+        // no-op
+    }
 }
 
 function OnboardingFlow() {
@@ -34,24 +78,53 @@ function OnboardingFlow() {
     const typeParam = searchParams.get('type') as AccountType | null;
     const isCreatingNew = searchParams.get('create') === 'true';
 
-    const [step, setStep] = useState<OnboardingStep>('DETAILS');
-    const [accountType, setAccountType] = useState<AccountType>(typeParam ?? 'organizer');
+    const resolvedAccountType = typeParam ?? 'organizer';
+    const draft = typeof window !== 'undefined' ? loadDraft(resolvedAccountType) : null;
 
-    // Form state
-    const [orgName, setOrgName] = useState('');
-    const [orgDesc, setOrgDesc] = useState('');
-    const [country, setCountry] = useState('');
-    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [step, setStep] = useState<OnboardingStep>(draft?.step ?? 'DETAILS');
+    const [accountType, setAccountType] = useState<AccountType>(draft?.accountType ?? resolvedAccountType);
+
+    // Form state — initialized from a persisted draft (if any) so a refresh
+    // or dropped connection mid-flow doesn't force the user to start over.
+    const [orgName, setOrgName] = useState(draft?.orgName ?? '');
+    const [orgDesc, setOrgDesc] = useState(draft?.orgDesc ?? '');
+    const [country, setCountry] = useState(draft?.country ?? '');
+    const [logoUrl, setLogoUrl] = useState<string | null>(draft?.logoUrl ?? null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // KYC state
+    // Set once create_organization_account succeeds. Its presence gates
+    // handleCreateOrganization against calling that RPC a second time on
+    // retry — the RPC has no idempotency guard, so re-calling it after a
+    // refresh mid-KYC-upload would create a second, orphaned organization.
+    const [accountId, setAccountId] = useState<string | null>(draft?.accountId ?? null);
+
+    // KYC state. File selections are session-only (File objects aren't
+    // serializable) — everything else survives a refresh via sessionStorage.
     const [kycRequirements, setKycRequirements] = useState<KycRequirement[]>([]);
-    const [kycFiles, setKycFiles] = useState<Record<string, { file: File; preview: string }[]>>({});
-    const [kycTextData, setKycTextData] = useState<Record<string, string>>({});
+    const [kycFiles, setKycFiles] = useState<KycFileMap>({});
+    const [kycTextData, setKycTextData] = useState<KycTextMap>({});
     const [skipping, setSkipping] = useState(false);
-    const kycFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+    // Persist the resumable subset of form state on every change.
+    useEffect(() => {
+        saveDraft(accountType, { accountType, step, orgName, orgDesc, country, logoUrl, accountId });
+    }, [accountType, step, orgName, orgDesc, country, logoUrl, accountId]);
+
+    // Re-fetch KYC requirements if we resumed directly into VERIFICATION
+    // (kycRequirements itself isn't persisted — it's cheap to refetch and
+    // country/account type could theoretically have changed).
+    useEffect(() => {
+        if (step !== 'VERIFICATION' || kycRequirements.length > 0) return;
+        supabase.schema('api').rpc('get_kyc_requirements', {
+            p_country_code: country,
+            p_account_type: accountType,
+        }).then(({ data, error: fetchError }) => {
+            if (!fetchError) setKycRequirements(data || []);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step]);
 
     // Redirect logged-in users who already have an account of this type,
     // unless they are explicitly creating a new one.
@@ -167,110 +240,60 @@ function OnboardingFlow() {
         setError(null);
 
         try {
-            const { data: accountId, error: rpcError } = await supabase.schema('api').rpc('create_organization_account', {
-                p_org_name: cleanName,
-                p_account_type: accountType,
-                p_country_code: country || null,
-            });
-            if (rpcError) throw rpcError;
+            // If a prior attempt already created the org (e.g. this attempt is
+            // a retry after a network drop during KYC upload), reuse that id
+            // instead of calling create_organization_account again —
+            // the RPC has no dedupe guard and would create a second, orphaned
+            // organization on every retry.
+            let currentAccountId = accountId;
+            if (!currentAccountId) {
+                const { data: newAccountId, error: rpcError } = await supabase.schema('api').rpc('create_organization_account', {
+                    p_org_name: cleanName,
+                    p_account_type: accountType,
+                    p_country_code: country || null,
+                });
+                if (rpcError) throw rpcError;
+                currentAccountId = newAccountId;
+                // Persist immediately — if anything below throws, the retry
+                // path above will find this and skip re-creating the org.
+                setAccountId(currentAccountId);
 
-            if (logoUrl || cleanDesc || country) {
-                if (logoUrl || country) {
-                    const { error: updateError } = await supabase
-                        .schema('api' as any)
-                        .from('v1_accounts')
-                        .update({
-                            ...(logoUrl ? { media: { logo: logoUrl } } : {}),
-                            ...(country ? { country_code: country } : {}),
-                        })
-                        .eq('id', accountId);
-                    if (updateError) console.error('Branding metadata update failed (non-fatal):', updateError);
-                }
-                if (cleanDesc) {
-                    const { error: rpcUpdateError } = await supabase.schema('api').rpc('update_account_settings', {
-                        p_account_id: accountId,
-                        p_display_name: null,
-                        p_info: { description: cleanDesc }
-                    });
-                    if (rpcUpdateError) console.error('Branding description update failed (non-fatal):', rpcUpdateError);
+                if (logoUrl || cleanDesc || country) {
+                    if (logoUrl || country) {
+                        const { error: updateError } = await supabase
+                            .schema('api' as any)
+                            .from('v1_accounts')
+                            .update({
+                                ...(logoUrl ? { media: { logo: logoUrl } } : {}),
+                                ...(country ? { country_code: country } : {}),
+                            })
+                            .eq('id', currentAccountId);
+                        if (updateError) console.error('Branding metadata update failed (non-fatal):', updateError);
+                    }
+                    if (cleanDesc) {
+                        const { error: rpcUpdateError } = await supabase.schema('api').rpc('update_account_settings', {
+                            p_account_id: currentAccountId,
+                            p_display_name: null,
+                            p_info: { description: cleanDesc }
+                        });
+                        if (rpcUpdateError) console.error('Branding description update failed (non-fatal):', rpcUpdateError);
+                    }
                 }
             }
 
-            // Upload KYC documents and text for each requirement
-            for (const req of kycRequirements) {
-                if (req.type === 'file') {
-                    const files = kycFiles[req.id];
-                    if (!files || files.length === 0) continue;
+            if (!currentAccountId) throw new Error('Organization could not be created. Please try again.');
 
-                    const uploadedPaths: string[] = [];
-                    for (const item of files) {
-                        const fileExt = item.file.name.split('.').pop();
-                        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-                        const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
-                            body: {
-                                action: 'upload',
-                                folder: 'accounts',
-                                filename: fileName,
-                                contentType: item.file.type,
-                                mediaType: 'image',
-                            }
-                        });
-
-                        if (signError || !signData?.uploadUrl) {
-                            throw new Error(signError?.message || 'Failed to get upload URL');
-                        }
-
-                        const putResponse = await fetch(signData.uploadUrl, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': item.file.type,
-                            },
-                            body: item.file,
-                        });
-
-                        if (!putResponse.ok) {
-                            throw new Error('Failed to upload KYC document to R2');
-                        }
-
-                        uploadedPaths.push(signData.fileKey);
-                    }
-
-                    if (uploadedPaths.length > 0) {
-                        await supabase.schema('api').rpc('submit_identity_verification', {
-                            p_account_id: accountId,
-                            p_document_type: (req.subtype || req.id) as any, // Cast to kyc_document_type
-                            p_uploaded_docs: uploadedPaths,
-                            p_pii_data: { requirement_id: req.id }
-                        });
-                    }
-                } else if (req.type === 'text') {
-                    const textValue = kycTextData[req.id];
-                    if (!textValue || textValue.trim() === '') continue;
-
-                    await supabase.schema('api').rpc('submit_identity_verification', {
-                        p_account_id: accountId,
-                        p_document_type: (req.subtype || req.id) as any,
-                        p_uploaded_docs: [],
-                        p_pii_data: { requirement_id: req.id, value: textValue.trim() }
-                    });
-                }
-            }
+            await submitKycRequirements(supabase, currentAccountId, kycRequirements, kycFiles, kycTextData);
 
             // Refresh context and set active account
             let memberships = await refreshAccounts();
-            if (!memberships.some((m: any) => m.id === accountId)) {
+            if (!memberships.some((m: any) => m.id === currentAccountId)) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 memberships = await refreshAccounts();
             }
-            if (accountId) {
-                localStorage.setItem('lynks_active_account_id', accountId);
-                // Explicitly set the active account in the user's profile database record
-                // await supabase.from('user_profile').update({ active_account_id: accountId }).eq('id', user.id);
-            }
+            localStorage.setItem('lynks_active_account_id', currentAccountId);
 
-            const newAccount = memberships.find((m: any) => m.id === accountId);
-            const accountRef = newAccount?.slug || accountId;
+            clearDraft(accountType);
 
             // Redirect to the dashboard for the new account type
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
@@ -281,27 +304,6 @@ function OnboardingFlow() {
             setLoading(false);
             setSkipping(false);
         }
-    };
-
-    const handleKycFileChange = (reqId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-        setKycFiles(prev => ({
-            ...prev,
-            [reqId]: [
-                ...(prev[reqId] || []),
-                ...Array.from(files).map(file => ({ file, preview: URL.createObjectURL(file) })),
-            ]
-        }));
-    };
-
-    const removeKycFile = (reqId: string, index: number) => {
-        setKycFiles(prev => {
-            const nextFiles = [...(prev[reqId] || [])];
-            URL.revokeObjectURL(nextFiles[index].preview);
-            nextFiles.splice(index, 1);
-            return { ...prev, [reqId]: nextFiles };
-        });
     };
 
     const isAdvertiser = accountType === 'advertiser';
@@ -404,69 +406,14 @@ function OnboardingFlow() {
                         {error && <div className={styles.errorBox}>{error}</div>}
 
                         <form onSubmit={(e) => handleCreateOrganization(e)} className={styles.form}>
-                            {kycRequirements.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '24px', opacity: 0.6 }}>
-                                    <p>No specific verification requirements for your country.</p>
-                                    <p style={{ fontSize: '12px' }}>You can proceed to launch your workspace.</p>
-                                </div>
-                            ) : (
-                                kycRequirements.map((req) => (
-                                    <div key={req.id} className={styles.inputGroup}>
-                                        <label className={styles.label}>
-                                            {req.label} {req.mandatory && <span className={styles.requiredIndicator}>*Required</span>}
-                                        </label>
-                                        
-                                        {req.type === 'file' ? (
-                                            <>
-                                                <div className={styles.kycUploadArea} onClick={() => kycFileInputRefs.current[req.id]?.click()}>
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '8px', opacity: 0.5 }}>
-                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                                                        </svg>
-                                                        <p style={{ fontSize: '14px', opacity: 0.8 }}>Click to upload {req.label.toLowerCase()}</p>
-                                                        <p style={{ fontSize: '11px', opacity: 0.4, marginTop: '4px' }}>PNG, JPG or PDF up to 10MB</p>
-                                                    </div>
-                                                </div>
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    ref={el => { kycFileInputRefs.current[req.id] = el; }}
-                                                    onChange={(e) => handleKycFileChange(req.id, e)}
-                                                    style={{ display: 'none' }}
-                                                    accept="image/*,application/pdf"
-                                                />
-
-                                                {(kycFiles[req.id] || []).length > 0 && (
-                                                    <div className={styles.fileList}>
-                                                        {kycFiles[req.id].map((item, idx) => (
-                                                            <div key={idx} className={styles.fileItem}>
-                                                                <div className={styles.filePreview}>
-                                                                    {item.file.type.startsWith('image/') ? (
-                                                                        <img src={item.preview} alt="preview" />
-                                                                    ) : (
-                                                                        <div className={styles.pdfIcon}>PDF</div>
-                                                                    )}
-                                                                </div>
-                                                                <span className={styles.fileName}>{item.file.name}</span>
-                                                                <button type="button" className={styles.removeFile} onClick={() => removeKycFile(req.id, idx)}>×</button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <input 
-                                                type="text" 
-                                                className={styles.input} 
-                                                placeholder={`Enter ${req.label.toLowerCase()}...`}
-                                                required={req.mandatory}
-                                                value={kycTextData[req.id] || ''}
-                                                onChange={(e) => setKycTextData(prev => ({ ...prev, [req.id]: e.target.value }))}
-                                            />
-                                        )}
-                                    </div>
-                                ))
-                            )}
+                            <KycRequirementsForm
+                                requirements={kycRequirements}
+                                files={kycFiles}
+                                textValues={kycTextData}
+                                onFilesChange={setKycFiles}
+                                onTextValuesChange={setKycTextData}
+                                emptyStateHint="You can proceed to launch your workspace."
+                            />
 
                             <div className={styles.actions}>
                                 <button type="button" className={styles.backBtn} onClick={() => { setStep('DETAILS'); setError(null); }} disabled={loading}>
@@ -475,10 +422,7 @@ function OnboardingFlow() {
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
-                                    disabled={loading || (kycRequirements.some(r => r.mandatory && (
-                                        (r.type === 'file' && (!kycFiles[r.id] || kycFiles[r.id].length === 0)) ||
-                                        (r.type === 'text' && (!kycTextData[r.id] || kycTextData[r.id].trim() === ''))
-                                    )))}
+                                    disabled={loading || !kycRequirementsSatisfied(kycRequirements, kycFiles, kycTextData)}
                                     style={{ background: accentColor }}
                                 >
                                     {loading ? 'Processing...' : 'Complete & Launch'}
