@@ -58,7 +58,7 @@ const TableRowActions: React.FC<TableRowActionsProps> = ({ actions }) => {
     };
 
     return (
-        <div className={styles.container} ref={containerRef}>
+        <div className={`${styles.container} ${isOpen ? styles.open : ''}`} ref={containerRef}>
             <button
                 className={`${styles.trigger} ${isOpen ? styles.active : ''}`}
                 onClick={toggleMenu}

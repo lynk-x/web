@@ -26,6 +26,7 @@ function VerifyFlow() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isFetchingReqs, setIsFetchingReqs] = useState(true);
+    const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
         if (!isLoading) {
@@ -66,16 +67,47 @@ function VerifyFlow() {
 
         try {
             await submitKycRequirements(supabase, activeAccount.id, kycRequirements, kycFiles, kycTextData);
-
-            // Redirect back to settings based on account type
-            const dashType = activeAccount.type === 'advertiser' ? 'ads' : 'organize';
-            window.location.href = `/dashboard/${dashType}/settings`;
+            setSubmitted(true);
+            setLoading(false);
         } catch (err: unknown) {
             console.error('Error submitting verification:', err);
             setError(getErrorMessage(err) || 'Failed to submit verification. Please try again.');
             setLoading(false);
         }
     };
+
+    const handleContinue = () => {
+        const dashType = activeAccount?.type === 'advertiser' ? 'ads' : 'organize';
+        window.location.href = `/dashboard/${dashType}/settings`;
+    };
+
+    if (submitted) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.onboardingWrapper}>
+                    <div className={styles.formCard}>
+                        <div className={styles.successCard}>
+                            <div className={styles.successIconWrap}>
+                                <svg className={styles.successIcon} width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <h2 className={styles.successTitle}>Documents Submitted</h2>
+                            <p className={styles.successDesc}>
+                                Your verification is now pending review. This usually takes 1-2 business days —
+                                we&apos;ll notify you once a decision has been made. You can check your status anytime
+                                from Account Settings.
+                            </p>
+                            <button type="button" className={styles.continueBtn} onClick={handleContinue}>
+                                Continue to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading || isFetchingReqs) {
         return (

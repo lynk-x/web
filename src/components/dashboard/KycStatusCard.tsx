@@ -8,7 +8,15 @@ interface KycStatusCardProps {
     accountId: string;
 }
 
-type KycStatus = 'pending' | 'approved' | 'rejected' | 'suspended' | 'expired';
+type KycStatus =
+    | 'pending'
+    | 'under_review'
+    | 'approved'
+    | 'rejected'
+    | 'flagged'
+    | 'appealed'
+    | 'expired'
+    | 'archived';
 
 export default function KycStatusCard({ accountId }: KycStatusCardProps) {
     const supabase = createClient();
@@ -41,12 +49,18 @@ export default function KycStatusCard({ accountId }: KycStatusCardProps) {
         switch (status) {
             case 'approved': return { color: '#20F928', bg: 'rgba(32, 249, 40, 0.1)', text: 'Verified' };
             case 'rejected': return { color: '#FF5252', bg: 'rgba(255, 82, 82, 0.1)', text: 'Rejected' };
+            case 'flagged': return { color: '#FF5252', bg: 'rgba(255, 82, 82, 0.1)', text: 'Flagged' };
+            case 'expired': return { color: '#FF5252', bg: 'rgba(255, 82, 82, 0.1)', text: 'Expired' };
+            case 'archived': return { color: 'rgba(255, 255, 255, 0.4)', bg: 'rgba(255, 255, 255, 0.05)', text: 'Archived' };
             case 'pending': return { color: '#F9C920', bg: 'rgba(249, 201, 32, 0.1)', text: 'Pending Review' };
+            case 'under_review': return { color: '#F9C920', bg: 'rgba(249, 201, 32, 0.1)', text: 'Under Review' };
+            case 'appealed': return { color: '#F9C920', bg: 'rgba(249, 201, 32, 0.1)', text: 'Appeal Pending' };
             default: return { color: 'rgba(255, 255, 255, 0.4)', bg: 'rgba(255, 255, 255, 0.05)', text: 'Not Verified' };
         }
     };
 
     const { color, bg, text } = getStatusTheme();
+    const canReverify = status === 'none' || status === 'rejected' || status === 'expired';
 
     return (
         <div className={styles.card}>
@@ -60,9 +74,9 @@ export default function KycStatusCard({ accountId }: KycStatusCardProps) {
                 <div className={styles.dot} style={{ background: color }} />
                 {text}
             </div>
-            {(status === 'none' || status === 'rejected') && (
+            {canReverify && (
                 <button className={styles.verifyBtn} onClick={() => window.location.href = '/verify'}>
-                    {status === 'rejected' ? 'Re-verify' : 'Verify Now'}
+                    {status === 'none' ? 'Verify Now' : 'Re-verify'}
                 </button>
             )}
         </div>

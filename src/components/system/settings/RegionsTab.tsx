@@ -65,7 +65,7 @@ export default function RegionsTab({
                 name: c.display_name,
                 currency: c.currency,
                 timezone: c.timezone,
-                region: c.region,
+                region: c.region || '',
                 phone_prefix: c.info?.phone_prefix ?? null,
                 phone_digits: c.info?.phone_digits ?? null,
                 is_active: c.is_active,
@@ -177,7 +177,7 @@ export default function RegionsTab({
             ),
         },
         { header: 'Currency', render: (c) => <code style={{ fontSize: '13px', fontWeight: 600 }}>{c.currency}</code> },
-        { header: 'Region', render: (c) => <div style={{ fontSize: '13px', opacity: 0.8, textTransform: 'capitalize' }}>{c.region.replace(/_/g, ' ')}</div> },
+        { header: 'Region', render: (c) => <div style={{ fontSize: '13px', opacity: 0.8, textTransform: 'capitalize' }}>{(c.region || '').replace(/_/g, ' ')}</div> },
         { header: 'Timezone', render: (c) => <div style={{ fontSize: '13px', opacity: 0.8 }}>{c.timezone}</div> },
         {
             header: 'Status',
@@ -260,6 +260,7 @@ export default function RegionsTab({
                                     value={editForm.region}
                                     onChange={e => setEditForm({ ...editForm, region: e.target.value })}
                                 >
+                                    <option value="">Select Region...</option>
                                     <option value="africa">Africa</option>
                                     <option value="europe">Europe</option>
                                     <option value="north_america">North America</option>
