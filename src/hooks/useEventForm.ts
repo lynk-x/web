@@ -106,7 +106,7 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
 
         formData.tickets.forEach((ticket, i) => {
             if (!ticket.display_name.trim()) next[`tickets.${i}.display_name`] = 'Ticket name is required';
-            if (!ticket.price || parseFloat(ticket.price) < 0) next[`tickets.${i}.price`] = 'Price must be 0 or more';
+            if (formData.isPaid && (!ticket.price || parseFloat(ticket.price) < 0)) next[`tickets.${i}.price`] = 'Price must be 0 or more';
             if (!ticket.capacity || parseInt(ticket.capacity) <= 0) next[`tickets.${i}.capacity`] = 'Quantity must be a positive integer';
         });
 
@@ -206,7 +206,7 @@ export function useEventForm({ initialData, isEditMode = false, onSubmit }: UseE
                 const pr = `tickets.${i}.price`;
                 const cp = `tickets.${i}.capacity`;
                 if (!ticket.display_name.trim()) setError(dn, 'Ticket name is required'); else clearError(dn);
-                if (!ticket.price || parseFloat(ticket.price) < 0) setError(pr, 'Price must be 0 or more'); else clearError(pr);
+                if (formData.isPaid && (!ticket.price || parseFloat(ticket.price) < 0)) setError(pr, 'Price must be 0 or more'); else clearError(pr);
                 if (!ticket.capacity || parseInt(ticket.capacity) <= 0) setError(cp, 'Quantity must be a positive integer'); else clearError(cp);
             });
         }
