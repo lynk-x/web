@@ -148,10 +148,17 @@ export function kycRequirementsSatisfied(
 }
 
 /**
- * Uploads every file requirement to R2 via the media-signer function and
- * submits each requirement (file or text) via submit_identity_verification.
- * Shared upload/submit logic previously duplicated between onboarding and
- * verify's submit handlers.
+ * Uploads every file requirement to R2 via the media-signer function, then
+ * submits a single identity_verifications row covering all requirements via
+ * submit_identity_verification. Shared upload/submit logic previously
+ * duplicated between onboarding and verify's submit handlers.
+ *
+ * submit_identity_verification models one verification *attempt* (one row:
+ * one document_type, one uploaded_documents array, one pii_data blob) — it
+ * must be called once per submission, not once per requirement. Calling it
+ * per-requirement both 404s (missing required p_tier_slug) and, once that's
+ * fixed, would still fail every call after the first: the RPC rejects a new
+ * submission while one is already 'pending' for the account.
  */
 export async function submitKycRequirements(
     supabase: ReturnType<typeof import('@/utils/supabase/client').createClient>,
@@ -159,13 +166,18 @@ export async function submitKycRequirements(
     requirements: KycRequirement[],
     files: KycFileMap,
     textValues: KycTextMap,
+    tierSlug: string = 'tier_1_basic',
 ): Promise<void> {
+    const uploadedDocs: { requirement_id: string; subtype?: string; file_keys: string[] }[] = [];
+    const piiData: Record<string, string> = {};
+    let primaryDocumentType: string | undefined;
+
     for (const req of requirements) {
         if (req.type === 'file') {
             const items = files[req.id];
             if (!items || items.length === 0) continue;
 
-            const uploadedPaths: string[] = [];
+            const fileKeys: string[] = [];
             for (const item of items) {
                 const fileExt = item.file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -194,27 +206,28 @@ export async function submitKycRequirements(
                     throw new Error('Failed to upload KYC document to R2');
                 }
 
-                uploadedPaths.push(signData.fileKey);
+                fileKeys.push(signData.fileKey);
             }
 
-            if (uploadedPaths.length > 0) {
-                await supabase.schema('api').rpc('submit_identity_verification', {
-                    p_account_id: accountId,
-                    p_document_type: (req.subtype || req.id) as any,
-                    p_uploaded_docs: uploadedPaths,
-                    p_pii_data: { requirement_id: req.id },
-                });
+            if (fileKeys.length > 0) {
+                uploadedDocs.push({ requirement_id: req.id, subtype: req.subtype, file_keys: fileKeys });
+                primaryDocumentType ??= req.subtype || req.id;
             }
         } else if (req.type === 'text') {
             const textValue = textValues[req.id];
             if (!textValue || textValue.trim() === '') continue;
 
-            await supabase.schema('api').rpc('submit_identity_verification', {
-                p_account_id: accountId,
-                p_document_type: (req.subtype || req.id) as any,
-                p_uploaded_docs: [],
-                p_pii_data: { requirement_id: req.id, value: textValue.trim() },
-            });
+            piiData[req.id] = textValue.trim();
         }
     }
+
+    if (uploadedDocs.length === 0 && Object.keys(piiData).length === 0) return;
+
+    await supabase.schema('api').rpc('submit_identity_verification', {
+        p_account_id: accountId,
+        p_tier_slug: tierSlug,
+        p_document_type: (primaryDocumentType || 'national_id') as any,
+        p_uploaded_docs: uploadedDocs,
+        p_pii_data: piiData,
+    });
 }
