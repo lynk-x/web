@@ -45,3 +45,8 @@
     color: var(--color-interface-error);
     opacity: 1;
 }
+
+.tabWarning {
+    color: var(--color-interface-warning);
+    opacity: 1;
+}

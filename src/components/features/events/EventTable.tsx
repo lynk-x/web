@@ -397,7 +397,19 @@ export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: E
         },
         {
             header: 'Event Name',
-            render: (event) => <div style={{ fontWeight: 500 }}>{event.title || (event as EventRow).name}</div>,
+            render: (event) => (
+                <div className={styles.eventInfo}>
+                    <div
+                        className={styles.thumbnail}
+                        style={event.thumbnailUrl ? { backgroundImage: `url(${event.thumbnailUrl})` } : {}}
+                    >
+                        {!event.thumbnailUrl && <div className={styles.thumbnailPlaceholder}>IMG</div>}
+                    </div>
+                    <div className={styles.eventDetails}>
+                        <span className={styles.eventTitle}>{event.title || (event as EventRow).name}</span>
+                    </div>
+                </div>
+            ),
         },
         {
             header: 'Date & Time',

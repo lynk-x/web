@@ -315,7 +315,7 @@ function SettingsContent() {
                         {(permissionsLoading || can('can_view_finance') || can('can_manage_billing')) && (
                             <TabsTrigger
                                 value="billing"
-                                className={onboardingStatus && !onboardingStatus.wallet_exists ? tabStyles.tabError : undefined}
+                                className={onboardingStatus && !onboardingStatus.wallet_exists ? tabStyles.tabWarning : undefined}
                             >
                                 Billing & Wallet
                             </TabsTrigger>
