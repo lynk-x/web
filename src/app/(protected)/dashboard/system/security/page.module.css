@@ -1,0 +1,157 @@
+.loadingState {
+    padding: 48px 24px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+}
+
+.emptyText {
+    padding: 24px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+}
+
+/* Encryption tab */
+.encryptionPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 24px;
+}
+
+.statusRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.statusLabel {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 4px;
+}
+
+.statusValue {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+}
+
+.rotateBtn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: var(--color-interface-error);
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+
+.rotateBtn:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.rotateBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.versionTable h3 {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+}
+
+.versionGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.versionItem {
+    display: grid;
+    grid-template-columns: 100px 100px 1fr;
+    align-items: center;
+    gap: 16px;
+}
+
+.versionItem label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+}
+
+.versionItem span {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.versionBar {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.versionBarFill {
+    height: 100%;
+    background: var(--color-brand-primary);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* Vault tab */
+.secretsList {
+    display: flex;
+    flex-direction: column;
+}
+
+.secretItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-interface-outline);
+}
+
+.secretItem:last-child {
+    border-bottom: none;
+}
+
+.secretInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.secretName {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: monospace;
+    color: var(--color-utility-primaryText);
+}
+
+.secretDesc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.secretDate {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
