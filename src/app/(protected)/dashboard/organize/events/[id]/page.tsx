@@ -72,12 +72,16 @@ export default function EventDetailPage() {
         if (!id || !activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_organizer_event_details', {
-                p_account_id: activeAccount.id,
-                p_event_id: id
-            });
+            const [{ data, error }, { data: analytics, error: analyticsError }] = await Promise.all([
+                supabase.schema('api').rpc('get_organizer_event_details', {
+                    p_account_id: activeAccount.id,
+                    p_event_id: id,
+                }),
+                supabase.schema('api').rpc('get_event_analytics', { p_event_id: id }),
+            ]);
 
             if (error) throw error;
+            if (analyticsError) throw analyticsError;
             if (!data) {
                 showToast('Event not found or access denied.', 'error');
                 router.push('/dashboard/organize/events');
@@ -85,10 +89,10 @@ export default function EventDetailPage() {
             }
 
             setEvent(data.event as EventDetail);
-            setRevenueTotal(data.stats.revenue || 0);
-            setScanCount(data.stats.scans || 0);
-            setForumMemberCount(data.stats.community || 0);
-            
+            setRevenueTotal(analytics?.gross_revenue || 0);
+            setScanCount(analytics?.scan_count || 0);
+            setForumMemberCount(analytics?.forum_members || 0);
+
             // Override ticket tiers from the RPC response
             setEvent(prev => prev ? { ...prev, ticket_tiers: data.tiers } : null);
 

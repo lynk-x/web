@@ -44,14 +44,15 @@ export default function CheckInLogsPage() {
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
         try {
+            // api.v1_tickets does the ticket_tiers/user_profile joins server-side
+            // rather than relying on a PostgREST embed: public.tickets is a plain
+            // proxy view over ticketing.tickets with no FK metadata of its own,
+            // so `user_profile!user_id`/`user_profile!redeemed_by_id` embeds
+            // can't be resolved against it.
             const { data, error } = await supabase
-                .from('tickets')
-                .select(`
-                    id, ticket_code, status, redeemed_at,
-                    tier:ticket_tiers!ticket_tier_id(display_name),
-                    buyer:user_profile!user_id(full_name, user_name),
-                    scanner:user_profile!redeemed_by_id(full_name, user_name)
-                `)
+                .schema('api')
+                .from('v1_tickets')
+                .select('id, status, redeemed_at, tier_name, holder_name, holder_user_name, scanner_name, scanner_user_name')
                 .eq('event_id', eventId)
                 .order('redeemed_at', { ascending: false, nullsFirst: false });
 
@@ -61,31 +62,24 @@ export default function CheckInLogsPage() {
                 id: string;
                 status: CheckInLog['status'];
                 redeemed_at: string | null;
-                tier: { display_name: string }[] | { display_name: string } | null;
-                buyer: { full_name: string; user_name: string }[] | { full_name: string; user_name: string } | null;
-                scanner: { full_name: string; user_name: string }[] | { full_name: string; user_name: string } | null;
+                tier_name: string | null;
+                holder_name: string | null;
+                holder_user_name: string | null;
+                scanner_name: string | null;
+                scanner_user_name: string | null;
             }
 
-            const getFirst = <T,>(val: T | T[] | null | undefined): T | null | undefined => 
-                Array.isArray(val) ? val[0] : (val as T | null | undefined);
-
-            const mappedLogs: CheckInLog[] = (data || []).map((row: TicketRow) => {
-                const tier = getFirst(row.tier);
-                const buyer = getFirst(row.buyer);
-                const scanner = getFirst(row.scanner);
-
-                return {
-                    id: row.id,
-                    attendeeName: buyer?.full_name || buyer?.user_name || 'Anonymous',
-                    attendeeAvatar: null,
-                    ticketTier: tier?.display_name || 'Unknown Tier',
-                    status: row.status,
-                    scannedBy: scanner?.full_name || scanner?.user_name || 'System',
-                    timestamp: row.redeemed_at 
-                        ? new Date(row.redeemed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
-                        : '-',
-                };
-            });
+            const mappedLogs: CheckInLog[] = (data || []).map((row: TicketRow) => ({
+                id: row.id,
+                attendeeName: row.holder_name || row.holder_user_name || 'Anonymous',
+                attendeeAvatar: null,
+                ticketTier: row.tier_name || 'Unknown Tier',
+                status: row.status,
+                scannedBy: row.scanner_name || row.scanner_user_name || 'System',
+                timestamp: row.redeemed_at
+                    ? new Date(row.redeemed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    : '-',
+            }));
 
             setLogs(mappedLogs);
 
