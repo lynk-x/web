@@ -134,7 +134,6 @@ export default function PageHeader({
             className={styles.header}
             style={{
                 alignItems: 'center',
-                borderBottom: hideDivider ? 'none' : '1px solid var(--color-interface-outline)',
                 paddingBottom: hideDivider ? '0' : '24px',
             }}
         >
@@ -151,8 +150,9 @@ export default function PageHeader({
                 {customAction}
                 {secondaryAction && renderAction(secondaryAction, 'secondary')}
                 {resolvedPrimaryAction && renderAction(resolvedPrimaryAction, 'primary')}
-                {(closeHref || onClose) && <CloseButton onClick={handleClose} />}
             </div>
+
+            {(closeHref || onClose) && <CloseButton onClick={handleClose} className={styles.headerCloseBtn} />}
         </header>
     );
 }

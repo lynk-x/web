@@ -15,6 +15,10 @@
     align-items: center;
 }
 
+.headerCloseBtn {
+    margin-left: 12px;
+}
+
 .title {
     font-size: 24px;
     font-weight: 700;

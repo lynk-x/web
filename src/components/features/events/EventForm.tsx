@@ -164,23 +164,18 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
             {ConfirmDialog}
             <header className={styles.header}>
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <CloseButton onClick={handleClose} aria-label="Back to Events" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {pageTitle && <h1 className={styles.title}>{pageTitle}</h1>}
+                        {isDraftLoaded && !isEditMode && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '10px', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--color-brand-primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Draft Restored</span>
+                                <button onClick={discardDraft} style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>Discard</button>
+                            </div>
+                        )}
                     </div>
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {pageTitle && <h1 className={styles.title}>{pageTitle}</h1>}
-                            {isDraftLoaded && !isEditMode && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '10px', background: 'rgba(52, 211, 153, 0.2)', color: 'var(--color-brand-primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Draft Restored</span>
-                                    <button onClick={discardDraft} style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>Discard</button>
-                                </div>
-                            )}
-                        </div>
-                        <p className={styles.subtitle}>
-                            {isEditMode ? 'Make changes to your event' : 'Create a new event from scratch'}
-                        </p>
-                    </div>
+                    <p className={styles.subtitle}>
+                        {isEditMode ? 'Make changes to your event' : 'Create a new event from scratch'}
+                    </p>
                 </div>
 
                 {/* Draft Restoration Banner */}
@@ -197,19 +192,22 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </div>
                 )}
 
-                <div className={`${styles.actions} tour-form-actions`}>
-                    {!isEditMode && (
-                        <button 
-                            className={styles.secondaryBtn} 
-                            onClick={() => handleSubmit('draft')} 
-                            disabled={loading}
-                        >
-                            Save Draft
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className={`${styles.actions} tour-form-actions`}>
+                        {!isEditMode && (
+                            <button
+                                className={styles.secondaryBtn}
+                                onClick={() => handleSubmit('draft')}
+                                disabled={loading}
+                            >
+                                Save Draft
+                            </button>
+                        )}
+                        <button className={styles.saveBtn} onClick={() => handleSubmit('published')} disabled={loading}>
+                            {loading ? 'Saving...' : submitBtnText}
                         </button>
-                    )}
-                    <button className={styles.saveBtn} onClick={() => handleSubmit('published')} disabled={loading}>
-                        {loading ? 'Saving...' : submitBtnText}
-                    </button>
+                    </div>
+                    <CloseButton onClick={handleClose} aria-label="Back to Events" />
                 </div>
             </header>
 
