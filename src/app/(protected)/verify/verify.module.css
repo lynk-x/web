@@ -156,6 +156,34 @@
     margin-bottom: 24px;
 }
 
+.rejectionBanner {
+    background: rgba(249, 201, 32, 0.08);
+    border: 1px solid rgba(249, 201, 32, 0.25);
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rejectionBanner strong {
+    color: #F9C920;
+    font-size: 13px;
+}
+
+.rejectionBanner p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.rejectionBanner span {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+}
+
 /* KYC Styles */
 .kycUploadArea {
     width: 100%;

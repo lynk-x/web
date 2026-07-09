@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import styles from './KycRequirementsForm.module.css';
 
 export interface KycRequirement {
@@ -9,6 +9,16 @@ export interface KycRequirement {
     label: string;
     subtype?: string;
     mandatory: boolean;
+    /**
+     * For file requirements backed by a physical two-sided document (a
+     * national ID, alien card, etc.) — when set, renders one labeled
+     * dropzone per side instead of a single freeform multi-file uploader,
+     * so reviewers get an unambiguous front/back pair rather than
+     * unlabeled "Page 1"/"Page 2" images.
+     */
+    sides?: string[];
+    /** Short one-line tip shown under the label — e.g. what makes a photo acceptable. */
+    hint?: string;
 }
 
 export type KycFileMap = Record<string, { file: File; preview: string }[]>;
@@ -41,23 +51,89 @@ export function KycRequirementsForm({
     emptyStateHint = 'You can proceed to launch your workspace.',
 }: KycRequirementsFormProps) {
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+    const sideInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-    const handleFileChange = (reqId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-        const selected = e.target.files;
-        if (!selected) return;
+    // A just-selected image is staged here before being committed to `files`,
+    // so the user can confirm it's readable (or retake) instead of only
+    // discovering a bad photo after a reviewer rejects it later. PDFs skip
+    // this step — there's nothing useful to zoom into.
+    const [pendingReview, setPendingReview] = useState<{
+        reqId: string;
+        sideIndex?: number;
+        file: File;
+        preview: string;
+    } | null>(null);
+
+    const stageOrCommitFile = (reqId: string, file: File, sideIndex?: number) => {
+        if (!file.type.startsWith('image/')) {
+            if (sideIndex !== undefined) setSideFile(reqId, sideIndex, file);
+            else commitFiles(reqId, [file]);
+            return;
+        }
+        setPendingReview({ reqId, sideIndex, file, preview: URL.createObjectURL(file) });
+    };
+
+    const confirmPendingReview = () => {
+        if (!pendingReview) return;
+        const { reqId, sideIndex, file } = pendingReview;
+        if (sideIndex !== undefined) setSideFile(reqId, sideIndex, file);
+        else commitFiles(reqId, [file]);
+        setPendingReview(null);
+    };
+
+    const retakePendingReview = () => {
+        if (!pendingReview) return;
+        URL.revokeObjectURL(pendingReview.preview);
+        const { reqId, sideIndex } = pendingReview;
+        setPendingReview(null);
+        if (sideIndex !== undefined) sideInputRefs.current[`${reqId}_${sideIndex}`]?.click();
+        else fileInputRefs.current[reqId]?.click();
+    };
+
+    const commitFiles = (reqId: string, newFiles: File[]) => {
         onFilesChange({
             ...files,
             [reqId]: [
                 ...(files[reqId] || []),
-                ...Array.from(selected).map(file => ({ file, preview: URL.createObjectURL(file) })),
+                ...newFiles.map(file => ({ file, preview: URL.createObjectURL(file) })),
             ],
         });
+    };
+
+    const handleFileChange = (reqId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const selected = e.target.files;
+        if (!selected || selected.length === 0) return;
+        // Single-image selection goes through the readability-confirmation
+        // step; multi-select (or non-image files) commits directly.
+        if (selected.length === 1 && selected[0].type.startsWith('image/')) {
+            stageOrCommitFile(reqId, selected[0]);
+        } else {
+            commitFiles(reqId, Array.from(selected));
+        }
+        e.target.value = '';
     };
 
     const removeFile = (reqId: string, index: number) => {
         const nextFiles = [...(files[reqId] || [])];
         URL.revokeObjectURL(nextFiles[index].preview);
         nextFiles.splice(index, 1);
+        onFilesChange({ ...files, [reqId]: nextFiles });
+    };
+
+    /** Sets (or replaces) the file at a fixed side index — e.g. 0 = Front, 1 = Back. */
+    const setSideFile = (reqId: string, sideIndex: number, file: File) => {
+        const nextFiles = [...(files[reqId] || [])];
+        if (nextFiles[sideIndex]) URL.revokeObjectURL(nextFiles[sideIndex].preview);
+        nextFiles[sideIndex] = { file, preview: URL.createObjectURL(file) };
+        onFilesChange({ ...files, [reqId]: nextFiles });
+    };
+
+    const removeSideFile = (reqId: string, sideIndex: number) => {
+        const nextFiles = [...(files[reqId] || [])];
+        if (nextFiles[sideIndex]) {
+            URL.revokeObjectURL(nextFiles[sideIndex].preview);
+            delete nextFiles[sideIndex];
+        }
         onFilesChange({ ...files, [reqId]: nextFiles });
     };
 
@@ -77,8 +153,56 @@ export function KycRequirementsForm({
                     <label className={styles.label}>
                         {req.label} {req.mandatory && <span className={styles.requiredIndicator}>*Required</span>}
                     </label>
+                    {req.hint && <p className={styles.hint}>{req.hint}</p>}
 
-                    {req.type === 'file' ? (
+                    {req.type === 'file' && req.sides ? (
+                        <div className={styles.sidesGrid}>
+                            {req.sides.map((sideLabel, sideIndex) => {
+                                const item = (files[req.id] || [])[sideIndex];
+                                return (
+                                    <div key={sideLabel} className={styles.sideSlot}>
+                                        <span className={styles.sideLabel}>{sideLabel}</span>
+                                        {item ? (
+                                            <div className={styles.fileItem}>
+                                                <div className={styles.filePreview}>
+                                                    {item.file.type.startsWith('image/') ? (
+                                                        <img src={item.preview} alt={`${sideLabel} preview`} />
+                                                    ) : (
+                                                        <div className={styles.pdfIcon}>PDF</div>
+                                                    )}
+                                                </div>
+                                                <span className={styles.fileName}>{item.file.name}</span>
+                                                <button type="button" className={styles.removeFile} onClick={() => removeSideFile(req.id, sideIndex)}>×</button>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className={styles.kycUploadArea}
+                                                onClick={() => sideInputRefs.current[`${req.id}_${sideIndex}`]?.click()}
+                                            >
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '6px', opacity: 0.5 }}>
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                                                    </svg>
+                                                    <p style={{ fontSize: '13px', opacity: 0.8 }}>Upload {sideLabel.toLowerCase()}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            ref={el => { sideInputRefs.current[`${req.id}_${sideIndex}`] = el; }}
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) stageOrCommitFile(req.id, file, sideIndex);
+                                                e.target.value = '';
+                                            }}
+                                            style={{ display: 'none' }}
+                                            accept="image/*,application/pdf"
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : req.type === 'file' ? (
                         <>
                             <div
                                 className={styles.kycUploadArea}
@@ -131,6 +255,26 @@ export function KycRequirementsForm({
                     )}
                 </div>
             ))}
+
+            {pendingReview && (
+                <div className={styles.reviewOverlay} onClick={retakePendingReview}>
+                    <div className={styles.reviewModal} onClick={(e) => e.stopPropagation()}>
+                        <p className={styles.reviewTitle}>Is this photo clear and readable?</p>
+                        <div className={styles.reviewImageWrap}>
+                            <img src={pendingReview.preview} alt="Review upload" />
+                        </div>
+                        <p className={styles.reviewHint}>Check that all corners and text are visible, with no glare or blur.</p>
+                        <div className={styles.reviewActions}>
+                            <button type="button" className={styles.reviewRetakeBtn} onClick={retakePendingReview}>
+                                Retake
+                            </button>
+                            <button type="button" className={styles.reviewConfirmBtn} onClick={confirmPendingReview}>
+                                Use This Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
@@ -142,7 +286,9 @@ export function kycRequirementsSatisfied(
     textValues: KycTextMap,
 ): boolean {
     return !requirements.some(r => r.mandatory && (
-        (r.type === 'file' && (!files[r.id] || files[r.id].length === 0)) ||
+        (r.type === 'file' && r.sides
+            ? r.sides.some((_, i) => !(files[r.id] || [])[i])
+            : r.type === 'file' && (!files[r.id] || files[r.id].length === 0)) ||
         (r.type === 'text' && (!textValues[r.id] || textValues[r.id].trim() === ''))
     ));
 }
@@ -180,7 +326,7 @@ export async function submitKycRequirements(
     textValues: KycTextMap,
     tierSlug: string = 'tier_1_basic',
 ): Promise<void> {
-    const uploadedDocs: { requirement_id: string; subtype?: string; file_keys: string[] }[] = [];
+    const uploadedDocs: string[] = [];
     const piiData: Record<string, string> = {};
     let primaryDocumentType: string | undefined;
 
@@ -222,7 +368,7 @@ export async function submitKycRequirements(
             }
 
             if (fileKeys.length > 0) {
-                uploadedDocs.push({ requirement_id: req.id, subtype: req.subtype, file_keys: fileKeys });
+                uploadedDocs.push(...fileKeys);
                 primaryDocumentType ??= resolveDocumentType(req.subtype || req.id);
             }
         } else if (req.type === 'text') {

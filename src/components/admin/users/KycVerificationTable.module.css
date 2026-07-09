@@ -6,7 +6,7 @@
 
 .accountName {
     font-weight: 600;
-    color: var(--color-foreground-primary);
+    color: var(--color-utility-primaryText);
 }
 
 .accountId {

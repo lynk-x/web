@@ -27,6 +27,7 @@ function VerifyFlow() {
     const [error, setError] = useState<string | null>(null);
     const [isFetchingReqs, setIsFetchingReqs] = useState(true);
     const [submitted, setSubmitted] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isLoading) {
@@ -39,12 +40,20 @@ function VerifyFlow() {
             const fetchRequirements = async () => {
                 setIsFetchingReqs(true);
                 try {
-                    const { data, error: fetchError } = await supabase.schema('api').rpc('get_kyc_requirements', {
-                        p_country_code: activeAccount.country_code || 'KE', // Fallback to KE if null
-                        p_account_type: activeAccount.type
-                    });
+                    const [{ data, error: fetchError }, { data: statusData }] = await Promise.all([
+                        supabase.schema('api').rpc('get_kyc_requirements', {
+                            p_country_code: activeAccount.country_code || 'KE', // Fallback to KE if null
+                            p_account_type: activeAccount.type
+                        }),
+                        supabase.schema('api').rpc('get_account_kyc_status', {
+                            p_account_id: activeAccount.id
+                        }),
+                    ]);
                     if (fetchError) throw fetchError;
                     setKycRequirements(data || []);
+                    if (statusData?.status === 'rejected' && statusData.rejection_reason) {
+                        setRejectionReason(statusData.rejection_reason);
+                    }
                 } catch (err) {
                     console.error('Error fetching KYC requirements:', err);
                     setError('Failed to fetch verification requirements for your country.');
@@ -52,7 +61,7 @@ function VerifyFlow() {
                     setIsFetchingReqs(false);
                 }
             };
-            
+
             fetchRequirements();
         }
     }, [isLoading, activeAccount, supabase, router]);
@@ -136,6 +145,13 @@ function VerifyFlow() {
                 </div>
 
                 <div className={styles.formCard}>
+                    {rejectionReason && (
+                        <div className={styles.rejectionBanner}>
+                            <strong>Your previous submission was rejected:</strong>
+                            <p>{rejectionReason}</p>
+                            <span>Please address the issue above before resubmitting.</span>
+                        </div>
+                    )}
                     {error && <div className={styles.errorBox}>{error}</div>}
 
                     <form onSubmit={handleVerify} className={styles.form}>

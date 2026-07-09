@@ -17,6 +17,13 @@
     font-size: 12px;
 }
 
+.hint {
+    margin: -4px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.45);
+}
+
 .input {
     width: 100%;
     padding: 16px 20px;
@@ -129,4 +136,122 @@
     text-align: center;
     padding: 24px;
     opacity: 0.6;
+}
+
+.sidesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.sideSlot {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sideLabel {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sideSlot .kycUploadArea {
+    padding: 20px;
+}
+
+.sideSlot .fileItem {
+    margin-top: 0;
+}
+
+.reviewOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+}
+
+.reviewModal {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reviewTitle {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+}
+
+.reviewImageWrap {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.reviewImageWrap img {
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    display: block;
+}
+
+.reviewHint {
+    margin: 0;
+    font-size: 12px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.reviewActions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.reviewRetakeBtn,
+.reviewConfirmBtn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.reviewRetakeBtn {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.reviewRetakeBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.reviewConfirmBtn {
+    background: var(--color-brand-primary);
+    color: #000;
+}
+
+.reviewConfirmBtn:hover {
+    filter: brightness(1.1);
 }

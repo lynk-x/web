@@ -158,10 +158,13 @@ const CheckoutView: React.FC = () => {
                         clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
                         setPaymentStatus('completed');
+
+                        const itemCountAtCompletion = items.length;
+                        const firstEventId = items[0]?.eventId || '';
                         clearCart();
                         // Use the M-Pesa checkout request ID as the order reference so
                         // support teams can look it up in the transactions table.
-                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}`);
+                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}`);
                     } else if (newStatus === 'failed' || newStatus === 'cancelled') {
                         clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
@@ -457,8 +460,10 @@ const CheckoutView: React.FC = () => {
             if (data.status === 'completed' && data.reason === 'ticket_sale') {
                 sessionStorage.removeItem('lynk-x-payment');
                 setPaymentStatus('completed');
+                const itemCountAtCompletion = items.length;
+                const firstEventId = items[0]?.eventId || '';
                 clearCart();
-                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}`);
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}`);
             } else if (data.status === 'pending') {
                 setPaymentError('Payment is still processing. Please wait for the confirmation SMS from M-Pesa and try again shortly.');
             } else if (data.status === 'failed' || data.status === 'cancelled') {
@@ -474,10 +479,22 @@ const CheckoutView: React.FC = () => {
         }
     };
 
+
+    if (paymentStatus === 'completed') {
+        return (
+            <div className={styles.container}>
+                <main className={styles.emptyStateContainer}>
+                    <Skeleton width="48px" height="48px" style={{ borderRadius: '50%', margin: '0 auto 16px' }} />
+                    <p className={styles.emptyStateText}>Payment confirmed — redirecting…</p>
+                </main>
+            </div>
+        );
+    }
+
     // ── Empty cart ────────────────────────────────────────────────────────────
     if (items.length === 0 && !isLoading) {
         return (
-            <CheckoutErrorView 
+            <CheckoutErrorView
                 title="Your cart is empty"
                 description="Looks like you haven't added any tickets yet."
                 actionLabel="Browse Events"
