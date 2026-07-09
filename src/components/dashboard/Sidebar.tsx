@@ -8,6 +8,7 @@ import styles from './Sidebar.module.css';
 import { navGroups } from './sidebarNav';
 import type { DashboardMode } from '@/types/shared';
 import OrganizationSwitcher from './OrganizationSwitcher';
+import NotificationBellButton from './NotificationBellButton';
 import { useAuth } from '@/context/AuthContext';
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -110,8 +111,9 @@ const Sidebar = () => {
                 </div>
             </nav>
 
-            {/* Organization Switcher */}
+            {/* Notifications + Organization Switcher */}
             <div style={{ marginTop: 'auto' }}>
+                <NotificationBellButton />
                 <OrganizationSwitcher pos="bottom" />
             </div>
 
