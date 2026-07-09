@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { exportToCSV } from '@/utils/export';
 import { formatCurrency } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 const COLORS = ['#20F928', '#0088FE', '#FFBB28', '#FF8042', '#a855f7'];
 
@@ -99,10 +99,10 @@ export default function EventInsightsPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title={eventTitle}
                 subtitle="Detailed performance metrics and audience insights."
-                backLabel="Back to Analytics"
+                closeHref={`/dashboard/organize/events/${id}`}
                 secondaryAction={{
                     label: 'Export Data',
                     onClick: handleExport,

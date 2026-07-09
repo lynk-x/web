@@ -7,7 +7,8 @@ import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import OutreachPreview from '@/components/admin/outreach/OutreachPreview';
 
@@ -16,6 +17,7 @@ export default function CreateBroadcastPage() {
     const { showToast } = useToast();
     const supabase = createClient();
     const { enabled: isBroadcastEnabled, isLoading: isFlagLoading } = useFeatureFlag('enable_admin_broadcast');
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -73,12 +75,21 @@ export default function CreateBroadcastPage() {
         );
     }
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.back();
+    };
+
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Create Broadcast Notification"
                 subtitle="Send a platform-wide alert or targeted notification."
-                isDirty={isDirty}
+                onClose={handleClose}
                 primaryAction={{
                     label: 'Send Broadcast',
                     onClick: () => handleSendNotification(),

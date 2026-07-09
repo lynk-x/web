@@ -9,7 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 
 import type { OrganizerEventFormData } from '@/types/organize';
@@ -155,10 +155,10 @@ export default function AdminCreateEventPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Admin: Create New Event"
                 subtitle="Add a platform-level event or override existing listings."
-                backLabel="Back to Events"
+                closeHref="/dashboard/admin/events"
             />
 
             {/* Account Selector — admin chooses owning account */}

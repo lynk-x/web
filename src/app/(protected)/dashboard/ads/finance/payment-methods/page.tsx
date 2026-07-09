@@ -6,7 +6,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import Spinner from '@/components/shared/Spinner';
 
 export default function AddPaymentMethodPage() {
@@ -36,10 +36,10 @@ export default function AddPaymentMethodPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Add Payment Method"
                 subtitle="Securely add a new card to your account for ad payments."
-                backLabel="Back to Billing"
+                closeHref="/dashboard/ads/finance"
             />
 
             <div className={adminStyles.pageCard} style={{ marginTop: '24px', maxWidth: '600px' }}>

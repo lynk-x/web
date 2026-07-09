@@ -6,13 +6,14 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/utils/error';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import BackButton from '@/components/shared/BackButton';
+import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/dashboard/PageHeader';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import Spinner from '@/components/shared/Spinner';
 
 export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const router = useRouter();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
@@ -91,12 +92,10 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
 
     return (
         <div>
-            <div style={{ marginBottom: '8px' }}>
-                <BackButton label="Back to Analytics" />
-            </div>
             <PageHeader
                 title={`${campaignTitle} Performance`}
                 subtitle="Detailed breakdown of your campaign metrics over the last 30 days."
+                onClose={() => router.back()}
             />
 
             <div className={sharedStyles.pageCard}>

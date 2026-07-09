@@ -7,15 +7,17 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import Badge from '@/components/shared/Badge';
 import type { ActionItem } from '@/types/shared';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function CreateMappingPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
     const publicClient = useMemo(() => createClient(), []);
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [mappingType, setMappingType] = useState<'category' | 'event'>('category');
@@ -87,9 +89,16 @@ export default function CreateMappingPage() {
         }
     };
 
+    const handleClose = async () => {
+        const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+        if (!confirmed) return;
+        router.push('/dashboard/system/registry');
+    };
+
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Create Tag Mapping"
                 subtitle="Link tags to categories or specific events."
                 primaryAction={{
@@ -97,7 +106,7 @@ export default function CreateMappingPage() {
                     onClick: handleSave,
                     isLoading: isLoading
                 }}
-                isDirty={true}
+                onClose={handleClose}
             />
 
             <div className={adminStyles.formCard}>

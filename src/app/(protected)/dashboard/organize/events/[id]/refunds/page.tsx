@@ -7,7 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { formatCurrency, formatDate } from '@/utils/format';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
@@ -183,12 +183,12 @@ export default function EventRefundsPage() {
 
     return (
         <div className={adminStyles.page}>
-            <SubPageHeader
+            <PageHeader
                 title="Refund Requests"
                 subtitle={eventTitle
                     ? `${pendingCount} pending for "${eventTitle}"`
                     : 'Manage refund requests'}
-                backHref={`/dashboard/organize/events/${eventId}`}
+                closeHref={`/dashboard/organize/events/${eventId}`}
             />
 
             <BulkActionsBar

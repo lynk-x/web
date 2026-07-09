@@ -9,10 +9,11 @@
  */
 
 import React, { useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import { sanitizeRichText } from '@/utils/sanitization';
 import styles from './EventForm.module.css';
-import BackButton from '@/components/shared/BackButton';
+import CloseButton from '@/components/shared/CloseButton';
 import TicketTierManager from './TicketTierManager';
 import { useEventForm, type EventFormTab } from '@/hooks/useEventForm';
 import type { OrganizerEventFormData as EventData } from '@/types/organize';
@@ -43,6 +44,7 @@ interface EventFormProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function EventForm({ initialData, pageTitle, submitBtnText, onSubmit, isEditMode = false }: EventFormProps) {
+    const router = useRouter();
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const { confirm: confirmModal, ConfirmDialog } = useConfirmModal();
@@ -149,12 +151,22 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirmModal('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.back();
+    };
+
     return (
         <div className={styles.container}>
             {ConfirmDialog}
             <header className={styles.header}>
                 <div>
-                    <BackButton label="Back to Events" isDirty={isDirty} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <CloseButton onClick={handleClose} aria-label="Back to Events" />
+                    </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {pageTitle && <h1 className={styles.title}>{pageTitle}</h1>}

@@ -2,24 +2,6 @@
     width: 100%;
 }
 
-.closeBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: transparent;
-    border: 1px solid var(--color-interface-outline);
-    color: var(--color-utility-primaryText);
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.closeBtn:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
 .ticketCard {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);

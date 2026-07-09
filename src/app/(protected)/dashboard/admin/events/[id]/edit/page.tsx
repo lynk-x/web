@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import Spinner from '@/components/shared/Spinner';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import type { OrganizerEventFormData, OrganizerEventTicket } from '@/types/organize';
 
@@ -304,10 +304,10 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Admin: Edit Event"
                 subtitle="Change event details, timing or ticketing configuration."
-                backLabel="Back to Events"
+                closeHref="/dashboard/admin/events"
             />
 
             {/* Account Selector — admin can reassign event ownership */}

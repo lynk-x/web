@@ -5,7 +5,8 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import styles from './InvoicePage.module.css';
 import { useToast } from '@/components/ui/Toast';
-import BackButton from '@/components/shared/BackButton';
+import CloseButton from '@/components/shared/CloseButton';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useFinancialDocumentDownload } from '@/hooks/useFinancialDocumentDownload';
@@ -42,6 +43,7 @@ export default function AdminInvoicePage() {
 
 function AdminInvoiceContent() {
     const params = useParams();
+    const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
     const searchParams = useSearchParams();
@@ -141,8 +143,8 @@ function AdminInvoiceContent() {
     if (!tx) {
         return (
             <div style={{ paddingBottom: '40px' }}>
-                <div style={{ padding: '24px' }}>
-                    <BackButton label="Back to Finance" />
+                <div style={{ padding: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <CloseButton onClick={() => router.back()} />
                 </div>
                 <div style={{ textAlign: 'center', padding: '60px' }}>
                     <h1>Transaction Not Found</h1>
@@ -157,7 +159,9 @@ function AdminInvoiceContent() {
     return (
         <div style={{ paddingBottom: '40px' }}>
             <div className={styles.container}>
-                <BackButton label="Back to Finance" />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                    <CloseButton onClick={() => router.back()} />
+                </div>
                 <header className={styles.header}>
                     <div className={styles.logoArea}>
                         <Image

@@ -6,7 +6,8 @@ import { useRouter, useParams } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import Badge from '@/components/shared/Badge';
 
 export default function EditBannerPage() {
@@ -15,6 +16,7 @@ export default function EditBannerPage() {
     const id = params.id as string;
     const { showToast } = useToast();
     const supabase = createClient();
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,12 +108,21 @@ export default function EditBannerPage() {
         return <div style={{ padding: '80px', textAlign: 'center', opacity: 0.5 }}>Loading banner details...</div>;
     }
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.push('/dashboard/admin/communications?tab=banners');
+    };
+
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Edit System Banner"
                 subtitle={`Modifying ID: ${id}`}
-                isDirty={isDirty}
+                onClose={handleClose}
                 primaryAction={{
                     label: 'Save Changes',
                     onClick: () => handleUpdateBanner(),

@@ -6,15 +6,17 @@ import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { sanitizeInput } from '@/utils/sanitization';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function EditTagTypePage() {
     const router = useRouter();
     const params = useParams();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -78,9 +80,18 @@ export default function EditTagTypePage() {
 
     if (isFetching) return <div style={{ padding: '40px', opacity: 0.5 }}>Loading type details...</div>;
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.push('/dashboard/system/registry');
+    };
+
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title={`Edit Type: ${params.id}`}
                 subtitle="Modify description or status of this category."
                 primaryAction={{
@@ -88,7 +99,7 @@ export default function EditTagTypePage() {
                     onClick: handleSave,
                     isLoading: isLoading
                 }}
-                isDirty={isDirty}
+                onClose={handleClose}
             />
 
             <div className={adminStyles.formCard}>

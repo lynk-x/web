@@ -4,7 +4,7 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -114,11 +114,10 @@ export default function CampaignAssetsPage() {
 
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            <PageHeader
                 title={campaignTitle || 'Ad Assets'}
                 subtitle="Review and manage creative assets for this campaign."
-                backHref="/dashboard/admin/campaigns"
-                backLabel="Back to Campaigns"
+                closeHref="/dashboard/admin/campaigns"
                 primaryAction={{
                     label: 'Show All Hidden',
                     onClick: showAllHidden,

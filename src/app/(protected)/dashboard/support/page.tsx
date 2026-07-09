@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -17,7 +16,6 @@ import { useToast } from '@/components/ui/Toast';
 import type { SupportTicket, SupportTicketMessage } from '@/lib/repositories/support.repository';
 
 export default function SupportDashboard() {
-    const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const supportRepo = useMemo(() => createSupportRepository(supabase), [supabase]);
     const { showToast } = useToast();
@@ -145,42 +143,14 @@ export default function SupportDashboard() {
                     <PageHeader
                         title={selectedTicket.subject}
                         subtitle={`Ticket: ${selectedTicket.reference} • Status: ${selectedTicket.status.toUpperCase()}`}
-                        customAction={
-                            <button
-                                type="button"
-                                className={styles.closeBtn}
-                                onClick={() => setSelectedTicket(null)}
-                                aria-label="Back to tickets"
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
-                        }
+                        onClose={() => setSelectedTicket(null)}
                     />
                 ) : (
                     <PageHeader
                         title="Help & Support"
                         subtitle="Manage your support tickets and get assistance from our team."
-                        customAction={
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-                                    + New Ticket
-                                </Button>
-                                <button
-                                    type="button"
-                                    className={styles.closeBtn}
-                                    onClick={() => router.push('/dashboard')}
-                                    aria-label="Close"
-                                >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                    </svg>
-                                </button>
-                            </div>
-                        }
+                        primaryAction={{ label: '+ New Ticket', onClick: () => setIsModalOpen(true) }}
+                        closeHref="/dashboard"
                     />
                 )}
             </div>

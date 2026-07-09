@@ -39,11 +39,8 @@ export default function EditEventPage() {
                 const { data: event, error: eventError } = await supabase
                     .from('events')
                     .select(`
-                        id, created_at, title, description, category_id, is_online, is_private, 
-                        location, starts_at, ends_at, media, timezone,
-                        event_tags (
-                            tags (id, name)
-                        )
+                        id, created_at, title, description, category_id, is_online, is_private,
+                        location, starts_at, ends_at, media, timezone
                     `)
                     .eq('id', eventId)
                     .eq('account_id', activeAccount.id)
@@ -58,6 +55,16 @@ export default function EditEventPage() {
                     .eq('event_id', eventId);
 
                 if (eventError) throw eventError;
+
+                // Fetch tags via RPC rather than an embedded event_tags(tags(...))
+                // select: public.event_tags is a plain proxy view (see
+                // 12_api/views/00_public_proxies.sql), and views carry no FK
+                // metadata for PostgREST to resolve an embed through.
+                const { data: eventTags, error: tagsError } = await supabase
+                    .schema('api')
+                    .rpc('get_event_tags', { p_event_id: eventId });
+
+                if (tagsError) throw tagsError;
 
                 // Parse dates
                 const startDt = new Date(event.starts_at);
@@ -86,7 +93,7 @@ export default function EditEventPage() {
                     };
                 });
 
-                const mappedTags = (event.event_tags || []).map((et: any) => et.tags?.name).filter(Boolean);
+                const mappedTags = (eventTags || []).map((t: { name: string }) => t.name).filter(Boolean);
 
                 setInitialData({
                     title: event.title,

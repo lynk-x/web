@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import Link from 'next/link';
 
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 interface EventOption {
     id: string;
@@ -142,10 +142,10 @@ export default function CreateForumPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Initialize New Forum"
                 subtitle="Link a dedicated community space to an existing event."
-                backLabel="Back to Forums"
+                closeHref="/dashboard/admin/forums"
                 primaryAction={{
                     label: isSubmitting ? 'Initializing...' : 'Initialize Forum',
                     onClick: () => handleSubmit(),

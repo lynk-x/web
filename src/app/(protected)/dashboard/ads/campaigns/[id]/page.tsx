@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import StatCard from '@/components/dashboard/StatCard';
@@ -209,10 +209,10 @@ export default function CampaignDetailPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title={campaign.title}
                 subtitle={`${TYPE_LABELS[campaign.type] || campaign.type} \u00B7 ${formatDate(campaign.start_at)} \u2013 ${formatDate(campaign.end_at)}`}
-                backLabel="Back to Campaigns"
+                closeHref="/dashboard/ads/campaigns"
                 badge={badge}
                 primaryAction={campaign.status === 'active' ? {
                     label: 'Pause Campaign',

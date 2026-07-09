@@ -7,7 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { formatDate } from '@/utils/format';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
@@ -153,12 +153,12 @@ export default function EventWaitlistPage() {
     return (
         <div className={adminStyles.page}>
             {ConfirmDialog}
-            <SubPageHeader
+            <PageHeader
                 title="Waitlist"
                 subtitle={eventTitle
                     ? `${entries.length} total, ${pendingCount} pending for "${eventTitle}"`
                     : 'Manage event waitlist'}
-                backHref={`/dashboard/organize/events/${eventId}`}
+                closeHref={`/dashboard/organize/events/${eventId}`}
             />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

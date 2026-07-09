@@ -9,7 +9,6 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { formatDate, formatTime, formatCurrency, formatNumber } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -125,10 +124,10 @@ export default function EventDetailPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title={event.title}
                 subtitle={`${locationName} \u00B7 ${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`}
-                backLabel="Back to Events"
+                closeHref="/dashboard/organize/events"
                 badge={badge}
                 primaryAction={{
                     label: 'Edit Event',

@@ -7,7 +7,8 @@ import styles from './NewLegalVersion.module.css';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Badge from '@/components/shared/Badge';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
@@ -18,6 +19,7 @@ export default function NewLegalVersionPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = createClient();
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -70,12 +72,21 @@ export default function NewLegalVersionPage() {
         }
     };
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.back();
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="New Legal Version"
                 subtitle="Draft a new version of policies, terms or agreements."
-                isDirty={isDirty}
+                onClose={handleClose}
                 primaryAction={{
                     label: 'Publish Version',
                     onClick: () => handleCreateVersion(),

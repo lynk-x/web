@@ -5,16 +5,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function EditDisclaimerPage() {
     const router = useRouter();
     const params = useParams();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -92,9 +94,18 @@ export default function EditDisclaimerPage() {
 
     if (isFetching) return <div style={{ padding: '40px', opacity: 0.5 }}>Loading rule...</div>;
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.push('/dashboard/system/registry');
+    };
+
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Edit Compliance Rule"
                 subtitle="Modify the legal binding for this tag."
                 primaryAction={{
@@ -102,7 +113,7 @@ export default function EditDisclaimerPage() {
                     onClick: handleSave,
                     isLoading: isLoading
                 }}
-                isDirty={isDirty}
+                onClose={handleClose}
             />
 
             <div className={adminStyles.formCard}>

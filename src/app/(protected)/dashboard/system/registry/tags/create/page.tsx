@@ -9,15 +9,17 @@ import { generateTagEmbedding } from '@/utils/embedding';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 import { sanitizeInput } from '@/utils/sanitization';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function CreateTagPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
     const { enabled: isEmbedEnabled } = useFeatureFlag('enable_client_embeddings');
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -93,9 +95,18 @@ export default function CreateTagPage() {
         }
     };
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.push('/dashboard/system/registry');
+    };
+
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Create New Tag"
                 subtitle="Add a new classification tag to the global registry."
                 primaryAction={{
@@ -103,7 +114,7 @@ export default function CreateTagPage() {
                     onClick: handleSave,
                     isLoading: isLoading
                 }}
-                isDirty={isDirty}
+                onClose={handleClose}
             />
 
             <div className={adminStyles.formCard}>

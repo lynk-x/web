@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 export default function CreateAccountPage() {
@@ -58,10 +58,10 @@ export default function CreateAccountPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Create New Account"
                 subtitle="Register a new organization or individual entity"
-                backLabel="Back to Identity"
+                closeHref="/dashboard/admin/users"
             />
 
             <div className={adminStyles.pageCard}>

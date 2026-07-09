@@ -10,7 +10,7 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import StatCard from '@/components/dashboard/StatCard';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import Modal from '@/components/shared/Modal';
 import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import type { ActionItem } from '@/components/shared/TableRowActions';
@@ -213,10 +213,10 @@ export default function CheckInLogsPage() {
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Check-in Logs"
                 subtitle="Real-time scanner feed and manual entry logs for this event."
-                backLabel="Back to Event"
+                closeHref={`/dashboard/organize/events/${eventId}`}
                 badge={{ label: 'Live Feed', variant: 'success' }}
                 primaryAction={{
                     label: 'Manual Check-in',

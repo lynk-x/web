@@ -9,7 +9,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import AttendeeTable from '@/components/features/events/attendees/AttendeeTable';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import FilterChips from '@/components/shared/FilterChips';
 import Spinner from '@/components/shared/Spinner';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -152,10 +152,10 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            <PageHeader
                 title="Attendee List"
                 subtitle="Manage registrations and check-ins for this event."
-                backLabel="Back to Event"
+                closeHref={`/dashboard/organize/events/${id}`}
                 hideDivider
                 primaryAction={{
                     label: 'Export CSV',

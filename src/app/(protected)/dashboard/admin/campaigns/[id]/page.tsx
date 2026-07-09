@@ -4,7 +4,7 @@ import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import CampaignDetail from '@/components/admin/campaigns/Detail/CampaignDetail';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '../page.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -176,9 +176,10 @@ export default function AdminCampaignDetailPage() {
 
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            <PageHeader
                 title={campaign.name}
                 subtitle={`Detailed oversight for ${campaign.client}'s campaign.`}
+                closeHref="/dashboard/admin/campaigns"
                 secondaryAction={allCampaigns.length > 1 ? {
                     label: 'Prev',
                     onClick: () => { if (prevCampaign) router.push(`/dashboard/admin/campaigns/${prevCampaign.id}?createdAt=${prevCampaign.created_at}`); },

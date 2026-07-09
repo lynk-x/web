@@ -6,13 +6,15 @@ import { useRouter } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 import Badge from '@/components/shared/Badge';
 
 export default function CreateBannerPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const supabase = createClient();
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -66,12 +68,21 @@ export default function CreateBannerPage() {
         }
     };
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.back();
+    };
+
     return (
         <div className={adminStyles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Create System Banner"
                 subtitle="Design and schedule a platform-wide alert banner."
-                isDirty={isDirty}
+                onClose={handleClose}
                 primaryAction={{
                     label: 'Create Banner',
                     onClick: () => handleCreateBanner(),

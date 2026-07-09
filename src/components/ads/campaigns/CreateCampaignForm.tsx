@@ -14,7 +14,8 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { createReferenceRepository } from '@/lib/repositories';
 import { generateCampaignEmbedding, preloadEmbeddingModel } from '@/utils/embedding';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ interface CreateCampaignFormProps {
     initialAccountId?: string;
     pageTitle?: string;
     pageSubtitle?: string;
+    /** @deprecated no longer used — the close button is icon-only now. */
     backLabel?: string;
     backHref?: string;
     children?: React.ReactNode;
@@ -91,7 +93,6 @@ export default function CreateCampaignForm({
     initialAccountId,
     pageTitle,
     pageSubtitle,
-    backLabel,
     backHref,
     children
 }: CreateCampaignFormProps) {
@@ -99,6 +100,7 @@ export default function CreateCampaignForm({
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     useEffect(() => {
         preloadEmbeddingModel();
@@ -740,14 +742,22 @@ export default function CreateCampaignForm({
 
         // ─── JSX ──────────────────────────────────────────────────────────────────
 
+        const handleClose = async () => {
+            if (isDirty) {
+                const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+                if (!confirmed) return;
+            }
+            if (backHref) router.push(backHref);
+            else router.back();
+        };
+
         return (
             <>
-                <SubPageHeader
+                {ConfirmDialog}
+                <PageHeader
                     title={pageTitle || (isEditing ? "Edit Campaign" : "Create New Campaign")}
                     subtitle={pageSubtitle || (isEditing ? "Update your campaign details and creative." : "Set up a new ad campaign to reach more users.")}
-                    backLabel={backLabel || "Back to Campaigns"}
-                    backHref={backHref}
-                    isDirty={isDirty}
+                    onClose={handleClose}
                     primaryAction={{
                         label: isEditing ? 'Save Changes' : 'Launch Campaign',
                         type: 'submit',

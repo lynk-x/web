@@ -4,16 +4,18 @@ import { getErrorMessage } from '@/utils/error';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ContentForm from '@/components/admin/content/Form/ContentForm';
-import SubPageHeader from '@/components/shared/SubPageHeader';
+import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { ContentItem } from '@/types/admin';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function AdminEditContentPage() {
     const params = useParams();
     const router = useRouter();
     const { showToast } = useToast();
+    const { confirm, ConfirmDialog } = useConfirmModal();
     const id = params.id as string;
     const [item, setItem] = useState<ContentItem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -64,13 +66,21 @@ export default function AdminEditContentPage() {
 
     if (!item) return null;
 
+    const handleClose = async () => {
+        if (isDirty) {
+            const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
+            if (!confirmed) return;
+        }
+        router.back();
+    };
+
     return (
         <div className={styles.container}>
-            <SubPageHeader
+            {ConfirmDialog}
+            <PageHeader
                 title="Edit Content"
                 subtitle={`Modifying: ${item.title}`}
-                backLabel="Back to Content"
-                isDirty={isDirty}
+                onClose={handleClose}
             />
 
             <ContentForm initialData={item} isEditing={true} onDirtyChange={setIsDirty} />
