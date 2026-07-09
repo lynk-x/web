@@ -20,7 +20,7 @@ function VerifyFlow() {
     const supabase = createClient();
     const { activeAccount, isLoading } = useOrganization();
 
-    const [step, setStep] = useState<'documents' | 'confirm'>('documents');
+    const [step, setStep] = useState<'info' | 'documents' | 'confirm'>('info');
     const [kycRequirements, setKycRequirements] = useState<KycRequirement[]>([]);
     const [kycFiles, setKycFiles] = useState<KycFileMap>({});
     const [kycTextData, setKycTextData] = useState<KycTextMap>({});
@@ -69,6 +69,14 @@ function VerifyFlow() {
         }
     }, [isLoading, activeAccount, supabase, router]);
 
+
+    const textRequirements = kycRequirements.filter(r => r.type === 'text');
+    const fileRequirements = kycRequirements.filter(r => r.type === 'file');
+
+    const handleContinueToDocuments = (e: React.FormEvent) => {
+        e.preventDefault();
+        setStep('documents');
+    };
 
     const handleContinueToConfirm = (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,7 +159,9 @@ function VerifyFlow() {
                 <div className={styles.header}>
                     <h1 className={styles.title}>Identity Verification</h1>
                     <p className={styles.subtitle}>
-                        Upload your identification documents to verify your account.
+                        {step === 'info' && 'Tell us a few details before uploading your documents.'}
+                        {step === 'documents' && 'Upload your identification documents to verify your account.'}
+                        {step === 'confirm' && 'Review your submission before sending it for verification.'}
                     </p>
                 </div>
 
@@ -159,10 +169,15 @@ function VerifyFlow() {
                     <div className={`${styles.stepDot} ${styles.stepDotActive}`}>
                         <span>1</span>
                     </div>
+                    <span className={styles.stepLabel}>Your Info</span>
+                    <div className={`${styles.stepLine} ${step === 'documents' || step === 'confirm' ? styles.stepLineActive : ''}`} />
+                    <div className={`${styles.stepDot} ${step === 'documents' || step === 'confirm' ? styles.stepDotActive : ''}`}>
+                        <span>2</span>
+                    </div>
                     <span className={styles.stepLabel}>Documents</span>
                     <div className={`${styles.stepLine} ${step === 'confirm' ? styles.stepLineActive : ''}`} />
                     <div className={`${styles.stepDot} ${step === 'confirm' ? styles.stepDotActive : ''}`}>
-                        <span>2</span>
+                        <span>3</span>
                     </div>
                     <span className={styles.stepLabel}>Confirm</span>
                 </div>
@@ -177,10 +192,35 @@ function VerifyFlow() {
                     )}
                     {error && <div className={styles.errorBox}>{error}</div>}
 
-                    {step === 'documents' ? (
+                    {step === 'info' ? (
+                        <form onSubmit={handleContinueToDocuments} className={styles.form}>
+                            <KycRequirementsForm
+                                requirements={textRequirements}
+                                files={kycFiles}
+                                textValues={kycTextData}
+                                onFilesChange={setKycFiles}
+                                onTextValuesChange={setKycTextData}
+                                emptyStateHint="No additional information needed — continue to documents."
+                            />
+
+                            <div className={styles.actions}>
+                                <button type="button" className={styles.backBtn} onClick={() => router.back()} disabled={loading}>
+                                    Go Back
+                                </button>
+                                <button
+                                    type="submit"
+                                    className={styles.submitBtn}
+                                    disabled={!kycRequirementsSatisfied(textRequirements, kycFiles, kycTextData)}
+                                    style={{ background: accentColor }}
+                                >
+                                    Continue
+                                </button>
+                            </div>
+                        </form>
+                    ) : step === 'documents' ? (
                         <form onSubmit={handleContinueToConfirm} className={styles.form}>
                             <KycRequirementsForm
-                                requirements={kycRequirements}
+                                requirements={fileRequirements}
                                 files={kycFiles}
                                 textValues={kycTextData}
                                 onFilesChange={setKycFiles}
@@ -189,19 +229,17 @@ function VerifyFlow() {
                             />
 
                             <div className={styles.actions}>
-                                <button type="button" className={styles.backBtn} onClick={() => router.back()} disabled={loading}>
+                                <button type="button" className={styles.backBtn} onClick={() => setStep('info')} disabled={loading}>
                                     Go Back
                                 </button>
-                                {kycRequirements.length > 0 && (
-                                    <button
-                                        type="submit"
-                                        className={styles.submitBtn}
-                                        disabled={!kycRequirementsSatisfied(kycRequirements, kycFiles, kycTextData)}
-                                        style={{ background: accentColor }}
-                                    >
-                                        Continue
-                                    </button>
-                                )}
+                                <button
+                                    type="submit"
+                                    className={styles.submitBtn}
+                                    disabled={!kycRequirementsSatisfied(fileRequirements, kycFiles, kycTextData)}
+                                    style={{ background: accentColor }}
+                                >
+                                    Continue
+                                </button>
                             </div>
                         </form>
                     ) : (
@@ -220,7 +258,7 @@ function VerifyFlow() {
                                     />
                                     <span>
                                         I confirm that the documents and information I submitted are accurate,
-                                        genuinely mine, and match the identity I am verifying.
+                                        genuinely mine and match the identity I am verifying.
                                     </span>
                                 </label>
 
