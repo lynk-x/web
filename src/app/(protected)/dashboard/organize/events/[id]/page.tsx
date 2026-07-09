@@ -131,7 +131,7 @@ export default function EventDetailPage() {
             <PageHeader
                 title={event.title}
                 subtitle={`${locationName} \u00B7 ${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`}
-                closeHref="/dashboard/organize/events"
+                onClose={() => router.back()}
                 badge={badge}
                 primaryAction={{
                     label: 'Edit Event',

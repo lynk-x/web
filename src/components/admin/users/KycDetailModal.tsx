@@ -16,6 +16,25 @@ interface KycDetailModalProps {
     onReject: (v: KycVerification, reason: string) => void;
 }
 
+type Step = 'overview' | 'documents' | 'information';
+
+const STEPS: { key: Step; label: string }[] = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'documents', label: 'Documents' },
+    { key: 'information', label: 'Information' },
+];
+
+const REJECTION_SUGGESTIONS = [
+    'ID photo is blurry or out of focus',
+    'Document is expired',
+    'Name on document does not match account name',
+    'Photo is cropped — all four corners must be visible',
+    'Document type does not match what was requested',
+    'Selfie/photo does not clearly show your face',
+    'Submitted information does not match the document',
+    'Document appears to be edited or tampered with',
+];
+
 const KycDetailModal: React.FC<KycDetailModalProps> = ({
     isOpen,
     onClose,
@@ -24,39 +43,58 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
     onReject,
 }) => {
     const supabase = createClient();
+    const [step, setStep] = useState<Step>('overview');
     const [signedUrls, setSignedUrls] = useState<string[]>([]);
+    const [decryptedPii, setDecryptedPii] = useState<Record<string, unknown>>({});
+    const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
 
     useEffect(() => {
-        const fetchImages = async () => {
-            if (!verification?.uploaded_documents?.length) return;
+        const fetchDetail = async () => {
+            if (!verification) return;
+            setIsLoadingDetail(true);
+            try {
+                const { data: detail, error } = await supabase
+                    .schema('api')
+                    .rpc('get_kyc_verification_detail', { p_verification_id: verification.id });
 
-            const { data, error } = await supabase.functions.invoke('media-signer', {
-                body: {
-                    action: 'sign_read_batch',
-                    fileKeys: verification.uploaded_documents
+                if (error) throw error;
+
+                setDecryptedPii(detail?.pii_data || {});
+
+                const documents: string[] = detail?.uploaded_documents || [];
+                if (documents.length > 0) {
+                    const { data: signData } = await supabase.functions.invoke('media-signer', {
+                        body: { action: 'sign_read_batch', fileKeys: documents }
+                    });
+
+                    if (signData?.signedUrls) {
+                        const urls = documents.map(key => signData.signedUrls[key]).filter(Boolean);
+                        setSignedUrls(urls);
+                    }
                 }
-            });
-
-            if (data?.signedUrls) {
-                const urls = verification.uploaded_documents
-                    .map(key => data.signedUrls[key])
-                    .filter(Boolean);
-                setSignedUrls(urls);
+            } catch (err) {
+                console.error('Failed to fetch KYC verification detail:', err);
+            } finally {
+                setIsLoadingDetail(false);
             }
         };
 
         if (isOpen && verification) {
-            fetchImages();
+            fetchDetail();
+            setStep('overview');
             setIsRejecting(false);
             setRejectionReason('');
+            setSignedUrls([]);
+            setDecryptedPii({});
         }
     }, [isOpen, verification, supabase]);
 
     if (!verification) return null;
 
-    const piiFields = Object.entries(verification.pii_data || {});
+    const piiFields = Object.entries(decryptedPii || {});
+    const stepIndex = STEPS.findIndex(s => s.key === step);
 
     return (
         <Modal
@@ -69,8 +107,8 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                     {isRejecting ? (
                         <>
                             <button className={styles.btnSecondary} onClick={() => setIsRejecting(false)}>Cancel</button>
-                            <button 
-                                className={styles.btnDanger} 
+                            <button
+                                className={styles.btnDanger}
                                 onClick={() => onReject(verification, rejectionReason)}
                                 disabled={!rejectionReason.trim()}
                             >
@@ -92,55 +130,107 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
             }
         >
             <div className={styles.content}>
-                {/* Status & Overview */}
-                <div className={styles.section}>
-                    <div className={styles.header}>
-                        <div className={styles.badgeRow}>
-                            <Badge label={formatString(verification.kyc_tier)} variant="primary" />
-                            <Badge label={formatString(verification.status)} variant={verification.status === 'approved' ? 'success' : 'warning'} showDot />
+                <div className={styles.stepIndicator}>
+                    {STEPS.map((s, i) => (
+                        <React.Fragment key={s.key}>
+                            {i > 0 && <div className={`${styles.stepLine} ${i <= stepIndex ? styles.stepLineActive : ''}`} />}
+                            <button
+                                type="button"
+                                className={styles.stepButton}
+                                onClick={() => setStep(s.key)}
+                            >
+                                <div className={`${styles.stepDot} ${i <= stepIndex ? styles.stepDotActive : ''}`}>
+                                    <span>{i + 1}</span>
+                                </div>
+                                <span className={styles.stepLabel}>{s.label}</span>
+                            </button>
+                        </React.Fragment>
+                    ))}
+                </div>
+
+                {step === 'overview' && (
+                    <div className={styles.section}>
+                        <div className={styles.header}>
+                            <div className={styles.badgeRow}>
+                                <Badge label={formatString(verification.kyc_tier)} variant="primary" />
+                                <Badge label={formatString(verification.status)} variant={verification.status === 'approved' ? 'success' : 'warning'} showDot />
+                            </div>
+                            <span className={styles.timestamp}>Submitted on {formatDate(verification.created_at)}</span>
                         </div>
-                        <span className={styles.timestamp}>Submitted on {formatDate(verification.created_at)}</span>
                     </div>
-                </div>
+                )}
 
-                {/* Documents Grid */}
-                <div className={styles.section}>
-                    <h3>Uploaded {formatString(verification.document_type)}</h3>
-                    <div className={styles.imageGrid}>
-                        {signedUrls.map((url, idx) => (
-                            <div key={idx} className={styles.imageWrapper}>
-                                <img src={url} alt={`KYC Document ${idx + 1}`} tabIndex={0} />
-                                <span className={styles.imageLabel}>Page {idx + 1}</span>
-                            </div>
-                        ))}
-                        {signedUrls.length === 0 && (
-                            <div className={styles.emptyDocuments}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                <span>No document images available</span>
-                            </div>
-                        )}
+                {step === 'documents' && (
+                    <div className={styles.section}>
+                        <h3>Uploaded {formatString(verification.document_type)}</h3>
+                        <div className={styles.imageGrid}>
+                            {isLoadingDetail ? (
+                                <div className={styles.emptyDocuments}>
+                                    <span>Loading documents...</span>
+                                </div>
+                            ) : (
+                                <>
+                                    {signedUrls.map((url, idx) => (
+                                        <div key={idx} className={styles.imageWrapper}>
+                                            <img src={url} alt={`KYC Document ${idx + 1}`} tabIndex={0} />
+                                            <span className={styles.imageLabel}>Page {idx + 1}</span>
+                                        </div>
+                                    ))}
+                                    {signedUrls.length === 0 && (
+                                        <div className={styles.emptyDocuments}>
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                            <span>No document images available</span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* PII Metadata */}
-                <div className={styles.section}>
-                    <h3>Verified Information</h3>
-                    <div className={styles.piiGrid}>
-                        {piiFields.map(([key, value]) => (
-                            <div key={key} className={styles.piiItem}>
-                                <label>{formatString(key)}</label>
-                                <span>{String(value)}</span>
-                            </div>
-                        ))}
+                {step === 'information' && (
+                    <div className={styles.section}>
+                        <h3>Verified Information</h3>
+                        <div className={styles.piiGrid}>
+                            {isLoadingDetail ? (
+                                <span>Decrypting...</span>
+                            ) : piiFields.length === 0 ? (
+                                <span>No additional information submitted.</span>
+                            ) : (
+                                piiFields.map(([key, value]) => (
+                                    <div key={key} className={styles.piiItem}>
+                                        <label>{formatString(key)}</label>
+                                        <span>{String(value)}</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Rejection UI */}
                 {isRejecting && (
                     <div className={styles.rejectionBox}>
                         <h3>Reason for Rejection</h3>
                         <p>Provide detailed feedback to the user on why their verification was rejected.</p>
-                        <textarea 
+                        <div className={styles.suggestionChips}>
+                            {REJECTION_SUGGESTIONS.map((suggestion) => (
+                                <button
+                                    key={suggestion}
+                                    type="button"
+                                    className={styles.suggestionChip}
+                                    onClick={() => setRejectionReason((prev) => {
+                                        const trimmed = prev.trim();
+                                        if (!trimmed) return suggestion;
+                                        if (trimmed.includes(suggestion)) return trimmed;
+                                        return `${trimmed} ${suggestion}`;
+                                    })}
+                                >
+                                    {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                        <textarea
                             value={rejectionReason}
                             onChange={(e) => setRejectionReason(e.target.value)}
                             placeholder="e.g. ID photo is blurry, Please upload a high-resolution color scan of your passport..."

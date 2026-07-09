@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { createNotificationsRepository } from '@/lib/repositories';
 import type { Notification } from '@/lib/repositories/notifications.repository';
@@ -11,6 +12,7 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import styles from './page.module.css';
 
 export default function NotificationsPage() {
+    const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const notificationsRepo = useMemo(() => createNotificationsRepository(supabase), [supabase]);
 
@@ -67,8 +69,12 @@ export default function NotificationsPage() {
             <PageHeader
                 title="Notifications"
                 subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'You\'re all caught up'}
-                actionLabel={unreadCount > 0 ? (isMarkingAll ? 'Marking...' : 'Mark all as read') : undefined}
-                onActionClick={unreadCount > 0 ? handleMarkAllRead : undefined}
+                primaryAction={unreadCount > 0 ? {
+                    label: isMarkingAll ? 'Marking...' : 'Mark all as read',
+                    onClick: handleMarkAllRead,
+                    disabled: isMarkingAll,
+                } : undefined}
+                onClose={() => router.back()}
             />
 
             <div className={sharedStyles.pageCard}>
