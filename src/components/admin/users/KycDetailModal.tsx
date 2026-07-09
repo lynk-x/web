@@ -194,6 +194,12 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                         <div className={styles.piiGrid}>
                             {isLoadingDetail ? (
                                 <span>Decrypting...</span>
+                            ) : decryptedPii._decryption_error ? (
+                                <span className={styles.decryptionError}>
+                                    Could not decrypt this submission&apos;s information. It may have been encrypted
+                                    under a different key, or the payload is corrupted. Contact engineering with this
+                                    verification&apos;s reference if the issue persists.
+                                </span>
                             ) : piiFields.length === 0 ? (
                                 <span>No additional information submitted.</span>
                             ) : (

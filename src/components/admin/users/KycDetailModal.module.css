@@ -143,6 +143,12 @@
     font-family: monospace;
 }
 
+.decryptionError {
+    color: var(--color-interface-error);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 .rejectionBox {
     background: rgba(239, 68, 68, 0.05);
     border: 1px solid rgba(239, 68, 68, 0.2);
