@@ -325,9 +325,10 @@ export async function submitKycRequirements(
     files: KycFileMap,
     textValues: KycTextMap,
     tierSlug: string = 'tier_1_basic',
+    extraPiiData: Record<string, string | boolean> = {},
 ): Promise<void> {
     const uploadedDocs: string[] = [];
-    const piiData: Record<string, string> = {};
+    const piiData: Record<string, string | boolean> = { ...extraPiiData };
     let primaryDocumentType: string | undefined;
 
     for (const req of requirements) {

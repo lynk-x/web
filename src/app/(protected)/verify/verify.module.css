@@ -3,10 +3,9 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 24px;
+    padding: 12px;
     width: 100%;
-    background: radial-gradient(circle at 10% 20%, rgba(32, 249, 40, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(249, 201, 32, 0.05) 0%, transparent 40%);
+    background: var(--color-interface-surface);
 }
 
 .onboardingWrapper {
@@ -15,7 +14,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 40px;
+    gap: 24px;
 }
 
 .header {
@@ -25,29 +24,119 @@
 }
 
 .title {
-    font-size: 42px;
+    font-size: 30px;
     font-weight: 800;
     color: white;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     letter-spacing: -0.03em;
 }
 
 .subtitle {
-    font-size: 18px;
+    font-size: 15px;
     color: rgba(255, 255, 255, 0.6);
-    line-height: 1.6;
+    line-height: 1.5;
+}
+
+/* Step Indicator */
+.stepIndicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stepDot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.stepDotActive {
+    background: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: #000;
+}
+
+.stepLabel {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.stepLine {
+    width: 40px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.12);
+    transition: background 0.3s ease;
+}
+
+.stepLineActive {
+    background: var(--color-brand-primary);
+}
+
+/* Confirm step */
+.confirmSection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.confirmTitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: white;
+}
+
+.confirmSubtitle {
+    margin: -12px 0 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+}
+
+.checkboxRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.5;
+}
+
+.checkboxRow input[type="checkbox"] {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: var(--color-brand-primary);
+    cursor: pointer;
 }
 
 /* Form Section */
 .formCard {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--color-interface-background);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
-    padding: 48px;
+    padding: 32px;
     width: 100%;
     max-width: 540px;
     animation: zoomIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(10px);
 }
 
 .form {

@@ -20,6 +20,7 @@ function VerifyFlow() {
     const supabase = createClient();
     const { activeAccount, isLoading } = useOrganization();
 
+    const [step, setStep] = useState<'documents' | 'confirm'>('documents');
     const [kycRequirements, setKycRequirements] = useState<KycRequirement[]>([]);
     const [kycFiles, setKycFiles] = useState<KycFileMap>({});
     const [kycTextData, setKycTextData] = useState<KycTextMap>({});
@@ -28,6 +29,8 @@ function VerifyFlow() {
     const [isFetchingReqs, setIsFetchingReqs] = useState(true);
     const [submitted, setSubmitted] = useState(false);
     const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+    const [consentAccepted, setConsentAccepted] = useState(false);
+    const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
 
     useEffect(() => {
         if (!isLoading) {
@@ -67,15 +70,23 @@ function VerifyFlow() {
     }, [isLoading, activeAccount, supabase, router]);
 
 
+    const handleContinueToConfirm = (e: React.FormEvent) => {
+        e.preventDefault();
+        setStep('confirm');
+    };
+
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!activeAccount) return;
+        if (!activeAccount || !consentAccepted || !accuracyConfirmed) return;
 
         setLoading(true);
         setError(null);
 
         try {
-            await submitKycRequirements(supabase, activeAccount.id, kycRequirements, kycFiles, kycTextData);
+            await submitKycRequirements(supabase, activeAccount.id, kycRequirements, kycFiles, kycTextData, 'tier_1_basic', {
+                data_processing_consent: true,
+                data_accuracy_confirmed: true,
+            });
             setSubmitted(true);
             setLoading(false);
         } catch (err: unknown) {
@@ -144,6 +155,18 @@ function VerifyFlow() {
                     </p>
                 </div>
 
+                <div className={styles.stepIndicator}>
+                    <div className={`${styles.stepDot} ${styles.stepDotActive}`}>
+                        <span>1</span>
+                    </div>
+                    <span className={styles.stepLabel}>Documents</span>
+                    <div className={`${styles.stepLine} ${step === 'confirm' ? styles.stepLineActive : ''}`} />
+                    <div className={`${styles.stepDot} ${step === 'confirm' ? styles.stepDotActive : ''}`}>
+                        <span>2</span>
+                    </div>
+                    <span className={styles.stepLabel}>Confirm</span>
+                </div>
+
                 <div className={styles.formCard}>
                     {rejectionReason && (
                         <div className={styles.rejectionBanner}>
@@ -154,32 +177,81 @@ function VerifyFlow() {
                     )}
                     {error && <div className={styles.errorBox}>{error}</div>}
 
-                    <form onSubmit={handleVerify} className={styles.form}>
-                        <KycRequirementsForm
-                            requirements={kycRequirements}
-                            files={kycFiles}
-                            textValues={kycTextData}
-                            onFilesChange={setKycFiles}
-                            onTextValuesChange={setKycTextData}
-                            emptyStateHint="You are good to go!"
-                        />
+                    {step === 'documents' ? (
+                        <form onSubmit={handleContinueToConfirm} className={styles.form}>
+                            <KycRequirementsForm
+                                requirements={kycRequirements}
+                                files={kycFiles}
+                                textValues={kycTextData}
+                                onFilesChange={setKycFiles}
+                                onTextValuesChange={setKycTextData}
+                                emptyStateHint="You are good to go!"
+                            />
 
-                        <div className={styles.actions}>
-                            <button type="button" className={styles.backBtn} onClick={() => router.back()} disabled={loading}>
-                                Go Back
-                            </button>
-                            {kycRequirements.length > 0 && (
+                            <div className={styles.actions}>
+                                <button type="button" className={styles.backBtn} onClick={() => router.back()} disabled={loading}>
+                                    Go Back
+                                </button>
+                                {kycRequirements.length > 0 && (
+                                    <button
+                                        type="submit"
+                                        className={styles.submitBtn}
+                                        disabled={!kycRequirementsSatisfied(kycRequirements, kycFiles, kycTextData)}
+                                        style={{ background: accentColor }}
+                                    >
+                                        Continue
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleVerify} className={styles.form}>
+                            <div className={styles.confirmSection}>
+                                <h3 className={styles.confirmTitle}>Review &amp; Confirm</h3>
+                                <p className={styles.confirmSubtitle}>
+                                    Please confirm the following before we submit your verification for review.
+                                </p>
+
+                                <label className={styles.checkboxRow}>
+                                    <input
+                                        type="checkbox"
+                                        checked={accuracyConfirmed}
+                                        onChange={(e) => setAccuracyConfirmed(e.target.checked)}
+                                    />
+                                    <span>
+                                        I confirm that the documents and information I submitted are accurate,
+                                        genuinely mine, and match the identity I am verifying.
+                                    </span>
+                                </label>
+
+                                <label className={styles.checkboxRow}>
+                                    <input
+                                        type="checkbox"
+                                        checked={consentAccepted}
+                                        onChange={(e) => setConsentAccepted(e.target.checked)}
+                                    />
+                                    <span>
+                                        I consent to Lynk-X processing and securely storing this data for the
+                                        purpose of identity verification, in line with the Privacy Policy.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div className={styles.actions}>
+                                <button type="button" className={styles.backBtn} onClick={() => setStep('documents')} disabled={loading}>
+                                    Go Back
+                                </button>
                                 <button
                                     type="submit"
                                     className={styles.submitBtn}
-                                    disabled={loading || !kycRequirementsSatisfied(kycRequirements, kycFiles, kycTextData)}
+                                    disabled={loading || !consentAccepted || !accuracyConfirmed}
                                     style={{ background: accentColor }}
                                 >
                                     {loading ? 'Processing...' : 'Submit Documents'}
                                 </button>
-                            )}
-                        </div>
-                    </form>
+                            </div>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>
