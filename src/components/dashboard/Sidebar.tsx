@@ -111,10 +111,10 @@ const Sidebar = () => {
                 </div>
             </nav>
 
-            {/* Notifications + Organization Switcher */}
+            {/* Organization Switcher + Notifications */}
             <div style={{ marginTop: 'auto' }}>
-                <NotificationBellButton />
                 <OrganizationSwitcher pos="bottom" />
+                <NotificationBellButton />
             </div>
 
         </aside>
