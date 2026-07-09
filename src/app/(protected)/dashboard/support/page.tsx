@@ -140,27 +140,46 @@ export default function SupportDashboard() {
 
     return (
         <div className={sharedStyles.container}>
-            <button 
-                className={styles.backBtn} 
-                onClick={() => selectedTicket ? setSelectedTicket(null) : router.back()} 
-                style={{ marginBottom: '-8px', alignSelf: 'flex-start' }}
-            >
-                &larr; {selectedTicket ? "Back to Tickets" : "Return to Dashboard"}
-            </button>
             <div style={{ marginBottom: '24px' }}>
                 {selectedTicket ? (
                     <PageHeader
                         title={selectedTicket.subject}
                         subtitle={`Ticket: ${selectedTicket.reference} • Status: ${selectedTicket.status.toUpperCase()}`}
+                        customAction={
+                            <button
+                                type="button"
+                                className={styles.closeBtn}
+                                onClick={() => setSelectedTicket(null)}
+                                aria-label="Back to tickets"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        }
                     />
                 ) : (
                     <PageHeader
                         title="Help & Support"
                         subtitle="Manage your support tickets and get assistance from our team."
                         customAction={
-                            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-                                + New Ticket
-                            </Button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+                                    + New Ticket
+                                </Button>
+                                <button
+                                    type="button"
+                                    className={styles.closeBtn}
+                                    onClick={() => router.push('/dashboard')}
+                                    aria-label="Close"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
                         }
                     />
                 )}

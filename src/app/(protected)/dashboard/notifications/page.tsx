@@ -63,7 +63,7 @@ export default function NotificationsPage() {
     const unreadCount = notifications.filter(n => !n.is_read).length;
 
     return (
-        <div>
+        <div className={styles.page}>
             <PageHeader
                 title="Notifications"
                 subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'You\'re all caught up'}
