@@ -160,6 +160,18 @@ export function kycRequirementsSatisfied(
  * fixed, would still fail every call after the first: the RPC rejects a new
  * submission while one is already 'pending' for the account.
  */
+// Mirrors identity.kyc_document_type in supabase/schema/00_base/04_types.sql.
+const VALID_DOCUMENT_TYPES = new Set(['national_id', 'passport', 'alien_card', 'incorporation_cert', 'utility_bill']);
+
+
+function resolveDocumentType(raw: string | undefined): string {
+    if (!raw) return 'national_id';
+    for (const candidate of raw.split('|')) {
+        if (VALID_DOCUMENT_TYPES.has(candidate)) return candidate;
+    }
+    return 'national_id';
+}
+
 export async function submitKycRequirements(
     supabase: ReturnType<typeof import('@/utils/supabase/client').createClient>,
     accountId: string,
@@ -211,7 +223,7 @@ export async function submitKycRequirements(
 
             if (fileKeys.length > 0) {
                 uploadedDocs.push({ requirement_id: req.id, subtype: req.subtype, file_keys: fileKeys });
-                primaryDocumentType ??= req.subtype || req.id;
+                primaryDocumentType ??= resolveDocumentType(req.subtype || req.id);
             }
         } else if (req.type === 'text') {
             const textValue = textValues[req.id];
