@@ -71,6 +71,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
     const columns: Column<AdminAccount>[] = [
         {
             header: 'Reference',
+            width: '200px',
             render: (acc) => (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 600, fontSize: '13px' }}>{acc.display_name}</span>

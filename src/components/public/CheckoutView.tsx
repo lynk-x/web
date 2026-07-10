@@ -147,7 +147,7 @@ const CheckoutView: React.FC = () => {
                 'postgres_changes',
                 {
                     event: 'UPDATE',
-                    schema: 'public',
+                    schema: 'finance',
                     table: 'transactions',
                     filter: `provider_ref=eq.${currentCheckoutId}`
                 },
