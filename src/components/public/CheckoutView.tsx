@@ -767,6 +767,11 @@ const CheckoutView: React.FC = () => {
                                 Live status updates were interrupted. If you&apos;ve completed payment on your phone, tap the button below to confirm.
                             </p>
                         )}
+                        {paymentError && (
+                            <p style={{ fontSize: '13px', color: 'var(--color-interface-error)', margin: '0 0 8px', textAlign: 'center' }}>
+                                {paymentError}
+                            </p>
+                        )}
                         <button
                             className={styles.primaryBtn}
                             disabled={manualConfirming}
