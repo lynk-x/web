@@ -14,6 +14,9 @@ import { useToast } from '@/components/ui/Toast';
 import { validateKenyanPhone, normalizeToE164 } from '@/utils/phone';
 import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
 
+/** Thrown only when the mpesa-stk-push invocation fails at the transport level (never got a response), not for business-logic rejections the function itself returns. */
+class FunctionTransportError extends Error {}
+
 /**
  * CheckoutView — Guest-first ticket purchase flow.
  */
@@ -402,8 +405,11 @@ const CheckoutView: React.FC = () => {
                     }
                 });
 
-                if (funcError || !data?.success) {
-                    throw new Error(funcError?.message || data?.error || 'Failed to initiate STK push');
+                if (funcError) {
+                    throw new FunctionTransportError(funcError.message || 'Failed to reach payment service');
+                }
+                if (!data?.success) {
+                    throw new Error(data?.error || 'Failed to initiate STK push');
                 }
 
                 setCurrentCheckoutId(data.checkoutRequestId);
@@ -420,14 +426,16 @@ const CheckoutView: React.FC = () => {
         } catch (err: unknown) {
             console.error('Payment error:', err);
             let errorMessage = getErrorMessage(err) || 'Payment failed to initiate.';
-            
-            // Improve error message for common edge function failures
-            if (errorMessage.toLowerCase().includes('failed to send') || errorMessage.toLowerCase().includes('network')) {
-                errorMessage = 'Unable to reach the payment service. Please check your internet connection and try again.';
-            } else if (errorMessage.toLowerCase().includes('function') && errorMessage.toLowerCase().includes('not found')) {
-                errorMessage = 'Payment service is not configured. Please contact support.';
+
+
+            if (err instanceof FunctionTransportError) {
+                if (errorMessage.toLowerCase().includes('function') && errorMessage.toLowerCase().includes('not found')) {
+                    errorMessage = 'Payment service is not configured. Please contact support.';
+                } else {
+                    errorMessage = 'Unable to reach the payment service. Please check your internet connection and try again.';
+                }
             }
-            
+
             setPaymentError(errorMessage);
             setIsSubmitting(false);
         }
