@@ -65,10 +65,6 @@ const CheckoutView: React.FC = () => {
         code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
     });
 
-    // Platform commission (5% of subtotal)
-    const commissionRate = 0.05;
-
-
     // Promo state
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<{
@@ -79,10 +75,8 @@ const CheckoutView: React.FC = () => {
 
     // Derived totals
     const subtotal = getCartTotal();
-    const commissionAmount = subtotal * commissionRate;
     const discountAmount = appliedPromo?.discount || 0;
-    // Total is subtotal + fee - discount. If free entry, ensure it hits zero.
-    const total = Math.max(0, (subtotal + commissionAmount) - discountAmount);
+    const total = Math.max(0, subtotal - discountAmount);
 
     const currency = items[0]?.currency || 'KES';
 
@@ -250,12 +244,12 @@ const CheckoutView: React.FC = () => {
 
             let discount: number;
             if (promo.type === 'free_entry') {
-                discount = subtotal + commissionAmount;
+                discount = subtotal;
             } else if (promo.type === 'percent') {
-                discount = ((subtotal + commissionAmount) * promo.value) / 100;
+                discount = (subtotal * promo.value) / 100;
             } else {
                 // 'fixed'
-                discount = Math.min(promo.value, subtotal + commissionAmount);
+                discount = Math.min(promo.value, subtotal);
             }
 
             setAppliedPromo({ code, discount, promoId: promo.id, type: promo.type, value: promo.value });
@@ -563,10 +557,6 @@ const CheckoutView: React.FC = () => {
                                     <div className={styles.summaryItem}>
                                         <span>Subtotal</span>
                                         <span>{currency} {subtotal.toLocaleString()}</span>
-                                    </div>
-                                    <div className={styles.summaryItem}>
-                                        <span>Service Fee</span>
-                                        <span className={styles.feeAmount}>{currency} {commissionAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
 
