@@ -13,13 +13,13 @@ export interface CartItem {
      */
     id: string;
     eventId: string;
-    /** The ticket_tiers.id FK — separate field so checkout never has to split the composite id. */
-    tierId: string;
+    eventCreatedAt?: string;
+    eventReference: string;
     eventTitle: string;
     ticketType: string;
+    tierId: string;
     price: number;
     quantity: number;
     currency: string;
     image?: string;
-    eventReference: string;
 }

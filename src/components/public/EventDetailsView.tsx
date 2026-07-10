@@ -77,6 +77,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
             addToCart({
                 id: `${event.id}-ticket-${selectedTier.id}`,
                 eventId: event.id,
+                eventCreatedAt: event.created_at,
                 tierId: selectedTier.id,
                 eventTitle: event.title,
                 eventReference: event.reference,

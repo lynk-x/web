@@ -176,10 +176,13 @@ const CheckoutView: React.FC = () => {
 
                         const itemCountAtCompletion = items.length;
                         const firstEventId = items[0]?.eventId || '';
+                        const firstEventCreatedAtParam = items[0]?.eventCreatedAt
+                            ? `&event_created_at=${encodeURIComponent(items[0].eventCreatedAt)}`
+                            : '';
                         clearCart();
                         // Use the M-Pesa checkout request ID as the order reference so
                         // support teams can look it up in the transactions table.
-                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}`);
+                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}${firstEventCreatedAtParam}`);
                     } else if (newStatus === 'failed' || newStatus === 'cancelled') {
                         clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
@@ -391,7 +394,7 @@ const CheckoutView: React.FC = () => {
             }
 
             setOtpVerified(true);
-            setFormErrors(prev => ({ ...prev, otpCode: '' }));
+            setFormErrors(prev => ({ ...prev, otpCode: '', phone: '' }));
         } catch (err) {
             setFormErrors(prev => ({ ...prev, otpCode: getErrorMessage(err) || 'Invalid or expired code' }));
         } finally {
@@ -404,7 +407,8 @@ const CheckoutView: React.FC = () => {
         e.preventDefault();
         if (!validateForm()) return;
         if (!otpVerified) {
-            setPaymentError('Please verify your phone number before continuing.');
+            setFormErrors(prev => ({ ...prev, phone: 'Please verify your phone number to continue' }));
+            document.getElementById('checkout-phone-field')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
@@ -461,7 +465,10 @@ const CheckoutView: React.FC = () => {
 
                 // Success!
                 clearCart();
-                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(result.ticket_ids?.[0] || 'FREE')}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}`);
+                const eventCreatedAtParam = items[0]?.eventCreatedAt
+                    ? `&event_created_at=${encodeURIComponent(items[0].eventCreatedAt)}`
+                    : '';
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(result.ticket_ids?.[0] || 'FREE')}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}${eventCreatedAtParam}`);
                 return;
             }
 
@@ -563,8 +570,11 @@ const CheckoutView: React.FC = () => {
                 setPaymentStatus('completed');
                 const itemCountAtCompletion = items.length;
                 const firstEventId = items[0]?.eventId || '';
+                const firstEventCreatedAtParam = items[0]?.eventCreatedAt
+                    ? `&event_created_at=${encodeURIComponent(items[0].eventCreatedAt)}`
+                    : '';
                 clearCart();
-                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}`);
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}${firstEventCreatedAtParam}`);
             } else if (data.status === 'pending') {
                 setPaymentError('Payment is still processing. Please wait for the confirmation SMS from M-Pesa and try again shortly.');
             } else if (data.status === 'failed' || data.status === 'cancelled') {
@@ -717,7 +727,7 @@ const CheckoutView: React.FC = () => {
                         <section className={styles.section}>
                             <h2 className={styles.sectionTitle}>Contact Information</h2>
                             <p style={{ fontSize: '13px', opacity: 0.6, marginBottom: '16px' }}>
-                                Your tickets will be linked to this phone number. Please ensure its the correct one.
+                                Your tickets will be linked to this email and phone number. Please ensure they are correct.
                             </p>
                             {isLoading ? (
                                 <>
@@ -735,7 +745,14 @@ const CheckoutView: React.FC = () => {
                                             className={styles.select}
                                         />
                                     </div>
+
                                     <div className={styles.formGroup}>
+                                        <label className={styles.label}>Email Address</label>
+                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
+                                        {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
+                                    </div>
+
+                                    <div className={styles.formGroup} id="checkout-phone-field">
                                         <label className={styles.label}>Phone Number</label>
                                         <div style={{ display: 'flex', gap: 8 }}>
                                             <input
@@ -808,12 +825,7 @@ const CheckoutView: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className={styles.formGroup}>
-                                        <label className={styles.label}>Email Address(Optional)</label>
-                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
-                                        {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
-                                        <p className={styles.helperText}>* Add your email to save your tickets to an account you can access later</p>
-                                    </div>
+
 
                                 </>
                             )}
@@ -902,10 +914,9 @@ const CheckoutView: React.FC = () => {
                                 <button
                                     onClick={handlePayment}
                                     className={styles.payBtn}
-                                    disabled={isSubmitting || items.length === 0 || !otpVerified}
-                                    title={!otpVerified ? 'Verify your phone number to continue' : undefined}
+                                    disabled={isSubmitting || items.length === 0}
                                 >
-                                    {isSubmitting ? 'Processing…' : !otpVerified ? 'Verify Phone to Continue' : (
+                                    {isSubmitting ? 'Processing…' : (
                                         total === 0
                                             ? 'Confirm Reservation'
                                             : `Confirm & Pay ${currency} ${total.toLocaleString()}`

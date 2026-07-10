@@ -41,11 +41,20 @@ async function mockSupabase(page: Page, overrides: {
     stkResult = { success: true, checkoutRequestId: 'ws_CO_TEST_12345' },
     promoResult = null,
     lockResult = 'reservation-uuid-1',
-    authUser = { id: 'user-test-1', is_anonymous: true },
+    authUser = { id: 'user-test-1', is_anonymous: false },
   } = overrides;
 
-  // Supabase auth — signInAnonymously
-  await page.route('**/auth/v1/signup**', async (route) => {
+  // Supabase auth — signInWithOtp (send code)
+  await page.route('**/auth/v1/otp**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({}),
+    });
+  });
+
+  // Supabase auth — verifyOtp (verify code)
+  await page.route('**/auth/v1/verify**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -103,6 +112,18 @@ async function mockSupabase(page: Page, overrides: {
   });
 }
 
+/** Fills the phone field, sends the OTP, and verifies it — required before
+ *  the Pay button is enabled, since checkout now mandates phone verification
+ *  for every purchase (replacing the old silent anonymous sign-in). */
+async function verifyPhoneOtp(page: Page, phone: string = VALID_PHONE) {
+  await page.fill('input[name="phone"]', phone);
+  await page.click('button:has-text("Send OTP")');
+  await page.waitForSelector('input[name="otpCode"]', { timeout: 10_000 });
+  await page.fill('input[name="otpCode"]', '123456');
+  await page.click('button:has-text("Verify")');
+  await page.waitForSelector('button:has-text("Verified")', { timeout: 10_000 });
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 test.describe('Checkout — empty cart', () => {
@@ -122,20 +143,21 @@ test.describe('Checkout — form validation', () => {
     await page.waitForSelector('input[name="phone"]', { timeout: 10_000 });
   });
 
-  test('shows validation errors when form is submitted empty', async ({ page }) => {
+  test('shows validation error for missing M-Pesa number after phone verification', async ({ page }) => {
+    await verifyPhoneOtp(page);
     await page.click('button[type="submit"], button:has-text("Pay")');
-    await expect(page.getByText(/valid phone number/i)).toBeVisible();
     await expect(page.getByText(/M-Pesa number required/i)).toBeVisible();
   });
 
   test('shows error for invalid Kenyan phone format', async ({ page }) => {
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', '123');
     await page.click('button[type="submit"], button:has-text("Pay")');
     await expect(page.getByText(/M-Pesa number required/i)).toBeVisible();
   });
 
   test('accepts valid 07XX format for M-Pesa number', async ({ page }) => {
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     // Validation should not show mpesa error
     await page.click('button[type="submit"], button:has-text("Pay")');
@@ -143,15 +165,15 @@ test.describe('Checkout — form validation', () => {
   });
 
   test('validates email format when provided', async ({ page }) => {
+    await verifyPhoneOtp(page);
     await page.fill('input[name="email"]', 'not-an-email');
-    await page.fill('input[name="phone"]', VALID_PHONE);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
     await expect(page.getByText(/valid email/i)).toBeVisible();
   });
 
   test('allows checkout without email (optional field)', async ({ page }) => {
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
     // Should not show email error
@@ -168,7 +190,7 @@ test.describe('Checkout — happy path', () => {
     await page.goto(CHECKOUT_URL);
     await page.waitForSelector('input[name="phone"]', { timeout: 10_000 });
 
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="email"]', VALID_EMAIL);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
@@ -187,7 +209,7 @@ test.describe('Checkout — happy path', () => {
     await page.goto(CHECKOUT_URL);
     await page.waitForSelector('input[name="phone"]', { timeout: 10_000 });
 
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
 
@@ -209,7 +231,7 @@ test.describe('Checkout — happy path', () => {
     await page.goto(CHECKOUT_URL);
     await page.waitForSelector('input[name="phone"]', { timeout: 10_000 });
 
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
 
@@ -237,7 +259,7 @@ test.describe('Checkout — STK push failure', () => {
     await page.goto(CHECKOUT_URL);
     await page.waitForSelector('input[name="phone"]', { timeout: 10_000 });
 
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
 
@@ -262,7 +284,7 @@ test.describe('Checkout — STK push failure', () => {
     await page.goto(CHECKOUT_URL);
     await page.waitForSelector('input[name="phone"]', { timeout: 10_000 });
 
-    await page.fill('input[name="phone"]', VALID_PHONE);
+    await verifyPhoneOtp(page);
     await page.fill('input[name="mpesaNumber"]', VALID_MPESA);
     await page.click('button[type="submit"], button:has-text("Pay")');
 

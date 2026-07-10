@@ -11,15 +11,27 @@ const ConfirmationContent = () => {
     const searchParams = useSearchParams();
     const orderRef = searchParams.get('order_ref') || 'LX-CONFIRMED';
     const eventId = searchParams.get('event_id') || '';
+    // events.events is partitioned by created_at — carrying this through lets
+    // verify_completed_order (and, in turn, the PWA forum bridge link) prune
+    // to one partition instead of scanning all of them. Optional: older
+    // links minted before this field existed simply fall back to an
+    // unpruned lookup by event_id alone.
+    const eventCreatedAtParam = searchParams.get('event_created_at') || '';
 
     // This page previously rendered "You're In!" purely off raw URL query
     // params, with no server check — a stray link or replayed URL could show
     // a false success state with no purchase behind it. Verify server-side
     // that the current session actually holds a completed ticket for this
     // event before rendering success.
+    //
+    // No claim-link/bridge token is minted anymore: checkout now signs the
+    // buyer into a real, durable account via phone+OTP (see CheckoutView),
+    // so the tickets already belong to the right identity the moment they're
+    // purchased. Opening the PWA and logging in with the same phone number
+    // resolves to the same account and its tickets — no re-pointing needed.
     const [verifyState, setVerifyState] = useState<'checking' | 'verified' | 'unverified'>('checking');
     const [ticketCount, setTicketCount] = useState(0);
-    const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
+    const [eventCreatedAt, setEventCreatedAt] = useState(eventCreatedAtParam);
 
     useEffect(() => {
         let cancelled = false;
@@ -32,36 +44,17 @@ const ConfirmationContent = () => {
                 const supabase = createClient();
                 const { data, error } = await supabase.schema('api').rpc('verify_completed_order', {
                     p_event_id: eventId,
+                    p_event_created_at: eventCreatedAtParam || null,
                 });
                 if (cancelled) return;
                 const row = Array.isArray(data) ? data[0] : data;
                 if (!error && row && row.ticket_count > 0) {
                     setTicketCount(row.ticket_count);
+                    // Prefer the server-resolved value — covers the case where
+                    // the URL param is missing (e.g. an older confirmation
+                    // link) but the DB lookup still found it via the join.
+                    if (row.event_created_at) setEventCreatedAt(row.event_created_at);
                     setVerifyState('verified');
-
-                    // Mint a signed claim-link token for the PWA bridge so tickets
-                    // from this (possibly anonymous) checkout session can be
-                    // attached to whatever session opens the link later, without
-                    // relying on phone-number matching. Falls back to the plain
-                    // event bridge (no claim) if minting fails for any reason —
-                    // the user can still recover via phone-OTP inside the PWA.
-                    // A multi-tier cart creates one order per cart item, so a
-                    // token is minted per order and all of them ride the
-                    // bridge link (comma-separated; tokens contain no commas).
-                    // Claiming only the first order would strand the rest of
-                    // the tickets on the anonymous checkout session.
-                    const orderIds: string[] = row.order_ids || [];
-                    if (orderIds.length > 0) {
-                        const results = await Promise.all(orderIds.map(orderId =>
-                            supabase.schema('api').rpc('mint_claim_token', { p_order_id: orderId })
-                        ));
-                        const tokens = results
-                            .filter(r => !r.error && r.data)
-                            .map(r => r.data as string);
-                        if (tokens.length > 0) {
-                            setBridgeUrl(`https://app.lynk-x.app/auth/bridge?claim=${encodeURIComponent(tokens.join(','))}`);
-                        }
-                    }
                 } else {
                     setVerifyState('unverified');
                 }
@@ -71,7 +64,7 @@ const ConfirmationContent = () => {
         };
         verify();
         return () => { cancelled = true; };
-    }, [eventId]);
+    }, [eventId, eventCreatedAtParam]);
 
     if (verifyState === 'checking') {
         return (
@@ -119,7 +112,7 @@ const ConfirmationContent = () => {
                 </div>
 
                 <div className={styles.actionGroup}>
-                    <Link href={bridgeUrl || `https://app.lynk-x.app/auth/bridge?event_id=${encodeURIComponent(eventId)}`} className={styles.primaryBtn}>
+                    <Link href={`https://app.lynk-x.app/auth/bridge?event_id=${encodeURIComponent(eventId)}${eventCreatedAt ? `&event_created_at=${encodeURIComponent(eventCreatedAt)}` : ''}`} className={styles.primaryBtn}>
                         <span className={styles.btnText}>Enter Event Forum</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

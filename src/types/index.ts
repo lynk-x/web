@@ -1,5 +1,9 @@
 export interface Event {
     id: string;
+    /** events.events.created_at — the table's partition key. Needed anywhere
+     *  a query joins back to events.events or a table partitioned in step
+     *  with it (e.g. social.forums), to prune to one partition. */
+    created_at?: string;
     title: string;
     description: string;
     start_datetime: string;
