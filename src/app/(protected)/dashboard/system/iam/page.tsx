@@ -66,7 +66,9 @@ function IAMContent() {
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
 
     const [roles, setRoles] = useState<AccountRole[]>([]);
+    const [rolesPage, setRolesPage] = useState(1);
     const [permissions, setPermissions] = useState<AccountPermission[]>([]);
+    const [permissionsPage, setPermissionsPage] = useState(1);
     const [rolePermissions, setRolePermissions] = useState<{ [roleSlug: string]: Set<string> }>({});
     
     const [isLoading, setIsLoading] = useState(true);
@@ -91,6 +93,8 @@ function IAMContent() {
     const handleTabChange = (value: string) => {
         setActiveTab(value);
         setSelectedPermissions(new Set()); // Reset selections when switching tabs
+        setRolesPage(1);
+        setPermissionsPage(1);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', value);
         router.push(`${pathname}?${params.toString()}`);
@@ -184,6 +188,8 @@ function IAMContent() {
 
     useEffect(() => {
         setAccountsPage(1);
+        setRolesPage(1);
+        setPermissionsPage(1);
     }, [debouncedSearch]);
 
     useEffect(() => {
@@ -335,24 +341,14 @@ function IAMContent() {
         );
     };
 
-    // Selection handlers for permissions table
-    const handleSelectPermission = (id: string) => {
-        const next = new Set(selectedPermissions);
-        if (next.has(id)) {
-            next.delete(id);
-        } else {
-            next.add(id);
-        }
-        setSelectedPermissions(next);
-    };
-
-    const handleSelectAllPermissions = () => {
-        if (selectedPermissions.size === mappedPermissions.length) {
-            setSelectedPermissions(new Set());
-        } else {
-            setSelectedPermissions(new Set(mappedPermissions.map(p => p.id)));
-        }
-    };
+    // Filtering roles based on search term
+    const filteredRoles = useMemo(() => {
+        return roles.filter(r => 
+            r.display_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            r.role_slug?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            r.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        );
+    }, [roles, debouncedSearch]);
 
     // Group permissions by category for visual hierarchy in matrix
     const groupedPermissions = useMemo(() => {
@@ -366,14 +362,10 @@ function IAMContent() {
         return groups;
     }, [permissions]);
 
-    // Filtering roles based on search term
-    const filteredRoles = useMemo(() => {
-        return roles.filter(r => 
-            r.display_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            r.role_slug?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            r.description?.toLowerCase().includes(debouncedSearch.toLowerCase())
-        );
-    }, [roles, debouncedSearch]);
+    const rolesTotalPages = Math.ceil(filteredRoles.length / 10);
+    const paginatedRoles = useMemo(() => {
+        return filteredRoles.slice((rolesPage - 1) * 10, rolesPage * 10);
+    }, [filteredRoles, rolesPage]);
 
     // Filtering permissions based on search term
     const filteredPermissions = useMemo(() => {
@@ -391,6 +383,35 @@ function IAMContent() {
             id: p.slug
         }));
     }, [filteredPermissions]);
+
+    const permissionsTotalPages = Math.ceil(mappedPermissions.length / 10);
+    const paginatedPermissions = useMemo(() => {
+        return mappedPermissions.slice((permissionsPage - 1) * 10, permissionsPage * 10);
+    }, [mappedPermissions, permissionsPage]);
+
+    // Selection handlers for permissions table
+    const handleSelectPermission = (id: string) => {
+        const next = new Set(selectedPermissions);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        setSelectedPermissions(next);
+    };
+
+    const handleSelectAllPermissions = () => {
+        const paginatedIds = paginatedPermissions.map(p => p.id);
+        const allSelectedOnPage = paginatedIds.every(id => selectedPermissions.has(id));
+        
+        const next = new Set(selectedPermissions);
+        if (allSelectedOnPage) {
+            paginatedIds.forEach(id => next.delete(id));
+        } else {
+            paginatedIds.forEach(id => next.add(id));
+        }
+        setSelectedPermissions(next);
+    };
 
     // Columns config for Roles Table
     const roleColumns = useMemo(() => [
@@ -550,10 +571,13 @@ function IAMContent() {
                     <TabsContent value="roles">
                         <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                             <DataTable
-                                data={filteredRoles}
+                                data={paginatedRoles}
                                 columns={roleColumns}
                                 getActions={getRoleActions}
                                 isLoading={isLoading}
+                                currentPage={rolesPage}
+                                totalPages={rolesTotalPages}
+                                onPageChange={setRolesPage}
                                 emptyMessage="No roles configured."
                             />
                         </div>
@@ -573,13 +597,16 @@ function IAMContent() {
                         )}
                         <div style={{ border: '1px solid var(--color-interface-outline)', borderRadius: '12px', overflow: 'hidden' }}>
                             <DataTable
-                                data={mappedPermissions}
+                                data={paginatedPermissions}
                                 columns={permissionColumns}
                                 getActions={getPermissionActions}
                                 selectedIds={selectedPermissions}
                                 onSelect={handleSelectPermission}
                                 onSelectAll={handleSelectAllPermissions}
                                 isLoading={isLoading}
+                                currentPage={permissionsPage}
+                                totalPages={permissionsTotalPages}
+                                onPageChange={setPermissionsPage}
                                 emptyMessage="No permissions found."
                             />
                         </div>
@@ -596,7 +623,9 @@ function IAMContent() {
                                 flexDirection: 'column',
                                 gap: '8px',
                                 borderRight: '1px solid var(--color-interface-outline)',
-                                paddingRight: '24px'
+                                paddingRight: '24px',
+                                maxHeight: 'calc(100vh - 280px)',
+                                overflowY: 'auto'
                             }}>
                                 <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary)', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                                     System Roles
@@ -647,10 +676,10 @@ function IAMContent() {
                             </div>
 
                             {/* Right Column: Grouped permissions with toggle switches */}
-                            <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: 'calc(100vh - 280px)' }}>
                                 {matrixActiveRoleSlug ? (
                                     <>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px', flexShrink: 0 }}>
                                             <div>
                                                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                                                     {roles.find(r => r.role_slug === matrixActiveRoleSlug)?.display_name} Permissions
@@ -661,7 +690,7 @@ function IAMContent() {
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', paddingRight: '8px', flex: 1 }}>
                                             {Object.keys(groupedPermissions).map(category => {
                                                 const catPerms = groupedPermissions[category];
                                                 return (

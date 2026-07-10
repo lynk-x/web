@@ -148,7 +148,9 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
                     flexDirection: 'column',
                     gap: '8px',
                     borderRight: '1px solid var(--color-interface-outline)',
-                    paddingRight: '24px'
+                    paddingRight: '24px',
+                    maxHeight: 'calc(100vh - 280px)',
+                    overflowY: 'auto'
                 }}>
                     <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-primary)', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                         Event Categories
@@ -202,10 +204,10 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
                 </div>
 
                 {/* Right Column: Grouped tags with toggle switches */}
-                <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: 'calc(100vh - 280px)' }}>
                     {activeCategory ? (
                         <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-interface-outline)', paddingBottom: '12px', flexShrink: 0 }}>
                                 <div>
                                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                                         {activeCategory.display_name} Tags
@@ -216,7 +218,7 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', paddingRight: '8px', flex: 1 }}>
                                 {Object.keys(groupedTags).map(typeId => {
                                     const typeTags = groupedTags[typeId];
                                     return (

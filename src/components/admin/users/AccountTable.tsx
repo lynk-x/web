@@ -80,14 +80,17 @@ const AccountTable: React.FC<AccountTableProps> = ({
         },
         {
             header: 'Country',
+            width: '90px',
             render: (acc) => <span style={{ fontSize: '13px', fontWeight: 600 }}>{acc.country_code || 'KE'}</span>,
         },
         {
             header: 'Type',
+            width: '120px',
             render: (acc) => <Badge label={acc.type} variant={getRoleVariant(acc.type)} />,
         },
         {
             header: 'Members',
+            width: '110px',
             render: (acc) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 600 }}>{acc.member_count}</span>
@@ -96,10 +99,11 @@ const AccountTable: React.FC<AccountTableProps> = ({
             ),
         },
         {
-            header: 'Identity',
+            header: 'KYC',
+            width: '180px',
             render: (acc) => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.7 }}>
                         {acc.kyc_tier ? acc.kyc_tier.replace(/_/g, ' ').toUpperCase() : 'NO TIER'}
                     </span>
                     <Badge 
@@ -109,9 +113,9 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 </div>
             ),
         },
-
         {
             header: 'Status',
+            width: '140px',
             render: (acc) => (
                 <Badge label={formatString(acc.status)} variant={getStatusVariant(acc.status)} showDot />
             ),
