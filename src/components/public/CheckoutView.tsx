@@ -450,6 +450,7 @@ const CheckoutView: React.FC = () => {
                 .from('v1_transactions')
                 .select('status, reason')
                 .eq('provider_ref', currentCheckoutId)
+                .eq('category', 'outgoing')
                 .single();
 
             if (error || !data) {
