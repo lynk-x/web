@@ -18,7 +18,10 @@ import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/Country
 class FunctionTransportError extends Error {}
 
 /**
- * CheckoutView — Guest-first ticket purchase flow.
+ * CheckoutView — Ticket purchase flow with mandatory phone OTP verification.
+ * A single signInWithOtp()/verifyOtp() pair doubles as account creation for
+ * first-time buyers and login for returning ones, so tickets always attach
+ * to one durable identity instead of a fresh anonymous user per checkout.
  */
 const CheckoutView: React.FC = () => {
     const { items, getCartTotal, itemCount, removeFromCart, clearCart } = useCart();
@@ -54,10 +57,10 @@ const CheckoutView: React.FC = () => {
 
     // Contact form state
     const [formData, setFormData] = useState({
-        email: '', phone: '', mpesaNumber: ''
+        email: '', phone: '', otpCode: '', mpesaNumber: ''
     });
     const [formErrors, setFormErrors] = useState({
-        email: '', phone: '', mpesaNumber: ''
+        email: '', phone: '', otpCode: '', mpesaNumber: ''
     });
     // Dial-code country for the contact phone field only — the M-Pesa payment
     // phone field stays a single Kenya-only input, deliberately not linked to
@@ -67,6 +70,21 @@ const CheckoutView: React.FC = () => {
     const [contactPhoneCountry, setContactPhoneCountry] = useState<DialCodeCountry>({
         code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
     });
+
+    // ── Phone OTP verification state ──────────────────────────────────────────
+    // Every checkout now verifies the contact phone via OTP before payment —
+    // this replaces the old silent signInAnonymously() call. A single
+    // signInWithOtp() covers both new and returning phone numbers (same as the
+    // PWA's login), so this doubles as real account creation for first-time
+    // guests, and correctly resumes the existing account for returning ones —
+    // fixing the old bug where every guest checkout minted a brand-new
+    // anonymous identity even if the phone number had purchased before.
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [otpSending, setOtpSending] = useState(false);
+    const [otpVerifying, setOtpVerifying] = useState(false);
+    const [otpResendCooldown, setOtpResendCooldown] = useState(0);
+    const [otpPhone, setOtpPhone] = useState<string | null>(null);
 
     // Promo state
     const [promoCode, setPromoCode] = useState('');
@@ -202,6 +220,15 @@ const CheckoutView: React.FC = () => {
         return () => clearInterval(id);
     }, [reservationExpiresAt]);
 
+    // ── OTP resend cooldown ────────────────────────────────────────────────────
+    useEffect(() => {
+        if (otpResendCooldown <= 0) return;
+        const id = setInterval(() => {
+            setOtpResendCooldown(prev => Math.max(0, prev - 1));
+        }, 1000);
+        return () => clearInterval(id);
+    }, [otpResendCooldown]);
+
     // ── Real promo code lookup ────────────────────────────────────────────────
     const handleApplyPromo = useCallback(async () => {
         const code = promoCode.trim().toUpperCase();
@@ -279,7 +306,7 @@ const CheckoutView: React.FC = () => {
     };
 
     const validateForm = (): boolean => {
-        const errs = { email: '', phone: '', mpesaNumber: '' };
+        const errs = { email: '', phone: '', otpCode: '', mpesaNumber: '' };
         let ok = true;
 
         // Phone Number is required and must match the selected country's digit count
@@ -300,42 +327,97 @@ const CheckoutView: React.FC = () => {
         return ok;
     };
 
-    // ── Payment handler (guest-first, no auth wall) ───────────────────────────
+    // ── OTP: send code to the contact phone ───────────────────────────────────
+    const handleSendOtp = async () => {
+        const normalizedPhone = normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined);
+        if (!normalizedPhone) {
+            setFormErrors(prev => ({ ...prev, phone: 'Please enter a valid phone number' }));
+            return;
+        }
+        if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+            setFormErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+            return;
+        }
+
+        setOtpSending(true);
+        setPaymentError('');
+        try {
+            const { error } = await supabase.auth.signInWithOtp({
+                phone: normalizedPhone,
+            });
+            if (error) throw error;
+
+            setOtpPhone(normalizedPhone);
+            setOtpSent(true);
+            setOtpVerified(false);
+            setOtpResendCooldown(60);
+        } catch (err) {
+            setPaymentError(getErrorMessage(err) || 'Failed to send verification code. Please try again.');
+        } finally {
+            setOtpSending(false);
+        }
+    };
+
+    // ── OTP: verify the entered code ──────────────────────────────────────────
+    const handleVerifyOtp = async () => {
+        const code = formData.otpCode.trim();
+        if (!code) {
+            setFormErrors(prev => ({ ...prev, otpCode: 'Please enter the code we sent you' }));
+            return;
+        }
+        if (!otpPhone) return;
+
+        setOtpVerifying(true);
+        setPaymentError('');
+        try {
+            const { data, error } = await supabase.auth.verifyOtp({
+                phone: otpPhone,
+                token: code,
+                type: 'sms',
+            });
+            if (error || !data.user) throw error || new Error('Verification failed');
+
+            // Bonus: if the user supplied an email, attach it to their profile now
+            // that they have a real (non-anonymous) session. Non-blocking — the
+            // ticket purchase must not fail just because this update fails.
+            if (formData.email.trim()) {
+                try {
+                    await supabase.schema('api').from('v1_profiles').update({
+                        email: formData.email.toLowerCase().trim(),
+                    }).eq('id', data.user.id);
+                } catch (profileErr) {
+                    console.warn('Profile email update failed (non-blocking):', profileErr);
+                }
+            }
+
+            setOtpVerified(true);
+            setFormErrors(prev => ({ ...prev, otpCode: '' }));
+        } catch (err) {
+            setFormErrors(prev => ({ ...prev, otpCode: getErrorMessage(err) || 'Invalid or expired code' }));
+        } finally {
+            setOtpVerifying(false);
+        }
+    };
+
+    // ── Payment handler (requires phone OTP verification first) ──────────────
     const handlePayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm()) return;
+        if (!otpVerified) {
+            setPaymentError('Please verify your phone number before continuing.');
+            return;
+        }
 
         setPaymentError('');
         setIsSubmitting(true);
 
-        // Canonical E.164 form of the contact phone — this, not the raw input,
-        // is what gets written to identity.user_profile.phone_number, so it
-        // stays in the same shape the PWA's phone+OTP login normalizes to.
-        // validateForm already confirmed this succeeds before we get here.
-        const normalizedContactPhone = normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined)!;
-
         try {
-            // Step 1: Resolve user session
-            let { data: { user } } = await supabase.auth.getUser();
-            if (!user || user.is_anonymous) {
-                const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-                if (anonError || !anonData.user) {
-                    throw new Error(anonError?.message || 'Anonymous sign-in failed. Please enable anonymous authentication in your Supabase project settings or sign in with a registered account.');
-                }
-                user = anonData.user;
-                if (user) {
-                    try {
-                        await supabase.schema('api').from('v1_profiles').update({
-                            email: formData.email.trim() ? formData.email.toLowerCase().trim() : null,
-                            phone_number: normalizedContactPhone,
-                        }).eq('id', user.id);
-                    } catch (profileErr) {
-                        console.warn('Profile update failed (non-blocking):', profileErr);
-                    }
-                }
-            }
-            if (!user) throw new Error('Could not establish session');
-            
+            // OTP verification (handleVerifyOtp) already established the session
+            // — either a resumed existing account for a returning phone number, or
+            // a brand-new one provisioned by the on_auth_user_created trigger.
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Your session expired. Please verify your phone number again.');
+
             // Step 1.5: Reserve all cart items before initiating payment.
             // lock_tickets_for_checkout is atomic per tier — run sequentially so we
             // can roll back any already-acquired reservations if a later tier fails
@@ -393,7 +475,7 @@ const CheckoutView: React.FC = () => {
                         metadata: {
                             user_id: user.id,
                             email: formData.email.trim() || null,
-                            phone: normalizedContactPhone,
+                            phone: otpPhone,
                             items: items.map(i => ({
                                 event_id: i.eventId,
                                 tier_id: i.tierId,
@@ -655,13 +737,82 @@ const CheckoutView: React.FC = () => {
                                     </div>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Phone Number</label>
-                                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`} placeholder="700 000 000" autoFocus />
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={formData.phone}
+                                                onChange={(e) => {
+                                                    handleInputChange(e);
+                                                    // Editing the phone after sending/verifying invalidates
+                                                    // the code that was sent — force a fresh send.
+                                                    if (otpSent || otpVerified) {
+                                                        setOtpSent(false);
+                                                        setOtpVerified(false);
+                                                        setOtpPhone(null);
+                                                        setFormData(prev => ({ ...prev, otpCode: '' }));
+                                                    }
+                                                }}
+                                                className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`}
+                                                placeholder="700 000 000"
+                                                autoFocus
+                                                disabled={otpVerified}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleSendOtp}
+                                                disabled={otpSending || otpVerified || otpResendCooldown > 0}
+                                                className={styles.applyBtn}
+                                                style={{ whiteSpace: 'nowrap' }}
+                                            >
+                                                {otpVerified
+                                                    ? 'Verified ✓'
+                                                    : otpSending
+                                                        ? 'Sending…'
+                                                        : otpResendCooldown > 0
+                                                            ? `Resend (${otpResendCooldown}s)`
+                                                            : otpSent
+                                                                ? 'Resend OTP'
+                                                                : 'Send OTP'}
+                                            </button>
+                                        </div>
                                         {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
                                     </div>
+
+                                    {otpSent && !otpVerified && (
+                                        <div className={styles.formGroup}>
+                                            <label className={styles.label}>Verification Code</label>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    name="otpCode"
+                                                    value={formData.otpCode}
+                                                    onChange={handleInputChange}
+                                                    className={`${styles.input} ${formErrors.otpCode ? styles.inputError : ''}`}
+                                                    placeholder="Enter code"
+                                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleVerifyOtp())}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleVerifyOtp}
+                                                    disabled={otpVerifying || !formData.otpCode.trim()}
+                                                    className={styles.applyBtn}
+                                                    style={{ whiteSpace: 'nowrap' }}
+                                                >
+                                                    {otpVerifying ? 'Verifying…' : 'Verify'}
+                                                </button>
+                                            </div>
+                                            {formErrors.otpCode && <span className={styles.errorText}>{formErrors.otpCode}</span>}
+                                            <p className={styles.helperText}>* We sent a code to {otpPhone}</p>
+                                        </div>
+                                    )}
+
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Email Address(Optional)</label>
                                         <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
                                         {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
+                                        <p className={styles.helperText}>* Add your email to save your tickets to an account you can access later</p>
                                     </div>
 
                                 </>
@@ -751,11 +902,12 @@ const CheckoutView: React.FC = () => {
                                 <button
                                     onClick={handlePayment}
                                     className={styles.payBtn}
-                                    disabled={isSubmitting || items.length === 0}
+                                    disabled={isSubmitting || items.length === 0 || !otpVerified}
+                                    title={!otpVerified ? 'Verify your phone number to continue' : undefined}
                                 >
-                                    {isSubmitting ? 'Processing…' : (
-                                        total === 0 
-                                            ? 'Confirm Reservation' 
+                                    {isSubmitting ? 'Processing…' : !otpVerified ? 'Verify Phone to Continue' : (
+                                        total === 0
+                                            ? 'Confirm Reservation'
                                             : `Confirm & Pay ${currency} ${total.toLocaleString()}`
                                     )}
                                 </button>
