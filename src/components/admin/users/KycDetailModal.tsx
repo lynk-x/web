@@ -16,12 +16,12 @@ interface KycDetailModalProps {
     onReject: (v: KycVerification, reason: string) => void;
 }
 
-type Step = 'overview' | 'documents' | 'information';
+type Step = 'info' | 'documents' | 'notes';
 
 const STEPS: { key: Step; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
+    { key: 'info', label: 'Info' },
     { key: 'documents', label: 'Documents' },
-    { key: 'information', label: 'Information' },
+    { key: 'notes', label: 'Notes' },
 ];
 
 const REJECTION_SUGGESTIONS = [
@@ -43,12 +43,15 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
     onReject,
 }) => {
     const supabase = createClient();
-    const [step, setStep] = useState<Step>('overview');
+    const [step, setStep] = useState<Step>('info');
     const [signedUrls, setSignedUrls] = useState<string[]>([]);
     const [decryptedPii, setDecryptedPii] = useState<Record<string, unknown>>({});
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
+    const [adminNotes, setAdminNotes] = useState('');
+    const [isSavingNotes, setIsSavingNotes] = useState(false);
+    const [notesSaved, setNotesSaved] = useState(false);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -62,6 +65,7 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                 if (error) throw error;
 
                 setDecryptedPii(detail?.pii_data || {});
+                setAdminNotes(detail?.admin_notes || '');
 
                 const documents: string[] = detail?.uploaded_documents || [];
                 if (documents.length > 0) {
@@ -83,11 +87,13 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
 
         if (isOpen && verification) {
             fetchDetail();
-            setStep('overview');
+            setStep('info');
             setIsRejecting(false);
             setRejectionReason('');
             setSignedUrls([]);
             setDecryptedPii({});
+            setAdminNotes('');
+            setNotesSaved(false);
         }
     }, [isOpen, verification, supabase]);
 
@@ -95,6 +101,23 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
 
     const piiFields = Object.entries(decryptedPii || {});
     const stepIndex = STEPS.findIndex(s => s.key === step);
+
+    const handleSaveNotes = async () => {
+        setIsSavingNotes(true);
+        setNotesSaved(false);
+        try {
+            const { error } = await supabase
+                .schema('api')
+                .rpc('update_kyc_admin_notes', { p_verification_id: verification.id, p_notes: adminNotes });
+
+            if (error) throw error;
+            setNotesSaved(true);
+        } catch (err) {
+            console.error('Failed to save admin notes:', err);
+        } finally {
+            setIsSavingNotes(false);
+        }
+    };
 
     return (
         <Modal
@@ -148,16 +171,42 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                     ))}
                 </div>
 
-                {step === 'overview' && (
-                    <div className={styles.section}>
-                        <div className={styles.header}>
-                            <div className={styles.badgeRow}>
-                                <Badge label={formatString(verification.kyc_tier)} variant="primary" />
-                                <Badge label={formatString(verification.status)} variant={verification.status === 'approved' ? 'success' : 'warning'} showDot />
+                {step === 'info' && (
+                    <>
+                        <div className={styles.section}>
+                            <div className={styles.header}>
+                                <div className={styles.badgeRow}>
+                                    <Badge label={formatString(verification.kyc_tier)} variant="primary" />
+                                    <Badge label={formatString(verification.status)} variant={verification.status === 'approved' ? 'success' : 'warning'} showDot />
+                                </div>
+                                <span className={styles.timestamp}>Submitted on {formatDate(verification.created_at)}</span>
                             </div>
-                            <span className={styles.timestamp}>Submitted on {formatDate(verification.created_at)}</span>
                         </div>
-                    </div>
+
+                        <div className={styles.section}>
+                            <h3>Verified Information</h3>
+                            <div className={styles.piiGrid}>
+                                {isLoadingDetail ? (
+                                    <span>Decrypting...</span>
+                                ) : decryptedPii._decryption_error ? (
+                                    <span className={styles.decryptionError}>
+                                        Could not decrypt this submission&apos;s information. It may have been encrypted
+                                        under a different key, or the payload is corrupted. Contact engineering with this
+                                        verification&apos;s reference if the issue persists.
+                                    </span>
+                                ) : piiFields.length === 0 ? (
+                                    <span>No additional information submitted.</span>
+                                ) : (
+                                    piiFields.map(([key, value]) => (
+                                        <div key={key} className={styles.piiItem}>
+                                            <label>{formatString(key)}</label>
+                                            <span>{String(value)}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 {step === 'documents' && (
@@ -188,28 +237,29 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                     </div>
                 )}
 
-                {step === 'information' && (
+                {step === 'notes' && (
                     <div className={styles.section}>
-                        <h3>Verified Information</h3>
-                        <div className={styles.piiGrid}>
-                            {isLoadingDetail ? (
-                                <span>Decrypting...</span>
-                            ) : decryptedPii._decryption_error ? (
-                                <span className={styles.decryptionError}>
-                                    Could not decrypt this submission&apos;s information. It may have been encrypted
-                                    under a different key, or the payload is corrupted. Contact engineering with this
-                                    verification&apos;s reference if the issue persists.
-                                </span>
-                            ) : piiFields.length === 0 ? (
-                                <span>No additional information submitted.</span>
-                            ) : (
-                                piiFields.map(([key, value]) => (
-                                    <div key={key} className={styles.piiItem}>
-                                        <label>{formatString(key)}</label>
-                                        <span>{String(value)}</span>
-                                    </div>
-                                ))
-                            )}
+                        <h3>Admin Notes</h3>
+                        <p className={styles.notesHint}>
+                            Internal notes for reviewers — never shown to the applicant.
+                        </p>
+                        <textarea
+                            value={adminNotes}
+                            onChange={(e) => { setAdminNotes(e.target.value); setNotesSaved(false); }}
+                            placeholder="e.g. Called applicant to confirm ID, looks legitimate..."
+                            className={styles.textarea}
+                            disabled={isLoadingDetail}
+                        />
+                        <div className={styles.notesActions}>
+                            {notesSaved && <span className={styles.notesSavedLabel}>Saved</span>}
+                            <button
+                                type="button"
+                                className={styles.btnSecondary}
+                                onClick={handleSaveNotes}
+                                disabled={isSavingNotes || isLoadingDetail}
+                            >
+                                {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                            </button>
                         </div>
                     </div>
                 )}

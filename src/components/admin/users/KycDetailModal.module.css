@@ -205,6 +205,25 @@
     resize: vertical;
 }
 
+.notesHint {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.6;
+}
+
+.notesActions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
+
+.notesSavedLabel {
+    font-size: 13px;
+    color: var(--color-interface-success);
+    font-weight: 600;
+}
+
 .footer {
     display: flex;
     justify-content: flex-end;
