@@ -406,6 +406,22 @@ const CheckoutView: React.FC = () => {
                 });
 
                 if (funcError) {
+
+                    const { data: pending } = await supabase.schema('api').rpc('check_pending_ticket_payment', {
+                        p_user_id: user.id,
+                        p_window_minutes: 5,
+                    });
+
+                    if (pending?.provider_ref) {
+                        setCurrentCheckoutId(pending.provider_ref);
+                        setPaymentStatus('waiting');
+                        setRealtimeDisrupted(false);
+                        sessionStorage.setItem('lynk-x-payment', JSON.stringify({
+                            checkoutId: pending.provider_ref,
+                        }));
+                        return;
+                    }
+
                     throw new FunctionTransportError(funcError.message || 'Failed to reach payment service');
                 }
                 if (!data?.success) {
