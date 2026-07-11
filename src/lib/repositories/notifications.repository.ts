@@ -95,29 +95,22 @@ export function createNotificationsRepository(client: DbClient) {
         },
 
         /**
-         * Mark a single notification as read. Requires `created_at` because the table is
-         * partitioned by created_at and the PK is composite (id, created_at).
-         */
-        async markRead(notificationId: string, createdAt: string): Promise<RepoResult<null>> {
+         * Mark a single notification as read via RPC rather than a direct
+
+        async markRead(notificationId: string, _createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
                 .schema('api')
-                .from('v1_notifications')
-                .update({ is_read: true })
-                .eq('id', notificationId)
-                .eq('created_at', createdAt);
+                .rpc('mark_notifications_read', { p_notification_ids: [notificationId] });
 
             if (error) return { data: null, error: toError(error) };
             return { data: null, error: null };
         },
 
-        /** Mark all notifications for a user as read. */
-        async markAllRead(userId: string): Promise<RepoResult<null>> {
+        /** Mark all notifications for a user as read (also sets read_at server-side). */
+        async markAllRead(_userId: string): Promise<RepoResult<null>> {
             const { error } = await client
                 .schema('api')
-                .from('v1_notifications')
-                .update({ is_read: true })
-                .eq('user_id', userId)
-                .eq('is_read', false);
+                .rpc('mark_all_notifications_read');
 
             if (error) return { data: null, error: toError(error) };
             return { data: null, error: null };

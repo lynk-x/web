@@ -11,11 +11,6 @@ const ConfirmationContent = () => {
     const searchParams = useSearchParams();
     const orderRef = searchParams.get('order_ref') || 'LX-CONFIRMED';
     const eventId = searchParams.get('event_id') || '';
-    // events.events is partitioned by created_at — carrying this through lets
-    // verify_completed_order (and, in turn, the PWA forum bridge link) prune
-    // to one partition instead of scanning all of them. Optional: older
-    // links minted before this field existed simply fall back to an
-    // unpruned lookup by event_id alone.
     const eventCreatedAtParam = searchParams.get('event_created_at') || '';
 
     // This page previously rendered "You're In!" purely off raw URL query
