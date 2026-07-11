@@ -16,10 +16,11 @@ import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
+import { getForumUrl } from '@/components/features/events/EventTable';
 
 interface TicketTier {
     id: string;
-    name: string;
+    display_name: string;
     price: number;
     capacity: number;
     tickets_sold: number;
@@ -41,6 +42,7 @@ interface EventDetail {
     is_private: boolean;
     currency: string;
     reference: string;
+    forum_reference: string | null;
     created_at: string;
     ticket_tiers: TicketTier[];
     cancellation_reason: string | null;
@@ -124,13 +126,16 @@ export default function EventDetailPage() {
     const totalCapacity = tiers.reduce((s, t) => s + (t.capacity || 0), 0);
     const sellThrough = totalCapacity > 0 ? ((totalSold / totalCapacity) * 100).toFixed(1) : '0';
     const badge = STATUS_BADGE_MAP[event.status] || { label: event.status, variant: 'neutral' as BadgeVariant };
-    const locationName = event.location?.name || 'TBD';
 
     return (
         <div className={adminStyles.container}>
             <PageHeader
                 title={event.title}
-                subtitle={`${locationName} \u00B7 ${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`}
+                subtitle={
+                    <Link href={`/event/${event.reference}`} target="_blank" rel="noopener noreferrer">
+                        View public page
+                    </Link>
+                }
                 onClose={() => router.back()}
                 badge={badge}
                 primaryAction={{
@@ -168,58 +173,15 @@ export default function EventDetailPage() {
             {/* Quick Links */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }} className="tour-event-links">
                 <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
-                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in Scanner" />
+                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
                 <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
-            </div>
-
-            {/* Ticket Tiers */}
-            <div className={`${adminStyles.pageCard} tour-event-tiers`} style={{ marginBottom: '24px' }}>
-                <h2 className={adminStyles.sectionTitle}>Ticket Tiers</h2>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                                <th style={thStyle}>Tier</th>
-                                <th style={thStyle}>Price</th>
-                                <th style={thStyle}>Sold</th>
-                                <th style={thStyle}>Capacity</th>
-                                <th style={thStyle}>Fill Rate</th>
-                                <th style={thStyle}>Sale Window</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {tiers.map(tier => {
-                                const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
-                                return (
-                                    <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                        <td style={tdStyle}>{tier.name}</td>
-                                        <td style={tdStyle}>{tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}</td>
-                                        <td style={tdStyle}>{formatNumber(tier.tickets_sold)}</td>
-                                        <td style={tdStyle}>{formatNumber(tier.capacity)}</td>
-                                        <td style={tdStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${fill}%`, height: '100%', borderRadius: '3px', background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)' }} />
-                                                </div>
-                                                <span style={{ opacity: 0.7, fontSize: '13px' }}>{fill}%</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ ...tdStyle, opacity: 0.6, fontSize: '13px' }}>
-                                            {tier.sale_starts_at ? formatDate(tier.sale_starts_at) : 'Open'} — {tier.sale_ends_at ? formatDate(tier.sale_ends_at) : 'Event start'}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            {tiers.length === 0 && (
-                                <tr><td colSpan={6} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5 }}>No ticket tiers configured.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                {event.forum_reference && (
+                    <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
+                )}
             </div>
 
             {/* Event Details Card */}
-            <div className={adminStyles.pageCard}>
+            <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
                 <h2 className={adminStyles.sectionTitle}>Event Details</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                     <DetailRow label="Reference" value={event.reference} />
@@ -239,6 +201,48 @@ export default function EventDetailPage() {
                         <p style={{ fontSize: '14px', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>{event.description}</p>
                     </div>
                 )}
+            </div>
+
+            {/* Ticket Tiers */}
+            <div className={`${adminStyles.pageCard} tour-event-tiers`}>
+                <h2 className={adminStyles.sectionTitle}>Ticket Tiers</h2>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
+                                <th style={thStyle}>Tier</th>
+                                <th style={thStyle}>Price</th>
+                                <th style={thStyle}>Sold</th>
+                                <th style={thStyle}>Capacity</th>
+                                <th style={thStyle}>Fill Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tiers.map(tier => {
+                                const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
+                                return (
+                                    <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
+                                        <td style={tdStyle}>{tier.display_name}</td>
+                                        <td style={tdStyle}>{tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}</td>
+                                        <td style={tdStyle}>{formatNumber(tier.tickets_sold)}</td>
+                                        <td style={tdStyle}>{formatNumber(tier.capacity)}</td>
+                                        <td style={tdStyle}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${fill}%`, height: '100%', borderRadius: '3px', background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)' }} />
+                                                </div>
+                                                <span style={{ opacity: 0.7, fontSize: '13px' }}>{fill}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {tiers.length === 0 && (
+                                <tr><td colSpan={5} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5 }}>No ticket tiers configured.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <ProductTour
@@ -264,7 +268,7 @@ export default function EventDetailPage() {
                     {
                         target: '.tour-event-tiers',
                         title: 'Tier Performance',
-                        content: 'View a breakdown of fill rates and sales windows for each ticket tier.',
+                        content: 'View a breakdown of pricing and fill rates for each ticket tier.',
                     }
                 ]}
             />
@@ -274,10 +278,11 @@ export default function EventDetailPage() {
 
 // ── Helper Components ──────────────────────────────────────────────────────
 
-function QuickLink({ href, label }: { href: string; label: string }) {
+function QuickLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
     return (
         <Link
             href={href}
+            {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             style={{
                 padding: '10px 20px',
                 borderRadius: 'var(--radius-full)',
