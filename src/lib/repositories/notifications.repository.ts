@@ -95,8 +95,8 @@ export function createNotificationsRepository(client: DbClient) {
         },
 
         /**
-         * Mark a single notification as read via RPC rather than a direct
-
+         * Mark a single notification as read via RPC rather than a direct update.
+         */
         async markRead(notificationId: string, _createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
                 .schema('api')

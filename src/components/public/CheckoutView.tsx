@@ -914,7 +914,7 @@ const CheckoutView: React.FC = () => {
                                 <button
                                     onClick={handlePayment}
                                     className={styles.payBtn}
-                                    disabled={isSubmitting || items.length === 0}
+                                    disabled={isSubmitting || items.length === 0 || !otpVerified}
                                 >
                                     {isSubmitting ? 'Processing…' : (
                                         total === 0

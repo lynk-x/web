@@ -28,11 +28,6 @@
     border-bottom: none;
 }
 
-.unread {
-    border-left: 3px solid var(--color-brand-primary);
-    padding-left: 17px;
-}
-
 .dot {
     flex-shrink: 0;
     width: 8px;

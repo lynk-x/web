@@ -90,7 +90,7 @@ export default function NotificationsPage() {
                         {notifications.map((notification) => (
                             <div
                                 key={notification.id}
-                                className={`${styles.item} ${!notification.is_read ? styles.unread : ''}`}
+                                className={styles.item}
                                 onClick={() => handleMarkRead(notification)}
                             >
                                 {!notification.is_read && <span className={styles.dot} />}
