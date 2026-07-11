@@ -26,11 +26,9 @@ const ConfirmationContent = () => {
     // resolves to the same account and its tickets — no re-pointing needed.
     const [verifyState, setVerifyState] = useState<'checking' | 'verified' | 'unverified'>('checking');
     const [ticketCount, setTicketCount] = useState(0);
-    const [eventCreatedAt, setEventCreatedAt] = useState(eventCreatedAtParam);
-    // Forum reference is a single opaque slug — unlike event_id + event_created_at,
-    // there's no timestamp to mangle in transit, so the bridge link is built from
-    // this instead whenever the lookup succeeds (falls back to the old params
-    // otherwise, e.g. if the forum hasn't been created yet for some reason).
+    // Forum reference is a single opaque slug passed to the PWA's /auth/bridge
+    // route — no timestamp to mangle in transit. The bridge link only renders
+    // once this resolves.
     const [forumReference, setForumReference] = useState<string | null>(null);
 
     useEffect(() => {
@@ -50,10 +48,6 @@ const ConfirmationContent = () => {
                 const row = Array.isArray(data) ? data[0] : data;
                 if (!error && row && row.ticket_count > 0) {
                     setTicketCount(row.ticket_count);
-                    // Prefer the server-resolved value — covers the case where
-                    // the URL param is missing (e.g. an older confirmation
-                    // link) but the DB lookup still found it via the join.
-                    if (row.event_created_at) setEventCreatedAt(row.event_created_at);
                     setVerifyState('verified');
 
                     const { data: forumRow } = await supabase
@@ -122,15 +116,18 @@ const ConfirmationContent = () => {
                 </div>
 
                 <div className={styles.actionGroup}>
-                    <Link href={forumReference
-                        ? `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`
-                        : `https://app.lynk-x.app/auth/bridge?event_id=${encodeURIComponent(eventId)}${eventCreatedAt ? `&event_created_at=${encodeURIComponent(eventCreatedAt)}` : ''}`
-                    } className={styles.primaryBtn}>
-                        <span className={styles.btnText}>Enter Event Forum</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    </Link>
+                    {forumReference ? (
+                        <Link href={`https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`} className={styles.primaryBtn}>
+                            <span className={styles.btnText}>Enter Event Forum</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </Link>
+                    ) : (
+                        <span className={styles.primaryBtn} aria-disabled="true">
+                            <span className={styles.btnText}>Preparing your forum…</span>
+                        </span>
+                    )}
 
                     <div className={styles.installNudge}>
                         <p>For the best experience, <strong>Install Lynk-X</strong> on your home screen.</p>
