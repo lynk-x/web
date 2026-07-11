@@ -22,6 +22,8 @@ export interface Forum {
     /** Computed via vw_forum_with_stats — not a real column on `forums`. */
     member_count?: number;
     created_at: string;
+    /** Stable slug accepted by the PWA's /forum/:reference route. Falls back to `id` when unset. */
+    reference?: string | null;
 }
 
 export interface ForumChannel {
@@ -81,8 +83,9 @@ export function createForumRepository(client: DbClient) {
         /** Fetch the forum for a given event. Returns null when no forum exists for the event. */
         async findByEventId(eventId: string): Promise<RepoResult<Forum | null>> {
             const { data, error } = await client
-                .from('forums')
-                .select('id, event_id, status, created_at')
+                .schema('api')
+                .from('v1_forums')
+                .select('id, event_id, status, created_at, reference')
                 .eq('event_id', eventId)
                 .maybeSingle();
 
