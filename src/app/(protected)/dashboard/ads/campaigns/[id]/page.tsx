@@ -362,7 +362,7 @@ export default function CampaignDetailPage() {
                 <h2 className={adminStyles.sectionTitle}>Campaign Details</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
                     <DetailRow label="Destination URL" value={campaign.destination_url} isLink />
-                    <DetailRow label="Max Bid" value={formatCurrency(campaign.max_bid_amount, campaign.currency)} />
+                    <DetailRow label="Max Bid" value={campaign.max_bid_amount != null ? formatCurrency(campaign.max_bid_amount, campaign.currency) : 'Not set'} />
                     <DetailRow label="Daily Limit" value={campaign.daily_limit ? formatCurrency(campaign.daily_limit, campaign.currency) : 'No limit'} />
                     <DetailRow label="Budget" value={formatCurrency(campaign.total_budget, campaign.currency)} />
                     <DetailRow label="Currency" value={campaign.currency} />
