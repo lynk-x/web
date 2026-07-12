@@ -11,6 +11,7 @@ import { createClient } from '@/utils/supabase/client';
 import type { AccountWallet, AccountPaymentMethod } from '@/types/organize';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
+import { useWalletPinGate } from '@/hooks/useWalletPinGate';
 
 interface WalletsTableProps {
     data: AccountWallet[];
@@ -25,6 +26,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
     const { can } = useAccountPermissions(accountId);
     const hasManageBilling = can('can_manage_billing');
+    const { requestPinHash, PinGateModals } = useWalletPinGate();
 
     const [selectedWallet, setSelectedWallet] = useState<AccountWallet | null>(null);
     const [activeModal, setActiveModal] = useState<'none' | 'withdraw' | 'topup' | 'transfer' | 'history'>('none');
@@ -90,13 +92,17 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
             return;
         }
 
+        const pinHash = await requestPinHash();
+        if (!pinHash) return;
+
         setIsWithdrawing(true);
         try {
             const { error } = await supabase.schema('api').rpc('request_account_payout', {
                 p_account_id: accountId,
                 p_amount: Number(withdrawAmount),
                 p_payout_method_id: selectedPayoutMethod,
-                p_currency: selectedWallet.currency
+                p_currency: selectedWallet.currency,
+                p_pin_hash: pinHash
             });
             if (error) throw error;
             showToast("Withdrawal requested successfully.", "success");
@@ -155,13 +161,17 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
             return;
         }
 
+        const pinHash = await requestPinHash();
+        if (!pinHash) return;
+
         setIsTransferring(true);
         try {
             const { error } = await supabase.schema('api').rpc('transfer_wallet_funds', {
                 p_account_id: accountId,
                 p_amount: Number(transferAmount),
                 p_from_currency: selectedWallet.currency,
-                p_to_currency: transferToCurrency
+                p_to_currency: transferToCurrency,
+                p_pin_hash: pinHash
             });
             if (error) throw error;
             showToast("Transfer completed successfully.", "success");
@@ -413,6 +423,8 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
                     )}
                 </div>
             </Modal>
+
+            {PinGateModals}
         </div>
     );
 }

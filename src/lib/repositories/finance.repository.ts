@@ -172,18 +172,20 @@ export function createFinanceRepository(client: DbClient) {
             return { data: data as Payout[], total: count ?? null, error: null };
         },
 
-        /** Request a payout. Wraps `request_account_payout` RPC. */
+        /** Request a payout. Wraps `request_account_payout` RPC. Requires the caller's wallet PIN hash — see useWalletPinGate. */
         async requestPayout(params: {
             accountId: string;
             amount: number;
             payoutMethodId: string;
             currency: string;
+            pinHash: string;
         }): Promise<RepoResult<RequestPayoutResult>> {
             const { data, error } = await client.schema('api').rpc('request_account_payout', {
                 p_account_id: params.accountId,
                 p_amount: params.amount,
                 p_payout_method_id: params.payoutMethodId,
                 p_currency: params.currency,
+                p_pin_hash: params.pinHash,
             });
 
             if (error) return { data: null, error: toError(error) };
