@@ -20,6 +20,8 @@ import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
+import { useConfirmModal } from '@/hooks/useConfirmModal';
+import QuickLinksRow, { QuickLink } from '@/components/shared/QuickLinksRow';
 
 const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
     draft: { label: 'Draft', variant: 'subtle' },
@@ -86,6 +88,7 @@ export default function CampaignDetailPage() {
     const { showToast } = useToast();
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
+    const { confirm, ConfirmDialog } = useConfirmModal();
 
     const [campaign, setCampaign] = useState<CampaignDetail | null>(null);
     const [variants, setVariants] = useState<AdVariant[]>([]);
@@ -173,6 +176,13 @@ export default function CampaignDetailPage() {
 
     const handleStatusChange = async (newStatus: 'active' | 'paused') => {
         if (!campaign || !activeAccount) return;
+        if (newStatus === 'paused') {
+            const confirmed = await confirm(
+                'Pausing this campaign stops ad delivery and spend immediately. You can resume it at any time.',
+                { title: 'Pause Campaign?', confirmLabel: 'Pause Campaign', variant: 'danger' }
+            );
+            if (!confirmed) return;
+        }
         try {
             const { error } = await supabase.schema('api').rpc('bulk_toggle_campaigns', {
                 p_account_id: activeAccount.id,
@@ -209,6 +219,7 @@ export default function CampaignDetailPage() {
 
     return (
         <div className={adminStyles.container}>
+            {ConfirmDialog}
             <PageHeader
                 title={campaign.title}
                 subtitle={`${TYPE_LABELS[campaign.type] || campaign.type} \u00B7 ${formatDate(campaign.start_at)} \u2013 ${formatDate(campaign.end_at)}`}
@@ -288,6 +299,13 @@ export default function CampaignDetailPage() {
                 <StatCard label="Remaining" value={formatCurrency(campaign.remaining_budget, campaign.currency)} trend="neutral" />
             </div>
 
+            {/* Quick Links */}
+            {campaign.target_event_id && (
+                <QuickLinksRow className="tour-campaign-links">
+                    <QuickLink href={`/dashboard/organize/events/${campaign.target_event_id}`} label="View Targeted Event" />
+                </QuickLinksRow>
+            )}
+
             {/* Performance Chart */}
             <div className={`${adminStyles.pageCard} tour-campaign-chart`} style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -339,9 +357,25 @@ export default function CampaignDetailPage() {
                 </div>
             </div>
 
+            {/* Campaign Details Card */}
+            <div className={`${adminStyles.pageCard} tour-campaign-details`} style={{ marginBottom: '24px' }}>
+                <h2 className={adminStyles.sectionTitle}>Campaign Details</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+                    <DetailRow label="Destination URL" value={campaign.destination_url} isLink />
+                    <DetailRow label="Max Bid" value={formatCurrency(campaign.max_bid_amount, campaign.currency)} />
+                    <DetailRow label="Daily Limit" value={campaign.daily_limit ? formatCurrency(campaign.daily_limit, campaign.currency) : 'No limit'} />
+                    <DetailRow label="Budget" value={formatCurrency(campaign.total_budget, campaign.currency)} />
+                    <DetailRow label="Currency" value={campaign.currency} />
+                    <DetailRow label="Created" value={formatDate(campaign.created_at)} />
+                    {campaign.reviewed_at && (
+                        <DetailRow label="Reviewed" value={formatDate(campaign.reviewed_at)} />
+                    )}
+                </div>
+            </div>
+
             {/* A/B Variant Comparison */}
             {variants.length > 0 && (
-                <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
+                <div className={`${adminStyles.pageCard} tour-campaign-variants`} style={{ marginBottom: '24px' }}>
                     <h2 className={adminStyles.sectionTitle}>Creative Variants {variants.length > 1 ? '(A/B Test)' : ''}</h2>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
@@ -413,21 +447,6 @@ export default function CampaignDetailPage() {
                 </div>
             )}
 
-            {/* Campaign Details Card */}
-            <div className={adminStyles.pageCard}>
-                <h2 className={adminStyles.sectionTitle}>Campaign Details</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                    <DetailRow label="Destination URL" value={campaign.destination_url} isLink />
-                    <DetailRow label="Max Bid" value={formatCurrency(campaign.max_bid_amount, campaign.currency)} />
-                    <DetailRow label="Daily Limit" value={campaign.daily_limit ? formatCurrency(campaign.daily_limit, campaign.currency) : 'No limit'} />
-                    <DetailRow label="Budget" value={formatCurrency(campaign.total_budget, campaign.currency)} />
-                    <DetailRow label="Currency" value={campaign.currency} />
-                    <DetailRow label="Created" value={formatDate(campaign.created_at)} />
-                    {campaign.reviewed_at && (
-                        <DetailRow label="Reviewed" value={formatDate(campaign.reviewed_at)} />
-                    )}
-                </div>
-            </div>
             <ProductTour
                 storageKey={activeAccount ? `hasSeenAdsCampaignDetailJoyride_${activeAccount.id}` : 'hasSeenAdsCampaignDetailJoyride_guest'}
                 steps={[
@@ -447,6 +466,16 @@ export default function CampaignDetailPage() {
                         target: '.tour-campaign-chart',
                         title: 'Delivery Trends',
                         content: 'Visualize how your ads are being delivered over time. Use the date range selector to analyze specific periods.',
+                    },
+                    {
+                        target: '.tour-campaign-details',
+                        title: 'Campaign Settings',
+                        content: 'Review the budget, bidding and delivery settings this campaign is running with.',
+                    },
+                    {
+                        target: '.tour-campaign-variants',
+                        title: 'Creative Performance',
+                        content: 'Compare how each creative variant is performing to see which one resonates most with your audience.',
                     }
                 ]}
             />

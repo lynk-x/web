@@ -3,7 +3,6 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -18,6 +17,7 @@ import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
 import { getForumUrl } from '@/components/features/events/EventTable';
 import EventCancellationModal from '@/components/features/events/EventCancellationModal';
+import QuickLinksRow, { QuickLink } from '@/components/shared/QuickLinksRow';
 
 interface TicketTier {
     id: string;
@@ -192,14 +192,14 @@ export default function EventDetailPage() {
             </div>
 
             {/* Quick Links */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }} className="tour-event-links">
+            <QuickLinksRow className="tour-event-links">
                 {event.forum_reference && (
                     <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
                 )}
                 <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
                 <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
                 <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
-            </div>
+            </QuickLinksRow>
 
             {/* Event Details Card */}
             <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
@@ -308,31 +308,6 @@ export default function EventDetailPage() {
 }
 
 // ── Helper Components ──────────────────────────────────────────────────────
-
-function QuickLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
-    return (
-        <Link
-            href={href}
-            {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-            style={{
-                padding: '10px 20px',
-                borderRadius: 'var(--radius-full)',
-                border: '1px solid var(--color-interface-outline)',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'var(--color-utility-primaryText)',
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-            }}
-        >
-            {label}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </Link>
-    );
-}
 
 function DetailRow({ label, value }: { label: string; value: string }) {
     return (
