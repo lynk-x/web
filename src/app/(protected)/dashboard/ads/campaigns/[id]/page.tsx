@@ -225,21 +225,19 @@ export default function CampaignDetailPage() {
                 subtitle={`${TYPE_LABELS[campaign.type] || campaign.type} \u00B7 ${formatDate(campaign.start_at)} \u2013 ${formatDate(campaign.end_at)}`}
                 closeHref="/dashboard/ads/campaigns"
                 badge={badge}
-                primaryAction={campaign.status === 'active' ? {
-                    label: 'Pause Campaign',
-                    onClick: () => handleStatusChange('paused'),
-                } : campaign.status === 'paused' ? {
-                    label: 'Resume Campaign',
-                    onClick: () => handleStatusChange('active'),
-                } : campaign.status === 'rejected' ? {
-                    label: 'Edit & Resubmit',
-                    onClick: () => router.push(`/dashboard/ads/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`),
-                } : undefined}
-                secondaryAction={{
-                    label: 'Edit',
+                primaryAction={{
+                    label: campaign.status === 'rejected' ? 'Edit & Resubmit' : 'Edit Campaign',
                     onClick: () => router.push(`/dashboard/ads/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`),
                     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 }}
+                secondaryAction={campaign.status === 'active' ? {
+                    label: 'Pause Campaign',
+                    onClick: () => handleStatusChange('paused'),
+                    className: adminStyles.btnDanger,
+                } : campaign.status === 'paused' ? {
+                    label: 'Resume Campaign',
+                    onClick: () => handleStatusChange('active'),
+                } : undefined}
             />
 
             {/* Rejection / Pending Approval Banner */}

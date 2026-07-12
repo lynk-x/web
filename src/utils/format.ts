@@ -69,8 +69,10 @@ export function toUtcIso(date: string, time: string, tz?: string): string {
     }
 }
 
-export function formatCurrency(amount: number | string, currency: string = 'USD'): string {
+export function formatCurrency(amount: number | string | null | undefined, currency: string = 'USD'): string {
+    if (amount == null) return '-';
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(num)) return '-';
     return num.toLocaleString('en-US', { style: 'currency', currency });
 }
 
@@ -79,7 +81,8 @@ export function formatCurrency(amount: number | string, currency: string = 'USD'
  *
  * @example formatNumber(123456) // "123,456"
  */
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | null | undefined): string {
+    if (num == null) return '-';
     return num.toLocaleString();
 }
 
