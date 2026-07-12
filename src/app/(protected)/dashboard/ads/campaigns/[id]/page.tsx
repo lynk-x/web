@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell, Legend
 } from 'recharts';
 import { createClient } from '@/utils/supabase/client';
@@ -75,13 +75,6 @@ interface AdVariant {
     clicks_count: number;
 }
 
-interface DayPoint {
-    name: string;
-    impressions: number;
-    clicks: number;
-    sortKey: number;
-}
-
 export default function CampaignDetailPage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
@@ -92,10 +85,7 @@ export default function CampaignDetailPage() {
 
     const [campaign, setCampaign] = useState<CampaignDetail | null>(null);
     const [variants, setVariants] = useState<AdVariant[]>([]);
-    const [performanceData, setPerformanceData] = useState<DayPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
-    const [timeRange, setTimeRange] = useState(30);
 
     const fetchCampaign = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -133,46 +123,7 @@ export default function CampaignDetailPage() {
         }
     }, [id, activeAccount, supabase, showToast, router]);
 
-    const fetchAnalytics = useCallback(async () => {
-        if (!id || !activeAccount) return;
-        setIsAnalyticsLoading(true);
-        try {
-            const end = new Date();
-            const start = new Date();
-            start.setDate(start.getDate() - timeRange);
-
-            const { data, error } = await supabase.schema('api').rpc('get_ads_performance_metrics', {
-                p_account_id: activeAccount.id,
-                p_start_date: start.toISOString().split('T')[0],
-                p_end_date: end.toISOString().split('T')[0],
-                p_campaign_id: id
-            });
-
-            if (error) throw error;
-
-            const formatted = (data || []).map((d: any) => {
-                const date = new Date(d.day);
-                const label = timeRange <= 7
-                    ? date.toLocaleDateString('en-US', { weekday: 'short' })
-                    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                return {
-                    name: label,
-                    impressions: Number(d.impressions),
-                    clicks: Number(d.clicks),
-                    sortKey: date.getTime()
-                };
-            });
-
-            setPerformanceData(formatted);
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to load analytics', 'error');
-        } finally {
-            setIsAnalyticsLoading(false);
-        }
-    }, [id, activeAccount, supabase, timeRange, showToast]);
-
     useEffect(() => { fetchCampaign(); }, [fetchCampaign]);
-    useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
 
     const handleStatusChange = async (newStatus: 'active' | 'paused') => {
         if (!campaign || !activeAccount) return;
@@ -298,62 +249,10 @@ export default function CampaignDetailPage() {
             </div>
 
             {/* Quick Links */}
-            {campaign.target_event_id && (
-                <QuickLinksRow className="tour-campaign-links">
-                    <QuickLink href={`/dashboard/organize/events/${campaign.target_event_id}`} label="View Targeted Event" />
-                </QuickLinksRow>
-            )}
-
-            {/* Performance Chart */}
-            <div className={`${adminStyles.pageCard} tour-campaign-chart`} style={{ marginBottom: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Performance Over Time</h2>
-                    <select
-                        value={timeRange}
-                        onChange={(e) => setTimeRange(Number(e.target.value))}
-                        style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid var(--color-interface-outline)',
-                            color: 'var(--color-utility-primaryText)',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                        }}
-                    >
-                        <option value={7}>Last 7 Days</option>
-                        <option value={30}>Last 30 Days</option>
-                        <option value={90}>Last 90 Days</option>
-                    </select>
-                </div>
-                <div style={{ width: '100%', height: 280, position: 'relative' }}>
-                    {isAnalyticsLoading && (
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', zIndex: 1, fontSize: '13px', opacity: 0.6 }}>
-                            Updating...
-                        </div>
-                    )}
-                    <ResponsiveContainer>
-                        <AreaChart data={performanceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="cImp" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#20f928" stopOpacity={0.15} />
-                                    <stop offset="95%" stopColor="#20f928" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="cClk" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="rgba(255,255,255,0.4)" stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor="rgba(255,255,255,0.4)" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <Tooltip contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }} />
-                            <Legend />
-                            <Area type="monotone" dataKey="impressions" stroke="#20f928" fillOpacity={1} fill="url(#cImp)" strokeWidth={2} />
-                            <Area type="monotone" dataKey="clicks" stroke="rgba(255,255,255,0.5)" fillOpacity={1} fill="url(#cClk)" strokeWidth={2} />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
+            <QuickLinksRow className="tour-campaign-links">
+                <QuickLink href={`/dashboard/ads/campaigns/${id}/audience`} label="View Audience" />
+                <QuickLink href={`/dashboard/ads/analytics/campaign/${id}`} label="View Analytics" />
+            </QuickLinksRow>
 
             {/* Campaign Details Card */}
             <div className={`${adminStyles.pageCard} tour-campaign-details`} style={{ marginBottom: '24px' }}>
@@ -461,9 +360,9 @@ export default function CampaignDetailPage() {
                         content: 'Track your primary success metrics including Click-Through Rate (CTR) and Cost Per Click (CPC) to measure ROI.',
                     },
                     {
-                        target: '.tour-campaign-chart',
-                        title: 'Delivery Trends',
-                        content: 'Visualize how your ads are being delivered over time. Use the date range selector to analyze specific periods.',
+                        target: '.tour-campaign-links',
+                        title: 'Quick Management',
+                        content: 'Jump straight to detailed performance analytics or the event this campaign is targeting.',
                     },
                     {
                         target: '.tour-campaign-details',
