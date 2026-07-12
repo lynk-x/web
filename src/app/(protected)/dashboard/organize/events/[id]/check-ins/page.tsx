@@ -309,7 +309,7 @@ export default function CheckInLogsPage() {
                 />
             </Modal>
             <ProductTour
-                storageKey={activeAccount ? `hasSeenEventCheckinsJoyride_${activeAccount.id}_${eventId}` : `hasSeenEventCheckinsJoyride_guest_${eventId}`}
+                storageKey={activeAccount ? `hasSeenEventCheckinsJoyride_${activeAccount.id}` : 'hasSeenEventCheckinsJoyride_guest'}
                 steps={[
                     {
                         target: 'body',

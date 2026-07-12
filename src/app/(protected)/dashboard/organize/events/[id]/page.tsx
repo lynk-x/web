@@ -17,6 +17,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
 import { getForumUrl } from '@/components/features/events/EventTable';
+import EventCancellationModal from '@/components/features/events/EventCancellationModal';
 
 interface TicketTier {
     id: string;
@@ -69,6 +70,7 @@ export default function EventDetailPage() {
     const [revenueTotal, setRevenueTotal] = useState<number>(0);
     const [forumMemberCount, setForumMemberCount] = useState<number>(0);
     const [scanCount, setScanCount] = useState<number>(0);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     const fetchEvent = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -107,6 +109,23 @@ export default function EventDetailPage() {
 
     useEffect(() => { fetchEvent(); }, [fetchEvent]);
 
+    const handleCancelEvent = async (reason: string) => {
+        if (!event || !activeAccount) return;
+
+        const { error } = await supabase.schema('api').rpc('cancel_event_full', {
+            p_account_id: activeAccount.id,
+            p_event_id: event.id,
+            p_created_at: event.created_at,
+            p_reason: reason,
+        });
+
+        if (error) throw error;
+
+        showToast(`"${event.title}" has been cancelled and tickets were refunded.`, 'success');
+        setIsCancelModalOpen(false);
+        fetchEvent();
+    };
+
     if (isLoading || !event) {
         return (
             <div className={adminStyles.container}>
@@ -131,18 +150,20 @@ export default function EventDetailPage() {
         <div className={adminStyles.container}>
             <PageHeader
                 title={event.title}
-                subtitle={
-                    <Link href={`/event/${event.reference}`} target="_blank" rel="noopener noreferrer">
-                        View public page
-                    </Link>
-                }
-                onClose={() => router.back()}
+                subtitle={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
+                closeHref="/dashboard/organize/events"
                 badge={badge}
                 primaryAction={{
                     label: 'Edit Event',
                     onClick: () => router.push(`/dashboard/organize/events/edit/${id}`),
                     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 }}
+                secondaryAction={(event.status === 'active' || event.status === 'published') ? {
+                    label: 'Cancel Event',
+                    onClick: () => setIsCancelModalOpen(true),
+                    className: adminStyles.btnDanger,
+                    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                } : undefined}
             />
 
             {/* Stats Row */}
@@ -172,12 +193,12 @@ export default function EventDetailPage() {
 
             {/* Quick Links */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }} className="tour-event-links">
-                <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
-                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
-                <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
                 {event.forum_reference && (
                     <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
                 )}
+                <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
+                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
+                <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
             </div>
 
             {/* Event Details Card */}
@@ -246,7 +267,7 @@ export default function EventDetailPage() {
             </div>
 
             <ProductTour
-                storageKey={activeAccount ? `hasSeenEventDetailJoyride_${activeAccount.id}_${id}` : `hasSeenEventDetailJoyride_guest_${id}`}
+                storageKey={activeAccount ? `hasSeenEventDetailJoyride_${activeAccount.id}` : 'hasSeenEventDetailJoyride_guest'}
                 steps={[
                     {
                         target: 'body',
@@ -272,6 +293,16 @@ export default function EventDetailPage() {
                     }
                 ]}
             />
+
+            {isCancelModalOpen && (
+                <EventCancellationModal
+                    eventTitle={event.title}
+                    eventId={event.id}
+                    ticketsSold={totalSold}
+                    onClose={() => setIsCancelModalOpen(false)}
+                    onConfirm={handleCancelEvent}
+                />
+            )}
         </div>
     );
 }

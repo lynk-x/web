@@ -22,7 +22,7 @@ export interface HeaderAction {
 
 type PageHeaderProps = React.PropsWithChildren<{
     title: string;
-    subtitle?: React.ReactNode;
+    subtitle?: string;
     badge?: {
         label: string;
         variant?: BadgeVariant;

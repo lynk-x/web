@@ -212,7 +212,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 </div>
             )}
             <ProductTour
-                storageKey={activeAccount ? `hasSeenEventAttendeesJoyride_${activeAccount.id}_${id}` : `hasSeenEventAttendeesJoyride_guest_${id}`}
+                storageKey={activeAccount ? `hasSeenEventAttendeesJoyride_${activeAccount.id}` : 'hasSeenEventAttendeesJoyride_guest'}
                 steps={[
                     {
                         target: 'body',
