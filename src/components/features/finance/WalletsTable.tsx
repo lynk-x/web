@@ -408,7 +408,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
                                     {transactions.map((t, idx) => (
                                         <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '8px' }}>{new Date(t.created_at).toLocaleDateString()}</td>
-                                            <td style={{ padding: '8px', textTransform: 'capitalize' }}>{t.reason.replace(/_/g, ' ')}</td>
+                                            <td style={{ padding: '8px', textTransform: 'capitalize' }}>{(t.description || '').replace(/_/g, ' ')}</td>
                                             <td style={{ padding: '8px', color: t.category === 'incoming' ? 'var(--color-success)' : 'inherit' }}>
                                                 {t.category === 'incoming' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: t.currency }).format(t.amount)}
                                             </td>

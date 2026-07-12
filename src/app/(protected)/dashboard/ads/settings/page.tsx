@@ -6,6 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -27,6 +28,7 @@ import Spinner from '@/components/shared/Spinner';
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
     const { user, isLoading: authLoading } = useAuth();
+    const { isOwner } = useAccountPermissions(activeAccount?.id);
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const searchParams = useSearchParams();
@@ -411,8 +413,10 @@ function AdsSettingsContent() {
                                             variant="danger"
                                             onClick={() => setIsDeactivateModalOpen(true)}
                                             isLoading={isDeactivating}
+                                            disabled={!isOwner}
+                                            title={!isOwner ? "Only the account owner can deactivate this account." : undefined}
                                         >
-                                            Deactivate Ads Account
+                                            Deactivate Account
                                         </Button>
                                     </div>
                                 </div>
@@ -478,10 +482,11 @@ function AdsSettingsContent() {
                 isOpen={isDeactivateModalOpen}
                 onClose={() => setIsDeactivateModalOpen(false)}
                 onConfirm={handleDeactivate}
-                title="Deactivate Ads Account"
-                message="This will pause all active campaigns and suspend your ads account. You will need to contact support to reactivate. Are you sure?"
-                confirmLabel={isDeactivating ? 'Deactivating...' : 'Yes, Deactivate'}
+                title="Deactivate Ads Account?"
+                message="This will pause all active campaigns and suspend your ads account. Contact support to reverse this."
+                confirmLabel="Deactivate"
                 variant="danger"
+                confirmText="DEACTIVATE"
             />
         </div>
     );

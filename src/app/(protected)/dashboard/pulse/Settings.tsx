@@ -5,10 +5,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
+import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import adminStyles from '../admin/page.module.css';
 import styles from './page.module.css';
-import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
-import Modal from '@/components/shared/Modal';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import Button from '@/components/shared/Button';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import { MfaManager } from '@/components/MfaManager';
@@ -19,6 +20,7 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
     const { showToast } = useToast();
     const router = useRouter();
     const supabase = createClient();
+    const { isOwner } = useAccountPermissions(accountId);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [activeTab, setActiveTab] = useState('account');
@@ -115,12 +117,15 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
                                             This will instantly disable your Pulse account and cryptographically shred all your personal identity data in compliance with GDPR.
                                         </p>
                                     </div>
-                                    <button 
-                                        className={adminStyles.btnDanger}
+                                    <Button
+                                        variant="danger"
                                         onClick={() => setIsDeleteModalOpen(true)}
+                                        isLoading={isDeleting}
+                                        disabled={!isOwner}
+                                        title={!isOwner ? "Only the account owner can deactivate this account." : undefined}
                                     >
                                         Deactivate Account
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -128,44 +133,16 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
                 </div>
             </Tabs>
 
-            {/* Danger Zone Modal */}
-            <Modal
+            <ConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
-                title="Deactivate Account & Shred Data"
-                footer={
-                    <>
-                        <button 
-                            className={adminStyles.btnSecondary} 
-                            onClick={() => setIsDeleteModalOpen(false)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            className={adminStyles.btnDanger} 
-                            onClick={handleDeleteAccount}
-                            disabled={isDeleting}
-                        >
-                            {isDeleting ? 'Processing...' : 'Yes, Deactivate & Shred'}
-                        </button>
-                    </>
-                }
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: 'var(--color-status-error)' }}>
-                        <strong>⚠️ WARNING: NUCLEAR ACTION</strong>
-                        <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
-                            You are about to execute a cryptographic shredding of your identity data.
-                        </p>
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', opacity: 0.9 }}>
-                        <li>Your data will be permanently destroyed.</li>
-                        <li>You will be immediately logged out and lose access to all Lynk-X services.</li>
-                    </ul>
-                    <p style={{ fontSize: '14px', fontWeight: 600 }}>Are you absolutely sure you want to proceed?</p>
-                </div>
-            </Modal>
+                onConfirm={handleDeleteAccount}
+                title="Deactivate Pulse Account?"
+                message="This will instantly disable your Pulse account and cryptographically shred all your personal identity data in compliance with GDPR. You will be immediately logged out. Contact support to reverse this."
+                confirmLabel="Deactivate"
+                variant="danger"
+                confirmText="DEACTIVATE"
+            />
         </div>
     );
 }
