@@ -1,15 +1,16 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import TableToolbar from '@/components/shared/TableToolbar';
+import Modal from '@/components/shared/Modal';
+import FormRow from '@/components/shared/FormRow';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import Badge from '@/components/shared/Badge';
 import Toggle from '@/components/shared/Toggle';
-import { useRouter } from 'next/navigation';
 import type { ActionItem } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
@@ -272,11 +273,17 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
     );
 }
 
-export default function MappingTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: MappingTabProps) {
+export interface MappingTabHandle {
+    openCreate: () => void;
+}
+
+const emptyMappingForm = { category_id: '', event_id: '', tag_id: '', is_primary: false };
+
+const MappingTab = forwardRef<MappingTabHandle, MappingTabProps>(function MappingTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }, ref) {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
-    const router = useRouter();
     const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const publicClient = useMemo(() => createClient(), []);
 
     const [eventMappings, setEventMappings] = useState<EventMapping[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -286,6 +293,77 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
     const setSearchTerm = externalSearchTerm !== undefined ? () => {} : setInternalSearchTerm;
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    // ─── Create Mapping Modal ───────────────────────────────────────────
+    const [isMappingModalOpen, setIsMappingModalOpen] = useState(false);
+    const [mappingType, setMappingType] = useState<'category' | 'event'>('category');
+    const [mappingForm, setMappingForm] = useState(emptyMappingForm);
+    const [isSavingMapping, setIsSavingMapping] = useState(false);
+    const [mappingTags, setMappingTags] = useState<{ id: string, name: string }[]>([]);
+    const [mappingCategories, setMappingCategories] = useState<{ id: string, name: string }[]>([]);
+    const [mappingEvents, setMappingEvents] = useState<{ id: string, title: string }[]>([]);
+
+    const openCreateMapping = useCallback(() => {
+        setMappingType(activeSubTab === 'event' ? 'event' : 'category');
+        setMappingForm(emptyMappingForm);
+        setIsMappingModalOpen(true);
+    }, [activeSubTab]);
+
+    useImperativeHandle(ref, () => ({ openCreate: openCreateMapping }));
+
+    useEffect(() => {
+        if (!isMappingModalOpen) return;
+        const loadRefs = async () => {
+            const [tagsRes, catsRes, evtsRes] = await Promise.all([
+                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' }),
+                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'event_categories' }),
+                publicClient.from('events').select('id, title').order('created_at', { ascending: false }).limit(100)
+            ]);
+            if (tagsRes.data) setMappingTags(tagsRes.data);
+            if (catsRes.data) setMappingCategories(catsRes.data);
+            if (evtsRes.data) setMappingEvents(evtsRes.data);
+        };
+        loadRefs();
+    }, [isMappingModalOpen, supabase, publicClient]);
+
+    const handleSaveMapping = async () => {
+        if (!mappingForm.tag_id || (mappingType === 'category' && !mappingForm.category_id) || (mappingType === 'event' && !mappingForm.event_id)) {
+            showToast('Please select both a target and a tag', 'error');
+            return;
+        }
+
+        setIsSavingMapping(true);
+        try {
+            if (mappingType === 'category') {
+                const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
+                    p_tab: 'mappings_category',
+                    p_data: {
+                        category_id: mappingForm.category_id,
+                        tag_id: mappingForm.tag_id,
+                        is_primary: mappingForm.is_primary
+                    }
+                });
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
+                    p_tab: 'mappings_event',
+                    p_data: {
+                        event_id: mappingForm.event_id,
+                        tag_id: mappingForm.tag_id
+                    }
+                });
+                if (error) throw error;
+            }
+
+            showToast('Mapping successfully created', 'success');
+            setIsMappingModalOpen(false);
+            if (mappingType === 'event') fetchMappings();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
+        } finally {
+            setIsSavingMapping(false);
+        }
+    };
 
     useEffect(() => {
         setCurrentPage(1);
@@ -380,8 +458,107 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
         }
     ];
 
+    const mappingModal = (
+        <Modal
+            isOpen={isMappingModalOpen}
+            onClose={() => setIsMappingModalOpen(false)}
+            title="Create Tag Mapping"
+            footer={
+                <>
+                    <button className={adminStyles.btnSecondary} onClick={() => setIsMappingModalOpen(false)}>Cancel</button>
+                    <button className={adminStyles.btnPrimary} onClick={handleSaveMapping} disabled={isSavingMapping}>
+                        {isSavingMapping ? 'Saving...' : 'Save Mapping'}
+                    </button>
+                </>
+            }
+        >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                    <label className={adminStyles.label}>Mapping Scope</label>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                        <button
+                            className={mappingType === 'category' ? adminStyles.btnPrimary : adminStyles.btnSecondary}
+                            onClick={() => setMappingType('category')}
+                            style={{ padding: '8px 16px' }}
+                        >
+                            Category Logic
+                        </button>
+                        <button
+                            className={mappingType === 'event' ? adminStyles.btnPrimary : adminStyles.btnSecondary}
+                            onClick={() => setMappingType('event')}
+                            style={{ padding: '8px 16px' }}
+                        >
+                            Event Specific
+                        </button>
+                    </div>
+                </div>
+
+                <div className={adminStyles.formGrid}>
+                    {mappingType === 'category' ? (
+                        <FormRow label="Event Category">
+                            <select
+                                className={adminStyles.select}
+                                value={mappingForm.category_id}
+                                onChange={(e) => setMappingForm(p => ({ ...p, category_id: e.target.value }))}
+                            >
+                                <option value="">Select category...</option>
+                                {mappingCategories.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </FormRow>
+                    ) : (
+                        <FormRow label="Event">
+                            <select
+                                className={adminStyles.select}
+                                value={mappingForm.event_id}
+                                onChange={(e) => setMappingForm(p => ({ ...p, event_id: e.target.value }))}
+                            >
+                                <option value="">Select event...</option>
+                                {mappingEvents.map(e => (
+                                    <option key={e.id} value={e.id}>{e.title}</option>
+                                ))}
+                            </select>
+                        </FormRow>
+                    )}
+
+                    <FormRow label="Tag to Associate">
+                        <select
+                            className={adminStyles.select}
+                            value={mappingForm.tag_id}
+                            onChange={(e) => setMappingForm(p => ({ ...p, tag_id: e.target.value }))}
+                        >
+                            <option value="">Select tag...</option>
+                            {mappingTags.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </FormRow>
+
+                    {mappingType === 'category' && (
+                        <div className={adminStyles.formGroup} style={{ display: 'flex', alignItems: 'center', paddingTop: '32px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={mappingForm.is_primary}
+                                    onChange={(e) => setMappingForm(p => ({ ...p, is_primary: e.target.checked }))}
+                                />
+                                <span style={{ fontSize: '14px' }}>Primary Tag for this Category</span>
+                            </label>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Modal>
+    );
+
     if (activeSubTab === 'category') {
-        return <CategoryLogicMatrix hideToolbar={hideToolbar} searchTerm={externalSearchTerm} />;
+        return (
+            <>
+                <CategoryLogicMatrix hideToolbar={hideToolbar} searchTerm={externalSearchTerm} />
+                {mappingModal}
+            </>
+        );
     }
 
     return (
@@ -392,7 +569,7 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
                     searchValue={searchTerm}
                     onSearchChange={setSearchTerm}
                 >
-                    <button className={adminStyles.btnPrimary} onClick={() => router.push('/dashboard/system/registry/mappings/create')}>
+                    <button className={adminStyles.btnPrimary} onClick={openCreateMapping}>
                         Create Mapping
                     </button>
                 </TableToolbar>
@@ -410,6 +587,9 @@ export default function MappingTab({ forceView, hideToolbar, searchTerm: externa
             />
 
             {ConfirmDialog}
+            {mappingModal}
         </div>
     );
-}
+});
+
+export default MappingTab;
