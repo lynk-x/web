@@ -97,11 +97,11 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
         setIsWithdrawing(true);
         try {
-            const { error } = await supabase.schema('api').rpc('request_account_payout', {
+            const { error } = await supabase.schema('api').rpc('request_account_withdrawal', {
                 p_account_id: accountId,
                 p_amount: Number(withdrawAmount),
-                p_payout_method_id: selectedPayoutMethod,
                 p_currency: selectedWallet.currency,
+                p_payout_method_id: selectedPayoutMethod,
                 p_pin_hash: pinHash
             });
             if (error) throw error;

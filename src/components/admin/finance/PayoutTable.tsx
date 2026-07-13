@@ -31,15 +31,18 @@ interface PayoutTableProps {
 
 /**
  * Maps `payout_status` schema enum values to badge colour variants.
- * requested | processing | completed | failed | rejected
+ * pending | requested | processing | completed | failed | rejected | hold
  */
 const getStatusVariant = (status: Payout['status']): BadgeVariant => {
     switch (status) {
         case 'completed': return 'success';
         case 'processing': return 'info';
         case 'requested': return 'warning';
+        case 'hold': return 'error';
         case 'failed': return 'error';
         case 'rejected': return 'subtle';
+        case 'pending': return 'subtle';
+        default: return 'subtle';
     }
 };
 
@@ -49,7 +52,7 @@ const getStatusVariant = (status: Payout['status']): BadgeVariant => {
  * Admin payout management table.
  *
  * Backed by the `payouts` table with `payout_status` enum:
- *   requested → processing → completed / failed / rejected
+ *   requested / hold → processing → completed / failed / rejected
  *
  * When wiring up:
  *   supabase.schema('api').from('v1_payouts')
@@ -142,11 +145,13 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
     const getActions = (payout: Payout): ActionItem[] => {
         const actions: ActionItem[] = [];
 
-        // Only `requested` payouts can be approved or rejected
-        if (payout.status === 'requested') {
+        // `requested` and `hold` payouts await admin review — approve or reject.
+        // `hold` is the AML-threshold-triggered variant, so its approve action
+        // reads as a deliberate compliance sign-off rather than a routine one.
+        if (payout.status === 'requested' || payout.status === 'hold') {
             actions.push(
                 {
-                    label: 'Approve',
+                    label: payout.status === 'hold' ? 'Approve (AML Review)' : 'Approve',
                     variant: 'success' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                     onClick: () => onApprove?.(payout),

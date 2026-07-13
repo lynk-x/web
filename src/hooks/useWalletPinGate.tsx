@@ -17,7 +17,7 @@ import MfaStepUpModal from '@/components/features/finance/MfaStepUpModal';
  *   const { requestPinHash, PinGateModals } = useWalletPinGate();
  *   const pinHash = await requestPinHash();
  *   if (!pinHash) return; // user cancelled
- *   await supabase.schema('api').rpc('request_account_payout', { ..., p_pin_hash: pinHash });
+ *   await supabase.schema('api').rpc('request_account_withdrawal', { ..., p_pin_hash: pinHash });
  *   // In JSX: {PinGateModals}
  */
 export function useWalletPinGate() {

@@ -96,6 +96,7 @@ export interface FinanceTransaction {
     /** `transaction_category` enum: incoming | outgoing | internal | hold */
     category?: 'incoming' | 'outgoing' | 'internal' | 'hold';
     reference?: string;
+    currency?: string;
     /** @deprecated Use `reference` instead. Kept for backward compatibility. */
     referenceId?: string;
     /** Used in organizer context to group transactions by event. */
@@ -115,7 +116,11 @@ export interface FinanceTransaction {
 /** A payout request — aligned to the `payouts` DB table.
  *
  * `status` maps to `payout_status` enum:
- * requested | processing | completed | failed | rejected
+ * pending | requested | processing | completed | failed | rejected | hold
+ *
+ * `hold` is set by finance.payout_determine_status when the amount hits the
+ * account's AML flag threshold — it needs escalated admin review, same
+ * Approve/Reject actions as `requested` but flagged more prominently.
  */
 export interface Payout {
     id: string;
@@ -124,7 +129,7 @@ export interface Payout {
     /** Requested amount in USD */
     amount: number;
     /** Aligned to `payout_status` enum */
-    status: 'requested' | 'processing' | 'completed' | 'failed' | 'rejected';
+    status: 'pending' | 'requested' | 'processing' | 'completed' | 'failed' | 'rejected' | 'hold';
     /** ISO date string of the payout request */
     requestedAt: string;
     /** Set when status transitions to 'completed' or 'failed'. From `payouts.processed_at`. */

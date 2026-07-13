@@ -220,6 +220,7 @@ function FinanceContent() {
                     reason: string;
                     event_title: string | null;
                     amount: number;
+                    currency: string;
                     created_at: string;
                     status: string;
                     category: string;
@@ -232,6 +233,7 @@ function FinanceContent() {
                     id: tx.id,
                     description: `${tx.reason.replace(/_/g, ' ')} for ${tx.event_title || 'System'}`,
                     amount: tx.amount,
+                    currency: tx.currency,
                     date: tx.created_at,
                     status: tx.status,
                     type: tx.reason as any,

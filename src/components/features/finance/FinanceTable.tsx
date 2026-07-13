@@ -96,11 +96,15 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
             render: (tx) => <Badge label={formatString(tx.type)} variant={getTypeVariant(tx.type)} />,
         },
         {
+            header: 'Currency',
+            render: (tx) => <code style={{ fontSize: '13px', fontWeight: 600 }}>{tx.currency || 'USD'}</code>,
+        },
+        {
             header: 'Amount',
             render: (tx) => {
                 const displayAmount = typeof tx.amount === 'string'
                     ? tx.amount
-                    : formatCurrency(tx.amount);
+                    : formatCurrency(tx.amount, tx.currency);
                 // Outgoing reasons displayed as negative amounts (matches transaction_reason enum)
                 const isNegative = (
                     tx.type === 'ticket_refund' ||
@@ -111,7 +115,7 @@ const FinanceTable: React.FC<FinanceTableProps> = ({
                 return (
                     <div className={styles.amount} data-type={tx.type}>
                         {isNegative && typeof tx.amount === 'number'
-                            ? `-${formatCurrency(tx.amount)}`
+                            ? `-${formatCurrency(tx.amount, tx.currency)}`
                             : displayAmount
                         }
                     </div>

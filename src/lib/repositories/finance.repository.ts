@@ -96,7 +96,7 @@ export interface TaxRate {
 }
 
 /**
- * `request_account_payout` returns a jsonb envelope. The shape comes directly from
+ * `request_account_withdrawal` returns a jsonb envelope. The shape comes directly from
  * the function body (success, payout_id, status, amount, currency).
  */
 export interface RequestPayoutResult {
@@ -172,7 +172,7 @@ export function createFinanceRepository(client: DbClient) {
             return { data: data as Payout[], total: count ?? null, error: null };
         },
 
-        /** Request a payout. Wraps `request_account_payout` RPC. Requires the caller's wallet PIN hash — see useWalletPinGate. */
+        /** Withdraw wallet balance to an external payout method. Wraps `request_account_withdrawal` RPC. Requires the caller's wallet PIN hash — see useWalletPinGate. */
         async requestPayout(params: {
             accountId: string;
             amount: number;
@@ -180,11 +180,11 @@ export function createFinanceRepository(client: DbClient) {
             currency: string;
             pinHash: string;
         }): Promise<RepoResult<RequestPayoutResult>> {
-            const { data, error } = await client.schema('api').rpc('request_account_payout', {
+            const { data, error } = await client.schema('api').rpc('request_account_withdrawal', {
                 p_account_id: params.accountId,
                 p_amount: params.amount,
-                p_payout_method_id: params.payoutMethodId,
                 p_currency: params.currency,
+                p_payout_method_id: params.payoutMethodId,
                 p_pin_hash: params.pinHash,
             });
 
