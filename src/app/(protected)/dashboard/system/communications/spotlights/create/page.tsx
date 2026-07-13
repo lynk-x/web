@@ -9,6 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function CreateSpotlightPage() {
@@ -63,7 +64,7 @@ export default function CreateSpotlightPage() {
 
             showToast('Hero Spotlight created successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/admin/communications?tab=spotlights');
+            router.push('/dashboard/system/communications?tab=spotlights');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to create spotlight', 'error');
         } finally {
@@ -107,8 +108,7 @@ export default function CreateSpotlightPage() {
                     <h2 className={adminStyles.sectionTitle}>Spotlight Configuration</h2>
                     <form className={adminStyles.form} onSubmit={handleCreateSpotlight}>
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Target Placement</label>
+                            <FormRow label="Target Placement" styles={adminStyles}>
                                 <select
                                     className={adminStyles.select}
                                     value={target}
@@ -119,20 +119,18 @@ export default function CreateSpotlightPage() {
                                     <option value="ads_dashboard">Advertiser Dashboard</option>
                                     <option value="discovery_page">Discovery Page (Home)</option>
                                 </select>
-                            </div>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Display Order</label>
+                            </FormRow>
+                            <FormRow label="Display Order" styles={adminStyles}>
                                 <input
                                     type="number"
                                     className={adminStyles.input}
                                     value={displayOrder}
                                     onChange={(e) => handleChange(setDisplayOrder, parseInt(e.target.value))}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Headline Title</label>
+                        <FormRow label="Headline Title" styles={adminStyles}>
                             <input
                                 type="text"
                                 placeholder="e.g. Early Bird Tickets Now Live!"
@@ -141,21 +139,19 @@ export default function CreateSpotlightPage() {
                                 onChange={(e) => handleChange(setTitle, e.target.value)}
                                 required
                             />
-                        </div>
+                        </FormRow>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Subtitle Content</label>
+                        <FormRow label="Subtitle Content" styles={adminStyles}>
                             <textarea
                                 className={adminStyles.textarea}
                                 placeholder="A brief description for the spotlight..."
                                 value={subtitle}
                                 onChange={(e) => handleChange(setSubtitle, e.target.value)}
                             />
-                        </div>
+                        </FormRow>
 
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>CTA Button Text</label>
+                            <FormRow label="CTA Button Text" styles={adminStyles}>
                                 <input
                                     type="text"
                                     placeholder="e.g. Register Now"
@@ -163,9 +159,8 @@ export default function CreateSpotlightPage() {
                                     value={ctaText}
                                     onChange={(e) => handleChange(setCtaText, e.target.value)}
                                 />
-                            </div>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Redirect URL</label>
+                            </FormRow>
+                            <FormRow label="Redirect URL" styles={adminStyles}>
                                 <input
                                     type="text"
                                     placeholder="/organize/events/create"
@@ -173,11 +168,10 @@ export default function CreateSpotlightPage() {
                                     value={redirectTo}
                                     onChange={(e) => handleChange(setRedirectTo, e.target.value)}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Background Image URL / CSS Gradient</label>
+                        <FormRow label="Background Image URL / CSS Gradient" styles={adminStyles}>
                             <input
                                 type="text"
                                 placeholder="https://... or linear-gradient(...)"
@@ -185,7 +179,7 @@ export default function CreateSpotlightPage() {
                                 value={backgroundUrl}
                                 onChange={(e) => handleChange(setBackgroundUrl, e.target.value)}
                             />
-                        </div>
+                        </FormRow>
 
                         <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>

@@ -16,6 +16,7 @@ import KycRequirementsTable from '@/components/system/compliance/KycRequirements
 import KycProvidersTable from '@/components/system/compliance/KycProvidersTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
+import FormRow, { FormHint } from '@/components/shared/FormRow';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
@@ -392,12 +393,10 @@ function GlobalComplianceContent() {
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Country</label>
+                    <div className={adminStyles.formGrid}>
+                        <FormRow label="Country">
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={kycLimitsForm.country_code}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, country_code: e.target.value })}
                                 disabled={!!editingKycLimit}
@@ -406,12 +405,10 @@ function GlobalComplianceContent() {
                                     <option key={c.code} value={c.code}>{c.name}</option>
                                 ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>Account Type</label>
+                        </FormRow>
+                        <FormRow label="Account Type">
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={kycLimitsForm.account_type}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, account_type: e.target.value })}
                                 disabled={!!editingKycLimit}
@@ -420,14 +417,12 @@ function GlobalComplianceContent() {
                                     <option key={t} value={t}>{t}</option>
                                 ))}
                             </select>
-                        </div>
+                        </FormRow>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Tier</label>
+                    <div className={adminStyles.formGrid}>
+                        <FormRow label="Tier">
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={kycLimitsForm.tier_slug}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, tier_slug: e.target.value })}
                                 disabled={!!editingKycLimit}
@@ -436,9 +431,8 @@ function GlobalComplianceContent() {
                                     <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
                                 ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>Currency</label>
+                        </FormRow>
+                        <FormRow label="Currency">
                             <input
                                 className={adminStyles.input}
                                 placeholder="e.g. USD, KES"
@@ -446,16 +440,15 @@ function GlobalComplianceContent() {
                                 value={kycLimitsForm.currency}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, currency: e.target.value.toUpperCase() })}
                             />
-                        </div>
+                        </FormRow>
                     </div>
 
-                    <p style={{ fontSize: '13px', opacity: 0.6, margin: 0 }}>
+                    <FormHint>
                         Leave a field blank to inherit the Global default for that value instead of overriding it.
-                    </p>
+                    </FormHint>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Daily Transfer</label>
+                    <div className={adminStyles.formGrid}>
+                        <FormRow label="Daily Transfer">
                             <input
                                 type="number"
                                 className={adminStyles.input}
@@ -463,9 +456,8 @@ function GlobalComplianceContent() {
                                 value={kycLimitsForm.daily_transfer}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, daily_transfer: e.target.value })}
                             />
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>Daily Withdrawal</label>
+                        </FormRow>
+                        <FormRow label="Daily Withdrawal">
                             <input
                                 type="number"
                                 className={adminStyles.input}
@@ -473,11 +465,10 @@ function GlobalComplianceContent() {
                                 value={kycLimitsForm.daily_withdrawal}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, daily_withdrawal: e.target.value })}
                             />
-                        </div>
+                        </FormRow>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Auto-Payout Max</label>
+                    <div className={adminStyles.formGrid}>
+                        <FormRow label="Auto-Payout Max">
                             <input
                                 type="number"
                                 className={adminStyles.input}
@@ -485,9 +476,8 @@ function GlobalComplianceContent() {
                                 value={kycLimitsForm.auto_payout_max}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, auto_payout_max: e.target.value })}
                             />
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>AML Flag Threshold</label>
+                        </FormRow>
+                        <FormRow label="AML Flag Threshold">
                             <input
                                 type="number"
                                 className={adminStyles.input}
@@ -495,7 +485,7 @@ function GlobalComplianceContent() {
                                 value={kycLimitsForm.aml_flag_threshold}
                                 onChange={e => setKycLimitsForm({ ...kycLimitsForm, aml_flag_threshold: e.target.value })}
                             />
-                        </div>
+                        </FormRow>
                     </div>
                 </div>
             </Modal>
@@ -513,12 +503,10 @@ function GlobalComplianceContent() {
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Country</label>
+                    <div className={adminStyles.formGrid}>
+                        <FormRow label="Country">
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={kycRequirementsForm.country_code}
                                 onChange={e => setKycRequirementsForm({ ...kycRequirementsForm, country_code: e.target.value })}
                                 disabled={!!editingKycRequirement}
@@ -527,12 +515,10 @@ function GlobalComplianceContent() {
                                     <option key={c.code} value={c.code}>{c.name}</option>
                                 ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>Account Type</label>
+                        </FormRow>
+                        <FormRow label="Account Type">
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={kycRequirementsForm.account_type}
                                 onChange={e => setKycRequirementsForm({ ...kycRequirementsForm, account_type: e.target.value })}
                                 disabled={!!editingKycRequirement}
@@ -541,13 +527,11 @@ function GlobalComplianceContent() {
                                     <option key={t} value={t}>{t}</option>
                                 ))}
                             </select>
-                        </div>
+                        </FormRow>
                     </div>
-                    <div>
-                        <label className={adminStyles.label}>Tier</label>
+                    <FormRow label="Tier">
                         <select
                             className={adminStyles.select}
-                            style={{ width: '100%' }}
                             value={kycRequirementsForm.tier_slug}
                             onChange={e => setKycRequirementsForm({ ...kycRequirementsForm, tier_slug: e.target.value })}
                             disabled={!!editingKycRequirement}
@@ -556,7 +540,7 @@ function GlobalComplianceContent() {
                                 <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
                             ))}
                         </select>
-                    </div>
+                    </FormRow>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <label className={adminStyles.label} style={{ margin: 0 }}>Document Steps</label>

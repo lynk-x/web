@@ -14,6 +14,7 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
+import FormRow from '@/components/shared/FormRow';
 import DataTable from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
@@ -762,24 +763,21 @@ function IAMContent() {
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div>
-                        <label className={adminStyles.label}>Role Display Name</label>
+                    <FormRow label="Role Display Name">
                         <input
                             className={adminStyles.input}
                             value={roleForm.display_name}
                             onChange={e => setRoleForm({ ...roleForm, display_name: e.target.value })}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div>
-                        <label className={adminStyles.label}>Role Description</label>
+                    <FormRow label="Role Description">
                         <textarea
-                            className={adminStyles.input}
-                            style={{ width: '100%', minHeight: '80px', fontFamily: 'inherit', padding: '8px' }}
+                            className={adminStyles.textarea}
                             value={roleForm.description}
                             onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
                         />
-                    </div>
+                    </FormRow>
                 </div>
             </Modal>
 
@@ -829,19 +827,19 @@ function IAMContent() {
                         </div>
 
                         <div style={{ borderTop: '1px solid var(--color-interface-outline)', paddingTop: '16px' }}>
-                            <label className={adminStyles.label} style={{ marginBottom: '8px', display: 'block' }}>Target Role</label>
-                            <select
-                                className={adminStyles.input}
-                                style={{ width: '100%', padding: '10px', background: 'var(--color-background-surface)', color: 'var(--color-text-primary)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
-                                value={targetRoleSlug}
-                                onChange={e => setTargetRoleSlug(e.target.value)}
-                            >
-                                {roles.map(r => (
-                                    <option key={r.id} value={r.role_slug}>
-                                        {r.display_name} ({r.role_slug})
-                                    </option>
-                                ))}
-                            </select>
+                            <FormRow label="Target Role">
+                                <select
+                                    className={adminStyles.select}
+                                    value={targetRoleSlug}
+                                    onChange={e => setTargetRoleSlug(e.target.value)}
+                                >
+                                    {roles.map(r => (
+                                        <option key={r.id} value={r.role_slug}>
+                                            {r.display_name} ({r.role_slug})
+                                        </option>
+                                    ))}
+                                </select>
+                            </FormRow>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px dashed var(--color-interface-outline)' }}>

@@ -415,6 +415,19 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 }
             ]
+        },
+        {
+            title: 'Communications',
+            items: [
+                {
+                    name: 'Communications', href: '/dashboard/system/communications', icon: (
+                        <svg {...svgProps}>
+                            <path d="M3 11l18-5v12L3 14v-3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
+            ]
         }
     ],
 };

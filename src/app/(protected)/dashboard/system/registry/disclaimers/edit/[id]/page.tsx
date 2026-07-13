@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import FormRow from '@/components/shared/FormRow';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
@@ -118,20 +119,18 @@ export default function EditDisclaimerPage() {
 
             <div className={adminStyles.formCard}>
                 <div className={adminStyles.formGrid}>
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Rule Title</label>
+                    <FormRow label="Rule Title">
                         <input
                             type="text"
                             className={adminStyles.input}
                             value={formData.title}
                             onChange={(e) => updateField('title', e.target.value)}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Target Tag</label>
+                    <FormRow label="Target Tag">
                         <select
-                            className={adminStyles.input}
+                            className={adminStyles.select}
                             value={formData.tag_id}
                             onChange={(e) => updateField('tag_id', e.target.value)}
                         >
@@ -139,19 +138,17 @@ export default function EditDisclaimerPage() {
                                 <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                         </select>
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Effective Date</label>
+                    <FormRow label="Effective Date">
                         <DatePicker
                             value={formData.effective_date}
                             onChange={(val) => updateField('effective_date', val)}
                             placeholder="dd/mm/yyyy"
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Status</label>
+                    <FormRow label="Status">
                         <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <input
@@ -162,18 +159,16 @@ export default function EditDisclaimerPage() {
                                 <span style={{ fontSize: '14px' }}>Active</span>
                             </label>
                         </div>
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                        <label className={adminStyles.label}>Disclaimer Content</label>
+                    <FormRow label="Disclaimer Content" style={{ gridColumn: '1 / -1' }}>
                         <textarea
-                            className={adminStyles.input}
+                            className={adminStyles.textarea}
                             rows={8}
                             value={formData.content}
                             onChange={(e) => updateField('content', e.target.value)}
-                            style={{ resize: 'vertical' }}
                         />
-                    </div>
+                    </FormRow>
                 </div>
             </div>
         </div>

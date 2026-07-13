@@ -117,7 +117,8 @@
 }
 
 .input,
-.textarea {
+.textarea,
+.select {
     padding: 12px 14px;
     border-radius: var(--radius-md);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -131,8 +132,13 @@
 }
 
 .input:focus,
-.textarea:focus {
+.textarea:focus,
+.select:focus {
     border-color: var(--color-brand-primary);
+}
+
+.select {
+    cursor: pointer;
 }
 
 .inputError {

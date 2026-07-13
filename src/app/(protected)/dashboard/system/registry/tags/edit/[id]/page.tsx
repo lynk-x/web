@@ -12,6 +12,7 @@ import { sanitizeInput } from '@/utils/sanitization';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function EditTagPage() {
@@ -141,18 +142,16 @@ export default function EditTagPage() {
 
             <div className={adminStyles.formCard}>
                 <div className={adminStyles.formGrid}>
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Display Name</label>
+                    <FormRow label="Display Name">
                         <input
                             type="text"
                             className={adminStyles.input}
                             value={formData.name}
                             onChange={(e) => updateField('name', e.target.value)}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>URL Slug (Immutable)</label>
+                    <FormRow label="URL Slug (Immutable)">
                         <input
                             type="text"
                             className={adminStyles.input}
@@ -160,10 +159,9 @@ export default function EditTagPage() {
                             disabled
                             style={{ opacity: 0.5, cursor: 'not-allowed' }}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Tag Type</label>
+                    <FormRow label="Tag Type">
                         <select
                             className={adminStyles.select}
                             value={formData.type_id}
@@ -174,10 +172,9 @@ export default function EditTagPage() {
                                 <option key={t.id} value={t.id}>{t.id}</option>
                             ))}
                         </select>
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Settings</label>
+                    <FormRow label="Settings">
                         <div style={{ display: 'flex', gap: '24px', marginTop: '8px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <input
@@ -196,7 +193,7 @@ export default function EditTagPage() {
                                 <span style={{ fontSize: '14px' }}>Enabled</span>
                             </label>
                         </div>
-                    </div>
+                    </FormRow>
                 </div>
             </div>
         </div>

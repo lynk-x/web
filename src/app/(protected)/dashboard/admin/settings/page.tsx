@@ -10,12 +10,12 @@ import { sanitizeInput } from '@/utils/sanitization';
 import MemberTable from '@/components/features/members/MemberTable';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
-import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import localStyles from '../page.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
 import Textarea from '@/components/shared/Textarea';
+import FormRow from '@/components/shared/FormRow';
 
 type Tab = 'account' | 'team';
 
@@ -212,62 +212,53 @@ function SettingsContent() {
 
                 <div style={{ marginTop: '24px' }} ref={settingsContainerRef}>
                     <TabsContent value="account">
-                        <div className={localStyles.pageCard || adminStyles.pageCard}>
-                            <h2 className={localStyles.sectionTitle || adminStyles.sectionTitle}>Administrative Profile</h2>
+                        <div className={localStyles.pageCard}>
+                            <h2 className={localStyles.sectionTitle}>Administrative Profile</h2>
                             <p style={{ fontSize: '13px', opacity: 0.6, marginBottom: '20px' }}>
                                 Manage profile fields and billing details for your active administrative country account.
                             </p>
 
-                            <div className={localStyles.formGrid || adminStyles.formGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Account Name</label>
+                            <div className={localStyles.formGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+                                <FormRow label="Account Name" styles={localStyles}>
                                     <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. Kenya Admin Office" />
-                                </div>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Support Email</label>
+                                </FormRow>
+                                <FormRow label="Support Email" styles={localStyles}>
                                     <Input type="email" name="support_email" value={formData.support_email} onChange={handleInputChange} placeholder="admin-ke@platform.com" />
-                                </div>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Primary Contact</label>
+                                </FormRow>
+                                <FormRow label="Primary Contact" styles={localStyles}>
                                     <Input name="primary_contact" value={formData.primary_contact} onChange={handleInputChange} placeholder="e.g. +254 700 000 000" />
-                                </div>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Secondary Contact</label>
+                                </FormRow>
+                                <FormRow label="Secondary Contact" styles={localStyles}>
                                     <Input name="secondary_contact" value={formData.secondary_contact} onChange={handleInputChange} placeholder="e.g. Alternative email/phone" />
-                                </div>
+                                </FormRow>
 
                                 <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Address Line</label>
+                                <FormRow label="Address Line" styles={localStyles}>
                                     <Input name="address_line" value={formData.address_line} onChange={handleInputChange} placeholder="e.g. Plaza Suite 4B, 5th Avenue" />
-                                </div>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Town</label>
+                                </FormRow>
+                                <FormRow label="Town" styles={localStyles}>
                                     <Input name="town" value={formData.town} onChange={handleInputChange} placeholder="e.g. Kilimani" />
-                                </div>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>City</label>
+                                </FormRow>
+                                <FormRow label="City" styles={localStyles}>
                                     <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" />
-                                </div>
-                                <div className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Country Jurisdiction</label>
+                                </FormRow>
+                                <FormRow label="Country Jurisdiction" styles={localStyles}>
                                     <CountrySelect
                                         value={formData.country}
                                         onChange={(val) => setFormData(prev => ({ ...prev, country: val }))}
                                     />
-                                </div>
+                                </FormRow>
 
-                                <div style={{ gridColumn: '1 / -1' }} className={localStyles.inputGroup}>
-                                    <label className={localStyles.label || adminStyles.label} style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Office Description / Internal Notes</label>
+                                <FormRow label="Office Description / Internal Notes" styles={localStyles} style={{ gridColumn: '1 / -1' }}>
                                     <Textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Describe the focus or operational responsibilities of this regional office..." rows={3} />
-                                </div>
+                                </FormRow>
                             </div>
                         </div>
                     </TabsContent>
 
                     <TabsContent value="team">
-                        <div className={localStyles.pageCard || adminStyles.pageCard} style={{ background: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-border-subtle)', padding: '24px', borderRadius: '12px' }}>
+                        <div className={localStyles.pageCard} style={{ background: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-border-subtle)', padding: '24px', borderRadius: '12px' }}>
                             <MemberTable />
                         </div>
                     </TabsContent>

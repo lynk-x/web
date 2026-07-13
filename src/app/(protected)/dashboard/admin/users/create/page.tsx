@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import PageHeader from '@/components/dashboard/PageHeader';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
+import FormRow from '@/components/shared/FormRow';
 
 export default function CreateAccountPage() {
     const supabase = useMemo(() => createClient(), []);
@@ -67,8 +68,7 @@ export default function CreateAccountPage() {
             <div className={adminStyles.pageCard}>
                 <form onSubmit={handleSubmit} className={adminStyles.form}>
                     <div className={adminStyles.formGrid}>
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Organization Name</label>
+                        <FormRow label="Organization Name" styles={adminStyles}>
                             <input
                                 type="text"
                                 required
@@ -77,10 +77,9 @@ export default function CreateAccountPage() {
                                 onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
                                 placeholder="e.g. Acme Corporation"
                             />
-                        </div>
+                        </FormRow>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Primary Owner Email</label>
+                        <FormRow label="Primary Owner Email" styles={adminStyles}>
                             <input
                                 type="email"
                                 required
@@ -90,10 +89,9 @@ export default function CreateAccountPage() {
                                 placeholder="owner@example.com"
                             />
                             <span style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>Account will be linked if this user exists.</span>
-                        </div>
+                        </FormRow>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Account Type</label>
+                        <FormRow label="Account Type" styles={adminStyles}>
                             <select
                                 className={adminStyles.select}
                                 value={formData.type}
@@ -104,10 +102,9 @@ export default function CreateAccountPage() {
                                 <option value="attendee">Attendee</option>
                                 <option value="pulse_user">Pulse User</option>
                             </select>
-                        </div>
+                        </FormRow>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Country</label>
+                        <FormRow label="Country" styles={adminStyles}>
                             <select
                                 className={adminStyles.select}
                                 value={formData.country_code}
@@ -117,11 +114,10 @@ export default function CreateAccountPage() {
                                     <option key={c.code} value={c.code}>{c.display_name}</option>
                                 ))}
                             </select>
-                        </div>
+                        </FormRow>
                     </div>
 
-                    <div className={adminStyles.inputGroup}>
-                        <label className={adminStyles.label}>Initial Status</label>
+                    <FormRow label="Initial Status" styles={adminStyles}>
                         <select
                             className={adminStyles.select}
                             value={formData.status}
@@ -131,7 +127,7 @@ export default function CreateAccountPage() {
                             <option value="pending_activation">Pending Activation</option>
                             <option value="suspended">Suspended</option>
                         </select>
-                    </div>
+                    </FormRow>
 
                     <div className={adminStyles.inputGroup} style={{ marginTop: '24px' }}>
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

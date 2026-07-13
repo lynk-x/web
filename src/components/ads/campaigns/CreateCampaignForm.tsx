@@ -884,7 +884,7 @@ export default function CreateCampaignForm({
                                                 <label className={styles.label} htmlFor="type">
                                                     Ad Type <span className={styles.requiredIndicator}>*Required</span>
                                                 </label>
-                                                <select id="type" name="type" className={styles.input}
+                                                <select id="type" name="type" className={styles.select}
                                                     value={formData.type} onChange={handleInputChange} required>
                                                     <option value="banner">Banner Ad (16:9)</option>
                                                     <option value="interstitial">Interstitial (9:16 – Full Screen)</option>

@@ -59,7 +59,7 @@ export default function CreateBroadcastPage() {
                 'success',
             );
             setIsDirty(false);
-            router.push('/dashboard/admin/communications?tab=broadcast');
+            router.push('/dashboard/system/communications?tab=broadcast');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to send broadcast', 'error');
         } finally {

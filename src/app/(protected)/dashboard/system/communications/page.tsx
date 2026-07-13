@@ -294,7 +294,7 @@ function CommunicationsContent() {
             header: 'Actions',
             render: (s) => (
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/spotlights/edit/${s.id}`)}>Edit</button>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/system/communications/spotlights/edit/${s.id}`)}>Edit</button>
                     <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleToggleSpotlight(s)}>
                         {s.is_active ? 'Hide' : 'Show'}
                     </button>
@@ -336,7 +336,7 @@ function CommunicationsContent() {
             header: 'Actions',
             render: (banner) => (
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/admin/communications/banners/edit/${banner.id}`)}>Edit</button>
+                    <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => router.push(`/dashboard/system/communications/banners/edit/${banner.id}`)}>Edit</button>
                     <button className={adminStyles.btnSecondary} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleToggleBanner(banner)}>
                         {banner.is_active ? 'Deactivate' : 'Activate'}
                     </button>
@@ -468,11 +468,11 @@ function CommunicationsContent() {
                     <button
                         className={adminStyles.btnPrimary}
                         onClick={() => {
-                            if (activeTab === 'spotlights') router.push('/dashboard/admin/communications/spotlights/new');
-                            else if (activeTab === 'content') router.push('/dashboard/admin/communications/create');
-                            else if (activeTab === 'legal') router.push('/dashboard/admin/communications/legal/new');
-                            else if (activeTab === 'broadcast') router.push('/dashboard/admin/communications/broadcast/create');
-                            else router.push('/dashboard/admin/communications/banners/create');
+                            if (activeTab === 'spotlights') router.push('/dashboard/system/communications/spotlights/new');
+                            else if (activeTab === 'content') router.push('/dashboard/system/communications/create');
+                            else if (activeTab === 'legal') router.push('/dashboard/system/communications/legal/new');
+                            else if (activeTab === 'broadcast') router.push('/dashboard/system/communications/broadcast/create');
+                            else router.push('/dashboard/system/communications/banners/create');
                         }}
                         style={{ whiteSpace: 'nowrap' }}
                     >

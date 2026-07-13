@@ -9,6 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function EditSpotlightPage() {
@@ -58,7 +59,7 @@ export default function EditSpotlightPage() {
                 }
             } catch (err: unknown) {
                 showToast(getErrorMessage(err), 'error');
-                router.push('/dashboard/admin/communications?tab=spotlights');
+                router.push('/dashboard/system/communications?tab=spotlights');
             } finally {
                 setIsLoading(false);
             }
@@ -100,7 +101,7 @@ export default function EditSpotlightPage() {
 
             showToast('Hero Spotlight updated successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/admin/communications?tab=spotlights');
+            router.push('/dashboard/system/communications?tab=spotlights');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to update spotlight', 'error');
         } finally {
@@ -148,8 +149,7 @@ export default function EditSpotlightPage() {
                     <h2 className={adminStyles.sectionTitle}>Spotlight Configuration</h2>
                     <form className={adminStyles.form} onSubmit={handleUpdateSpotlight}>
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Target Placement</label>
+                            <FormRow label="Target Placement" styles={adminStyles}>
                                 <select
                                     className={adminStyles.select}
                                     value={target}
@@ -160,20 +160,18 @@ export default function EditSpotlightPage() {
                                     <option value="ads_dashboard">Advertiser Dashboard</option>
                                     <option value="discovery_page">Discovery Page (Home)</option>
                                 </select>
-                            </div>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Display Order</label>
+                            </FormRow>
+                            <FormRow label="Display Order" styles={adminStyles}>
                                 <input
                                     type="number"
                                     className={adminStyles.input}
                                     value={displayOrder}
                                     onChange={(e) => handleChange(setDisplayOrder, parseInt(e.target.value))}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Headline Title</label>
+                        <FormRow label="Headline Title" styles={adminStyles}>
                             <input
                                 type="text"
                                 placeholder="e.g. Early Bird Tickets Now Live!"
@@ -182,21 +180,19 @@ export default function EditSpotlightPage() {
                                 onChange={(e) => handleChange(setTitle, e.target.value)}
                                 required
                             />
-                        </div>
+                        </FormRow>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Subtitle Content</label>
+                        <FormRow label="Subtitle Content" styles={adminStyles}>
                             <textarea
                                 className={adminStyles.textarea}
                                 placeholder="A brief description for the spotlight..."
                                 value={subtitle}
                                 onChange={(e) => handleChange(setSubtitle, e.target.value)}
                             />
-                        </div>
+                        </FormRow>
 
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>CTA Button Text</label>
+                            <FormRow label="CTA Button Text" styles={adminStyles}>
                                 <input
                                     type="text"
                                     placeholder="e.g. Register Now"
@@ -204,9 +200,8 @@ export default function EditSpotlightPage() {
                                     value={ctaText}
                                     onChange={(e) => handleChange(setCtaText, e.target.value)}
                                 />
-                            </div>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Redirect URL</label>
+                            </FormRow>
+                            <FormRow label="Redirect URL" styles={adminStyles}>
                                 <input
                                     type="text"
                                     placeholder="/organize/events/create"
@@ -214,11 +209,10 @@ export default function EditSpotlightPage() {
                                     value={redirectTo}
                                     onChange={(e) => handleChange(setRedirectTo, e.target.value)}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Background Image URL / CSS Gradient</label>
+                        <FormRow label="Background Image URL / CSS Gradient" styles={adminStyles}>
                             <input
                                 type="text"
                                 placeholder="https://... or linear-gradient(...)"
@@ -226,7 +220,7 @@ export default function EditSpotlightPage() {
                                 value={backgroundUrl}
                                 onChange={(e) => handleChange(setBackgroundUrl, e.target.value)}
                             />
-                        </div>
+                        </FormRow>
 
                         <div className={adminStyles.inputGroup}>
                             <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>

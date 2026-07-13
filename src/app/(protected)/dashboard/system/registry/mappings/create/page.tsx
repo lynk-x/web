@@ -10,6 +10,7 @@ import type { ActionItem } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function CreateMappingPage() {
@@ -132,10 +133,9 @@ export default function CreateMappingPage() {
 
                 <div className={adminStyles.formGrid}>
                     {mappingType === 'category' ? (
-                        <div className={adminStyles.formGroup}>
-                            <label className={adminStyles.label}>Event Category</label>
+                        <FormRow label="Event Category">
                             <select
-                                className={adminStyles.input}
+                                className={adminStyles.select}
                                 value={formData.category_id}
                                 onChange={(e) => setFormData(p => ({ ...p, category_id: e.target.value }))}
                             >
@@ -144,12 +144,11 @@ export default function CreateMappingPage() {
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
-                        </div>
+                        </FormRow>
                     ) : (
-                        <div className={adminStyles.formGroup}>
-                            <label className={adminStyles.label}>Event</label>
+                        <FormRow label="Event">
                             <select
-                                className={adminStyles.input}
+                                className={adminStyles.select}
                                 value={formData.event_id}
                                 onChange={(e) => setFormData(p => ({ ...p, event_id: e.target.value }))}
                             >
@@ -158,13 +157,12 @@ export default function CreateMappingPage() {
                                     <option key={e.id} value={e.id}>{e.title}</option>
                                 ))}
                             </select>
-                        </div>
+                        </FormRow>
                     )}
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Tag to Associate</label>
+                    <FormRow label="Tag to Associate">
                         <select
-                            className={adminStyles.input}
+                            className={adminStyles.select}
                             value={formData.tag_id}
                             onChange={(e) => setFormData(p => ({ ...p, tag_id: e.target.value }))}
                         >
@@ -173,7 +171,7 @@ export default function CreateMappingPage() {
                                 <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                         </select>
-                    </div>
+                    </FormRow>
 
                     {mappingType === 'category' && (
                         <div className={adminStyles.formGroup} style={{ display: 'flex', alignItems: 'center', paddingTop: '32px' }}>

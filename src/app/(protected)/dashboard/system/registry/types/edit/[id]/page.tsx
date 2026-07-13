@@ -9,6 +9,7 @@ import { sanitizeInput } from '@/utils/sanitization';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function EditTagTypePage() {
@@ -104,19 +105,16 @@ export default function EditTagTypePage() {
 
             <div className={adminStyles.formCard}>
                 <div className={adminStyles.formGrid}>
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Description</label>
+                    <FormRow label="Description">
                         <textarea
-                            className={adminStyles.input}
+                            className={adminStyles.textarea}
                             rows={3}
                             value={formData.description}
                             onChange={(e) => updateField('description', e.target.value)}
-                            style={{ resize: 'vertical' }}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Status</label>
+                    <FormRow label="Status">
                         <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <input
@@ -127,7 +125,7 @@ export default function EditTagTypePage() {
                                 <span style={{ fontSize: '14px' }}>Active / Enabled</span>
                             </label>
                         </div>
-                    </div>
+                    </FormRow>
                 </div>
             </div>
         </div>

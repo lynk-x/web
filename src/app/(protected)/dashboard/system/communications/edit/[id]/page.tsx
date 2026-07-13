@@ -48,7 +48,7 @@ export default function AdminEditContentPage() {
                 }
             } catch (err: unknown) {
                 showToast(getErrorMessage(err), 'error');
-                router.push('/dashboard/admin/communications?tab=content');
+                router.push('/dashboard/system/communications?tab=content');
             } finally {
                 setIsLoading(false);
             }

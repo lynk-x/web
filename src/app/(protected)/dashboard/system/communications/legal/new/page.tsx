@@ -14,6 +14,7 @@ import Badge from '@/components/shared/Badge';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import { formatDate } from '@/utils/format';
 import { DatePicker } from '@/components/ui/DatePicker';
+import FormRow from '@/components/shared/FormRow';
 
 export default function NewLegalVersionPage() {
     const router = useRouter();
@@ -64,7 +65,7 @@ export default function NewLegalVersionPage() {
 
             showToast('Legal document version created successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/admin/communications?tab=legal');
+            router.push('/dashboard/system/communications?tab=legal');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to create document', 'error');
         } finally {
@@ -99,8 +100,7 @@ export default function NewLegalVersionPage() {
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle}>Document Content</h2>
                         <form className={adminStyles.form} onSubmit={handleCreateVersion}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Document Type</label>
+                            <FormRow label="Document Type" styles={adminStyles}>
                                 <select
                                     className={adminStyles.select}
                                     value={type}
@@ -112,10 +112,9 @@ export default function NewLegalVersionPage() {
                                     <option value="cookie_policy">Cookie Policy</option>
                                     <option value="refund_policy">Refund Policy</option>
                                 </select>
-                            </div>
+                            </FormRow>
 
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Title</label>
+                            <FormRow label="Title" styles={adminStyles}>
                                 <input
                                     type="text"
                                     placeholder="Display title for users..."
@@ -124,16 +123,15 @@ export default function NewLegalVersionPage() {
                                     onChange={(e) => handleChange(setTitle, e.target.value)}
                                     required
                                 />
-                            </div>
+                            </FormRow>
 
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Rich Text Editor</label>
+                            <FormRow label="Rich Text Editor" styles={adminStyles}>
                                 <RichTextEditor
                                     value={content}
                                     onChange={(val) => handleChange(setContent, val)}
                                     placeholder="Paste or write the legal text here..."
                                 />
-                            </div>
+                            </FormRow>
                         </form>
                     </div>
 
@@ -141,8 +139,7 @@ export default function NewLegalVersionPage() {
                         <h2 className={adminStyles.sectionTitle}>Version Strategy</h2>
 
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Version Identifier</label>
+                            <FormRow label="Version Identifier" styles={adminStyles}>
                                 <input
                                     type="text"
                                     placeholder="e.g. v3.4.0"
@@ -151,16 +148,15 @@ export default function NewLegalVersionPage() {
                                     onChange={(e) => handleChange(setVersion, e.target.value)}
                                     required
                                 />
-                            </div>
+                            </FormRow>
 
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Effective Date</label>
+                            <FormRow label="Effective Date" styles={adminStyles}>
                                 <DatePicker
                                     value={effective_date}
                                     onChange={(val) => handleChange(setEffectiveDate, val)}
                                     placeholder="dd/mm/yyyy"
                                 />
-                            </div>
+                            </FormRow>
                         </div>
 
                         <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--color-interface-outline)' }}>

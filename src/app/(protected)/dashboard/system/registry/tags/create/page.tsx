@@ -12,6 +12,7 @@ import { sanitizeInput } from '@/utils/sanitization';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function CreateTagPage() {
@@ -120,8 +121,7 @@ export default function CreateTagPage() {
 
             <div className={adminStyles.formCard}>
                 <div className={adminStyles.formGrid}>
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Display Name</label>
+                    <FormRow label="Display Name">
                         <input
                             type="text"
                             className={adminStyles.input}
@@ -129,10 +129,9 @@ export default function CreateTagPage() {
                             value={formData.name}
                             onChange={(e) => updateField('name', e.target.value)}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>URL Slug</label>
+                    <FormRow label="URL Slug">
                         <input
                             type="text"
                             className={adminStyles.input}
@@ -140,10 +139,9 @@ export default function CreateTagPage() {
                             value={formData.slug}
                             onChange={(e) => updateField('slug', e.target.value.toLowerCase().replace(/\s+/g, '-'))}
                         />
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Tag Type</label>
+                    <FormRow label="Tag Type">
                         <select
                             className={adminStyles.select}
                             value={formData.type_id}
@@ -154,10 +152,9 @@ export default function CreateTagPage() {
                                 <option key={t.id} value={t.id}>{t.id}</option>
                             ))}
                         </select>
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Ownership</label>
+                    <FormRow label="Ownership">
                         <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <input
@@ -168,7 +165,7 @@ export default function CreateTagPage() {
                                 <span style={{ fontSize: '14px' }}>Official Tag</span>
                             </label>
                         </div>
-                    </div>
+                    </FormRow>
                 </div>
             </div>
         </div>

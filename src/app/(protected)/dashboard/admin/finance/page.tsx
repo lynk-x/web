@@ -20,6 +20,7 @@ import DateRangeRow from '@/components/shared/DateRangeRow';
 import AmountRangeRow from '@/components/shared/AmountRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import Modal from '@/components/shared/Modal';
+import FormRow from '@/components/shared/FormRow';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
@@ -850,11 +851,9 @@ function FinanceContent() {
                         <p><strong>Account:</strong> {selectedSub?.account_name}</p>
                         <p><strong>Current Plan:</strong> {selectedSub?.plan_name}</p>
                     </div>
-                    <div>
-                        <label className={adminStyles.label}>Target Plan Tier</label>
+                    <FormRow label="Target Plan Tier">
                         <select
                             className={adminStyles.select}
-                            style={{ width: '100%' }}
                             value={newPlanId}
                             onChange={e => setNewPlanId(e.target.value)}
                         >
@@ -866,7 +865,7 @@ function FinanceContent() {
                         <p style={{ fontSize: '11px', marginTop: '8px', opacity: 0.6 }}>
                             Note: Changing the plan will update the enrollment immediately. Prorating must be handled manually in the gateway if required.
                         </p>
-                    </div>
+                    </FormRow>
                 </div>
             </Modal>
 
@@ -888,12 +887,10 @@ function FinanceContent() {
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>
                             <p><strong>Wallet:</strong> {adjustWalletKey}</p>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                                <label className={adminStyles.label}>Balance Type</label>
+                        <div className={adminStyles.formGrid}>
+                            <FormRow label="Balance Type">
                                 <select
                                     className={adminStyles.select}
-                                    style={{ width: '100%' }}
                                     value={adjustBalanceType}
                                     onChange={e => setAdjustBalanceType(e.target.value as any)}
                                 >
@@ -901,9 +898,8 @@ function FinanceContent() {
                                     <option value="credit">Credit</option>
                                     <option value="escrow">Escrow</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label className={adminStyles.label}>Amount ({adjustBalanceType === 'cash' ? '±' : 'signed value'})</label>
+                            </FormRow>
+                            <FormRow label={`Amount (${adjustBalanceType === 'cash' ? '±' : 'signed value'})`}>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -912,10 +908,9 @@ function FinanceContent() {
                                     value={adjustAmount}
                                     onChange={e => setAdjustAmount(e.target.value)}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
-                        <div>
-                            <label className={adminStyles.label}>Reason</label>
+                        <FormRow label="Reason">
                             <input
                                 type="text"
                                 className={adminStyles.input}
@@ -923,7 +918,7 @@ function FinanceContent() {
                                 value={adjustReason}
                                 onChange={e => setAdjustReason(e.target.value)}
                             />
-                        </div>
+                        </FormRow>
                     </div>
                 </Modal>
             )}

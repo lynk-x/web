@@ -9,6 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import Badge from '@/components/shared/Badge';
+import FormRow from '@/components/shared/FormRow';
 
 export default function EditBannerPage() {
     const router = useRouter();
@@ -55,7 +56,7 @@ export default function EditBannerPage() {
                 }
             } catch (err: unknown) {
                 showToast(getErrorMessage(err), 'error');
-                router.push('/dashboard/admin/communications?tab=banners');
+                router.push('/dashboard/system/communications?tab=banners');
             } finally {
                 setIsLoading(false);
             }
@@ -96,7 +97,7 @@ export default function EditBannerPage() {
 
             showToast('System banner updated successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/admin/communications?tab=banners');
+            router.push('/dashboard/system/communications?tab=banners');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to update banner', 'error');
         } finally {
@@ -113,7 +114,7 @@ export default function EditBannerPage() {
             const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
             if (!confirmed) return;
         }
-        router.push('/dashboard/admin/communications?tab=banners');
+        router.push('/dashboard/system/communications?tab=banners');
     };
 
     return (
@@ -135,8 +136,7 @@ export default function EditBannerPage() {
                     <h2 className={adminStyles.sectionTitle}>Banner Details</h2>
                     <form className={adminStyles.form} onSubmit={handleUpdateBanner}>
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Banner Type</label>
+                            <FormRow label="Banner Type" styles={adminStyles}>
                                 <select
                                     className={adminStyles.select}
                                     value={type}
@@ -147,7 +147,7 @@ export default function EditBannerPage() {
                                     <option value="warning">Warning (Yellow)</option>
                                     <option value="error">Error (Red)</option>
                                 </select>
-                            </div>
+                            </FormRow>
                             <div className={adminStyles.inputGroup} style={{ alignSelf: 'center', paddingTop: '20px' }}>
                                 <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', margin: 0 }}>
                                     <input
@@ -160,8 +160,7 @@ export default function EditBannerPage() {
                             </div>
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Headline Title</label>
+                        <FormRow label="Headline Title" styles={adminStyles}>
                             <input
                                 type="text"
                                 placeholder="e.g. Server Maintenance"
@@ -170,10 +169,9 @@ export default function EditBannerPage() {
                                 onChange={(e) => handleChange(setTitle, e.target.value)}
                                 required
                             />
-                        </div>
+                        </FormRow>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Banner Message</label>
+                        <FormRow label="Banner Message" styles={adminStyles}>
                             <textarea
                                 className={adminStyles.textarea}
                                 placeholder="Describe the alert in detail..."
@@ -181,11 +179,10 @@ export default function EditBannerPage() {
                                 onChange={(e) => handleChange(setContent, e.target.value)}
                                 required
                             />
-                        </div>
+                        </FormRow>
 
                         <div className={adminStyles.formGrid}>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Starts At</label>
+                            <FormRow label="Starts At" styles={adminStyles}>
                                 <input
                                     type="datetime-local"
                                     className={adminStyles.input}
@@ -193,20 +190,18 @@ export default function EditBannerPage() {
                                     onChange={(e) => handleChange(setStartsAt, e.target.value)}
                                     required
                                 />
-                            </div>
-                            <div className={adminStyles.inputGroup}>
-                                <label className={adminStyles.label}>Ends At (Optional)</label>
+                            </FormRow>
+                            <FormRow label="Ends At (Optional)" styles={adminStyles}>
                                 <input
                                     type="datetime-local"
                                     className={adminStyles.input}
                                     value={endsAt}
                                     onChange={(e) => handleChange(setEndsAt, e.target.value)}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
 
-                        <div className={adminStyles.inputGroup}>
-                            <label className={adminStyles.label}>Action URL (Optional)</label>
+                        <FormRow label="Action URL (Optional)" styles={adminStyles}>
                             <input
                                 type="text"
                                 placeholder="https://example.com/more-info"
@@ -214,7 +209,7 @@ export default function EditBannerPage() {
                                 value={actionUrl}
                                 onChange={(e) => handleChange(setActionUrl, e.target.value)}
                             />
-                        </div>
+                        </FormRow>
                     </form>
                 </div>
 

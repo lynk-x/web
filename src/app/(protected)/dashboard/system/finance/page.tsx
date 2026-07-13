@@ -17,6 +17,7 @@ import PaymentProvidersTab from '@/components/system/settings/PaymentProvidersTa
 import WalletTable, { AdminWallet } from '@/components/admin/finance/WalletTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
+import FormRow from '@/components/shared/FormRow';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -456,20 +457,17 @@ function GlobalFinanceContent() {
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div>
-                        <label className={adminStyles.label}>Rate Name</label>
+                    <FormRow label="Rate Name">
                         <input
                             className={adminStyles.input}
                             placeholder="e.g. VAT, Sales Tax"
                             value={taxForm.display_name}
                             onChange={e => setTaxForm({ ...taxForm, display_name: e.target.value })}
                         />
-                    </div>
-                    <div>
-                        <label className={adminStyles.label}>Applicable Reason</label>
+                    </FormRow>
+                    <FormRow label="Applicable Reason">
                         <select
                             className={adminStyles.select}
-                            style={{ width: '100%' }}
                             value={taxForm.applicable_reason}
                             onChange={e => setTaxForm({ ...taxForm, applicable_reason: e.target.value })}
                         >
@@ -479,13 +477,11 @@ function GlobalFinanceContent() {
                             <option value="wallet_top_up">Wallet Top-up</option>
                             <option value="organizer_payout">Organizer Payout</option>
                         </select>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <label className={adminStyles.label}>Country</label>
+                    </FormRow>
+                    <div className={adminStyles.formGrid}>
+                        <FormRow label="Country">
                             <select
                                 className={adminStyles.select}
-                                style={{ width: '100%' }}
                                 value={taxForm.country_code}
                                 onChange={e => setTaxForm({ ...taxForm, country_code: e.target.value })}
                             >
@@ -493,16 +489,15 @@ function GlobalFinanceContent() {
                                     <option key={c.code} value={c.code}>{c.name}</option>
                                 ))}
                             </select>
-                        </div>
-                        <div>
-                            <label className={adminStyles.label}>Rate (%)</label>
+                        </FormRow>
+                        <FormRow label="Rate (%)">
                             <input
                                 type="number"
                                 className={adminStyles.input}
                                 value={taxForm.rate_percent}
                                 onChange={e => setTaxForm({ ...taxForm, rate_percent: Number(e.target.value) })}
                             />
-                        </div>
+                        </FormRow>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
                         <input
@@ -532,12 +527,10 @@ function GlobalFinanceContent() {
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>
                             <p><strong>Wallet:</strong> {adjustWalletKey}</p>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                                <label className={adminStyles.label}>Balance Type</label>
+                        <div className={adminStyles.formGrid}>
+                            <FormRow label="Balance Type">
                                 <select
                                     className={adminStyles.select}
-                                    style={{ width: '100%' }}
                                     value={adjustBalanceType}
                                     onChange={e => setAdjustBalanceType(e.target.value as any)}
                                 >
@@ -545,9 +538,8 @@ function GlobalFinanceContent() {
                                     <option value="credit">Credit</option>
                                     <option value="escrow">Escrow</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label className={adminStyles.label}>Amount ({adjustBalanceType === 'cash' ? '±' : 'signed value'})</label>
+                            </FormRow>
+                            <FormRow label={`Amount (${adjustBalanceType === 'cash' ? '±' : 'signed value'})`}>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -556,10 +548,9 @@ function GlobalFinanceContent() {
                                     value={adjustAmount}
                                     onChange={e => setAdjustAmount(e.target.value)}
                                 />
-                            </div>
+                            </FormRow>
                         </div>
-                        <div>
-                            <label className={adminStyles.label}>Reason</label>
+                        <FormRow label="Reason">
                             <input
                                 type="text"
                                 className={adminStyles.input}
@@ -567,7 +558,7 @@ function GlobalFinanceContent() {
                                 value={adjustReason}
                                 onChange={e => setAdjustReason(e.target.value)}
                             />
-                        </div>
+                        </FormRow>
                     </div>
                 </Modal>
             )}

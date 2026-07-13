@@ -9,6 +9,7 @@ import { sanitizeInput } from '@/utils/sanitization';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from '@/app/(protected)/dashboard/admin/settings/page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
+import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
 export default function CreateTagTypePage() {
@@ -84,8 +85,7 @@ export default function CreateTagTypePage() {
 
             <div className={adminStyles.formCard}>
                 <div className={adminStyles.formGrid}>
-                    <div className={adminStyles.formGroup}>
-                        <label className={adminStyles.label}>Type Identifier (ID)</label>
+                    <FormRow label="Type Identifier (ID)">
                         <input
                             type="text"
                             className={adminStyles.input}
@@ -96,19 +96,17 @@ export default function CreateTagTypePage() {
                         <p style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
                             Lowercase, use underscores for spaces.
                         </p>
-                    </div>
+                    </FormRow>
 
-                    <div className={adminStyles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                        <label className={adminStyles.label}>Description</label>
+                    <FormRow label="Description" style={{ gridColumn: '1 / -1' }}>
                         <textarea
-                            className={adminStyles.input}
+                            className={adminStyles.textarea}
                             rows={3}
                             placeholder="Describe what tags in this category represent..."
                             value={formData.description}
                             onChange={(e) => updateField('description', e.target.value)}
-                            style={{ resize: 'vertical' }}
                         />
-                    </div>
+                    </FormRow>
                 </div>
             </div>
         </div>
