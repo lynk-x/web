@@ -18,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import TableToolbar from '@/components/shared/TableToolbar';
 import PageHeader from '@/components/dashboard/PageHeader';
 
-type Tab = 'config' | 'feature-flags';
+type Tab = 'config' | 'feature-flags' | 'regions';
 
 function SystemSettingsContent() {
     const searchParams = useSearchParams();
@@ -27,14 +27,14 @@ function SystemSettingsContent() {
 
     const initialTab = searchParams.get('tab') as Tab;
     const [activeTab, setActiveTab] = useState<Tab>(
-        (initialTab && ['config', 'feature-flags'].includes(initialTab))
+        (initialTab && ['config', 'feature-flags', 'regions'].includes(initialTab))
             ? initialTab
             : 'config'
     );
 
     useEffect(() => {
         const tab = searchParams.get('tab') as Tab;
-        if (tab && ['config', 'feature-flags'].includes(tab)) {
+        if (tab && ['config', 'feature-flags', 'regions'].includes(tab)) {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -54,6 +54,7 @@ function SystemSettingsContent() {
         switch (activeTab) {
             case 'config': return 'Search configurations...';
             case 'feature-flags': return 'Search feature flags...';
+            case 'regions': return 'Search supported countries...';
             default: return 'Search...';
         }
     };
@@ -96,9 +97,10 @@ function SystemSettingsContent() {
                     <TabsList>
                         <TabsTrigger value="config">System Config</TabsTrigger>
                         <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
+                        <TabsTrigger value="regions">Available Regions</TabsTrigger>
                     </TabsList>
 
-                    {['config'].includes(activeTab) && (
+                    {['config', 'regions'].includes(activeTab) && (
                         <div className={adminStyles.filterGroup} style={{ marginBottom: 0 }}>
                             {[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }].map(({ value, label }) => (
                                 <button
@@ -119,6 +121,9 @@ function SystemSettingsContent() {
                     </TabsContent>
                     <TabsContent value="feature-flags">
                         <FeatureFlagTab searchTerm={searchTerm} triggerCreate={triggerCreate} />
+                    </TabsContent>
+                    <TabsContent value="regions">
+                        <RegionsTab searchTerm={searchTerm} statusFilter={statusFilter} />
                     </TabsContent>
                 </div>
             </Tabs>

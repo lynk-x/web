@@ -88,6 +88,7 @@ export default function EditTagPage() {
                         // called .schema('identity') directly, which always
                         // failed silently (caught into a console.error).
                         const { error: embedError } = await supabase
+                            .schema('api')
                             .rpc('admin_save_tag_embedding', { p_tag_id: tagId, p_embedding: vector });
                         if (embedError) {
                             console.error('[Embedding] Failed to save tag embedding:', embedError);

@@ -33,6 +33,7 @@ interface Tag {
     use_count: number;
     is_official: boolean;
     is_active: boolean;
+    has_embedding: boolean;
 }
 
 export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: externalSearchTerm }: TagLibraryTabProps) {
@@ -156,6 +157,10 @@ export default function TagLibraryTab({ forceView, hideToolbar, searchTerm: exte
         {
             header: 'Official',
             render: (tag) => tag.is_official ? <Badge label="Official" variant="info" /> : <span style={{ opacity: 0.3, fontSize: '12px' }}>User</span>
+        },
+        {
+            header: 'Embedding',
+            render: (tag) => tag.has_embedding ? <Badge label="Yes" variant="success" /> : <Badge label="No" variant="subtle" />
         },
         {
             header: 'Status',

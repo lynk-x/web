@@ -56,16 +56,16 @@ const TaxRateTable: React.FC<TaxRateTableProps> = ({
             render: (r) => <div style={{ fontWeight: 600 }}>{r.display_name}</div>
         },
         {
+            header: 'Transaction Reason',
+            render: (r) => <Badge label={r.applicable_reason.replace(/_/g, ' ')} variant="subtle" />
+        },
+        {
             header: 'Type',
             render: (r) => <Badge label={r.is_inclusive ? 'Inclusive' : 'Exclusive'} variant="info" />
         },
         {
             header: 'Percentage',
             render: (r) => <div style={{ fontWeight: 700, color: 'var(--color-brand-primary)' }}>{r.rate_percent}%</div>
-        },
-        {
-            header: 'Reason',
-            render: (r) => <Badge label={r.applicable_reason.replace(/_/g, ' ')} variant="subtle" />
         },
         {
             header: 'Status',

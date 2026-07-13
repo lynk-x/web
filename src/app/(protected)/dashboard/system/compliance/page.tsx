@@ -11,7 +11,6 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
-import RegionsTab from '@/components/system/settings/RegionsTab';
 import KycLimitsTable from '@/components/system/compliance/KycLimitsTable';
 import KycRequirementsTable from '@/components/system/compliance/KycRequirementsTable';
 import KycProvidersTable from '@/components/system/compliance/KycProvidersTable';
@@ -274,12 +273,12 @@ function GlobalComplianceContent() {
     return (
         <div className={sharedStyles.container}>
             <PageHeader
-                title="Global Compliance & Territories"
-                subtitle="Manage supported countries and country-scoped KYC policy — document requirements and money-movement limits."
+                title="Global Compliance & KYC"
+                subtitle="Manage country-scoped KYC policy — document requirements and money-movement limits."
             />
 
             <TableToolbar
-                searchPlaceholder="Search regions or KYC parameters..."
+                searchPlaceholder="Search KYC parameters..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             />
@@ -290,7 +289,6 @@ function GlobalComplianceContent() {
                         <TabsTrigger value="kyc-limits">KYC Limits</TabsTrigger>
                         <TabsTrigger value="kyc-requirements">KYC Requirements</TabsTrigger>
                         <TabsTrigger value="kyc-providers">KYC Providers</TabsTrigger>
-                        <TabsTrigger value="regions">Supported Countries</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -377,10 +375,6 @@ function GlobalComplianceContent() {
                         totalPages={kycProvidersTotalPages}
                         onPageChange={setKycProvidersCurrentPage}
                     />
-                </TabsContent>
-
-                <TabsContent value="regions">
-                    <RegionsTab searchTerm={searchTerm} />
                 </TabsContent>
             </Tabs>
 
