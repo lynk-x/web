@@ -233,19 +233,19 @@ function AnalyticsContent() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Performance Intelligence',
-                        content: 'This page provides real-time data on how your ads are performing across the Lynk-X ecosystem.',
+                        title: 'Ad Performance Intelligence',
+                        content: 'Analyze how your campaigns are performing across the Lynk-X ecosystem — understand which campaigns are generating clicks and which need optimization.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-ads-analytics-range',
-                        title: 'Historical Trends',
-                        content: 'Choose your measurement window to see how your campaigns have evolved over time.',
+                        title: 'Filter by Time Period',
+                        content: 'Adjust the date range to see performance over different windows. Narrow it to a week to evaluate a recent campaign push, or go broader to assess long-term trends.',
                     },
                     {
                         target: '.tour-ads-analytics-stats',
-                        title: 'Success Metrics',
-                        content: 'Monitor Click-Through Rate (CTR) and Cost Per Click (CPC) to measure the effectiveness and efficiency of your ad spend.',
+                        title: 'Key Ad Metrics',
+                        content: 'CTR (Click-Through Rate) shows what percentage of people who see your ad click it — higher is better. CPC (Cost Per Click) shows how much each click costs you. Monitor both to optimize ROI.',
                     }
                 ]}
             />

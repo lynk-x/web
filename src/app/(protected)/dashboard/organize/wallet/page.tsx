@@ -338,28 +338,28 @@ export default function WalletPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Your Wallet',
-                        content: 'Manage your organization\'s funds here. You can top up your balance, view ad credits and track your transaction history.',
+                        content: 'Your wallet holds funds used for advertising campaigns and receives deposited revenue from ticket sales. Keep your balance healthy to ensure campaigns continue running without interruption.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-wallet-topup',
-                        title: 'Add Funds',
-                        content: 'Need to run ads or pay for features? Click here to securely top up your wallet using mobile money or card.',
+                        title: 'Top Up Your Balance',
+                        content: 'Add funds to power your ad campaigns. Supported payment methods include mobile money and card. Funds are credited instantly upon payment confirmation.',
                     },
                     {
                         target: '.tour-wallet-balances',
-                        title: 'Current Balances',
-                        content: 'View your available and pending balances across different currencies.',
+                        title: 'Available Balances',
+                        content: 'View your available balance (spendable now) and pending balance (recently topped up, awaiting clearance) across supported currencies.',
                     },
                     {
                         target: '.tour-wallet-credits',
-                        title: 'Ad Credits',
-                        content: 'Track any promotional credits issued by Lynk-X. These are automatically applied to your ad spend.',
+                        title: 'Promotional Ad Credits',
+                        content: 'Any bonus credits from Lynk-X promotions or referral rewards appear here. They are applied automatically to your ad campaigns before drawing from your cash balance.',
                     },
                     {
                         target: '.tour-wallet-history',
-                        title: 'Transaction Log',
-                        content: 'Review all your past top-ups and their current status to stay on top of your finances.',
+                        title: 'Transaction History',
+                        content: 'A full log of all wallet activity — top-ups, ad spend deductions and credit applications. Use this to reconcile your advertising budget.',
                     }
                 ]}
             />

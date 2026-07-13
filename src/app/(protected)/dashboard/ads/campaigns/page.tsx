@@ -316,24 +316,19 @@ export default function CampaignsPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Your Ad Campaigns',
-                        content: 'This list shows all your marketing efforts. You can monitor budgets, schedules and delivery status for each individual campaign.',
+                        content: 'Every campaign you create lives here. Monitor budget utilization, campaign status and delivery schedules — and take action on individual campaigns from this centralized list.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-campaigns-filter',
-                        title: 'Refine Your View',
-                        content: 'Filter your campaigns by status (Active, Paused, Completed) to focus on what matters most right now.',
+                        title: 'Filter by Status',
+                        content: 'Use these chips to narrow your view to Active, Paused, Under Review or Completed campaigns. Combine with the search bar to find specific campaigns instantly.',
                     },
                     {
                         target: '.tour-campaigns-table',
-                        title: 'Campaign Details',
-                        content: 'Review key stats like remaining budget and total spend. You can edit, pause or duplicate campaigns directly from this list.',
+                        title: 'Campaign Summary',
+                        content: 'Each row shows remaining budget, total spend, delivery status and creation date. Click a campaign row to open the full performance dashboard for that campaign.',
                     },
-                    {
-                        target: '.tour-campaigns-list',
-                        title: 'Optimization',
-                        content: 'Review and optimize your targeting or update creative assets for individual campaigns.',
-                    }
                 ]}
             />
         </div>

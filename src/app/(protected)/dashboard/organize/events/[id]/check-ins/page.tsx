@@ -315,18 +315,18 @@ export default function CheckInLogsPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Live Check-in Feed',
-                        content: 'Monitor your event entrance in real-time. This feed updates automatically as staff scan tickets at the gate.',
+                        content: 'This page updates in real-time as staff scan tickets at the gate using the Lynk-X Scanner app. You can also perform manual check-ins directly from here.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-checkin-stats',
-                        title: 'Entry Progress',
-                        content: 'Track total scans, remaining attendees and rejected tickets to manage gate flow effectively.',
+                        title: 'Gate Progress',
+                        content: 'Track total successful scans, remaining tickets still to be checked in and any rejected scans (e.g. duplicate or invalid tickets) to stay on top of gate flow.',
                     },
                     {
                         target: '.tour-checkin-feed',
-                        title: 'Verification Log',
-                        content: 'Review individual scan details, including the staff member who performed the scan and the exact time of entry.',
+                        title: 'Real-time Verification Log',
+                        content: 'Each entry shows the attendee name, ticket tier, scan outcome and the staff member who performed the scan. Select rows to perform bulk check-ins.',
                     }
                 ]}
             />

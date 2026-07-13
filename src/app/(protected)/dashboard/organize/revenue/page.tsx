@@ -394,14 +394,19 @@ function RevenueContent() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Financial Dashboard',
-                        content: "Track every cent earned from your events. View gross revenue, pending escrow, and successful payouts.",
+                        title: 'Revenue & Payouts',
+                        content: 'Your financial command center. Track every cent earned from ticket sales, monitor your available balance and manage payout requests and refunds all in one place.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-revenue-stats-grid',
                         title: 'Real-time Balances',
-                        content: 'Monitor your available balance and funds currently held in escrow until your events are successfully completed.',
+                        content: 'Gross Revenue is your total ticket income. Available Balance is funds ready to withdraw. Pending Escrow is held until your event is successfully completed and released.',
+                    },
+                    {
+                        target: '.tour-revenue-tabs',
+                        title: 'Payouts & Refunds',
+                        content: 'Switch between the Payouts tab (your withdrawal requests) and the Refunds tab (attendee refund requests awaiting your approval or rejection). Use the filter chips to narrow by status.',
                     },
                 ]}
             />

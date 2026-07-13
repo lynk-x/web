@@ -144,16 +144,16 @@ export default function DashboardOverview() {
             <section className={styles.quickActions}>
                 <h2 className={sharedStyles.sectionTitle}>Quick Actions</h2>
                 <div className={styles.actionsGrid}>
-                    <button className={`${styles.actionCard} tour-create-event`} onClick={() => router.push('/dashboard/organize/events/create')}>
+                    <button type="button" className={`${styles.actionCard} tour-create-event`} onClick={() => router.push('/dashboard/organize/events/create')}>
                         <span className={styles.actionLabel}>Create Event</span>
                     </button>
-                    <button className={`${styles.actionCard} tour-view-analytics`} onClick={() => router.push('/dashboard/organize/analytics')}>
+                    <button type="button" className={`${styles.actionCard} tour-view-analytics`} onClick={() => router.push('/dashboard/organize/analytics')}>
                         <span className={styles.actionLabel}>View Analytics</span>
                     </button>
-                    <button className={`${styles.actionCard} tour-revenue`} onClick={() => router.push('/dashboard/organize/revenue')}>
+                    <button type="button" className={`${styles.actionCard} tour-revenue`} onClick={() => router.push('/dashboard/organize/revenue')}>
                         <span className={styles.actionLabel}>Revenue</span>
                     </button>
-                    <button className={`${styles.actionCard} tour-team`} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
+                    <button type="button" className={`${styles.actionCard} tour-team`} onClick={() => router.push('/dashboard/organize/settings?tab=team')}>
                         <span className={styles.actionLabel}>Team Management</span>
                     </button>
                 </div>
@@ -173,33 +173,33 @@ export default function DashboardOverview() {
                         target: 'body',
                         placement: 'center',
                         title: 'Welcome to your Organize Dashboard!',
-                        content: 'Let\'s get you set up to host unforgettable events. This dashboard is your central hub for all organizer activities.',
+                        content: 'This is your command center for hosting events on Lynk-X. Create and manage events, track ticket sales, monitor revenue and grow your audience — all from one place.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-stats',
-                        title: 'Performance Overview',
-                        content: 'Track your total events, upcoming scheduled events and active public listings at a glance.',
+                        title: 'Live Performance Snapshot',
+                        content: 'These cards give you an at-a-glance view of your portfolio: total events created, upcoming events on your calendar and how many are currently live and accepting tickets.',
                     },
                     {
                         target: '.tour-create-event',
-                        title: 'Create an event',
-                        content: 'Ready to start? Click here to create your next event, set up ticket tiers and add your marketing materials.',
+                        title: 'Create Your First Event',
+                        content: 'Tap here to launch the event creation wizard. You\'ll walk through setting a cover image, description, ticket tiers, location and more — step by step.',
                     },
                     {
                         target: '.tour-view-analytics',
-                        title: 'Understand your audience',
-                        content: 'Dive deep into your event analytics and ticket sales data to understand your growth and attendee behavior.',
+                        title: 'Understand Your Audience',
+                        content: 'View aggregated analytics across all your events — including ticket sales trends, revenue over time and category performance — to make smarter decisions.',
                     },
                     {
                         target: '.tour-revenue',
-                        title: 'Financial Health',
-                        content: 'Quick access to your revenue dashboard, payout history and wallet balances.',
+                        title: 'Revenue & Payouts',
+                        content: 'Access your financial dashboard to see gross revenue, available balance and payout history. This is where you request withdrawals to your linked payment method.',
                     },
                     {
                         target: '.tour-team',
-                        title: 'Team Management',
-                        content: 'Invite collaborators and manage permissions for your organization.',
+                        title: 'Collaborate With Your Team',
+                        content: 'Invite team members and assign roles like Scanner or Finance Manager. You control who can edit events, manage check-ins or view financial data.',
                     },
                 ]}
             />

@@ -170,23 +170,23 @@ export default function AdsBillingPage() {
                 </div>
             </div>
 
-<ProductTour
-                 storageKey={activeAccount ? `hasSeenAdsBillingJoyride_${activeAccount.id}` : 'hasSeenAdsBillingJoyride_guest'}
-                 steps={[
-                     {
-                         target: 'body',
-                         placement: 'center',
-                         title: 'Billing & Payments',
-                         content: 'Manage your organization\'s payment methods and track your advertising spend history.',
-                         skipBeacon: true,
-                     },
-                     {
-                         target: '.tour-billing-history',
-                         title: 'Invoicing & Receipts',
-                         content: 'Download historical invoices and track every transaction related to your ad campaigns.',
-                     }
-                 ]}
-             />
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsBillingJoyride_${activeAccount.id}` : 'hasSeenAdsBillingJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Ad Spend & Finance',
+                        content: 'Track all charges and payments related to your advertising campaigns. Download invoices, monitor your spend history and ensure your wallet has sufficient funds to keep campaigns running.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-billing-history',
+                        title: 'Invoice & Transaction History',
+                        content: 'Every charge for ad impressions and clicks is logged here. Search by status or date, then download a CSV export for accounting or reconciliation purposes.',
+                    },
+                ]}
+            />
         </div>
     );
 }

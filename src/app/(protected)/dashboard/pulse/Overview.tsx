@@ -219,7 +219,7 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
                     {
                         target: '.tour-pulse-stats',
                         title: 'Real-time Metrics',
-                        content: 'Monitor global sentiment, topic volume, and market velocity in real-time.',
+                        content: 'Monitor global sentiment, topic volume and market velocity in real-time.',
                     },
                     {
                         target: '.tour-pulse-explorer',

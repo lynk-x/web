@@ -350,29 +350,29 @@ export default function CampaignDetailPage() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Campaign Intelligence',
-                        content: 'This deep-dive view provides real-time performance data and creative A/B testing results for this specific campaign.',
+                        title: 'Campaign Deep Dive',
+                        content: 'This is your single-campaign command center. See real-time performance data, compare your creative variants and review all delivery settings for this specific campaign.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-campaign-stats',
-                        title: 'Performance Snapshot',
-                        content: 'Track your primary success metrics including Click-Through Rate (CTR) and Cost Per Click (CPC) to measure ROI.',
+                        title: 'Core Performance Metrics',
+                        content: 'CTR (Click-Through Rate) measures how compelling your ad is — the higher, the better. CPC (Cost Per Click) shows your average cost efficiency. Track both to identify when to pause or boost a campaign.',
                     },
                     {
                         target: '.tour-campaign-links',
-                        title: 'Quick Management',
-                        content: 'Jump straight to detailed performance analytics or the event this campaign is targeting.',
+                        title: 'Quick Actions',
+                        content: 'Jump directly to the detailed analytics breakdown for this campaign, edit its settings, or navigate to the target event page to cross-reference event performance.',
                     },
                     {
                         target: '.tour-campaign-details',
-                        title: 'Campaign Settings',
-                        content: 'Review the budget, bidding and delivery settings this campaign is running with.',
+                        title: 'Delivery Configuration',
+                        content: 'Review the budget ceiling, max bid amount and campaign dates. These settings control how aggressively your ad competes in the auction and how long it runs.',
                     },
                     {
                         target: '.tour-campaign-variants',
-                        title: 'Creative Performance',
-                        content: 'Compare how each creative variant is performing to see which one resonates most with your audience.',
+                        title: 'A/B Creative Results',
+                        content: 'If you uploaded multiple creative variants, compare their individual impression and click counts here. Our system automatically serves the best-performing variant more frequently.',
                     }
                 ]}
             />

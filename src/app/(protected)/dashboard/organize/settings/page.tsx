@@ -520,10 +520,16 @@ function SettingsContent() {
                                     Please write this down immediately. It will not be shown again.
                                 </p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: 'var(--color-background-surface)', borderRadius: '4px', border: '1px solid var(--color-interface-outline)' }}>
-                                    <code style={{ flex: 1, fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
+                                    <code
+                                        style={{ flex: 1, fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}
+                                        aria-label="Recovery code"
+                                    >
                                         {recoveryCode}
                                     </code>
                                     <button
+                                        type="button"
+                                        aria-label="Copy recovery code to clipboard"
+                                        title="Copy to clipboard"
                                         onClick={() => {
                                             navigator.clipboard.writeText(recoveryCode || '');
                                             showToast('Recovery code copied to clipboard!', 'success');
@@ -531,9 +537,8 @@ function SettingsContent() {
                                         style={{
                                             background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)'
                                         }}
-                                        title="Copy to clipboard"
                                     >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                         </svg>
@@ -583,23 +588,23 @@ function SettingsContent() {
                         target: 'body',
                         placement: 'center',
                         title: 'Organizer Settings',
-                        content: 'Configure your organization\'s identity, team members and payout preferences.',
+                        content: 'Set up your organization profile, manage your team and configure payouts. Complete all three tabs to unlock the full power of Lynk-X.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-settings-tabs',
-                        title: 'Configuration Tabs',
-                        content: 'Switch between Account profile, Team member management and Billing/Payout setup.',
+                        title: 'Settings Sections',
+                        content: 'Navigate between Account (your public organizer profile and branding), Team (invite collaborators with role-specific access) and Finance (payout methods and KYC verification).',
                     },
                     {
                         target: '.tour-settings-kyc',
-                        title: 'KYC Verification',
-                        content: 'To receive payouts, you must verify your identity. Check your current verification status here.',
+                        title: 'Identity Verification (KYC)',
+                        content: 'Completing KYC is required to receive payouts from ticket sales. Upload your ID documents here — verification typically takes 1-2 business days.',
                     },
                     {
                         target: '.tour-settings-save',
-                        title: 'Apply Changes',
-                        content: 'Don\'t forget to save your settings after making any changes to your profile or preferences.',
+                        title: 'Save Your Changes',
+                        content: 'Changes are not saved automatically. Always click the save button after editing any section to ensure nothing is lost.',
                     }
                 ]}
             />

@@ -136,38 +136,38 @@ export default function AdsDashboard() {
                             target: 'body',
                             placement: 'center',
                             title: 'Ads Command Center',
-                            content: 'Welcome to your Advertising Dashboard. From here, you can launch campaigns that reach thousands of Lynk-X attendees across our mobile and web platforms.',
+                            content: 'Welcome to your Advertising Dashboard. Launch targeted campaigns that reach thousands of Lynk-X attendees across our forums right when they are browsing.',
                             skipBeacon: true,
                         },
                         {
                             target: '.tour-ads-stats',
-                            title: 'Campaign Performance',
-                            content: 'Monitor your active reach, total impressions and ad engagement (clicks) in real-time.',
+                            title: 'Live Campaign Performance',
+                            content: 'Monitor your combined reach, total impressions delivered and total clicks in real-time across all your active campaigns.',
                         },
                         {
                             target: '.tour-ads-quick-actions',
                             title: 'Quick Access',
-                            content: 'Jump straight into creating campaigns, managing assets or viewing detailed analytics from this panel.',
+                            content: 'Jump straight into creating campaigns, reviewing analytics or topping up your wallet to fund ongoing campaigns.',
                         },
                         {
                             target: '.tour-create-campaign',
-                            title: 'Start Advertising',
-                            content: 'Ready to grow your event? Create a new ad campaign, set your budget and choose your target audience here.',
+                            title: 'Launch a Campaign',
+                            content: 'Create a new ad campaign in minutes: set your budget, choose your target audience by region and interests, then upload your creative assets.',
                         },
                         {
                             target: '.tour-manage-campaigns',
                             title: 'Manage Campaigns',
-                            content: 'Monitor your existing campaigns, pause them or duplicate high-performing ones.',
+                            content: 'Review all your campaigns in one list. Pause, resume or duplicate high-performing campaigns without re-entering all details from scratch.',
                         },
                         {
                             target: '.tour-ads-analytics',
-                            title: 'Deep Insights',
-                            content: 'Analyze your ad spend and conversion rates to optimize your marketing strategy.',
+                            title: 'Performance Insights',
+                            content: 'Analyze CTR, CPC and impression trends to understand which campaigns are delivering ROI and where to reallocate your budget.',
                         },
                         {
                             target: '.tour-ads-billing',
-                            title: 'Billing & Funds',
-                            content: 'Add funds to your account, manage payment methods and view invoices.',
+                            title: 'Finance & Spend History',
+                            content: 'View your full ad spend history, download invoices for accounting and top up your ad wallet to keep campaigns running without interruption.',
                         }
                     ]}
                 />

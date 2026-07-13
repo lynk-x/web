@@ -218,18 +218,18 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                         target: 'body',
                         placement: 'center',
                         title: 'Attendee Management',
-                        content: 'This list shows all registered attendees for your event. You can search, filter and perform bulk actions directly from here.',
+                        content: 'View and manage every registered attendee for this event. Search by name or ticket code, filter by status and perform bulk check-ins or data exports.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-attendee-list',
-                        title: 'Registration Details',
-                        content: 'View ticket status, purchase date and contact information for each attendee.',
+                        title: 'Attendee Registry',
+                        content: 'Each row shows an attendee\'s name, ticket tier, purchase date and current ticket status (Valid, Used, Cancelled). Click any row for more detail.',
                     },
                     {
                         target: '.tour-attendee-export',
-                        title: 'Data Portability',
-                        content: 'Need your attendee list offline? Select participants and click "Export CSV" to download the data.',
+                        title: 'Export Attendee Data',
+                        content: 'Download the complete attendee list as a CSV file for offline use, door list printing or third-party integrations.',
                     }
                 ]}
             />

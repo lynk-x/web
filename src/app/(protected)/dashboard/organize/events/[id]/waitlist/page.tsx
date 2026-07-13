@@ -162,7 +162,7 @@ export default function EventWaitlistPage() {
             />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div role="group" aria-label="Filter by status" style={{ display: 'flex', gap: 8 }}>
                     {['all', 'pending', 'invited', 'joined', 'expired'].map(s => (
                         <button
                             key={s}
@@ -189,12 +189,12 @@ export default function EventWaitlistPage() {
                 <table className={adminStyles.table}>
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Attendee</th>
-                            <th>Ticket Tier</th>
-                            <th>Joined</th>
-                            <th>Status</th>
-                            <th></th>
+                            <th scope="col">#</th>
+                            <th scope="col">Attendee</th>
+                            <th scope="col">Ticket Tier</th>
+                            <th scope="col">Joined</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" aria-label="Actions"></th>
                         </tr>
                     </thead>
                     <tbody>

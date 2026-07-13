@@ -210,16 +210,17 @@ export default function EventRefundsPage() {
                             <th style={{ width: 40 }}>
                                 <input
                                     type="checkbox"
+                                    aria-label="Select all pending refund requests"
                                     checked={selectedIds.size > 0 && selectedIds.size === refunds.filter(r => r.status === 'pending').length}
                                     onChange={handleSelectAll}
                                 />
                             </th>
-                            <th>Requested</th>
-                            <th>Attendee</th>
-                            <th>Reason</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th></th>
+                            <th scope="col">Requested</th>
+                            <th scope="col">Attendee</th>
+                            <th scope="col">Reason</th>
+                            <th scope="col">Amount</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" aria-label="Actions"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -231,6 +232,7 @@ export default function EventRefundsPage() {
                                     <td>
                                         <input
                                             type="checkbox"
+                                            aria-label={`Select refund from ${r.user_profile?.full_name ?? r.user_id.slice(0, 8)}`}
                                             checked={selectedIds.has(r.id)}
                                             onChange={() => handleSelect(r.id)}
                                             disabled={!isPending}

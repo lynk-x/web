@@ -70,7 +70,7 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
                     color: 'var(--color-utility-primaryText, #ffffff)',
                 },
                 buttonSkip: {
-                    color: '#aaaaaa',
+                    color: '#c8c8c8',
                 },
                 tooltip: {
                     borderRadius: '12px',

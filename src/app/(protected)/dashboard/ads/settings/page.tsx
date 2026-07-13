@@ -24,6 +24,7 @@ import Button from '@/components/shared/Button';
 import Textarea from '@/components/shared/Textarea';
 import type { AccountWallet } from '@/types/organize';
 import Spinner from '@/components/shared/Spinner';
+import ProductTour from '@/components/dashboard/ProductTour';
 
 function AdsSettingsContent() {
     const { activeAccount, isLoading: isOrgLoading, refreshAccounts } = useOrganization();
@@ -265,7 +266,7 @@ function AdsSettingsContent() {
             />
 
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <div className={adminStyles.tabsHeaderRow}>
+                <div className={`${adminStyles.tabsHeaderRow} tour-ads-settings-tabs`}>
                     <TabsList>
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="team">Team Members</TabsTrigger>
@@ -277,7 +278,7 @@ function AdsSettingsContent() {
                 <div style={{ marginTop: '24px' }}>
                     <TabsContent value="account">
                         <div className={adminStyles.pageCard}>
-                            {activeAccount && <KycStatusCard accountId={activeAccount.id} />}
+                            {activeAccount && <div className="tour-ads-settings-kyc"><KycStatusCard accountId={activeAccount.id} /></div>}
                             <h2 className={adminStyles.sectionTitle}>Account Profile</h2>
                             <div className={adminStyles.formGrid}>
                                 <div className={adminStyles.inputGroup}>
@@ -322,13 +323,13 @@ function AdsSettingsContent() {
                     </TabsContent>
 
                     <TabsContent value="team">
-                        <div className={adminStyles.pageCard}>
+                        <div className={`${adminStyles.pageCard} tour-ads-settings-team`}>
                             <MemberTable />
                         </div>
                     </TabsContent>
 
                     <TabsContent value="billing">
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div className="tour-ads-settings-billing" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             <div className={adminStyles.pageCard}>
                                 <h2 className={adminStyles.sectionTitle}>Payment Methods</h2>
                                 {activeAccount ? (
@@ -348,7 +349,7 @@ function AdsSettingsContent() {
                     </TabsContent>
 
                     <TabsContent value="danger-zone">
-                        <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
+                        <div className={`${adminStyles.pageCard} tour-ads-settings-danger`} style={{ marginBottom: '24px' }}>
                             <h2 className={adminStyles.sectionTitle} style={{ color: '#ffffff' }}>Account Security</h2>
                             
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
@@ -433,10 +434,16 @@ function AdsSettingsContent() {
                                     Please write this down immediately. It will not be shown again.
                                 </p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: 'var(--color-background-surface)', borderRadius: '4px', border: '1px solid var(--color-interface-outline)' }}>
-                                    <code style={{ flex: 1, fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
+                                    <code
+                                        style={{ flex: 1, fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}
+                                        aria-label="Recovery code"
+                                    >
                                         {recoveryCode}
                                     </code>
                                     <button
+                                        type="button"
+                                        aria-label="Copy recovery code to clipboard"
+                                        title="Copy to clipboard"
                                         onClick={() => {
                                             navigator.clipboard.writeText(recoveryCode || '');
                                             showToast('Recovery code copied to clipboard!', 'success');
@@ -444,9 +451,8 @@ function AdsSettingsContent() {
                                         style={{
                                             background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)'
                                         }}
-                                        title="Copy to clipboard"
                                     >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                         </svg>
@@ -462,6 +468,44 @@ function AdsSettingsContent() {
                     </TabsContent>
                 </div>
             </Tabs>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAdsSettingsJoyride_${activeAccount.id}` : 'hasSeenAdsSettingsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Ads Account Settings',
+                        content: 'Configure your advertising account before launching campaigns. Complete all four tabs to ensure your account is fully set up and ready to spend.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-ads-settings-tabs',
+                        title: 'Settings Sections',
+                        content: 'Navigate between Account (your business profile), Team Members (delegate access), Billing & Wallet (payment methods and funds) and Danger Zone (security and account controls).',
+                    },
+                    {
+                        target: '.tour-ads-settings-kyc',
+                        title: 'Identity Verification (KYC)',
+                        content: 'KYC verification is required before your campaigns can go live. Upload your business documents here — verification typically takes 1-2 business days.',
+                    },
+                    {
+                        target: '.tour-ads-settings-team',
+                        title: 'Team Access',
+                        content: 'Invite team members to help manage campaigns and creative assets. Assign roles to control who can edit budgets or view billing information.',
+                    },
+                    {
+                        target: '.tour-ads-settings-billing',
+                        title: 'Billing & Wallet',
+                        content: 'Add a payment method and top up your ad wallet here. Your wallet balance is what funds campaign delivery — campaigns pause automatically when the balance reaches zero.',
+                    },
+                    {
+                        target: '.tour-ads-settings-danger',
+                        title: 'Security & Danger Zone',
+                        content: 'Generate a recovery code for emergency account access, set up two-factor authentication and manage your password. Account deactivation is also here — it is permanent and pauses all active campaigns.',
+                    },
+                ]}
+            />
 
             <ConfirmationModal
                 isOpen={!!pendingTab}

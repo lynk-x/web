@@ -201,7 +201,7 @@ export default function AnalyticsClient() {
                     </div>
                 </div>
             ) : (
-                <div className={adminStyles.pageCard} style={{ marginTop: 'var(--spacing-md)' }}>
+                <div className={`${adminStyles.pageCard} tour-performance-table`} style={{ marginTop: 'var(--spacing-md)' }}>
                     <h2 className={adminStyles.sectionTitle}>Event Performance Matrix</h2>
                     <PerformanceTable data={filteredInsights} />
                 </div>
@@ -214,18 +214,23 @@ export default function AnalyticsClient() {
                         target: 'body', 
                         placement: 'center', 
                         title: 'Event Analytics', 
-                        content: 'Welcome to your analytics command center. Track ticket sales, revenue trends, and conversion rates across your entire organization.', 
+                        content: 'Your analytics hub aggregates performance data across all events — track ticket sales velocity, revenue growth and attendee trends to make data-driven decisions.', 
                         skipBeacon: true 
                     },
                     { 
                         target: '.tour-analytics-range', 
-                        title: 'Time Range & Filters', 
-                        content: 'Adjust the date range or filter by event status to analyze specific trends.' 
+                        title: 'Slice by Time & Status', 
+                        content: 'Adjust the date window or filter by event status to compare specific periods or focus on active vs. completed events. Toggle between chart and table view for different perspectives.' 
                     },
                     { 
                         target: '.tour-analytics-trend', 
-                        title: 'Revenue Trends', 
-                        content: 'Visualize your growth over time. Hover over data points for specific daily breakdowns.' 
+                        title: 'Revenue & Sales Trends', 
+                        content: 'The bar chart shows ticket sales over time. Hover over any bar for a daily breakdown of tickets sold — useful for spotting sales spikes around promotions.' 
+                    },
+                    { 
+                        target: '.tour-performance-table', 
+                        title: 'Event Performance Matrix', 
+                        content: 'View a detailed breakdown of every event including revenue, tickets sold and status — perfect for deep-diving into individual event performance.' 
                     }
                 ]}
             />

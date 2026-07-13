@@ -272,24 +272,24 @@ export default function EventDetailPage() {
                     {
                         target: 'body',
                         placement: 'center',
-                        title: 'Event Intelligence',
-                        content: 'This page provides real-time insights into your event performance. Track sales, revenue and attendee engagement from a single view.',
+                        title: 'Event Control Panel',
+                        content: 'Your event\'s dedicated command center. See real-time performance metrics, jump to management tools and review how each ticket tier is selling.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-event-stats',
-                        title: 'Performance Snapshot',
-                        content: 'Monitor your critical KPIs including total ticket sales, gross revenue and forum community growth.',
+                        title: 'Live Performance Metrics',
+                        content: 'Track tickets sold, gross revenue and active forum community members at a glance. These update in real-time so you always have the latest picture.',
                     },
                     {
                         target: '.tour-event-links',
-                        title: 'Quick Management',
-                        content: 'Jump directly to the attendee list, scanner interface or detailed event analytics.',
+                        title: 'Event Management Tools',
+                        content: 'Quick links to manage attendees, view check-in logs, access event analytics or edit the event listing — all from this panel.',
                     },
                     {
                         target: '.tour-event-tiers',
-                        title: 'Tier Performance',
-                        content: 'View a breakdown of pricing and fill rates for each ticket tier.',
+                        title: 'Ticket Tier Breakdown',
+                        content: 'Compare sales performance across your ticket tiers. See the price, units sold and remaining capacity for each — useful for deciding when to release more tickets.',
                     }
                 ]}
             />

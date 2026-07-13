@@ -492,23 +492,23 @@ export default function OrganizerEventsPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Manage Your Events',
-                        content: 'This is where you can view, edit and manage all your Lynk-X events. You can see their status, dates and ticket sales at a glance.',
+                        content: 'This is where all your Lynk-X events live. View status, dates, ticket sales and forum activity at a glance — then drill into any event for full details.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-events-filter',
-                        title: 'Filter & Search',
-                        content: 'Quickly find specific events by status (Draft, Published, Active) or search by name.',
+                        title: 'Find Events Fast',
+                        content: 'Use the status filter chips (Draft, Published, Active, Completed) or the search bar to quickly surface the events you need.',
                     },
                     {
                         target: '.tour-events-table',
-                        title: 'Event List',
-                        content: 'View details for each event. Use the checkboxes to select multiple events for bulk actions.',
+                        title: 'Event Overview',
+                        content: 'Each row shows the event status, ticket capacity and revenue at a glance. Click a row to open the full event detail page, or use the action menu to edit or cancel.',
                     },
                     {
                         target: '.tour-bulk-actions',
-                        title: 'Management Actions',
-                        content: 'Perform bulk actions like duplicating, publishing or deleting selected events.',
+                        title: 'Bulk Operations',
+                        content: 'Select multiple events using the checkboxes, then perform bulk actions like publishing drafts or deleting events — saving time when managing large portfolios.',
                     },
                 ]}
             />
