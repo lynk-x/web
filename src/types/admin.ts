@@ -270,6 +270,42 @@ export interface FXRate {
     updated_at: string;
 }
 
+/** One (country_code, account_type, tier_slug) money-movement limits row. */
+export interface KycLimit {
+    id: string;
+    country_code: string;
+    account_type: 'attendee' | 'organizer' | 'advertiser' | 'pulse_user' | 'platform' | 'system';
+    tier_slug: string;
+    currency: string;
+    daily_transfer: number | null;
+    daily_withdrawal: number | null;
+    auto_payout_max: number | null;
+    aml_flag_threshold: number | null;
+    is_active: boolean;
+    updated_at: string;
+    country_name?: string;
+}
+
+/** One (country_code, account_type, tier_slug) document checklist row. */
+export interface KycRequirement {
+    id: string;
+    country_code: string;
+    account_type: 'attendee' | 'organizer' | 'advertiser' | 'pulse_user' | 'platform' | 'system';
+    tier_slug: string;
+    required_steps: Array<{
+        id?: string;
+        type: string;
+        label: string;
+        subtype?: string;
+        mandatory?: boolean;
+        sides?: string[];
+        hint?: string;
+    }>;
+    is_active: boolean;
+    updated_at: string;
+    country_name?: string;
+}
+
 
 /** A legal document version. Mirrors `legal_documents` table. */
 export interface LegalDocument {

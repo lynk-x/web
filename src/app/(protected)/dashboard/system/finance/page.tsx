@@ -12,6 +12,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import FXRateTable from '@/components/system/finance/FXRateTable';
+import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import PaymentProvidersTab from '@/components/system/settings/PaymentProvidersTab';
 import WalletTable, { AdminWallet } from '@/components/admin/finance/WalletTable';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -25,7 +26,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import type { FXRate } from '@/types/admin';
+import type { FXRate, TaxRate } from '@/types/admin';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatCurrency } from '@/utils/format';
 
@@ -52,12 +53,24 @@ function GlobalFinanceContent() {
     const [wallets, setWallets] = useState<AdminWallet[]>([]);
     const [walletStatusFilter, setWalletStatusFilter] = useState('all');
     const [selectedWalletIds, setSelectedWalletIds] = useState<Set<string>>(new Set());
+    const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
+    const [countries, setCountries] = useState<{ code: string, name: string }[]>([]);
+    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+    const [editingTaxRate, setEditingTaxRate] = useState<TaxRate | null>(null);
+    const [taxForm, setTaxForm] = useState({
+        display_name: '',
+        country_code: 'KE',
+        applicable_reason: 'ticket_sale',
+        rate_percent: 0,
+        is_inclusive: true
+    });
     const [fxRates, setFxRates] = useState<FXRate[]>([]);
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [isSyncingFX, setIsSyncingFX] = useState(false);
 
     const [walletsCurrentPage, setWalletsCurrentPage] = useState(1);
     const [walletsTotalCount, setWalletsTotalCount] = useState(0);
+    const [taxCurrentPage, setTaxCurrentPage] = useState(1);
     const [fxCurrentPage, setFxCurrentPage] = useState(1);
     const [plansCurrentPage, setPlansCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -96,6 +109,23 @@ function GlobalFinanceContent() {
                 if (error) throw error;
                 setWallets(data || []);
                 setWalletsTotalCount(data?.[0]?.total_count || 0);
+            } else if (activeTab === 'tax-rates') {
+                // Country name is joined client-side: PostgREST can't embed
+                // finance.tax_rates -> infra.countries through a plain view.
+                const [ratesRes, countriesRes] = await Promise.all([
+                    supabase.schema('api').from('v1_tax_rates').select('*').order('display_name'),
+                    supabase.schema('api').from('v1_countries').select('code, display_name'),
+                ]);
+                if (ratesRes.error) throw ratesRes.error;
+                if (countriesRes.error) throw countriesRes.error;
+
+                const countryNameByCode = new Map(
+                    (countriesRes.data || []).map((c: { code: string; display_name: string }) => [c.code, c.display_name])
+                );
+                setTaxRates((ratesRes.data || []).map((t: TaxRate) => ({
+                    ...t,
+                    country_name: countryNameByCode.get(t.country_code) || t.country_code
+                })));
             } else if (activeTab === 'fx-rates') {
                 const { data, error } = await supabase.schema('api' as any).from('v1_fx_rates').select('*').order('currency');
                 if (error) throw error;
@@ -121,10 +151,38 @@ function GlobalFinanceContent() {
     }, [activeTab, debouncedSearch, fetchData]);
 
     useEffect(() => {
+        const fetchCountries = async () => {
+            const { data } = await supabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
+            if (data) setCountries(data.map((c: { code: string; display_name: string }) => ({ code: c.code, name: c.display_name })));
+        };
+        fetchCountries();
+    }, [supabase]);
+
+    useEffect(() => {
         setWalletsCurrentPage(1);
+        setTaxCurrentPage(1);
         setFxCurrentPage(1);
         setPlansCurrentPage(1);
     }, [activeTab, debouncedSearch]);
+
+    const handleSaveTaxRate = async () => {
+        try {
+            const { error } = await supabase.schema('api').rpc('admin_upsert_tax_rate', {
+                p_id: editingTaxRate?.id ?? null,
+                p_country_code: taxForm.country_code,
+                p_applicable_reason: taxForm.applicable_reason,
+                p_display_name: taxForm.display_name,
+                p_rate_percent: Number(taxForm.rate_percent),
+                p_is_inclusive: taxForm.is_inclusive,
+            });
+            if (error) throw error;
+            showToast(editingTaxRate ? 'Tax rate updated successfully' : 'Tax rate created successfully', 'success');
+            setIsTaxModalOpen(false);
+            fetchData();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error), 'error');
+        }
+    };
 
     const handleSyncFX = async () => {
         setIsSyncingFX(true);
@@ -205,6 +263,10 @@ function GlobalFinanceContent() {
         p.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const filteredTaxRates = taxRates.filter(t => t.display_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const taxTotalPages = Math.max(1, Math.ceil(filteredTaxRates.length / itemsPerPage));
+    const paginatedTaxRates = filteredTaxRates.slice((taxCurrentPage - 1) * itemsPerPage, taxCurrentPage * itemsPerPage);
+
     const filteredRates = fxRates.filter(f => f.currency.toLowerCase().includes(searchTerm.toLowerCase()));
     const fxTotalPages = Math.max(1, Math.ceil(filteredRates.length / itemsPerPage));
     const paginatedRates = filteredRates.slice((fxCurrentPage - 1) * itemsPerPage, fxCurrentPage * itemsPerPage);
@@ -248,11 +310,11 @@ function GlobalFinanceContent() {
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Global Finance"
-                subtitle="Oversee platform-wide wallets, foreign exchange markets, payment networks and subscription plans."
+                subtitle="Oversee platform-wide wallets, tax regions, foreign exchange markets, payment networks and subscription plans."
             />
 
             <TableToolbar
-                searchPlaceholder="Search wallets, currency, providers, or plans..."
+                searchPlaceholder="Search wallets, tax rates, currency, providers, or plans..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             />
@@ -263,6 +325,7 @@ function GlobalFinanceContent() {
                         <TabsTrigger value="wallets">Platform Wallets</TabsTrigger>
                         <TabsTrigger value="payment-providers">Payment Networks</TabsTrigger>
                         <TabsTrigger value="billing-constants">Billing Constants</TabsTrigger>
+                        <TabsTrigger value="tax-rates">Tax Rates</TabsTrigger>
                         <TabsTrigger value="fx-rates">FX Markets</TabsTrigger>
                     </TabsList>
 
@@ -278,6 +341,15 @@ function GlobalFinanceContent() {
                                 currentValue={walletStatusFilter}
                                 onChange={setWalletStatusFilter}
                             />
+                        )}
+                        {activeTab === 'tax-rates' && (
+                            <button className={adminStyles.btnPrimary} onClick={() => {
+                                setEditingTaxRate(null);
+                                setTaxForm({ display_name: '', country_code: 'KE', applicable_reason: 'ticket_sale', rate_percent: 0, is_inclusive: true });
+                                setIsTaxModalOpen(true);
+                            }}>
+                                + Add Tax Rate
+                            </button>
                         )}
                         {activeTab === 'fx-rates' && (
                             <button
@@ -336,6 +408,28 @@ function GlobalFinanceContent() {
                         />
                     </TabsContent>
 
+                    <TabsContent value="tax-rates">
+                        <TaxRateTable
+                            data={paginatedTaxRates}
+                            isLoading={isLoading}
+                            onUpdate={fetchData}
+                            currentPage={taxCurrentPage}
+                            totalPages={taxTotalPages}
+                            onPageChange={setTaxCurrentPage}
+                            onEdit={(rate) => {
+                                setEditingTaxRate(rate);
+                                setTaxForm({
+                                    display_name: rate.display_name,
+                                    country_code: rate.country_code,
+                                    applicable_reason: rate.applicable_reason,
+                                    rate_percent: rate.rate_percent,
+                                    is_inclusive: rate.is_inclusive
+                                });
+                                setIsTaxModalOpen(true);
+                            }}
+                        />
+                    </TabsContent>
+
                     <TabsContent value="fx-rates">
                         <FXRateTable
                             data={paginatedRates}
@@ -348,6 +442,78 @@ function GlobalFinanceContent() {
                     </TabsContent>
                 </div>
             </Tabs>
+
+            {/* Global Tax Form Modal */}
+            <Modal
+                isOpen={isTaxModalOpen}
+                onClose={() => setIsTaxModalOpen(false)}
+                title={editingTaxRate ? 'Edit Tax Rate' : 'Add New Tax Rate'}
+                footer={
+                    <>
+                        <button className={adminStyles.btnSecondary} onClick={() => setIsTaxModalOpen(false)}>Cancel</button>
+                        <button className={adminStyles.btnPrimary} onClick={handleSaveTaxRate}>Save Rate</button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label className={adminStyles.label}>Rate Name</label>
+                        <input
+                            className={adminStyles.input}
+                            placeholder="e.g. VAT, Sales Tax"
+                            value={taxForm.display_name}
+                            onChange={e => setTaxForm({ ...taxForm, display_name: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className={adminStyles.label}>Applicable Reason</label>
+                        <select
+                            className={adminStyles.select}
+                            style={{ width: '100%' }}
+                            value={taxForm.applicable_reason}
+                            onChange={e => setTaxForm({ ...taxForm, applicable_reason: e.target.value })}
+                        >
+                            <option value="ticket_sale">Ticket Sale</option>
+                            <option value="ad_campaign_payment">Ad Campaign</option>
+                            <option value="subscription_payment">Subscription</option>
+                            <option value="wallet_top_up">Wallet Top-up</option>
+                            <option value="organizer_payout">Organizer Payout</option>
+                        </select>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                            <label className={adminStyles.label}>Country</label>
+                            <select
+                                className={adminStyles.select}
+                                style={{ width: '100%' }}
+                                value={taxForm.country_code}
+                                onChange={e => setTaxForm({ ...taxForm, country_code: e.target.value })}
+                            >
+                                {countries.map(c => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={adminStyles.label}>Rate (%)</label>
+                            <input
+                                type="number"
+                                className={adminStyles.input}
+                                value={taxForm.rate_percent}
+                                onChange={e => setTaxForm({ ...taxForm, rate_percent: Number(e.target.value) })}
+                            />
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                        <input
+                            type="checkbox"
+                            checked={taxForm.is_inclusive}
+                            onChange={e => setTaxForm({ ...taxForm, is_inclusive: e.target.checked })}
+                        />
+                        <span style={{ fontSize: '14px', opacity: 0.8 }}>Inclusive of price</span>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Wallet Adjust Balance Modal */}
             {adjustWalletKey && (
