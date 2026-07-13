@@ -306,6 +306,15 @@ export interface KycRequirement {
     country_name?: string;
 }
 
+/** Third-party identity-verification vendor. api_url/info are never surfaced client-side. */
+export interface KycProvider {
+    id: string;
+    provider_name: string;
+    display_name: string;
+    status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'flagged' | 'appealed' | 'expired' | 'archived';
+    updated_at: string;
+}
+
 
 /** A legal document version. Mirrors `legal_documents` table. */
 export interface LegalDocument {

@@ -3,8 +3,8 @@
 /**
  * Global Compliance Administration Page.
  * Governs supported countries and country-scoped KYC policy (document
- * requirements and money-movement limits). Tax jurisdictions live under
- * Global Finance's "Tax Rates" tab.
+ * requirements, money-movement limits, and vendor availability). Tax
+ * jurisdictions live under Global Finance's "Tax Rates" tab.
  */
 
 import { getErrorMessage } from '@/utils/error';
@@ -14,6 +14,7 @@ import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import RegionsTab from '@/components/system/settings/RegionsTab';
 import KycLimitsTable from '@/components/system/compliance/KycLimitsTable';
 import KycRequirementsTable from '@/components/system/compliance/KycRequirementsTable';
+import KycProvidersTable from '@/components/system/compliance/KycProvidersTable';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -21,7 +22,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
-import type { KycLimit, KycRequirement } from '@/types/admin';
+import type { KycLimit, KycRequirement, KycProvider } from '@/types/admin';
 import { useDebounce } from '@/hooks/useDebounce';
 
 const KYC_ACCOUNT_TYPES = ['organizer', 'advertiser', 'attendee'] as const;
@@ -90,7 +91,7 @@ function GlobalComplianceContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'regions');
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'kyc-limits');
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -108,6 +109,9 @@ function GlobalComplianceContent() {
     const [editingKycRequirement, setEditingKycRequirement] = useState<KycRequirement | null>(null);
     const [kycRequirementsForm, setKycRequirementsForm] = useState<KycRequirementsForm>(emptyKycRequirementsForm);
     const [kycRequirementsCurrentPage, setKycRequirementsCurrentPage] = useState(1);
+
+    const [kycProviders, setKycProviders] = useState<KycProvider[]>([]);
+    const [kycProvidersCurrentPage, setKycProvidersCurrentPage] = useState(1);
 
     // 'XX' is deliberately excluded from api.v1_countries (it must never show
     // up in a normal user-facing country selector), but the KYC tabs need to
@@ -160,6 +164,14 @@ function GlobalComplianceContent() {
                     ...r,
                     country_name: r.country_code === 'XX' ? 'Global default' : (countryNameByCode.get(r.country_code) || r.country_code),
                 })));
+            } else if (activeTab === 'kyc-providers') {
+                const { data, error } = await supabase
+                    .schema('api')
+                    .from('v1_kyc_providers')
+                    .select('*')
+                    .order('display_name');
+                if (error) throw error;
+                setKycProviders(data || []);
             }
         } catch (error: unknown) {
             showToast(getErrorMessage(error), 'error');
@@ -175,6 +187,7 @@ function GlobalComplianceContent() {
     useEffect(() => {
         setKycLimitsCurrentPage(1);
         setKycRequirementsCurrentPage(1);
+        setKycProvidersCurrentPage(1);
     }, [activeTab, debouncedSearch]);
 
     useEffect(() => {
@@ -224,6 +237,13 @@ function GlobalComplianceContent() {
     const kycRequirementsTotalPages = Math.max(1, Math.ceil(filteredKycRequirements.length / itemsPerPage));
     const paginatedKycRequirements = filteredKycRequirements.slice((kycRequirementsCurrentPage - 1) * itemsPerPage, kycRequirementsCurrentPage * itemsPerPage);
 
+    const filteredKycProviders = kycProviders.filter(p =>
+        p.display_name.toLowerCase().includes(searchTerm.toLowerCase())
+        || p.provider_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const kycProvidersTotalPages = Math.max(1, Math.ceil(filteredKycProviders.length / itemsPerPage));
+    const paginatedKycProviders = filteredKycProviders.slice((kycProvidersCurrentPage - 1) * itemsPerPage, kycProvidersCurrentPage * itemsPerPage);
+
     const handleSaveKycRequirement = async () => {
         try {
             const required_steps = kycRequirementsForm.steps.map(({ id, type, label, subtype, mandatory, hint }) => ({
@@ -267,9 +287,10 @@ function GlobalComplianceContent() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none', marginTop: '16px' }}>
                     <TabsList>
-                        <TabsTrigger value="regions">Supported Countries</TabsTrigger>
                         <TabsTrigger value="kyc-limits">KYC Limits</TabsTrigger>
                         <TabsTrigger value="kyc-requirements">KYC Requirements</TabsTrigger>
+                        <TabsTrigger value="kyc-providers">KYC Providers</TabsTrigger>
+                        <TabsTrigger value="regions">Supported Countries</TabsTrigger>
                     </TabsList>
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -293,10 +314,6 @@ function GlobalComplianceContent() {
                         )}
                     </div>
                 </div>
-
-                <TabsContent value="regions">
-                    <RegionsTab searchTerm={searchTerm} />
-                </TabsContent>
 
                 <TabsContent value="kyc-limits">
                     <KycLimitsTable
@@ -349,6 +366,21 @@ function GlobalComplianceContent() {
                             setIsKycRequirementsModalOpen(true);
                         }}
                     />
+                </TabsContent>
+
+                <TabsContent value="kyc-providers">
+                    <KycProvidersTable
+                        data={paginatedKycProviders}
+                        isLoading={isLoading}
+                        onUpdate={fetchData}
+                        currentPage={kycProvidersCurrentPage}
+                        totalPages={kycProvidersTotalPages}
+                        onPageChange={setKycProvidersCurrentPage}
+                    />
+                </TabsContent>
+
+                <TabsContent value="regions">
+                    <RegionsTab searchTerm={searchTerm} />
                 </TabsContent>
             </Tabs>
 
