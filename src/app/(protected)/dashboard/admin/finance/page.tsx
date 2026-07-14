@@ -606,50 +606,65 @@ function FinanceContent() {
                 }
             />
 
-            <div className={styles.balancesWrapper}>
-                {globalStats.balances?.length === 0 ? (
-                    <div className={sharedStyles.statsGrid}>
-                        <StatCard 
-                            label="Selected Region" 
-                            value={resolvedCountryFilter === 'all' ? 'All Regions' : resolvedCountryFilter} 
-                            change="No active balances found"
-                            trend="neutral"
-                            isLoading={isStatsLoading} 
-                        />
-                    </div>
-                ) : (
-                    globalStats.balances.map((bal) => (
-                        <div key={bal.currency} className={styles.regionalGroup}>
-                            <h3 className={styles.regionalTitle}>
-                                <span className={styles.regionalDot}></span>
-                                Balances in {bal.currency} ({resolvedCountryFilter === 'all' ? 'All Regions' : resolvedCountryFilter})
-                            </h3>
-                            <div className={sharedStyles.statsGrid}>
-                                <StatCard 
-                                    label="Total Cash" 
-                                    value={formatCurrency(bal.total_cash, bal.currency)} 
-                                    change={`Available liquid ${bal.currency}`}
-                                    trend="positive"
-                                    isLoading={isStatsLoading} 
-                                />
-                                <StatCard 
-                                    label="Total Credit" 
-                                    value={formatCurrency(bal.total_credit, bal.currency)} 
-                                    change={`Outstanding customer credit in ${bal.currency}`}
-                                    trend="neutral"
-                                    isLoading={isStatsLoading} 
-                                />
-                                <StatCard 
-                                    label="Total Escrow" 
-                                    value={formatCurrency(bal.total_escrow, bal.currency)} 
-                                    change={`Funds held in escrow in ${bal.currency}`}
-                                    trend="neutral"
-                                    isLoading={isStatsLoading} 
-                                />
-                            </div>
-                        </div>
-                    ))
-                )}
+            <div className={sharedStyles.statsGrid}>
+                <StatCard 
+                    label="Regional Currency" 
+                    value={
+                        globalStats.balances?.length === 0 
+                            ? '--' 
+                            : globalStats.balances.length === 1 
+                                ? globalStats.balances[0].currency 
+                                : `${globalStats.balances[0].currency} (+${globalStats.balances.length - 1} more)`
+                    } 
+                    change={resolvedCountryFilter === 'all' ? 'All active regions' : `Region: ${resolvedCountryFilter.toUpperCase()}`}
+                    trend="neutral"
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Total Cash" 
+                    value={
+                        globalStats.balances?.length === 0 
+                            ? '--' 
+                            : formatCurrency(globalStats.balances[0].total_cash, globalStats.balances[0].currency)
+                    } 
+                    change={
+                        globalStats.balances && globalStats.balances.length > 1 
+                            ? `Primary cash; others active` 
+                            : 'Available liquid funds'
+                    }
+                    trend="positive"
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Total Credit" 
+                    value={
+                        globalStats.balances?.length === 0 
+                            ? '--' 
+                            : formatCurrency(globalStats.balances[0].total_credit, globalStats.balances[0].currency)
+                    } 
+                    change={
+                        globalStats.balances && globalStats.balances.length > 1 
+                            ? `Primary credit; others active` 
+                            : 'Outstanding user credit'
+                    }
+                    trend="neutral"
+                    isLoading={isStatsLoading} 
+                />
+                <StatCard 
+                    label="Total Escrow" 
+                    value={
+                        globalStats.balances?.length === 0 
+                            ? '--' 
+                            : formatCurrency(globalStats.balances[0].total_escrow, globalStats.balances[0].currency)
+                    } 
+                    change={
+                        globalStats.balances && globalStats.balances.length > 1 
+                            ? `Primary escrow; others active` 
+                            : 'Escrow safety balance'
+                    }
+                    trend="neutral"
+                    isLoading={isStatsLoading} 
+                />
             </div>
 
 

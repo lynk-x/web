@@ -232,10 +232,12 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
 
     if (isLoading) return <div className={styles.loading}>Loading Demographics...</div>;
 
-    const accountTypes = (data?.account_types || []).map(t => ({
-        name: formatLabel(t.account_type),
-        value: t.count
-    }));
+    const accountTypes = (data?.account_types || [])
+        .filter(t => t.account_type !== 'platform')
+        .map(t => ({
+            name: formatLabel(t.account_type),
+            value: t.count
+        }));
 
     const churnData = (data?.churn_risk || []).map(c => ({
         name: c.status === 'active' ? 'Active (Last 7d)' : c.status === 'lapsing' ? 'Lapsing (8-30d)' : 'Inactive (>30d)',
