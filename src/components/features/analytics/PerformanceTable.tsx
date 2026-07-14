@@ -55,12 +55,16 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             render: (item) => <div style={{ fontWeight: 500 }}>{item.ticketsSold}</div>,
         },
         {
+            header: 'Currency',
+            render: (item) => <span style={{ fontWeight: 500, opacity: 0.8 }}>{item.currency || 'USD'}</span>,
+        },
+        {
             header: 'Gross Revenue',
-            render: (item) => <span className={styles.money} style={{ opacity: 0.7 }}>{formatCurrency(item.totalRevenue)}</span>,
+            render: (item) => <span className={styles.money} style={{ opacity: 0.7 }}>{formatCurrency(item.totalRevenue, item.currency)}</span>,
         },
         {
             header: 'Net Revenue',
-            render: (item) => <span className={styles.money} style={{ fontWeight: 600, color: 'var(--color-brand-primary)' }}>{formatCurrency(item.netRevenue)}</span>,
+            render: (item) => <span className={styles.money} style={{ fontWeight: 600, color: 'var(--color-brand-primary)' }}>{formatCurrency(item.netRevenue, item.currency)}</span>,
         },
         {
             header: 'Status',

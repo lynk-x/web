@@ -188,6 +188,7 @@ export interface PerformanceEvent {
     /** Estimated revenue after platform commission (95% of totalRevenue) */
     netRevenue: number;
     status: string;
+    currency?: string;
 }
 
 /** Form data for creating/editing an event. */

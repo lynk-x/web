@@ -14,6 +14,7 @@ interface PerformanceEvent {
     ticketsSold: number;
     totalRevenue: number;
     netRevenue: number;
+    currency?: string;
 }
 
 interface AnalyticsData {
