@@ -70,11 +70,13 @@ function CampaignsContent() {
     const itemsPerPage = 10;
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
+        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+            p_country_code: resolvedCountryFilter
+        });
         if (!error && data) {
             setSummary(data);
         }
-    }, [supabase]);
+    }, [supabase, resolvedCountryFilter]);
 
     const fetchCampaignPerf = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('get_admin_ad_performance', {
@@ -349,32 +351,32 @@ function CampaignsContent() {
             
             <div className={adminStyles.statsGrid} style={{ marginBottom: 'var(--spacing-xs)' }}>
                 <StatCard 
-                    label="Active Campaigns" 
-                    value={summary?.advertising?.active_campaigns || 0} 
-                    change="Platform reach"
-                    trend="positive"
+                    label="Total Campaigns (30d)" 
+                    value={summary?.advertising?.total_30d ?? 0} 
+                    change="Volume created"
+                    trend="neutral"
                     isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Ad Revenue (30d)" 
-                    value={summary?.advertising?.spend_30d !== undefined ? formatCurrency(summary.advertising.spend_30d) : '—'} 
-                    change="Net proceeds"
+                    label="Active Campaigns (30d)" 
+                    value={summary?.advertising?.active_30d ?? 0} 
+                    change="Active engagement"
                     trend="positive"
                     isLoading={!summary} 
                 />
                 <StatCard
-                    label="Credit Liability"
-                    value={summary?.advertising?.outstanding_credits !== undefined ? formatCurrency(summary.advertising.outstanding_credits) : '—'}
-                    change="Outstanding grants"
+                    label="Pending Review"
+                    value={summary?.advertising?.pending ?? 0}
+                    change="Awaiting approval"
                     trend="neutral"
                     isLoading={!summary}
                 />
                 <StatCard
-                    label="Avg CTR"
-                    value={campaignPerf?.avgCtr ?? '—'}
-                    change="Engagement rate"
-                    trend="positive"
-                    isLoading={!campaignPerf}
+                    label="Flagged Ads"
+                    value={summary?.advertising?.flagged ?? 0}
+                    change="Compliance violations"
+                    trend="negative"
+                    isLoading={!summary}
                 />
             </div>
 

@@ -27,6 +27,7 @@ import { createClient } from '@/utils/supabase/client';
 import { formatRelativeTime } from '@/utils/format';
 import StatCard from '@/components/dashboard/StatCard';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useOrganization } from '@/context/OrganizationContext';
 
 function ForumsContent() {
     const supabase = useMemo(() => createClient(), []);
@@ -36,6 +37,18 @@ function ForumsContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { activeAccount } = useOrganization();
+
+    const resolvedCountryFilter = useMemo(() => {
+        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
+            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
+            if (proxyCode) return proxyCode;
+        }
+        if (activeAccount?.country_code) {
+            return activeAccount.country_code;
+        }
+        return 'all';
+    }, [activeAccount]);
 
     const [viewerConfig, setViewerConfig] = useState<{ 
         isOpen: boolean, 
@@ -49,7 +62,7 @@ function ForumsContent() {
 
     const [threads, setThreads] = useState<ForumThread[]>([]);
     const [totalCount, setTotalCount] = useState(0);
-    const [platformStats, setPlatformStats] = useState({ total: 0, open: 0, readOnly: 0, escalations: 0 });
+    const [summary, setSummary] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -62,23 +75,30 @@ function ForumsContent() {
     // Direct reads of analytics.mv_forum_performance are blocked by REVOKE to authenticated.
     const [allForums, setAllForums] = useState<any[]>([]);
 
+    const fetchDashboardSummary = useCallback(async () => {
+        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+            p_country_code: resolvedCountryFilter
+        });
+        if (!error && data) {
+            setSummary(data);
+        }
+    }, [supabase, resolvedCountryFilter]);
+
+    useEffect(() => {
+        fetchDashboardSummary();
+    }, [fetchDashboardSummary]);
+
     useEffect(() => {
         const fetchForumsData = async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase.schema('api').rpc('get_admin_analytics', { p_category: 'forums' });
+                const { data, error } = await supabase.schema('api').rpc('get_admin_analytics', {
+                    p_category: 'forums',
+                    p_params: { country_code: resolvedCountryFilter }
+                });
                 if (error) throw error;
 
                 const rows: any[] = data || [];
-
-                // Compute stats from the full dataset
-                setPlatformStats({
-                    total: rows.length,
-                    open: rows.filter((f: any) => f.status === 'open').length,
-                    readOnly: rows.filter((f: any) => f.status === 'read_only').length,
-                    escalations: rows.reduce((acc: number, f: any) => acc + (parseInt(f.escalated_reports_count) || 0), 0),
-                });
-
                 setAllForums(rows);
             } catch (err) {
                 showToast(getErrorMessage(err) || 'Failed to load forum management data.', 'error');
@@ -88,7 +108,7 @@ function ForumsContent() {
         };
 
         fetchForumsData();
-    }, [supabase, showToast]);
+    }, [supabase, showToast, resolvedCountryFilter]);
 
     // Client-side filter & paginate from the cached full list
     useEffect(() => {
@@ -223,8 +243,6 @@ function ForumsContent() {
         { label: 'Delete Selection', onClick: handleBulkDelete, variant: 'danger' }
     ];
 
-    const stats = platformStats;
-
     return (
         <div className={adminStyles.container}>
             {ConfirmDialog}
@@ -235,31 +253,32 @@ function ForumsContent() {
 
             <div className={adminStyles.statsGrid}>
                 <StatCard 
-                    label="Total Forums" 
-                    value={stats.total} 
-                    change="Platform history"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Open Forums" 
-                    value={stats.open} 
-                    change="Real-time interaction"
-                    trend="positive"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Read-only Forums" 
-                    value={stats.readOnly} 
-                    change="Moderated state"
+                    label="Total Forums (T30)" 
+                    value={summary?.forums?.total_30d ?? 0} 
+                    change="Volume created"
                     trend="neutral"
-                    isLoading={isLoading} 
+                    isLoading={!summary} 
                 />
                 <StatCard 
-                    label="Pending Escalations" 
-                    value={stats.escalations} 
-                    change="High priority"
-                    trend={stats.escalations > 0 ? "negative" : "positive"}
-                    isLoading={isLoading} 
+                    label="Open Forums (T30)" 
+                    value={summary?.forums?.open_30d ?? 0} 
+                    change="Active interaction"
+                    trend="positive"
+                    isLoading={!summary} 
+                />
+                <StatCard 
+                    label="Pending Review" 
+                    value={summary?.forums?.pending ?? 0} 
+                    change="Requires attention"
+                    trend={(summary?.forums?.pending ?? 0) > 0 ? "negative" : "positive"}
+                    isLoading={!summary} 
+                />
+                <StatCard 
+                    label="Flagged Forums" 
+                    value={summary?.forums?.flagged ?? 0} 
+                    change="Moderated read-only"
+                    trend="negative"
+                    isLoading={!summary} 
                 />
             </div>
 

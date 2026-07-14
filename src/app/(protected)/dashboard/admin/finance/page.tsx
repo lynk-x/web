@@ -101,28 +101,19 @@ function FinanceContent() {
     const [subscriptionPlans, setSubscriptionPlans] = useState<Array<{ id: string; display_name: string }>>([]);
 
     // Global Stats state
-    interface GlobalFinanceStats {
-        platformRevenue: number | null;
-        pendingPayouts: number | null;
-        ticketCommission: number | null;
-        adRevenue: number | null;
-        payoutRequestCount: number | null;
-        escrowTotal: number | null;
-        failureRate: number | null;
-        failedVolume: number | null;
-        mrr: number | null;
+    interface BalanceAggregate {
+        currency: string;
+        total_cash: number;
+        total_credit: number;
+        total_escrow: number;
     }
 
-    const [globalStats, setGlobalStats] = useState<GlobalFinanceStats>({
-        platformRevenue: null,
-        pendingPayouts: null,
-        ticketCommission: null,
-        adRevenue: null,
-        payoutRequestCount: null,
-        escrowTotal: null,
-        failureRate: null,
-        failedVolume: null,
-        mrr: null
+    interface RegionalFinanceStats {
+        balances: BalanceAggregate[];
+    }
+
+    const [globalStats, setGlobalStats] = useState<RegionalFinanceStats>({
+        balances: []
     });
 
     useEffect(() => {
@@ -173,26 +164,20 @@ function FinanceContent() {
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
+            const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+                p_country_code: resolvedCountryFilter
+            });
             if (error) throw error;
     
             setGlobalStats({
-                platformRevenue: data.finance.commission,
-                pendingPayouts: data.finance.pending_payouts,
-                ticketCommission: data.finance.commission, // Using commission as proxy for now
-                payoutRequestCount: data.finance.payout_count,
-                adRevenue: data.advertising.spend_30d,
-                failureRate: data.finance.failure_rate,
-                failedVolume: data.finance.failed_volume,
-                escrowTotal: data.finance.escrow_total,
-                mrr: data.finance.mrr
+                balances: data.finance.balances || []
             });
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to load financial aggregates.', 'error');
         } finally {
             setIsStatsLoading(false);
         }
-    }, [supabase, showToast]);
+    }, [supabase, showToast, resolvedCountryFilter]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -621,35 +606,50 @@ function FinanceContent() {
                 }
             />
 
-            <div className={sharedStyles.statsGrid}>
-                <StatCard 
-                    label="Platform MRR" 
-                    value={globalStats.mrr !== null ? formatCurrency(globalStats.mrr) : null} 
-                    change="Monthly Recurring Revenue"
-                    trend="positive"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Platform Revenue" 
-                    value={globalStats.platformRevenue !== null ? formatCurrency(globalStats.platformRevenue) : null} 
-                    change="Net commission & fees"
-                    trend="positive"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Pending Payouts" 
-                    value={globalStats.pendingPayouts !== null ? formatCurrency(globalStats.pendingPayouts) : null} 
-                    change={globalStats.payoutRequestCount !== null ? `${globalStats.payoutRequestCount} active requests` : '...'}
-                    trend="neutral"
-                    isLoading={isStatsLoading} 
-                />
-                <StatCard 
-                    label="Escrow Total" 
-                    value={globalStats.escrowTotal !== null ? formatCurrency(globalStats.escrowTotal) : null} 
-                    change="Funds in transit"
-                    trend="neutral"
-                    isLoading={isStatsLoading} 
-                />
+            <div className={styles.balancesWrapper}>
+                {globalStats.balances?.length === 0 ? (
+                    <div className={sharedStyles.statsGrid}>
+                        <StatCard 
+                            label="Selected Region" 
+                            value={resolvedCountryFilter === 'all' ? 'All Regions' : resolvedCountryFilter} 
+                            change="No active balances found"
+                            trend="neutral"
+                            isLoading={isStatsLoading} 
+                        />
+                    </div>
+                ) : (
+                    globalStats.balances.map((bal) => (
+                        <div key={bal.currency} className={styles.regionalGroup}>
+                            <h3 className={styles.regionalTitle}>
+                                <span className={styles.regionalDot}></span>
+                                Balances in {bal.currency} ({resolvedCountryFilter === 'all' ? 'All Regions' : resolvedCountryFilter})
+                            </h3>
+                            <div className={sharedStyles.statsGrid}>
+                                <StatCard 
+                                    label="Total Cash" 
+                                    value={formatCurrency(bal.total_cash, bal.currency)} 
+                                    change={`Available liquid ${bal.currency}`}
+                                    trend="positive"
+                                    isLoading={isStatsLoading} 
+                                />
+                                <StatCard 
+                                    label="Total Credit" 
+                                    value={formatCurrency(bal.total_credit, bal.currency)} 
+                                    change={`Outstanding customer credit in ${bal.currency}`}
+                                    trend="neutral"
+                                    isLoading={isStatsLoading} 
+                                />
+                                <StatCard 
+                                    label="Total Escrow" 
+                                    value={formatCurrency(bal.total_escrow, bal.currency)} 
+                                    change={`Funds held in escrow in ${bal.currency}`}
+                                    trend="neutral"
+                                    isLoading={isStatsLoading} 
+                                />
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
 
