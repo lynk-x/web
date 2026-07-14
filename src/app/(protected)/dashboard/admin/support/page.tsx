@@ -134,9 +134,9 @@ function SupportContent() {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'tickets' && (
                             <FilterChips
-                                options={['all', 'new', 'investigating', 'resolved', 'dismissed'].map(s => ({ 
-                                    value: s, 
-                                    label: s.charAt(0).toUpperCase() + s.slice(1) 
+                                options={['all', 'new', 'open', 'waiting_on_user', 'resolved', 'closed'].map(s => ({
+                                    value: s,
+                                    label: s === 'all' ? 'All' : s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
                                 }))}
                                 currentValue={feedbackStatusFilter}
                                 onChange={setFeedbackStatusFilter}

@@ -18,7 +18,7 @@ export interface SupportTicket {
     subject: string;
     message: string;
     priority: 'low' | 'normal' | 'high' | 'urgent';
-    status: 'new' | 'investigating' | 'resolved' | 'dismissed';
+    status: 'new' | 'open' | 'waiting_on_user' | 'resolved' | 'closed';
     metadata: Record<string, unknown>;
     created_at: string;
     updated_at: string;

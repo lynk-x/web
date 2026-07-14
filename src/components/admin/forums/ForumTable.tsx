@@ -111,6 +111,15 @@ const ForumTable: React.FC<ForumTableProps> = ({
             render: (thread) => <div style={{ fontSize: '13px' }}>{thread.messageCount}</div>,
         },
         {
+            header: 'Media Count',
+            render: (thread) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{thread.mediaCount || 0}</span>
+                    <span style={{ fontSize: '11px', opacity: 0.5 }}>Files</span>
+                </div>
+            ),
+        },
+        {
             header: 'Monitor / Reports',
             render: (thread) => {
                 if (thread.reportsCount === 0) return <span style={{ opacity: 0.4 }}>Health Good (0)</span>;

@@ -87,13 +87,13 @@ export default function SupportDashboard() {
         if (error) {
             showToast('Failed to create ticket', 'error');
         } else if (data) {
+            // reports.trigger_support_ticket_created already inserts the ticket's
+            // `message` as the first row in support_ticket_messages — no need to
+            // add it again here.
             showToast('Support ticket created successfully!', 'success');
             setTickets([data, ...tickets]);
             setIsModalOpen(false);
             setNewTicket({ subject: '', message: '', priority: 'normal' });
-            
-            // Automatically insert the initial message so it shows in the chat view
-            await supportRepo.addMessage(data.id, newTicket.message, userId);
         }
         setIsSubmitting(false);
     };
@@ -182,11 +182,11 @@ export default function SupportDashboard() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {selectedTicket.status !== 'resolved' && (
+                        {selectedTicket.status !== 'resolved' && selectedTicket.status !== 'closed' && (
                             <div className={styles.choiceChipsContainer}>
                                 {["Thank you!", "I still need help.", "Can you provide more details?", "This issue is resolved."].map((reply, i) => (
-                                    <button 
-                                        key={i} 
+                                    <button
+                                        key={i}
                                         type="button"
                                         className={styles.choiceChip}
                                         onClick={() => setNewMessageContent(reply)}
@@ -198,18 +198,18 @@ export default function SupportDashboard() {
                         )}
 
                         <form className={styles.chatInputArea} onSubmit={handleSendMessage}>
-                            <textarea 
-                                className={sharedStyles.input} 
+                            <textarea
+                                className={sharedStyles.input}
                                 style={{ flex: 1, minHeight: '44px', maxHeight: '120px', resize: 'vertical' }}
-                                placeholder={selectedTicket.status === 'resolved' ? "Ticket resolved. You cannot reply." : "Type your message here..."}
+                                placeholder={selectedTicket.status === 'resolved' || selectedTicket.status === 'closed' ? "Ticket closed. You cannot reply." : "Type your message here..."}
                                 value={newMessageContent}
                                 onChange={e => setNewMessageContent(e.target.value)}
-                                disabled={selectedTicket.status === 'resolved'}
+                                disabled={selectedTicket.status === 'resolved' || selectedTicket.status === 'closed'}
                             />
-                            <button 
-                                type="submit" 
-                                className={styles.sendBtn} 
-                                disabled={isSendingMessage || !newMessageContent.trim() || selectedTicket.status === 'resolved'}
+                            <button
+                                type="submit"
+                                className={styles.sendBtn}
+                                disabled={isSendingMessage || !newMessageContent.trim() || selectedTicket.status === 'resolved' || selectedTicket.status === 'closed'}
                             >
                                 Send
                             </button>
@@ -236,9 +236,9 @@ export default function SupportDashboard() {
                                                 <h3 className={styles.ticketTitle}>{ticket.subject}</h3>
                                                 <span className={styles.ticketRef}>{ticket.reference}</span>
                                             </div>
-                                            <Badge 
-                                                label={ticket.status} 
-                                                variant={ticket.status === 'resolved' ? 'success' : ticket.status === 'investigating' ? 'warning' : ticket.status === 'new' ? 'primary' : 'neutral'} 
+                                            <Badge
+                                                label={ticket.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                                variant={ticket.status === 'resolved' ? 'success' : ticket.status === 'open' || ticket.status === 'waiting_on_user' ? 'warning' : ticket.status === 'new' ? 'primary' : 'neutral'}
                                             />
                                         </div>
                                         <hr className={styles.divider} />
