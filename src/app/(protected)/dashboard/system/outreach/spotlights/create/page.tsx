@@ -1,8 +1,8 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -12,16 +12,13 @@ import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 import FormRow from '@/components/shared/FormRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 
-export default function EditSpotlightPage() {
+export default function CreateSpotlightPage() {
     const router = useRouter();
-    const params = useParams();
-    const id = params.id as string;
     const { showToast } = useToast();
     const supabase = createClient();
     const { confirm, ConfirmDialog } = useConfirmModal();
 
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
 
     // Form State
@@ -34,45 +31,12 @@ export default function EditSpotlightPage() {
     const [backgroundUrl, setBackgroundUrl] = useState('');
     const [isActive, setIsActive] = useState(true);
 
-    useEffect(() => {
-        async function fetchSpotlight() {
-            setIsLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .schema('api')
-                    .from('v1_spotlights')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    setTitle(data.title);
-                    setSubtitle(data.subtitle || '');
-                    setTarget(data.target);
-                    setDisplayOrder(data.display_order);
-                    setCtaText(data.cta_text || '');
-                    setRedirectTo(data.redirect_to || '');
-                    setBackgroundUrl(data.background_url || '');
-                    setIsActive(data.is_active);
-                    setIsDirty(false);
-                }
-            } catch (err: unknown) {
-                showToast(getErrorMessage(err), 'error');
-                router.push('/dashboard/system/communications?tab=spotlights');
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        if (id) fetchSpotlight();
-    }, [id, supabase, router, showToast]);
-
     const handleChange = (setter: any, value: any) => {
         setter(value);
         setIsDirty(true);
     };
 
-    const handleUpdateSpotlight = async (e?: React.FormEvent) => {
+    const handleCreateSpotlight = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
         if (!title) {
@@ -80,11 +44,10 @@ export default function EditSpotlightPage() {
             return;
         }
 
-        setIsSubmitting(true);
+        setIsLoading(true);
         try {
             const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
                 p_tab: 'spotlights',
-                p_id: id,
                 p_data: {
                     title,
                     subtitle: subtitle || null,
@@ -99,13 +62,13 @@ export default function EditSpotlightPage() {
 
             if (error) throw error;
 
-            showToast('Hero Spotlight updated successfully', 'success');
+            showToast('Hero Spotlight created successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/system/communications?tab=spotlights');
+            router.push('/dashboard/system/outreach?tab=spotlights');
         } catch (error: unknown) {
-            showToast(getErrorMessage(error) || 'Failed to update spotlight', 'error');
+            showToast(getErrorMessage(error) || 'Failed to create spotlight', 'error');
         } finally {
-            setIsSubmitting(false);
+            setIsLoading(false);
         }
     };
 
@@ -117,10 +80,6 @@ export default function EditSpotlightPage() {
         ctaLabel: ctaText,
         ctaHref: redirectTo
     };
-
-    if (isLoading) {
-        return <div style={{ padding: '80px', textAlign: 'center', opacity: 0.5 }}>Loading spotlight details...</div>;
-    }
 
     const handleClose = async () => {
         if (isDirty) {
@@ -134,26 +93,26 @@ export default function EditSpotlightPage() {
         <div className={adminStyles.container}>
             {ConfirmDialog}
             <PageHeader
-                title="Edit Hero Spotlight"
-                subtitle={`Modifying ID: ${id}`}
+                title="Create Hero Spotlight"
+                subtitle="Design a high-impact carousel item for dashboards."
                 onClose={handleClose}
                 primaryAction={{
-                    label: 'Save Changes',
-                    onClick: () => handleUpdateSpotlight(),
-                    isLoading: isSubmitting
+                    label: 'Create Spotlight',
+                    onClick: () => handleCreateSpotlight(),
+                    isLoading: isLoading
                 }}
             />
 
             <div className={adminStyles.subPageGrid}>
                 <div className={adminStyles.pageCard}>
                     <h2 className={adminStyles.sectionTitle}>Spotlight Configuration</h2>
-                    <form className={adminStyles.form} onSubmit={handleUpdateSpotlight}>
+                    <form className={adminStyles.form} onSubmit={handleCreateSpotlight}>
                         <div className={adminStyles.formGrid}>
                             <FormRow label="Target Placement" styles={adminStyles}>
                                 <select
                                     className={adminStyles.select}
                                     value={target}
-                                    onChange={(e) => handleChange(setTarget, e.target.value as 'event' | 'url' | 'profile')}
+                                    onChange={(e) => handleChange(setTarget, e.target.value)}
                                 >
                                     <option value="all">Everywhere</option>
                                     <option value="organize_dashboard">Organizer Dashboard</option>
@@ -235,7 +194,7 @@ export default function EditSpotlightPage() {
                     </form>
                 </div>
 
-                <div className={adminStyles.formSection}>
+                <div className={adminStyles.formSection} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div>
                         <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
                         <SystemBannerSpotlight slides={[previewSlide]} interval={999999} />
@@ -245,6 +204,17 @@ export default function EditSpotlightPage() {
                             {isActive && <Badge label="ACTIVE" variant="success" showDot />}
                             {!isActive && <Badge label="HIDDEN" variant="neutral" />}
                         </div>
+                    </div>
+
+
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Targeting Rules</h2>
+                        <ul style={{ paddingLeft: '20px', fontSize: '14px', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--color-utility-primaryText)' }}>
+                            <li>"Everywhere" shows on all hero-enabled dashboards.</li>
+                            <li>Multiple spotlights on one target will alternate.</li>
+                            <li>Use "Display Order" to control the first-shown slide.</li>
+                            <li>External links should include full protocol (https://).</li>
+                        </ul>
                     </div>
                 </div>
             </div>

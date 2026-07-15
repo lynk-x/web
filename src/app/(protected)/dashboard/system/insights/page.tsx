@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Global System Analytics page — super_admin only.
+ * Global System Insights page — super_admin only.
  * Reads insights.mv_insights, mv_demographics(_geo), and mv_ad_performance
  * via api.get_system_analytics, distinct from the country-scoped
  * /dashboard/admin/analytics page (api.get_admin_analytics).
@@ -416,7 +416,7 @@ function AdvertisingTab() {
 
 const VALID_TABS: Tab[] = ['search', 'demographics', 'events', 'forums', 'advertising'];
 
-function AnalyticsContent() {
+function InsightsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -445,7 +445,7 @@ function AnalyticsContent() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <div className={sharedStyles.tabsHeaderRow} style={{ marginBottom: 0, borderBottom: 'none' }}>
                     <TabsList>
-                        <TabsTrigger value="search">Search Insights</TabsTrigger>
+                        <TabsTrigger value="search">Search Results</TabsTrigger>
                         <TabsTrigger value="demographics">Demographics</TabsTrigger>
                         <TabsTrigger value="events">Events</TabsTrigger>
                         <TabsTrigger value="forums">Forums</TabsTrigger>
@@ -464,21 +464,21 @@ function AnalyticsContent() {
 }
 
 /**
- * Global analytics hub — super_admin only (identity.is_super_admin()).
+ * Global insights hub — super_admin only (identity.is_super_admin()).
  * Reads insights.mv_insights, mv_demographics(_geo), mv_ad_performance and
  * mv_ad_campaign_performance via api.get_system_analytics. Distinct from
  * /dashboard/admin/analytics, which is country-scoped for platform admins.
  */
-export default function SystemAnalyticsPage() {
+export default function SystemInsightsPage() {
     return (
         <div className={styles.container}>
             <PageHeader
-                title="System Analytics"
+                title="System Insights"
                 subtitle="Global platform metrics — search behavior, demographics, and ad performance across all countries."
             />
 
-            <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading Analytics...</div>}>
-                <AnalyticsContent />
+            <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading Insights...</div>}>
+                <InsightsContent />
             </Suspense>
         </div>
     );

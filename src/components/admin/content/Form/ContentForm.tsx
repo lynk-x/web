@@ -138,7 +138,7 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
 
             showToast(isEditing ? 'Content updated successfully!' : 'Content created successfully!', 'success');
             onDirtyChange?.(false);
-            router.push('/dashboard/system/communications?tab=content');
+            router.push('/dashboard/system/outreach?tab=content');
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'An error occurred', 'error');
         } finally {

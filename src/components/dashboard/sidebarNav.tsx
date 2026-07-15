@@ -337,8 +337,8 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'IAM',
-                    href: '/dashboard/system/iam',
+                    name: 'Access',
+                    href: '/dashboard/system/access',
                     icon: (
                         <svg {...svgProps}>
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -349,7 +349,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                 },
                 {
                     name: 'Outreach',
-                    href: '/dashboard/system/communications',
+                    href: '/dashboard/system/outreach',
                     icon: (
                         <svg {...svgProps}>
                             <path d="M3 11l18-5v12L3 14v-3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -381,7 +381,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                 },
                 {
                     name: 'Insights',
-                    href: '/dashboard/system/analytics',
+                    href: '/dashboard/system/insights',
                     icon: (
                         <svg {...svgProps}>
                             <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

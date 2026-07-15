@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Identity & Access Management (IAM) Page.
+ * Access Page.
  * Governs platform-level administrators, roles, and granular security permissions.
  */
 
@@ -42,7 +42,7 @@ interface AccountPermission {
     description: string;
 }
 
-function IAMContent() {
+function AccessContent() {
     const { showToast } = useToast();
     const { run: runAction } = useAction();
     const { confirm, ConfirmDialog } = useConfirmModal();
@@ -132,7 +132,7 @@ function IAMContent() {
     }, [supabaseApi, showToast, debouncedSearch, accountsPage]);
 
     // Load global roles and permissions matrix
-    const fetchIAMData = useCallback(async () => {
+    const fetchAccessData = useCallback(async () => {
         setIsLoading(true);
         try {
             // Fetch Roles
@@ -177,15 +177,15 @@ function IAMContent() {
             setRolePermissions(mappingMap);
         } catch (error) {
             console.error('Error fetching IAM configs:', error);
-            showToast(getErrorMessage(error) || 'Failed to fetch IAM metadata', 'error');
+            showToast(getErrorMessage(error) || 'Failed to fetch access metadata', 'error');
         } finally {
             setIsLoading(false);
         }
     }, [supabaseApi, showToast]);
 
     useEffect(() => {
-        fetchIAMData();
-    }, [fetchIAMData]);
+        fetchAccessData();
+    }, [fetchAccessData]);
 
     useEffect(() => {
         setAccountsPage(1);
@@ -223,7 +223,7 @@ function IAMContent() {
             {
                 successMessage: `Permissions updated for role ${roleSlug}`,
                 errorMessage: 'Failed to update permissions',
-                onError: () => fetchIAMData() // revert optimistic state
+                onError: () => fetchAccessData() // revert optimistic state
             }
         );
     };
@@ -241,7 +241,7 @@ function IAMContent() {
             {
                 successMessage: 'Role updated successfully',
                 errorMessage: 'Failed to update role',
-                onSuccess: async () => { setIsRoleModalOpen(false); await fetchIAMData(); },
+                onSuccess: async () => { setIsRoleModalOpen(false); await fetchAccessData(); },
                 onSettled: () => setIsLoading(false)
             }
         );
@@ -263,11 +263,11 @@ function IAMContent() {
             {
                 successMessage: 'Role deleted successfully',
                 errorMessage: 'Failed to delete role',
-                onSuccess: () => fetchIAMData(),
+                onSuccess: () => fetchAccessData(),
                 onSettled: () => setIsLoading(false)
             }
         );
-    }, [supabaseApi, runAction, fetchIAMData, confirm]);
+    }, [supabaseApi, runAction, fetchAccessData, confirm]);
 
     // Handle single permission assign/revoke to/from a role
     const handlePermissionRoleAction = async (action: 'assign' | 'revoke') => {
@@ -288,7 +288,7 @@ function IAMContent() {
             {
                 successMessage: `Permission "${selectedPerm.slug}" successfully ${action === 'assign' ? 'assigned to' : 'revoked from'} role "${targetRoleSlug}"`,
                 errorMessage: 'Failed to update permission mapping',
-                onSuccess: async () => { setIsAssignPermModalOpen(false); await fetchIAMData(); },
+                onSuccess: async () => { setIsAssignPermModalOpen(false); await fetchAccessData(); },
                 onSettled: () => setIsLoading(false)
             }
         );
@@ -312,7 +312,7 @@ function IAMContent() {
             {
                 successMessage: `Successfully assigned ${count} permissions to all roles`,
                 errorMessage: 'Failed to assign bulk permissions',
-                onSuccess: async () => { setSelectedPermissions(new Set()); await fetchIAMData(); },
+                onSuccess: async () => { setSelectedPermissions(new Set()); await fetchAccessData(); },
                 onSettled: () => setIsLoading(false)
             }
         );
@@ -336,7 +336,7 @@ function IAMContent() {
             {
                 successMessage: `Successfully revoked ${count} permissions from all roles`,
                 errorMessage: 'Failed to revoke bulk permissions',
-                onSuccess: async () => { setSelectedPermissions(new Set()); await fetchIAMData(); },
+                onSuccess: async () => { setSelectedPermissions(new Set()); await fetchAccessData(); },
                 onSettled: () => setIsLoading(false)
             }
         );
@@ -533,7 +533,7 @@ function IAMContent() {
     return (
         <div className={sharedStyles.container}>
             <PageHeader 
-                title="Identity & Access (IAM)"
+                title="Access"
                 subtitle="Manage platform-level system roles, accounts, and granular security permissions."
             />
 
@@ -866,10 +866,10 @@ function IAMContent() {
     );
 }
 
-export default function IAMPage() {
+export default function AccessPage() {
     return (
-        <Suspense fallback={<div className={adminStyles.loading}>Loading IAM Center...</div>}>
-            <IAMContent />
+        <Suspense fallback={<div className={adminStyles.loading}>Loading Access Center...</div>}>
+            <AccessContent />
         </Suspense>
     );
 }

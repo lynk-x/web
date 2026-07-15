@@ -26,7 +26,7 @@ export default function SystemDashboardPage() {
         <div className={sharedStyles.container}>
             <PageHeader
                 title="System Overview"
-                subtitle="Global Platform Operations Control Room. Monitor platform health, live transactions, and administer central systems."
+                subtitle="Global Platform Operations Control Room. Monitor platform health, live transactions and administer central systems."
             />
 
             {/* High-Fidelity World Clocks */}

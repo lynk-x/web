@@ -1,8 +1,8 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
@@ -11,13 +11,16 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 import Badge from '@/components/shared/Badge';
 import FormRow from '@/components/shared/FormRow';
 
-export default function CreateBannerPage() {
+export default function EditBannerPage() {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const { showToast } = useToast();
     const supabase = createClient();
     const { confirm, ConfirmDialog } = useConfirmModal();
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
 
     // Form State
@@ -29,12 +32,44 @@ export default function CreateBannerPage() {
     const [endsAt, setEndsAt] = useState('');
     const [actionUrl, setActionUrl] = useState('');
 
+    useEffect(() => {
+        async function fetchBanner() {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .schema('api')
+                    .from('v1_banners')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setTitle(data.title);
+                    setContent(data.content);
+                    setType(data.type);
+                    setIsActive(data.is_active);
+                    setStartsAt(new Date(data.starts_at).toISOString().slice(0, 16));
+                    if (data.ends_at) setEndsAt(new Date(data.ends_at).toISOString().slice(0, 16));
+                    setActionUrl(data.action_url || '');
+                    setIsDirty(false);
+                }
+            } catch (err: unknown) {
+                showToast(getErrorMessage(err), 'error');
+                router.push('/dashboard/system/outreach?tab=banners');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        if (id) fetchBanner();
+    }, [id, supabase, router, showToast]);
+
     const handleChange = (setter: any, value: any) => {
         setter(value);
         setIsDirty(true);
     };
 
-    const handleCreateBanner = async (e?: React.FormEvent) => {
+    const handleUpdateBanner = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
         if (!title || !content || !startsAt) {
@@ -42,10 +77,11 @@ export default function CreateBannerPage() {
             return;
         }
 
-        setIsLoading(true);
+        setIsSubmitting(true);
         try {
             const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
                 p_tab: 'banners',
+                p_id: id,
                 p_data: {
                     title,
                     body: content,
@@ -59,48 +95,52 @@ export default function CreateBannerPage() {
 
             if (error) throw error;
 
-            showToast('System banner created successfully', 'success');
+            showToast('System banner updated successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/system/communications?tab=banners');
+            router.push('/dashboard/system/outreach?tab=banners');
         } catch (error: unknown) {
-            showToast(getErrorMessage(error) || 'Failed to create banner', 'error');
+            showToast(getErrorMessage(error) || 'Failed to update banner', 'error');
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
+
+    if (isLoading) {
+        return <div style={{ padding: '80px', textAlign: 'center', opacity: 0.5 }}>Loading banner details...</div>;
+    }
 
     const handleClose = async () => {
         if (isDirty) {
             const confirmed = await confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', confirmLabel: 'Leave', cancelLabel: 'Stay' });
             if (!confirmed) return;
         }
-        router.back();
+        router.push('/dashboard/system/outreach?tab=banners');
     };
 
     return (
         <div className={adminStyles.container}>
             {ConfirmDialog}
             <PageHeader
-                title="Create System Banner"
-                subtitle="Design and schedule a platform-wide alert banner."
+                title="Edit System Banner"
+                subtitle={`Modifying ID: ${id}`}
                 onClose={handleClose}
                 primaryAction={{
-                    label: 'Create Banner',
-                    onClick: () => handleCreateBanner(),
-                    isLoading: isLoading
+                    label: 'Save Changes',
+                    onClick: () => handleUpdateBanner(),
+                    isLoading: isSubmitting
                 }}
             />
 
             <div className={adminStyles.subPageGrid}>
                 <div className={adminStyles.pageCard}>
                     <h2 className={adminStyles.sectionTitle}>Banner Details</h2>
-                    <form className={adminStyles.form} onSubmit={handleCreateBanner}>
+                    <form className={adminStyles.form} onSubmit={handleUpdateBanner}>
                         <div className={adminStyles.formGrid}>
                             <FormRow label="Banner Type" styles={adminStyles}>
                                 <select
                                     className={adminStyles.select}
                                     value={type}
-                                    onChange={(e) => handleChange(setType, e.target.value)}
+                                    onChange={(e) => handleChange(setType, e.target.value as 'info' | 'warning' | 'success' | 'danger')}
                                 >
                                     <option value="info">Information (Blue)</option>
                                     <option value="success">Success (Green)</option>
@@ -108,14 +148,14 @@ export default function CreateBannerPage() {
                                     <option value="error">Error (Red)</option>
                                 </select>
                             </FormRow>
-                            <div className={adminStyles.inputGroup} style={{ justifyContent: 'center' }}>
-                                <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginTop: '20px' }}>
+                            <div className={adminStyles.inputGroup} style={{ alignSelf: 'center', paddingTop: '20px' }}>
+                                <label className={adminStyles.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', margin: 0 }}>
                                     <input
                                         type="checkbox"
                                         checked={isActive}
                                         onChange={(e) => handleChange(setIsActive, e.target.checked)}
                                     />
-                                    Activate immediately
+                                    Active banner
                                 </label>
                             </div>
                         </div>
@@ -185,11 +225,10 @@ export default function CreateBannerPage() {
                                 type === 'success' ? '#4caf50' :
                                     type === 'warning' ? '#ffc107' : '#f44336'
                                 }`,
-                            borderRadius: 'var(--radius-md)',
+                            borderRadius: '4px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '12px',
-                            marginBottom: '24px'
+                            gap: '12px'
                         }}>
                             <div style={{ flexShrink: 0 }}>
                                 {type === 'info' && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2196f3" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>}
@@ -197,26 +236,16 @@ export default function CreateBannerPage() {
                                 {type === 'warning' && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffc107" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>}
                                 {type === 'error' && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>}
                             </div>
-                            <div style={{ fontSize: '14px', color: 'var(--color-utility-primaryText)' }}>
+                            <div style={{ fontSize: '14px' }}>
                                 <strong>{title || 'Headline Title'}:</strong> {content || 'Draft content will appear here...'}
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <div style={{ marginTop: '24px', display: 'flex', gap: '8px' }}>
                             <Badge label={type.toUpperCase()} variant={type as 'info' | 'warning' | 'success' | 'error'} />
                             {isActive && <Badge label="ACTIVE" variant="success" showDot />}
-                            {!isActive && <Badge label="DRAFT" variant="neutral" />}
+                            {!isActive && <Badge label="INACTIVE" variant="neutral" />}
                         </div>
-                    </div>
-
-                    <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle}>Deployment Logic</h2>
-                        <ul style={{ paddingLeft: '20px', fontSize: '14px', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--color-utility-primaryText)' }}>
-                            <li>Banners are global and visible to all users.</li>
-                            <li>Only one "info" banner is shown at a time (stack priority).</li>
-                            <li>Banners automatically expire after the "Ends At" date.</li>
-                            <li>Scheduled banners will go live automatically.</li>
-                        </ul>
                     </div>
                 </div>
             </div>

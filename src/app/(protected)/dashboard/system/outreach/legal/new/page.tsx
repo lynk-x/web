@@ -65,7 +65,7 @@ export default function NewLegalVersionPage() {
 
             showToast('Legal document version created successfully', 'success');
             setIsDirty(false);
-            router.push('/dashboard/system/communications?tab=legal');
+            router.push('/dashboard/system/outreach?tab=legal');
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to create document', 'error');
         } finally {
