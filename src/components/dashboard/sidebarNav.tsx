@@ -348,13 +348,21 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Analytics',
-                    href: '/dashboard/system/analytics',
+                    name: 'Outreach',
+                    href: '/dashboard/system/communications',
                     icon: (
                         <svg {...svgProps}>
-                            <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M3 11l18-5v12L3 14v-3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
+                {
+                    name: 'Registry',
+                    href: '/dashboard/system/registry',
+                    icon: (
+                        <svg {...svgProps}>
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },
@@ -364,17 +372,21 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Global Registries',
             items: [
                 {
-                    name: 'Registry', href: '/dashboard/system/registry', icon: (
-                        <svg {...svgProps}>
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    )
-                },
-                {
                     name: 'Finance', href: '/dashboard/system/finance', icon: (
                         <svg {...svgProps}>
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
                             <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" strokeWidth="2" />
+                        </svg>
+                    )
+                },
+                {
+                    name: 'Insights',
+                    href: '/dashboard/system/analytics',
+                    icon: (
+                        <svg {...svgProps}>
+                            <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                         </svg>
                     )
                 },
@@ -414,19 +426,6 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                         </svg>
                     )
                 }
-            ]
-        },
-        {
-            title: 'Communications',
-            items: [
-                {
-                    name: 'Communications', href: '/dashboard/system/communications', icon: (
-                        <svg {...svgProps}>
-                            <path d="M3 11l18-5v12L3 14v-3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    )
-                },
             ]
         }
     ],
