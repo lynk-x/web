@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { LegalDocument, SystemBanner, BroadcastLog, Spotlight } from '@/types/admin';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
-import StatCard from '@/components/dashboard/StatCard';
 import PageHeader from '@/components/dashboard/PageHeader';
 
 // ...
@@ -50,7 +49,6 @@ function CommunicationsContent() {
 
     const [contents, setContents] = useState<ContentItem[]>([]);
     const [contentTotal, setContentTotal] = useState(0);
-    const [publishedPagesCount, setPublishedPagesCount] = useState(0);
     const [legalDocs, setLegalDocs] = useState<LegalDocument[]>([]);
     const [legalTotal, setLegalTotal] = useState(0);
     const [broadcastLogs, setBroadcastLogs] = useState<BroadcastLog[]>([]);
@@ -128,19 +126,7 @@ function CommunicationsContent() {
         fetchData();
     }, [fetchData]);
 
-    // Fetch platform-wide published pages count once
-    useEffect(() => {
-        supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'content', p_params: { status: 'published', limit: 1 } })
-            .then(({ data }) => { if (data?.total !== undefined) setPublishedPagesCount(data.total); });
-    }, [supabase]);
 
-    // ─── Stats Calculation ──────────────────────────────────────────────
-    const stats = {
-        publishedPages: publishedPagesCount,
-        activePolicies: legalDocs.filter(l => l.is_active).length,
-        totalNotifications: broadcastLogs.reduce((acc, log) => acc + (log.fcm_tokens_count || 0), 0),
-        activeSpotlights: spotlights.filter(s => s.is_active).length
-    };
 
     // ─── Legal Documents Pagination ──────────────────────────────────────
     const totalLegalPages = Math.ceil(legalTotal / legalDocsPerPage);
@@ -424,36 +410,7 @@ function CommunicationsContent() {
                 subtitle="Manage platform content, spotlights and notifications."
             />
 
-            <div className={adminStyles.statsGrid}>
-                <StatCard 
-                    label="Hero Spotlights" 
-                    value={stats.activeSpotlights} 
-                    change="Active showcases"
-                    trend="positive"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Published Pages" 
-                    value={stats.publishedPages} 
-                    change="Information assets"
-                    trend="neutral"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Active Policies" 
-                    value={stats.activePolicies} 
-                    change="Platform compliance"
-                    trend="positive"
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    label="Total Reach" 
-                    value={stats.totalNotifications >= 1000 ? (stats.totalNotifications / 1000).toFixed(1) + 'k' : stats.totalNotifications} 
-                    change="Broadcast impact"
-                    trend="neutral"
-                    isLoading={isLoading} 
-                />
-            </div>
+
 
             <div style={{ marginBottom: '24px' }}>
                 <TableToolbar
