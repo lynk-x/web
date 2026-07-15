@@ -131,7 +131,7 @@ export default function CreateEventPage() {
             // Success Cleanup
             localStorage.removeItem('event_draft'); // Clear draft on success
             showToast('Event created successfully!', 'success');
-            router.push('/dashboard/organize/events');
+            router.push(`/dashboard/organize/events/${newEventId}`);
 
         } catch (error: unknown) {
             console.error("Error creating event:", error);

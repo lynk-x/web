@@ -116,14 +116,11 @@ export function createNotificationsRepository(client: DbClient) {
             return { data: null, error: null };
         },
 
-        /** Delete a notification. Requires `created_at` for the partitioned PK. */
-        async delete(notificationId: string, createdAt: string): Promise<RepoResult<null>> {
+        /** Delete a notification via RPC rather than a direct delete. */
+        async delete(notificationId: string, _createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
                 .schema('api')
-                .from('v1_notifications')
-                .delete()
-                .eq('id', notificationId)
-                .eq('created_at', createdAt);
+                .rpc('bulk_delete_notifications', { p_notification_ids: [notificationId] });
 
             if (error) return { data: null, error: toError(error) };
             return { data: null, error: null };
