@@ -29,7 +29,6 @@ export type NotificationType =
     | 'event_cancelled'
     | 'account_suspended'
     | 'event_reminder'
-    | 'sponsorship_accepted'
     | 'ticket_resale_offer'
     | 'identity'
     | 'auth'

@@ -233,7 +233,7 @@ export default function PaymentMethodsManager({ accountId }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h2 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 8px 0' }}>Payout Methods</h2>
-                    <p style={{ margin: 0, fontSize: '14px', opacity: 0.7 }}>Manage where funds from ticket sales and sponsorships are sent.</p>
+                    <p style={{ margin: 0, fontSize: '14px', opacity: 0.7 }}>Manage where funds from ticket sales are sent.</p>
                 </div>
                 {hasManageBilling && (
                     <button className={adminStyles.btnPrimary} onClick={() => setIsAddModalOpen(true)}>
