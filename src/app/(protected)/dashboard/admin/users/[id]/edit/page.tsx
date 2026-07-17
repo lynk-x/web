@@ -29,7 +29,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 const { data, error } = await supabase
                     .schema('api')
                     .from('v1_profiles')
-                    .select('id, full_name, user_name, email, role, status, bio, country_code, kyc_tier')
+                    .select('id, full_name, user_name, email, phone_number, role, status, bio, country_code, kyc_tier')
                     .eq('id', id)
                     .single();
 
@@ -39,6 +39,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     id: data.id,
                     name: data.full_name,
                     email: data.email,
+                    phone: data.phone_number ?? '',
                     role: data.role as any,
                     status: data.status as any,
                     countryCode: data.country_code,

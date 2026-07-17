@@ -22,9 +22,16 @@ export interface AccountMember {
     userId?: string;
     name: string;
     email: string;
-    role: 'owner' | 'admin' | 'accountant' | 'viewer' | string;
+    phone?: string;
+    role: string;
     joinedAt: string;
     isPending?: boolean;
+}
+
+interface AccountRole {
+    role_slug: string;
+    display_name: string;
+    description: string | null;
 }
 
 const getRoleVariant = (role: string): BadgeVariant => {
@@ -56,12 +63,36 @@ export default function MemberTable() {
     const [members, setMembers] = useState<AccountMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [assignableRoles, setAssignableRoles] = useState<AccountRole[]>([]);
 
     // Invitation Modal State
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteRole, setInviteRole] = useState('viewer');
+    const [invitePhone, setInvitePhone] = useState('');
+    const [inviteRole, setInviteRole] = useState('member');
     const [isInviting, setIsInviting] = useState(false);
+
+    // Roles a member can be invited/changed to — everything except 'owner',
+    // which is only granted via ownership transfer.
+    useEffect(() => {
+        const fetchRoles = async () => {
+            const { data, error } = await supabase
+                .schema('api')
+                .from('v1_account_roles')
+                .select('role_slug, display_name, description')
+                .neq('role_slug', 'owner')
+                .order('display_name');
+
+            if (!error && data) {
+                setAssignableRoles(data);
+                if (data.length > 0 && !data.some(r => r.role_slug === 'member')) {
+                    setInviteRole(data[0].role_slug);
+                }
+            }
+        };
+
+        fetchRoles();
+    }, [supabase]);
 
     const fetchMembers = useCallback(async () => {
         if (!activeAccount) return;
@@ -81,7 +112,7 @@ export default function MemberTable() {
             const { data: inviteData, error: inviteError } = await supabase
                 .schema('api')
                 .from('v1_account_invitations')
-                .select('id, invitee_email, role_slug, created_at')
+                .select('id, invitee_email, invitee_phone, role_slug, created_at')
                 .eq('account_id', activeAccount.id)
                 .is('accepted_at', null);
 
@@ -103,6 +134,7 @@ export default function MemberTable() {
                 id: i.id, // For pending, ID is the invitation ID
                 name: 'Pending Invite',
                 email: i.invitee_email || '',
+                phone: i.invitee_phone || '',
                 role: i.role_slug,
                 joinedAt: formatDate(i.created_at),
                 isPending: true
@@ -140,8 +172,8 @@ export default function MemberTable() {
     const handleInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!activeAccount) return;
-        if (!inviteEmail) {
-            showToast("Email is required.", "error");
+        if (!inviteEmail && !invitePhone) {
+            showToast("Enter an email address or a phone number.", "error");
             return;
         }
 
@@ -149,15 +181,17 @@ export default function MemberTable() {
         try {
             const { error } = await supabase.schema('api').rpc('create_account_invitation', {
                 p_account_id: activeAccount.id,
-                p_invitee_email: inviteEmail.toLowerCase(),
+                p_invitee_email: inviteEmail ? inviteEmail.toLowerCase() : null,
+                p_invitee_phone: invitePhone || null,
                 p_role_slug: inviteRole
             });
 
             if (error) throw error;
 
-            showToast(`An access invite has been sent to ${inviteEmail}.`, "success", "Invite Sent");
+            showToast(`An access invite has been sent to ${inviteEmail || invitePhone}.`, "success", "Invite Sent");
             setIsInviteModalOpen(false);
             setInviteEmail('');
+            setInvitePhone('');
             setInviteRole('viewer');
             fetchMembers(); // refresh
         } catch (err: unknown) {
@@ -201,13 +235,17 @@ export default function MemberTable() {
 
     const handleRoleChange = async (userId: string, currentRole: string) => {
         if (!activeAccount) return;
-        
-        const roles = ['admin', 'accountant', 'editor', 'staff', 'analyst', 'viewer'];
-        const roleLabel = roles.join(', ');
+
+        if (assignableRoles.length === 0) {
+            showToast("No assignable roles are available.", "error");
+            return;
+        }
+
+        const roleLabel = assignableRoles.map(r => r.role_slug).join(', ');
         const newRole = window.prompt(`Enter new role for this member (${roleLabel}):`, currentRole);
-        
+
         if (!newRole || newRole === currentRole) return;
-        if (!roles.includes(newRole.toLowerCase())) {
+        if (!assignableRoles.some(r => r.role_slug === newRole.toLowerCase())) {
             showToast(`Invalid role. Please choose from: ${roleLabel}`, 'error');
             return;
         }
@@ -287,7 +325,7 @@ export default function MemberTable() {
                             {member.name}
                             {member.isPending && <span style={{ fontSize: '11px', marginLeft: '6px', color: '#f5a623' }}>Pending</span>}
                         </span>
-                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{member.email}</span>
+                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{member.email || member.phone}</span>
                     </div>
                 </div>
             )
@@ -408,19 +446,34 @@ export default function MemberTable() {
                         width: '100%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)'
                     }}>
                         <h3 style={{ marginTop: 0, marginBottom: '8px', fontSize: '1.25rem', color: 'white' }}>Invite Team Member</h3>
-                        <p style={{ color: 'gray', fontSize: '0.875rem', marginBottom: '24px' }}>They will receive an email with an invite link.</p>
+                        <p style={{ color: 'gray', fontSize: '0.875rem', marginBottom: '24px' }}>Enter an email, a phone number, or both. They&apos;ll receive an invite link by email, or it&apos;ll be applied automatically if they sign up with this phone number.</p>
 
                         <form onSubmit={handleInviteSubmit}>
                             <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
-                                    Email Address <span style={{ color: '#ff4d4d', fontSize: '10px', marginLeft: '6px', position: 'relative', top: '-4px', fontWeight: 600 }}>*Required</span>
+                                    Email Address
                                 </label>
                                 <input
                                     type="email"
-                                    required
                                     value={inviteEmail}
                                     onChange={e => setInviteEmail(sanitizeInput(e.target.value.toLowerCase()))}
                                     placeholder="colleague@example.com"
+                                    style={{
+                                        width: '100%', padding: '10px', borderRadius: '6px',
+                                        border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
+                                    Phone Number
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={invitePhone}
+                                    onChange={e => setInvitePhone(sanitizeInput(e.target.value))}
+                                    placeholder="+254712345678"
                                     style={{
                                         width: '100%', padding: '10px', borderRadius: '6px',
                                         border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
@@ -440,10 +493,12 @@ export default function MemberTable() {
                                         border: '1px solid rgba(255,255,255,0.2)', background: '#1a1a1a', color: 'white'
                                     }}
                                 >
-                                    <option value="admin">Administrator (Full Access)</option>
-                                    <option value="accountant">Accountant (Revenues & Payouts)</option>
-                                    <option value="viewer">Viewer (Read-only)</option>
-                                    {/* Exclude 'owner', only system/owner transfers should grant 'owner' */}
+                                    {/* Sourced from api.v1_account_roles, 'owner' excluded — only system/owner transfers should grant 'owner' */}
+                                    {assignableRoles.map(r => (
+                                        <option key={r.role_slug} value={r.role_slug}>
+                                            {r.display_name}{r.description ? ` (${r.description})` : ''}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 

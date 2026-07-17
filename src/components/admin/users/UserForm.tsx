@@ -14,6 +14,7 @@ export interface UserFormData {
     id?: string;
     name: string;
     email: string;
+    phone: string;
     role: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'system';
     status: 'active' | 'temporarily_suspended' | 'permanently_suspended';
     countryCode: string;
@@ -46,6 +47,7 @@ export default function UserForm({
     const defaultData: UserFormData = {
         name: '',
         email: '',
+        phone: '',
         role: 'attendee',
         status: 'active',
         countryCode: 'KE',
@@ -75,15 +77,27 @@ export default function UserForm({
     const getInputClass = (name: keyof UserFormData, baseClass: string) => {
         if (!touched[name as string]) return baseClass;
         const value = formData[name];
-        const isValid = name === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string || '') : !!value;
+        const isValid = name === 'email'
+            ? (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
+            : name === 'phone'
+                ? /^\+?[1-9]\d{7,14}$/.test(value as string || '')
+                : !!value;
         return `${baseClass} ${isValid ? 'input-success' : 'input-error'}`;
     };
 
     const renderValidationHint = (name: keyof UserFormData) => {
         if (!touched[name as string]) return null;
         const value = formData[name];
-        const isValid = name === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string || '') : !!value;
-        const label = name === 'email' && value && !isValid ? 'Invalid Email' : 'Required';
+        const isValid = name === 'email'
+            ? (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
+            : name === 'phone'
+                ? /^\+?[1-9]\d{7,14}$/.test(value as string || '')
+                : !!value;
+        const label = name === 'email' && value && !isValid
+            ? 'Invalid Email'
+            : name === 'phone' && !isValid
+                ? 'Invalid Phone (e.g. +254712345678)'
+                : 'Required';
 
         return isValid ? (
             <div className="validation-hint success">
@@ -106,7 +120,8 @@ export default function UserForm({
         try {
             const sanitizedName = sanitizeInput(formData.name);
             const sanitizedEmail = sanitizeInput(formData.email);
-            
+            const sanitizedPhone = sanitizeInput(formData.phone);
+
             if (isEditing) {
                 const { error: profileError } = await supabase
                     .schema('api')
@@ -114,6 +129,7 @@ export default function UserForm({
                     .update({
                         full_name: sanitizedName,
                         email: sanitizedEmail,
+                        phone_number: sanitizedPhone,
                         role: formData.role,
                         status: formData.status,
                         country_code: formData.countryCode
@@ -144,6 +160,7 @@ export default function UserForm({
                 showToast('Account updated successfully!', 'success');
             } else {
                 const { data: userId, error: createError } = await supabase.schema('api').rpc('admin_create_user', {
+                    p_phone: sanitizedPhone,
                     p_email: sanitizedEmail,
                     p_full_name: sanitizedName,
                     p_user_name: sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),
@@ -202,7 +219,27 @@ export default function UserForm({
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Email Address</label>
+                        <label className={styles.label}>Phone Number</label>
+                        <input
+                            type="tel"
+                            name="phone"
+                            className={getInputClass('phone', styles.input)}
+                            placeholder="+254712345678"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            required
+                            disabled={isEditing}
+                        />
+                        {renderValidationHint('phone')}
+                        {!isEditing && (
+                            <div className="validation-hint info" style={{ marginTop: '4px', opacity: 0.7, fontSize: '0.85em' }}>
+                                Primary identifier — an existing user with this number will be reused instead of creating a duplicate.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Email Address (optional)</label>
                         <input
                             type="email"
                             name="email"
@@ -210,7 +247,6 @@ export default function UserForm({
                             placeholder="john@example.com"
                             value={formData.email}
                             onChange={handleInputChange}
-                            required
                         />
                         {renderValidationHint('email')}
                     </div>
