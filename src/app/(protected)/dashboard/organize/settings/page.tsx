@@ -46,6 +46,7 @@ function SettingsContent() {
         (['account', 'team', 'billing', 'danger-zone'] as string[]).includes(initialTab) ? initialTab as 'account' | 'team' | 'billing' | 'danger-zone' : 'account'
     );
     const [pendingTab, setPendingTab] = useState<string | null>(null);
+    const [teamMissingPhone, setTeamMissingPhone] = useState(false);
 
     useEffect(() => {
         const tab = searchParams.get('tab') as string;
@@ -310,7 +311,7 @@ function SettingsContent() {
                             Account
                         </TabsTrigger>
                         {(permissionsLoading || can('can_manage_members')) && (
-                            <TabsTrigger value="team">Team Members</TabsTrigger>
+                            <TabsTrigger value="team" className={teamMissingPhone ? tabStyles.tabError : undefined}>Team Members</TabsTrigger>
                         )}
                         {(permissionsLoading || can('can_view_finance') || can('can_manage_billing')) && (
                             <TabsTrigger
@@ -400,7 +401,7 @@ function SettingsContent() {
                     <TabsContent value="team">
                         {can('can_manage_members') ? (
                             <div className={adminStyles.pageCard}>
-                                <MemberTable />
+                                <MemberTable onMissingPhoneChange={setTeamMissingPhone} />
                             </div>
                         ) : (
                             <div className={adminStyles.pageCard} style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>

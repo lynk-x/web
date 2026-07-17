@@ -5,10 +5,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styles from './UserForm.module.css';
 import { useRouter } from 'next/navigation';
 import { sanitizeInput } from '@/utils/sanitization';
+import { normalizeToE164 } from '@/utils/phone';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useCountries } from '@/hooks/useCountries';
+import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
+
+const DEFAULT_PHONE_COUNTRY: DialCodeCountry = { code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9 };
 
 export interface UserFormData {
     id?: string;
@@ -58,6 +62,7 @@ export default function UserForm({
     const [formData, setFormData] = useState<UserFormData>(initialData || defaultData);
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [phoneCountry, setPhoneCountry] = useState<DialCodeCountry>(DEFAULT_PHONE_COUNTRY);
 
     // Dirty Check
     useEffect(() => {
@@ -80,7 +85,7 @@ export default function UserForm({
         const isValid = name === 'email'
             ? (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
             : name === 'phone'
-                ? /^\+?[1-9]\d{7,14}$/.test(value as string || '')
+                ? !!normalizeToE164(value as string || '', phoneCountry.phone_prefix, phoneCountry.phone_digits ?? undefined)
                 : !!value;
         return `${baseClass} ${isValid ? 'input-success' : 'input-error'}`;
     };
@@ -91,12 +96,12 @@ export default function UserForm({
         const isValid = name === 'email'
             ? (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string))
             : name === 'phone'
-                ? /^\+?[1-9]\d{7,14}$/.test(value as string || '')
+                ? !!normalizeToE164(value as string || '', phoneCountry.phone_prefix, phoneCountry.phone_digits ?? undefined)
                 : !!value;
         const label = name === 'email' && value && !isValid
             ? 'Invalid Email'
             : name === 'phone' && !isValid
-                ? 'Invalid Phone (e.g. +254712345678)'
+                ? `Invalid Phone (e.g. ${phoneCountry.phone_prefix}712345678)`
                 : 'Required';
 
         return isValid ? (
@@ -120,7 +125,14 @@ export default function UserForm({
         try {
             const sanitizedName = sanitizeInput(formData.name);
             const sanitizedEmail = sanitizeInput(formData.email);
-            const sanitizedPhone = sanitizeInput(formData.phone);
+            const normalizedPhone = normalizeToE164(sanitizeInput(formData.phone), phoneCountry.phone_prefix, phoneCountry.phone_digits ?? undefined);
+
+            if (!normalizedPhone) {
+                showToast('Enter a valid phone number for the selected country.', 'error');
+                setIsSubmitting(false);
+                onSubmittingChange?.(false);
+                return;
+            }
 
             if (isEditing) {
                 const { error: profileError } = await supabase
@@ -129,7 +141,7 @@ export default function UserForm({
                     .update({
                         full_name: sanitizedName,
                         email: sanitizedEmail,
-                        phone_number: sanitizedPhone,
+                        phone_number: normalizedPhone,
                         role: formData.role,
                         status: formData.status,
                         country_code: formData.countryCode
@@ -160,7 +172,7 @@ export default function UserForm({
                 showToast('Account updated successfully!', 'success');
             } else {
                 const { data: userId, error: createError } = await supabase.schema('api').rpc('admin_create_user', {
-                    p_phone: sanitizedPhone,
+                    p_phone: normalizedPhone,
                     p_email: sanitizedEmail,
                     p_full_name: sanitizedName,
                     p_user_name: sanitizedName.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100),
@@ -220,16 +232,25 @@ export default function UserForm({
 
                     <div className={styles.inputGroup}>
                         <label className={styles.label}>Phone Number</label>
-                        <input
-                            type="tel"
-                            name="phone"
-                            className={getInputClass('phone', styles.input)}
-                            placeholder="+254712345678"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            required
-                            disabled={isEditing}
-                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <CountryPhoneSelect
+                                value={phoneCountry.code}
+                                onChange={setPhoneCountry}
+                                className={styles.select}
+                                disabled={isEditing}
+                            />
+                            <input
+                                type="tel"
+                                name="phone"
+                                className={getInputClass('phone', styles.input)}
+                                placeholder="712345678"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                required
+                                disabled={isEditing}
+                                style={{ flex: 1 }}
+                            />
+                        </div>
                         {renderValidationHint('phone')}
                         {!isEditing && (
                             <div className="validation-hint info" style={{ marginTop: '4px', opacity: 0.7, fontSize: '0.85em' }}>

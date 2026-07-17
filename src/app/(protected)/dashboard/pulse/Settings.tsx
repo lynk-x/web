@@ -12,6 +12,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Button from '@/components/shared/Button';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import tabStyles from '@/components/shared/Tabs.module.css';
 import { MfaManager } from '@/components/MfaManager';
 import MemberTable from '@/components/features/members/MemberTable';
 import PaymentMethodsManager from '@/components/features/members/PaymentMethodsManager';
@@ -24,6 +25,7 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [activeTab, setActiveTab] = useState('account');
+    const [teamMissingPhone, setTeamMissingPhone] = useState(false);
 
     const handleDeleteAccount = async () => {
         setIsDeleting(true);
@@ -60,7 +62,7 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="account">Account</TabsTrigger>
-                        <TabsTrigger value="team">Team Members</TabsTrigger>
+                        <TabsTrigger value="team" className={teamMissingPhone ? tabStyles.tabError : undefined}>Team Members</TabsTrigger>
                         <TabsTrigger value="billing">Billing & Wallet</TabsTrigger>
                         <TabsTrigger value="danger-zone">Danger Zone</TabsTrigger>
                     </TabsList>
@@ -80,7 +82,7 @@ export default function PulseSettings({ accountId }: { accountId: string }) {
 
                     <TabsContent value="team">
                         <div className={adminStyles.pageCard}>
-                            <MemberTable />
+                            <MemberTable onMissingPhoneChange={setTeamMissingPhone} />
                         </div>
                     </TabsContent>
 

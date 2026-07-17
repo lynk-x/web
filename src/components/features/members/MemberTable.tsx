@@ -11,11 +11,14 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { formatDate } from '@/utils/format';
 import { sanitizeInput } from '@/utils/sanitization';
+import { normalizeToE164 } from '@/utils/phone';
+import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 
+const DEFAULT_PHONE_COUNTRY: DialCodeCountry = { code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9 };
 
 export interface AccountMember {
     id: string; // The user ID or invitation ID
@@ -28,10 +31,13 @@ export interface AccountMember {
     isPending?: boolean;
 }
 
+interface MemberTableProps {
+    onMissingPhoneChange?: (hasMissing: boolean) => void;
+}
+
 interface AccountRole {
     role_slug: string;
     display_name: string;
-    description: string | null;
 }
 
 const getRoleVariant = (role: string): BadgeVariant => {
@@ -48,7 +54,7 @@ const getRoleLabel = (role: string): string => {
     return role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 };
 
-export default function MemberTable() {
+export default function MemberTable({ onMissingPhoneChange }: MemberTableProps = {}) {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { activeAccount } = useOrganization();
@@ -69,18 +75,19 @@ export default function MemberTable() {
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [invitePhone, setInvitePhone] = useState('');
+    const [invitePhoneCountry, setInvitePhoneCountry] = useState<DialCodeCountry>(DEFAULT_PHONE_COUNTRY);
     const [inviteRole, setInviteRole] = useState('member');
     const [isInviting, setIsInviting] = useState(false);
 
-    // Roles a member can be invited/changed to — everything except 'owner',
-    // which is only granted via ownership transfer.
+    // Roles a member can be invited/changed to — 'owner' is only granted via
+    // ownership transfer, so 'member' is the only assignable role today.
     useEffect(() => {
         const fetchRoles = async () => {
             const { data, error } = await supabase
                 .schema('api')
                 .from('v1_account_roles')
-                .select('role_slug, display_name, description')
-                .neq('role_slug', 'owner')
+                .select('role_slug, display_name')
+                .in('role_slug', ['member'])
                 .order('display_name');
 
             if (!error && data) {
@@ -124,6 +131,7 @@ export default function MemberTable() {
                 userId: m.user_id,
                 name: m.full_name || m.user_name || 'Unknown User',
                 email: m.email || '',
+                phone: m.phone_number || '',
                 role: m.role_slug,
                 joinedAt: formatDate(m.joined_at),
                 isPending: false
@@ -140,13 +148,15 @@ export default function MemberTable() {
                 isPending: true
             }));
 
-            setMembers([...mappedMembers, ...mappedInvites]);
+            const allMembers = [...mappedMembers, ...mappedInvites];
+            setMembers(allMembers);
+            onMissingPhoneChange?.(allMembers.some(m => !m.phone));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load team members.', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast]);
+    }, [activeAccount, supabase, showToast, onMissingPhoneChange]);
 
     useEffect(() => {
         if (activeAccount) {
@@ -172,7 +182,17 @@ export default function MemberTable() {
     const handleInviteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!activeAccount) return;
-        if (!inviteEmail && !invitePhone) {
+
+        let normalizedPhone: string | null = null;
+        if (invitePhone) {
+            normalizedPhone = normalizeToE164(invitePhone, invitePhoneCountry.phone_prefix, invitePhoneCountry.phone_digits ?? undefined);
+            if (!normalizedPhone) {
+                showToast("Enter a valid phone number for the selected country.", "error");
+                return;
+            }
+        }
+
+        if (!inviteEmail && !normalizedPhone) {
             showToast("Enter an email address or a phone number.", "error");
             return;
         }
@@ -182,17 +202,18 @@ export default function MemberTable() {
             const { error } = await supabase.schema('api').rpc('create_account_invitation', {
                 p_account_id: activeAccount.id,
                 p_invitee_email: inviteEmail ? inviteEmail.toLowerCase() : null,
-                p_invitee_phone: invitePhone || null,
+                p_invitee_phone: normalizedPhone,
                 p_role_slug: inviteRole
             });
 
             if (error) throw error;
 
-            showToast(`An access invite has been sent to ${inviteEmail || invitePhone}.`, "success", "Invite Sent");
+            showToast(`An access invite has been sent to ${inviteEmail || normalizedPhone}.`, "success", "Invite Sent");
             setIsInviteModalOpen(false);
             setInviteEmail('');
             setInvitePhone('');
-            setInviteRole('viewer');
+            setInvitePhoneCountry(DEFAULT_PHONE_COUNTRY);
+            setInviteRole('member');
             fetchMembers(); // refresh
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || "We couldn't send the invitation. Please try again later.", "error", "Delivery Failed");
@@ -325,9 +346,17 @@ export default function MemberTable() {
                             {member.name}
                             {member.isPending && <span style={{ fontSize: '11px', marginLeft: '6px', color: '#f5a623' }}>Pending</span>}
                         </span>
-                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{member.email || member.phone}</span>
+                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{member.email}</span>
                     </div>
                 </div>
+            )
+        },
+        {
+            header: 'Phone',
+            render: (member) => (
+                member.phone
+                    ? <span style={{ fontSize: '13px', opacity: 0.8 }}>{member.phone}</span>
+                    : <span style={{ fontSize: '13px', color: '#ff4d4d' }}>Missing</span>
             )
         },
         {
@@ -469,16 +498,23 @@ export default function MemberTable() {
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
                                     Phone Number
                                 </label>
-                                <input
-                                    type="tel"
-                                    value={invitePhone}
-                                    onChange={e => setInvitePhone(sanitizeInput(e.target.value))}
-                                    placeholder="+254712345678"
-                                    style={{
-                                        width: '100%', padding: '10px', borderRadius: '6px',
-                                        border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
-                                    }}
-                                />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <CountryPhoneSelect
+                                        value={invitePhoneCountry.code}
+                                        onChange={setInvitePhoneCountry}
+                                        className="w-[110px] rounded-md border border-white/20 bg-[#1a1a1a] px-2.5 py-2.5 text-white"
+                                    />
+                                    <input
+                                        type="tel"
+                                        value={invitePhone}
+                                        onChange={e => setInvitePhone(sanitizeInput(e.target.value))}
+                                        placeholder="712345678"
+                                        style={{
+                                            flex: 1, padding: '10px', borderRadius: '6px',
+                                            border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>
@@ -493,10 +529,10 @@ export default function MemberTable() {
                                         border: '1px solid rgba(255,255,255,0.2)', background: '#1a1a1a', color: 'white'
                                     }}
                                 >
-                                    {/* Sourced from api.v1_account_roles, 'owner' excluded — only system/owner transfers should grant 'owner' */}
+                                    {/* Sourced from api.v1_account_roles, filtered to 'member' — 'owner' is only granted via ownership transfer */}
                                     {assignableRoles.map(r => (
                                         <option key={r.role_slug} value={r.role_slug}>
-                                            {r.display_name}{r.description ? ` (${r.description})` : ''}
+                                            {r.display_name}
                                         </option>
                                     ))}
                                 </select>

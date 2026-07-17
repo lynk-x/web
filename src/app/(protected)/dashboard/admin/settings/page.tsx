@@ -10,6 +10,7 @@ import { sanitizeInput } from '@/utils/sanitization';
 import MemberTable from '@/components/features/members/MemberTable';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import tabStyles from '@/components/shared/Tabs.module.css';
 import localStyles from '../page.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import CountrySelect from '@/components/shared/CountrySelect';
@@ -32,6 +33,7 @@ function SettingsContent() {
         ['account', 'team'].includes(initialTab) ? initialTab : 'account'
     );
     const [pendingTab, setPendingTab] = useState<string | null>(null);
+    const [teamMissingPhone, setTeamMissingPhone] = useState(false);
 
     useEffect(() => {
         const tab = searchParams.get('tab') as Tab;
@@ -206,7 +208,7 @@ function SettingsContent() {
                 <div className={localStyles.tabsHeaderRow} style={{ marginTop: '16px' }}>
                     <TabsList>
                         <TabsTrigger value="account">Account Details</TabsTrigger>
-                        <TabsTrigger value="team">Team Members</TabsTrigger>
+                        <TabsTrigger value="team" className={teamMissingPhone ? tabStyles.tabError : undefined}>Team Members</TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -259,7 +261,7 @@ function SettingsContent() {
 
                     <TabsContent value="team">
                         <div className={localStyles.pageCard} style={{ background: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-border-subtle)', padding: '24px', borderRadius: '12px' }}>
-                            <MemberTable />
+                            <MemberTable onMissingPhoneChange={setTeamMissingPhone} />
                         </div>
                     </TabsContent>
                 </div>

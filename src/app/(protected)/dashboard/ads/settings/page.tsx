@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
+import tabStyles from '@/components/shared/Tabs.module.css';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { MfaManager } from '@/components/MfaManager';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -41,6 +42,7 @@ function AdsSettingsContent() {
         (['account', 'team', 'billing', 'danger-zone'] as string[]).includes(initialTab) ? initialTab as 'account' | 'team' | 'billing' | 'danger-zone' : 'account'
     );
     const [pendingTab, setPendingTab] = useState<string | null>(null);
+    const [teamMissingPhone, setTeamMissingPhone] = useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
     const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
@@ -269,7 +271,7 @@ function AdsSettingsContent() {
                 <div className={`${adminStyles.tabsHeaderRow} tour-ads-settings-tabs`}>
                     <TabsList>
                         <TabsTrigger value="account">Account</TabsTrigger>
-                        <TabsTrigger value="team">Team Members</TabsTrigger>
+                        <TabsTrigger value="team" className={teamMissingPhone ? tabStyles.tabError : undefined}>Team Members</TabsTrigger>
                         <TabsTrigger value="billing">Billing & Wallet</TabsTrigger>
                         <TabsTrigger value="danger-zone">Danger Zone</TabsTrigger>
                     </TabsList>
@@ -324,7 +326,7 @@ function AdsSettingsContent() {
 
                     <TabsContent value="team">
                         <div className={`${adminStyles.pageCard} tour-ads-settings-team`}>
-                            <MemberTable />
+                            <MemberTable onMissingPhoneChange={setTeamMissingPhone} />
                         </div>
                     </TabsContent>
 
