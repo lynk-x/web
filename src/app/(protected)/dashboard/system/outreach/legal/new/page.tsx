@@ -49,16 +49,13 @@ export default function NewLegalVersionPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
-                p_tab: 'legal',
-                p_data: {
-                    slug: type,
-                    title,
-                    content,
-                    version,
-                    is_active,
-                    effective_date: new Date(effective_date).toISOString()
-                }
+            const { error } = await supabase.schema('api').rpc('upsert_legal_document', {
+                p_slug: type,
+                p_title: title,
+                p_content: content,
+                p_version: version,
+                p_is_active: is_active,
+                p_effective_date: new Date(effective_date).toISOString()
             });
 
             if (error) throw error;

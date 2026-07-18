@@ -62,9 +62,7 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
     const fetchMatrix = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', {
-                p_tab: 'categories_matrix'
-            });
+            const { data, error } = await supabase.schema('api').rpc('get_categories_tag_matrix');
             if (error) throw error;
 
             const cats: MatrixCategory[] = data?.categories || [];
@@ -103,14 +101,13 @@ function CategoryLogicMatrix({ hideToolbar, searchTerm: externalSearchTerm }: { 
 
         try {
             const { error } = isMapped
-                ? await supabase.schema('api').rpc('admin_manage_registry_item', {
-                    p_tab: 'mappings_category',
-                    p_action: 'delete',
-                    p_id: `${categoryId}-${tagId}`
+                ? await supabase.schema('api').rpc('delete_category_tag_mapping', {
+                    p_category_id: categoryId,
+                    p_tag_id: tagId
                 })
-                : await supabase.schema('api').rpc('admin_upsert_registry_item', {
-                    p_tab: 'mappings_category',
-                    p_data: { category_id: categoryId, tag_id: tagId }
+                : await supabase.schema('api').rpc('upsert_category_tag_mapping', {
+                    p_category_id: categoryId,
+                    p_tag_id: tagId
                 });
             if (error) throw error;
         } catch (error: unknown) {
@@ -315,8 +312,8 @@ const MappingTab = forwardRef<MappingTabHandle, MappingTabProps>(function Mappin
         if (!isMappingModalOpen) return;
         const loadRefs = async () => {
             const [tagsRes, catsRes, evtsRes] = await Promise.all([
-                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' }),
-                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'event_categories' }),
+                supabase.schema('api').rpc('get_tags'),
+                supabase.schema('api').rpc('get_event_categories'),
                 publicClient.from('events').select('id, title').order('created_at', { ascending: false }).limit(100)
             ]);
             if (tagsRes.data) setMappingTags(tagsRes.data);
@@ -335,22 +332,15 @@ const MappingTab = forwardRef<MappingTabHandle, MappingTabProps>(function Mappin
         setIsSavingMapping(true);
         try {
             if (mappingType === 'category') {
-                const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
-                    p_tab: 'mappings_category',
-                    p_data: {
-                        category_id: mappingForm.category_id,
-                        tag_id: mappingForm.tag_id,
-                        is_primary: mappingForm.is_primary
-                    }
+                const { error } = await supabase.schema('api').rpc('upsert_category_tag_mapping', {
+                    p_category_id: mappingForm.category_id,
+                    p_tag_id: mappingForm.tag_id
                 });
                 if (error) throw error;
             } else {
-                const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
-                    p_tab: 'mappings_event',
-                    p_data: {
-                        event_id: mappingForm.event_id,
-                        tag_id: mappingForm.tag_id
-                    }
+                const { error } = await supabase.schema('api').rpc('upsert_event_tag_mapping', {
+                    p_event_id: mappingForm.event_id,
+                    p_tag_id: mappingForm.tag_id
                 });
                 if (error) throw error;
             }
@@ -373,9 +363,7 @@ const MappingTab = forwardRef<MappingTabHandle, MappingTabProps>(function Mappin
         if (activeSubTab === 'category') return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', {
-                p_tab: 'mappings_event'
-            });
+            const { data, error } = await supabase.schema('api').rpc('get_event_tag_mappings');
 
             if (error) throw error;
 
@@ -423,13 +411,12 @@ const MappingTab = forwardRef<MappingTabHandle, MappingTabProps>(function Mappin
         }
     ];
 
-    const handleDeleteMapping = async (id: string) => {
+    const handleDeleteMapping = async (eventId: string, tagId: string) => {
         setIsLoading(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
-                p_tab: 'mappings_event',
-                p_action: 'delete',
-                p_id: id
+            const { error } = await supabase.schema('api').rpc('delete_event_tag_mapping', {
+                p_event_id: eventId,
+                p_tag_id: tagId
             });
 
             if (error) throw error;
@@ -453,7 +440,7 @@ const MappingTab = forwardRef<MappingTabHandle, MappingTabProps>(function Mappin
                     title: 'Remove Mapping',
                     confirmLabel: 'Remove'
                 })) return;
-                handleDeleteMapping(item.id);
+                handleDeleteMapping(item.event_id, item.tag_id);
             },
         }
     ];

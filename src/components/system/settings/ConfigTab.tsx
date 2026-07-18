@@ -59,9 +59,7 @@ export default function ConfigTab({
     const fetchConfigs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
-                p_tab: 'config'
-            });
+            const { data, error } = await supabase.schema('api').rpc('get_config');
 
             if (error) throw error;
             setConfigs(data || []);
@@ -78,11 +76,9 @@ export default function ConfigTab({
 
     const handleToggleConfig = async (key: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'config',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_config', {
                 p_id: key,
-                p_params: { is_active: !currentValue }
+                p_is_active: !currentValue
             });
 
             if (error) throw error;
@@ -129,11 +125,12 @@ export default function ConfigTab({
 
         setIsSaving(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'config',
-                p_action: 'upsert',
+            const { error } = await supabase.schema('api').rpc('upsert_config', {
                 p_id: formValues.key,
-                p_params: formValues
+                p_value: formValues.value,
+                p_data_type: formValues.data_type,
+                p_description: formValues.description,
+                p_is_active: formValues.is_active
             });
 
             if (error) throw error;
@@ -190,12 +187,10 @@ export default function ConfigTab({
             label: 'Enable Selected',
             onClick: async () => {
                 const keys = Array.from(selectedConfigKeys);
-                const results = await Promise.all(keys.map(key => 
-                    supabase.schema('api').rpc('admin_manage_settings_item', {
-                        p_tab: 'config',
-                        p_action: 'toggle',
+                const results = await Promise.all(keys.map(key =>
+                    supabase.schema('api').rpc('toggle_config', {
                         p_id: key,
-                        p_params: { is_active: true }
+                        p_is_active: true
                     })
                 ));
                 
@@ -214,12 +209,10 @@ export default function ConfigTab({
             label: 'Disable Selected',
             onClick: async () => {
                 const keys = Array.from(selectedConfigKeys);
-                const results = await Promise.all(keys.map(key => 
-                    supabase.schema('api').rpc('admin_manage_settings_item', {
-                        p_tab: 'config',
-                        p_action: 'toggle',
+                const results = await Promise.all(keys.map(key =>
+                    supabase.schema('api').rpc('toggle_config', {
                         p_id: key,
-                        p_params: { is_active: false }
+                        p_is_active: false
                     })
                 ));
                 

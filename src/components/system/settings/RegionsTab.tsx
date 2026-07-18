@@ -55,9 +55,7 @@ export default function RegionsTab({
     const fetchCountries = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
-                p_tab: 'regions'
-            });
+            const { data, error } = await supabase.schema('api').rpc('get_regions');
             if (error) throw error;
             setCountries((data || []).map((c: any) => ({
                 id: c.code,
@@ -87,11 +85,9 @@ export default function RegionsTab({
 
     const handleToggleCountry = async (code: string, current: boolean) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'regions',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_region', {
                 p_id: code,
-                p_params: { is_active: !current }
+                p_is_active: !current
             });
             if (error) throw error;
             setCountries(prev => prev.map(c => c.code === code ? { ...c, is_active: !current } : c));
@@ -116,16 +112,12 @@ export default function RegionsTab({
                 }
             };
 
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'regions',
-                p_action: 'update',
+            const { error } = await supabase.schema('api').rpc('update_region', {
                 p_id: isEditing.code,
-                p_params: {
-                    currency: editForm.currency,
-                    region: editForm.region,
-                    timezone: editForm.timezone,
-                    info: updatedInfo
-                }
+                p_currency: editForm.currency,
+                p_region: editForm.region,
+                p_timezone: editForm.timezone,
+                p_info: updatedInfo
             });
 
             if (error) throw error;

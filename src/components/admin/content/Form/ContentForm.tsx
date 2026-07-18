@@ -113,26 +113,18 @@ export default function ContentForm({ initialData, isEditing = false, onDirtyCha
 
         try {
             const supabase = createClient();
-            const payload = {
-                title: formData.title,
-                slug: formData.slug,
-                type: formData.type,
-                status: formData.status,
-                content: {
+            const res = await supabase.schema('api').rpc('upsert_cms_page', {
+                p_id: isEditing ? initialData?.id : null,
+                p_slug: formData.slug,
+                p_type: formData.type,
+                p_title: formData.title,
+                p_content: {
                     ...formData.info,
                     description: formData.content
                 },
-                updated_at: new Date().toISOString(),
-                // author_id would go here if we had auth context
-            };
-
-            let error;
-            const res = await supabase.schema('api').rpc('admin_upsert_comms_item', {
-                p_tab: 'content',
-                p_id: isEditing ? initialData?.id : null,
-                p_data: payload
+                p_status: formData.status
             });
-            error = res.error;
+            const error = res.error;
 
             if (error) throw error;
 

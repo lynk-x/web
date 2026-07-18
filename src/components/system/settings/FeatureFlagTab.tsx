@@ -40,9 +40,7 @@ export default function FeatureFlagTab({
     const fetchFlags = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
-                p_tab: 'feature_flags'
-            });
+            const { data, error } = await supabase.schema('api').rpc('get_feature_flags');
 
             if (error) throw error;
             setFlags(data || []);
@@ -65,11 +63,9 @@ export default function FeatureFlagTab({
 
     const handleToggleFlag = async (key: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'feature_flags',
-                p_action: 'toggle',
-                p_id: key,
-                p_params: { is_enabled: !currentValue }
+            const { error } = await supabase.schema('api').rpc('toggle_feature_flag', {
+                p_key: key,
+                p_is_enabled: !currentValue
             });
 
             if (error) throw error;

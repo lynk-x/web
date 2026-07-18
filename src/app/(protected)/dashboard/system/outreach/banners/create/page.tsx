@@ -44,17 +44,14 @@ export default function CreateBannerPage() {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
-                p_tab: 'banners',
-                p_data: {
-                    title,
-                    body: content,
-                    type,
-                    status: isActive ? 'approved' : 'draft',
-                    starts_at: new Date(startsAt).toISOString(),
-                    ends_at: endsAt ? new Date(endsAt).toISOString() : null,
-                    action_url: actionUrl || null
-                }
+            const { error } = await supabase.schema('api').rpc('upsert_banner', {
+                p_title: title,
+                p_body: content,
+                p_type: type,
+                p_status: isActive ? 'approved' : 'draft',
+                p_starts_at: new Date(startsAt).toISOString(),
+                p_ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+                p_action_url: actionUrl || null
             });
 
             if (error) throw error;

@@ -16,7 +16,6 @@ import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/Country
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter, usePathname } from 'next/navigation';
 
 const DEFAULT_PHONE_COUNTRY: DialCodeCountry = { code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9 };
 
@@ -60,8 +59,6 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
     const { user } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
 
     const { can } = useAccountPermissions(activeAccount?.id);
     const hasManageMembers = can('can_manage_members');
@@ -78,6 +75,14 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
     const [invitePhoneCountry, setInvitePhoneCountry] = useState<DialCodeCountry>(DEFAULT_PHONE_COUNTRY);
     const [inviteRole, setInviteRole] = useState('member');
     const [isInviting, setIsInviting] = useState(false);
+
+    // Contact Info Modal State — used both for editing your own contact info
+    // ("Edit Profile") and a teammate's (via can_manage_members).
+    const [contactModalMember, setContactModalMember] = useState<AccountMember | null>(null);
+    const [contactEmail, setContactEmail] = useState('');
+    const [contactPhone, setContactPhone] = useState('');
+    const [contactPhoneCountry, setContactPhoneCountry] = useState<DialCodeCountry>(DEFAULT_PHONE_COUNTRY);
+    const [isSavingContact, setIsSavingContact] = useState(false);
 
     // Roles a member can be invited/changed to — 'owner' is only granted via
     // ownership transfer, so 'member' is the only assignable role today.
@@ -286,6 +291,66 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
         }
     };
 
+    const openContactModal = (member: AccountMember) => {
+        setContactModalMember(member);
+        setContactEmail(member.email || '');
+        setContactPhone('');
+        setContactPhoneCountry(DEFAULT_PHONE_COUNTRY);
+    };
+
+    const handleContactSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activeAccount || !contactModalMember) return;
+
+        let normalizedPhone: string | null = null;
+        if (contactPhone) {
+            normalizedPhone = normalizeToE164(contactPhone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined);
+            if (!normalizedPhone) {
+                showToast("Enter a valid phone number for the selected country.", "error");
+                return;
+            }
+        }
+
+        const email = contactEmail ? sanitizeInput(contactEmail).toLowerCase() : null;
+        if (!email && !normalizedPhone) {
+            showToast("Enter an email address or a phone number to update.", "error");
+            return;
+        }
+
+        setIsSavingContact(true);
+        try {
+            const isSelf = user && contactModalMember.userId === user.id;
+
+            if (isSelf) {
+                const { error } = await supabase
+                    .schema('api')
+                    .from('v1_profiles')
+                    .update({
+                        ...(email ? { email } : {}),
+                        ...(normalizedPhone ? { phone_number: normalizedPhone } : {})
+                    })
+                    .eq('id', contactModalMember.userId);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.schema('api').rpc('update_member_contact_info', {
+                    p_account_id: activeAccount.id,
+                    p_user_id: contactModalMember.userId,
+                    p_email: email,
+                    p_phone: normalizedPhone
+                });
+                if (error) throw error;
+            }
+
+            showToast("Contact info updated successfully.", "success", "Updated");
+            setContactModalMember(null);
+            fetchMembers();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || "Failed to update contact info.", "error", "Error");
+        } finally {
+            setIsSavingContact(false);
+        }
+    };
+
     const handleBulkRemove = async () => {
         if (selectedIds.size === 0 || !activeAccount) return;
         const count = selectedIds.size;
@@ -377,9 +442,7 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
             actions.push({
                 label: 'Edit Profile',
                 icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
-                onClick: () => {
-                    router.replace(`${pathname}?tab=account`);
-                }
+                onClick: () => openContactModal(member)
             });
         }
 
@@ -392,6 +455,13 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                     onClick: () => handleRevokeInvite(member.id)
                 });
             } else if (member.role !== 'owner') {
+                if (!user || member.userId !== user.id) {
+                    actions.push({
+                        label: 'Edit Contact Info',
+                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+                        onClick: () => openContactModal(member)
+                    });
+                }
                 actions.push({
                     label: 'Change Role',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>,
@@ -559,6 +629,90 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                                     }}
                                 >
                                     {isInviting ? 'Sending...' : 'Send Invite'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Contact Info Modal Overlay */}
+            {contactModalMember && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        background: '#1a1a1a', padding: '32px', borderRadius: '12px',
+                        width: '100%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                        <h3 style={{ marginTop: 0, marginBottom: '8px', fontSize: '1.25rem', color: 'white' }}>Edit Contact Info</h3>
+                        <p style={{ color: 'gray', fontSize: '0.875rem', marginBottom: '24px' }}>
+                            Update {contactModalMember.name}&apos;s email or phone number. Leave a field blank to keep its current value.
+                        </p>
+
+                        <form onSubmit={handleContactSubmit}>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    value={contactEmail}
+                                    onChange={e => setContactEmail(sanitizeInput(e.target.value.toLowerCase()))}
+                                    placeholder="colleague@example.com"
+                                    style={{
+                                        width: '100%', padding: '10px', borderRadius: '6px',
+                                        border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
+                                    Phone Number {contactModalMember.phone && <span style={{ opacity: 0.6, fontWeight: 400 }}>(current: {contactModalMember.phone})</span>}
+                                </label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <CountryPhoneSelect
+                                        value={contactPhoneCountry.code}
+                                        onChange={setContactPhoneCountry}
+                                        className="w-[110px] rounded-md border border-white/20 bg-[#1a1a1a] px-2.5 py-2.5 text-white"
+                                    />
+                                    <input
+                                        type="tel"
+                                        value={contactPhone}
+                                        onChange={e => setContactPhone(sanitizeInput(e.target.value))}
+                                        placeholder="712345678"
+                                        style={{
+                                            flex: 1, padding: '10px', borderRadius: '6px',
+                                            border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setContactModalMember(null)}
+                                    style={{
+                                        background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)',
+                                        padding: '8px 16px', borderRadius: '6px', cursor: 'pointer'
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingContact}
+                                    style={{
+                                        background: 'white', color: 'black', border: 'none',
+                                        padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600,
+                                        opacity: isSavingContact ? 0.7 : 1
+                                    }}
+                                >
+                                    {isSavingContact ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>

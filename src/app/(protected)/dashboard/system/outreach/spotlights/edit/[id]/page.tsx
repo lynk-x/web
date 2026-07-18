@@ -82,19 +82,16 @@ export default function EditSpotlightPage() {
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_upsert_comms_item', {
-                p_tab: 'spotlights',
+            const { error } = await supabase.schema('api').rpc('upsert_spotlight', {
                 p_id: id,
-                p_data: {
-                    title,
-                    subtitle: subtitle || null,
-                    target,
-                    display_order: displayOrder,
-                    cta_text: ctaText || null,
-                    redirect_to: redirectTo || null,
-                    background_url: backgroundUrl || null,
-                    is_active: isActive
-                }
+                p_title: title,
+                p_subtitle: subtitle || null,
+                p_target: target,
+                p_display_order: displayOrder,
+                p_cta_text: ctaText || null,
+                p_redirect_to: redirectTo || null,
+                p_background_url: backgroundUrl || null,
+                p_is_active: isActive
             });
 
             if (error) throw error;

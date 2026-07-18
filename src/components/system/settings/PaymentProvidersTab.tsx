@@ -33,9 +33,7 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data: res, error } = await supabase.schema('api').rpc('get_admin_settings_data', {
-                p_tab: 'payment_providers'
-            });
+            const { data: res, error } = await supabase.schema('api').rpc('get_payment_providers');
             if (error) throw error;
 
             setData(res || []);
@@ -58,17 +56,13 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
         if (!isEditing) return;
         setIsSaving(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'payment_providers',
-                p_action: 'update',
+            const { error } = await supabase.schema('api').rpc('update_payment_provider', {
                 p_id: isEditing.id,
-                p_params: {
-                    processing_fee_percent: Number(editForm.processing_fee_percent),
-                    is_active: editForm.is_active,
-                    metadata: {
-                        environment: editForm.environment,
-                        config: editForm.config
-                    }
+                p_processing_fee_percent: Number(editForm.processing_fee_percent),
+                p_is_active: editForm.is_active,
+                p_metadata: {
+                    environment: editForm.environment,
+                    config: editForm.config
                 }
             });
 
@@ -86,11 +80,9 @@ export default function PaymentProvidersTab({ searchTerm = '' }: { searchTerm?: 
     const toggleActiveStatus = async (provider: PlatformPaymentProvider) => {
         const newStatus = !provider.is_active;
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_settings_item', {
-                p_tab: 'payment_providers',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_payment_provider', {
                 p_id: provider.id,
-                p_params: { is_active: newStatus }
+                p_is_active: newStatus
             });
 
             if (error) throw error;

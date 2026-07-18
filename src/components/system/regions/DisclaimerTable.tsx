@@ -70,9 +70,7 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
     const fetchDisclaimers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', {
-                p_tab: 'disclaimers'
-            });
+            const { data, error } = await supabase.schema('api').rpc('get_disclaimers');
 
             if (error) throw error;
             setDisclaimers(data || []);
@@ -90,7 +88,7 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
     useEffect(() => {
         if (!isModalOpen) return;
         const fetchTags = async () => {
-            const { data, error } = await supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' });
+            const { data, error } = await supabase.schema('api').rpc('get_tags');
             if (error) { showToast(getErrorMessage(error), 'error'); return; }
             if (data) setTags(data);
         };
@@ -129,8 +127,7 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
 
         setIsSaving(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
-                p_tab: 'disclaimers',
+            const { error } = await supabase.schema('api').rpc('upsert_disclaimer', {
                 p_data: editingDisclaimer ? { ...form, id: editingDisclaimer.id } : form
             });
 
@@ -148,11 +145,9 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
 
     const handleToggle = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
-                p_tab: 'disclaimers',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_disclaimer', {
                 p_id: id,
-                p_params: { is_active: !currentValue }
+                p_is_active: !currentValue
             });
 
             if (error) throw error;
@@ -220,9 +215,7 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
             confirmLabel: 'Delete'
         })) return;
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
-                p_tab: 'disclaimers',
-                p_action: 'delete',
+            const { error } = await supabase.schema('api').rpc('delete_disclaimer', {
                 p_id: id
             });
 
@@ -254,11 +247,9 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
             onClick: async () => {
                 const ids = Array.from(selectedIds);
                 const results = await Promise.all(ids.map(id =>
-                    supabase.schema('api').rpc('admin_manage_registry_item', {
-                        p_tab: 'disclaimers',
-                        p_action: 'toggle',
+                    supabase.schema('api').rpc('toggle_disclaimer', {
                         p_id: id,
-                        p_params: { is_active: true }
+                        p_is_active: true
                     })
                 ));
                 const errors = results.filter(r => r.error);
@@ -277,11 +268,9 @@ const DisclaimerTable = forwardRef<DisclaimerTableHandle, DisclaimerTableProps>(
             onClick: async () => {
                 const ids = Array.from(selectedIds);
                 const results = await Promise.all(ids.map(id =>
-                    supabase.schema('api').rpc('admin_manage_registry_item', {
-                        p_tab: 'disclaimers',
-                        p_action: 'toggle',
+                    supabase.schema('api').rpc('toggle_disclaimer', {
                         p_id: id,
-                        p_params: { is_active: false }
+                        p_is_active: false
                     })
                 ));
                 const errors = results.filter(r => r.error);

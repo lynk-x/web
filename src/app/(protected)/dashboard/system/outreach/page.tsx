@@ -72,24 +72,24 @@ function CommunicationsContent() {
         setIsLoading(true);
         try {
             const cmsParams = {
-                search: searchTerm,
-                type: typeFilter,
-                status: statusFilter,
-                offset: (currentPage - 1) * itemsPerPage,
-                limit: itemsPerPage
+                p_search: searchTerm,
+                p_type: typeFilter,
+                p_status: statusFilter,
+                p_offset: (currentPage - 1) * itemsPerPage,
+                p_limit: itemsPerPage
             };
 
             const legalParams = {
-                offset: (legalDocPage - 1) * legalDocsPerPage,
-                limit: legalDocsPerPage
+                p_offset: (legalDocPage - 1) * legalDocsPerPage,
+                p_limit: legalDocsPerPage
             };
 
             const [spotlightsRes, broadcastRes, bannerRes, contentRes, legalRes] = await Promise.all([
-                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'spotlights' }),
-                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'broadcast', p_params: { search: searchTerm } }),
-                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'banners' }),
-                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'content', p_params: cmsParams }),
-                supabase.schema('api').rpc('get_admin_comms_data', { p_tab: 'legal', p_params: legalParams })
+                supabase.schema('api').rpc('get_spotlights'),
+                supabase.schema('api').rpc('get_broadcast_logs', { p_search: searchTerm }),
+                supabase.schema('api').rpc('get_banners'),
+                supabase.schema('api').rpc('get_cms_pages', cmsParams),
+                supabase.schema('api').rpc('get_legal_documents', legalParams)
             ]);
 
             if (contentRes.data) {
@@ -134,11 +134,9 @@ function CommunicationsContent() {
 
     const handleToggleLegalActive = async (doc: LegalDocument) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
-                p_tab: 'legal',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_legal_document', {
                 p_id: doc.id,
-                p_params: { is_active: !doc.is_active }
+                p_is_active: !doc.is_active
             });
 
             if (error) throw error;
@@ -185,18 +183,13 @@ function CommunicationsContent() {
         try {
             let error;
             if (action === 'delete') {
-                // Handle deletion one by one or add a bulk delete RPC if needed. 
-                // For now, let's use the manage RPC in a loop or implement bulk delete in backend.
-                // Hardening: Moving to secure RPC for all deletions.
                 for (const id of ids) {
-                    await supabase.schema('api').rpc('admin_manage_comms_item', { p_tab: 'content', p_action: 'delete', p_id: id });
+                    await supabase.schema('api').rpc('delete_cms_page', { p_id: id });
                 }
             } else {
-                await supabase.schema('api').rpc('admin_manage_comms_item', {
-                    p_tab: 'content',
-                    p_action: 'bulk_status',
-                    p_id: null,
-                    p_params: { ids, status: action === 'publish' ? 'published' : 'archived' }
+                await supabase.schema('api').rpc('bulk_update_cms_page_status', {
+                    p_ids: ids,
+                    p_status: action === 'publish' ? 'published' : 'archived'
                 });
             }
 
@@ -339,11 +332,9 @@ function CommunicationsContent() {
 
     const handleToggleBanner = async (banner: SystemBanner) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
-                p_tab: 'banners',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_banner', {
                 p_id: banner.id,
-                p_params: { is_active: !banner.is_active }
+                p_is_active: !banner.is_active
             });
             if (error) throw error;
             showToast(`Banner ${!banner.is_active ? 'activated' : 'deactivated'}`, 'success');
@@ -356,11 +347,7 @@ function CommunicationsContent() {
     const handleDeleteBanner = async (id: string) => {
         if (!await confirm('Are you sure you want to delete this banner?')) return;
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
-                p_tab: 'banners',
-                p_action: 'delete',
-                p_id: id
-            });
+            const { error } = await supabase.schema('api').rpc('delete_banner', { p_id: id });
             if (error) throw error;
             showToast('Banner deleted', 'success');
             fetchData();
@@ -372,11 +359,9 @@ function CommunicationsContent() {
     // ─── Spotlight Logic ───
     const handleToggleSpotlight = async (spotlight: Spotlight) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
-                p_tab: 'spotlights',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_spotlight', {
                 p_id: spotlight.id,
-                p_params: { is_active: !spotlight.is_active }
+                p_is_active: !spotlight.is_active
             });
             if (error) throw error;
             showToast(`Spotlight ${!spotlight.is_active ? 'activated' : 'deactivated'}`, 'success');
@@ -389,11 +374,7 @@ function CommunicationsContent() {
     const handleDeleteSpotlight = async (id: string) => {
         if (!await confirm('Are you sure you want to delete this spotlight?')) return;
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_comms_item', {
-                p_tab: 'spotlights',
-                p_action: 'delete',
-                p_id: id
-            });
+            const { error } = await supabase.schema('api').rpc('delete_spotlight', { p_id: id });
             if (error) throw error;
             showToast('Spotlight deleted', 'success');
             fetchData();

@@ -84,8 +84,8 @@ const TagLibraryTab = forwardRef<TagLibraryTabHandle, TagLibraryTabProps>(functi
         setIsLoading(true);
         try {
             const [typesRes, tagsRes] = await Promise.all([
-                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tag_types' }),
-                supabase.schema('api').rpc('get_admin_registry_data', { p_tab: 'tags' })
+                supabase.schema('api').rpc('get_tag_types'),
+                supabase.schema('api').rpc('get_tags')
             ]);
 
             if (typesRes.error) throw typesRes.error;
@@ -106,11 +106,9 @@ const TagLibraryTab = forwardRef<TagLibraryTabHandle, TagLibraryTabProps>(functi
 
     const handleToggleTag = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
-                p_tab: 'tags',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_tag', {
                 p_id: id,
-                p_params: { is_active: !currentValue }
+                p_is_active: !currentValue
             });
 
             if (error) throw error;
@@ -123,11 +121,9 @@ const TagLibraryTab = forwardRef<TagLibraryTabHandle, TagLibraryTabProps>(functi
 
     const handleToggleType = async (id: string, currentValue: boolean) => {
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
-                p_tab: 'tag_types',
-                p_action: 'toggle',
+            const { error } = await supabase.schema('api').rpc('toggle_tag_type', {
                 p_id: id,
-                p_params: { is_active: !currentValue }
+                p_is_active: !currentValue
             });
 
             if (error) throw error;
@@ -178,8 +174,7 @@ const TagLibraryTab = forwardRef<TagLibraryTabHandle, TagLibraryTabProps>(functi
 
         setIsSavingTag(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
-                p_tab: 'tags',
+            const { data, error } = await supabase.schema('api').rpc('upsert_tag', {
                 p_data: editingTag ? { ...tagForm, id: editingTag.id } : tagForm
             });
 
@@ -245,13 +240,10 @@ const TagLibraryTab = forwardRef<TagLibraryTabHandle, TagLibraryTabProps>(functi
 
         setIsSavingType(true);
         try {
-            const { error } = await supabase.schema('api').rpc('admin_upsert_registry_item', {
-                p_tab: 'tag_types',
-                p_data: {
-                    id: editingType ? editingType.id : typeForm.id.toLowerCase().replace(/\s+/g, '_'),
-                    description: typeForm.description,
-                    is_active: typeForm.is_active
-                }
+            const { error } = await supabase.schema('api').rpc('upsert_tag_type', {
+                p_id: editingType ? editingType.id : typeForm.id.toLowerCase().replace(/\s+/g, '_'),
+                p_description: typeForm.description,
+                p_is_active: typeForm.is_active
             });
 
             if (error) throw error;
@@ -360,9 +352,7 @@ const TagLibraryTab = forwardRef<TagLibraryTabHandle, TagLibraryTabProps>(functi
         })) return;
 
         try {
-            const { error } = await supabase.schema('api').rpc('admin_manage_registry_item', {
-                p_tab: 'tags',
-                p_action: 'delete',
+            const { error } = await supabase.schema('api').rpc('delete_tag', {
                 p_id: tag.id
             });
             if (error) throw error;
