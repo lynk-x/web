@@ -323,19 +323,6 @@ export function createFinanceRepository(client: DbClient) {
             return { data: (data as { items?: Record<string, unknown>[]; total?: number })?.items ?? [], total: (data as { items?: Record<string, unknown>[]; total?: number })?.total ?? null, error: null };
         },
 
-        /** Approve or reject a refund request for an organizer's own event. */
-        async approveOrganizerRefund(
-            refundId: string,
-            status: 'approved' | 'rejected'
-        ): Promise<RepoResult<Record<string, unknown>>> {
-            const { data, error } = await client.schema('api').rpc('approve_organizer_refund_request', {
-                p_refund_id: refundId,
-                p_status: status,
-            });
-            if (error) return { data: null, error: toError(error) };
-            return { data: data as Record<string, unknown>, error: null };
-        },
-
         /** Retry a failed payout via the `retry_payout` RPC. */
         async retryPayout(
             payoutId: string

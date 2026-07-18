@@ -9,11 +9,22 @@ import type { ActionItem } from '@/components/shared/TableRowActions';
 
 export interface Refund {
     id: string;
+    // The refund_requests row's raw created_at (partition key) — required
+    // as-is by api.decide_refund_request, separate from the display-only
+    // created_at string below.
+    requestedAtRaw: string;
     reference: string;
     event_name: string;
     ticket_code: string;
-    amount: number;
-    currency: string;
+    reason?: string;
+    // Null until the organizer approves and sets a granted amount — tickets
+    // are non-refundable by default, so there is no request-time amount.
+    amount?: number;
+    currency?: string;
+    // The ticket's original purchase price/currency — shown as context and
+    // used as the max/default when prompting the organizer for an amount.
+    ticketPrice?: number;
+    ticketCurrency?: string;
     status: 'pending' | 'approved' | 'rejected' | 'processed';
     created_at: string;
     processed_at?: string;
@@ -28,7 +39,11 @@ interface RefundTableProps {
     totalPages?: number;
     onPageChange?: (page: number) => void;
     isLoading?: boolean;
-    onStatusChange?: (refundId: string, status: 'approved' | 'rejected') => void;
+    // Opens the amount-entry modal — approval doesn't happen directly from
+    // this table since tickets are non-refundable by default and the
+    // organizer must set a granted amount.
+    onApprove?: (refund: Refund) => void;
+    onReject?: (refund: Refund) => void;
 }
 
 const getRefundStatusVariant = (status: string): BadgeVariant => {
@@ -50,7 +65,8 @@ const RefundTable: React.FC<RefundTableProps> = ({
     totalPages = 1,
     onPageChange,
     isLoading = false,
-    onStatusChange,
+    onApprove,
+    onReject,
 }) => {
     const { showToast } = useToast();
 
@@ -78,16 +94,20 @@ const RefundTable: React.FC<RefundTableProps> = ({
             ),
         },
         {
-            header: 'Currency',
+            header: 'Ticket Price',
             render: (refund, _idx) => (
-                <span style={{ fontWeight: 600 }}>{refund.currency || '—'}</span>
+                <span style={{ fontWeight: 600 }}>
+                    {refund.ticketPrice != null
+                        ? formatCurrency(refund.ticketPrice, refund.ticketCurrency)
+                        : '—'}
+                </span>
             ),
         },
         {
-            header: 'Amount',
+            header: 'Refund Amount',
             render: (refund, _idx) => (
                 <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>
-                    {formatCurrency(refund.amount, refund.currency)}
+                    {refund.amount != null ? formatCurrency(refund.amount, refund.currency) : 'Not yet set'}
                 </div>
             ),
         },
@@ -117,13 +137,13 @@ const RefundTable: React.FC<RefundTableProps> = ({
                       label: 'Approve',
                       variant: 'success' as const,
                       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-                      onClick: () => onStatusChange ? onStatusChange(refund.id, 'approved') : showToast('Refund approval not yet available.', 'warning'),
+                      onClick: () => onApprove ? onApprove(refund) : showToast('Refund approval not yet available.', 'warning'),
                   },
                   {
                       label: 'Reject',
                       variant: 'danger' as const,
                       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-                      onClick: () => onStatusChange ? onStatusChange(refund.id, 'rejected') : showToast('Refund rejection not yet available.', 'warning'),
+                      onClick: () => onReject ? onReject(refund) : showToast('Refund rejection not yet available.', 'warning'),
                   },
               ]
             : []),

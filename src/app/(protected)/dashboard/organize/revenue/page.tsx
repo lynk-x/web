@@ -7,6 +7,7 @@ import styles from './page.module.css';
 import PayoutTable from '@/components/features/finance/PayoutTable';
 import RefundTable, { type Refund } from '@/components/features/finance/RefundTable';
 import PayoutInvoiceModal from '@/components/features/finance/PayoutInvoiceModal';
+import ApproveRefundModal from '@/components/features/finance/ApproveRefundModal';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -60,6 +61,7 @@ function RevenueContent() {
     const [totalRefunds, setTotalRefunds] = useState(0);
     const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
     const [isRefundsLoading, setIsRefundsLoading] = useState(true);
+    const [refundToApprove, setRefundToApprove] = useState<Refund | null>(null);
     const itemsPerPage = 10;
     const [payoutsPage, setPayoutsPage] = useState(1);
     const [refundsPage, setRefundsPage] = useState(1);
@@ -86,15 +88,19 @@ function RevenueContent() {
     });
 
     const buildRefundRow = (r: Record<string, unknown>): Refund => ({
-        id:           String(r.refund_id ?? r.id ?? ''),
-        reference:    String(r.reference ?? ''),
-        event_name:   String(r.event_name ?? ''),
-        ticket_code:  String(r.ticket_code ?? ''),
-        amount:       Number(r.amount) || 0,
-        currency:     String(r.currency ?? ''),
-        status:       String(r.status ?? '') as Refund['status'],
-        created_at:   String(r.created_at ?? ''),
-        processed_at: typeof r.processed_at === 'string' ? r.processed_at : undefined,
+        id:             String(r.refund_id ?? r.id ?? ''),
+        requestedAtRaw: String(r.requested_at ?? ''),
+        reference:      String(r.reference ?? ''),
+        event_name:     String(r.event_name ?? ''),
+        ticket_code:    String(r.ticket_code ?? ''),
+        reason:         typeof r.reason === 'string' ? r.reason : undefined,
+        amount:         r.amount != null ? Number(r.amount) : undefined,
+        currency:       typeof r.currency === 'string' ? r.currency : undefined,
+        ticketPrice:    r.ticket_price != null ? Number(r.ticket_price) : undefined,
+        ticketCurrency: typeof r.ticket_currency === 'string' ? r.ticket_currency : undefined,
+        status:         String(r.status ?? '') as Refund['status'],
+        created_at:     String(r.requested_at ?? ''),
+        processed_at:   typeof r.processed_at === 'string' ? r.processed_at : undefined,
     });
 
     /* ── Data fetch: summary ─────────────────────────────────────────────────── */
@@ -168,22 +174,44 @@ function RevenueContent() {
         }
     }, [activeAccount, supabase, refundsPage, refundStatusFilter, startDate, endDate, showToast]);
 
-    const handleRefundStatusChange = async (refundId: string, status: 'approved' | 'rejected') => {
-        if (status === 'rejected' && !await confirm('Reject this refund request? This cannot be undone.', {
+    const handleRejectRefund = async (refund: Refund) => {
+        if (!await confirm('Reject this refund request? This cannot be undone.', {
             title: 'Reject Refund',
             confirmLabel: 'Reject'
         })) return;
 
         try {
-            const { error } = await supabase.schema('api').rpc('approve_organizer_refund_request', {
-                p_refund_id: refundId,
-                p_status: status
+            const { error } = await supabase.schema('api').rpc('decide_refund_request', {
+                p_refund_id: refund.id,
+                p_created_at: refund.requestedAtRaw,
+                p_decision: 'rejected',
             });
             if (error) throw error;
-            showToast(`Refund ${status}.`, 'success');
+            showToast('Refund rejected.', 'success');
             fetchRefunds();
         } catch (err) {
-            showToast(getErrorMessage(err) || `Failed to ${status === 'approved' ? 'approve' : 'reject'} refund.`, 'error');
+            showToast(getErrorMessage(err) || 'Failed to reject refund.', 'error');
+        }
+    };
+
+    // Tickets are non-refundable by default — approval is a discretionary
+    // exception, so the organizer sets the amount via ApproveRefundModal
+    // rather than the platform computing one automatically.
+    const handleApproveRefund = async (refund: Refund, amount: number) => {
+        try {
+            const { error } = await supabase.schema('api').rpc('decide_refund_request', {
+                p_refund_id: refund.id,
+                p_created_at: refund.requestedAtRaw,
+                p_decision: 'approved',
+                p_amount: amount,
+                p_currency: refund.ticketCurrency ?? refund.currency,
+            });
+            if (error) throw error;
+            showToast('Refund approved.', 'success');
+            setRefundToApprove(null);
+            fetchRefunds();
+        } catch (err) {
+            showToast(getErrorMessage(err) || 'Failed to approve refund.', 'error');
         }
     };
 
@@ -383,7 +411,8 @@ function RevenueContent() {
                         totalPages={Math.ceil(totalRefunds / itemsPerPage)}
                         onPageChange={setRefundsPage}
                         isLoading={isRefundsLoading}
-                        onStatusChange={handleRefundStatusChange}
+                        onApprove={setRefundToApprove}
+                        onReject={handleRejectRefund}
                     />
                 )}
             </div>
@@ -416,6 +445,12 @@ function RevenueContent() {
                 onClose={() => setSelectedPayoutForInvoice(null)}
                 payout={selectedPayoutForInvoice}
                 accountName={activeAccount?.name}
+            />
+
+            <ApproveRefundModal
+                refund={refundToApprove}
+                onClose={() => setRefundToApprove(null)}
+                onConfirm={handleApproveRefund}
             />
 
             {ConfirmDialog}
