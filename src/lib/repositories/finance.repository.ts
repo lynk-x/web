@@ -97,14 +97,16 @@ export interface TaxRate {
 
 /**
  * `request_account_withdrawal` returns a jsonb envelope. The shape comes directly from
- * the function body (success, payout_id, status, amount, currency).
+ * the function body (success, payout_id, status, fee, net_settlement).
+ * `fee` is priced off the withdrawing account's country (see api.v1_withdrawal_fee_rates)
+ * and already reduces `net_settlement` — the requested `amount` is the gross figure.
  */
 export interface RequestPayoutResult {
     success: boolean;
     payout_id: string;
     status: PayoutStatus;
-    amount: number;
-    currency: string;
+    fee: number;
+    net_settlement: number;
 }
 
 export function createFinanceRepository(client: DbClient) {

@@ -12,6 +12,14 @@ import type { AccountWallet, AccountPaymentMethod } from '@/types/organize';
 import type { ActionItem } from '@/components/shared/TableRowActions';
 import { useAccountPermissions } from '@/hooks/useAccountPermissions';
 import { useWalletPinGate } from '@/hooks/useWalletPinGate';
+import { useOrganization } from '@/context/OrganizationContext';
+
+interface WithdrawalFeeRate {
+    country_code: string | null;
+    rate_percent: number;
+    min_fee: number;
+    currency: string;
+}
 
 interface WalletsTableProps {
     data: AccountWallet[];
@@ -27,6 +35,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
     const { can } = useAccountPermissions(accountId);
     const hasManageBilling = can('can_manage_billing');
     const { requestPinHash, PinGateModals } = useWalletPinGate();
+    const { activeAccount } = useOrganization();
 
     const [selectedWallet, setSelectedWallet] = useState<AccountWallet | null>(null);
     const [activeModal, setActiveModal] = useState<'none' | 'withdraw' | 'topup' | 'transfer' | 'history'>('none');
@@ -36,6 +45,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
     const [selectedPayoutMethod, setSelectedPayoutMethod] = useState('');
     const [payoutMethods, setPayoutMethods] = useState<AccountPaymentMethod[]>([]);
     const [isWithdrawing, setIsWithdrawing] = useState(false);
+    const [withdrawalFeeRate, setWithdrawalFeeRate] = useState<WithdrawalFeeRate | null>(null);
 
     // Topup State
     const [topupAmount, setTopupAmount] = useState('');
@@ -58,6 +68,19 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
             // Fetch payout methods
             supabase.schema('api').from('v1_account_payment_methods').select('*').eq('account_id', accountId)
                 .then(({ data }) => setPayoutMethods(data || []));
+
+            // Fetch the applicable withdrawal fee rate for this account's country,
+            // falling back to the global (NULL country_code) rate — mirrors the
+            // lookup finance.calculate_withdrawal_fee does server-side, so this is
+            // a preview only; the RPC response after submit is authoritative.
+            supabase.schema('api').from('v1_withdrawal_fee_rates')
+                .select('country_code, rate_percent, min_fee, currency')
+                .or(`country_code.eq.${activeAccount?.country_code || ''},country_code.is.null`)
+                .then(({ data }) => {
+                    const rows = (data || []) as WithdrawalFeeRate[];
+                    const countryRate = rows.find(r => r.country_code === activeAccount?.country_code);
+                    setWithdrawalFeeRate(countryRate || rows.find(r => r.country_code === null) || null);
+                });
         }
         if (activeModal === 'topup') {
             // Fetch top up providers
@@ -79,7 +102,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
                 setIsHistoryLoading(false);
             });
         }
-    }, [activeModal, accountId, selectedWallet, supabase]);
+    }, [activeModal, accountId, selectedWallet, supabase, activeAccount?.country_code]);
 
     const handleWithdraw = async () => {
         if (!accountId || !selectedWallet) return;
@@ -97,7 +120,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
         setIsWithdrawing(true);
         try {
-            const { error } = await supabase.schema('api').rpc('request_account_withdrawal', {
+            const { data, error } = await supabase.schema('api').rpc('request_account_withdrawal', {
                 p_account_id: accountId,
                 p_amount: Number(withdrawAmount),
                 p_currency: selectedWallet.currency,
@@ -105,7 +128,11 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
                 p_pin_hash: pinHash
             });
             if (error) throw error;
-            showToast("Withdrawal requested successfully.", "success");
+            const netSettlement = data?.net_settlement;
+            const message = typeof netSettlement === 'number'
+                ? `Withdrawal requested. You'll receive ${new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedWallet.currency }).format(netSettlement)} after fees.`
+                : "Withdrawal requested successfully.";
+            showToast(message, "success");
             closeModal();
             if (onRefresh) onRefresh();
         } catch (err: any) {
@@ -189,6 +216,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
         setSelectedWallet(null);
         setWithdrawAmount('');
         setSelectedPayoutMethod('');
+        setWithdrawalFeeRate(null);
         setTopupAmount('');
         setSelectedProvider('');
         setPayerIdentity('');
@@ -196,6 +224,20 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
         setTransferToCurrency('');
         setTransactions([]);
     };
+
+    // Preview only — mirrors finance.calculate_withdrawal_fee's percent-vs-floor
+    // logic, but only when the configured rate's currency matches the wallet's
+    // (the common case for all seeded rates). Cross-currency floors are skipped
+    // here rather than reproduced with a client-side FX guess; the actual fee
+    // returned by the RPC on submit is always authoritative regardless.
+    const estimatedFee = (() => {
+        if (!withdrawalFeeRate || !selectedWallet) return null;
+        const amount = Number(withdrawAmount);
+        if (!amount || amount <= 0) return null;
+        const percentFee = amount * (withdrawalFeeRate.rate_percent / 100);
+        if (withdrawalFeeRate.currency !== selectedWallet.currency) return percentFee;
+        return Math.max(percentFee, withdrawalFeeRate.min_fee);
+    })();
 
     const columns = [
         {
@@ -315,6 +357,22 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
                         value={selectedPayoutMethod}
                         onChange={(e) => setSelectedPayoutMethod(e.target.value)}
                     />
+                    {estimatedFee !== null && selectedWallet && (
+                        <div style={{
+                            display: 'flex', flexDirection: 'column', gap: '4px',
+                            padding: '12px', borderRadius: '8px',
+                            background: 'rgba(255,255,255,0.03)', fontSize: '13px'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
+                                <span>Withdrawal fee{withdrawalFeeRate?.country_code ? '' : ' (estimated)'}</span>
+                                <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedWallet.currency }).format(estimatedFee)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                                <span>You'll receive</span>
+                                <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedWallet.currency }).format(Math.max(Number(withdrawAmount) - estimatedFee, 0))}</span>
+                            </div>
+                        </div>
+                    )}
                     <Button variant="primary" onClick={handleWithdraw} isLoading={isWithdrawing} style={{ marginTop: '8px' }}>
                         Submit Withdrawal Request
                     </Button>
