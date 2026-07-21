@@ -603,7 +603,7 @@ const CheckoutView: React.FC = () => {
     }
 
     // ── Empty cart ────────────────────────────────────────────────────────────
-    if (items.length === 0 && !isLoading) {
+    if (items.length === 0 && !isLoading && !isSubmitting && paymentStatus !== 'waiting') {
         return (
             <CheckoutErrorView
                 title="Your cart is empty"
@@ -748,7 +748,15 @@ const CheckoutView: React.FC = () => {
 
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Email Address</label>
-                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`} placeholder="john@example.com" />
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`}
+                                            placeholder="john@example.com"
+                                            autoFocus // Automatically focus email address input first on page load
+                                        />
                                         {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
                                     </div>
 
@@ -772,14 +780,13 @@ const CheckoutView: React.FC = () => {
                                                 }}
                                                 className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`}
                                                 placeholder="700 000 000"
-                                                autoFocus
                                                 disabled={otpVerified}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={handleSendOtp}
                                                 disabled={otpSending || otpVerified || otpResendCooldown > 0}
-                                                className={styles.applyBtn}
+                                                className={styles.sendOtpBtn} // Styled with a green background by default
                                                 style={{ whiteSpace: 'nowrap' }}
                                             >
                                                 {otpVerified

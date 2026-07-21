@@ -158,7 +158,14 @@ const OrderConfirmationPage = () => {
                 </Link>
             </header>
 
-            <Suspense fallback={<div className={styles.loading}>Loading Confirmation...</div>}>
+            <Suspense fallback={
+                <main className={styles.content}>
+                    <div className={styles.successHeader}>
+                        <h1 className={styles.title}>Confirming…</h1>
+                        <p className={styles.message}>Verifying your order, one moment.</p>
+                    </div>
+                </main>
+            }>
                 <ConfirmationContent />
             </Suspense>
         </div>

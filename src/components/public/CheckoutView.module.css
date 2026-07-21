@@ -538,3 +538,29 @@
     font-weight: 700;
     color: var(--color-brand-primaryText);
 }
+
+.sendOtpBtn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-brand-primary);
+    border: 1px solid var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sendOtpBtn:hover:not(:disabled) {
+    background-color: transparent;
+    color: var(--color-brand-primary);
+}
+
+.sendOtpBtn:disabled {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
