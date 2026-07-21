@@ -703,7 +703,7 @@ const CheckoutView: React.FC = () => {
                                                 />
                                                 <button
                                                     onClick={handleApplyPromo}
-                                                    className={styles.applyBtn}
+                                                    className={styles.filledActionBtn} // Styled with a green background by default
                                                     disabled={promoLoading || !promoCode.trim()}
                                                 >
                                                     {promoLoading ? '…' : 'Apply'}
@@ -786,7 +786,7 @@ const CheckoutView: React.FC = () => {
                                                 type="button"
                                                 onClick={handleSendOtp}
                                                 disabled={otpSending || otpVerified || otpResendCooldown > 0}
-                                                className={styles.sendOtpBtn} // Styled with a green background by default
+                                                className={styles.filledActionBtn} // Styled with a green background by default
                                                 style={{ whiteSpace: 'nowrap' }}
                                             >
                                                 {otpVerified
