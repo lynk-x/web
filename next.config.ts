@@ -10,7 +10,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.gstatic.com https://apis.google.com https://static.cloudflareinsights.com https://cdn.jsdelivr.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://*.supabase.co https://www.gstatic.com https://apis.google.com https://static.cloudflareinsights.com https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://cdn.lynk-x.app https://*.supabase.co https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://api.qrserver.com https://*.r2.cloudflarestorage.com",
