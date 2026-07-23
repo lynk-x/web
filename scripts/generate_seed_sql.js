@@ -148,7 +148,11 @@ async function run() {
   console.log('Loading Hugging Face Transformers...');
   const { pipeline, env } = await import('@huggingface/transformers');
   env.allowLocalModels = false;
-  
+  // R2-hosted mirror, matching the apps and backfill script — avoids this
+  // script depending on huggingface.co independently of them.
+  env.remoteHost = 'https://cdn.lynk-x.app/';
+  env.remotePathTemplate = 'models/granite-embedding-97m/';
+
   console.log('Loading Granite ONNX embedding model...');
   const extractor = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
 

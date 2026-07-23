@@ -54,6 +54,10 @@ async function getExtractor() {
   if (!extractorPipeline) {
     const { pipeline, env } = await import('@huggingface/transformers');
     env.allowLocalModels = false;
+    // R2-hosted mirror, matching the apps — avoids this script depending on
+    // huggingface.co independently of them (rate limits, availability).
+    env.remoteHost = 'https://cdn.lynk-x.app/';
+    env.remotePathTemplate = 'models/granite-embedding-97m/';
     extractorPipeline = await pipeline('feature-extraction', 'yuiseki/granite-embedding-97m-multilingual-r2-ONNX');
   }
   return extractorPipeline;
