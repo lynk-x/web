@@ -23,6 +23,7 @@ export interface AccountMember {
     id: string; // The user ID or invitation ID
     userId?: string;
     name: string;
+    reference?: string;
     email: string;
     phone?: string;
     role: string;
@@ -135,6 +136,7 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                 id: m.user_id, // For members, ID is user_id so we do not clash with invites
                 userId: m.user_id,
                 name: m.full_name || m.user_name || 'Unknown User',
+                reference: m.user_reference || '',
                 email: m.email || '',
                 phone: m.phone_number || '',
                 role: m.role_slug,
@@ -411,9 +413,19 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                             {member.name}
                             {member.isPending && <span style={{ fontSize: '11px', marginLeft: '6px', color: '#f5a623' }}>Pending</span>}
                         </span>
-                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{member.email}</span>
+                        {member.reference && (
+                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{member.reference}</span>
+                        )}
                     </div>
                 </div>
+            )
+        },
+        {
+            header: 'Email',
+            render: (member) => (
+                member.email
+                    ? <span style={{ fontSize: '13px', opacity: 0.8 }}>{member.email}</span>
+                    : <span style={{ fontSize: '13px', color: '#ff4d4d' }}>Missing</span>
             )
         },
         {

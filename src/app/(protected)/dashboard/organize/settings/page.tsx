@@ -358,40 +358,41 @@ function SettingsContent() {
                             <div className={adminStyles.formGrid}>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Organization Name <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Events" disabled={!can('manage_settings')} />
+                                    <Input name="name" autoComplete="off" value={formData.name} onChange={handleInputChange} placeholder="e.g. Acme Events" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Support Email <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input type="email" name="support_email" value={formData.support_email} onChange={handleInputChange} placeholder="support@organization.com" disabled={!can('manage_settings')} />
+                                    <Input type="email" name="support_email" autoComplete="off" value={formData.support_email} onChange={handleInputChange} placeholder="support@organization.com" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Primary Contact <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input name="primary_contact" value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." disabled={!can('manage_settings')} />
+                                    <Input name="primary_contact" autoComplete="off" value={formData.primary_contact} onChange={handleInputChange} placeholder="+000..." disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Secondary Contact</label>
-                                    <Input name="secondary_contact" value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" disabled={!can('manage_settings')} />
+                                    <Input name="secondary_contact" autoComplete="off" value={formData.secondary_contact} onChange={handleInputChange} placeholder="+000... or alternative email" disabled={!can('manage_settings')} />
                                 </div>
                                 <div style={{ gridColumn: '1 / -1', margin: '12px 0', borderBottom: '1px solid var(--color-interface-outline)' }} />
 
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Address Line</label>
-                                    <Input name="address_line" value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" disabled={!can('manage_settings')} />
+                                    <Input name="address_line" autoComplete="off" value={formData.address_line} onChange={handleInputChange} placeholder="e.g. 123 Event Street" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Town</label>
-                                    <Input name="town" value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" disabled={!can('manage_settings')} />
+                                    <Input name="town" autoComplete="off" value={formData.town} onChange={handleInputChange} placeholder="e.g. Westlands" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>City <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" disabled={!can('manage_settings')} />
+                                    <Input name="city" autoComplete="off" value={formData.city} onChange={handleInputChange} placeholder="e.g. Nairobi" disabled={!can('manage_settings')} />
                                 </div>
                                 <div className={adminStyles.inputGroup}>
                                     <label className={adminStyles.label}>Country <span className={adminStyles.requiredIndicator}>*Required</span></label>
-                                    <CountrySelect 
-                                        value={formData.country} 
-                                        onChange={(val) => setFormData(prev => ({ ...prev, country: val }))} 
+                                    <CountrySelect
+                                        value={formData.country}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, country: val }))}
                                         disabled={!can('manage_settings')}
+                                        autoComplete="off"
                                     />
                                 </div>
                             </div>

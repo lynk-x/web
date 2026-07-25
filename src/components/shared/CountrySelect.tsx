@@ -15,6 +15,7 @@ interface CountrySelectProps {
     className?: string;
     placeholder?: string;
     disabled?: boolean;
+    autoComplete?: string;
 }
 
 export default function CountrySelect({
@@ -22,7 +23,8 @@ export default function CountrySelect({
     onChange,
     className,
     placeholder = "Select Country...",
-    disabled = false
+    disabled = false,
+    autoComplete
 }: CountrySelectProps) {
     const supabase = useMemo(() => createClient(), []);
     const [countries, setCountries] = useState<Country[]>([]);
@@ -60,6 +62,7 @@ export default function CountrySelect({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled || isLoading}
+            autoComplete={autoComplete}
         >
             <option value="">{isLoading ? 'Loading countries...' : placeholder}</option>
             {countries.map((country) => (

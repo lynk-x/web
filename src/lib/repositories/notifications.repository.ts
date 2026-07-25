@@ -62,17 +62,31 @@ export interface NotificationPreference {
 
 export function createNotificationsRepository(client: DbClient) {
     return {
-        /** Fetch notifications for a user, newest first. */
-        async getForUser(userId: string, opts?: ListOptions): Promise<RepoResult<Notification[]>> {
+        /**
+         * Fetch notifications for a user, newest first. Pass `accountId` to
+         * scope to whichever account is currently active in the dashboard
+         * (per OrganizationContext) — every notification's `data` jsonb now
+         * carries an `account_id` (see migration
+         * 20260725145245_add_account_id_to_notification_data.sql), so this
+         * filters on that key rather than a real column. Omit `accountId`
+         * to get the unfiltered, all-accounts list.
+         */
+        async getForUser(userId: string, opts?: ListOptions & { accountId?: string }): Promise<RepoResult<Notification[]>> {
             const page = opts?.page ?? 1;
             const size = opts?.pageSize ?? 20;
             const from = (page - 1) * size;
 
-            const { data, error } = await client
+            let query = client
                 .schema('api')
                 .from('v1_notifications')
                 .select('id, user_id, type, title, body, action_url, data, metadata, is_read, created_at')
-                .eq('user_id', userId)
+                .eq('user_id', userId);
+
+            if (opts?.accountId) {
+                query = query.eq('data->>account_id', opts.accountId);
+            }
+
+            const { data, error } = await query
                 .order('created_at', { ascending: false })
                 .range(from, from + size - 1);
 
@@ -80,14 +94,20 @@ export function createNotificationsRepository(client: DbClient) {
             return { data: data as Notification[], error: null };
         },
 
-        /** Count unread notifications for a user. */
-        async countUnread(userId: string): Promise<RepoResult<number>> {
-            const { count, error } = await client
+        /** Count unread notifications for a user, optionally scoped to an active account (see getForUser). */
+        async countUnread(userId: string, accountId?: string): Promise<RepoResult<number>> {
+            let query = client
                 .schema('api')
                 .from('v1_notifications')
                 .select('id', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('is_read', false);
+
+            if (accountId) {
+                query = query.eq('data->>account_id', accountId);
+            }
+
+            const { count, error } = await query;
 
             if (error) return { data: null, error: toError(error) };
             return { data: count ?? 0, error: null };

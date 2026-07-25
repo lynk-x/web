@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { createNotificationsRepository } from '@/lib/repositories';
 import type { Notification } from '@/lib/repositories/notifications.repository';
 import { formatRelativeTime } from '@/utils/format';
+import { useOrganization } from '@/context/OrganizationContext';
 import PageHeader from '@/components/dashboard/PageHeader';
 import EmptyStateGuide from '@/components/dashboard/EmptyStateGuide';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -15,15 +16,17 @@ export default function NotificationsPage() {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const notificationsRepo = useMemo(() => createNotificationsRepository(supabase), [supabase]);
+    const { activeAccount } = useOrganization();
 
     const [userId, setUserId] = useState<string | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isMarkingAll, setIsMarkingAll] = useState(false);
+    const [showAllAccounts, setShowAllAccounts] = useState(false);
 
-    const fetchNotifications = useCallback(async (uid: string) => {
+    const fetchNotifications = useCallback(async (uid: string, accountId?: string) => {
         setIsLoading(true);
-        const { data } = await notificationsRepo.getForUser(uid, { page: 1, pageSize: 50 });
+        const { data } = await notificationsRepo.getForUser(uid, { page: 1, pageSize: 50, accountId });
         setNotifications(data || []);
         setIsLoading(false);
     }, [notificationsRepo]);
@@ -33,13 +36,14 @@ export default function NotificationsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setUserId(user.id);
-                fetchNotifications(user.id);
+                fetchNotifications(user.id, showAllAccounts ? undefined : activeAccount?.id);
             } else {
                 setIsLoading(false);
             }
         };
         init();
-    }, [supabase, fetchNotifications]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [supabase, fetchNotifications, activeAccount?.id, showAllAccounts]);
 
     const handleMarkRead = async (notification: Notification) => {
         if (notification.is_read) return;
@@ -76,6 +80,19 @@ export default function NotificationsPage() {
                 } : undefined}
                 onClose={() => router.back()}
             />
+
+            {activeAccount && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                    <input
+                        type="checkbox"
+                        checked={showAllAccounts}
+                        onChange={(e) => setShowAllAccounts(e.target.checked)}
+                    />
+                    {showAllAccounts
+                        ? 'Showing notifications for all your accounts'
+                        : `Showing notifications for ${activeAccount.name || 'this account'} only`}
+                </label>
+            )}
 
             <div className={sharedStyles.pageCard}>
                 {isLoading ? (
