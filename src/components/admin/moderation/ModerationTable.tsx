@@ -9,7 +9,7 @@ import type { ActionItem } from '../../shared/TableRowActions';
 export interface ModerationEntry {
     id: string;
     item_id: string;
-    item_type: 'event' | 'campaign' | 'forum_message' | 'forum_media' | 'user_profile';
+    item_type: 'event' | 'campaign' | 'forum_message' | 'forum_media' | 'user_profile' | 'forum';
     status: 'pending_review' | 'approved' | 'rejected' | 'flagged' | 'appealed' | 'resolved';
     reviewer_id: string | null;
     review: Record<string, unknown> | null;

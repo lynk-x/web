@@ -270,7 +270,8 @@ export default function AdminModerationPage() {
                         { id: 'all', label: 'All Content' },
                         { id: 'event', label: 'Events' },
                         { id: 'campaign', label: 'Campaigns' },
-                        { id: 'forum_message', label: 'Messages' }
+                        { id: 'forum_message', label: 'Messages' },
+                        { id: 'forum', label: 'Forums' }
                     ].map(type => (
                         <button 
                             key={type.id}
