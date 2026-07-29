@@ -145,6 +145,13 @@ export default function EventDetailPage() {
     const totalCapacity = tiers.reduce((s, t) => s + (t.capacity || 0), 0);
     const sellThrough = totalCapacity > 0 ? ((totalSold / totalCapacity) * 100).toFixed(1) : '0';
     const badge = STATUS_BADGE_MAP[event.status] || { label: event.status, variant: 'neutral' as BadgeVariant };
+    
+    // Resolve event cover image URL from available media metadata
+    const eventImage = (event as any).cover_image_url || 
+                       (event.media as any)?.cover_image_url || 
+                       (event.media as any)?.thumbnail_url || 
+                       (event.media as any)?.thumbnail || 
+                       (event.media as any)?.poster;
 
     return (
         <div className={adminStyles.container}>
@@ -161,7 +168,7 @@ export default function EventDetailPage() {
                 secondaryAction={(event.status === 'active' || event.status === 'published') ? {
                     label: 'Cancel Event',
                     onClick: () => setIsCancelModalOpen(true),
-                    className: adminStyles.btnDanger,
+                    className: adminStyles.btnSecondary,
                     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 } : undefined}
             />
@@ -191,78 +198,116 @@ export default function EventDetailPage() {
                 />
             </div>
 
-            {/* Quick Links */}
-            <QuickLinksRow className="tour-event-links">
-                {event.forum_reference && (
-                    <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
-                )}
-                <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
-                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
-                <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
-            </QuickLinksRow>
-
-            {/* Event Details Card */}
-            <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
-                <h2 className={adminStyles.sectionTitle}>Event Details</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                    <DetailRow label="Reference" value={event.reference} />
-                    <DetailRow label="Visibility" value={event.is_private ? 'Private (invite only)' : 'Public'} />
-                    <DetailRow label="Start" value={`${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`} />
-                    <DetailRow label="End" value={event.ends_at ? `${formatDate(event.ends_at)} at ${formatTime(event.ends_at)}` : 'Not set'} />
-                    <DetailRow label="Timezone" value={event.timezone || 'Etc/UTC'} />
-                    <DetailRow label="Currency" value={event.currency} />
-                    <DetailRow label="Created" value={formatDate(event.created_at)} />
-                    {event.cancellation_reason && (
-                        <DetailRow label="Cancellation Reason" value={event.cancellation_reason} />
-                    )}
-                </div>
-                {event.description && (
-                    <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-interface-outline)' }}>
-                        <p style={{ fontSize: '13px', opacity: 0.5, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</p>
-                        <p style={{ fontSize: '14px', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>{event.description}</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Ticket Tiers */}
-            <div className={`${adminStyles.pageCard} tour-event-tiers`}>
-                <h2 className={adminStyles.sectionTitle}>Ticket Tiers</h2>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                                <th style={thStyle}>Tier</th>
-                                <th style={thStyle}>Price</th>
-                                <th style={thStyle}>Sold</th>
-                                <th style={thStyle}>Capacity</th>
-                                <th style={thStyle}>Fill Rate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {tiers.map(tier => {
-                                const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
-                                return (
-                                    <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                        <td style={tdStyle}>{tier.display_name}</td>
-                                        <td style={tdStyle}>{tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}</td>
-                                        <td style={tdStyle}>{formatNumber(tier.tickets_sold)}</td>
-                                        <td style={tdStyle}>{formatNumber(tier.capacity)}</td>
-                                        <td style={tdStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${fill}%`, height: '100%', borderRadius: '3px', background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)' }} />
-                                                </div>
-                                                <span style={{ opacity: 0.7, fontSize: '13px' }}>{fill}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            {tiers.length === 0 && (
-                                <tr><td colSpan={5} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5 }}>No ticket tiers configured.</td></tr>
+            {/* Reorganized layout utilizing subPageGrid to present event details and image side-by-side */}
+            <div className={adminStyles.subPageGrid}>
+                {/* Left Column: Details & Tiers */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {/* Event Details Card */}
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Event Details</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                            <DetailRow label="Reference" value={event.reference} />
+                            <DetailRow label="Visibility" value={event.is_private ? 'Private (invite only)' : 'Public'} />
+                            <DetailRow label="Start" value={`${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`} />
+                            <DetailRow label="End" value={event.ends_at ? `${formatDate(event.ends_at)} at ${formatTime(event.ends_at)}` : 'Not set'} />
+                            <DetailRow label="Timezone" value={event.timezone || 'Etc/UTC'} />
+                            <DetailRow label="Currency" value={event.currency} />
+                            <DetailRow label="Created" value={formatDate(event.created_at)} />
+                            {event.cancellation_reason && (
+                                <DetailRow label="Cancellation Reason" value={event.cancellation_reason} />
                             )}
-                        </tbody>
-                    </table>
+                        </div>
+                        {event.description && (
+                            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-interface-outline)' }}>
+                                <p style={{ fontSize: '13px', opacity: 0.5, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</p>
+                                <p style={{ fontSize: '14px', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>{event.description}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Ticket Tiers */}
+                    <div className={`${adminStyles.pageCard} tour-event-tiers`}>
+                        <h2 className={adminStyles.sectionTitle}>Ticket Tiers</h2>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
+                                        <th style={thStyle}>Tier</th>
+                                        <th style={thStyle}>Price</th>
+                                        <th style={thStyle}>Sold</th>
+                                        <th style={thStyle}>Capacity</th>
+                                        <th style={thStyle}>Fill Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tiers.map(tier => {
+                                        const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
+                                        return (
+                                            <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
+                                                <td style={tdStyle}>{tier.display_name}</td>
+                                                <td style={tdStyle}>{tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}</td>
+                                                <td style={tdStyle}>{formatNumber(tier.tickets_sold)}</td>
+                                                <td style={tdStyle}>{formatNumber(tier.capacity)}</td>
+                                                <td style={tdStyle}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                                                            <div style={{ width: `${fill}%`, height: '100%', borderRadius: '3px', background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)' }} />
+                                                        </div>
+                                                        <span style={{ opacity: 0.7, fontSize: '13px' }}>{fill}%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {tiers.length === 0 && (
+                                        <tr><td colSpan={5} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5 }}>No ticket tiers configured.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Event Image & Quick Links */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {/* Event Image Card */}
+                    <div className={adminStyles.pageCard} style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-interface-outline)' }}>
+                        {eventImage ? (
+                            <img 
+                                src={eventImage} 
+                                alt={event.title} 
+                                style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} 
+                            />
+                        ) : (
+                            <div style={{ 
+                                width: '100%', 
+                                aspectRatio: '16/9', 
+                                background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.05) 100%)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                            }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                                    <circle cx="9" cy="9" r="2"/>
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                                </svg>
+                                <span style={{ fontSize: '13px', opacity: 0.4 }}>No cover image configured</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Quick Links */}
+                    <QuickLinksRow className="tour-event-links">
+                        {event.forum_reference && (
+                            <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
+                        )}
+                        <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
+                        <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
+                        <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
+                    </QuickLinksRow>
                 </div>
             </div>
 
