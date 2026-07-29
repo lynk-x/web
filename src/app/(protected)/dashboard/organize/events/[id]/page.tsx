@@ -11,7 +11,6 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
-import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
@@ -181,30 +180,6 @@ export default function EventDetailPage() {
                 } : undefined}
             />
 
-            {/* Stats Row */}
-            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-                <StatCard 
-                    label="Tickets Sold" 
-                    value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} 
-                    change={`${sellThrough}% sell-through`}
-                    trend={Number(sellThrough) >= 50 ? 'positive' : 'neutral'}
-                />
-                <StatCard 
-                    label="Revenue" 
-                    value={formatCurrency(revenueTotal, event.currency)} 
-                    trend={revenueTotal > 0 ? 'positive' : 'neutral'}
-                />
-                <StatCard 
-                    label="Check-ins" 
-                    value={formatNumber(scanCount)} 
-                    change={totalSold > 0 ? `${((scanCount / totalSold) * 100).toFixed(0)}% scanned` : undefined}
-                />
-                <StatCard 
-                    label="Community" 
-                    value={formatNumber(forumMemberCount)} 
-                    change="forum members"
-                />
-            </div>
 
             {/* Quick Links */}
             <QuickLinksRow className="tour-event-links">
@@ -322,18 +297,13 @@ export default function EventDetailPage() {
                                     Engage with your attendees, host live Q&As and coordinate event logistics directly in a private forum workspace.
                                 </p>
                             </div>
-                            
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
-                                <span style={{ fontSize: '12px', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Members</span>
-                                <span style={{ fontSize: '14px', fontWeight: 600 }}>{formatNumber(forumMemberCount)}</span>
-                            </div>
 
                             <a 
                                 href={getForumUrl(event.forum_reference)} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className={adminStyles.btnPrimary}
-                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', textDecoration: 'none', height: '38px', fontSize: '13px' }}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', textDecoration: 'none', height: '38px', fontSize: '13px', borderRadius: '8px' }}
                             >
                                 Open Forum
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -354,23 +324,13 @@ export default function EventDetailPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Event Control Panel',
-                        content: 'Your event\'s dedicated command center. See real-time performance metrics, jump to management tools and review how each ticket tier is selling.',
+                        content: 'Your event\'s dedicated command center. Jump to management tools, edit event details, and coordinate in the community forum.',
                         skipBeacon: true,
-                    },
-                    {
-                        target: '.tour-event-stats',
-                        title: 'Live Performance Metrics',
-                        content: 'Track tickets sold, gross revenue and active forum community members at a glance. These update in real-time so you always have the latest picture.',
                     },
                     {
                         target: '.tour-event-links',
                         title: 'Event Management Tools',
-                        content: 'Quick links to manage attendees, view check-in logs, access event analytics or edit the event listing — all from this panel.',
-                    },
-                    {
-                        target: '.tour-event-tiers',
-                        title: 'Ticket Tier Breakdown',
-                        content: 'Compare sales performance across your ticket tiers. See the price, units sold and remaining capacity for each — useful for deciding when to release more tickets.',
+                        content: 'Quick links to manage ticket tiers, view attendees, check-in logs, and access analytics — all from this panel.',
                     }
                 ]}
             />
