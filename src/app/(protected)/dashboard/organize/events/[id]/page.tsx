@@ -11,6 +11,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import Badge from '@/components/shared/Badge';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
+import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
@@ -180,34 +181,125 @@ export default function EventDetailPage() {
                 } : undefined}
             />
 
+            {/* Stats Row */}
+            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+                <StatCard 
+                    label="Tickets Sold" 
+                    value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} 
+                    change={`${sellThrough}% sell-through`}
+                    trend={Number(sellThrough) >= 50 ? 'positive' : 'neutral'}
+                />
+                <StatCard 
+                    label="Revenue" 
+                    value={formatCurrency(revenueTotal, event.currency)} 
+                    trend={revenueTotal > 0 ? 'positive' : 'neutral'}
+                />
+                <StatCard 
+                    label="Check-ins" 
+                    value={formatNumber(scanCount)} 
+                    change={totalSold > 0 ? `${((scanCount / totalSold) * 100).toFixed(0)}% scanned` : undefined}
+                />
+                <StatCard 
+                    label="Community" 
+                    value={formatNumber(forumMemberCount)} 
+                    change="forum members"
+                />
+            </div>
 
             {/* Quick Links */}
             <QuickLinksRow className="tour-event-links">
-                <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
-                <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
-                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
-                <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
+                    <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
+                    <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
+                    <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
+                </div>
+                {event && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px', padding: '4px 6px 4px 12px', minWidth: '320px', maxWidth: '100%' }}>
+                        <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600, marginRight: '4px', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>PUBLIC LINK</span>
+                        <input 
+                            type="text" 
+                            readOnly 
+                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`} 
+                            style={{ 
+                                flex: 1, 
+                                background: 'transparent', 
+                                border: 'none', 
+                                fontSize: '13px',
+                                color: 'inherit',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                outline: 'none',
+                                padding: 0
+                            }} 
+                        />
+                        <button 
+                            onClick={() => handleCopyLink(`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`)}
+                            className={adminStyles.btnSecondary} 
+                            style={{ padding: '6px 12px', whiteSpace: 'nowrap', height: '28px', fontSize: '12px', borderRadius: '6px' }}
+                        >
+                            {copied ? 'Copied!' : 'Copy'}
+                        </button>
+                    </div>
+                )}
             </QuickLinksRow>
 
-            {/* Reorganized layout utilizing subPageGrid to present event details and image side-by-side */}
+            {/* Reorganized layout utilizing subPageGrid to present event details and community forum side-by-side */}
             <div className={adminStyles.subPageGrid}>
                 {/* Left Column: Details */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Event Details Card */}
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle}>Event Details</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                            <DetailRow label="Reference" value={event.reference} />
-                            <DetailRow label="Visibility" value={event.is_private ? 'Private (invite only)' : 'Public'} />
-                            <DetailRow label="Start" value={`${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`} />
-                            <DetailRow label="End" value={event.ends_at ? `${formatDate(event.ends_at)} at ${formatTime(event.ends_at)}` : 'Not set'} />
-                            <DetailRow label="Timezone" value={event.timezone || 'Etc/UTC'} />
-                            <DetailRow label="Currency" value={event.currency} />
-                            <DetailRow label="Created" value={formatDate(event.created_at)} />
-                            {event.cancellation_reason && (
-                                <DetailRow label="Cancellation Reason" value={event.cancellation_reason} />
-                            )}
+                        
+                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                            {/* Left Side: Event Image */}
+                            <div style={{ flex: '1 1 300px', maxWidth: '360px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
+                                {eventImage ? (
+                                    <img 
+                                        src={eventImage} 
+                                        alt={event.title} 
+                                        style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} 
+                                    />
+                                ) : (
+                                    <div style={{ 
+                                        width: '100%', 
+                                        aspectRatio: '16/9', 
+                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.05) 100%)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px'
+                                    }}>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+                                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                                            <circle cx="9" cy="9" r="2"/>
+                                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                                        </svg>
+                                        <span style={{ fontSize: '13px', opacity: 0.4 }}>No cover image configured</span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Right Side: Details Items */}
+                            <div style={{ flex: '2 1 320px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                                    <DetailRow label="Reference" value={event.reference} />
+                                    <DetailRow label="Visibility" value={event.is_private ? 'Private (invite only)' : 'Public'} />
+                                    <DetailRow label="Start" value={`${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`} />
+                                    <DetailRow label="End" value={event.ends_at ? `${formatDate(event.ends_at)} at ${formatTime(event.ends_at)}` : 'Not set'} />
+                                    <DetailRow label="Timezone" value={event.timezone || 'Etc/UTC'} />
+                                    <DetailRow label="Currency" value={event.currency} />
+                                    <DetailRow label="Created" value={formatDate(event.created_at)} />
+                                    {event.cancellation_reason && (
+                                        <DetailRow label="Cancellation Reason" value={event.cancellation_reason} />
+                                    )}
+                                </div>
+                            </div>
                         </div>
+
                         {event.description && (
                             <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-interface-outline)' }}>
                                 <p style={{ fontSize: '13px', opacity: 0.5, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</p>
@@ -217,72 +309,8 @@ export default function EventDetailPage() {
                     </div>
                 </div>
 
-                {/* Right Column: Event Image & Quick Links */}
+                {/* Right Column: Community Forum */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    {/* Event Image Card */}
-                    <div className={adminStyles.pageCard} style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-interface-outline)' }}>
-                        {eventImage ? (
-                            <img 
-                                src={eventImage} 
-                                alt={event.title} 
-                                style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} 
-                            />
-                        ) : (
-                            <div style={{ 
-                                width: '100%', 
-                                aspectRatio: '16/9', 
-                                background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.05) 100%)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px'
-                            }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
-                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                                    <circle cx="9" cy="9" r="2"/>
-                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-                                </svg>
-                                <span style={{ fontSize: '13px', opacity: 0.4 }}>No cover image configured</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Event Page Link */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.5, marginBottom: '6px' }}>
-                                Event Page Link
-                            </label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <input 
-                                    type="text" 
-                                    readOnly 
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`} 
-                                    style={{ 
-                                        flex: 1, 
-                                        padding: '8px 12px', 
-                                        borderRadius: '8px', 
-                                        background: 'rgba(255,255,255,0.03)', 
-                                        border: '1px solid var(--color-interface-outline)', 
-                                        fontSize: '13px',
-                                        color: 'inherit',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden'
-                                    }} 
-                                />
-                                <button 
-                                    onClick={() => handleCopyLink(`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`)}
-                                    className={adminStyles.btnSecondary} 
-                                    style={{ padding: '8px 14px', whiteSpace: 'nowrap', height: '38px', minWidth: '80px', fontSize: '13px' }}
-                                >
-                                    {copied ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Community Forum Card */}
                     {event.forum_reference && (
                         <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -313,7 +341,6 @@ export default function EventDetailPage() {
                             </a>
                         </div>
                     )}
-
                 </div>
             </div>
 
@@ -324,13 +351,23 @@ export default function EventDetailPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Event Control Panel',
-                        content: 'Your event\'s dedicated command center. Jump to management tools, edit event details, and coordinate in the community forum.',
+                        content: 'Your event\'s dedicated command center. See real-time performance metrics, jump to management tools and review how each ticket tier is selling.',
                         skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-event-stats',
+                        title: 'Live Performance Metrics',
+                        content: 'Track tickets sold, gross revenue and active forum community members at a glance. These update in real-time so you always have the latest picture.',
                     },
                     {
                         target: '.tour-event-links',
                         title: 'Event Management Tools',
-                        content: 'Quick links to manage ticket tiers, view attendees, check-in logs, and access analytics — all from this panel.',
+                        content: 'Quick links to manage attendees, view check-in logs, access event analytics or edit the event listing — all from this panel.',
+                    },
+                    {
+                        target: '.tour-event-tiers',
+                        title: 'Ticket Tier Breakdown',
+                        content: 'Compare sales performance across your ticket tiers. See the price, units sold and remaining capacity for each — useful for deciding when to release more tickets.',
                     }
                 ]}
             />

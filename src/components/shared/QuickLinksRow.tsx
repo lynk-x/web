@@ -39,17 +39,26 @@ interface QuickLinksRowProps {
     children: React.ReactNode;
     /** Passed through so ProductTour can target this row (e.g. "tour-event-links"). */
     className?: string;
+    style?: React.CSSProperties;
 }
 
 /**
  * Row of pill-shaped quick-navigation links, shown near the top of a detail
  * page (event detail, campaign detail, etc) to jump to related sub-pages.
  */
-export default function QuickLinksRow({ children, className }: QuickLinksRowProps) {
+export default function QuickLinksRow({ children, className, style }: QuickLinksRowProps) {
     return (
         <div
             className={className}
-            style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}
+            style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                marginBottom: '16px', 
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                ...style 
+            }}
         >
             {children}
         </div>
