@@ -114,7 +114,7 @@ export default function AttendeesLandingPage() {
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="lineDraw" />
+                            <SplitMediaMotion variant="cardStack" />
                         </div>
                     </motion.div>
 
@@ -144,7 +144,7 @@ export default function AttendeesLandingPage() {
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="constellation" />
+                            <SplitMediaMotion variant="ticketPunch" />
                         </div>
                     </motion.div>
                 </section>

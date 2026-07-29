@@ -114,7 +114,7 @@ export default function AdvertisersLandingPage() {
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="constellation" />
+                            <SplitMediaMotion variant="flowLines" />
                         </div>
                     </motion.div>
 
@@ -143,7 +143,7 @@ export default function AdvertisersLandingPage() {
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="lineDraw" />
+                            <SplitMediaMotion variant="stackingBars" />
                         </div>
                     </motion.div>
                 </section>

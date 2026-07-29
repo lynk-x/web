@@ -17,57 +17,7 @@
     pointer-events: none;
 }
 
-/* ---------------- Line-draw variant ---------------- */
-.lineDrawSvg {
-    position: relative;
-    z-index: 2;
-    width: 62%;
-    overflow: visible;
-}
-
-.drawPath {
-    fill: transparent;
-    stroke: #ffffff;
-    stroke-width: 1.4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-dasharray: var(--len);
-    stroke-dashoffset: var(--len);
-}
-
-.xPath {
-    stroke: var(--color-brand-primary);
-}
-
-.drawing .drawPath {
-    animation: drawStroke 2.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
-}
-
-@keyframes drawStroke {
-    to {
-        stroke-dashoffset: 0;
-    }
-}
-
-.filled .drawPath {
-    transition: fill 0.9s ease, stroke-opacity 0.9s ease;
-    stroke-opacity: 0;
-}
-
-.filled .wordPath {
-    fill: #ffffff;
-}
-
-.filled .xPath {
-    fill: var(--color-brand-primary);
-}
-
-.hiddenOut .drawPath {
-    transition: opacity 0.7s ease;
-    opacity: 0;
-}
-
-/* ---------------- Constellation variant ---------------- */
+/* ---------------- Orbit system ---------------- */
 .system {
     position: relative;
     z-index: 2;
@@ -211,11 +161,226 @@
     justify-content: center;
 }
 
+/* ---------------- Flow lines ---------------- */
+.flowSvg {
+    position: relative;
+    z-index: 2;
+    width: 84%;
+    max-width: 300px;
+    overflow: visible;
+}
+
+.flowPath {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-dasharray: 14 240;
+    animation-name: flowDash;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    opacity: 0.75;
+}
+
+.flowPrimary {
+    stroke: var(--color-brand-primary);
+}
+
+.flowSecondary {
+    stroke: var(--color-brand-secondary);
+}
+
+@keyframes flowDash {
+    to {
+        stroke-dashoffset: -254;
+    }
+}
+
+.flowNode {
+    fill: #ffffff;
+    opacity: 0.5;
+}
+
+.flowCenter {
+    filter: drop-shadow(0 0 10px rgba(var(--color-brand-primary-rgb), 0.35));
+}
+
+/* ---------------- Stacking bars ---------------- */
+.bars {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 14px;
+    width: 70%;
+    max-width: 220px;
+    height: 60%;
+}
+
+.bar {
+    flex: 1;
+    min-width: 0;
+    height: var(--bar-min);
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--color-brand-primary), var(--color-brand-secondary));
+    animation-name: barPulse;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    opacity: 0.85;
+}
+
+@keyframes barPulse {
+    from {
+        height: var(--bar-min);
+    }
+
+    to {
+        height: var(--bar-max);
+    }
+}
+
+/* ---------------- Card stack ---------------- */
+.cardStack {
+    position: relative;
+    z-index: 2;
+    width: 54%;
+    max-width: 190px;
+    aspect-ratio: 4 / 5;
+}
+
+.card {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.16), rgba(var(--color-brand-secondary-rgb), 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+    animation-name: cardCycle;
+    animation-duration: 8s;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+    animation-iteration-count: infinite;
+}
+
+/* Each card's own keyframe stops define which of the 4 stack slots it's
+   in at that point in the cycle — position, scale and depth all move
+   together so the front card visibly recedes as the next one advances. */
+@keyframes cardCycle {
+
+    0%,
+    4% {
+        transform: translate(0, 0) scale(1);
+        z-index: 4;
+        opacity: 1;
+    }
+
+    25%,
+    29% {
+        transform: translate(10px, 14px) scale(0.94);
+        z-index: 3;
+        opacity: 0.85;
+    }
+
+    50%,
+    54% {
+        transform: translate(18px, 26px) scale(0.88);
+        z-index: 2;
+        opacity: 0.6;
+    }
+
+    75%,
+    79% {
+        transform: translate(24px, 36px) scale(0.82);
+        z-index: 1;
+        opacity: 0.35;
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1);
+        z-index: 4;
+        opacity: 1;
+    }
+}
+
+.cardStart0 {
+    background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.22), rgba(var(--color-brand-secondary-rgb), 0.12));
+}
+
+.cardStart1 {
+    background: linear-gradient(155deg, rgba(var(--color-brand-secondary-rgb), 0.2), rgba(var(--color-brand-primary-rgb), 0.1));
+}
+
+.cardStart2 {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(var(--color-brand-primary-rgb), 0.08));
+}
+
+.cardStart3 {
+    background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.14), rgba(255, 255, 255, 0.06));
+}
+
+/* ---------------- Ticket punch ---------------- */
+.ticketWrap {
+    position: relative;
+    z-index: 2;
+    width: 82%;
+    max-width: 300px;
+}
+
+.ticketSvg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.ticketBody {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 1;
+}
+
+.ticketNotchCut {
+    fill: var(--color-brand-tertiary, #0a0a0a);
+}
+
+.ticketStubLine {
+    stroke: rgba(255, 255, 255, 0.14);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+}
+
+.ticketNotch {
+    fill: rgba(255, 255, 255, 0.18);
+}
+
+.ticketPunchDot {
+    fill: var(--color-brand-primary);
+    filter: drop-shadow(0 0 6px rgba(var(--color-brand-primary-rgb), 0.7));
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ticketPunchTravel 3.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes ticketPunchTravel {
+
+    0%,
+    6% {
+        transform: translateY(0);
+    }
+
+    94%,
+    100% {
+        transform: translateY(98px);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     .orbit,
     .dot,
-    .drawing .drawPath {
+    .flowPath,
+    .bar,
+    .card,
+    .ticketPunchDot {
         animation: none !important;
     }
 }

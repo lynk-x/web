@@ -66,26 +66,26 @@ export default function OrganizersLandingPage() {
                     >
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                            </div>
-                            <h3 className={styles.cardTitle}>Direct Settlement</h3>
-                            <p className={styles.cardDesc}>Receive your funds directly via MPESA or Bank Transfer. No waiting weeks for your hard-earned revenue.</p>
-                        </motion.div>
-                        
-                        <motion.div className={styles.card} variants={fadeInUp}>
-                            <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                             </div>
                             <h3 className={styles.cardTitle}>Private Event Forums</h3>
                             <p className={styles.cardDesc}>Every event includes a dedicated forum. Build hype through networking and live discussions before the first ticket is scanned.</p>
                         </motion.div>
-                        
+
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Automated Payouts</h3>
-                            <p className={styles.cardDesc}>Streamline your cash flow. Our automated settlement system ensures your event revenue is processed and ready when you need it.</p>
+                            <h3 className={styles.cardTitle}>You Get Paid, Without Chasing Anyone</h3>
+                            <p className={styles.cardDesc}>Most payouts land automatically via MPESA or bank transfer. Larger settlements get a quick review first — a safety check, not a black box.</p>
+                        </motion.div>
+
+                        <motion.div className={styles.card} variants={fadeInUp}>
+                            <div className={styles.cardIcon}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3zM20 14v3M17 20h3" /></svg>
+                            </div>
+                            <h3 className={styles.cardTitle}>Instant Gate Scan</h3>
+                            <p className={styles.cardDesc}>QR check-in that works even when the venue WiFi doesn’t. No manual lookups, no queues at the door.</p>
                         </motion.div>
                     </motion.div>
                 </section>
@@ -99,24 +99,24 @@ export default function OrganizersLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Total Event Mastery</h2>
+                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Get Found. Get Started.</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-                                    Network-Wide Indexing
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+                                    Findable, Not Just Listed
                                 </h4>
-                                <p className={styles.cardDesc}>Leverage the Lynk-X ecosystem. Your events are automatically indexed and recommended to active attendees across our entire social network.</p>
+                                <p className={styles.cardDesc}>Attendees search by category and tag. Your event shows up for people actually looking, not buried in a generic list.</p>
                             </div>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
-                                    Direct Payout Routing
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>
+                                    Free to Start. Setting up is easy.
                                 </h4>
-                                <p className={styles.cardDesc}>Get paid instantly. Revenue is routed directly to your platform wallet, where you can withdraw to your local bank accounts or mobile money at any time.</p>
+                                <p className={styles.cardDesc}>List your first event at no cost and see how it runs before you commit to anything bigger.</p>
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="constellation" />
+                            <SplitMediaMotion variant="flowLines" />
                         </div>
                     </motion.div>
 
@@ -145,7 +145,7 @@ export default function OrganizersLandingPage() {
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="lineDraw" />
+                            <SplitMediaMotion />
                         </div>
                     </motion.div>
                 </section>
