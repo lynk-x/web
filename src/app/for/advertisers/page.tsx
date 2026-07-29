@@ -7,6 +7,7 @@ import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
+import SplitMediaMotion from '@/components/public/SplitMediaMotion';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -112,7 +113,9 @@ export default function AdvertisersLandingPage() {
                                 <p className={styles.cardDesc}>Maintain your brand’s prestige. Ensure your audience sees your message just enough to convert, never enough to fatigue. </p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia} />
+                        <div className={styles.splitMedia}>
+                            <SplitMediaMotion variant="constellation" />
+                        </div>
                     </motion.div>
 
                     <motion.div 
@@ -139,7 +142,9 @@ export default function AdvertisersLandingPage() {
                                 <p className={styles.cardDesc}>No more manual overhead. Sophisticated budget caps and automated billing ensure your campaigns never pause unexpectedly.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia} />
+                        <div className={styles.splitMedia}>
+                            <SplitMediaMotion variant="lineDraw" />
+                        </div>
                     </motion.div>
                 </section>
 

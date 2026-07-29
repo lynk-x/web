@@ -7,6 +7,7 @@ import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
+import SplitMediaMotion from '@/components/public/SplitMediaMotion';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -112,7 +113,9 @@ export default function AttendeesLandingPage() {
                                 <p className={styles.cardDesc}>Capture the moment together. Browse shared galleries of photos and videos uploaded by the community to see the event from every angle.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia} />
+                        <div className={styles.splitMedia}>
+                            <SplitMediaMotion variant="lineDraw" />
+                        </div>
                     </motion.div>
 
                     <motion.div 
@@ -140,7 +143,9 @@ export default function AttendeesLandingPage() {
                                 <p className={styles.cardDesc}>A unified home for your ticket refunds, forum rewards, and digital assets. We’re building a seamless way to manage your event finances across the globe.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia} />
+                        <div className={styles.splitMedia}>
+                            <SplitMediaMotion variant="constellation" />
+                        </div>
                     </motion.div>
                 </section>
 

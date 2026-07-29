@@ -7,6 +7,7 @@ import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
+import SplitMediaMotion from '@/components/public/SplitMediaMotion';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -114,7 +115,9 @@ export default function OrganizersLandingPage() {
                                 <p className={styles.cardDesc}>Get paid instantly. Revenue is routed directly to your platform wallet, where you can withdraw to your local bank accounts or mobile money at any time.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia} />
+                        <div className={styles.splitMedia}>
+                            <SplitMediaMotion variant="constellation" />
+                        </div>
                     </motion.div>
 
                     <motion.div 
@@ -141,7 +144,9 @@ export default function OrganizersLandingPage() {
                                 <p className={styles.cardDesc}>From pre-event polls to mid-event reactions, our forums turn passive attendees into active ambassadors for your event’s energy.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia} />
+                        <div className={styles.splitMedia}>
+                            <SplitMediaMotion variant="lineDraw" />
+                        </div>
                     </motion.div>
                 </section>
 

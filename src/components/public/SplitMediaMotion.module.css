@@ -1,0 +1,221 @@
+.mediaFrame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.ambient {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    opacity: 0.5;
+    background: radial-gradient(circle 55% at 50% 50%, rgba(var(--color-brand-primary-rgb), 0.1), transparent 72%);
+    pointer-events: none;
+}
+
+/* ---------------- Line-draw variant ---------------- */
+.lineDrawSvg {
+    position: relative;
+    z-index: 2;
+    width: 62%;
+    overflow: visible;
+}
+
+.drawPath {
+    fill: transparent;
+    stroke: #ffffff;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: var(--len);
+    stroke-dashoffset: var(--len);
+}
+
+.xPath {
+    stroke: var(--color-brand-primary);
+}
+
+.drawing .drawPath {
+    animation: drawStroke 2.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes drawStroke {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.filled .drawPath {
+    transition: fill 0.9s ease, stroke-opacity 0.9s ease;
+    stroke-opacity: 0;
+}
+
+.filled .wordPath {
+    fill: #ffffff;
+}
+
+.filled .xPath {
+    fill: var(--color-brand-primary);
+}
+
+.hiddenOut .drawPath {
+    transition: opacity 0.7s ease;
+    opacity: 0;
+}
+
+/* ---------------- Constellation variant ---------------- */
+.system {
+    position: relative;
+    z-index: 2;
+    width: 72%;
+    aspect-ratio: 1;
+    max-width: 280px;
+}
+
+.orbit {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: spin linear infinite;
+}
+
+.o1 {
+    width: 34%;
+    height: 34%;
+    inset: 33%;
+    animation-duration: 9s;
+}
+
+.o2 {
+    width: 56%;
+    height: 56%;
+    inset: 22%;
+    animation-duration: 15s;
+    animation-direction: reverse;
+}
+
+.o3 {
+    width: 78%;
+    height: 78%;
+    inset: 11%;
+    animation-duration: 21s;
+}
+
+.o4 {
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    animation-duration: 27s;
+    animation-direction: reverse;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.dot {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    animation: counterSpin linear infinite;
+    box-shadow: 0 0 8px 1px currentColor;
+}
+
+@keyframes counterSpin {
+    to {
+        transform: translateY(-50%) rotate(-360deg);
+    }
+}
+
+.o1 .dot {
+    background: var(--color-brand-primary);
+    color: rgba(var(--color-brand-primary-rgb), 0.6);
+    animation-duration: 9s;
+}
+
+.o2 .dot {
+    background: var(--color-brand-secondary);
+    color: rgba(var(--color-brand-secondary-rgb), 0.6);
+    animation-duration: 15s;
+    animation-direction: reverse;
+    width: 6px;
+    height: 6px;
+}
+
+.o2 .d2 {
+    top: auto;
+    bottom: 0;
+    left: auto;
+    right: 50%;
+    transform: translateX(50%);
+    animation-name: counterSpinReverse;
+}
+
+@keyframes counterSpinReverse {
+    to {
+        transform: translateX(50%) rotate(360deg);
+    }
+}
+
+.o3 .dot {
+    background: #ffffff;
+    color: rgba(255, 255, 255, 0.4);
+    animation-duration: 21s;
+    width: 5px;
+    height: 5px;
+}
+
+.o3 .d2 {
+    left: auto;
+    right: 0;
+    transform: translateY(-50%) scaleX(-1);
+}
+
+.o4 .dot {
+    background: var(--color-brand-secondary);
+    color: rgba(var(--color-brand-secondary-rgb), 0.5);
+    animation-duration: 27s;
+    animation-direction: reverse;
+    width: 5px;
+    height: 5px;
+}
+
+.ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    width: 16%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .orbit,
+    .dot,
+    .drawing .drawPath {
+        animation: none !important;
+    }
+}
