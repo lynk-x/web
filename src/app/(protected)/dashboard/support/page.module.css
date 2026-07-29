@@ -3,8 +3,8 @@
 }
 
 .ticketCard {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-border-subtle);
     border-radius: 12px;
     padding: 20px;
     cursor: pointer;
@@ -16,7 +16,7 @@
 }
 
 .ticketCard:hover {
-    border-color: var(--primary-color);
+    border-color: var(--color-brand-primary);
     transform: translateY(-3px) scale(1.005);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
@@ -38,7 +38,7 @@
 .ticketTitle {
     font-size: 16px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-utility-primaryText);
     margin: 0;
     line-height: 1.3;
 }
@@ -57,10 +57,10 @@
 
 .ticketPreview {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--color-utility-primaryText);
     line-height: 1.5;
     margin: 0;
-    opacity: 0.75;
+    opacity: 0.65;
     word-break: break-word;
 }
 
@@ -70,7 +70,7 @@
     flex-wrap: wrap;
     gap: 16px;
     padding-top: 4px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--color-interface-border-subtle);
 }
 
 .metaItem {
@@ -107,7 +107,7 @@
 }
 
 .modal {
-    background: var(--bg-surface);
+    background: var(--color-interface-surface);
     border-radius: 12px;
     width: 100%;
     max-width: 500px;
@@ -119,7 +119,7 @@
     font-size: 20px;
     font-weight: 600;
     margin: 0 0 20px 0;
-    color: var(--text-primary);
+    color: var(--color-utility-primaryText);
 }
 
 .btnRow {
@@ -225,8 +225,8 @@
     height: 44px;
     padding: 0 20px;
     border-radius: var(--radius-md);
-    background: var(--primary-color);
-    color: white;
+    background: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
     border: none;
     font-weight: 600;
     cursor: pointer;

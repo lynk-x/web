@@ -206,6 +206,16 @@ export default function EventDetailPage() {
                 />
             </div>
 
+            {/* Quick Links */}
+            <QuickLinksRow className="tour-event-links">
+                {event.forum_reference && (
+                    <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
+                )}
+                <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
+                <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
+                <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
+            </QuickLinksRow>
+
             {/* Reorganized layout utilizing subPageGrid to present event details and image side-by-side */}
             <div className={adminStyles.subPageGrid}>
                 {/* Left Column: Details & Tiers */}
@@ -307,12 +317,11 @@ export default function EventDetailPage() {
                         )}
                     </div>
 
-                    {/* Share Event & QR Code Widget */}
+                    {/* Event Page Link */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {/* Copy Link Input */}
                         <div>
                             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.5, marginBottom: '6px' }}>
-                                Public Event Page
+                                Event Page Link
                             </label>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <input 
@@ -331,7 +340,6 @@ export default function EventDetailPage() {
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden'
                                     }} 
-                                
                                 />
                                 <button 
                                     onClick={() => handleCopyLink(`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`)}
@@ -342,58 +350,8 @@ export default function EventDetailPage() {
                                 </button>
                             </div>
                         </div>
-
-                        {/* QR Code Section */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--color-interface-outline)', gap: '12px' }}>
-                            <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                                {/* Inline high-fidelity vector QR code */}
-                                <svg width="120" height="120" viewBox="0 0 29 29" style={{ color: '#13131a', display: 'block' }}>
-                                    {/* Finder Pattern Top-Left */}
-                                    <path d="M0,0 h7 v7 h-7 z M1,1 h5 v5 h-5 z M2,2 h3 v3 h-3 z" fill="currentColor" fillRule="evenodd" />
-                                    {/* Finder Pattern Top-Right */}
-                                    <path d="M22,0 h7 v7 h-7 z M23,1 h5 v5 h-5 z M24,2 h3 v3 h-3 z" fill="currentColor" fillRule="evenodd" />
-                                    {/* Finder Pattern Bottom-Left */}
-                                    <path d="M0,22 h7 v7 h-7 z M1,23 h5 v5 h-5 z M2,24 h3 v3 h-3 z" fill="currentColor" fillRule="evenodd" />
-                                    
-                                    {/* Timing Patterns & Alignment */}
-                                    <path d="M8,2 h1 M10,2 h1 M12,2 h1 M14,2 h1 M16,2 h1 M18,2 h1 M20,2 h1" fill="currentColor" />
-                                    <path d="M2,8 h1 M2,10 h1 M2,12 h1 M2,14 h1 M2,16 h1 M2,18 h1 M2,20 h1" fill="currentColor" />
-                                    <path d="M22,22 h5 v5 h-5 z M23,23 h3 v3 h-3 z" fill="currentColor" fillRule="evenodd" />
-
-                                    {/* Dynamic QR code dots */}
-                                    <path d="
-                                        M 8,8 h1 v1 h-1 z M 9,9 h2 v1 h-2 z M 8,11 h1 v2 h-1 z M 10,12 h2 v1 h-2 z M 11,8 h3 v1 h-3 z M 13,10 h1 v1 h-1 z M 14,12 h1 v1 h-1 z
-                                        M 16,8 h2 v1 h-2 z M 17,9 h1 v2 h-1 z M 15,11 h2 v1 h-2 z M 16,13 h1 v2 h-1 z M 18,12 h2 v1 h-2 z M 19,10 h1 v1 h-1 z M 20,8 h1 v1 h-1 z
-                                        M 8,15 h3 v1 h-3 z M 9,16 h1 v2 h-1 z M 11,17 h2 v1 h-2 z M 12,19 h1 v1 h-1 z M 13,15 h2 v2 h-2 z M 14,18 h1 v1 h-1 z M 10,20 h3 v1 h-3 z
-                                        M 16,16 h1 v1 h-1 z M 18,15 h2 v1 h-2 z M 19,17 h1 v2 h-1 z M 15,19 h3 v1 h-3 z M 17,21 h2 v1 h-2 z M 20,20 h1 v1 h-1 z M 19,21 h1 v1 h-1 z
-                                        M 23,8 h2 v1 h-2 z M 24,10 h1 v2 h-1 z M 22,12 h1 v1 h-1 z M 23,14 h2 v1 h-2 z M 26,9 h1 v2 h-1 z M 27,11 h1 v1 h-1 z M 25,13 h2 v1 h-2 z
-                                        M 8,23 h1 v1 h-1 z M 9,25 h2 v1 h-2 z M 10,27 h1 v1 h-1 z M 12,24 h2 v1 h-2 z M 13,26 h1 v2 h-1 z M 14,23 h1 v1 h-1 z M 11,25 h1 v1 h-1 z
-                                        M 16,23 h3 v1 h-3 z M 17,25 h1 v1 h-1 z M 19,24 h1 v2 h-1 z M 18,27 h2 v1 h-2 z M 20,25 h1 v1 h-1 z M 15,26 h2 v1 h-2 z M 16,28 h1 v1 h-1 z
-                                        M 23,16 h3 v1 h-3 z M 25,18 h2 v1 h-2 z M 22,19 h1 v1 h-1 z M 24,20 h2 v1 h-2 z M 26,21 h1 v1 h-1 z
-                                    " fill="currentColor" opacity="0.85" />
-
-                                    {/* White mask to clear center dots */}
-                                    <rect x="10" y="10" width="9" height="9" fill="#fff" rx="1.5" />
-
-                                    {/* Center Lynk-X Logo Badge */}
-                                    <svg x="10.5" y="10.5" width="8" height="8" viewBox="450 400 660 660">
-                                        <rect x="450" y="400" width="660" height="660" rx="120" fill="#13131a" />
-                                        <path fill="var(--color-brand-primary)" d="M583.68 1068.46 c-11.45 -2.14 -32.97 -10.07 -42.89 -15.87 -17.86 -10.38 -38.31 -32.51 -47.93 -51.59 -8.70 -17.25 -12.36 -33.43 -12.67 -55.41 -0.15 -25.03 2.75 -38.77 12.82 -59.68 8.55 -17.71 16.94 -27.32 69.91 -79.37 20 -19.69 30.99 -31.44 30.68 -33.12 -0.31 -1.37 -18.16 -20.61 -39.69 -42.59 -21.52 -22.13 -41.67 -43.20 -44.88 -46.86 -12.21 -14.65 -19.69 -36.02 -22.13 -62.28 -2.59 -28.70 3.51 -57.39 17.10 -80.59 7.94 -13.58 30.68 -36.17 43.96 -43.96 19.54 -11.30 47.78 -17.55 72.35 -15.87 18.32 1.22 29.15 4.27 46.71 12.67 l14.50 7.02 45.33 45.94 45.33 46.10 44.72 -44.42 c51.74 -51.59 58.92 -56.93 86.09 -64.11 15.57 -4.12 44.57 -3.82 61.67 0.76 20.61 5.49 36.48 14.04 50.52 27.32 30.07 28.24 44.26 64.72 41.98 107.91 -0.92 19.38 -3.66 30.83 -10.84 45.94 -6.11 12.67 -18.62 26.56 -65.94 73.11 -17.10 16.79 -30.99 31.44 -30.99 32.51 0 1.07 6.41 8.24 14.20 16.03 31.44 31.29 68.08 69.91 74.94 78.76 15.57 20.30 24.27 47.47 24.27 76.47 0 22.28 -4.12 39.69 -13.74 59.53 -5.95 12.52 -9.01 16.48 -21.67 29 -8.09 8.09 -18.93 17.10 -23.96 20.15 -39.84 23.35 -87.46 23.81 -125.01 1.07 -7.02 -4.27 -55.25 -51.44 -98.15 -95.86 l-8.09 -8.40 -51.44 51.29 c-49.76 49.45 -51.90 51.44 -64.41 57.39 -7.17 3.51 -17.10 7.48 -22.13 8.85 -10.84 2.90 -39.69 4.12 -50.52 2.14z" />
-                                    </svg>
-                                </svg>
-                            </div>
-                        </div>
                     </div>
 
-                    {/* Quick Links */}
-                    <QuickLinksRow className="tour-event-links">
-                        {event.forum_reference && (
-                            <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
-                        )}
-                        <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
-                        <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
-                        <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
-                    </QuickLinksRow>
                 </div>
             </div>
 

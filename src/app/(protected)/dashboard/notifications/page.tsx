@@ -22,7 +22,6 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isMarkingAll, setIsMarkingAll] = useState(false);
-    const [showAllAccounts, setShowAllAccounts] = useState(false);
 
     const fetchNotifications = useCallback(async (uid: string, accountId?: string) => {
         setIsLoading(true);
@@ -36,14 +35,14 @@ export default function NotificationsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setUserId(user.id);
-                fetchNotifications(user.id, showAllAccounts ? undefined : activeAccount?.id);
+                fetchNotifications(user.id, activeAccount?.id);
             } else {
                 setIsLoading(false);
             }
         };
         init();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [supabase, fetchNotifications, activeAccount?.id, showAllAccounts]);
+    }, [supabase, fetchNotifications, activeAccount?.id]);
 
     const handleMarkRead = async (notification: Notification) => {
         if (notification.is_read) return;
@@ -81,18 +80,7 @@ export default function NotificationsPage() {
                 onClose={() => router.back()}
             />
 
-            {activeAccount && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-                    <input
-                        type="checkbox"
-                        checked={showAllAccounts}
-                        onChange={(e) => setShowAllAccounts(e.target.checked)}
-                    />
-                    {showAllAccounts
-                        ? 'Showing notifications for all your accounts'
-                        : `Showing notifications for ${activeAccount.name || 'this account'} only`}
-                </label>
-            )}
+
 
             <div className={sharedStyles.pageCard}>
                 {isLoading ? (
