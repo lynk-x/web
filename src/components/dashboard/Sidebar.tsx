@@ -113,8 +113,8 @@ const Sidebar = () => {
 
             {/* Organization Switcher + Notifications */}
             <div style={{ marginTop: 'auto' }}>
-                <OrganizationSwitcher pos="bottom" />
                 <NotificationBellButton />
+                <OrganizationSwitcher pos="bottom" />
             </div>
 
         </aside>

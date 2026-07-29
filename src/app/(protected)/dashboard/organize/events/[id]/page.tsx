@@ -208,10 +208,7 @@ export default function EventDetailPage() {
 
             {/* Quick Links */}
             <QuickLinksRow className="tour-event-links">
-                {event.forum_reference && (
-                    <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
-                )}
-                <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Ticket Tiers" />
+                <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
                 <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
                 <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
                 <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
@@ -310,6 +307,42 @@ export default function EventDetailPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Community Forum Card */}
+                    {event.forum_reference && (
+                        <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.8 }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-brand-primary)' }}>
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    Community Forum
+                                </h3>
+                                <p style={{ fontSize: '13px', opacity: 0.6, margin: '8px 0 0', lineHeight: '1.5' }}>
+                                    Engage with your attendees, host live Q&As and coordinate event logistics directly in a private forum workspace.
+                                </p>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
+                                <span style={{ fontSize: '12px', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Members</span>
+                                <span style={{ fontSize: '14px', fontWeight: 600 }}>{formatNumber(forumMemberCount)}</span>
+                            </div>
+
+                            <a 
+                                href={getForumUrl(event.forum_reference)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className={adminStyles.btnPrimary}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', textDecoration: 'none', height: '38px', fontSize: '13px' }}
+                            >
+                                Open Forum
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </a>
+                        </div>
+                    )}
 
                 </div>
             </div>
