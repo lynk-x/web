@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -16,6 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { SupportTicket, SupportTicketMessage } from '@/lib/repositories/support.repository';
 
 export default function SupportDashboard() {
+    const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const supportRepo = useMemo(() => createSupportRepository(supabase), [supabase]);
     const { showToast } = useToast();
@@ -150,7 +152,7 @@ export default function SupportDashboard() {
                         title="Help & Support"
                         subtitle="Manage your support tickets and get assistance from our team."
                         primaryAction={{ label: '+ New Ticket', onClick: () => setIsModalOpen(true) }}
-                        closeHref="/dashboard"
+                        onClose={() => router.back()}
                     />
                 )}
             </div>
@@ -234,13 +236,6 @@ export default function SupportDashboard() {
                                         key={ticket.id} 
                                         className={styles.ticketCard} 
                                         onClick={() => handleTicketClick(ticket)}
-                                        style={{ 
-                                            borderLeft: `4px solid ${
-                                                ticket.priority === 'urgent' ? '#F44336' : 
-                                                ticket.priority === 'high' ? '#FF9800' : 
-                                                ticket.priority === 'normal' ? '#2196F3' : '#708090'
-                                            }`
-                                        }}
                                     >
                                         <div className={styles.ticketHeader}>
                                             <div className={styles.ticketHeaderLeft}>

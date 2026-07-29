@@ -165,7 +165,7 @@ export default function EventDetailPage() {
         <div className={adminStyles.container}>
             <PageHeader
                 title={event.title}
-                subtitle={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
+                subtitle="Manage event details, monitor ticket sales and track live performance analytics."
                 closeHref="/dashboard/organize/events"
                 badge={badge}
                 primaryAction={{
@@ -211,6 +211,7 @@ export default function EventDetailPage() {
                 {event.forum_reference && (
                     <QuickLink href={getForumUrl(event.forum_reference)} label="Open Forum" external />
                 )}
+                <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Ticket Tiers" />
                 <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
                 <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
                 <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
@@ -218,7 +219,7 @@ export default function EventDetailPage() {
 
             {/* Reorganized layout utilizing subPageGrid to present event details and image side-by-side */}
             <div className={adminStyles.subPageGrid}>
-                {/* Left Column: Details & Tiers */}
+                {/* Left Column: Details */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Event Details Card */}
                     <div className={adminStyles.pageCard}>
@@ -241,48 +242,6 @@ export default function EventDetailPage() {
                                 <p style={{ fontSize: '14px', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>{event.description}</p>
                             </div>
                         )}
-                    </div>
-
-                    {/* Ticket Tiers */}
-                    <div className={`${adminStyles.pageCard} tour-event-tiers`}>
-                        <h2 className={adminStyles.sectionTitle}>Ticket Tiers</h2>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                                        <th style={thStyle}>Tier</th>
-                                        <th style={thStyle}>Price</th>
-                                        <th style={thStyle}>Sold</th>
-                                        <th style={thStyle}>Capacity</th>
-                                        <th style={thStyle}>Fill Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {tiers.map(tier => {
-                                        const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
-                                        return (
-                                            <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                                <td style={tdStyle}>{tier.display_name}</td>
-                                                <td style={tdStyle}>{tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}</td>
-                                                <td style={tdStyle}>{formatNumber(tier.tickets_sold)}</td>
-                                                <td style={tdStyle}>{formatNumber(tier.capacity)}</td>
-                                                <td style={tdStyle}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                                                            <div style={{ width: `${fill}%`, height: '100%', borderRadius: '3px', background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)' }} />
-                                                        </div>
-                                                        <span style={{ opacity: 0.7, fontSize: '13px' }}>{fill}%</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                    {tiers.length === 0 && (
-                                        <tr><td colSpan={5} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5 }}>No ticket tiers configured.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
 
