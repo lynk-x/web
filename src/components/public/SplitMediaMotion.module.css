@@ -200,10 +200,6 @@
     opacity: 0.5;
 }
 
-.flowCenter {
-    filter: drop-shadow(0 0 10px rgba(var(--color-brand-primary-rgb), 0.35));
-}
-
 /* ---------------- Stacking bars ---------------- */
 .bars {
     position: relative;
@@ -258,8 +254,8 @@
     top: 0;
     bottom: 0;
     left: 50%;
-    width: 44%;
-    margin-left: -22%;
+    width: 40%;
+    margin-left: -20%;
     border-radius: 14px;
     background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.16), rgba(var(--color-brand-secondary-rgb), 0.1));
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -271,26 +267,32 @@
     animation-fill-mode: backwards;
 }
 
-/* Continuous right-to-left drift across the whole cycle, no resting dead
-   zone — every card is always moving. With 4 cards spaced 2s apart on
-   this 8s cycle, at any instant one card is centered while its
-   neighbors are simultaneously mid-transit on either side, so the
-   whole track is visible as a continuous train rather than a single
-   card teleporting in and out. */
+/* Animates `left` (a percentage of the TRACK's own width, per the CSS
+   box model) rather than `transform: translateX(%)` (which is relative
+   to the CARD's own width) — avoids the self-referential percentage
+   trap that previously left cards short of the track edge and bunched
+   together. Card center travels from 130% (fully past the right edge:
+   50% card-width + a margin) through 50% (dead center) to -30% (fully
+   past the left edge), so at every instant along the 8s cycle exactly
+   one card is centered while its neighbors are genuinely offscreen or
+   mid-transit either side — a continuous, non-overlapping train. */
 @keyframes cardCarousel {
     0% {
-        transform: translateX(140%) scale(0.88);
-        opacity: 0.5;
+        left: 130%;
+        transform: scale(0.88);
+        opacity: 0;
     }
 
     50% {
-        transform: translateX(0) scale(1);
+        left: 50%;
+        transform: scale(1);
         opacity: 1;
     }
 
     100% {
-        transform: translateX(-140%) scale(0.88);
-        opacity: 0.5;
+        left: -30%;
+        transform: scale(0.88);
+        opacity: 0;
     }
 }
 

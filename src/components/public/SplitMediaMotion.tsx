@@ -79,11 +79,6 @@ function FlowLinesVariant() {
             {FLOW_NODES.map((n, i) => (
                 <circle key={i} className={styles.flowNode} cx={n.cx} cy={n.cy} r={n.r} />
             ))}
-            <g className={styles.flowCenter}>
-                <svg x="105" y="100" width="70" height="70" viewBox="386.1 95.6 85.7 86.7">
-                    <path fill="var(--color-brand-primary)" d={X_MARK_PATH} />
-                </svg>
-            </g>
         </svg>
     );
 }
