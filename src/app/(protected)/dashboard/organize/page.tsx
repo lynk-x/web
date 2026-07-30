@@ -57,7 +57,7 @@ export default function DashboardOverview() {
                         .schema('api')
                         .from('v1_spotlights')
                         .select('*')
-                        .in('target', ['all', 'organize_dashboard'])
+                        .in('target', ['all', 'organizer_dashboard'])
                         .eq('is_active', true)
                         .order('display_order', { ascending: true })
                 ]);

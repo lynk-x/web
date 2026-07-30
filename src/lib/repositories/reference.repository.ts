@@ -95,7 +95,7 @@ export interface Spotlight {
     id: string;
     title: string;
     subtitle?: string | null;
-    target: 'all' | 'organize_dashboard' | 'ads_dashboard' | 'discovery_page';
+    target: 'all' | 'organizer_dashboard' | 'ads_dashboard' | 'discovery_page';
     display_order: number;
     cta_text?: string | null;
     redirect_to?: string | null;

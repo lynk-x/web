@@ -27,7 +27,7 @@ export default function EditSpotlightPage() {
     // Form State
     const [title, setTitle] = useState('');
     const [subtitle, setSubtitle] = useState('');
-    const [target, setTarget] = useState<'all' | 'organize_dashboard' | 'ads_dashboard' | 'discovery_page'>('all');
+    const [target, setTarget] = useState<'all' | 'organizer_dashboard' | 'ads_dashboard' | 'discovery_page'>('all');
     const [displayOrder, setDisplayOrder] = useState(0);
     const [ctaText, setCtaText] = useState('');
     const [redirectTo, setRedirectTo] = useState('');
@@ -153,7 +153,7 @@ export default function EditSpotlightPage() {
                                     onChange={(e) => handleChange(setTarget, e.target.value as 'event' | 'url' | 'profile')}
                                 >
                                     <option value="all">Everywhere</option>
-                                    <option value="organize_dashboard">Organizer Dashboard</option>
+                                    <option value="organizer_dashboard">Organizer Dashboard</option>
                                     <option value="ads_dashboard">Advertiser Dashboard</option>
                                     <option value="discovery_page">Discovery Page (Home)</option>
                                 </select>

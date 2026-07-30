@@ -346,7 +346,7 @@ export interface Spotlight {
     id: string;
     title: string;
     subtitle?: string;
-    target: 'all' | 'organize_dashboard' | 'ads_dashboard' | 'discovery_page';
+    target: 'all' | 'organizer_dashboard' | 'ads_dashboard' | 'discovery_page';
     display_order: number;
     cta_text?: string;
     redirect_to?: string;
