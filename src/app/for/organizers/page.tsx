@@ -145,7 +145,7 @@ export default function OrganizersLandingPage() {
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion />
+                            <SplitMediaMotion variant="pulseWave" />
                         </div>
                     </motion.div>
                 </section>

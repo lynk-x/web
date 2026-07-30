@@ -240,13 +240,14 @@
     }
 }
 
-/* ---------------- Card stack ---------------- */
+/* ---------------- Card carousel ---------------- */
 .cardStack {
     position: relative;
     z-index: 2;
-    width: 54%;
-    max-width: 190px;
+    width: 62%;
+    max-width: 210px;
     aspect-ratio: 4 / 5;
+    overflow: hidden;
 }
 
 .card {
@@ -256,65 +257,53 @@
     background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.16), rgba(var(--color-brand-secondary-rgb), 0.1));
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
-    animation-name: cardCycle;
+    animation-name: cardCarousel;
     animation-duration: 8s;
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
     animation-iteration-count: infinite;
+    animation-fill-mode: backwards;
 }
 
-/* Each card's own keyframe stops define which of the 4 stack slots it's
-   in at that point in the cycle — position, scale and depth all move
-   together so the front card visibly recedes as the next one advances. */
-@keyframes cardCycle {
+/* One card's turn: enters from the right, holds centered, exits left.
+   Each card is offset by animation-delay so exactly one is ever
+   centered — a real carousel pass, not a depth shuffle. */
+@keyframes cardCarousel {
 
-    0%,
-    4% {
-        transform: translate(0, 0) scale(1);
-        z-index: 4;
+    0% {
+        transform: translateX(120%) scale(0.92);
+        opacity: 0;
+    }
+
+    8%,
+    17% {
+        transform: translateX(0) scale(1);
         opacity: 1;
     }
 
-    25%,
-    29% {
-        transform: translate(10px, 14px) scale(0.94);
-        z-index: 3;
-        opacity: 0.85;
-    }
-
-    50%,
-    54% {
-        transform: translate(18px, 26px) scale(0.88);
-        z-index: 2;
-        opacity: 0.6;
-    }
-
-    75%,
-    79% {
-        transform: translate(24px, 36px) scale(0.82);
-        z-index: 1;
-        opacity: 0.35;
+    25% {
+        transform: translateX(-120%) scale(0.92);
+        opacity: 0;
     }
 
     100% {
-        transform: translate(0, 0) scale(1);
-        z-index: 4;
-        opacity: 1;
+        transform: translateX(-120%) scale(0.92);
+        opacity: 0;
     }
 }
 
-.cardStart0 {
+.cardTint0 {
     background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.22), rgba(var(--color-brand-secondary-rgb), 0.12));
 }
 
-.cardStart1 {
+.cardTint1 {
     background: linear-gradient(155deg, rgba(var(--color-brand-secondary-rgb), 0.2), rgba(var(--color-brand-primary-rgb), 0.1));
 }
 
-.cardStart2 {
+.cardTint2 {
     background: linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(var(--color-brand-primary-rgb), 0.08));
 }
 
-.cardStart3 {
+.cardTint3 {
     background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.14), rgba(255, 255, 255, 0.06));
 }
 
@@ -373,6 +362,50 @@
     }
 }
 
+/* ---------------- Pulse wave ---------------- */
+.pulseWrap {
+    position: relative;
+    z-index: 2;
+    width: 40%;
+    max-width: 140px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pulseRing {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-brand-primary);
+    opacity: 0;
+    animation-name: pulseOut;
+    animation-duration: 3.3s;
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+    animation-iteration-count: infinite;
+}
+
+@keyframes pulseOut {
+    0% {
+        transform: scale(0.3);
+        opacity: 0.65;
+    }
+
+    80%,
+    100% {
+        transform: scale(2.1);
+        opacity: 0;
+    }
+}
+
+.pulseCore {
+    position: relative;
+    z-index: 3;
+    width: 44%;
+    filter: drop-shadow(0 0 10px rgba(var(--color-brand-primary-rgb), 0.4));
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     .orbit,
@@ -380,7 +413,8 @@
     .flowPath,
     .bar,
     .card,
-    .ticketPunchDot {
+    .ticketPunchDot,
+    .pulseRing {
         animation: none !important;
     }
 }

@@ -9,7 +9,7 @@ type BarStyle = CSSProperties & { '--bar-min': string; '--bar-max': string };
 // variant traces the actual logo geometry rather than an approximation.
 const X_MARK_PATH = "M404.58 175.82 c-6.03 -1.45 -10.97 -6.55 -12.13 -12.43 -0.71 -3.72 -0.26 -7.44 1.30 -10.71 1.04 -2.23 2.23 -3.76 6.51 -8.30 2.90 -3.05 5.25 -5.69 5.25 -5.92 0 -0.19 -2.19 -2.64 -4.87 -5.47 -5.43 -5.69 -6.70 -7.81 -7.40 -12.17 -0.52 -3.35 0.04 -6.77 1.64 -10.16 3.01 -6.40 10.01 -10.01 17.08 -8.82 4.32 0.74 6.03 1.82 11.79 7.40 l5.21 5.06 5.13 -5.02 c5.39 -5.28 7.25 -6.51 11.16 -7.33 2.68 -0.56 4.72 -0.52 7.33 0.15 3.31 0.86 5.25 1.93 7.44 4.06 4.54 4.46 6.14 11.68 3.94 17.89 -0.97 2.75 -1.97 4.09 -7.07 9.49 -2.49 2.64 -4.50 4.87 -4.50 4.99 0 0.11 2.31 2.64 5.13 5.58 6.77 7.07 8.26 9.93 8.26 15.77 0 10.12 -8.89 17.78 -18.71 16.15 -4.58 -0.78 -6.14 -1.79 -12.24 -7.96 -3.01 -3.01 -5.62 -5.51 -5.84 -5.51 -0.19 0 -2.60 2.31 -5.39 5.13 -2.75 2.79 -5.88 5.62 -6.99 6.29 -3.57 2.16 -7.92 2.83 -12.02 1.82z";
 
-type Variant = 'constellation' | 'flowLines' | 'stackingBars' | 'cardStack' | 'ticketPunch';
+type Variant = 'constellation' | 'flowLines' | 'stackingBars' | 'cardStack' | 'ticketPunch' | 'pulseWave';
 
 interface SplitMediaMotionProps {
     variant?: Variant;
@@ -117,10 +117,11 @@ function StackingBarsVariant() {
     );
 }
 
-// Four cards cycle through stack positions on a shared 4-step timeline —
-// each card takes a turn at the front, then recedes to the back of the
-// stack. Reads as browsable objects (photos, campaigns, events) rather
-// than abstract data, fitting media/creative-themed copy.
+// Four cards take turns sliding through center on a shared timeline — each
+// enters from the right, holds centered, then exits left as the next card
+// enters. A real carousel pass, not a depth shuffle. Reads as browsable
+// objects (photos, campaigns, events) rather than abstract data, fitting
+// media/creative-themed copy.
 const CARD_COUNT = 4;
 const CARD_CYCLE_S = 8;
 
@@ -130,8 +131,8 @@ function CardStackVariant() {
             {Array.from({ length: CARD_COUNT }).map((_, i) => (
                 <div
                     key={i}
-                    className={`${styles.card} ${styles[`cardStart${i}` as keyof typeof styles]}`}
-                    style={{ animationDelay: `${-(i * (CARD_CYCLE_S / CARD_COUNT))}s` }}
+                    className={`${styles.card} ${styles[`cardTint${i}` as keyof typeof styles]}`}
+                    style={{ animationDelay: `${i * (CARD_CYCLE_S / CARD_COUNT)}s` }}
                 />
             ))}
         </div>
@@ -163,6 +164,30 @@ function TicketPunchVariant() {
     );
 }
 
+// Concentric rings expand outward from the center X mark and fade — the
+// universal "broadcast/notification going out" visual. Direct fit for
+// broadcast/announcement-themed copy.
+const PULSE_RING_COUNT = 3;
+
+function PulseWaveVariant() {
+    return (
+        <div className={styles.pulseWrap}>
+            {Array.from({ length: PULSE_RING_COUNT }).map((_, i) => (
+                <div
+                    key={i}
+                    className={styles.pulseRing}
+                    style={{ animationDelay: `${i * 1.1}s` }}
+                />
+            ))}
+            <div className={styles.pulseCore}>
+                <svg viewBox="386.1 95.6 85.7 86.7" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', overflow: 'visible' }}>
+                    <path fill="var(--color-brand-primary)" d={X_MARK_PATH} />
+                </svg>
+            </div>
+        </div>
+    );
+}
+
 /**
  * Fills the `.splitMedia` slot on the /for/* landing pages with a looping,
  * wordless motion piece instead of a static screenshot — avoids the
@@ -179,6 +204,7 @@ export default function SplitMediaMotion({ variant = 'constellation' }: SplitMed
             {variant === 'stackingBars' && <StackingBarsVariant />}
             {variant === 'cardStack' && <CardStackVariant />}
             {variant === 'ticketPunch' && <TicketPunchVariant />}
+            {variant === 'pulseWave' && <PulseWaveVariant />}
             {variant === 'constellation' && <ConstellationVariant />}
         </div>
     );
