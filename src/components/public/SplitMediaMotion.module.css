@@ -241,18 +241,25 @@
 }
 
 /* ---------------- Card carousel ---------------- */
+/* Track is wide enough to hold the centered card plus a slice of its
+   neighbors on either side, so the whole carousel reads as a track with
+   cards passing through — not a single-card window with off-screen teleports. */
 .cardStack {
     position: relative;
     z-index: 2;
-    width: 62%;
-    max-width: 210px;
-    aspect-ratio: 4 / 5;
+    width: 96%;
+    max-width: 320px;
+    aspect-ratio: 12 / 5;
     overflow: hidden;
 }
 
 .card {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 44%;
+    margin-left: -22%;
     border-radius: 14px;
     background: linear-gradient(155deg, rgba(var(--color-brand-primary-rgb), 0.16), rgba(var(--color-brand-secondary-rgb), 0.1));
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -264,30 +271,26 @@
     animation-fill-mode: backwards;
 }
 
-/* One card's turn: enters from the right, holds centered, exits left.
-   Each card is offset by animation-delay so exactly one is ever
-   centered — a real carousel pass, not a depth shuffle. */
+/* Continuous right-to-left drift across the whole cycle, no resting dead
+   zone — every card is always moving. With 4 cards spaced 2s apart on
+   this 8s cycle, at any instant one card is centered while its
+   neighbors are simultaneously mid-transit on either side, so the
+   whole track is visible as a continuous train rather than a single
+   card teleporting in and out. */
 @keyframes cardCarousel {
-
     0% {
-        transform: translateX(120%) scale(0.92);
-        opacity: 0;
+        transform: translateX(140%) scale(0.88);
+        opacity: 0.5;
     }
 
-    8%,
-    17% {
+    50% {
         transform: translateX(0) scale(1);
         opacity: 1;
     }
 
-    25% {
-        transform: translateX(-120%) scale(0.92);
-        opacity: 0;
-    }
-
     100% {
-        transform: translateX(-120%) scale(0.92);
-        opacity: 0;
+        transform: translateX(-140%) scale(0.88);
+        opacity: 0.5;
     }
 }
 

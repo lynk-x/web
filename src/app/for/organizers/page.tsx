@@ -55,7 +55,7 @@ export default function OrganizersLandingPage() {
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
                     >
-                        Built for Scale, Designed for Humans
+                        Everything Your Event Actually Needs
                     </motion.h2>
                     <motion.div 
                         className={styles.grid}
@@ -74,18 +74,18 @@ export default function OrganizersLandingPage() {
 
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                            </div>
-                            <h3 className={styles.cardTitle}>You Get Paid, Without Chasing Anyone</h3>
-                            <p className={styles.cardDesc}>Most payouts land automatically via MPESA or bank transfer. Larger settlements get a quick review first — a safety check, not a black box.</p>
-                        </motion.div>
-
-                        <motion.div className={styles.card} variants={fadeInUp}>
-                            <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3zM20 14v3M17 20h3" /></svg>
                             </div>
                             <h3 className={styles.cardTitle}>Instant Gate Scan</h3>
                             <p className={styles.cardDesc}>QR check-in that works even when the venue WiFi doesn’t. No manual lookups, no queues at the door.</p>
+                        </motion.div>
+
+                        <motion.div className={styles.card} variants={fadeInUp}>
+                            <div className={styles.cardIcon}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                            </div>
+                            <h3 className={styles.cardTitle}>Shared Media Wall</h3>
+                            <p className={styles.cardDesc}>Every photo and clip attendees share lands in one place — yours to keep after the event ends.</p>
                         </motion.div>
                     </motion.div>
                 </section>

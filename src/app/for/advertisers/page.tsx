@@ -97,24 +97,24 @@ export default function AdvertisersLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Scalable Brand Influence</h2>
+                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Reach, Under Your Control</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 2.1l4 2v14l-4-2-6 3-4-2-4 2V4.1l4-2 6 3 4-2z" /><polyline points="9 5.1 9 21.1" /><polyline points="15 2.1 15 18.1" /></svg>
-                                    Multi-Event Synchronization
+                                    Show Up Where It Matters
                                 </h4>
-                                <p className={styles.cardDesc}>Dominate an entire season. Launch unified campaigns across hundreds of related events and community forums with a single click.</p>
+                                <p className={styles.cardDesc}>Target a specific event directly, or expand by geography and audience tags — you choose how narrow or broad your reach is.</p>
                             </div>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-                                    Global Frequency Capping
+                                    No Ad Fatigue, By Default
                                 </h4>
-                                <p className={styles.cardDesc}>Maintain your brand’s prestige. Ensure your audience sees your message just enough to convert, never enough to fatigue. </p>
+                                <p className={styles.cardDesc}>The same person won’t be hit with your ad over and over — impressions are automatically capped so your spend keeps reaching new people.</p>
                             </div>
                         </div>
                         <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="flowLines" />
+                            <SplitMediaMotion variant="constellation" />
                         </div>
                     </motion.div>
 
