@@ -3,18 +3,24 @@ import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import styles from './NewLegalVersion.module.css';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
-import RichTextEditor from '@/components/ui/RichTextEditor';
 import Badge from '@/components/shared/Badge';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import { formatDate } from '@/utils/format';
 import { DatePicker } from '@/components/ui/DatePicker';
 import FormRow from '@/components/shared/FormRow';
+
+// Tiptap + ProseMirror add meaningful weight; defer until the form actually renders.
+const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), {
+    ssr: false,
+    loading: () => <div style={{ minHeight: 200 }} />,
+});
 
 export default function NewLegalVersionPage() {
     const router = useRouter();

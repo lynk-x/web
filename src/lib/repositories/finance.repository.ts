@@ -79,12 +79,6 @@ export interface RefundRequest {
     created_at: string;
 }
 
-export interface FxRate {
-    currency: string;
-    rate_to_base: number;
-    updated_at: string;
-}
-
 export interface TaxRate {
     id: string;
     country_code: string;
@@ -250,25 +244,14 @@ export function createFinanceRepository(client: DbClient) {
             return { data: data as RefundRequest[], error: null };
         },
 
-        /** Fetch all FX rates (rate_to_base relative to USD). */
-        async getFxRates(): Promise<RepoResult<FxRate[]>> {
-            const { data, error } = await client
-                .schema('api')
-                .from('v1_fx_rates')
-                .select('currency, rate_to_base, updated_at')
-                .order('currency', { ascending: true });
-
-            if (error) return { data: null, error: toError(error) };
-            return { data: data as FxRate[], error: null };
-        },
-
         /** Fetch active tax rates, optionally filtered by country. */
         async getTaxRates(countryCode?: string): Promise<RepoResult<TaxRate[]>> {
             let query = client
                 .schema('api')
                 .from('v1_tax_rates')
                 .select('id, country_code, display_name, rate_percent, is_inclusive, is_active, updated_at')
-                .eq('is_active', true);
+                .eq('is_active', true)
+                .limit(1000);
 
             if (countryCode) query = query.eq('country_code', countryCode);
 

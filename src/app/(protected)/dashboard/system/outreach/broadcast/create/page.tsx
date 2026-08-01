@@ -3,14 +3,20 @@ import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
-import RichTextEditor from '@/components/ui/RichTextEditor';
 import OutreachPreview from '@/components/admin/outreach/OutreachPreview';
+
+// Tiptap + ProseMirror add meaningful weight; defer until the form actually renders.
+const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), {
+    ssr: false,
+    loading: () => <div style={{ minHeight: 200 }} />,
+});
 
 export default function CreateBroadcastPage() {
     const router = useRouter();

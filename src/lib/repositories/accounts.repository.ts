@@ -97,27 +97,29 @@ export function createAccountsRepository(client: DbClient) {
 
             const accountIds = memberData.map((m: any) => m.account_id);
 
-            // 2. Fetch countries/currencies from api.v1_countries
+            // 2 & 3. Fetch countries/currencies and wallets in parallel — neither
+            // depends on the other, only on memberData from step 1.
             const countryCodes = Array.from(new Set(memberData.map((row: any) => row.country_code).filter(Boolean)));
-            let countryData: any[] = [];
-            if (countryCodes.length > 0) {
-                const { data: countries, error: countriesError } = await client
+            const [countriesResult, walletsResult] = await Promise.all([
+                countryCodes.length > 0
+                    ? client
+                        .schema('api' as any)
+                        .from('v1_countries')
+                        .select('code, currency')
+                        .in('code', countryCodes)
+                    : Promise.resolve({ data: [] as any[], error: null }),
+                client
                     .schema('api' as any)
-                    .from('v1_countries')
-                    .select('code, currency')
-                    .in('code', countryCodes);
-                if (countriesError) return { data: null, error: toError(countriesError) };
-                countryData = countries ?? [];
-            }
+                    .from('v1_wallet_balances')
+                    .select('account_id, currency, cash_balance')
+                    .in('account_id', accountIds),
+            ]);
+
+            if (countriesResult.error) return { data: null, error: toError(countriesResult.error) };
+            const countryData = countriesResult.data ?? [];
             const countryMap = new Map(countryData.map((c: any) => [c.code, c.currency]));
 
-            // 3. Fetch wallets from api.v1_wallet_balances
-            const { data: walletData, error: walletError } = await client
-                .schema('api' as any)
-                .from('v1_wallet_balances')
-                .select('account_id, currency, cash_balance')
-                .in('account_id', accountIds);
-
+            const { data: walletData, error: walletError } = walletsResult;
             if (walletError) return { data: null, error: toError(walletError) };
 
             const walletsMap = new Map<string, { currency: string; balance: number }[]>();

@@ -200,12 +200,15 @@ export function createTicketsRepository(client: DbClient) {
             const size = opts?.pageSize ?? 50;
             const from = (page - 1) * size;
 
-            // 1. Fetch all ticket IDs for the event
+            // 1. Fetch ticket IDs for the event. Capped defensively — this feeds
+            // an .in() filter below, so it must stay well under PostgREST/URL
+            // length limits even for a very large event.
             const { data: ticketsData, error: ticketsError } = await client
                 .schema('api')
                 .from('v1_tickets')
                 .select('id')
-                .eq('event_id', eventId);
+                .eq('event_id', eventId)
+                .limit(10000);
 
             if (ticketsError) return { data: null, error: toError(ticketsError) };
 
@@ -238,13 +241,18 @@ export function createTicketsRepository(client: DbClient) {
         },
 
         /** Fetch ticket transfers for a user (sent or received). */
-        async getTransfersByUser(userId: string): Promise<RepoResult<TicketTransfer[]>> {
+        async getTransfersByUser(userId: string, opts?: ListOptions): Promise<RepoResult<TicketTransfer[]>> {
+            const page = opts?.page ?? 1;
+            const size = opts?.pageSize ?? 20;
+            const from = (page - 1) * size;
+
             const { data, error } = await client
                 .schema('api')
                 .from('v1_ticket_transfers')
                 .select('id, ticket_id, sender_id, recipient_id, status, expires_at, transferred_at')
                 .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-                .order('transferred_at', { ascending: false });
+                .order('transferred_at', { ascending: false })
+                .range(from, from + size - 1);
 
             if (error) return { data: null, error: toError(error) };
             return { data: data as TicketTransfer[], error: null };

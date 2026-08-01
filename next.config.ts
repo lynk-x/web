@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import createBundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = createBundleAnalyzer({
+    enabled: process.env.ANALYZE === "true",
+});
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -23,6 +28,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
     devIndicators: false,
+    experimental: {
+        optimizePackageImports: ['recharts', 'framer-motion', 'react-leaflet'],
+    },
     async headers() {
         return [
             {
@@ -43,4 +51,4 @@ const nextConfig: NextConfig = {
     },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

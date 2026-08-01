@@ -2,13 +2,19 @@
 import { getErrorMessage } from '@/utils/error';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import styles from './ContentForm.module.css';
 import { useRouter } from 'next/navigation';
-import RichTextEditor from '@/components/ui/RichTextEditor';
 import { createClient } from '@/utils/supabase/client';
 import { ContentItem } from '@/types/admin';
 import { useToast } from '@/components/ui/Toast';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
+
+// Tiptap + ProseMirror add meaningful weight; defer until the form actually renders.
+const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), {
+    ssr: false,
+    loading: () => <div style={{ minHeight: 200 }} />,
+});
 
 interface ContentFormProps {
     initialData?: Partial<ContentItem>;

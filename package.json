@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "analyze": "ANALYZE=true next build",
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
@@ -25,7 +26,6 @@
     "dompurify": "^3.3.3",
     "firebase": "^11.4.0",
     "framer-motion": "^12.34.0",
-    "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "next": "^16.2.4",
     "react": "19.2.3",
@@ -38,6 +38,7 @@
     "sharp": "^0.35.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.12",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/dompurify": "^3.0.5",

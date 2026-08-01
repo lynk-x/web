@@ -10,7 +10,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import RichTextEditor from '@/components/ui/RichTextEditor';
+import dynamic from 'next/dynamic';
 import { sanitizeRichText } from '@/utils/sanitization';
 import styles from './EventForm.module.css';
 import CloseButton from '@/components/shared/CloseButton';
@@ -28,6 +28,12 @@ import { TimePicker } from '@/components/ui/TimePicker';
 import { LocationInput } from '@/components/ui/LocationInput';
 import ImageCropperModal from '@/components/shared/ImageCropperModal';
 import { preloadEmbeddingModel } from '@/utils/embedding';
+
+// Tiptap + ProseMirror add meaningful weight; defer until the form actually renders.
+const RichTextEditor = dynamic(() => import('@/components/ui/RichTextEditor'), {
+    ssr: false,
+    loading: () => <div style={{ minHeight: 200 }} />,
+});
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
