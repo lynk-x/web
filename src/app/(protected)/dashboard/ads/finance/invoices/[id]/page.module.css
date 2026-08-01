@@ -19,7 +19,7 @@
 .logoArea {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-sm);
 }
 
 .invoiceTitle {
@@ -34,7 +34,7 @@
     text-align: right;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--spacing-xs);
 }
 
 .metaItem {
@@ -44,7 +44,7 @@
 
 .metaLabel {
     opacity: 0.6;
-    margin-right: 8px;
+    margin-right: var(--spacing-sm);
 }
 
 .infoGrid {
@@ -59,7 +59,7 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--color-brand-primary);
-    margin-bottom: 12px;
+    margin-bottom: var(--spacing-md);
     letter-spacing: 1px;
 }
 
@@ -78,7 +78,7 @@
 
 .table th {
     text-align: left;
-    padding: 12px 16px;
+    padding: var(--spacing-md) var(--spacing-lg);
     background-color: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid var(--color-interface-outline);
     font-size: 12px;
@@ -108,13 +108,13 @@
 .totalRow {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
+    padding: var(--spacing-sm) 0;
 }
 
 .totalRow.grandTotal {
     border-top: 2px solid var(--color-interface-outline);
-    margin-top: 12px;
-    padding-top: 16px;
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-lg);
     font-size: 20px;
     font-weight: 700;
     color: var(--color-brand-primary);
@@ -122,7 +122,7 @@
 
 .footer {
     margin-top: 80px;
-    padding-top: 24px;
+    padding-top: var(--spacing-xl);
     border-top: 1px solid var(--color-interface-outline);
     display: flex;
     justify-content: space-between;
@@ -131,7 +131,7 @@
 
 .statusBadge {
     display: inline-flex;
-    padding: 4px 12px;
+    padding: var(--spacing-xs) var(--spacing-md);
     border-radius: var(--radius-full);
     font-size: 12px;
     font-weight: 600;
@@ -155,8 +155,8 @@
 
 .actions {
     display: flex;
-    gap: 16px;
-    margin-top: 24px;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
 }
 
 .btn {
@@ -167,7 +167,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
     transition: all 0.2s;
     border: none;
 }

@@ -1,10 +1,10 @@
 .formContainer {
     max-width: 800px;
-    margin: 24px auto;
+    margin: var(--spacing-xl) auto;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--color-interface-outline);
     border-radius: 12px;
-    padding: 32px;
+    padding: var(--spacing-xxl);
     backdrop-filter: blur(10px);
 }
 
@@ -17,13 +17,13 @@
 .formSection {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--spacing-xl);
 }
 
 .inputGroup {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-sm);
 }
 
 .label {
@@ -35,7 +35,7 @@
 }
 
 .input, .select {
-    padding: 12px 16px;
+    padding: var(--spacing-md) var(--spacing-lg);
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--color-interface-outline);
     border-radius: 8px;
@@ -59,13 +59,13 @@
 .footer {
     display: flex;
     justify-content: flex-end;
-    gap: 16px;
-    padding-top: 24px;
+    gap: var(--spacing-lg);
+    padding-top: var(--spacing-xl);
     border-top: 1px solid var(--color-interface-outline);
 }
 
 .cancelButton {
-    padding: 10px 24px;
+    padding: 10px var(--spacing-xl);
     background: transparent;
     border: none;
     color: var(--color-text-secondary);
@@ -79,7 +79,7 @@
 }
 
 .submitButton {
-    padding: 10px 32px;
+    padding: 10px var(--spacing-xxl);
     background: var(--color-brand-primary);
     border: none;
     border-radius: 8px;

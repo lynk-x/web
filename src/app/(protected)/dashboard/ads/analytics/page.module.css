@@ -23,7 +23,7 @@
     font-size: 14px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    margin-top: 4px;
+    margin-top: var(--spacing-xs);
 }
 
 .dateRangeBtn {
@@ -36,7 +36,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
 }
 
 .overviewCards {

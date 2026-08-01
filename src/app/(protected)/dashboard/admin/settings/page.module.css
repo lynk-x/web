@@ -20,7 +20,7 @@
     border: none;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    padding: 12px 24px;
+    padding: var(--spacing-md) var(--spacing-xl);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;

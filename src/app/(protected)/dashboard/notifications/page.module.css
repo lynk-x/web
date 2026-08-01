@@ -3,7 +3,7 @@
 }
 
 .loadingState {
-    padding: 48px 24px;
+    padding: var(--spacing-huge) var(--spacing-xl);
     text-align: center;
     color: rgba(255, 255, 255, 0.5);
     font-size: 14px;
@@ -18,8 +18,8 @@
     position: relative;
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    padding: 16px 20px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) 20px;
     border-bottom: 1px solid var(--color-interface-outline);
     cursor: pointer;
 }
@@ -46,7 +46,7 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--spacing-md);
 }
 
 .itemTitle {
@@ -62,7 +62,7 @@
 }
 
 .itemText {
-    margin: 4px 0 0;
+    margin: var(--spacing-xs) 0 0;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.6);
     line-height: 1.5;
