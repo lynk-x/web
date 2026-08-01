@@ -23,7 +23,7 @@
     font-size: 14px;
     text-decoration: none;
     transition: opacity 0.2s;
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-xs);
 }
 
 .backLink:hover {
@@ -42,7 +42,7 @@
     font-size: 14px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    margin-top: 4px;
+    margin-top: var(--spacing-xs);
 }
 
 .actions {
@@ -62,7 +62,7 @@
 .filterBtn {
     background: transparent;
     border: none;
-    padding: 6px 12px;
+    padding: 6px var(--spacing-md);
     font-size: 13px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
@@ -81,11 +81,11 @@
 .exportBtn {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
     background-color: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
     color: var(--color-utility-primaryText);
-    padding: 8px 16px;
+    padding: var(--spacing-sm) var(--spacing-lg);
     border-radius: var(--radius-md);
     font-size: 13px;
     font-weight: 500;
@@ -117,7 +117,7 @@
     font-size: 14px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-sm);
 }
 
 .summaryValue {
@@ -125,7 +125,7 @@
     font-weight: 700;
     font-family: var(--font-heading);
     color: var(--color-utility-primaryText);
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-xs);
 }
 
 .trend {

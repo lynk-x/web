@@ -6,6 +6,7 @@ interface StatCardProps {
     label: string;
     value: string | number | null;
     change?: string;
+    /** @deprecated Use `trend` instead. Only read when `trend` is omitted. */
     isPositive?: boolean;
     trend?: 'positive' | 'negative' | 'neutral';
     href?: string;
@@ -14,6 +15,12 @@ interface StatCardProps {
     changeColor?: string;
 }
 
+/**
+ * A single metric tile (label + value + optional change indicator) used across
+ * every dashboard role — admin, organizer, advertiser, and Pulse. Renders as a
+ * link when `href` is given, otherwise a static card. `null`/`undefined` value
+ * or `isLoading` both render a loading placeholder instead of the value.
+ */
 export default function StatCard({
     label,
     value,

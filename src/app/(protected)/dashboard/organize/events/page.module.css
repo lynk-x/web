@@ -24,13 +24,13 @@
     font-size: 14px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    margin-top: 4px;
+    margin-top: var(--spacing-xs);
 }
 
 .primaryBtn {
     background-color: var(--color-brand-primary);
     color: var(--color-utility-secondaryText);
-    padding: 10px 24px;
+    padding: 10px var(--spacing-xl);
     border-radius: var(--radius-full);
     font-weight: 600;
     font-size: 14px;
@@ -40,7 +40,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
     text-decoration: none;
 }
 
@@ -52,7 +52,7 @@
 /* Toolbar & Filters */
 .toolbarContainer {
     display: flex;
-    gap: 8px;
+    gap: var(--spacing-sm);
     flex-wrap: wrap;
 }
 
@@ -60,7 +60,7 @@
     background: transparent;
     border: 1px solid var(--color-interface-outline);
     color: var(--color-utility-primaryText);
-    padding: 8px 16px;
+    padding: var(--spacing-sm) var(--spacing-lg);
     border-radius: var(--radius-full);
     font-size: 13px;
     cursor: pointer;
@@ -91,7 +91,7 @@
 /* Filter Group - retained if needed for extra filters */
 .filterGroup {
     display: flex;
-    gap: 12px;
+    gap: var(--spacing-md);
     align-items: center;
 }
 
@@ -120,7 +120,7 @@
 .statsGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 20px;
+    gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
 }
 
@@ -128,10 +128,10 @@
     background-color: var(--color-interface-surface);
     border: 1px solid var(--color-interface-outline);
     border-radius: var(--radius-xl);
-    padding: 24px;
+    padding: var(--spacing-xl);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-sm);
     transition: transform 0.2s;
 }
 
@@ -160,7 +160,7 @@
     font-size: 13px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--spacing-xs);
     font-weight: 500;
 }
 

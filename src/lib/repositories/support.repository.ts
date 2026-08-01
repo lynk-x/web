@@ -36,7 +36,11 @@ export interface SupportTicketMessage {
 
 export function createSupportRepository(client: DbClient) {
     return {
-        /** Create a new support ticket */
+        /**
+         * Create a new support ticket. Wraps `api.v1_support_tickets`.
+         * `user_id` is optional — the underlying table allows a null submitter
+         * for non-authenticated help requests (e.g. contact-form submissions).
+         */
         async createTicket(
             data: {
                 user_id?: string;
@@ -58,7 +62,9 @@ export function createSupportRepository(client: DbClient) {
             return { data: ticket as SupportTicket, error: null };
         },
 
-        /** Get all tickets for a user */
+        /**
+         * Fetch a user's support tickets, newest first, paginated. Wraps `api.v1_support_tickets`.
+         */
         async getUserTickets(
             userId: string,
             opts?: ListOptions
@@ -81,7 +87,7 @@ export function createSupportRepository(client: DbClient) {
             return { data: data as SupportTicket[], total: count, error: null };
         },
 
-        /** Get a single ticket by id */
+        /** Fetch a single support ticket by id. Wraps `api.v1_support_tickets`. */
         async getTicket(ticketId: string): Promise<RepoResult<SupportTicket>> {
             const { data, error } = await client
                 .schema('api')
@@ -94,7 +100,10 @@ export function createSupportRepository(client: DbClient) {
             return { data: data as SupportTicket, error: null };
         },
 
-        /** Get all messages for a ticket */
+        /**
+         * Fetch a ticket's message thread in chronological order. Wraps `api.v1_support_ticket_messages`.
+         * A message with `sender_id: null` came from the system/an automated agent, not a person.
+         */
         async getTicketMessages(ticketId: string): Promise<RepoResult<SupportTicketMessage[]>> {
             const { data, error } = await client
                 .schema('api')
@@ -107,7 +116,10 @@ export function createSupportRepository(client: DbClient) {
             return { data: data as SupportTicketMessage[], error: null };
         },
 
-        /** Add a message to a ticket */
+        /**
+         * Post a reply to a ticket's thread. Wraps `api.v1_support_ticket_messages`.
+         * Omit `senderId` for a system/automated message rather than passing an empty string.
+         */
         async addMessage(
             ticketId: string,
             message: string,

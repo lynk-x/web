@@ -25,7 +25,7 @@
     font-size: 14px;
     color: var(--color-utility-primaryText);
     opacity: 0.6;
-    margin-top: 4px;
+    margin-top: var(--spacing-xs);
 }
 
 .headerActions {
@@ -37,7 +37,7 @@
 .primaryBtn {
     background-color: var(--color-brand-primary);
     color: var(--color-utility-secondaryText);
-    padding: 10px 24px;
+    padding: 10px var(--spacing-xl);
     border-radius: var(--radius-full);
     font-weight: 600;
     font-size: 14px;
@@ -47,7 +47,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
     text-decoration: none;
 }
 
@@ -60,7 +60,7 @@
 .statsGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
+    gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
 }
 

@@ -101,11 +101,11 @@ const CheckoutView: React.FC = () => {
 
     const currency = items[0]?.currency || 'KES';
 
-    // ── Init: restore payment state + pre-fill from session + read service fee ─
+    // ── Init: restore payment state + fetch available payment providers ─
     useEffect(() => {
         const init = async () => {
             try {
-                // 0. Restore pending payment state from sessionStorage (survives refresh).
+                // 1. Restore pending payment state from sessionStorage (survives refresh).
                 // Only the checkoutId is persisted — phone numbers are not stored to
                 // avoid XSS-readable PII in sessionStorage.
                 const saved = sessionStorage.getItem('lynk-x-payment');
@@ -118,11 +118,7 @@ const CheckoutView: React.FC = () => {
                     }
                 }
 
-                // 1. Service fee fetch removed as we use a flat 5% commission included in the price
-
-
-                // 2. Pre-fill contact form logic removed to keep checkout fully disconnected from active auth session.
-                // 3. Fetch available payment providers based on event currency
+                // 2. Fetch available payment providers based on event currency
                 const { data: providers } = await supabase.schema('api').rpc('get_available_payment_providers', {
                     p_currency: currency
                 });
