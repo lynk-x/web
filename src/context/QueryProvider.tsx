@@ -14,6 +14,12 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
             retry: 1,
             refetchOnWindowFocus: false,
           },
+          // Mutations don't inherit the `queries` retry default above. This applies
+          // only when a mutation doesn't set its own `retry` — non-idempotent actions
+          // (payments, balance deltas, one-shot creates) MUST override with `retry: false`.
+          mutations: {
+            retry: 1,
+          },
         },
       })
   );

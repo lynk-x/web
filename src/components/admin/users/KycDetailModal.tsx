@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import styles from './KycDetailModal.module.css';
 import Modal from '../../shared/Modal';
 import Badge from '../../shared/Badge';
 import { formatString, formatDate } from '@/utils/format';
 import type { KycVerification } from '@/types/admin';
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { getErrorMessage } from '@/utils/error';
 
 interface KycDetailModalProps {
     isOpen: boolean;
@@ -43,6 +46,7 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
     onReject,
 }) => {
     const supabase = createClient();
+    const { showToast } = useToast();
     const [step, setStep] = useState<Step>('info');
     const [signedUrls, setSignedUrls] = useState<string[]>([]);
     const [decryptedPii, setDecryptedPii] = useState<Record<string, unknown>>({});
@@ -50,8 +54,25 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [adminNotes, setAdminNotes] = useState('');
-    const [isSavingNotes, setIsSavingNotes] = useState(false);
     const [notesSaved, setNotesSaved] = useState(false);
+
+    // Full-overwrite semantics (not append) — safe to retry on a transient failure,
+    // since resending the same notes text twice is a no-op.
+    const saveNotesMutation = useMutation({
+        mutationFn: async (notes: string) => {
+            if (!verification) return;
+            const { error } = await supabase
+                .schema('api')
+                .rpc('update_kyc_admin_notes', { p_verification_id: verification.id, p_notes: notes });
+            if (error) throw error;
+        },
+        retry: 1,
+        onSuccess: () => setNotesSaved(true),
+        onError: (err) => {
+            console.error('Failed to save admin notes:', err);
+            showToast(getErrorMessage(err) || 'Could not save notes', 'error');
+        },
+    });
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -102,21 +123,9 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
     const piiFields = Object.entries(decryptedPii || {});
     const stepIndex = STEPS.findIndex(s => s.key === step);
 
-    const handleSaveNotes = async () => {
-        setIsSavingNotes(true);
+    const handleSaveNotes = () => {
         setNotesSaved(false);
-        try {
-            const { error } = await supabase
-                .schema('api')
-                .rpc('update_kyc_admin_notes', { p_verification_id: verification.id, p_notes: adminNotes });
-
-            if (error) throw error;
-            setNotesSaved(true);
-        } catch (err) {
-            console.error('Failed to save admin notes:', err);
-        } finally {
-            setIsSavingNotes(false);
-        }
+        saveNotesMutation.mutate(adminNotes);
     };
 
     return (
@@ -256,9 +265,9 @@ const KycDetailModal: React.FC<KycDetailModalProps> = ({
                                 type="button"
                                 className={styles.btnSecondary}
                                 onClick={handleSaveNotes}
-                                disabled={isSavingNotes || isLoadingDetail}
+                                disabled={saveNotesMutation.isPending || isLoadingDetail}
                             >
-                                {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                                {saveNotesMutation.isPending ? 'Saving...' : 'Save Notes'}
                             </button>
                         </div>
                     </div>

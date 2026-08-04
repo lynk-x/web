@@ -7,6 +7,7 @@ import { createNotificationsRepository } from '@/lib/repositories';
 import type { Notification } from '@/lib/repositories/notifications.repository';
 import { formatRelativeTime } from '@/utils/format';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useRepoMutation } from '@/hooks/useRepoMutation';
 import PageHeader from '@/components/dashboard/PageHeader';
 import EmptyStateGuide from '@/components/dashboard/EmptyStateGuide';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -21,7 +22,6 @@ export default function NotificationsPage() {
     const [userId, setUserId] = useState<string | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isMarkingAll, setIsMarkingAll] = useState(false);
 
     const fetchNotifications = useCallback(async (uid: string, accountId?: string) => {
         setIsLoading(true);
@@ -44,25 +44,62 @@ export default function NotificationsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [supabase, fetchNotifications, activeAccount?.id]);
 
-    const handleMarkRead = async (notification: Notification) => {
+    // Idempotent (set-to-value / delete-by-id) — safe to retry on a transient failure.
+    // On error, roll the optimistic UI update back to what the server last confirmed
+    // rather than leaving the (already-applied) optimistic state stuck and unreported.
+    const markReadMutation = useRepoMutation(
+        (notification: Notification) => notificationsRepo.markRead(notification.id, notification.created_at),
+        {
+            errorMessage: 'Could not mark notification as read',
+            onError: (_err, notification) => {
+                setNotifications(prev =>
+                    prev.map(n => (n.id === notification.id ? { ...n, is_read: false } : n))
+                );
+            },
+        }
+    );
+
+    const markAllReadMutation = useRepoMutation(
+        () => notificationsRepo.markAllRead(userId ?? ''),
+        {
+            errorMessage: 'Could not mark all notifications as read',
+            onError: () => {
+                if (userId) fetchNotifications(userId, activeAccount?.id);
+            },
+        }
+    );
+
+    const deleteMutation = useRepoMutation(
+        (notification: Notification) => notificationsRepo.delete(notification.id, notification.created_at),
+        {
+            errorMessage: 'Could not delete notification',
+            onError: (_err, notification) => {
+                setNotifications(prev =>
+                    prev.some(n => n.id === notification.id) ? prev : [...prev, notification].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    )
+                );
+            },
+        }
+    );
+
+    const handleMarkRead = (notification: Notification) => {
         if (notification.is_read) return;
         setNotifications(prev =>
             prev.map(n => (n.id === notification.id ? { ...n, is_read: true } : n))
         );
-        await notificationsRepo.markRead(notification.id, notification.created_at);
+        markReadMutation.mutate(notification);
     };
 
-    const handleMarkAllRead = async () => {
+    const handleMarkAllRead = () => {
         if (!userId) return;
-        setIsMarkingAll(true);
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-        await notificationsRepo.markAllRead(userId);
-        setIsMarkingAll(false);
+        markAllReadMutation.mutate();
     };
 
-    const handleDelete = async (notification: Notification) => {
+    const handleDelete = (notification: Notification) => {
         setNotifications(prev => prev.filter(n => n.id !== notification.id));
-        await notificationsRepo.delete(notification.id, notification.created_at);
+        deleteMutation.mutate(notification);
     };
 
     const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -73,9 +110,9 @@ export default function NotificationsPage() {
                 title="Notifications"
                 subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'You\'re all caught up'}
                 primaryAction={unreadCount > 0 ? {
-                    label: isMarkingAll ? 'Marking...' : 'Mark all as read',
+                    label: markAllReadMutation.isPending ? 'Marking...' : 'Mark all as read',
                     onClick: handleMarkAllRead,
-                    disabled: isMarkingAll,
+                    disabled: markAllReadMutation.isPending,
                 } : undefined}
                 onClose={() => router.back()}
             />
