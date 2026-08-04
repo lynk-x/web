@@ -57,10 +57,10 @@ const CheckoutView: React.FC = () => {
 
     // Contact form state
     const [formData, setFormData] = useState({
-        email: '', phone: '', otpCode: '', mpesaNumber: ''
+        email: '', phone: '', mpesaNumber: ''
     });
     const [formErrors, setFormErrors] = useState({
-        email: '', phone: '', otpCode: '', mpesaNumber: ''
+        email: '', phone: '', mpesaNumber: ''
     });
     // Dial-code country for the contact phone field only — the M-Pesa payment
     // phone field stays a single Kenya-only input, deliberately not linked to
@@ -70,21 +70,6 @@ const CheckoutView: React.FC = () => {
     const [contactPhoneCountry, setContactPhoneCountry] = useState<DialCodeCountry>({
         code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
     });
-
-    // ── Phone OTP verification state ──────────────────────────────────────────
-    // Every checkout now verifies the contact phone via OTP before payment —
-    // this replaces the old silent signInAnonymously() call. A single
-    // signInWithOtp() covers both new and returning phone numbers (same as the
-    // PWA's login), so this doubles as real account creation for first-time
-    // guests, and correctly resumes the existing account for returning ones —
-    // fixing the old bug where every guest checkout minted a brand-new
-    // anonymous identity even if the phone number had purchased before.
-    const [otpSent, setOtpSent] = useState(false);
-    const [otpVerified, setOtpVerified] = useState(false);
-    const [otpSending, setOtpSending] = useState(false);
-    const [otpVerifying, setOtpVerifying] = useState(false);
-    const [otpResendCooldown, setOtpResendCooldown] = useState(0);
-    const [otpPhone, setOtpPhone] = useState<string | null>(null);
 
     // Promo state
     const [promoCode, setPromoCode] = useState('');
@@ -219,15 +204,6 @@ const CheckoutView: React.FC = () => {
         return () => clearInterval(id);
     }, [reservationExpiresAt]);
 
-    // ── OTP resend cooldown ────────────────────────────────────────────────────
-    useEffect(() => {
-        if (otpResendCooldown <= 0) return;
-        const id = setInterval(() => {
-            setOtpResendCooldown(prev => Math.max(0, prev - 1));
-        }, 1000);
-        return () => clearInterval(id);
-    }, [otpResendCooldown]);
-
     // ── Real promo code lookup ────────────────────────────────────────────────
     const handleApplyPromo = useCallback(async () => {
         const code = promoCode.trim().toUpperCase();
@@ -305,7 +281,7 @@ const CheckoutView: React.FC = () => {
     };
 
     const validateForm = (): boolean => {
-        const errs = { email: '', phone: '', otpCode: '', mpesaNumber: '' };
+        const errs = { email: '', phone: '', mpesaNumber: '' };
         let ok = true;
 
         // Phone Number is required and must match the selected country's digit count
