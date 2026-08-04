@@ -12,12 +12,12 @@ const projectId =
     : 'lynk-x-firebase');
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDju1jIcIjZMvW31gxMlaMkYVxxrhftQFY',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'lynk-x-firebase.firebaseapp.com',
   projectId,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'lynk-x-firebase.appspot.com',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '632799565510',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:632799565510:web:78327f319b4f3be791e9c7',
 };
 
 const app = initializeApp(firebaseConfig);
