@@ -53,24 +53,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
-    const fetchProfile = async (userId: string) => {
-        const usersRepo = createUsersRepository(supabase);
-        const { data, error } = await usersRepo.getProfile(userId);
-        if (error) {
-            console.error('Error fetching profile:', error);
-            return null;
+    const loadProfile = React.useCallback(async (userId: string, isMounted: () => boolean) => {
+        setIsLoadingProfile(true);
+        try {
+            const usersRepo = createUsersRepository(supabase);
+            const { data, error } = await usersRepo.getProfile(userId);
+            if (error) {
+                console.error('[AuthContext] Error fetching profile:', error);
+            } else if (isMounted()) {
+                setProfile(data as UserProfile);
+            }
+        } catch (err) {
+            console.error('[AuthContext] Uncaught error fetching profile:', err);
+        } finally {
+            if (isMounted()) {
+                setIsLoadingProfile(false);
+            }
         }
-        return data as UserProfile;
-    };
+    }, []);
 
     useEffect(() => {
         let mounted = true;
 
-        // Safety valve: if onAuthStateChange never fires (e.g. bad network / misconfigured
-        // Supabase URL), unblock the loading spinner after 5 s so the UI doesn't hang forever.
+        // Safety valve: unblock loading spinners after 4s if auth or profile state hangs
         const timeout = setTimeout(() => {
-            if (mounted) setIsLoading(false);
-        }, 5000);
+            if (mounted) {
+                setIsLoading(false);
+                setIsLoadingProfile(false);
+            }
+        }, 4000);
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (!mounted) return;
@@ -82,16 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 if (newUser) {
-                    setIsLoadingProfile(true);
-                    fetchProfile(newUser.id).then((profileData) => {
-                        if (mounted) {
-                            setProfile(profileData);
-                            setIsLoadingProfile(false);
-                        }
-                    });
-                    pushNotificationService.init().catch((error) => {
-                        console.error('[AuthContext] Push init failed:', error);
-                    });
+                    loadProfile(newUser.id, () => mounted);
+                } else {
+                    setProfile(null);
+                    setIsLoadingProfile(false);
                 }
             } else if (event === 'SIGNED_OUT') {
                 setProfile(null);
@@ -100,13 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     console.error('[AuthContext] Push removal failed:', error);
                 });
             } else if (newUser) {
-                setIsLoadingProfile(true);
-                fetchProfile(newUser.id).then((profileData) => {
-                    if (mounted) {
-                        setProfile(profileData);
-                        setIsLoadingProfile(false);
-                    }
-                });
+                loadProfile(newUser.id, () => mounted);
             } else {
                 setProfile(null);
                 setIsLoadingProfile(false);
@@ -118,26 +117,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearTimeout(timeout);
             subscription.unsubscribe();
         };
-    }, []);
+    }, [loadProfile]);
+
+    // Initialize Web Push notifications exclusively when an authenticated user is on a dashboard route.
+    // This prevents public discovery and checkout pages from triggering native browser notification permission prompts.
+    useEffect(() => {
+        if (user && pathname.startsWith('/dashboard')) {
+            pushNotificationService.init().catch((error) => {
+                console.error('[AuthContext] Push init failed:', error);
+            });
+        }
+    }, [pathname, user]);
 
     // Sync auth session on routing to protected pages to resolve server-action redirect mismatches
     useEffect(() => {
         let mounted = true;
         const checkSession = async () => {
             if (!user) {
-                setIsLoading(true);
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!mounted) return;
-                if (session?.user) {
-                    setUser(session.user);
-                    setIsLoadingProfile(true);
-                    const profileData = await fetchProfile(session.user.id);
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!mounted) return;
+                    if (session?.user) {
+                        setUser(session.user);
+                        await loadProfile(session.user.id, () => mounted);
+                    }
+                } catch (err) {
+                    console.error('[AuthContext] Error checking session:', err);
+                } finally {
                     if (mounted) {
-                        setProfile(profileData);
+                        setIsLoading(false);
                         setIsLoadingProfile(false);
                     }
                 }
-                setIsLoading(false);
             }
         };
 
@@ -150,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => {
             mounted = false;
         };
-    }, [pathname, user]);
+    }, [pathname, user, loadProfile]);
 
     /** Derived: true when the user has completed their profile setup. */
     const isProfileComplete = Boolean(profile?.full_name?.trim());

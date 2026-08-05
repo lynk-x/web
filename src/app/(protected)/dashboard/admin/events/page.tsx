@@ -31,6 +31,8 @@ import ReportTable from '@/components/admin/moderation/ReportTable';
 import TicketingTab from '@/components/admin/events/ticketing/TicketingTab';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
 import { formatRelativeTime, formatCurrency } from '@/utils/format';
+import Badge from '@/components/shared/Badge';
+import Button from '@/components/shared/Button';
 
 // --- Local Components ---
 
@@ -105,8 +107,34 @@ export default function AdminEventsPage() {
     const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
     const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
     const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
+    const [selectedPayoutForReview, setSelectedPayoutForReview] = useState<Payout | null>(null);
+    const [isPayoutReviewModalOpen, setIsPayoutReviewModalOpen] = useState(false);
     const [payoutCountryFilter, setPayoutCountryFilter] = useState('all');
+    const [payoutStatusFilter, setPayoutStatusFilter] = useState('pending');
     const [countries, setCountries] = useState<{ code: string, name: string }[]>([]);
+
+    /** Memoized & sorted payouts: filters by status chip and forces pending/requested/hold items to top of list */
+    const sortedAndFilteredPayouts = useMemo(() => {
+        let list = payouts;
+
+        if (payoutStatusFilter !== 'all') {
+            if (payoutStatusFilter === 'pending') {
+                list = list.filter(p => p.status === 'pending' || p.status === 'requested' || p.status === 'hold');
+            } else {
+                list = list.filter(p => p.status === payoutStatusFilter);
+            }
+        }
+
+        return [...list].sort((a, b) => {
+            const isAPending = a.status === 'pending' || a.status === 'requested' || a.status === 'hold';
+            const isBPending = b.status === 'pending' || b.status === 'requested' || b.status === 'hold';
+
+            if (isAPending && !isBPending) return -1;
+            if (!isAPending && isBPending) return 1;
+
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+    }, [payouts, payoutStatusFilter]);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = 10;
@@ -307,7 +335,7 @@ export default function AdminEventsPage() {
     // Reset page on search/filter change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, forumStatusFilter, activeTab, startDate, endDate, resolvedPayoutCountryFilter]);
+    }, [debouncedSearch, statusFilter, forumStatusFilter, payoutStatusFilter, activeTab, startDate, endDate, resolvedPayoutCountryFilter]);
 
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -353,6 +381,40 @@ export default function AdminEventsPage() {
             }
             
             showToast('Payout successfully initiated.', 'success');
+            setIsPayoutReviewModalOpen(false);
+            fetchPayouts();
+            fetchDashboardSummary();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const handleBulkApprovePayouts = async () => {
+        if (selectedPayoutIds.size === 0) return;
+        const selectedList = payouts.filter(p => selectedPayoutIds.has(p.id));
+
+        const unverifiedCount = selectedList.filter(p => !p.is_verified).length;
+        if (unverifiedCount > 0) {
+            showToast(`Critical Block: ${unverifiedCount} selected payout(s) belong to unverified recipients. Approve KYC first.`, 'error');
+            return;
+        }
+
+        if (!await confirm(`Are you sure you want to approve disbursement for ${selectedList.length} selected payout(s)?`)) return;
+
+        showToast(`Initiating disbursement for ${selectedList.length} payouts...`, 'info');
+        try {
+            const results = await Promise.all(
+                selectedList.map(p => publicSupabase.functions.invoke('payout-fulfillment', { body: { payout_id: p.id } }))
+            );
+            const failures = results.filter(r => r.error || !r.data?.success);
+
+            if (failures.length > 0) {
+                showToast(`Completed with warnings: ${failures.length} disbursement(s) failed to initiate.`, 'warning');
+            } else {
+                showToast(`Successfully initiated ${selectedList.length} payouts.`, 'success');
+            }
+
+            setSelectedPayoutIds(new Set());
             fetchPayouts();
             fetchDashboardSummary();
         } catch (err: unknown) {
@@ -704,6 +766,20 @@ export default function AdminEventsPage() {
                                 currentValue={forumStatusFilter}
                                 onChange={setForumStatusFilter}
                             />
+                        ) : activeTab === 'payouts' ? (
+                            <FilterChips
+                                options={[
+                                    { value: 'pending', label: 'Pending' },
+                                    { value: 'all', label: 'All' },
+                                    { value: 'processing', label: 'Processing' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'failed', label: 'Failed' },
+                                    { value: 'rejected', label: 'Rejected' },
+                                    { value: 'hold', label: 'On Hold' },
+                                ]}
+                                currentValue={payoutStatusFilter}
+                                onChange={setPayoutStatusFilter}
+                            />
                         ) : null}
                     </div>
                 </div>
@@ -800,20 +876,7 @@ export default function AdminEventsPage() {
                         actions={[
                             {
                                 label: 'Approve Selected',
-                                onClick: async () => {
-                                    if (!await confirm(`Approve ${selectedPayoutIds.size} payouts?`)) return;
-                                    try {
-                                        const { error } = await supabase.schema('api').rpc('bulk_approve_payouts', {
-                                            p_payout_ids: Array.from(selectedPayoutIds)
-                                        });
-                                        if (error) throw error;
-                                        showToast('Bulk approval initiated.', 'success');
-                                        fetchPayouts();
-                                        setSelectedPayoutIds(new Set());
-                                    } catch (err: unknown) {
-                                        showToast(getErrorMessage(err) || 'Failed to approve payouts.', 'error');
-                                    }
-                                },
+                                onClick: handleBulkApprovePayouts,
                                 variant: 'success'
                             },
                             {
@@ -830,7 +893,7 @@ export default function AdminEventsPage() {
                     />
 
                     <PayoutTable
-                        payouts={payouts}
+                        payouts={sortedAndFilteredPayouts}
                         isLoading={isLoading}
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -842,7 +905,17 @@ export default function AdminEventsPage() {
                             else next.add(id);
                             setSelectedPayoutIds(next);
                         }}
-                        onApprove={handleApprovePayout}
+                        onSelectAll={() => {
+                            if (selectedPayoutIds.size === sortedAndFilteredPayouts.length) {
+                                setSelectedPayoutIds(new Set());
+                            } else {
+                                setSelectedPayoutIds(new Set(sortedAndFilteredPayouts.map(p => p.id)));
+                            }
+                        }}
+                        onApprove={(payout: Payout) => {
+                            setSelectedPayoutForReview(payout);
+                            setIsPayoutReviewModalOpen(true);
+                        }}
                         onReject={(payout: Payout) => {
                             setPendingRejectPayout(payout);
                             setIsPayoutRejectModalOpen(true);
@@ -850,6 +923,92 @@ export default function AdminEventsPage() {
                     />
                 </TabsContent>
             </Tabs>
+
+            {selectedPayoutForReview && (
+                <Modal
+                    isOpen={isPayoutReviewModalOpen}
+                    onClose={() => setIsPayoutReviewModalOpen(false)}
+                    title={`Payout Review: ${selectedPayoutForReview.reference || selectedPayoutForReview.id}`}
+                    size="medium"
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {!selectedPayoutForReview.is_verified && (
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: '8px',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                color: '#ef4444',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <span>Recipient identity is NOT verified. Identity verification (KYC) is required before approving payout.</span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
+                            <div>
+                                <span style={{ opacity: 0.6, fontSize: '11px', display: 'block' }}>Recipient</span>
+                                <strong>{selectedPayoutForReview.recipient || 'Unknown'}</strong>
+                            </div>
+                            <div>
+                                <span style={{ opacity: 0.6, fontSize: '11px', display: 'block' }}>Identity Status</span>
+                                <Badge
+                                    label={selectedPayoutForReview.is_verified ? `Verified (${selectedPayoutForReview.kyc_tier || 'Tier 1'})` : 'Unverified'}
+                                    variant={selectedPayoutForReview.is_verified ? 'success' : 'error'}
+                                />
+                            </div>
+                            <div>
+                                <span style={{ opacity: 0.6, fontSize: '11px', display: 'block' }}>Amount</span>
+                                <strong style={{ fontSize: '16px', color: '#20F928' }}>
+                                    {formatCurrency(selectedPayoutForReview.amount, selectedPayoutForReview.currency)}
+                                </strong>
+                            </div>
+                            <div>
+                                <span style={{ opacity: 0.6, fontSize: '11px', display: 'block' }}>Status</span>
+                                <Badge label={selectedPayoutForReview.status} variant="warning" showDot />
+                            </div>
+                            <div>
+                                <span style={{ opacity: 0.6, fontSize: '11px', display: 'block' }}>Event Name</span>
+                                <span>{selectedPayoutForReview.eventName || 'System Adjustment'}</span>
+                            </div>
+                            <div>
+                                <span style={{ opacity: 0.6, fontSize: '11px', display: 'block' }}>Destination Wallet</span>
+                                <span style={{ fontFamily: 'monospace' }}>{selectedPayoutForReview.wallet || '—'}</span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                            <Button
+                                variant="ghost"
+                                onClick={() => setIsPayoutReviewModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={() => {
+                                    setIsPayoutReviewModalOpen(false);
+                                    setPendingRejectPayout(selectedPayoutForReview);
+                                    setIsPayoutRejectModalOpen(true);
+                                }}
+                            >
+                                Reject Request
+                            </Button>
+                            <Button
+                                variant="primary"
+                                disabled={!selectedPayoutForReview.is_verified}
+                                onClick={() => handleApprovePayout(selectedPayoutForReview)}
+                            >
+                                Approve Disbursement
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
 
             {selectedEvent && (
                 <Modal

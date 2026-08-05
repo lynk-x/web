@@ -107,9 +107,26 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     }, [user]);
 
     useEffect(() => {
+        let mounted = true;
+
+        // Safety valve: unblock loading spinner after 4s if account fetching hangs
+        const timeout = setTimeout(() => {
+            if (mounted) setIsLoading(false);
+        }, 4000);
+
         if (!isLoadingAuth) {
-            fetchAccounts();
+            fetchAccounts().finally(() => {
+                if (mounted) {
+                    clearTimeout(timeout);
+                    setIsLoading(false);
+                }
+            });
         }
+
+        return () => {
+            mounted = false;
+            clearTimeout(timeout);
+        };
     }, [isLoadingAuth, fetchAccounts]);
 
     const setActiveAccountId = async (idOrSlug: string) => {

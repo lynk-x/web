@@ -145,13 +145,13 @@ const PayoutTable: React.FC<PayoutTableProps> = ({
     const getActions = (payout: Payout): ActionItem[] => {
         const actions: ActionItem[] = [];
 
-        // `requested` and `hold` payouts await admin review — approve or reject.
+        // `pending`, `requested`, and `hold` payouts await admin review — approve or reject.
         // `hold` is the AML-threshold-triggered variant, so its approve action
         // reads as a deliberate compliance sign-off rather than a routine one.
-        if (payout.status === 'requested' || payout.status === 'hold') {
+        if (payout.status === 'pending' || payout.status === 'requested' || payout.status === 'hold') {
             actions.push(
                 {
-                    label: payout.status === 'hold' ? 'Approve (AML Review)' : 'Approve',
+                    label: payout.status === 'hold' ? 'Review AML & Approve' : 'Review & Approve',
                     variant: 'success' as const,
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
                     onClick: () => onApprove?.(payout),

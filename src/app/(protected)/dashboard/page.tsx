@@ -47,6 +47,16 @@ function DashboardRoot() {
         }
     }, [router, setActiveAccountId, isProfileComplete]);
 
+    const [isForceLoaded, setIsForceLoaded] = useState(false);
+
+    // Fallback safety valve: ensure loading screen never hangs non-stop if network or state sync delays
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsForceLoaded(true);
+        }, 3500);
+        return () => clearTimeout(timer);
+    }, []);
+
     useEffect(() => {
         if (isLoadingAuth || isLoadingProfile || isLoadingOrg) return;
 
@@ -60,8 +70,9 @@ function DashboardRoot() {
         // The user can manually click "Create New Account" if they have no memberships.
     }, [isLoadingAuth, isLoadingProfile, isLoadingOrg, user, router]);
 
+    const showSpinner = !isForceLoaded && (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting);
 
-    if (isLoadingAuth || isLoadingProfile || isLoadingOrg || isRedirecting) {
+    if (showSpinner) {
         return (
             <div className={styles.container}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
