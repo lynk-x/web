@@ -30,6 +30,71 @@ const ConfirmationContent = () => {
     // route — no timestamp to mangle in transit. The bridge link only renders
     // once this resolves.
     const [forumReference, setForumReference] = useState<string | null>(null);
+    const [isInstalledApp, setIsInstalledApp] = useState(false);
+
+    /** Detect if the Lynk-X app is installed or running in PWA standalone mode */
+    useEffect(() => {
+        const checkAppInstallation = async () => {
+            // 1. Check if running in standalone display mode (installed PWA)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                (navigator as any).standalone === true ||
+                document.referrer.includes('android-app://');
+
+            if (isStandalone) {
+                setIsInstalledApp(true);
+                return;
+            }
+
+            // 2. Check getInstalledRelatedApps API if supported (Chrome / Edge / Android)
+            if ('getInstalledRelatedApps' in navigator) {
+                try {
+                    const relatedApps = await (navigator as any).getInstalledRelatedApps();
+                    if (relatedApps && relatedApps.length > 0) {
+                        setIsInstalledApp(true);
+                        return;
+                    }
+                } catch (err) {
+                    console.debug('getInstalledRelatedApps check failed:', err);
+                }
+            }
+        };
+
+        checkAppInstallation();
+    }, []);
+
+    /** Seamlessly navigate to the event forum without spawning redundant windows */
+    const handleProceedToForum = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        if (!forumReference) return;
+
+        const bridgeUrl = `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`;
+        const customSchemeUrl = `lynkx://auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`;
+
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+
+        if (isStandalone) {
+            // Already running in installed PWA standalone context: navigate in-place
+            window.location.href = bridgeUrl;
+            return;
+        }
+
+        if (isInstalledApp) {
+            // App is installed on device: attempt custom scheme deep link with timer fallback
+            const startTime = Date.now();
+            window.location.href = customSchemeUrl;
+
+            setTimeout(() => {
+                // If browser did not blur/background to launch app within 1s, fall back to web bridge URL
+                if (Date.now() - startTime < 1500) {
+                    window.location.href = bridgeUrl;
+                }
+            }, 1000);
+            return;
+        }
+
+        // Standard web browser fallback: navigate in current tab (no new window)
+        window.location.href = bridgeUrl;
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -117,12 +182,19 @@ const ConfirmationContent = () => {
 
                 <div className={styles.actionGroup}>
                     {forumReference ? (
-                        <Link href={`https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`} className={styles.primaryBtn}>
-                            <span className={styles.btnText}>Enter Event Forum</span>
+                        <a 
+                            href={`https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`} 
+                            onClick={handleProceedToForum}
+                            className={styles.primaryBtn}
+                            target="_self"
+                        >
+                            <span className={styles.btnText}>
+                                {isInstalledApp ? 'Open in Lynk-X App' : 'Enter Event Forum'}
+                            </span>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                        </Link>
+                        </a>
                     ) : (
                         <span className={styles.primaryBtn} aria-disabled="true">
                             <span className={styles.btnText}>Preparing your forum…</span>
