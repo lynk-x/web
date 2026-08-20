@@ -27,6 +27,10 @@ interface CheckInLog {
     timestamp: string;
 }
 
+/**
+ * Check-in logs view for a specific event in the organizer dashboard.
+ * Displays real-time scanner feed, gate entry progress, and manual check-in tools.
+ */
 export default function CheckInLogsPage() {
     const { id: eventId } = useParams() as { id: string };
     const { showToast } = useToast();
@@ -36,7 +40,7 @@ export default function CheckInLogsPage() {
     const [logs, setLogs] = useState<CheckInLog[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState<{ scanned: number | null; remaining: number | null; rejected: number | null }>({ scanned: null, remaining: null, rejected: null });
+    const [stats, setStats] = useState<{ scanned: number | null; remaining: number | null }>({ scanned: null, remaining: null });
     const [showManualModal, setShowManualModal] = useState(false);
     const [manualCode, setManualCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
@@ -75,7 +79,7 @@ export default function CheckInLogsPage() {
                 attendeeAvatar: null,
                 ticketTier: row.tier_name || 'Unknown Tier',
                 status: row.status,
-                scannedBy: row.scanner_name || row.scanner_user_name || 'System',
+                scannedBy: row.scanner_name || row.scanner_user_name || (row.redeemed_at || row.status === 'used' ? 'System' : '-'),
                 timestamp: row.redeemed_at
                     ? new Date(row.redeemed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                     : '-',
@@ -84,12 +88,10 @@ export default function CheckInLogsPage() {
             setLogs(mappedLogs);
 
             const scanned = mappedLogs.filter(l => l.status === 'used').length;
-            const rejected = mappedLogs.filter(l => l.status === 'rejected').length;
             const valid = mappedLogs.filter(l => l.status === 'valid').length;
             setStats({
                 scanned,
                 remaining: valid,
-                rejected,
             });
 
         } catch (err) {
@@ -175,10 +177,6 @@ export default function CheckInLogsPage() {
 
     const columns: Column<CheckInLog>[] = [
         {
-            header: 'Time',
-            render: (log) => <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.8)' }}>{log.timestamp}</span>
-        },
-        {
             header: 'Attendee',
             render: (log) => (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -188,12 +186,16 @@ export default function CheckInLogsPage() {
             )
         },
         {
-            header: 'Status',
-            render: (log) => <Badge label={log.status === 'used' ? 'Valid Scan' : log.status} variant={getStatusVariant(log.status)} showDot />
+            header: 'Scanned by',
+            render: (log) => <span style={{ fontSize: '13px', opacity: 0.8 }}>{log.scannedBy}</span>
         },
         {
-            header: 'Scanner/Staff',
-            render: (log) => <span style={{ fontSize: '13px', opacity: 0.8 }}>{log.scannedBy}</span>
+            header: 'Scanned at',
+            render: (log) => <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.8)' }}>{log.timestamp}</span>
+        },
+        {
+            header: 'Status',
+            render: (log) => <Badge label={log.status === 'used' ? 'Valid Scan' : log.status} variant={getStatusVariant(log.status)} showDot />
         }
     ];
 
@@ -211,7 +213,6 @@ export default function CheckInLogsPage() {
                 title="Check-in Logs"
                 subtitle="Real-time scanner feed and manual entry logs for this event."
                 closeHref={`/dashboard/organize/events/${eventId}`}
-                badge={{ label: 'Live Feed', variant: 'success' }}
                 primaryAction={{
                     label: 'Manual Check-in',
                     onClick: () => setShowManualModal(true),
@@ -234,6 +235,11 @@ export default function CheckInLogsPage() {
                 }}
             />
 
+            <div className={`${adminStyles.statsGrid} tour-checkin-stats`}>
+                <StatCard label="Total Scanned" value={stats.scanned} color="var(--color-interface-success)" isLoading={isLoading} />
+                <StatCard label="Remaining" value={stats.remaining} isLoading={isLoading} />
+            </div>
+
             <BulkActionsBar
                 selectedCount={selectedIds.size}
                 onCancel={() => setSelectedIds(new Set())}
@@ -241,12 +247,6 @@ export default function CheckInLogsPage() {
                     { label: 'Check-in Selected', onClick: handleBulkCheckIn, variant: 'default' }
                 ]}
             />
-
-            <div className={`${adminStyles.statsGrid} tour-checkin-stats`}>
-                <StatCard label="Total Scanned" value={stats.scanned} color="var(--color-interface-success)" isLoading={isLoading} />
-                <StatCard label="Remaining" value={stats.remaining} isLoading={isLoading} />
-                <StatCard label="Rejected Scans" value={stats.rejected} color="var(--color-interface-error)" isLoading={isLoading} />
-            </div>
 
             <div style={{ marginTop: '24px' }} className="tour-checkin-feed">
                 <DataTable<CheckInLog>
@@ -321,7 +321,7 @@ export default function CheckInLogsPage() {
                     {
                         target: '.tour-checkin-stats',
                         title: 'Gate Progress',
-                        content: 'Track total successful scans, remaining tickets still to be checked in and any rejected scans (e.g. duplicate or invalid tickets) to stay on top of gate flow.',
+                        content: 'Track total successful scans and remaining tickets still to be checked in to stay on top of gate flow.',
                     },
                     {
                         target: '.tour-checkin-feed',

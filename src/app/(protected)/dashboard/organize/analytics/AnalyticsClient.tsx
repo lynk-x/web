@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import PerformanceTable, { type PerformanceEvent } from '@/components/features/analytics/PerformanceTable';
 import FilterChips from '@/components/shared/FilterChips';
@@ -33,6 +33,8 @@ export default function AnalyticsClient() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [activeTab, setActiveTab] = useState('summary');
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Fetch metrics dynamically using our pre-hydrated React Query hook!
     const { data: rawData, isLoading } = useSupabaseQuery<AnalyticsData>(
@@ -60,6 +62,17 @@ export default function AnalyticsClient() {
             return matchesStatus && matchesSearch;
         });
     }, [data.insights, statusFilter, searchTerm]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredInsights.length / itemsPerPage));
+
+    const paginatedInsights = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredInsights.slice(start, start + itemsPerPage);
+    }, [filteredInsights, currentPage, itemsPerPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, timeRange]);
 
     const handleExport = () => {
         if (filteredInsights.length === 0) {
@@ -201,9 +214,13 @@ export default function AnalyticsClient() {
                     </div>
                 </div>
             ) : (
-                <div className={`${adminStyles.pageCard} tour-performance-table`} style={{ marginTop: 'var(--spacing-md)' }}>
-                    <h2 className={adminStyles.sectionTitle}>Event Performance Matrix</h2>
-                    <PerformanceTable data={filteredInsights} />
+                <div style={{ marginTop: 'var(--spacing-md)' }} className="tour-performance-table">
+                    <PerformanceTable
+                        data={paginatedInsights}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             )}
 
@@ -229,7 +246,7 @@ export default function AnalyticsClient() {
                     },
                     { 
                         target: '.tour-performance-table', 
-                        title: 'Event Performance Matrix', 
+                        title: 'Detailed Breakdown', 
                         content: 'View a detailed breakdown of every event including revenue, tickets sold and status — perfect for deep-diving into individual event performance.' 
                     }
                 ]}

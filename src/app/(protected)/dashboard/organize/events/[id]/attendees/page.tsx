@@ -16,7 +16,12 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 import type { Attendee } from '@/types/organize';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
+import AddAttendeeModal from '@/components/features/events/attendees/AddAttendeeModal';
 
+/**
+ * Attendee registry view for a specific event in the organizer dashboard.
+ * Supports attendee search, status filtering, CSV export, and bulk check-in actions.
+ */
 export default function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { showToast } = useToast();
@@ -26,6 +31,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
     const [attendees, setAttendees] = useState<Attendee[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -158,6 +164,11 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 closeHref={`/dashboard/organize/events/${id}`}
                 hideDivider
                 primaryAction={{
+                    label: 'Add Attendee',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+                    onClick: () => setIsAddModalOpen(true)
+                }}
+                secondaryAction={{
                     label: 'Export CSV',
                     icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
                     className: 'tour-attendee-export',
@@ -207,10 +218,20 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
             </div>
 
             {isLoading && (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-                    <Spinner label="Loading attendees..." />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px', width: '100%' }}>
+                    <Spinner label="Loading attendees..." centered />
                 </div>
             )}
+
+            <AddAttendeeModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                eventId={id}
+                accountId={eventMeta?.accountId}
+                eventCreatedAt={eventMeta?.createdAt}
+                onSuccess={fetchAttendees}
+            />
+
             <ProductTour
                 storageKey={activeAccount ? `hasSeenEventAttendeesJoyride_${activeAccount.id}` : 'hasSeenEventAttendeesJoyride_guest'}
                 steps={[

@@ -58,6 +58,10 @@ const STATUS_BADGE_MAP: Record<string, { label: string; variant: BadgeVariant }>
     suspended: { label: 'Suspended', variant: 'warning' },
 };
 
+/**
+ * Event detail control panel page for organizers. Displays live performance analytics,
+ * quick action links, public event URL sharing, ticket tier breakdown, and community forum links.
+ */
 export default function EventDetailPage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
@@ -138,8 +142,8 @@ export default function EventDetailPage() {
         return (
             <div className={adminStyles.container}>
                 {isLoading ? (
-                    <div style={{ padding: '60px', textAlign: 'center' }}>
-                        <Spinner label="Loading event details..." />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', width: '100%' }}>
+                        <Spinner label="Loading event details..." centered />
                     </div>
                 ) : (
                     <EmptyState message="Event not found." />
@@ -215,25 +219,40 @@ export default function EventDetailPage() {
                     <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
                 </div>
                 {event && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px', padding: '4px 6px 4px 12px', minWidth: '320px', maxWidth: '100%' }}>
-                        <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600, marginRight: '4px', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>PUBLIC LINK</span>
-                        <input 
-                            type="text" 
-                            readOnly 
-                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`} 
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        background: 'rgba(255,255,255,0.03)', 
+                        border: '1px solid var(--color-interface-outline)', 
+                        borderRadius: '8px', 
+                        padding: '4px 6px 4px 12px', 
+                        width: '460px',
+                        maxWidth: '100%',
+                        flex: '0 1 460px'
+                    }}>
+                        <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600, marginRight: '4px', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>EVENT LINK</span>
+                        <a 
+                            href={`/event/${event.reference}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Open event details page"
                             style={{ 
                                 flex: 1, 
-                                background: 'transparent', 
-                                border: 'none', 
                                 fontSize: '13px',
-                                color: 'inherit',
+                                color: 'var(--color-brand-primary, #3b82f6)',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
-                                outline: 'none',
+                                textDecoration: 'none',
+                                cursor: 'pointer',
                                 padding: 0
-                            }} 
-                        />
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                        >
+                            {`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
+                        </a>
                         <button 
                             onClick={() => handleCopyLink(`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`)}
                             className={adminStyles.btnSecondary} 

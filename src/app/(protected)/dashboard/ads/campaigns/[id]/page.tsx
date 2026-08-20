@@ -152,8 +152,8 @@ export default function CampaignDetailPage() {
         return (
             <div className={adminStyles.container}>
                 {isLoading ? (
-                    <div style={{ padding: '60px', textAlign: 'center' }}>
-                        <Spinner label="Loading campaign..." />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', width: '100%' }}>
+                        <Spinner label="Loading campaign..." centered />
                     </div>
                 ) : (
                     <EmptyState message="Campaign not found." />

@@ -20,6 +20,7 @@ interface TicketTierManagerProps {
     currency: string;
     isPaid: boolean;
     onPaidChange: (isPaid: boolean) => void;
+    onCurrencyChange?: (currency: string) => void;
     errors: Record<string, string>;
     onAdd: () => void;
     onRemove: (index: number) => void;
@@ -28,7 +29,7 @@ interface TicketTierManagerProps {
 }
 
 const TicketTierManager: React.FC<TicketTierManagerProps> = ({
-    tickets, currency, isPaid, onPaidChange, errors, onAdd, onRemove, onChange, onboardingStatus,
+    tickets, currency, isPaid, onPaidChange, onCurrencyChange, errors, onAdd, onRemove, onChange, onboardingStatus,
 }) => {
     const { showToast } = useToast();
     const canCreatePaidEvents = onboardingStatus?.can_create_paid_events ?? true;
@@ -37,27 +38,37 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
         <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Tickets</h2>
 
-            <div style={{ marginBottom: '32px', display: 'flex', gap: '24px', alignItems: 'center' }}>
-                <div className={styles.inputGroup}>
-                    <label className={styles.label}>Is this event free?</label>
+            <div style={{ marginBottom: '32px', display: 'flex', gap: '24px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div className={styles.inputGroup} style={{ flex: 1, minWidth: '220px' }}>
+                    <label className={styles.label}>Is this a paid event?</label>
                     <div className={styles.toggleRow}>
                         <label className={styles.checkboxLabel} title={!canCreatePaidEvents ? 'Complete account verification to create paid tickets.' : undefined}>
                             <input
                                 type="checkbox"
                                 className={styles.checkbox}
-                                checked={!isPaid}
+                                checked={isPaid}
                                 onChange={(e) => {
-                                    if (e.target.checked === false && !canCreatePaidEvents) {
+                                    if (e.target.checked && !canCreatePaidEvents) {
                                         showToast('Complete account verification before creating paid tickets.', 'warning');
                                         return;
                                     }
-                                    onPaidChange(!e.target.checked);
+                                    onPaidChange(e.target.checked);
                                 }}
                             />
-                            Yes, this event is free for all attendees
+                            Yes, tickets require payment
                         </label>
                     </div>
                 </div>
+
+                {isPaid && onCurrencyChange && (
+                    <div className={styles.inputGroup} style={{ width: '220px' }}>
+                        <label className={styles.label}>Event Currency</label>
+                        <CurrencySelector
+                            value={currency}
+                            onChange={onCurrencyChange}
+                        />
+                    </div>
+                )}
             </div>
             
             <div className={styles.ticketList}>
@@ -65,7 +76,7 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                             <div key={index} className={styles.ticketItem}>
                                 <div className={styles.ticketRow}>
                                     {/* Ticket Name */}
-                                    <div className={styles.inputGroup} style={{ flex: 2 }}>
+                                    <div className={styles.inputGroup} style={{ flex: isPaid ? 2 : 3 }}>
                                         <label className={styles.label}>
                                             Ticket Name <span className={styles.requiredIndicator}>*Required</span>
                                         </label>
@@ -82,37 +93,25 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                     </div>
 
                                     {/* Price */}
-                                    <div className={styles.inputGroup} style={{ flex: 1 }}>
-                                        <label className={styles.label}>
-                                            Price {isPaid && `(${currency})`} <span className={styles.requiredIndicator}>*Required</span>
-                                        </label>
-                                        {isPaid ? (
-                                            <>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    className={`${styles.input} ${errors[`tickets.${index}.price`] ? styles.inputError : ''}`}
-                                                    placeholder="0.00"
-                                                    value={ticket.price}
-                                                    onChange={(e) => onChange(index, 'price', e.target.value)}
-                                                />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <input
-                                                    type="text"
-                                                    className={styles.input}
-                                                    value="FREE"
-                                                    disabled
-                                                    style={{ fontWeight: 700 }}
-                                                />
-                                            </>
-                                        )}
-                                        {isPaid && errors[`tickets.${index}.price`] && (
-                                            <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>
-                                        )}
-                                    </div>
+                                    {isPaid && (
+                                        <div className={styles.inputGroup} style={{ flex: 1 }}>
+                                            <label className={styles.label}>
+                                                Price ({currency}) <span className={styles.requiredIndicator}>*Required</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className={`${styles.input} ${errors[`tickets.${index}.price`] ? styles.inputError : ''}`}
+                                                placeholder="0.00"
+                                                value={ticket.price}
+                                                onChange={(e) => onChange(index, 'price', e.target.value)}
+                                            />
+                                            {errors[`tickets.${index}.price`] && (
+                                                <p className={styles.errorMessage}>{errors[`tickets.${index}.price`]}</p>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Quantity */}
                                     <div className={styles.inputGroup} style={{ flex: 1 }}>

@@ -9,7 +9,8 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { formatCurrency, formatNumber, formatDate } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import StatCard from '@/components/dashboard/StatCard';
+import TableToolbar from '@/components/shared/TableToolbar';
+import FilterChips from '@/components/shared/FilterChips';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
 
@@ -32,6 +33,10 @@ interface EventDetail {
     created_at: string;
 }
 
+/**
+ * Ticket tiers management view for a specific event in the organizer dashboard.
+ * Displays tier sales statistics, remaining capacities, pricing, and ticket sales window status.
+ */
 export default function EventTiersPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
@@ -42,6 +47,8 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     const [event, setEvent] = useState<EventDetail | null>(null);
     const [tiers, setTiers] = useState<TicketTier[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('all');
 
     const fetchTiersData = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -78,17 +85,28 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
         fetchTiersData();
     }, [fetchTiersData]);
 
-    // Computed Stats
-    const totalSold = useMemo(() => tiers.reduce((sum, t) => sum + (t.tickets_sold || 0), 0), [tiers]);
-    const totalCapacity = useMemo(() => tiers.reduce((sum, t) => sum + (t.capacity || 0), 0), [tiers]);
-    const totalRevenue = useMemo(() => tiers.reduce((sum, t) => sum + ((t.tickets_sold || 0) * (t.price || 0)), 0), [tiers]);
-    const potentialRevenue = useMemo(() => tiers.reduce((sum, t) => sum + ((t.capacity || 0) * (t.price || 0)), 0), [tiers]);
+    const filteredTiers = useMemo(() => {
+        return tiers.filter((tier) => {
+            const matchesSearch = tier.display_name.toLowerCase().includes(searchTerm.toLowerCase());
+            let matchesFilter = true;
+            if (filter === 'paid') {
+                matchesFilter = tier.price > 0;
+            } else if (filter === 'free') {
+                matchesFilter = tier.price === 0;
+            } else if (filter === 'available') {
+                matchesFilter = tier.capacity === 0 || tier.tickets_sold < tier.capacity;
+            } else if (filter === 'sold_out') {
+                matchesFilter = tier.capacity > 0 && tier.tickets_sold >= tier.capacity;
+            }
+            return matchesSearch && matchesFilter;
+        });
+    }, [tiers, searchTerm, filter]);
 
     if (isLoading) {
         return (
             <div className={adminStyles.container}>
-                <div style={{ padding: '60px', textAlign: 'center' }}>
-                    <Spinner label="Loading ticket tiers..." />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', width: '100%' }}>
+                    <Spinner label="Loading ticket tiers..." centered />
                 </div>
             </div>
         );
@@ -110,30 +128,27 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                 closeHref={`/dashboard/organize/events/${id}`}
             />
 
-            {/* Metrics Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-                <StatCard
-                    label="Tiers Configured"
-                    value={tiers.length}
-                    change="Active ticket categories"
+            {/* Search & Filter Toolbar */}
+            <TableToolbar
+                searchPlaceholder="Search tier by name..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+                <FilterChips
+                    options={[
+                        { value: 'all', label: 'All Tiers' },
+                        { value: 'paid', label: 'Paid' },
+                        { value: 'free', label: 'Free' },
+                        { value: 'available', label: 'Available' },
+                        { value: 'sold_out', label: 'Sold Out' },
+                    ]}
+                    currentValue={filter}
+                    onChange={setFilter}
                 />
-                <StatCard
-                    label="Aggregate Sales"
-                    value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`}
-                    change={totalCapacity > 0 ? `${((totalSold / totalCapacity) * 100).toFixed(1)}% capacity filled` : 'No capacity set'}
-                    trend={totalCapacity > 0 && (totalSold / totalCapacity) >= 0.5 ? 'positive' : 'neutral'}
-                />
-                <StatCard
-                    label="Gross Revenue"
-                    value={formatCurrency(totalRevenue, event.currency)}
-                    change={`Potential: ${formatCurrency(potentialRevenue, event.currency)}`}
-                    trend={totalRevenue > 0 ? 'positive' : 'neutral'}
-                />
-            </div>
+            </TableToolbar>
 
             {/* Tiers List Card */}
             <div className={adminStyles.pageCard}>
-                <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Tier Details</h2>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                         <thead>
@@ -147,7 +162,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                             </tr>
                         </thead>
                         <tbody>
-                            {tiers.map(tier => {
+                            {filteredTiers.map(tier => {
                                 const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
                                 
                                 // Format sale window dates
@@ -193,10 +208,10 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                                     </tr>
                                 );
                             })}
-                            {tiers.length === 0 && (
+                            {filteredTiers.length === 0 && (
                                 <tr>
                                     <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
-                                        No ticket tiers configured for this event.
+                                        {searchTerm || filter !== 'all' ? 'No ticket tiers match your search and filter criteria.' : 'No ticket tiers configured for this event.'}
                                     </td>
                                 </tr>
                             )}

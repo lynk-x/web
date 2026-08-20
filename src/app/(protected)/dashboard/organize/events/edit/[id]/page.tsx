@@ -13,6 +13,9 @@ import Spinner from '@/components/shared/Spinner';
 
 import type { OrganizerEventFormData, OrganizerEventTicket } from '@/types/organize';
 
+/**
+ * Event editing view for organizers to update event metadata, timing, location, and ticket tiers.
+ */
 export default function EditEventPage() {
     const params = useParams();
     const eventId = params.id as string;
@@ -283,8 +286,8 @@ export default function EditEventPage() {
 
     if (isLoading && !activeAccount) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-                <Spinner label="Loading event data..." />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', width: '100%' }}>
+                <Spinner label="Loading event data..." centered />
             </div>
         );
     }

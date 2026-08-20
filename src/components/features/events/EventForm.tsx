@@ -555,6 +555,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                         currency={formData.currency}
                         isPaid={formData.isPaid ?? true}
                         onPaidChange={(val) => setFormData((prev) => ({ ...prev, isPaid: val }))}
+                        onCurrencyChange={(val) => setFormData((prev) => ({ ...prev, currency: val }))}
                         errors={errors}
                         onAdd={addTicket}
                         onRemove={removeTicket}
@@ -568,16 +569,6 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Event Settings</h2>
                         <div className={styles.formGrid}>
-                            <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                                <label className={styles.label}>Event Currency</label>
-                                <div className={styles.currencyDisplay}>
-                                    <span className={styles.currencyCode}>{formData.currency}</span>
-                                    <span className={styles.currencyHint}>
-                                        Locked to your account&#39;s billing region ({activeAccount?.country_code || 'US'}).
-                                    </span>
-                                </div>
-                            </div>
-
                             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
                                 <div className={styles.toggleRow} style={{ marginBottom: '16px' }}>
                                     <label className={styles.checkboxLabel}>
