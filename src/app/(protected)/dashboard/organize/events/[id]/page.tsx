@@ -186,7 +186,7 @@ export default function EventDetailPage() {
             />
 
             {/* Stats Row */}
-            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
                 <StatCard 
                     label="Tickets Sold" 
                     value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} 
@@ -211,7 +211,7 @@ export default function EventDetailPage() {
             </div>
 
             {/* Quick Links */}
-            <QuickLinksRow className="tour-event-links">
+            <QuickLinksRow className="tour-event-links" style={{ marginBottom: 0 }}>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
                     <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
@@ -227,11 +227,13 @@ export default function EventDetailPage() {
                         border: '1px solid var(--color-interface-outline)', 
                         borderRadius: '8px', 
                         padding: '4px 6px 4px 12px', 
+                        height: '40px',
+                        boxSizing: 'border-box',
                         width: '460px',
                         maxWidth: '100%',
                         flex: '0 1 460px'
                     }}>
-                        <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600, marginRight: '4px', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>EVENT LINK</span>
+                        <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600, marginRight: '2px', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>EVENT LINK</span>
                         <a 
                             href={`/event/${event.reference}`}
                             target="_blank"
@@ -240,7 +242,7 @@ export default function EventDetailPage() {
                             style={{ 
                                 flex: 1, 
                                 fontSize: '13px',
-                                color: 'var(--color-brand-primary, #3b82f6)',
+                                color: 'var(--color-utility-primaryText, #ffffff)',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',

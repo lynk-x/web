@@ -104,9 +104,9 @@ export default function EventInsightsPage() {
                 });
 
                 setCheckInData([
-                    { name: 'Checked In', value: checkedInCount, color: '#20F928' },
+                    { name: 'Checked In', value: checkedInCount, color: '#FF8042' },
                     { name: 'Unused / Pending', value: pendingCount, color: '#0088FE' },
-                    ...(otherCount > 0 ? [{ name: 'Cancelled / Other', value: otherCount, color: '#FF8042' }] : [])
+                    ...(otherCount > 0 ? [{ name: 'Cancelled / Other', value: otherCount, color: '#20F928' }] : [])
                 ]);
             }
         } catch (err: unknown) {
@@ -210,7 +210,7 @@ export default function EventInsightsPage() {
             />
 
             {/* Top Chart Row: Gate Check-In & Ticket Tier Distribution */}
-            <div className={adminStyles.subPageGridBalanced} style={{ marginTop: '24px' }}>
+            <div className={adminStyles.subPageGridBalanced}>
                 {/* 1. Gate Check-In Telemetry */}
                 <div className={adminStyles.pageCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -286,7 +286,7 @@ export default function EventInsightsPage() {
             </div>
 
             {/* Bottom Row: Combined Sales Velocity & Capacity Target (Full Width Card) */}
-            <div className={adminStyles.pageCard} style={{ marginTop: '24px' }}>
+            <div className={adminStyles.pageCard}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
                         <h2 className={adminStyles.sectionTitle}>Sales Velocity & Capacity Target</h2>
