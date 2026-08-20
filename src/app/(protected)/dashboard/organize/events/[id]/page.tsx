@@ -186,7 +186,7 @@ export default function EventDetailPage() {
             />
 
             {/* Stats Row */}
-            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 <StatCard 
                     label="Tickets Sold" 
                     value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} 
@@ -211,7 +211,7 @@ export default function EventDetailPage() {
             </div>
 
             {/* Quick Links */}
-            <QuickLinksRow className="tour-event-links" style={{ marginBottom: 0 }}>
+            <QuickLinksRow className="tour-event-links">
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
                     <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
