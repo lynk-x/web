@@ -10,7 +10,7 @@ import { toError } from './types';
 import type { ForumStatus } from '@/types/status';
 
 /** Matches DB enum `message_type`. */
-export type MessageType = 'announcement' | 'chat' | 'system_announcement' | 'system_chat';
+export type MessageType = 'announcement' | 'chat' | 'system_announcement' | 'system_chat' | 'livechat_poll' | 'livechat_quiz' | 'update_poll' | 'update_quiz' | 'stream_chat' | 'stream_event';
 
 /** Matches DB enum `media_type` (subset used by forum media). */
 export type ForumMediaType = 'image' | 'video' | 'audio' | 'document';
