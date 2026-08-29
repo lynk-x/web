@@ -311,27 +311,39 @@ const CheckoutView: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // Establish user session if logged in (unauthenticated guest checkouts auto-provision a durable phone account in mpesa-stk-push)
+            // Step 1: Establish user identity (logged-in session or durable guest resolution)
             const { data: { user } } = await supabase.auth.getUser();
+            let effectiveUserId = user?.id || null;
 
             const normalizedContactPhone = normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined) || formData.phone;
 
-            // Step 1.5: Pre-reserve cart items if caller is logged in (otherwise mpesa-stk-push handles reservation server-side)
-            const reservations: Array<{ tierId: string; reservationId: string }> = [];
-            if (user) {
-                for (const item of items) {
-                    const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
-                        p_tier_id: item.tierId,
-                        p_quantity: item.quantity,
-                    });
-                    if (reserveError) {
-                        await Promise.all(reservations.map(r =>
-                            supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
-                        ));
-                        throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
-                    }
-                    reservations.push({ tierId: item.tierId, reservationId: resId as string });
+            if (!effectiveUserId) {
+                const { data: guestUserId, error: identityError } = await supabase.schema('api').rpc('resolve_or_create_checkout_user', {
+                    p_phone: normalizedContactPhone,
+                    p_email: formData.email.trim() || null,
+                });
+
+                if (identityError || !guestUserId) {
+                    throw new Error(identityError?.message || 'Failed to resolve user identity for ticket delivery.');
                 }
+                effectiveUserId = guestUserId as string;
+            }
+
+            // Step 1.5: Lock ticket reservations under effectiveUserId
+            const reservations: Array<{ tierId: string; reservationId: string }> = [];
+            for (const item of items) {
+                const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
+                    p_tier_id: item.tierId,
+                    p_quantity: item.quantity,
+                    p_user_id: effectiveUserId,
+                });
+                if (reserveError) {
+                    await Promise.all(reservations.map(r =>
+                        supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
+                    ));
+                    throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
+                }
+                reservations.push({ tierId: item.tierId, reservationId: resId as string });
             }
 
             // Show the 15-minute countdown from this point forward.
@@ -348,7 +360,8 @@ const CheckoutView: React.FC = () => {
                         promo_code: appliedPromo?.code || null,
                     })),
                     p_provider: 'in-app',
-                    p_provider_ref: 'FREE-' + Date.now()
+                    p_provider_ref: 'FREE-' + Date.now(),
+                    p_user_id: effectiveUserId,
                 });
 
                 if (purchaseError) {
@@ -390,7 +403,7 @@ const CheckoutView: React.FC = () => {
                         amount: total,
                         currency: currency,
                         metadata: {
-                            user_id: user?.id ?? null,
+                            user_id: effectiveUserId,
                             email: formData.email.trim(),
                             phone: normalizedContactPhone,
                             items: items.map(i => ({
@@ -405,9 +418,9 @@ const CheckoutView: React.FC = () => {
                 });
 
                 if (funcError) {
-                    if (user) {
+                    if (effectiveUserId) {
                         const { data: pending } = await supabase.schema('api').rpc('check_pending_ticket_payment', {
-                            p_user_id: user.id,
+                            p_user_id: effectiveUserId,
                             p_window_minutes: 5,
                         });
 
