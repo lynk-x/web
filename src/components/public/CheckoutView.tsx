@@ -311,32 +311,27 @@ const CheckoutView: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // Establish session (if unauthenticated guest, sign in anonymously for reservation locking)
-            let { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                const { data: anonData, error: anonErr } = await supabase.auth.signInAnonymously();
-                if (anonErr || !anonData.user) {
-                    throw new Error(anonErr?.message || 'Failed to initialize checkout session. Please try again.');
-                }
-                user = anonData.user;
-            }
+            // Establish user session if logged in (unauthenticated guest checkouts auto-provision a durable phone account in mpesa-stk-push)
+            const { data: { user } } = await supabase.auth.getUser();
 
             const normalizedContactPhone = normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined) || formData.phone;
 
-            // Step 1.5: Reserve all cart items before initiating payment.
+            // Step 1.5: Pre-reserve cart items if caller is logged in (otherwise mpesa-stk-push handles reservation server-side)
             const reservations: Array<{ tierId: string; reservationId: string }> = [];
-            for (const item of items) {
-                const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
-                    p_tier_id: item.tierId,
-                    p_quantity: item.quantity,
-                });
-                if (reserveError) {
-                    await Promise.all(reservations.map(r =>
-                        supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
-                    ));
-                    throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
+            if (user) {
+                for (const item of items) {
+                    const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
+                        p_tier_id: item.tierId,
+                        p_quantity: item.quantity,
+                    });
+                    if (reserveError) {
+                        await Promise.all(reservations.map(r =>
+                            supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
+                        ));
+                        throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
+                    }
+                    reservations.push({ tierId: item.tierId, reservationId: resId as string });
                 }
-                reservations.push({ tierId: item.tierId, reservationId: resId as string });
             }
 
             // Show the 15-minute countdown from this point forward.
@@ -395,7 +390,7 @@ const CheckoutView: React.FC = () => {
                         amount: total,
                         currency: currency,
                         metadata: {
-                            user_id: user.id,
+                            user_id: user?.id ?? null,
                             email: formData.email.trim(),
                             phone: normalizedContactPhone,
                             items: items.map(i => ({
@@ -410,20 +405,21 @@ const CheckoutView: React.FC = () => {
                 });
 
                 if (funcError) {
+                    if (user) {
+                        const { data: pending } = await supabase.schema('api').rpc('check_pending_ticket_payment', {
+                            p_user_id: user.id,
+                            p_window_minutes: 5,
+                        });
 
-                    const { data: pending } = await supabase.schema('api').rpc('check_pending_ticket_payment', {
-                        p_user_id: user.id,
-                        p_window_minutes: 5,
-                    });
-
-                    if (pending?.provider_ref) {
-                        setCurrentCheckoutId(pending.provider_ref);
-                        setPaymentStatus('waiting');
-                        setRealtimeDisrupted(false);
-                        sessionStorage.setItem('lynk-x-payment', JSON.stringify({
-                            checkoutId: pending.provider_ref,
-                        }));
-                        return;
+                        if (pending?.provider_ref) {
+                            setCurrentCheckoutId(pending.provider_ref);
+                            setPaymentStatus('waiting');
+                            setRealtimeDisrupted(false);
+                            sessionStorage.setItem('lynk-x-payment', JSON.stringify({
+                                checkoutId: pending.provider_ref,
+                            }));
+                            return;
+                        }
                     }
 
                     throw new FunctionTransportError(funcError.message || 'Failed to reach payment service');
