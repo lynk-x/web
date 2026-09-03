@@ -1,14 +1,42 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { resetPassword } from '../login/actions';
 
 export default function ForgotPasswordPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
-    const error = searchParams.get('error');
-    const message = searchParams.get('message');
+    const serverError = searchParams.get('error');
+    const serverMessage = searchParams.get('message');
+
+    const [formError, setFormError] = useState<string | null>(serverError || null);
+    const [formMessage, setFormMessage] = useState<string | null>(serverMessage || null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setFormError(null);
+        setFormMessage(null);
+        setIsSubmitting(true);
+
+        const formData = new FormData(e.currentTarget);
+
+        try {
+            const res = await resetPassword(formData);
+            if (res.error) {
+                setFormError(res.error);
+                setIsSubmitting(false);
+            } else if (res.redirectTo) {
+                router.push(res.redirectTo);
+            }
+        } catch (err: any) {
+            setFormError(err?.message || 'Failed to send reset email.');
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -27,10 +55,10 @@ export default function ForgotPasswordPage() {
                     We will send you an email with a link to reset your password, please enter the email associated with your account below.
                 </p>
 
-                {error && <p style={{ color: 'var(--color-interface-error)', textAlign: 'center', marginBottom: '16px' }}>{error}</p>}
-                {message && <p style={{ color: 'var(--color-interface-success)', textAlign: 'center', marginBottom: '16px' }}>{message}</p>}
+                {formError && <p style={{ color: 'var(--color-interface-error)', textAlign: 'center', marginBottom: '16px' }}>{formError}</p>}
+                {formMessage && <p style={{ color: 'var(--color-interface-success)', textAlign: 'center', marginBottom: '16px' }}>{formMessage}</p>}
 
-                <form className={styles.form} action={resetPassword}>
+                <form className={styles.form} onSubmit={handleSubmit}>
                     <input
                         name="email"
                         type="email"
@@ -39,7 +67,9 @@ export default function ForgotPasswordPage() {
                         required
                     />
 
-                    <button className={styles.sendBtn} type="submit">Send Link</button>
+                    <button className={styles.sendBtn} type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Sending...' : 'Send Link'}
+                    </button>
                 </form>
             </div>
         </div>

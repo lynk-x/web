@@ -1,22 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import styles from './page.module.css';
 import { login, signup } from './actions';
 
-// useFormStatus only reports the pending state of the nearest ancestor
-// <form>, so this must be a child of it rather than read directly in
-// AuthPage — otherwise `pending` is always false.
-function SubmitButton({ isLoginDetail }: { isLoginDetail: boolean }) {
-    const { pending } = useFormStatus();
+function SubmitButton({ isLoginDetail, isSubmitting }: { isLoginDetail: boolean; isSubmitting: boolean }) {
     return (
-        <button type="submit" className={styles.signInBtn} disabled={pending} aria-busy={pending}>
-            {pending ? 'Please wait...' : (isLoginDetail ? 'Sign In' : 'Get Started')}
+        <button type="submit" className={styles.signInBtn} disabled={isSubmitting} aria-busy={isSubmitting}>
+            {isSubmitting ? 'Please wait...' : (isLoginDetail ? 'Sign In' : 'Get Started')}
         </button>
     );
 }
@@ -25,10 +20,11 @@ function SubmitButton({ isLoginDetail }: { isLoginDetail: boolean }) {
  * Unified authentication view supporting password-based sign in, new account
  * registration, and Google OAuth SSO.
  *
- * Handles toggleable input fields for email/phone and preserves query parameter
- * redirect targets (`?next=`) for returning users post-authentication.
+ * Handles toggleable input fields for email/phone, in-place error reporting
+ * without page reloads, and smooth router navigation post-authentication.
  */
 export default function AuthPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const serverError = searchParams.get('error');
     const serverMessage = searchParams.get('message');
@@ -40,12 +36,62 @@ export default function AuthPage() {
     const [isLoginDetail, setIsLoginDetail] = useState(true);
     const [useEmail, setUseEmail] = useState(false);
     const [formError, setFormError] = useState<string | null>(serverError || null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isOAuthPending, setIsOAuthPending] = useState(false);
 
     // Clear out errors when switching tabs
     useEffect(() => {
         setFormError(serverError || null);
     }, [isLoginDetail, serverError]);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setFormError(null);
+        setIsSubmitting(true);
+
+        const formData = new FormData(e.currentTarget);
+
+        try {
+            if (!isLoginDetail) {
+                const password = formData.get('password') as string;
+                const confirmPassword = formData.get('confirmPassword') as string;
+
+                if (password !== confirmPassword) {
+                    setFormError('Passwords do not match');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                if (password.length < 6) {
+                    setFormError('Password must be at least 6 characters');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                const res = await signup(formData);
+                if (res.error) {
+                    setFormError(res.error);
+                    setIsSubmitting(false);
+                } else if (res.redirectTo) {
+                    router.push(res.redirectTo);
+                    router.refresh();
+                }
+            } else {
+                const res = await login(formData);
+                if (res.error) {
+                    setFormError(res.error);
+                    setIsSubmitting(false);
+                } else if (res.redirectTo) {
+                    router.push(res.redirectTo);
+                    router.refresh();
+                }
+            }
+        } catch (err: any) {
+            console.error('[AuthPage] Authentication error:', err);
+            setFormError(err?.message || 'An error occurred during authentication.');
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -67,30 +113,7 @@ export default function AuthPage() {
                     : 'Let\'s get started by filling out the form below.'}
             </p>
 
-            <form
-                className={styles.form}
-                action={async (formData) => {
-                    setFormError(null);
-                    if (!isLoginDetail) {
-                        const password = formData.get('password') as string;
-                        const confirmPassword = formData.get('confirmPassword') as string;
-
-                        if (password !== confirmPassword) {
-                            setFormError('Passwords do not match');
-                            return;
-                        }
-
-                        if (password.length < 6) {
-                            setFormError('Password must be at least 6 characters');
-                            return;
-                        }
-
-                        await signup(formData);
-                    } else {
-                        await login(formData);
-                    }
-                }}
-            >
+            <form className={styles.form} onSubmit={handleSubmit}>
                 {formError && (
                     <div style={{ color: 'var(--color-interface-error)', background: 'rgba(239,68,68,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
                         {formError}
@@ -209,7 +232,7 @@ export default function AuthPage() {
                     {next && <input name="next" value={next} readOnly />}
                 </div>
 
-                <SubmitButton isLoginDetail={isLoginDetail} />
+                <SubmitButton isLoginDetail={isLoginDetail} isSubmitting={isSubmitting} />
             </form>
 
             <div className={styles.divider}>Or sign in with</div>
@@ -228,8 +251,6 @@ export default function AuthPage() {
                             redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
                         },
                     });
-                    // Only reset on error — success navigates away via redirect,
-                    // so there's no "pending" state left to clear in that case.
                     if (error) setIsOAuthPending(false);
                 }}
             >
