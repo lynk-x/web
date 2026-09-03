@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
-import { sanitizeInput, getSafeRedirect } from '@/utils/sanitization'
+import { sanitizeInputServer, getSafeRedirect } from '@/utils/sanitization'
 import { normalizeToE164 } from '@/utils/phone'
 
 export type AuthActionResult = {
@@ -21,10 +21,10 @@ export type AuthActionResult = {
 export async function login(formData: FormData): Promise<AuthActionResult> {
     const supabase = await createClient()
 
-    let email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
-    let phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
+    let email = formData.get('email') ? sanitizeInputServer(formData.get('email') as string) : null
+    let phone = formData.get('phone') ? sanitizeInputServer(formData.get('phone') as string) : null
     const password = formData.get('password') as string
-    const next = getSafeRedirect(sanitizeInput((formData.get('next') as string) || ''), '/dashboard')
+    const next = getSafeRedirect(sanitizeInputServer((formData.get('next') as string) || ''), '/dashboard')
 
     if (!email && !phone) {
         return { error: 'Please enter an email address or phone number.' }
@@ -75,10 +75,10 @@ export async function login(formData: FormData): Promise<AuthActionResult> {
 export async function signup(formData: FormData): Promise<AuthActionResult> {
     const supabase = await createClient()
 
-    let email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
-    let phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
+    let email = formData.get('email') ? sanitizeInputServer(formData.get('email') as string) : null
+    let phone = formData.get('phone') ? sanitizeInputServer(formData.get('phone') as string) : null
     const password = formData.get('password') as string
-    const next = getSafeRedirect(sanitizeInput((formData.get('next') as string) || ''), '/dashboard')
+    const next = getSafeRedirect(sanitizeInputServer((formData.get('next') as string) || ''), '/dashboard')
 
     if (!email && !phone) {
         return { error: 'Please enter an email address or phone number.' }
@@ -116,7 +116,7 @@ export async function signup(formData: FormData): Promise<AuthActionResult> {
 export async function resetPassword(formData: FormData): Promise<AuthActionResult> {
     const supabase = await createClient()
 
-    const email = sanitizeInput(formData.get('email') as string)
+    const email = sanitizeInputServer(formData.get('email') as string)
     if (!email) {
         return { error: 'Please provide your email address.' }
     }

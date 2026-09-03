@@ -84,7 +84,6 @@ export default function AuthPage() {
                     setIsSubmitting(false);
                 } else if (res.redirectTo) {
                     router.push(res.redirectTo);
-                    router.refresh();
                 }
             } else {
                 const res = await login(formData);
@@ -93,7 +92,6 @@ export default function AuthPage() {
                     setIsSubmitting(false);
                 } else if (res.redirectTo) {
                     router.push(res.redirectTo);
-                    router.refresh();
                 }
             }
         } catch (err: any) {

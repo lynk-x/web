@@ -1,6 +1,22 @@
 import DOMPurify from 'dompurify';
 
 /**
+ * Server-safe input sanitizer — strips HTML tags using regex only.
+ * Does NOT import DOMPurify (browser-only) so it is safe to call from
+ * Next.js Server Actions and Route Handlers where `window` is undefined.
+ *
+ * Use this instead of `sanitizeInput` in any `'use server'` file.
+ *
+ * @param value - Raw string from FormData or user input.
+ * @returns Trimmed string with all HTML/XML tags removed.
+ */
+export function sanitizeInputServer(value: string | null | undefined): string {
+    if (!value) return '';
+    // Strip HTML/XML tags, then trim surrounding whitespace.
+    return value.replace(/<[^>]*>?/gm, '').trim();
+}
+
+/**
  * Sanitizes user input to prevent XSS attacks while maintaining basic formatting.
  * 
  * @param value The raw input string from the user.
