@@ -39,6 +39,16 @@ export default function AuthPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isOAuthPending, setIsOAuthPending] = useState(false);
 
+    // Automatically bypass login page if user already possesses an active session
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+                router.replace(next || '/dashboard');
+            }
+        });
+    }, [next, router]);
+
     // Clear out errors when switching tabs
     useEffect(() => {
         setFormError(serverError || null);

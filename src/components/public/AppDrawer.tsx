@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 import styles from './AppDrawer.module.css';
 import { useCurrencies } from '@/hooks/useCurrencies';
 
@@ -18,7 +16,6 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
 }) => {
     const [currency, setCurrency] = useState('all');
     const [region, setRegion] = useState('Global');
-    const [isAuthed, setIsAuthed] = useState(false);
     const router = useRouter();
     const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
 
@@ -31,10 +28,6 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                 ?.split('=')[1];
 
             if (countryCode && !isLoadingCurrencies && currencies.length > 0) {
-                // Find matching currency from DB
-                const match = currencies.find(c => c.code.startsWith(countryCode)); // Simplified logic
-                // Better: find by country code? But hook only returns unique currencies.
-                // Actually, the previous logic had a record.
                 const currencyMap: Record<string, string> = {
                     'KE': 'KES',
                     'NG': 'NGN',
@@ -49,21 +42,10 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
         }
     }, [isLoadingCurrencies, currencies]);
 
-    // Check auth state once when drawer mounts
-    useEffect(() => {
-        const supabase = createClient();
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsAuthed(!!session);
-        });
-    }, []);
-
     const handlePortalClick = (type: 'organizer' | 'advertiser') => {
         onClose();
-        if (isAuthed) {
-            router.push(`/dashboard?type=${type}`);
-        } else {
-            router.push(`/login?next=${encodeURIComponent(`/dashboard?type=${type}`)}`);
-        }
+        // Route directly to dashboard portal. Middleware automatically guards unauthenticated users.
+        router.push(`/dashboard?type=${type}`);
     };
 
     return (
