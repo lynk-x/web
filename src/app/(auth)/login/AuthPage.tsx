@@ -21,6 +21,13 @@ function SubmitButton({ isLoginDetail }: { isLoginDetail: boolean }) {
     );
 }
 
+/**
+ * Unified authentication view supporting password-based sign in, new account
+ * registration, and Google OAuth SSO.
+ *
+ * Handles toggleable input fields for email/phone and preserves query parameter
+ * redirect targets (`?next=`) for returning users post-authentication.
+ */
 export default function AuthPage() {
     const searchParams = useSearchParams();
     const serverError = searchParams.get('error');

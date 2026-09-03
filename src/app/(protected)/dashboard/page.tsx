@@ -6,6 +6,12 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
 import styles from './page.module.css';
 
+/**
+ * Root workspace selector for authenticated users.
+ *
+ * Evaluates account memberships to display available workspaces (organizer,
+ * advertiser, platform, or system) or prompts users to create their first account.
+ */
 function DashboardRoot() {
     const router = useRouter();
     const searchParams = useSearchParams();

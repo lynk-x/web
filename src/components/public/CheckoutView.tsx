@@ -13,6 +13,7 @@ import { useCart } from '@/context/CartContext';
 import { useToast } from '@/components/ui/Toast';
 import { validateKenyanPhone, normalizeToE164 } from '@/utils/phone';
 import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
+import { CheckoutSupportModal } from './CheckoutSupportModal';
 
 /** Thrown only when the mpesa-stk-push invocation fails at the transport level (never got a response), not for business-logic rejections the function itself returns. */
 class FunctionTransportError extends Error {}
@@ -33,6 +34,7 @@ const CheckoutView: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'waiting' | 'completed' | 'failed'>('idle');
     const [paymentError, setPaymentError] = useState('');
+    const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
     const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<string>('mpesa');
     const [availableProviders, setAvailableProviders] = useState<Array<{
@@ -768,12 +770,13 @@ const CheckoutView: React.FC = () => {
                                         >
                                             Try Again
                                         </button>
-                                        <a
-                                            href="mailto:support@lynk-x.com"
-                                            style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsSupportModalOpen(true)}
+                                            style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}
                                         >
                                             Contact Support
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -838,6 +841,15 @@ const CheckoutView: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <CheckoutSupportModal
+                isOpen={isSupportModalOpen}
+                onClose={() => setIsSupportModalOpen(false)}
+                checkoutId={currentCheckoutId}
+                eventName={items[0]?.eventTitle}
+                phone={formData.phone}
+                paymentError={paymentError}
+            />
         </div>
     );
 };

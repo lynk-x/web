@@ -6,14 +6,29 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { sanitizeInput, getSafeRedirect } from '@/utils/sanitization'
 
+/**
+ * Authenticates an existing user via password using either email or phone.
+ *
+ * Auto-detects identifier type (e.g., if phone field contains an '@', it treats
+ * it as an email address to handle default form state gracefully).
+ */
 export async function login(formData: FormData) {
     const supabase = await createClient()
 
-    const email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
-    const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
+    let email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
+    let phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
     // Honour the ?next= param so checkout and other gates land the user where they wanted.
     const next = getSafeRedirect(sanitizeInput((formData.get('next') as string) || ''), '/dashboard')
+
+    // Auto-detect email vs phone in case user entered an email address into the default phone input or vice-versa
+    if (phone && phone.includes('@')) {
+        email = phone
+        phone = null
+    } else if (email && !email.includes('@') && email.match(/^[\d\+\-\s\(\)]+$/)) {
+        phone = email
+        email = null
+    }
 
     const { data, error } = await supabase.auth.signInWithPassword(
         phone ? { phone, password } : { email: email!, password }
@@ -37,13 +52,24 @@ export async function login(formData: FormData) {
     redirect(next)
 }
 
+/**
+ * Registers a new user account with email or phone number.
+ */
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
-    const email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
-    const phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
+    let email = formData.get('email') ? sanitizeInput(formData.get('email') as string) : null
+    let phone = formData.get('phone') ? sanitizeInput(formData.get('phone') as string) : null
     const password = formData.get('password') as string
     const next = getSafeRedirect(sanitizeInput((formData.get('next') as string) || ''), '/dashboard')
+
+    if (phone && phone.includes('@')) {
+        email = phone
+        phone = null
+    } else if (email && !email.includes('@') && email.match(/^[\d\+\-\s\(\)]+$/)) {
+        phone = email
+        email = null
+    }
 
     const { error } = await supabase.auth.signUp(
         phone ? { phone, password } : { email: email!, password }

@@ -134,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let mounted = true;
         const checkSession = async () => {
             if (!user) {
+                setIsLoading(true);
                 try {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (!mounted) return;
