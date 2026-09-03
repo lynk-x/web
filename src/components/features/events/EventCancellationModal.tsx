@@ -1,23 +1,9 @@
 "use client";
-import { getErrorMessage } from '@/utils/error';
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-/**
- * EventCancellationModal
- *
- * Called from the organizer events page when an organiser wants to cancel an event.
- *
- * On confirm:
- *  1. The parent performs supabase.from('events').update({ status: 'cancelled' }).eq('id', eventId)
- *  2. In production a server action / webhook should trigger refund_requests for all
- *     valid tickets — that is out of scope here and handled by DB trigger tr_cancel_event_refunds
- *     (if configured) or a separate admin job.
- *
- * Design note: we collect a cancellation reason so the organiser has a paper trail and
- * the reason can be shown to attendees in their ticket notifications.
- */
+import { getErrorMessage } from '@/utils/error';
+import styles from './EventCancellationModal.module.css';
 
 interface EventCancellationModalProps {
     eventTitle: string;
@@ -36,6 +22,15 @@ const CANCELLATION_REASONS = [
     "Other",
 ];
 
+/**
+ * EventCancellationModal
+ *
+ * Renders a confirmation modal dialog when an organizer requests event cancellation.
+ * Collects a cancellation reason and requires explicit checkbox acknowledgement
+ * when existing tickets have already been sold.
+ *
+ * Styled using Lynk-X brand design tokens via EventCancellationModal.module.css.
+ */
 const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
     eventTitle,
     eventId,
@@ -78,37 +73,21 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
 
     return (
         <AnimatePresence>
-            <div
-                style={{
-                    position: 'fixed', inset: 0, zIndex: 9999,
-                    background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
-                }}
-                onClick={onClose}
-            >
+            <div className={styles.overlay} onClick={onClose}>
                 <motion.div
+                    className={styles.modal}
                     onClick={e => e.stopPropagation()}
                     initial={{ opacity: 0, scale: 0.95, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 16 }}
-                    style={{
-                        width: '100%', maxWidth: '500px',
-                        background: 'var(--color-background-card, #13131a)',
-                        border: '1px solid rgba(239,68,68,0.25)',
-                        borderRadius: '16px', overflow: 'hidden'
-                    }}
                 >
                     {/* Header */}
-                    <div style={{ padding: '20px 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div className={styles.header}>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#f87171' }}>
-                                Cancel Event
-                            </h2>
-                            <p style={{ margin: '4px 0 0', fontSize: '13px', opacity: 0.55 }}>
-                                {eventTitle}
-                            </p>
+                            <h2 className={styles.title}>Cancel Event</h2>
+                            <p className={styles.subtitle}>{eventTitle}</p>
                         </div>
-                        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.5, padding: 4, marginTop: 2 }}>
+                        <button onClick={onClose} className={styles.closeBtn} aria-label="Close modal">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                             </svg>
@@ -117,11 +96,11 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
 
                     {/* Sold-tickets warning */}
                     {ticketsSold > 0 && (
-                        <div style={{ margin: '16px 24px 0', padding: '12px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                            <p style={{ margin: 0, fontSize: '13px', color: '#f87171', fontWeight: 600 }}>
+                        <div className={styles.warningBox}>
+                            <p className={styles.warningTitle}>
                                 ⚠ {ticketsSold} ticket{ticketsSold !== 1 ? 's' : ''} already sold
                             </p>
-                            <p style={{ margin: '4px 0 0', fontSize: '12px', opacity: 0.7 }}>
+                            <p className={styles.warningText}>
                                 Cancelling this event will require issuing refunds to all ticket holders.
                                 This action is irreversible.
                             </p>
@@ -129,21 +108,15 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
                     )}
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} style={{ padding: '20px 24px 24px' }}>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '10px', opacity: 0.8 }}>
+                    <form onSubmit={handleSubmit} className={styles.form}>
+                        <label className={styles.label}>
                             Reason for cancellation
                         </label>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                        <div className={styles.reasonsList}>
                             {CANCELLATION_REASONS.map(r => (
                                 <label
                                     key={r}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
-                                        fontSize: '14px', padding: '10px 12px', borderRadius: '10px',
-                                        background: reason === r ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.03)',
-                                        border: `1px solid ${reason === r ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                                        transition: 'all 0.15s'
-                                    }}
+                                    className={`${styles.reasonOption} ${reason === r ? styles.reasonOptionSelected : ''}`}
                                 >
                                     <input
                                         type="radio"
@@ -151,7 +124,7 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
                                         value={r}
                                         checked={reason === r}
                                         onChange={() => setReason(r)}
-                                        style={{ accentColor: '#ef4444' }}
+                                        className={styles.radioInput}
                                     />
                                     {r}
                                 </label>
@@ -164,25 +137,20 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
                                 onChange={e => setCustomReason(e.target.value)}
                                 placeholder="Describe the cancellation reason..."
                                 rows={3}
-                                style={{
-                                    width: '100%', padding: '10px 12px', borderRadius: '10px',
-                                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'inherit', fontSize: '14px', resize: 'vertical', marginBottom: '16px',
-                                    boxSizing: 'border-box', fontFamily: 'inherit'
-                                }}
+                                className={styles.textarea}
                             />
                         )}
 
                         {/* Confirmation checkbox for events with sold tickets */}
                         {ticketsSold > 0 && (
-                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '16px' }}>
+                            <label className={styles.confirmCheckbox}>
                                 <input
                                     type="checkbox"
                                     checked={confirmed}
                                     onChange={e => setConfirmed(e.target.checked)}
-                                    style={{ marginTop: '2px', accentColor: '#ef4444' }}
+                                    className={styles.checkboxInput}
                                 />
-                                <span style={{ fontSize: '13px', opacity: 0.75 }}>
+                                <span className={styles.checkboxText}>
                                     I understand that cancelling this event will require processing refunds
                                     for all {ticketsSold} ticket holder{ticketsSold !== 1 ? 's' : ''}.
                                 </span>
@@ -190,33 +158,21 @@ const EventCancellationModal: React.FC<EventCancellationModalProps> = ({
                         )}
 
                         {error && (
-                            <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>{error}</p>
+                            <p className={styles.errorMessage}>{error}</p>
                         )}
 
-                        <div style={{ display: 'flex', gap: '10px' }}>
+                        <div className={styles.actions}>
                             <button
                                 type="button"
                                 onClick={onClose}
-                                style={{
-                                    flex: 1, padding: '12px', borderRadius: '10px',
-                                    border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
-                                    color: 'inherit', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
-                                }}
+                                className={styles.cancelBtn}
                             >
                                 Keep Event
                             </button>
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !isValid || (ticketsSold > 0 && !confirmed)}
-                                style={{
-                                    flex: 1, padding: '12px', borderRadius: '10px',
-                                    background: (isSubmitting || !isValid || (ticketsSold > 0 && !confirmed))
-                                        ? 'rgba(239,68,68,0.25)'
-                                        : 'rgba(239,68,68,0.85)',
-                                    border: 'none', color: '#fff', fontSize: '14px', fontWeight: 600,
-                                    cursor: (isSubmitting || !isValid) ? 'not-allowed' : 'pointer',
-                                    transition: 'opacity 0.2s'
-                                }}
+                                className={styles.submitBtn}
                             >
                                 {isSubmitting ? 'Cancelling…' : 'Cancel Event'}
                             </button>
