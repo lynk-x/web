@@ -59,6 +59,34 @@ const CheckoutView: React.FC = () => {
 
     // Already-claimed free-ticket modal state
     const [alreadyClaimedEventId, setAlreadyClaimedEventId] = useState<string | null>(null);
+    const [alreadyClaimedForumRef, setAlreadyClaimedForumRef] = useState<string | null>(null);
+
+    // Resolve forum reference for already-claimed redirects
+    useEffect(() => {
+        if (!alreadyClaimedEventId) {
+            setAlreadyClaimedForumRef(null);
+            return;
+        }
+        let cancelled = false;
+        const resolveForum = async () => {
+            try {
+                const supabase = createClient();
+                const { data } = await supabase
+                    .schema('api')
+                    .from('v1_forums')
+                    .select('reference')
+                    .eq('event_id', alreadyClaimedEventId)
+                    .maybeSingle();
+                if (!cancelled && data) {
+                    setAlreadyClaimedForumRef(data.reference || null);
+                }
+            } catch {
+                // non-fatal; button will fall back to event page
+            }
+        };
+        resolveForum();
+        return () => { cancelled = true; };
+    }, [alreadyClaimedEventId]);
 
     // Contact form state
     const [formData, setFormData] = useState({
@@ -863,14 +891,14 @@ const CheckoutView: React.FC = () => {
             {alreadyClaimedEventId && (
                 <div className={styles.overlay} onClick={() => setAlreadyClaimedEventId(null)}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.header}>
+                        <div className={styles.modalHeader}>
                             <h2 className={styles.title}>Free tickets already claimed</h2>
                             <p className={styles.subtitle}>
                                 You have already claimed free tickets for this event.
                             </p>
                         </div>
                         <div className={styles.body}>
-                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.6 }}>
+                            <p>
                                 Each user can claim free tickets only once per event. Head to the event forum to join the conversation, meet other attendees, and get event updates.
                             </p>
                         </div>
@@ -886,7 +914,12 @@ const CheckoutView: React.FC = () => {
                                     className={styles.confirmBtn}
                                     onClick={() => {
                                         setAlreadyClaimedEventId(null);
-                                        router.push(`/events/${alreadyClaimedEventId}/forum`);
+                                        setAlreadyClaimedForumRef(null);
+                                        if (alreadyClaimedForumRef) {
+                                            window.location.href = `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(alreadyClaimedForumRef)}`;
+                                        } else {
+                                            router.push(`/event/${alreadyClaimedEventId}`);
+                                        }
                                     }}
                                 >
                                     Go to Event Forum
