@@ -57,6 +57,9 @@ const CheckoutView: React.FC = () => {
     const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
     const [reservationSecondsLeft, setReservationSecondsLeft] = useState(0);
 
+    // Already-claimed free-ticket modal state
+    const [alreadyClaimedEventId, setAlreadyClaimedEventId] = useState<string | null>(null);
+
     // Contact form state
     const [formData, setFormData] = useState({
         email: '', phone: '', mpesaNumber: ''
@@ -367,7 +370,13 @@ const CheckoutView: React.FC = () => {
                 });
 
                 if (purchaseError) {
-                    throw new Error(purchaseError.message || 'Failed to complete free checkout');
+                    const msg = purchaseError.message || 'Failed to complete free checkout';
+                    if (msg.toLowerCase().includes('already claimed free tickets')) {
+                        const eventId = items[0]?.eventId || null;
+                        setAlreadyClaimedEventId(eventId);
+                        return;
+                    }
+                    throw new Error(msg);
                 }
 
                 // Trigger Magic Claim Link email for zero-cost ticket claims
@@ -850,6 +859,43 @@ const CheckoutView: React.FC = () => {
                 phone={formData.phone}
                 paymentError={paymentError}
             />
+
+            {alreadyClaimedEventId && (
+                <div className={styles.overlay} onClick={() => setAlreadyClaimedEventId(null)}>
+                    <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.header}>
+                            <h2 className={styles.title}>Free tickets already claimed</h2>
+                            <p className={styles.subtitle}>
+                                You have already claimed free tickets for this event.
+                            </p>
+                        </div>
+                        <div className={styles.body}>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.6 }}>
+                                Each user can claim free tickets only once per event. Head to the event forum to join the conversation, meet other attendees, and get event updates.
+                            </p>
+                        </div>
+                        <div className={styles.footer}>
+                            <div className={styles.actions}>
+                                <button
+                                    className={styles.cancelBtn}
+                                    onClick={() => setAlreadyClaimedEventId(null)}
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    className={styles.confirmBtn}
+                                    onClick={() => {
+                                        setAlreadyClaimedEventId(null);
+                                        router.push(`/events/${alreadyClaimedEventId}/forum`);
+                                    }}
+                                >
+                                    Go to Event Forum
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
