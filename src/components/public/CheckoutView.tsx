@@ -403,6 +403,9 @@ const CheckoutView: React.FC = () => {
                 if (purchaseError) {
                     const msg = purchaseError.message || 'Failed to complete free checkout';
                     if (msg.toLowerCase().includes('already claimed free tickets')) {
+                        await Promise.all(reservations.map(r =>
+                            supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
+                        ));
                         const eventId = items[0]?.eventId || null;
                         setAlreadyClaimedEventId(eventId);
                         return;
@@ -498,7 +501,6 @@ const CheckoutView: React.FC = () => {
             console.error('Payment error:', err);
             let errorMessage = getErrorMessage(err) || 'Payment failed to initiate.';
 
-
             if (err instanceof FunctionTransportError) {
                 if (errorMessage.toLowerCase().includes('function') && errorMessage.toLowerCase().includes('not found')) {
                     errorMessage = 'Payment service is not configured. Please contact support.';
@@ -506,6 +508,10 @@ const CheckoutView: React.FC = () => {
                     errorMessage = 'Unable to reach the payment service. Please check your internet connection and try again.';
                 }
             }
+
+            await Promise.all(reservations.map(r =>
+                supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
+            ));
 
             setPaymentError(errorMessage);
             setIsSubmitting(false);
