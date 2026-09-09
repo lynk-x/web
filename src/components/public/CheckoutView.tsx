@@ -413,24 +413,6 @@ const CheckoutView: React.FC = () => {
                     throw new Error(msg);
                 }
 
-                // Trigger Magic Claim Link email for zero-cost ticket claims
-                if (formData.email.trim()) {
-                    try {
-                        const eventId = items[0]?.eventId || '';
-                        const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
-                        const redirectUrl = `${appUrl}/auth/confirm?next=/events/${eventId}/forum`;
-
-                        await supabase.auth.signInWithOtp({
-                            email: formData.email.trim(),
-                            options: {
-                                emailRedirectTo: redirectUrl,
-                            },
-                        });
-                    } catch (magicLinkErr) {
-                        console.error('Non-fatal error sending magic claim link for free reservation:', magicLinkErr);
-                    }
-                }
-
                 // Success!
                 clearCart();
                 const eventCreatedAtParam = items[0]?.eventCreatedAt
