@@ -19,6 +19,7 @@ import type { OrganizerEvent } from '@/types/organize';
 import { exportToCSV } from '@/utils/export';
 import { formatDate, formatDateTime, formatTime } from '@/utils/format';
 import ProductTour from '@/components/dashboard/ProductTour';
+import { useState } from 'react';
 
 // Main Component
 export default function OrganizerEventsPage() {
@@ -36,6 +37,12 @@ export default function OrganizerEventsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     // Cancellation modal: stores the event to cancel + how many tickets were sold
     const [cancelTarget, setCancelTarget] = useState<{ event: OrganizerEvent; ticketsSold: number } | null>(null);
+
+    // Add Forum modal state
+    const [isAddForumModalOpen, setIsAddForumModalOpen] = useState(false);
+    const [isCreatingForum, setIsCreatingForum] = useState(false);
+    const [forumImageFile, setForumImageFile] = useState<File | null>(null);
+    const [forumImagePreview, setForumImagePreview] = useState<string | null>(null);
 
     // Filter States
     const [statusFilter, setStatusFilter] = useState<'all' | OrganizerEvent['status']>('all');
@@ -393,6 +400,97 @@ export default function OrganizerEventsPage() {
         setIsDeleteModalOpen(true);
     };
 
+    const handleAddForum = async (formData: { title: string; startsAt: string; endsAt: string; location: string }) => {
+        if (!activeAccount) return;
+        setIsCreatingForum(true);
+        try {
+            let uploadedImageUrl: string | null = null;
+
+            if (forumImageFile) {
+                const fileExt = forumImageFile.name.split('.').pop();
+                const fileName = `${activeAccount.id}_${Date.now()}.${fileExt}`;
+
+                const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
+                    body: {
+                        action: 'upload',
+                        folder: 'events',
+                        filename: fileName,
+                        contentType: forumImageFile.type,
+                        mediaType: 'image',
+                    }
+                });
+
+                if (signError || !signData?.uploadUrl) {
+                    throw new Error(signError?.message || 'Failed to get upload URL');
+                }
+
+                const putResponse = await fetch(signData.uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': forumImageFile.type,
+                    },
+                    body: forumImageFile,
+                });
+
+                if (!putResponse.ok) {
+                    throw new Error('Failed to upload image');
+                }
+
+                uploadedImageUrl = signData.fileUrl;
+            }
+
+            const eventData: Record<string, any> = {
+                title: formData.title,
+                status: 'published',
+                location: { venue: formData.location || 'External' },
+                media: uploadedImageUrl ? { thumbnail: uploadedImageUrl } : {},
+                ...(formData.startsAt ? { starts_at: new Date(formData.startsAt).toISOString() } : {}),
+                ...(formData.endsAt ? { ends_at: new Date(formData.endsAt).toISOString() } : {})
+            };
+
+            const { data, error } = await supabase.schema('api').rpc('upsert_organizer_event', {
+                p_account_id: activeAccount.id,
+                p_event_id: null,
+                p_created_at: null,
+                p_data: eventData,
+                p_tiers: []
+            });
+
+            if (error) throw error;
+
+            const eventId = data?.event_id;
+            const createdAt = data?.created_at;
+
+            if (!eventId || !createdAt) {
+                throw new Error('Event creation failed: missing event id or timestamp');
+            }
+
+            const { data: forumRow, error: forumError } = await supabase
+                .schema('api')
+                .from('v1_forums')
+                .select('id, reference')
+                .eq('event_id', eventId)
+                .maybeSingle();
+
+            if (forumError || !forumRow) {
+                throw new Error('Forum was not created for this event.');
+            }
+
+            const forumLink = `https://app.lynk-x.app/forum/${forumRow.reference || forumRow.id}`;
+            showToast('Forum created successfully.', 'success');
+            setIsAddForumModalOpen(false);
+            setForumImageFile(null);
+            setForumImagePreview(null);
+            fetchEvents();
+
+            window.open(forumLink, '_blank');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to create forum.', 'error');
+        } finally {
+            setIsCreatingForum(false);
+        }
+    };
+
     return (
         <div className={sharedStyles.container}>
             <PageHeader
@@ -405,6 +503,10 @@ export default function OrganizerEventsPage() {
                         <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 }
+                secondaryAction={{
+                    label: 'Add Forum',
+                    onClick: () => setIsAddForumModalOpen(true),
+                }}
             />
 
             {/* Toolbar */}
@@ -479,10 +581,229 @@ export default function OrganizerEventsPage() {
                 <EventCancellationModal
                     eventTitle={cancelTarget.event.title}
                     eventId={cancelTarget.event.id}
-                    ticketsSold={cancelTarget.ticketsSold}
+                    ticketsSold={cancelTarget.ticketsSold || 0}
                     onClose={() => setCancelTarget(null)}
                     onConfirm={handleCancelEvent}
                 />
+            )}
+
+            {/* Add Forum Modal */}
+            {isAddForumModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '16px'
+                }} onClick={() => setIsAddForumModalOpen(false)}>
+                    <div style={{
+                        backgroundColor: 'var(--color-interface-surface)',
+                        border: '1px solid var(--color-brand-primary)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '24px',
+                        maxWidth: '480px',
+                        width: '100%',
+                        maxHeight: '90vh',
+                        overflow: 'auto'
+                    }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Add Event Forum</h2>
+                            <button onClick={() => setIsAddForumModalOpen(false)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '4px' }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
+                            Create a minimal Lynk-X event to host your forum. You can link this from your external event page or send the forum link to attendees.
+                        </p>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const form = e.target as HTMLFormElement;
+                            const fd = new FormData(form);
+                            handleAddForum({
+                                title: fd.get('title') as string,
+                                startsAt: fd.get('startsAt') as string,
+                                endsAt: fd.get('endsAt') as string,
+                                location: fd.get('location') as string,
+                            });
+                        }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Event Image</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            setForumImageFile(file);
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => setForumImagePreview(ev.target?.result as string);
+                                                reader.readAsDataURL(file);
+                                            } else {
+                                                setForumImagePreview(null);
+                                            }
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                            color: 'var(--color-utility-primaryText)',
+                                            fontSize: '14px'
+                                        }}
+                                    />
+                                    {forumImagePreview && (
+                                        <div style={{ marginTop: '8px', position: 'relative', display: 'inline-block' }}>
+                                            <img src={forumImagePreview} alt="Preview" style={{ maxHeight: '120px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.2)' }} />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setForumImageFile(null);
+                                                    setForumImagePreview(null);
+                                                }}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '-8px',
+                                                    right: '-8px',
+                                                    background: 'rgba(0,0,0,0.8)',
+                                                    border: 'none',
+                                                    borderRadius: '50%',
+                                                    width: '24px',
+                                                    height: '24px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    color: 'white',
+                                                    fontSize: '16px',
+                                                    lineHeight: 1
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Event Title *</label>
+                                    <input
+                                        name="title"
+                                        required
+                                        placeholder="My Event Forum"
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                            color: 'var(--color-utility-primaryText)',
+                                            fontSize: '14px',
+                                            outline: 'none'
+                                        }}
+                                    />
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Start Date/Time</label>
+                                        <input
+                                            name="startsAt"
+                                            type="datetime-local"
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px 12px',
+                                                borderRadius: 'var(--radius-md)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                                color: 'var(--color-utility-primaryText)',
+                                                fontSize: '14px',
+                                                outline: 'none',
+                                                colorScheme: 'dark'
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>End Date/Time</label>
+                                        <input
+                                            name="endsAt"
+                                            type="datetime-local"
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px 12px',
+                                                borderRadius: 'var(--radius-md)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                                color: 'var(--color-utility-primaryText)',
+                                                fontSize: '14px',
+                                                outline: 'none',
+                                                colorScheme: 'dark'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Location</label>
+                                    <input
+                                        name="location"
+                                        placeholder="External / TBD"
+                                        defaultValue="External"
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                            color: 'var(--color-utility-primaryText)',
+                                            fontSize: '14px',
+                                            outline: 'none'
+                                        }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddForumModalOpen(false)}
+                                        disabled={isCreatingForum}
+                                        style={{
+                                            padding: '10px 16px',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            backgroundColor: 'transparent',
+                                            color: 'rgba(255,255,255,0.7)',
+                                            cursor: 'pointer',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isCreatingForum}
+                                        style={{
+                                            padding: '10px 16px',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: 'none',
+                                            backgroundColor: 'var(--color-brand-primary)',
+                                            color: 'var(--color-utility-secondaryText)',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            opacity: isCreatingForum ? 0.6 : 1
+                                        }}
+                                    >
+                                        {isCreatingForum ? 'Creating...' : 'Create Forum'}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
 
             <ProductTour

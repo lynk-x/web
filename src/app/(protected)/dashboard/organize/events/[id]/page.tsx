@@ -76,6 +76,12 @@ export default function EventDetailPage() {
     const [scanCount, setScanCount] = useState<number>(0);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [invitePhone, setInvitePhone] = useState('');
+    const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+    const [inviteError, setInviteError] = useState('');
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [csvImporting, setCsvImporting] = useState(false);
 
     const handleCopyLink = useCallback((url: string) => {
         navigator.clipboard.writeText(url);
@@ -136,6 +142,125 @@ export default function EventDetailPage() {
         showToast(`"${event.title}" has been cancelled and tickets were refunded.`, 'success');
         setIsCancelModalOpen(false);
         fetchEvent();
+    };
+
+    const handleSendIndividualInvite = async () => {
+        if (!event || !activeAccount) return;
+        const email = inviteEmail.trim();
+        const phone = invitePhone.trim();
+        if (!email && !phone) {
+            setInviteError('Email or phone is required.');
+            setInviteStatus('error');
+            return;
+        }
+
+        setInviteStatus('sending');
+        setInviteError('');
+
+        try {
+            const { data: userId, error: ensureError } = await supabase.schema('api').rpc('ensure_forum_invite_user', {
+                p_email: email || null,
+                p_phone: phone || null,
+            });
+
+            if (ensureError) throw ensureError;
+
+            const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
+            const redirectUrl = `${appUrl}/auth/confirm?next=/events/${event.id}/forum`;
+
+            const { error: otpError } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    emailRedirectTo: redirectUrl,
+                },
+            });
+
+            if (otpError) throw otpError;
+
+            setInviteStatus('sent');
+            setInviteEmail('');
+            setInvitePhone('');
+            showToast('Invite sent successfully.', 'success');
+        } catch (err: unknown) {
+            const message = getErrorMessage(err) || 'Failed to send invite.';
+            setInviteError(message);
+            setInviteStatus('error');
+            showToast(message, 'error');
+        }
+    };
+
+    const handleCsvImport = async () => {
+        if (!csvFile || !event || !activeAccount) return;
+        setCsvImporting(true);
+        try {
+            const text = await csvFile.text();
+            const lines = text.split('\n').filter((line) => line.trim());
+            if (lines.length < 2) {
+                showToast('CSV must contain a header row and at least one attendee.', 'warning');
+                return;
+            }
+
+            const header = lines[0].split(',').map((col) => col.trim().toLowerCase());
+            const emailIdx = header.findIndex((col) => col === 'email');
+            const phoneIdx = header.findIndex((col) => col === 'phone');
+
+            if (emailIdx === -1) {
+                showToast('CSV must contain an "email" column.', 'warning');
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                const email = cols[emailIdx]?.trim();
+                const phone = phoneIdx !== -1 ? cols[phoneIdx]?.trim() : '';
+
+                if (!email && !phone) {
+                    failCount++;
+                    continue;
+                }
+
+                try {
+                    const { data: userId, error: ensureError } = await supabase.schema('api').rpc('ensure_forum_invite_user', {
+                        p_email: email || null,
+                        p_phone: phone || null,
+                    });
+
+                    if (ensureError || !userId) {
+                        failCount++;
+                        continue;
+                    }
+
+                    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
+                    const redirectUrl = `${appUrl}/auth/confirm?next=/events/${event.id}/forum`;
+
+                    const { error: otpError } = await supabase.auth.signInWithOtp({
+                        email: email || undefined,
+                        options: {
+                            emailRedirectTo: redirectUrl,
+                        },
+                    });
+
+                    if (otpError) {
+                        failCount++;
+                        continue;
+                    }
+
+                    successCount++;
+                } catch {
+                    failCount++;
+                }
+            }
+
+            setCsvFile(null);
+            showToast(`Import complete. ${successCount} invites sent, ${failCount} failed.`, successCount > 0 ? 'success' : 'error');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to import CSV.', 'error');
+        } finally {
+            setCsvImporting(false);
+        }
     };
 
     if (isLoading || !event) {
@@ -363,7 +488,130 @@ export default function EventDetailPage() {
                         </div>
                     )}
                 </div>
+            )}
+
+            {/* Invite Attendees Card */}
+            <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                    <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.8 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-brand-primary)' }}>
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Invite Attendees
+                    </h3>
+                    <p style={{ fontSize: '13px', opacity: 0.6, margin: '8px 0 0', lineHeight: '1.5' }}>
+                        Send individual invites or import a CSV to add attendees to the forum.
+                    </p>
+                </div>
+
+                {/* Individual Invite */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input
+                            type="email"
+                            placeholder="attendee@example.com"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                color: 'var(--color-utility-primaryText)',
+                                fontSize: '13px',
+                                outline: 'none'
+                            }}
+                        />
+                        <input
+                            type="tel"
+                            placeholder="+254 712 345 678"
+                            value={invitePhone}
+                            onChange={(e) => setInvitePhone(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                color: 'var(--color-utility-primaryText)',
+                                fontSize: '13px',
+                                outline: 'none'
+                            }}
+                        />
+                    </div>
+                    {inviteError && (
+                        <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0 }}>{inviteError}</p>
+                    )}
+                    <button
+                        onClick={handleSendIndividualInvite}
+                        disabled={inviteStatus === 'sending' || !inviteEmail.trim()}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: 'var(--radius-md)',
+                            border: 'none',
+                            backgroundColor: 'var(--color-brand-primary)',
+                            color: 'var(--color-utility-secondaryText)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            opacity: inviteStatus === 'sending' ? 0.6 : 1,
+                            alignSelf: 'flex-start'
+                        }}
+                    >
+                        {inviteStatus === 'sending' ? 'Sending...' : inviteStatus === 'sent' ? 'Sent!' : 'Send Invite'}
+                    </button>
+                </div>
+
+                {/* CSV Import */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
+                        CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email,phone</code>
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <label
+                            htmlFor="forum-csv-import"
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px dashed rgba(255,255,255,0.25)',
+                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                color: 'rgba(255,255,255,0.7)',
+                                cursor: 'pointer',
+                                fontSize: '13px'
+                            }}
+                        >
+                            {csvFile ? csvFile.name : 'Choose CSV'}
+                        </label>
+                        <input
+                            id="forum-csv-import"
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                            style={{ display: 'none' }}
+                        />
+                        <button
+                            onClick={handleCsvImport}
+                            disabled={!csvFile || csvImporting}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                border: 'none',
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                color: 'var(--color-utility-primaryText)',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                opacity: csvImporting ? 0.5 : 1
+                            }}
+                        >
+                            {csvImporting ? 'Importing...' : 'Import'}
+                        </button>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenEventDetailJoyride_${activeAccount.id}` : 'hasSeenEventDetailJoyride_guest'}

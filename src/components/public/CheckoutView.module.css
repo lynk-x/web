@@ -418,12 +418,6 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: 16px;
-}
-
-.modalHeader {
-    text-align: center;
-    margin-bottom: var(--spacing-sm);
 }
 
 .modal {
@@ -432,7 +426,7 @@
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-brand-primary);
     max-width: 400px;
-    width: 100%;
+    width: 90%;
     text-align: center;
     box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     display: flex;
@@ -441,34 +435,66 @@
     gap: var(--spacing-lg);
 }
 
+.title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 8px 0 0;
+}
+
+.body {
+    padding: 0;
+    flex: 1;
+    width: 100%;
+}
+
+.footer {
+    padding: 0;
+    width: 100%;
+    background: transparent;
+    border-top: none;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.confirmBtn {
+    flex: 1;
+    height: 44px;
+    background-color: var(--color-brand-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--color-utility-secondaryText);
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.confirmBtn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+.confirmBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Responsive modal element positioning */
 @media (max-width: 480px) {
     .modal {
-        padding: var(--spacing-lg);
-        border-radius: var(--radius-md);
-        max-width: 100%;
-    }
-
-    .title {
-        font-size: 18px;
-    }
-
-    .subtitle {
-        font-size: 13px;
-    }
-
-    .body {
-        padding: 0;
-    }
-
-    .body p {
-        font-size: 13px;
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .footer {
-        padding: 0;
         width: 100%;
+        padding: var(--spacing-lg);
+        gap: var(--spacing-md);
     }
 
     .actions {
@@ -476,20 +502,19 @@
         gap: 10px;
     }
 
-    .cancelBtn {
-        width: 100%;
-        text-align: center;
-        text-decoration: none;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
-        font-size: 14px;
-    }
-
     .confirmBtn {
         width: 100%;
         height: 48px;
         font-size: 15px;
+    }
+
+    .cancelBtn {
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        font-size: 14px;
     }
 }
 
@@ -498,94 +523,10 @@
         padding: 32px;
     }
 
-    .title {
-        font-size: 20px;
-    }
-
-    .subtitle {
-        font-size: 14px;
-    }
-
-    .body p {
-        font-size: 14px;
-        line-height: 1.6;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
     .actions {
         flex-direction: row;
     }
-
-    .confirmBtn {
-        flex: 1;
-        height: 44px;
-    }
 }
-
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 3px solid rgba(32, 249, 40, 0.1);
-    border-top: 3px solid var(--color-brand-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: var(--spacing-md);
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.waitingTitle {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--color-utility-primaryText);
-}
-
-.waitingText {
-    font-size: 16px;
-    opacity: 0.8;
-    line-height: 1.5;
-}
-
-.cancelBtn {
-    margin-top: var(--spacing-md);
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.4);
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.primaryBtn {
-    width: 100%;
-    max-width: 320px;
-    background-color: var(--color-brand-primary);
-    color: var(--color-utility-secondaryText);
-    border: none;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--radius-md);
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.primaryBtn:active {
-    opacity: 0.8;
-}
-
-.primaryBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Waterfall Styles */
 .waterfallContainer {
     margin-top: var(--spacing-lg);
     padding: var(--spacing-md);
