@@ -12,6 +12,7 @@ const ConfirmationContent = () => {
     const orderRef = searchParams.get('order_ref') || 'LX-CONFIRMED';
     const eventId = searchParams.get('event_id') || '';
     const eventCreatedAtParam = searchParams.get('event_created_at') || '';
+    const userId = searchParams.get('user_id') || '';
 
     // This page previously rendered "You're In!" purely off raw URL query
     // params, with no server check — a stray link or replayed URL could show
@@ -108,6 +109,7 @@ const ConfirmationContent = () => {
                 const { data, error } = await supabase.schema('api').rpc('verify_completed_order', {
                     p_event_id: eventId,
                     p_event_created_at: eventCreatedAtParam || null,
+                    p_user_id: userId || null,
                 });
                 if (cancelled) return;
                 const row = Array.isArray(data) ? data[0] : data;

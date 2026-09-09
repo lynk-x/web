@@ -60,6 +60,7 @@ const CheckoutView: React.FC = () => {
     // Already-claimed free-ticket modal state
     const [alreadyClaimedEventId, setAlreadyClaimedEventId] = useState<string | null>(null);
     const [alreadyClaimedForumRef, setAlreadyClaimedForumRef] = useState<string | null>(null);
+    const [effectiveUserId, setEffectiveUserId] = useState<string | null>(null);
 
     // Resolve forum reference for already-claimed redirects
     useEffect(() => {
@@ -196,7 +197,7 @@ const CheckoutView: React.FC = () => {
                         clearCart();
                         // Use the M-Pesa checkout request ID as the order reference so
                         // support teams can look it up in the transactions table.
-                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}${firstEventCreatedAtParam}`);
+                        router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}${firstEventCreatedAtParam}&user_id=${encodeURIComponent(effectiveUserId || '')}`);
                     } else if (newStatus === 'failed' || newStatus === 'cancelled') {
                         clearTimeout(timeoutId);
                         sessionStorage.removeItem('lynk-x-payment');
@@ -346,11 +347,11 @@ const CheckoutView: React.FC = () => {
         try {
             // Step 1: Establish user identity (logged-in session or durable guest resolution)
             const { data: { user } } = await supabase.auth.getUser();
-            let effectiveUserId = user?.id || null;
+            let resolvedUserId = user?.id || null;
 
             const normalizedContactPhone = normalizeToE164(formData.phone, contactPhoneCountry.phone_prefix, contactPhoneCountry.phone_digits ?? undefined) || formData.phone;
 
-            if (!effectiveUserId) {
+            if (!resolvedUserId) {
                 const { data: guestUserId, error: identityError } = await supabase.schema('api').rpc('resolve_or_create_checkout_user', {
                     p_phone: normalizedContactPhone,
                     p_email: formData.email.trim() || null,
@@ -359,8 +360,10 @@ const CheckoutView: React.FC = () => {
                 if (identityError || !guestUserId) {
                     throw new Error(identityError?.message || 'Failed to resolve user identity for ticket delivery.');
                 }
-                effectiveUserId = guestUserId as string;
+                resolvedUserId = guestUserId as string;
             }
+
+            setEffectiveUserId(resolvedUserId);
 
             // Step 1.5: Lock ticket reservations under effectiveUserId
             const reservations: Array<{ tierId: string; reservationId: string }> = [];
@@ -368,7 +371,7 @@ const CheckoutView: React.FC = () => {
                 const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
                     p_tier_id: item.tierId,
                     p_quantity: item.quantity,
-                    p_user_id: effectiveUserId,
+                    p_user_id: resolvedUserId,
                 });
                 if (reserveError) {
                     await Promise.all(reservations.map(r =>
@@ -394,7 +397,7 @@ const CheckoutView: React.FC = () => {
                     })),
                     p_provider: 'in-app',
                     p_provider_ref: 'FREE-' + Date.now(),
-                    p_user_id: effectiveUserId,
+                    p_user_id: resolvedUserId,
                 });
 
                 if (purchaseError) {
@@ -430,7 +433,7 @@ const CheckoutView: React.FC = () => {
                 const eventCreatedAtParam = items[0]?.eventCreatedAt
                     ? `&event_created_at=${encodeURIComponent(items[0].eventCreatedAt)}`
                     : '';
-                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(result.ticket_ids?.[0] || 'FREE')}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}${eventCreatedAtParam}`);
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(result.ticket_ids?.[0] || 'FREE')}&items=${items.length}&event_id=${encodeURIComponent(items[0]?.eventId || '')}${eventCreatedAtParam}&user_id=${encodeURIComponent(resolvedUserId || '')}`);
                 return;
             }
 
@@ -442,7 +445,7 @@ const CheckoutView: React.FC = () => {
                         amount: total,
                         currency: currency,
                         metadata: {
-                            user_id: effectiveUserId,
+                            user_id: resolvedUserId,
                             email: formData.email.trim(),
                             phone: normalizedContactPhone,
                             items: items.map(i => ({
@@ -537,7 +540,7 @@ const CheckoutView: React.FC = () => {
                     ? `&event_created_at=${encodeURIComponent(items[0].eventCreatedAt)}`
                     : '';
                 clearCart();
-                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}${firstEventCreatedAtParam}`);
+                router.push(`/checkout/confirmation?order_ref=${encodeURIComponent(currentCheckoutId)}&items=${itemCountAtCompletion}&event_id=${encodeURIComponent(firstEventId)}${firstEventCreatedAtParam}&user_id=${encodeURIComponent(effectiveUserId || '')}`);
             } else if (data.status === 'pending') {
                 setPaymentError('Payment is still processing. Please wait for the confirmation SMS from M-Pesa and try again shortly.');
             } else if (data.status === 'failed' || data.status === 'cancelled') {
