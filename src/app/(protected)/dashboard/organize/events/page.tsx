@@ -19,7 +19,6 @@ import type { OrganizerEvent } from '@/types/organize';
 import { exportToCSV } from '@/utils/export';
 import { formatDate, formatDateTime, formatTime } from '@/utils/format';
 import ProductTour from '@/components/dashboard/ProductTour';
-import { useState } from 'react';
 
 // Main Component
 export default function OrganizerEventsPage() {
