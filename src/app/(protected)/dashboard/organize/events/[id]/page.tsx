@@ -520,125 +520,125 @@ export default function EventDetailPage() {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Invite Attendees Card */}
-            <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.8 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-brand-primary)' }}>
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                        Invite Attendees
-                    </h3>
-                    <p style={{ fontSize: '13px', opacity: 0.6, margin: '8px 0 0', lineHeight: '1.5' }}>
-                        Send individual invites or import a CSV to add attendees to the forum.
-                    </p>
-                </div>
-
-                {/* Individual Invite */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <input
-                            type="email"
-                            placeholder="attendee@example.com"
-                            value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
-                            style={{
-                                padding: '8px 12px',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                color: 'var(--color-utility-primaryText)',
-                                fontSize: '13px',
-                                outline: 'none'
-                            }}
-                        />
-                        <input
-                            type="tel"
-                            placeholder="+254 712 345 678"
-                            value={invitePhone}
-                            onChange={(e) => setInvitePhone(e.target.value)}
-                            style={{
-                                padding: '8px 12px',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                color: 'var(--color-utility-primaryText)',
-                                fontSize: '13px',
-                                outline: 'none'
-                            }}
-                        />
+                {/* Invite Attendees Card */}
+                <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <h3 style={{ fontSize: '14px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.8 }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-brand-primary)' }}>
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            Invite Attendees
+                        </h3>
+                        <p style={{ fontSize: '13px', opacity: 0.6, margin: '8px 0 0', lineHeight: '1.5' }}>
+                            Send individual invites or import a CSV to add attendees to the forum.
+                        </p>
                     </div>
-                    {inviteError && (
-                        <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0 }}>{inviteError}</p>
-                    )}
-                    <button
-                        onClick={handleSendIndividualInvite}
-                        disabled={inviteStatus === 'sending' || !inviteEmail.trim()}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: 'var(--radius-md)',
-                            border: 'none',
-                            backgroundColor: 'var(--color-brand-primary)',
-                            color: 'var(--color-utility-secondaryText)',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            opacity: inviteStatus === 'sending' ? 0.6 : 1,
-                            alignSelf: 'flex-start'
-                        }}
-                    >
-                        {inviteStatus === 'sending' ? 'Sending...' : inviteStatus === 'sent' ? 'Sent!' : 'Send Invite'}
-                    </button>
-                </div>
 
-                {/* CSV Import */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
-                        CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email,phone</code>
-                    </p>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <label
-                            htmlFor="forum-csv-import"
-                            style={{
-                                padding: '8px 12px',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px dashed rgba(255,255,255,0.25)',
-                                backgroundColor: 'rgba(255,255,255,0.03)',
-                                color: 'rgba(255,255,255,0.7)',
-                                cursor: 'pointer',
-                                fontSize: '13px'
-                            }}
-                        >
-                            {csvFile ? csvFile.name : 'Choose CSV'}
-                        </label>
-                        <input
-                            id="forum-csv-import"
-                            type="file"
-                            accept=".csv"
-                            onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                            style={{ display: 'none' }}
-                        />
+                    {/* Individual Invite */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <input
+                                type="email"
+                                placeholder="attendee@example.com"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                    color: 'var(--color-utility-primaryText)',
+                                    fontSize: '13px',
+                                    outline: 'none'
+                                }}
+                            />
+                            <input
+                                type="tel"
+                                placeholder="+254 712 345 678"
+                                value={invitePhone}
+                                onChange={(e) => setInvitePhone(e.target.value)}
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                    color: 'var(--color-utility-primaryText)',
+                                    fontSize: '13px',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+                        {inviteError && (
+                            <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0 }}>{inviteError}</p>
+                        )}
                         <button
-                            onClick={handleCsvImport}
-                            disabled={!csvFile || csvImporting}
+                            onClick={handleSendIndividualInvite}
+                            disabled={inviteStatus === 'sending' || !inviteEmail.trim()}
                             style={{
-                                padding: '8px 12px',
+                                padding: '8px 16px',
                                 borderRadius: 'var(--radius-md)',
                                 border: 'none',
-                                backgroundColor: 'rgba(255,255,255,0.1)',
-                                color: 'var(--color-utility-primaryText)',
+                                backgroundColor: 'var(--color-brand-primary)',
+                                color: 'var(--color-utility-secondaryText)',
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 fontSize: '13px',
-                                opacity: csvImporting ? 0.5 : 1
+                                opacity: inviteStatus === 'sending' ? 0.6 : 1,
+                                alignSelf: 'flex-start'
                             }}
                         >
-                            {csvImporting ? 'Importing...' : 'Import'}
+                            {inviteStatus === 'sending' ? 'Sending...' : inviteStatus === 'sent' ? 'Sent!' : 'Send Invite'}
                         </button>
+                    </div>
+
+                    {/* CSV Import */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
+                            CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email,phone</code>
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <label
+                                htmlFor="forum-csv-import"
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px dashed rgba(255,255,255,0.25)',
+                                    backgroundColor: 'rgba(255,255,255,0.03)',
+                                    color: 'rgba(255,255,255,0.7)',
+                                    cursor: 'pointer',
+                                    fontSize: '13px'
+                                }}
+                            >
+                                {csvFile ? csvFile.name : 'Choose CSV'}
+                            </label>
+                            <input
+                                id="forum-csv-import"
+                                type="file"
+                                accept=".csv"
+                                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                                style={{ display: 'none' }}
+                            />
+                            <button
+                                onClick={handleCsvImport}
+                                disabled={!csvFile || csvImporting}
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: 'none',
+                                    backgroundColor: 'rgba(255,255,255,0.1)',
+                                    color: 'var(--color-utility-primaryText)',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    opacity: csvImporting ? 0.5 : 1
+                                }}
+                            >
+                                {csvImporting ? 'Importing...' : 'Import'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

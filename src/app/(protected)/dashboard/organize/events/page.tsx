@@ -19,6 +19,8 @@ import type { OrganizerEvent } from '@/types/organize';
 import { exportToCSV } from '@/utils/export';
 import { formatDate, formatDateTime, formatTime } from '@/utils/format';
 import ProductTour from '@/components/dashboard/ProductTour';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { TimePicker } from '@/components/ui/TimePicker';
 
 // Main Component
 export default function OrganizerEventsPage() {
@@ -42,6 +44,10 @@ export default function OrganizerEventsPage() {
     const [isCreatingForum, setIsCreatingForum] = useState(false);
     const [forumImageFile, setForumImageFile] = useState<File | null>(null);
     const [forumImagePreview, setForumImagePreview] = useState<string | null>(null);
+    const [forumStartDate, setForumStartDate] = useState('');
+    const [forumStartTime, setForumStartTime] = useState('');
+    const [forumEndDate, setForumEndDate] = useState('');
+    const [forumEndTime, setForumEndTime] = useState('');
 
     // Filter States
     const [statusFilter, setStatusFilter] = useState<'all' | OrganizerEvent['status']>('all');
@@ -399,7 +405,7 @@ export default function OrganizerEventsPage() {
         setIsDeleteModalOpen(true);
     };
 
-    const handleAddForum = async (formData: { title: string; startsAt: string; endsAt: string; location: string }) => {
+    const handleAddForum = async (formData: { title: string; startDate: string; startTime: string; endDate: string; endTime: string; location: string }) => {
         if (!activeAccount) return;
         setIsCreatingForum(true);
         try {
@@ -443,8 +449,8 @@ export default function OrganizerEventsPage() {
                 status: 'published',
                 location: { venue: formData.location || 'External' },
                 media: uploadedImageUrl ? { thumbnail: uploadedImageUrl } : {},
-                ...(formData.startsAt ? { starts_at: new Date(formData.startsAt).toISOString() } : {}),
-                ...(formData.endsAt ? { ends_at: new Date(formData.endsAt).toISOString() } : {})
+                ...(formData.startDate && formData.startTime ? { starts_at: new Date(`${formData.startDate}T${formData.startTime}`).toISOString() } : {}),
+                ...(formData.endDate && formData.endTime ? { ends_at: new Date(`${formData.endDate}T${formData.endTime}`).toISOString() } : {})
             };
 
             const { data, error } = await supabase.schema('api').rpc('upsert_organizer_event', {
@@ -480,6 +486,10 @@ export default function OrganizerEventsPage() {
             setIsAddForumModalOpen(false);
             setForumImageFile(null);
             setForumImagePreview(null);
+            setForumStartDate('');
+            setForumStartTime('');
+            setForumEndDate('');
+            setForumEndTime('');
             fetchEvents();
 
             window.open(forumLink, '_blank');
@@ -600,7 +610,6 @@ export default function OrganizerEventsPage() {
                 }} onClick={() => setIsAddForumModalOpen(false)}>
                     <div style={{
                         backgroundColor: 'var(--color-interface-surface)',
-                        border: '1px solid var(--color-brand-primary)',
                         borderRadius: 'var(--radius-lg)',
                         padding: '24px',
                         maxWidth: '480px',
@@ -626,8 +635,10 @@ export default function OrganizerEventsPage() {
                             const fd = new FormData(form);
                             handleAddForum({
                                 title: fd.get('title') as string,
-                                startsAt: fd.get('startsAt') as string,
-                                endsAt: fd.get('endsAt') as string,
+                                startDate: forumStartDate,
+                                startTime: forumStartTime,
+                                endDate: forumEndDate,
+                                endTime: forumEndTime,
                                 location: fd.get('location') as string,
                             });
                         }}>
@@ -710,39 +721,37 @@ export default function OrganizerEventsPage() {
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Start Date/Time</label>
-                                        <input
-                                            name="startsAt"
-                                            type="datetime-local"
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 12px',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                                color: 'var(--color-utility-primaryText)',
-                                                fontSize: '14px',
-                                                outline: 'none',
-                                                colorScheme: 'dark'
-                                            }}
+                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Start Date</label>
+                                        <DatePicker
+                                            value={forumStartDate}
+                                            onChange={setForumStartDate}
+                                            placeholder="DD/MM/YYYY"
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>End Date/Time</label>
-                                        <input
-                                            name="endsAt"
-                                            type="datetime-local"
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 12px',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                                color: 'var(--color-utility-primaryText)',
-                                                fontSize: '14px',
-                                                outline: 'none',
-                                                colorScheme: 'dark'
-                                            }}
+                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Start Time</label>
+                                        <TimePicker
+                                            value={forumStartTime}
+                                            onChange={setForumStartTime}
+                                            placeholder="HH:MM"
+                                        />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>End Date</label>
+                                        <DatePicker
+                                            value={forumEndDate}
+                                            onChange={setForumEndDate}
+                                            placeholder="DD/MM/YYYY"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>End Time</label>
+                                        <TimePicker
+                                            value={forumEndTime}
+                                            onChange={setForumEndTime}
+                                            placeholder="HH:MM"
                                         />
                                     </div>
                                 </div>
