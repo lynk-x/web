@@ -70,7 +70,8 @@ const CheckoutView: React.FC = () => {
         }
         let cancelled = false;
         const resolveForum = async () => {
-            try {
+            const reservations: Array<{ tierId: string; reservationId: string }> = [];
+        try {
                 const supabase = createClient();
                 const { data } = await supabase
                     .schema('api')
@@ -123,7 +124,8 @@ const CheckoutView: React.FC = () => {
     // ── Init: restore payment state + fetch available payment providers ─
     useEffect(() => {
         const init = async () => {
-            try {
+            const reservations: Array<{ tierId: string; reservationId: string }> = [];
+        try {
                 // 1. Restore pending payment state from sessionStorage (survives refresh).
                 // Only the checkoutId is persisted — phone numbers are not stored to
                 // avoid XSS-readable PII in sessionStorage.
@@ -246,6 +248,7 @@ const CheckoutView: React.FC = () => {
         setPromoLoading(true);
         setPromoError('');
 
+        const reservations: Array<{ tierId: string; reservationId: string }> = [];
         try {
             const { data: promo, error } = await supabase
                 .schema('api')
@@ -344,6 +347,7 @@ const CheckoutView: React.FC = () => {
         setPaymentError('');
         setIsSubmitting(true);
 
+        const reservations: Array<{ tierId: string; reservationId: string }> = [];
         try {
             // Step 1: Establish user identity (logged-in session or durable guest resolution)
             const { data: { user } } = await supabase.auth.getUser();
@@ -365,8 +369,6 @@ const CheckoutView: React.FC = () => {
 
             setEffectiveUserId(resolvedUserId);
 
-            // Step 1.5: Lock ticket reservations under effectiveUserId
-            const reservations: Array<{ tierId: string; reservationId: string }> = [];
             for (const item of items) {
                 const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
                     p_tier_id: item.tierId,
@@ -505,6 +507,7 @@ const CheckoutView: React.FC = () => {
         setManualConfirming(true);
         setPaymentError('');
 
+        const reservations: Array<{ tierId: string; reservationId: string }> = [];
         try {
             const { data, error } = await supabase
                 .schema('api')

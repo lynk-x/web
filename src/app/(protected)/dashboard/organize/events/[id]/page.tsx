@@ -486,7 +486,7 @@ export default function EventDetailPage() {
                         )}
                     </div>
                 </div>
-
+                
                 {/* Right Column: Community Forum */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Community Forum Card */}
