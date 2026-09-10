@@ -148,8 +148,8 @@ export default function EventDetailPage() {
         if (!event || !activeAccount) return;
         const email = inviteEmail.trim();
         const phone = invitePhone.trim();
-        if (!email && !phone) {
-            setInviteError('Email or phone is required.');
+        if (!email) {
+            setInviteError('Email is required to send the invite.');
             setInviteStatus('error');
             return;
         }
@@ -159,11 +159,25 @@ export default function EventDetailPage() {
 
         try {
             const { data: userId, error: ensureError } = await supabase.schema('api').rpc('ensure_forum_invite_user', {
-                p_email: email || null,
+                p_email: email,
                 p_phone: phone || null,
             });
 
             if (ensureError) throw ensureError;
+
+            const { data: forumRow, error: forumError } = await supabase
+                .schema('api')
+                .from('v1_forums')
+                .select('id')
+                .eq('event_id', event.id)
+                .maybeSingle();
+
+            if (forumRow?.id) {
+                await supabase.schema('api').rpc('add_forum_member', {
+                    p_forum_id: forumRow.id,
+                    p_user_id: userId,
+                });
+            }
 
             const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
             const redirectUrl = `${appUrl}/auth/confirm?next=/events/${event.id}/forum`;
@@ -212,19 +226,26 @@ export default function EventDetailPage() {
             let successCount = 0;
             let failCount = 0;
 
+            const { data: forumRow, error: forumError } = await supabase
+                .schema('api')
+                .from('v1_forums')
+                .select('id')
+                .eq('event_id', event.id)
+                .maybeSingle();
+
             for (let i = 1; i < lines.length; i++) {
                 const cols = lines[i].split(',');
                 const email = cols[emailIdx]?.trim();
                 const phone = phoneIdx !== -1 ? cols[phoneIdx]?.trim() : '';
 
-                if (!email && !phone) {
+                if (!email) {
                     failCount++;
                     continue;
                 }
 
                 try {
                     const { data: userId, error: ensureError } = await supabase.schema('api').rpc('ensure_forum_invite_user', {
-                        p_email: email || null,
+                        p_email: email,
                         p_phone: phone || null,
                     });
 
@@ -233,11 +254,22 @@ export default function EventDetailPage() {
                         continue;
                     }
 
+                    if (forumRow?.id) {
+                        const { error: memberError } = await supabase.schema('api').rpc('add_forum_member', {
+                            p_forum_id: forumRow.id,
+                            p_user_id: userId,
+                        });
+
+                        if (memberError) {
+                            console.error('Failed to add forum member:', memberError);
+                        }
+                    }
+
                     const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
                     const redirectUrl = `${appUrl}/auth/confirm?next=/events/${event.id}/forum`;
 
                     const { error: otpError } = await supabase.auth.signInWithOtp({
-                        email: email || undefined,
+                        email,
                         options: {
                             emailRedirectTo: redirectUrl,
                         },
@@ -488,7 +520,7 @@ export default function EventDetailPage() {
                         </div>
                     )}
                 </div>
-            )}
+            </div>
 
             {/* Invite Attendees Card */}
             <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -610,8 +642,6 @@ export default function EventDetailPage() {
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenEventDetailJoyride_${activeAccount.id}` : 'hasSeenEventDetailJoyride_guest'}
