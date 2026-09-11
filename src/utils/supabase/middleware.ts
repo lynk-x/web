@@ -40,6 +40,24 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
+    // ── Onboarding guard ────────────────────────────────────────────────────
+    // A session with no account yet (e.g. signed up via login/OAuth, which
+    // no longer auto-provisions an attendee account) must finish onboarding
+    // before reaching the dashboard.
+    if (user && pathname.startsWith('/dashboard')) {
+        const { data: hasAccount, error } = await supabase.schema('api').rpc('user_has_any_account')
+
+        if (error) {
+            console.error('[Middleware] user_has_any_account RPC error:', error)
+        }
+
+        if (!error && !hasAccount) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/onboarding'
+            return NextResponse.redirect(url)
+        }
+    }
+
     // ── Admin route guard ──────────────────────────────────────────────────
     // Non-admin users attempting to access /dashboard/admin are redirected.
     // Full role verification happens in RLS — this just prevents the shell from rendering.
