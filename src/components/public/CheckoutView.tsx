@@ -359,6 +359,7 @@ const CheckoutView: React.FC = () => {
                 const { data: guestUserId, error: identityError } = await supabase.schema('api').rpc('resolve_or_create_checkout_user', {
                     p_phone: normalizedContactPhone,
                     p_email: formData.email.trim() || null,
+                    p_country_code: contactPhoneCountry.code || null,
                 });
 
                 if (identityError || !guestUserId) {
