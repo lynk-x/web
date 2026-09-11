@@ -154,7 +154,7 @@ export default function EventDetailPage() {
             return;
         }
 
-         setInviteStatus('sending');
+        setInviteStatus('sending');
         setInviteError('');
 
         try {
