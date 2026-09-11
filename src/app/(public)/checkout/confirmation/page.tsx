@@ -20,17 +20,20 @@ const ConfirmationContent = () => {
     // that the current session actually holds a completed ticket for this
     // event before rendering success.
     //
-    // No claim-link/bridge token is minted anymore: checkout now signs the
-    // buyer into a real, durable account via phone+OTP (see CheckoutView),
-    // so the tickets already belong to the right identity the moment they're
-    // purchased. Opening the PWA and logging in with the same phone number
-    // resolves to the same account and its tickets — no re-pointing needed.
+    // Checkout never establishes a browser/app session (resolve_or_create_
+    // checkout_user runs as anon) — a bridge link carrying only
+    // forum_reference has nothing for the PWA to authenticate with, so
+    // api.v1_forums (authenticated-only) denies the anon request. A
+    // magic-link token_hash is minted server-side (see actions.ts) and
+    // appended to the bridge link; the PWA's bridge screen exchanges it for
+    // a real session via verifyOtp before forwarding to the forum.
     const [verifyState, setVerifyState] = useState<'checking' | 'verified' | 'unverified'>('checking');
     const [ticketCount, setTicketCount] = useState(0);
     // Forum reference is a single opaque slug passed to the PWA's /auth/bridge
     // route — no timestamp to mangle in transit. The bridge link only renders
     // once this resolves.
     const [forumReference, setForumReference] = useState<string | null>(null);
+    const [bridgeToken, setBridgeToken] = useState<string | null>(null);
     const [isInstalledApp, setIsInstalledApp] = useState(false);
 
     /** Detect if the Lynk-X app is installed or running in PWA standalone mode */
@@ -68,8 +71,9 @@ const ConfirmationContent = () => {
         e.preventDefault();
         if (!forumReference) return;
 
-        const bridgeUrl = `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`;
-        const customSchemeUrl = `lynkx://auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`;
+        const tokenParam = bridgeToken ? `&token_hash=${encodeURIComponent(bridgeToken)}` : '';
+        const bridgeUrl = `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}${tokenParam}`;
+        const customSchemeUrl = `lynkx://auth/bridge?forum_reference=${encodeURIComponent(forumReference)}${tokenParam}`;
 
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
 
@@ -125,6 +129,22 @@ const ConfirmationContent = () => {
                         .maybeSingle();
                     if (!cancelled && forumRow) {
                         setForumReference(forumRow.reference || forumRow.id);
+                    }
+
+                    if (!cancelled && userId) {
+                        try {
+                            const tokenRes = await fetch('/api/checkout/forum-bridge-token', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId }),
+                            });
+                            const tokenJson = await tokenRes.json();
+                            if (!cancelled && tokenJson?.tokenHash) {
+                                setBridgeToken(tokenJson.tokenHash);
+                            }
+                        } catch (tokenErr) {
+                            console.error('Failed to mint forum bridge token:', tokenErr);
+                        }
                     }
                 } else {
                     setVerifyState('unverified');
@@ -184,8 +204,8 @@ const ConfirmationContent = () => {
 
                 <div className={styles.actionGroup}>
                     {forumReference ? (
-                        <a 
-                            href={`https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}`} 
+                        <a
+                            href={`https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumReference)}${bridgeToken ? `&token_hash=${encodeURIComponent(bridgeToken)}` : ''}`}
                             onClick={handleProceedToForum}
                             className={styles.primaryBtn}
                             target="_self"

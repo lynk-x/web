@@ -907,13 +907,35 @@ const CheckoutView: React.FC = () => {
                                 </button>
                                 <button
                                     className={styles.confirmBtn}
-                                    onClick={() => {
+                                    onClick={async () => {
+                                        const forumRef = alreadyClaimedForumRef;
+                                        const targetEventId = alreadyClaimedEventId;
                                         setAlreadyClaimedEventId(null);
                                         setAlreadyClaimedForumRef(null);
-                                        if (alreadyClaimedForumRef) {
-                                            window.location.href = `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(alreadyClaimedForumRef)}`;
+                                        if (forumRef) {
+                                            // Checkout never establishes a session (anon throughout), so
+                                            // the bridge link needs a magic-link token_hash for the PWA
+                                            // to actually authenticate — otherwise api.v1_forums denies
+                                            // the anon request. See checkout/confirmation/actions.ts.
+                                            let tokenParam = '';
+                                            if (effectiveUserId) {
+                                                try {
+                                                    const tokenRes = await fetch('/api/checkout/forum-bridge-token', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ userId: effectiveUserId }),
+                                                    });
+                                                    const tokenJson = await tokenRes.json();
+                                                    if (tokenJson?.tokenHash) {
+                                                        tokenParam = `&token_hash=${encodeURIComponent(tokenJson.tokenHash)}`;
+                                                    }
+                                                } catch (tokenErr) {
+                                                    console.error('Failed to mint forum bridge token:', tokenErr);
+                                                }
+                                            }
+                                            window.location.href = `https://app.lynk-x.app/auth/bridge?forum_reference=${encodeURIComponent(forumRef)}${tokenParam}`;
                                         } else {
-                                            router.push(`/event/${alreadyClaimedEventId}`);
+                                            router.push(`/event/${targetEventId}`);
                                         }
                                     }}
                                 >
