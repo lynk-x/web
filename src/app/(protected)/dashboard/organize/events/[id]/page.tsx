@@ -154,17 +154,10 @@ export default function EventDetailPage() {
             return;
         }
 
-        setInviteStatus('sending');
+         setInviteStatus('sending');
         setInviteError('');
 
         try {
-            const { data: userId, error: ensureError } = await supabase.schema('api').rpc('ensure_forum_invite_user', {
-                p_email: email,
-                p_phone: phone || null,
-            });
-
-            if (ensureError) throw ensureError;
-
             const { data: forumRow, error: forumError } = await supabase
                 .schema('api')
                 .from('v1_forums')
@@ -172,24 +165,17 @@ export default function EventDetailPage() {
                 .eq('event_id', event.id)
                 .maybeSingle();
 
+            if (forumError) throw forumError;
+
             if (forumRow?.id) {
-                await supabase.schema('api').rpc('add_forum_member', {
+                const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
                     p_forum_id: forumRow.id,
-                    p_user_id: userId,
+                    p_user_handle: phone || email,
+                    p_role_id: 'member',
                 });
+
+                if (inviteError) throw inviteError;
             }
-
-            const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
-            const redirectUrl = `${appUrl}/auth/confirm?next=/events/${event.id}/forum`;
-
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                    emailRedirectTo: redirectUrl,
-                },
-            });
-
-            if (otpError) throw otpError;
 
             setInviteStatus('sent');
             setInviteEmail('');
@@ -233,6 +219,8 @@ export default function EventDetailPage() {
                 .eq('event_id', event.id)
                 .maybeSingle();
 
+            if (forumError) throw forumError;
+
             for (let i = 1; i < lines.length; i++) {
                 const cols = lines[i].split(',');
                 const email = cols[emailIdx]?.trim();
@@ -243,39 +231,19 @@ export default function EventDetailPage() {
                     continue;
                 }
 
+                if (!forumRow?.id) {
+                    failCount++;
+                    continue;
+                }
+
                 try {
-                    const { data: userId, error: ensureError } = await supabase.schema('api').rpc('ensure_forum_invite_user', {
-                        p_email: email,
-                        p_phone: phone || null,
+                    const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
+                        p_forum_id: forumRow.id,
+                        p_user_handle: phone || email,
+                        p_role_id: 'member',
                     });
 
-                    if (ensureError || !userId) {
-                        failCount++;
-                        continue;
-                    }
-
-                    if (forumRow?.id) {
-                        const { error: memberError } = await supabase.schema('api').rpc('add_forum_member', {
-                            p_forum_id: forumRow.id,
-                            p_user_id: userId,
-                        });
-
-                        if (memberError) {
-                            console.error('Failed to add forum member:', memberError);
-                        }
-                    }
-
-                    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://lynk-x.app';
-                    const redirectUrl = `${appUrl}/auth/confirm?next=/events/${event.id}/forum`;
-
-                    const { error: otpError } = await supabase.auth.signInWithOtp({
-                        email,
-                        options: {
-                            emailRedirectTo: redirectUrl,
-                        },
-                    });
-
-                    if (otpError) {
+                    if (inviteError) {
                         failCount++;
                         continue;
                     }
