@@ -519,8 +519,6 @@ export default function EventDetailPage() {
                             </a>
                         </div>
                     )}
-                </div>
-
                 {/* Invite Attendees Card */}
                 <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div>
@@ -642,6 +640,7 @@ export default function EventDetailPage() {
                     </div>
                 </div>
             </div>
+        </div>
 
             <ProductTour
                 storageKey={activeAccount ? `hasSeenEventDetailJoyride_${activeAccount.id}` : 'hasSeenEventDetailJoyride_guest'}

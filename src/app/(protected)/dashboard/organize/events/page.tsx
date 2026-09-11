@@ -756,10 +756,11 @@ export default function OrganizerEventsPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>Location</label>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '6px' }}>External Event Link</label>
                                     <input
                                         name="location"
-                                        placeholder="External / TBD"
+                                        placeholder="https://example.com/event"
+                                        type="url"
                                         defaultValue="External"
                                         style={{
                                             width: '100%',
