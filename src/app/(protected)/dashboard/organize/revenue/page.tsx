@@ -21,6 +21,7 @@ import ProductTour from '@/components/dashboard/ProductTour';
 import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 import type { AccountWallet, Payout } from '@/types/organize';
 
 type TabId = 'payouts' | 'refunds';
@@ -62,7 +63,7 @@ function RevenueContent() {
     const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
     const [isRefundsLoading, setIsRefundsLoading] = useState(true);
     const [refundToApprove, setRefundToApprove] = useState<Refund | null>(null);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
     const [payoutsPage, setPayoutsPage] = useState(1);
     const [refundsPage, setRefundsPage] = useState(1);
     const [startDate, setStartDate] = useState('');
@@ -147,7 +148,7 @@ function RevenueContent() {
         } finally {
             setIsPayoutsLoading(false);
         }
-    }, [activeAccount, supabase, payoutsPage, payoutStatusFilter, startDate, endDate, showToast]);
+    }, [activeAccount, supabase, payoutsPage, itemsPerPage, payoutStatusFilter, startDate, endDate, showToast]);
 
     /* ── Data fetch: refunds ─────────────────────────────────────────────────── */
     const fetchRefunds = useCallback(async () => {
@@ -172,7 +173,7 @@ function RevenueContent() {
         } finally {
             setIsRefundsLoading(false);
         }
-    }, [activeAccount, supabase, refundsPage, refundStatusFilter, startDate, endDate, showToast]);
+    }, [activeAccount, supabase, refundsPage, itemsPerPage, refundStatusFilter, startDate, endDate, showToast]);
 
     const handleRejectRefund = async (refund: Refund) => {
         if (!await confirm('Reject this refund request? This cannot be undone.', {

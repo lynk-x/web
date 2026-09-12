@@ -7,7 +7,7 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import styles from '../admin/audit-logs/page.module.css';
 import adminStyles from '../page.module.css';
 import AuditTable, { AuditLog } from '@/components/system/audit/AuditTable';
@@ -20,11 +20,12 @@ import SystemJobsTab from '@/components/system/audit/SystemJobsTab';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import DateRangeRow from '@/components/shared/DateRangeRow';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { useUrlTab } from '@/hooks/useUrlTab';
+import { usePagination } from '@/hooks/usePagination';
 
 function JobsOperationsContent() {
     const { showToast } = useToast();
-    const router = useRouter();
-    const pathname = usePathname();
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
@@ -35,20 +36,15 @@ function JobsOperationsContent() {
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
     const [jobStatusFilter, setJobStatusFilter] = useState('all');
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'audit');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'audit', { mode: 'push' });
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [stats, setStats] = useState<any>(null);
-    const itemsPerPage = 10;
-
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', value);
-        router.push(`${pathname}?${params.toString()}`);
-    };
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+        itemsPerPage,
+        [searchTerm, actionFilter, startDate, endDate, itemsPerPage]
+    );
 
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
@@ -97,7 +93,7 @@ function JobsOperationsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, actionFilter, currentPage, startDate, endDate]);
+    }, [supabase, showToast, actionFilter, currentPage, itemsPerPage, startDate, endDate, setTotalCount]);
 
     const fetchStats = useCallback(async () => {
         setIsStatsLoading(true);
@@ -120,10 +116,6 @@ function JobsOperationsContent() {
         fetchLogs();
     }, [fetchLogs]);
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, actionFilter, startDate, endDate]);
-
     const filteredLogs = logs.filter(log => {
         if (!searchTerm) return true;
         return (
@@ -132,8 +124,6 @@ function JobsOperationsContent() {
             log.target.toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     return (
         <div className={adminStyles.container}>

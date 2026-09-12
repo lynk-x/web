@@ -17,6 +17,7 @@ import type { Attendee } from '@/types/organize';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useOrganization } from '@/context/OrganizationContext';
 import AddAttendeeModal from '@/components/features/events/attendees/AddAttendeeModal';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 
 /**
  * Attendee registry view for a specific event in the organizer dashboard.
@@ -37,7 +38,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [eventMeta, setEventMeta] = useState<{ accountId: string; createdAt: string } | null>(null);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize();
 
     const fetchAttendees = useCallback(async () => {
         setIsLoading(true);

@@ -21,6 +21,8 @@ import { formatDate, formatDateTime, formatTime } from '@/utils/format';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
 
 // Main Component
 export default function OrganizerEventsPage() {
@@ -31,7 +33,6 @@ export default function OrganizerEventsPage() {
 
     // Data State
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
     const [isLoadingEvents, setIsLoadingEvents] = useState(true);
 
     // Modal State
@@ -53,8 +54,8 @@ export default function OrganizerEventsPage() {
     const [statusFilter, setStatusFilter] = useState<'all' | OrganizerEvent['status']>('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
+    const itemsPerPage = useResponsivePageSize();
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
@@ -129,7 +130,7 @@ export default function OrganizerEventsPage() {
         } finally {
             setIsLoadingEvents(false);
         }
-    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter, setTotalCount]);
 
     // ── Initialization & Data Fetching ───────────────────────────────────────
     useEffect(() => {
@@ -143,14 +144,13 @@ export default function OrganizerEventsPage() {
         }
     }, [isOrgLoading, activeAccount, fetchEvents]);
 
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
     const paginatedEvents = events;
 
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
         setSelectedIds(new Set());
-    }, [searchTerm, statusFilter, categoryFilter]);
+    }, [searchTerm, statusFilter, categoryFilter, setCurrentPage]);
 
     // Selection Logic
     const handleSelect = (id: string) => {

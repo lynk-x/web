@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import ProductTour from '@/components/dashboard/ProductTour';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
 
 export default function CampaignsPage() {
     const { showToast } = useToast();
@@ -24,10 +26,9 @@ export default function CampaignsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize();
 
-    const [totalCount, setTotalCount] = useState(0);
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     const fetchCampaigns = useCallback(async () => {
         if (!activeAccount) return;
@@ -81,7 +82,7 @@ export default function CampaignsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter]);
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter, setTotalCount]);
 
     useEffect(() => {
         if (!isOrgLoading && activeAccount) {
@@ -89,13 +90,11 @@ export default function CampaignsPage() {
         }
     }, [isOrgLoading, activeAccount, fetchCampaigns]);
 
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
-
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
         setSelectedIds(new Set());
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, statusFilter, setCurrentPage]);
 
     // Selection Logic
     const handleSelect = (id: string) => {

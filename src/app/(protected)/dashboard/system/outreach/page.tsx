@@ -2,7 +2,7 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import ContentTable, { ContentItem } from '@/components/admin/content/ContentTable';
 import Link from 'next/link';
@@ -19,33 +19,20 @@ import LegalDocTable from '@/components/admin/content/LegalDocTable';
 import Badge from '@/components/shared/Badge';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { useUrlTab } from '@/hooks/useUrlTab';
+
+type OutreachTab = 'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights';
 
 function CommunicationsContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const pathname = usePathname();
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = (searchParams.get('tab') as string) || 'broadcast';
-    const [activeTab, setActiveTab] = useState<'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights'>(
-        ['content', 'broadcast', 'legal', 'banners', 'spotlights'].includes(initialTab) ? initialTab as 'content' | 'broadcast' | 'legal' | 'banners' | 'spotlights' : 'broadcast'
-    );
-
-    useEffect(() => {
-        const tab = searchParams.get('tab') as string;
-        if (tab && ['content', 'broadcast', 'legal', 'banners', 'spotlights'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Extract<typeof activeTab, string>);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'broadcast', {
+        validValues: ['content', 'broadcast', 'legal', 'banners', 'spotlights']
+    }) as [OutreachTab, (value: OutreachTab) => void];
 
     const [contents, setContents] = useState<ContentItem[]>([]);
     const [contentTotal, setContentTotal] = useState(0);
@@ -66,7 +53,7 @@ function CommunicationsContent() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = useResponsivePageSize();
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -426,7 +413,7 @@ function CommunicationsContent() {
                 </TableToolbar>
             </div>
 
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <Tabs value={activeTab} onValueChange={(newTab) => handleTabChange(newTab as OutreachTab)}>
                 <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none' }}>
                     <TabsList>
                         <TabsTrigger value="broadcast">Broadcasts</TabsTrigger>

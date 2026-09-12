@@ -22,6 +22,9 @@ import StatCard from '@/components/dashboard/StatCard';
 import RejectionModal from '@/components/shared/RejectionModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import ForumTable from '@/components/admin/forums/ForumTable';
 import type { ForumThread, Report } from '@/types/admin';
@@ -96,8 +99,6 @@ export default function AdminEventsPage() {
     const [activeTab, setActiveTab] = useState('events');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
     const [selectedForumIds, setSelectedForumIds] = useState<Set<string>>(new Set());
     const [summary, setSummary] = useState<any>(null);
@@ -137,32 +138,18 @@ export default function AdminEventsPage() {
     }, [payouts, payoutStatusFilter]);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
 
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-    const resolvedCountryFilter = useMemo(() => {
-        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode) return proxyCode;
-        }
-        if (activeAccount?.country_code) {
-            return activeAccount.country_code;
-        }
-        return 'all';
-    }, [activeAccount]);
+    const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
+    const resolvedPayoutCountryFilter = useResolvedCountryFilter(activeAccount, payoutCountryFilter);
 
-    const resolvedPayoutCountryFilter = useMemo(() => {
-        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode) return proxyCode;
-        }
-        if (activeAccount?.country_code) {
-            return activeAccount.country_code;
-        }
-        return payoutCountryFilter;
-    }, [activeAccount, payoutCountryFilter]);
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+        itemsPerPage,
+        [debouncedSearch, statusFilter, forumStatusFilter, payoutStatusFilter, activeTab, startDate, endDate, resolvedPayoutCountryFilter, itemsPerPage]
+    );
 
     const fetchDashboardSummary = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
@@ -213,7 +200,7 @@ export default function AdminEventsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, startDate, endDate, resolvedPayoutCountryFilter, currentPage, showToast]);
+    }, [supabase, debouncedSearch, startDate, endDate, resolvedPayoutCountryFilter, currentPage, itemsPerPage, showToast, setTotalCount]);
 
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
@@ -310,7 +297,7 @@ export default function AdminEventsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, statusFilter, forumStatusFilter, startDate, endDate, resolvedCountryFilter, currentPage, showToast]);
+    }, [supabase, debouncedSearch, statusFilter, forumStatusFilter, startDate, endDate, resolvedCountryFilter, currentPage, itemsPerPage, showToast, setTotalCount]);
 
     const fetchCountries = useCallback(async () => {
         const { data } = await publicSupabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
@@ -331,13 +318,6 @@ export default function AdminEventsPage() {
     useEffect(() => {
         fetchDashboardSummary();
     }, [fetchDashboardSummary]);
-
-    // Reset page on search/filter change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, forumStatusFilter, payoutStatusFilter, activeTab, startDate, endDate, resolvedPayoutCountryFilter]);
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [pendingModerationItem, setPendingModerationItem] = useState<{ id: string, title: string, status: string } | null>(null);
@@ -370,16 +350,24 @@ export default function AdminEventsPage() {
         }
 
         if (!await confirm(`Are you sure you want to approve this payout for ${payout.recipient}? This will initiate disbursement.`)) return;
-        
+
         try {
-            const { data, error } = await publicSupabase.functions.invoke('payout-fulfillment', {
-                body: { payout_id: payout.id }
+            // Previously called functions.invoke('payout-fulfillment', ...)
+            // — that edge function was never actually implemented/deployed
+            // (only a stale enum label + doc reference), so approval always
+            // failed client-side with "Failed to send a request to the Edge
+            // Function". api.bulk_approve_payouts already exists and is the
+            // real, working path: it enqueues onto payout_jobs, drained by
+            // the actual mpesa-wallet-withdrawal edge function (which
+            // itself branches per payout, e.g. skips non-KES payouts) — an
+            // admin approval click never needs to call an edge function
+            // directly.
+            const { error } = await supabase.schema('api').rpc('bulk_approve_payouts', {
+                p_payout_ids: [payout.id]
             });
-            
-            if (error || !data?.success) {
-                throw new Error(error?.message || data?.error || 'Failed to initiate payout');
-            }
-            
+
+            if (error) throw error;
+
             showToast('Payout successfully initiated.', 'success');
             setIsPayoutReviewModalOpen(false);
             fetchPayouts();
@@ -403,16 +391,13 @@ export default function AdminEventsPage() {
 
         showToast(`Initiating disbursement for ${selectedList.length} payouts...`, 'info');
         try {
-            const results = await Promise.all(
-                selectedList.map(p => publicSupabase.functions.invoke('payout-fulfillment', { body: { payout_id: p.id } }))
-            );
-            const failures = results.filter(r => r.error || !r.data?.success);
+            const { error } = await supabase.schema('api').rpc('bulk_approve_payouts', {
+                p_payout_ids: selectedList.map(p => p.id)
+            });
 
-            if (failures.length > 0) {
-                showToast(`Completed with warnings: ${failures.length} disbursement(s) failed to initiate.`, 'warning');
-            } else {
-                showToast(`Successfully initiated ${selectedList.length} payouts.`, 'success');
-            }
+            if (error) throw error;
+
+            showToast(`Successfully initiated ${selectedList.length} payouts.`, 'success');
 
             setSelectedPayoutIds(new Set());
             fetchPayouts();

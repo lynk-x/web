@@ -7,7 +7,6 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -17,6 +16,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import styles from './page.module.css';
+import { useUrlTab } from '@/hooks/useUrlTab';
 
 type Tab = 'encryption' | 'vault';
 
@@ -37,27 +37,17 @@ interface VaultSecret {
 function SystemSecurityContent() {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = searchParams.get('tab') as Tab;
-    const [activeTab, setActiveTab] = useState<Tab>(
-        (initialTab && ['encryption', 'vault'].includes(initialTab)) ? initialTab : 'encryption'
-    );
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'encryption', { validValues: ['encryption', 'vault'] }) as [
+        Tab,
+        (value: Tab) => void
+    ];
 
     const [kekStatus, setKekStatus] = useState<KekRotationStatus | null>(null);
     const [vaultSecrets, setVaultSecrets] = useState<VaultSecret[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRotating, setIsRotating] = useState(false);
-
-    const handleTabChange = (value: string) => {
-        setActiveTab(value as Tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', value);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
 
     const fetchKekStatus = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('get_kek_rotation_status');
@@ -126,7 +116,7 @@ function SystemSecurityContent() {
                 subtitle="Manage PII encryption keys and view registered Vault secrets."
             />
 
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as Tab)}>
                 <TabsList>
                     <TabsTrigger value="encryption">Encryption</TabsTrigger>
                     <TabsTrigger value="vault">Vault</TabsTrigger>

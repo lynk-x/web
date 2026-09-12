@@ -9,7 +9,7 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import KycLimitsTable from '@/components/system/compliance/KycLimitsTable';
 import KycRequirementsTable from '@/components/system/compliance/KycRequirementsTable';
@@ -24,6 +24,8 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import type { KycLimit, KycRequirement, KycProvider } from '@/types/admin';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { useUrlTab } from '@/hooks/useUrlTab';
 
 const KYC_ACCOUNT_TYPES = ['organizer', 'advertiser', 'attendee'] as const;
 const KYC_TIERS = ['tier_1_basic', 'tier_2_verified', 'tier_3_advanced'] as const;
@@ -86,17 +88,15 @@ function newStepDraft(): KycRequirementStepDraft {
 
 function GlobalComplianceContent() {
     const { showToast } = useToast();
-    const router = useRouter();
-    const pathname = usePathname();
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'kyc-limits');
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'kyc-limits', { mode: 'push' });
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
     const [countries, setCountries] = useState<{ code: string, name: string }[]>([]);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize();
 
     const [kycLimits, setKycLimits] = useState<KycLimit[]>([]);
     const [isKycLimitsModalOpen, setIsKycLimitsModalOpen] = useState(false);
@@ -123,13 +123,6 @@ function GlobalComplianceContent() {
     );
 
     const debouncedSearch = useDebounce(searchTerm, 300);
-
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', value);
-        router.push(`${pathname}?${params.toString()}`);
-    };
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);

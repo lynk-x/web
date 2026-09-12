@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useState, Suspense } from 'react';
 import styles from './page.module.css';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import StatCard from '@/components/dashboard/StatCard';
@@ -10,6 +9,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
 import { useOrganization } from '@/context/OrganizationContext';
 import SharedEmptyState from '@/components/shared/EmptyState';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { 
     AreaChart, Area, 
     BarChart, Bar, 
@@ -760,39 +760,20 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
 // ─── Content Component ──────────────────────────────────────────────────────
 
 function AnalyticsContent() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const pathname = usePathname();
-
     const { activeAccount } = useOrganization();
 
-    const initialTab = (searchParams.get('tab') as string) || 'demographics';
-    const [activeTab, setActiveTab] = useState<Tab>(
-        (['demographics', 'events', 'advertising', 'community', 'finance'].includes(initialTab) ? initialTab as Tab : 'demographics')
-    );
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'demographics', {
+        validValues: ['demographics', 'events', 'advertising', 'community', 'finance']
+    }) as [Tab, (value: Tab) => void];
 
     // Lock local territory analytics to the active administrator's country_code
     const activeCountry = activeAccount?.country_code || 'KE';
     const [countryFilter] = useState(activeCountry.toLowerCase());
 
-    useEffect(() => {
-        const tab = searchParams.get('tab') as Tab;
-        if (tab && ['demographics', 'events', 'advertising', 'community', 'finance'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as Tab)}>
                     <div className={sharedStyles.tabsHeaderRow} style={{ marginBottom: 0, borderBottom: 'none' }}>
                         <TabsList>
                             <TabsTrigger value="demographics">Demographics</TabsTrigger>

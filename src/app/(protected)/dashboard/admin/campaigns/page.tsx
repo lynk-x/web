@@ -2,7 +2,6 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import FilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
@@ -21,8 +20,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 import { formatCurrency } from '@/utils/format';
 import DateRangeRow from '@/components/shared/DateRangeRow';
+import { useUrlTab } from '@/hooks/useUrlTab';
 
 function CampaignsContent() {
     const supabase = useMemo(() => createClient(), []);
@@ -30,26 +33,14 @@ function CampaignsContent() {
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { executeAction } = useModerationAction();
     const { activeAccount } = useOrganization();
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
 
-    const resolvedCountryFilter = useMemo(() => {
-        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode) return proxyCode;
-        }
-        if (activeAccount?.country_code) {
-            return activeAccount.country_code;
-        }
-        return 'all';
-    }, [activeAccount]);
+    const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
 
-    const initialTab = (searchParams.get('tab') as string) || 'campaigns';
-    const [activeTab, setActiveTab] = useState<'campaigns' | 'analytics'>(
-        ['campaigns', 'analytics'].includes(initialTab) ? initialTab as 'campaigns' | 'analytics' : 'campaigns'
-    );
-    
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'campaigns', { validValues: ['campaigns', 'analytics'] }) as [
+        'campaigns' | 'analytics',
+        (value: 'campaigns' | 'analytics') => void
+    ];
+
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -59,15 +50,17 @@ function CampaignsContent() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
     const [summary, setSummary] = useState<any>(null);
     const [campaignPerf, setCampaignPerf] = useState<{ avgCtr: string; avgCpc: string } | null>(null);
 
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+        itemsPerPage,
+        [debouncedSearch, statusFilter, adTypeFilter, startDate, endDate, itemsPerPage]
+    );
 
     const fetchDashboardSummary = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
@@ -90,21 +83,6 @@ function CampaignsContent() {
             });
         }
     }, [supabase, resolvedCountryFilter]);
-
-    useEffect(() => {
-        const tab = searchParams.get('tab') as string;
-        if (tab && ['campaigns', 'analytics'].includes(tab)) {
-            setActiveTab(tab as typeof activeTab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: string) => {
-        const tab = newTab as typeof activeTab;
-        setActiveTab(tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
 
     const fetchCampaigns = useCallback(async () => {
         if (activeTab !== 'campaigns') return;
@@ -145,7 +123,7 @@ function CampaignsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, statusFilter, adTypeFilter, resolvedCountryFilter, currentPage, activeTab, showToast]);
+    }, [supabase, debouncedSearch, statusFilter, adTypeFilter, resolvedCountryFilter, currentPage, itemsPerPage, activeTab, showToast, setTotalCount]);
 
     useEffect(() => {
         fetchCampaigns();
@@ -155,13 +133,6 @@ function CampaignsContent() {
         fetchDashboardSummary();
         fetchCampaignPerf();
     }, [fetchDashboardSummary, fetchCampaignPerf]);
-
-    // Reset page on search/filter change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, adTypeFilter, startDate, endDate]);
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [pendingModerationItem, setPendingModerationItem] = useState<{ id: string, moderationId?: string, title: string, status: string } | null>(null);
@@ -399,7 +370,7 @@ function CampaignsContent() {
                 />
             </TableToolbar>
 
-            <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id)} className={styles.tabsReset}>
+            <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as 'campaigns' | 'analytics')} className={styles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="campaigns">Campaigns</TabsTrigger>

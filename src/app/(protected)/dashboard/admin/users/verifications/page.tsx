@@ -5,10 +5,12 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'reac
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
 import FilterChips from '@/components/shared/FilterChips';
 import KycVerificationTable from '@/components/admin/users/KycVerificationTable';
+import { usePagination } from '@/hooks/usePagination';
 import KycDetailModal from '@/components/admin/users/KycDetailModal';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import adminStyles from '../../page.module.css';
@@ -24,9 +26,8 @@ function KycVerificationsContent() {
     const [statusFilter, setStatusFilter] = useState('pending');
     
     // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
-    const itemsPerPage = 20;
+    const itemsPerPage = useResponsivePageSize();
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     // Modals
     const [selectedVerification, setSelectedVerification] = useState<KycVerification | null>(null);
@@ -81,7 +82,7 @@ function KycVerificationsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, statusFilter, currentPage, showToast]);
+    }, [supabase, statusFilter, currentPage, itemsPerPage, showToast, setTotalCount]);
 
     useEffect(() => {
         fetchVerifications();
@@ -121,8 +122,6 @@ function KycVerificationsContent() {
             showToast(getErrorMessage(err), 'error');
         }
     };
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     return (
         <div className={sharedStyles.container}>

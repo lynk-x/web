@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useState, useRef, Suspense } from 'react';
 import adminStyles from '../page.module.css';
 import TagLibraryTab, { TagLibraryTabHandle } from '@/components/system/registry/TagLibraryTab';
 import MappingTab, { MappingTabHandle } from '@/components/system/registry/MappingTab';
@@ -9,40 +8,20 @@ import DisclaimerTable, { DisclaimerTableHandle } from '@/components/system/regi
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
+import { useUrlTab } from '@/hooks/useUrlTab';
 
 type RegistryTab = 'disclaimer' | 'tags' | 'types' | 'logic';
 
 function RegistryContent() {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-
-    const initialTab = (searchParams.get('tab') as string) || 'disclaimer';
-    const validTabs: RegistryTab[] = ['disclaimer', 'tags', 'types', 'logic'];
-    const [activeTab, setActiveTab] = useState<RegistryTab>(
-        validTabs.includes(initialTab as RegistryTab) ? initialTab as RegistryTab : 'disclaimer'
-    );
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'disclaimer', {
+        validValues: ['disclaimer', 'tags', 'types', 'logic']
+    }) as [RegistryTab, (value: RegistryTab) => void];
     const [searchTerm, setSearchTerm] = useState('');
 
     const disclaimerRef = useRef<DisclaimerTableHandle>(null);
     const tagsRef = useRef<TagLibraryTabHandle>(null);
     const typesRef = useRef<TagLibraryTabHandle>(null);
     const logicRef = useRef<MappingTabHandle>(null);
-
-    useEffect(() => {
-        const tab = searchParams.get('tab') as string;
-        if (tab && validTabs.includes(tab as RegistryTab)) {
-            setActiveTab(tab as RegistryTab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: string) => {
-        const tab = newTab as RegistryTab;
-        setActiveTab(tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
 
     return (
         <div className={adminStyles.container}>
@@ -57,7 +36,7 @@ function RegistryContent() {
                 onSearchChange={setSearchTerm} 
             />
 
-            <Tabs value={activeTab} onValueChange={handleTabChange} className={adminStyles.tabsReset}>
+            <Tabs value={activeTab} onValueChange={(id) => handleTabChange(id as RegistryTab)} className={adminStyles.tabsReset}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="disclaimer">Disclaimers</TabsTrigger>

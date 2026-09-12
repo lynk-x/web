@@ -12,6 +12,8 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ProductTour from '@/components/dashboard/ProductTour';
 import StatCard from '@/components/dashboard/StatCard';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
 
 export default function AdsBillingPage() {
     const { showToast } = useToast();
@@ -19,14 +21,13 @@ export default function AdsBillingPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
     const [walletBalance, setWalletBalance] = useState(0);
     const [adCredits, setAdCredits] = useState(0);
     const [rawTotalSpend, setRawTotalSpend] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
+    const { currentPage, setCurrentPage, totalCount, setTotalCount } = usePagination(itemsPerPage, [searchQuery]);
 
     const fetchBillingData = useCallback(async () => {
         if (!activeAccount) return;
@@ -79,7 +80,7 @@ export default function AdsBillingPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage]);
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, setTotalCount]);
 
     useEffect(() => {
         if (!isOrgLoading) {
@@ -107,10 +108,6 @@ export default function AdsBillingPage() {
     const paginatedInvoices = searchQuery
         ? invoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
         : invoices;
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery]);
 
     const currency = 'USD';
 

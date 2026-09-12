@@ -13,6 +13,9 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import KYCTab from '@/components/admin/users/KYCTab';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
@@ -33,11 +36,9 @@ function AccountsContent() {
     const [accounts, setAccounts] = useState<AdminAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-    const [typeFilter, setTypeFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
     const [activeTab, setActiveTab] = useState('accounts');
     const [kycStatusFilter, setKycStatusFilter] = useState('pending');
     const [startDate, setStartDate] = useState('');
@@ -53,18 +54,14 @@ function AccountsContent() {
     const [summary, setSummary] = useState<AdminSummary | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
-    const itemsPerPage = 20;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
 
-    const resolvedCountryFilter = useMemo(() => {
-        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode) return proxyCode;
-        }
-        if (activeAccount?.country_code) {
-            return activeAccount.country_code;
-        }
-        return 'all';
-    }, [activeAccount]);
+    const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
+
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+        itemsPerPage,
+        [debouncedSearch, typeFilter, statusFilter, resolvedCountryFilter, startDate, endDate, itemsPerPage]
+    );
 
     const fetchSummary = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
@@ -92,7 +89,7 @@ function AccountsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, resolvedCountryFilter, currentPage]);
+    }, [supabase, showToast, debouncedSearch, typeFilter, statusFilter, resolvedCountryFilter, currentPage, itemsPerPage, setTotalCount]);
 
     useEffect(() => {
         fetchAccounts();
@@ -101,13 +98,6 @@ function AccountsContent() {
     useEffect(() => {
         fetchSummary();
     }, [fetchSummary]);
-
-    // Reset pagination when filter changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch, typeFilter, statusFilter, resolvedCountryFilter, startDate, endDate]);
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const handleBulkAccountStatusUpdate = async (newStatus: string) => {
         if (selectedIds.size === 0) return;

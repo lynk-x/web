@@ -7,8 +7,7 @@
  * /dashboard/admin/analytics page (api.get_admin_analytics).
  */
 
-import { useState, useEffect, Suspense, type CSSProperties } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { Suspense, type CSSProperties } from 'react';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -17,6 +16,7 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import EmptyState from '@/components/shared/EmptyState';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import {
     AreaChart, Area,
     BarChart, Bar,
@@ -417,32 +417,14 @@ function AdvertisingTab() {
 const VALID_TABS: Tab[] = ['search', 'demographics', 'events', 'forums', 'advertising'];
 
 function InsightsContent() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    const initialTab = (searchParams.get('tab') as string) || 'search';
-    const [activeTab, setActiveTab] = useState<Tab>(
-        VALID_TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'search'
-    );
-
-    useEffect(() => {
-        const tab = searchParams.get('tab') as Tab;
-        if (tab && VALID_TABS.includes(tab)) {
-            setActiveTab(tab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'search', { validValues: VALID_TABS }) as [
+        Tab,
+        (value: Tab) => void
+    ];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <Tabs value={activeTab} onValueChange={(newTab) => handleTabChange(newTab as Tab)}>
                 <div className={sharedStyles.tabsHeaderRow} style={{ marginBottom: 0, borderBottom: 'none' }}>
                     <TabsList>
                         <TabsTrigger value="search">Search Results</TabsTrigger>

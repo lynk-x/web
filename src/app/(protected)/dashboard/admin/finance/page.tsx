@@ -28,6 +28,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 import type { FinanceTransaction } from '@/types/organize';
 import type { PromoCode, TaxRate } from '@/types/admin';
 import { exportToCSV } from '@/utils/export';
@@ -46,16 +49,7 @@ function FinanceContent() {
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const resolvedCountryFilter = useMemo(() => {
-        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode) return proxyCode;
-        }
-        if (activeAccount?.country_code) {
-            return activeAccount.country_code;
-        }
-        return 'all';
-    }, [activeAccount]);
+    const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'wallets');
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -63,10 +57,9 @@ function FinanceContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isStatsLoading, setIsStatsLoading] = useState(true);
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
     const debouncedSearch = useDebounce(searchTerm, 500);
-    const itemsPerPage = 20;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     // Date range state
     const [startDate, setStartDate] = useState('');
@@ -316,7 +309,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, minAmount, maxAmount, currentPage, debouncedSearch, categoryFilter, resolvedCountryFilter, activeAccount?.country_code]);
+    }, [activeTab, supabase, showToast, startDate, endDate, minAmount, maxAmount, currentPage, itemsPerPage, debouncedSearch, categoryFilter, resolvedCountryFilter, activeAccount?.country_code, setTotalCount]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -357,7 +350,7 @@ function FinanceContent() {
     useEffect(() => {
         setCurrentPage(1);
         fetchData();
-    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, minAmount, maxAmount]);
+    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, minAmount, maxAmount, itemsPerPage]);
 
     useEffect(() => {
         fetchData();
@@ -588,8 +581,6 @@ function FinanceContent() {
         return [];
     };
     
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
-
     return (
         <div className={sharedStyles.container}>
             <PageHeader

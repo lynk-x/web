@@ -13,6 +13,8 @@ import RejectionModal from '@/components/shared/RejectionModal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
 
 export default function AdminModerationPage() {
     const { showToast } = useToast();
@@ -23,12 +25,11 @@ export default function AdminModerationPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
 
-    const [totalCount, setTotalCount] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
     const [summary, setSummary] = useState<any>(null);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
 
     const debouncedSearch = useDebounce(searchTerm, 500);
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage, [debouncedSearch, typeFilter]);
 
     // Selection for bulk actions
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -78,7 +79,7 @@ export default function AdminModerationPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, debouncedSearch, typeFilter, currentPage, showToast]);
+    }, [supabase, debouncedSearch, typeFilter, currentPage, itemsPerPage, showToast, setTotalCount]);
 
     useEffect(() => {
         fetchQueue();
@@ -102,11 +103,6 @@ export default function AdminModerationPage() {
     }, [supabase, fetchQueue, fetchDashboardSummary]);
 
     // Reset pagination on filter change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch, typeFilter]);
-
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     const handleApprove = async (entry: ModerationEntry) => {
         showToast(`Approving ${entry.item_type}...`, 'info');

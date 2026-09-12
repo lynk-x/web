@@ -8,7 +8,7 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import FXRateTable from '@/components/system/finance/FXRateTable';
@@ -27,6 +27,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import type { FXRate, TaxRate } from '@/types/admin';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatCurrency } from '@/utils/format';
@@ -42,12 +45,10 @@ interface SubscriptionPlan {
 function GlobalFinanceContent() {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
-    const router = useRouter();
-    const pathname = usePathname();
     const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'wallets');
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'wallets', { mode: 'push' });
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,12 +70,16 @@ function GlobalFinanceContent() {
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [isSyncingFX, setIsSyncingFX] = useState(false);
 
-    const [walletsCurrentPage, setWalletsCurrentPage] = useState(1);
-    const [walletsTotalCount, setWalletsTotalCount] = useState(0);
     const [taxCurrentPage, setTaxCurrentPage] = useState(1);
     const [fxCurrentPage, setFxCurrentPage] = useState(1);
     const [plansCurrentPage, setPlansCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize();
+    const {
+        currentPage: walletsCurrentPage,
+        setCurrentPage: setWalletsCurrentPage,
+        totalCount: walletsTotalCount,
+        setTotalCount: setWalletsTotalCount,
+    } = usePagination(itemsPerPage);
 
     const debouncedSearch = useDebounce(searchTerm, 300);
 
@@ -84,13 +89,6 @@ function GlobalFinanceContent() {
     const [adjustBalanceType, setAdjustBalanceType] = useState<'cash' | 'credit' | 'escrow'>('cash');
     const [adjustAmount, setAdjustAmount] = useState('');
     const [adjustReason, setAdjustReason] = useState('');
-
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', value);
-        router.push(`${pathname}?${params.toString()}`);
-    };
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -145,7 +143,7 @@ function GlobalFinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, debouncedSearch, walletStatusFilter, walletsCurrentPage]);
+    }, [activeTab, supabase, showToast, debouncedSearch, walletStatusFilter, walletsCurrentPage, itemsPerPage, setWalletsTotalCount]);
 
     useEffect(() => {
         fetchData();
@@ -164,7 +162,7 @@ function GlobalFinanceContent() {
         setTaxCurrentPage(1);
         setFxCurrentPage(1);
         setPlansCurrentPage(1);
-    }, [activeTab, debouncedSearch]);
+    }, [activeTab, debouncedSearch, itemsPerPage, setWalletsCurrentPage]);
 
     const handleSaveTaxRate = async () => {
         try {

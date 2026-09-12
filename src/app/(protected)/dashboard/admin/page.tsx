@@ -15,6 +15,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
+import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 
 interface ActivityItem {
     id: string;
@@ -40,24 +41,14 @@ export default function AdminDashboard() {
     });
     const [activities, setActivities] = useState<ActivityItem[]>([]);
 
-    // Helper to get selected active country scope, supporting proxy overrides for platform admins
-    const getActiveCountry = useCallback(() => {
-        if (!activeAccount) return 'all';
-        if (typeof window !== 'undefined') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode && activeAccount.type === 'platform') {
-                return proxyCode;
-            }
-        }
-        return activeAccount.country_code || 'all';
-    }, [activeAccount]);
+    const activeCountryCode = useResolvedCountryFilter(activeAccount);
 
     // 1. Fetch Local Segment Statistics (Option A)
     const fetchStats = useCallback(async () => {
         if (!activeAccount) return;
         setIsStatsLoading(true);
         try {
-            const country = getActiveCountry();
+            const country = activeCountryCode;
 
             // Count organizers in the active country
             let orgQuery = supabase
@@ -81,12 +72,11 @@ export default function AdminDashboard() {
             }
             const { count: advs } = await advQuery;
 
-            // Count community/pulse attendees in the active country
             let pulseQuery = supabase
                 .schema('api' as any)
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
-                .in('type', ['pulse_user', 'attendee']);
+                .eq('type', 'attendee');
             if (country !== 'all') {
                 pulseQuery = pulseQuery.eq('country_code', country);
             }
@@ -110,14 +100,14 @@ export default function AdminDashboard() {
         } finally {
             setIsStatsLoading(false);
         }
-    }, [activeAccount, supabase, getActiveCountry]);
+    }, [activeAccount, supabase, activeCountryCode]);
 
     // 2. Fetch Consolidated Territory Activity Log
     const fetchActivityLog = useCallback(async () => {
         if (!activeAccount) return;
         setIsActivityLoading(true);
         try {
-            const country = getActiveCountry();
+            const country = activeCountryCode;
             const logList: ActivityItem[] = [];
 
             // A. Fetch recent account signups in this country
@@ -180,7 +170,7 @@ export default function AdminDashboard() {
         } finally {
             setIsActivityLoading(false);
         }
-    }, [activeAccount, supabase, getActiveCountry]);
+    }, [activeAccount, supabase, activeCountryCode]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -190,7 +180,6 @@ export default function AdminDashboard() {
         }
     }, [activeAccount, fetchStats, fetchActivityLog]);
 
-    const activeCountryCode = getActiveCountry();
     const countryLabel = activeCountryCode !== 'all'
         ? `(${activeCountryCode.toUpperCase()} Territory${activeAccount?.type === 'platform' ? ' [Proxy]' : ''})`
         : '';
@@ -220,13 +209,13 @@ export default function AdminDashboard() {
                     isLoading={isStatsLoading}
                     href="/dashboard/admin/users?type=advertiser"
                 />
-                <StatCard 
-                    label="Pulse & Attendee Base" 
-                    value={stats.pulseUsers} 
-                    change="Active social community" 
+                <StatCard
+                    label="Local Attendees"
+                    value={stats.pulseUsers}
+                    change="Active social community"
                     trend="neutral"
                     isLoading={isStatsLoading}
-                    href="/dashboard/admin/users?type=pulse_user"
+                    href="/dashboard/admin/users?type=attendee"
                 />
                 <StatCard 
                     label="Admin Office Team" 

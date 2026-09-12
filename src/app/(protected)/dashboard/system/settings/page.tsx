@@ -6,8 +6,7 @@
  * active regions, and generic system constants in a secure space.
  */
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useState, Suspense } from 'react';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import adminStyles from '../../admin/page.module.css'; // Leverage utility styles for tabs/chips
 import ConfigTab from '@/components/system/settings/ConfigTab';
@@ -17,34 +16,14 @@ import RegionsTab from '@/components/system/settings/RegionsTab';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import TableToolbar from '@/components/shared/TableToolbar';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { useUrlTab } from '@/hooks/useUrlTab';
 
 type Tab = 'config' | 'feature-flags' | 'regions';
 
 function SystemSettingsContent() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    const initialTab = searchParams.get('tab') as Tab;
-    const [activeTab, setActiveTab] = useState<Tab>(
-        (initialTab && ['config', 'feature-flags', 'regions'].includes(initialTab))
-            ? initialTab
-            : 'config'
-    );
-
-    useEffect(() => {
-        const tab = searchParams.get('tab') as Tab;
-        if (tab && ['config', 'feature-flags', 'regions'].includes(tab)) {
-            setActiveTab(tab);
-        }
-    }, [searchParams]);
-
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab as Tab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'config', {
+        validValues: ['config', 'feature-flags', 'regions']
+    }) as [Tab, (value: Tab) => void];
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -92,7 +71,7 @@ function SystemSettingsContent() {
                 </TableToolbar>
             </div>
 
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <Tabs value={activeTab} onValueChange={(newTab) => handleTabChange(newTab as Tab)}>
                 <div className={adminStyles.tabsHeaderRow} style={{ borderBottom: 'none', marginTop: '16px' }}>
                     <TabsList>
                         <TabsTrigger value="config">System Config</TabsTrigger>

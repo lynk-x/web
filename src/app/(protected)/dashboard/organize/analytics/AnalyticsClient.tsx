@@ -14,6 +14,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 
 interface TimeSeriesItem {
     name: string;
@@ -34,7 +35,7 @@ export default function AnalyticsClient() {
     const [activeTab, setActiveTab] = useState('summary');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 760 });
 
     // Fetch metrics dynamically using our pre-hydrated React Query hook!
     const { data: rawData, isLoading } = useSupabaseQuery<AnalyticsData>(

@@ -28,6 +28,9 @@ import { formatRelativeTime } from '@/utils/format';
 import StatCard from '@/components/dashboard/StatCard';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useOrganization } from '@/context/OrganizationContext';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 
 function ForumsContent() {
     const supabase = useMemo(() => createClient(), []);
@@ -39,18 +42,9 @@ function ForumsContent() {
     const searchParams = useSearchParams();
     const { activeAccount } = useOrganization();
 
-    const resolvedCountryFilter = useMemo(() => {
-        if (typeof window !== 'undefined' && activeAccount?.type === 'platform') {
-            const proxyCode = localStorage.getItem('lynks_proxy_country_code');
-            if (proxyCode) return proxyCode;
-        }
-        if (activeAccount?.country_code) {
-            return activeAccount.country_code;
-        }
-        return 'all';
-    }, [activeAccount]);
+    const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
 
-    const [viewerConfig, setViewerConfig] = useState<{ 
+    const [viewerConfig, setViewerConfig] = useState<{
         isOpen: boolean, 
         type: 'edit' | 'reports', 
         thread?: ForumThread
@@ -61,15 +55,14 @@ function ForumsContent() {
 
 
     const [threads, setThreads] = useState<ForumThread[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
     const [summary, setSummary] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
-    const [currentPage, setCurrentPage] = useState(1);
     const [activeTab, setActiveTab] = useState('forums');
-    const itemsPerPage = 8;
+    const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     // All forum data is loaded once via the secure RPC, then paginated/filtered client-side.
     // Direct reads of analytics.mv_forum_performance are blocked by REVOKE to authenticated.
@@ -141,16 +134,15 @@ function ForumsContent() {
             escalatedCount: parseInt(f.escalated_reports_count) || 0,
             oldestReportAt: f.oldest_report_at,
         })));
-    }, [allForums, searchTerm, statusFilter, currentPage, itemsPerPage]);
+    }, [allForums, searchTerm, statusFilter, currentPage, itemsPerPage, setTotalCount]);
 
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
     const paginatedThreads = threads;
 
     // Reset pagination when filter changes
     useEffect(() => {
         setCurrentPage(1);
         setSelectedThreadIds(new Set());
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, statusFilter, setCurrentPage]);
 
     // Selection Logic
     const handleSelectThread = (id: string) => {

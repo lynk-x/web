@@ -2,7 +2,6 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 
@@ -19,6 +18,7 @@ import FilterChips from '@/components/shared/FilterChips';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
+import { useUrlTab } from '@/hooks/useUrlTab';
 type SupportTab = 'queue' | 'tickets';
 
 import ReviewQueueTab from '@/components/admin/support/ReviewQueueTab';
@@ -26,25 +26,10 @@ import SupportTicketsTab from '@/components/admin/support/SupportTicketsTab';
 
 function SupportContent() {
     const { showToast } = useToast();
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
-    const initialTab = (searchParams.get('tab') as SupportTab) || 'tickets';
-    const [activeTab, setActiveTab] = useState<SupportTab>(
-        (initialTab && ['tickets', 'queue'].includes(initialTab))
-            ? initialTab
-            : 'tickets'
-    );
+    const [activeTab, handleTabChange] = useUrlTab('tab', 'tickets', { validValues: ['tickets', 'queue'] }) as [SupportTab, (value: SupportTab) => void];
     const [isLoading, setIsLoading] = useState(true);
-
-    const handleTabChange = (newTab: SupportTab) => {
-        setActiveTab(newTab);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', newTab);
-        router.replace(`${pathname}?${params.toString()}`);
-    };
     const [summary, setSummary] = useState<any>(null);
 
     // ── Filtering State ───────────────────────────────────────────────
