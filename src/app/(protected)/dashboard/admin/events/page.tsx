@@ -27,59 +27,12 @@ import { usePagination } from '@/hooks/usePagination';
 import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import ForumTable from '@/components/admin/forums/ForumTable';
-import type { ForumThread, Report } from '@/types/admin';
+import type { ForumThread } from '@/types/admin';
 import Modal from '@/components/shared/Modal';
-import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
-import ReportTable from '@/components/admin/moderation/ReportTable';
-import TicketingTab from '@/components/admin/events/ticketing/TicketingTab';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
 import { formatRelativeTime, formatCurrency } from '@/utils/format';
 import Badge from '@/components/shared/Badge';
 import Button from '@/components/shared/Button';
-
-// --- Local Components ---
-
-const EventReportsSection = ({ eventId }: { eventId: string }) => {
-    const supabase = useMemo(() => createClient(), []);
-    const [reports, setReports] = useState<Report[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const fetchReports = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase
-                .schema('api')
-                .from('v1_reports')
-                .select('*')
-                .eq('target_event_id', eventId);
-
-            if (error) throw error;
-
-            setReports((data || []).map((r: any) => ({
-                id: r.id,
-                targetType: 'event',
-                targetId: r.target_event_id,
-                title: r.reason_display_name || `Report #${r.id.slice(0, 8)}`,
-                description: r.info?.description || 'No description provided.',
-                date: new Date(r.created_at).toLocaleDateString(),
-                reporter: r.reporter_username || 'Anonymous',
-                status: (r.status === 'under_investigation' ? 'investigating' : r.status) as Report['status'],
-                createdAt: r.created_at,
-                reasonId: r.reason_id
-            })));
-        } catch (err) {
-            console.error('Failed to fetch event reports:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [supabase, eventId]);
-
-    useEffect(() => {
-        fetchReports();
-    }, [fetchReports]);
-
-    return <ReportTable reports={reports} isLoading={isLoading} />;
-};
 
 export default function AdminEventsPage() {
     const supabase = useMemo(() => createClient().schema('api' as any), []);
@@ -139,9 +92,6 @@ export default function AdminEventsPage() {
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
-
-    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
     const resolvedPayoutCountryFilter = useResolvedCountryFilter(activeAccount, payoutCountryFilter);
@@ -583,30 +533,6 @@ export default function AdminEventsPage() {
         );
     };
 
-    const handleResendTicketConfirmations = async (event: Event) => {
-        if (!await confirm(
-            `Resend the ticket confirmation email to every buyer of "${event.title}"? This bypasses each buyer's email notification preference.`,
-            { title: 'Resend Ticket Confirmations' }
-        )) return;
-
-        showToast(`Resending ticket confirmations for ${event.title}...`, 'info');
-        try {
-            const { data, error } = await supabase.schema('api').rpc('admin_resend_ticket_confirmations', {
-                p_event_id: event.id,
-                p_event_created_at: event.createdAt
-            });
-            if (error) throw error;
-
-            if (data?.failed > 0) {
-                showToast(`Resent to ${data.sent} buyer(s); ${data.failed} failed — check server logs.`, 'warning');
-            } else {
-                showToast(`Ticket confirmations resent to ${data?.sent ?? 0} buyer(s) for ${event.title}`, 'success');
-            }
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to resend ticket confirmations.', 'error');
-        }
-    };
-
     const handleRestoreEvent = async (event: Event) => {
         if (!await confirm(`Restore "${event.title}"? It will return as a draft for re-review.`, { title: 'Restore Event', confirmLabel: 'Restore' })) return;
         await executeAction(
@@ -805,8 +731,7 @@ export default function AdminEventsPage() {
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
                         onEdit={(event) => {
-                            setSelectedEvent(event as Event);
-                            setIsDetailModalOpen(true);
+                            router.push(`/dashboard/admin/events/${event.id}?created_at=${encodeURIComponent((event as Event).createdAt)}`);
                         }}
                         onStatusChange={handleSingleStatusUpdate}
                         onDelete={handleSingleDelete}
@@ -860,8 +785,7 @@ export default function AdminEventsPage() {
                         onEditForum={(thread) => {
                             const event = events.find(e => e.forum_id === thread.id);
                             if (event) {
-                                setSelectedEvent(event);
-                                setIsDetailModalOpen(true);
+                                router.push(`/dashboard/admin/events/${event.id}?created_at=${encodeURIComponent(event.createdAt)}`);
                             }
                         }}
                         onStatusChange={async (id, status) => {
@@ -1016,69 +940,6 @@ export default function AdminEventsPage() {
                             </Button>
                         </div>
                     </div>
-                </Modal>
-            )}
-
-            {selectedEvent && (
-                <Modal
-                    isOpen={isDetailModalOpen}
-                    onClose={() => setIsDetailModalOpen(false)}
-                    title={`Event Management: ${selectedEvent.title}`}
-                    size="large"
-                >
-                    <Tabs defaultValue="overview" className={styles.detailTabs}>
-                        <TabsList style={{ width: 'fit-content' }}>
-                            <TabsTrigger value="overview">Overview</TabsTrigger>
-                            <TabsTrigger value="ticketing">Ticketing & Resale</TabsTrigger>
-                            <TabsTrigger value="community">Forum & Chat</TabsTrigger>
-                            <TabsTrigger value="moderation">Moderation Queue</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="overview">
-                            <div className={styles.detailGrid}>
-                                <div className={styles.detailSection}>
-                                    <h3>Basic Information</h3>
-                                    <p><strong>Reference:</strong> {selectedEvent.eventReference}</p>
-                                    <p><strong>Organizer:</strong> {selectedEvent.organizer}</p>
-                                    <p><strong>Date:</strong> {selectedEvent.date} {selectedEvent.time}</p>
-                                    <p><strong>Location:</strong> {selectedEvent.location}</p>
-                                </div>
-                                <div className={styles.detailSection}>
-                                    <h3>Performance</h3>
-                                    <p><strong>Attendees:</strong> {selectedEvent.attendees}</p>
-                                    <p><strong>Total Reports:</strong> {selectedEvent.reportsCount}</p>
-                                </div>
-                                <div className={styles.detailSection}>
-                                    <h3>Communications</h3>
-                                    <p style={{ opacity: 0.6, fontSize: '13px', marginBottom: '12px' }}>
-                                        Resend the ticket purchase confirmation email to every buyer of this event — e.g. after fixing a template issue that affected an already-sent batch.
-                                    </p>
-                                    <Button
-                                        variant="secondary"
-                                        onClick={() => handleResendTicketConfirmations(selectedEvent)}
-                                    >
-                                        Resend Ticket Confirmations
-                                    </Button>
-                                </div>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="ticketing">
-                            <TicketingTab eventId={selectedEvent.id} />
-                        </TabsContent>
-
-                        <TabsContent value="community">
-                            {selectedEvent.forum_id ? (
-                                <ForumMessagesTab forumId={selectedEvent.forum_id} />
-                            ) : (
-                                <div className={styles.emptyState}>No forum exists for this event.</div>
-                            )}
-                        </TabsContent>
-
-                        <TabsContent value="moderation">
-                            <EventReportsSection eventId={selectedEvent.id} />
-                        </TabsContent>
-                    </Tabs>
                 </Modal>
             )}
 

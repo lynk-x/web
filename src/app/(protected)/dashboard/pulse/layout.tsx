@@ -8,9 +8,8 @@ export const metadata: Metadata = {
 
 export default function PulseLayout({ children }: { children: React.ReactNode }) {
     return (
-        <AccountGuard 
+        <AccountGuard
             allowedTypes={['pulse_user']}
-            allowedRoles={['owner', 'member', 'tester']}
         >
             {children}
         </AccountGuard>

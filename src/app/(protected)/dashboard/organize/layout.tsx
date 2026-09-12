@@ -8,9 +8,8 @@ export const metadata: Metadata = {
 
 export default function OrganizeLayout({ children }: { children: React.ReactNode }) {
     return (
-        <AccountGuard 
+        <AccountGuard
             allowedTypes={['organizer']}
-            allowedRoles={['owner', 'member', 'tester']}
         >
             {children}
         </AccountGuard>

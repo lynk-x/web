@@ -22,13 +22,18 @@ function DashboardRoot() {
     // ?type=organizer|advertiser — set by the drawer to pre-filter the workspace list
     const typeParam = searchParams.get('type') as 'organizer' | 'advertiser' | null;
 
-    // Non-attendee accounts filtered by valid role templates, optionally filtered by typeParam
+    // Non-attendee accounts, optionally filtered by typeParam. Organizer/advertiser/
+    // pulse_user accounts use an open-ended, admin-configurable role-builder (role_slug
+    // is plain text, not a fixed enum), so any membership role counts as a real
+    // workspace — `allAccounts` is already scoped to genuine memberships. Platform/
+    // system accounts still gate by role since not every platform role should see
+    // a dashboard entry here.
     const businessAccounts = allAccounts.filter(a => {
         if (a.type === 'attendee') return false;
         if (a.type === 'platform' || a.type === 'system') {
             return ['super_admin', 'admin', 'support_agent', 'moderator', 'reviewer'].includes(a.role);
         }
-        return ['owner', 'member', 'tester'].includes(a.role);
+        return true;
     });
 
     const displayAccounts = typeParam

@@ -8,9 +8,8 @@ export const metadata: Metadata = {
 
 export default function AdsLayout({ children }: { children: React.ReactNode }) {
     return (
-        <AccountGuard 
+        <AccountGuard
             allowedTypes={['advertiser']}
-            allowedRoles={['owner', 'member', 'tester']}
         >
             {children}
         </AccountGuard>
