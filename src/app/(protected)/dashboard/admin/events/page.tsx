@@ -598,6 +598,30 @@ export default function AdminEventsPage() {
         );
     };
 
+    const handleResendTicketConfirmations = async (event: Event) => {
+        if (!await confirm(
+            `Resend the ticket confirmation email to every buyer of "${event.title}"? This bypasses each buyer's email notification preference.`,
+            { title: 'Resend Ticket Confirmations' }
+        )) return;
+
+        showToast(`Resending ticket confirmations for ${event.title}...`, 'info');
+        try {
+            const { data, error } = await supabase.schema('api').rpc('admin_resend_ticket_confirmations', {
+                p_event_id: event.id,
+                p_event_created_at: event.createdAt
+            });
+            if (error) throw error;
+
+            if (data?.failed > 0) {
+                showToast(`Resent to ${data.sent} buyer(s); ${data.failed} failed — check server logs.`, 'warning');
+            } else {
+                showToast(`Ticket confirmations resent to ${data?.sent ?? 0} buyer(s) for ${event.title}`, 'success');
+            }
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to resend ticket confirmations.', 'error');
+        }
+    };
+
     const handleRestoreEvent = async (event: Event) => {
         if (!await confirm(`Restore "${event.title}"? It will return as a draft for re-review.`, { title: 'Restore Event', confirmLabel: 'Restore' })) return;
         await executeAction(
@@ -1038,6 +1062,18 @@ export default function AdminEventsPage() {
                                     <h3>Performance</h3>
                                     <p><strong>Attendees:</strong> {selectedEvent.attendees}</p>
                                     <p><strong>Total Reports:</strong> {selectedEvent.reportsCount}</p>
+                                </div>
+                                <div className={styles.detailSection}>
+                                    <h3>Communications</h3>
+                                    <p style={{ opacity: 0.6, fontSize: '13px', marginBottom: '12px' }}>
+                                        Resend the ticket purchase confirmation email to every buyer of this event — e.g. after fixing a template issue that affected an already-sent batch.
+                                    </p>
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => handleResendTicketConfirmations(selectedEvent)}
+                                    >
+                                        Resend Ticket Confirmations
+                                    </Button>
                                 </div>
                             </div>
                         </TabsContent>
