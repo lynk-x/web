@@ -107,6 +107,7 @@ function RevenueContent() {
     /* ── Data fetch: summary ─────────────────────────────────────────────────── */
     const fetchSummary = useCallback(async () => {
         if (!activeAccount) return;
+        setIsSummaryLoading(true);
         try {
             const { data, error } = await supabase.schema('api').rpc('get_organizer_revenue_summary', {
                 p_account_id: activeAccount.id,
@@ -122,6 +123,8 @@ function RevenueContent() {
             });
         } catch (err) {
             console.error('Failed to fetch revenue summary:', err);
+        } finally {
+            setIsSummaryLoading(false);
         }
     }, [activeAccount, supabase]);
 

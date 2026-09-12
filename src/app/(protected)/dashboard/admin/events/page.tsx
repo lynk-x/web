@@ -302,16 +302,6 @@ export default function AdminEventsPage() {
         if (!await confirm(`Are you sure you want to approve this payout for ${payout.recipient}? This will initiate disbursement.`)) return;
 
         try {
-            // Previously called functions.invoke('payout-fulfillment', ...)
-            // — that edge function was never actually implemented/deployed
-            // (only a stale enum label + doc reference), so approval always
-            // failed client-side with "Failed to send a request to the Edge
-            // Function". api.bulk_approve_payouts already exists and is the
-            // real, working path: it enqueues onto payout_jobs, drained by
-            // the actual mpesa-wallet-withdrawal edge function (which
-            // itself branches per payout, e.g. skips non-KES payouts) — an
-            // admin approval click never needs to call an edge function
-            // directly.
             const { error } = await supabase.schema('api').rpc('bulk_approve_payouts', {
                 p_payout_ids: [payout.id]
             });
