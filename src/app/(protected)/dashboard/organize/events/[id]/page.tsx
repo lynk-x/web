@@ -339,6 +339,7 @@ export default function EventDetailPage() {
             <QuickLinksRow className="tour-event-links">
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
+                    <QuickLink href={`/dashboard/organize/events/${id}/promo-codes`} label="Setup Promo Codes" />
                     <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />
                     <QuickLink href={`/dashboard/organize/events/${id}/check-ins`} label="Check-in List" />
                     <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />

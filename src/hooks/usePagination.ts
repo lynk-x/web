@@ -21,9 +21,9 @@ export function usePagination(itemsPerPage: number, resetKeys: readonly unknown[
 
     const resetToFirstPage = () => setCurrentPage(1);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (resetKeys.length > 0) setCurrentPage(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, resetKeys);
 
     return {

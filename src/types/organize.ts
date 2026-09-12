@@ -290,3 +290,21 @@ export interface TicketResale {
     /** listing_status enum: pending | active | sold | cancelled | expired */
     status: 'pending' | 'active' | 'sold' | 'cancelled' | 'expired';
 }
+
+/** A promo code scoped to one of the organizer's own events. */
+export interface OrganizerPromoCode {
+    id: string;
+    reference: string;
+    code: string;
+    type: 'percent' | 'fixed' | 'free_entry';
+    value: number;
+    max_uses: number | null;
+    uses_count: number;
+    one_per_user: boolean;
+    valid_from: string | null;
+    valid_until: string | null;
+    is_active: boolean;
+    created_at: string;
+    event_id: string;
+    event_title: string;
+}
