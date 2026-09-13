@@ -23,6 +23,8 @@ interface EventDetailsViewProps {
     disclaimers?: Disclaimer[];
     /** True when every ticket tier has reached its capacity */
     isSoldOut?: boolean;
+    /** True when the event's end_datetime has passed, or its status is 'completed'/'cancelled' */
+    isEventEnded?: boolean;
 }
 
 const stripHtml = (html: string) => {
@@ -34,6 +36,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     ticketTiers = [],
     disclaimers = [],
     isSoldOut = false,
+    isEventEnded = false,
 }) => {
     const plainText = stripHtml(event.description || '');
     const router = useRouter();
@@ -307,8 +310,14 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
 
                         <h2 className={styles.ticketSectionTitle}>Tickets</h2>
 
-                        {/* ── Sold-out state: show waitlist CTA ── */}
-                        {isSoldOut ? (
+                        {/* ── Ended state: no waitlist/purchase makes sense after the fact ── */}
+                        {isEventEnded ? (
+                            <div style={{ padding: '20px 0' }}>
+                                <p style={{ opacity: 0.7, fontSize: '14px' }}>
+                                    This event has already taken place.
+                                </p>
+                            </div>
+                        ) : isSoldOut ? (
                             <div style={{ padding: '20px 0' }}>
                                 <p style={{ opacity: 0.7, marginBottom: '12px', fontSize: '14px' }}>
                                     All tickets for this event are sold out.
@@ -413,8 +422,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         )}
                     </div>
 
-                    {/* ── Ticket action footer (hidden when sold out) ── */}
-                    {!isSoldOut && (
+                    {/* ── Ticket action footer (hidden when sold out or ended) ── */}
+                    {!isSoldOut && !isEventEnded && (
                         <motion.div 
                             className={styles.footerActions}
                             initial={{ opacity: 0, y: 50 }}

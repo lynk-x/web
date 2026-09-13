@@ -14,7 +14,8 @@ export async function generateMetadata(
     const { reference } = await params;
 
     const { data: event } = await supabase
-        .from('vw_events')
+        .schema('api')
+        .from('v1_event_detail')
         .select('title, description, media, cover_image_url')
         .eq('reference', reference)
         .single();
@@ -46,7 +47,8 @@ export default async function EventPage({ params }: { params: { reference: strin
     const { reference } = await params;
 
     const { data: rawEvent, error } = await supabase
-        .from('vw_events')
+        .schema('api')
+        .from('v1_event_detail')
         .select('*')
         .eq('reference', reference)
         .single();
@@ -102,6 +104,12 @@ export default async function EventPage({ params }: { params: { reference: strin
     const isSoldOut = tiers.length > 0 && tiers.every(
         (t: any) => t.capacity !== null && (t.tickets_available ?? 0) <= 0
     );
+
+    // api.v1_event_detail has no ends_at cutoff (unlike vw_events), so an
+    // already-ended event now resolves here instead of 404ing — but its
+    // purchase/waitlist UI still needs to reflect that it's over.
+    const isEventEnded = ['completed', 'cancelled'].includes(rawEvent.status)
+        || (rawEvent.ends_at ? new Date(rawEvent.ends_at) < new Date() : false);
 
     const event: Event = {
         ...rawEvent,
@@ -162,6 +170,7 @@ export default async function EventPage({ params }: { params: { reference: strin
                 ticketTiers={tiers}
                 disclaimers={disclaimers}
                 isSoldOut={isSoldOut}
+                isEventEnded={isEventEnded}
             />
         </>
     );
