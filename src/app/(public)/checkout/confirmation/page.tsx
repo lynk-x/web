@@ -121,12 +121,16 @@ const ConfirmationContent = () => {
                     setTicketCount(row.ticket_count);
                     setVerifyState('verified');
 
-                    const { data: forumRow } = await supabase
+                    const { data: forumRows, error: forumErr } = await supabase
                         .schema('api')
-                        .from('v1_forums')
-                        .select('id, reference')
-                        .eq('event_id', eventId)
-                        .maybeSingle();
+                        .rpc('get_checkout_forum_reference', {
+                            p_event_id: eventId,
+                            p_event_created_at: eventCreatedAtParam || null,
+                        });
+                    if (forumErr) {
+                        console.error('Failed to resolve event forum:', forumErr.message);
+                    }
+                    const forumRow = Array.isArray(forumRows) ? forumRows[0] : forumRows;
                     if (!cancelled && forumRow) {
                         setForumReference(forumRow.reference || forumRow.id);
                     }
