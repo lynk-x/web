@@ -10,6 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
 import { formatDateTimeInTimezone, formatEventDate, formatTime, formatTimeInTimezone } from '@/utils/format';
+import { getEventImage } from '@/utils/eventImage';
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 import { useToast } from '@/components/ui/Toast';
@@ -70,7 +71,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const handleAcceptDisclaimer = () => {
         setIsDisclaimerOpen(false);
 
-        const eventImage = (event as any).cover_image_url || (event.media as any)?.cover_image_url || (event.media as any)?.thumbnail_url || (event.media as any)?.thumbnail || (event.media as any)?.poster || (event.media as any)?.hero;
+        const eventImage = getEventImage(event);
         const selectedTier = ticketTiers.find(t => t.id === selectedTicket);
 
         if (selectedTier) {
@@ -216,11 +217,11 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                     transition={{ delay: 0.2, duration: 0.5 }}
                 >
                     <div className={styles.hero}>
-                        {((event as any).cover_image_url || (event.media as any)?.cover_image_url || (event.media as any)?.thumbnail_url || (event.media as any)?.thumbnail || (event.media as any)?.poster) ? (
-                            <img 
-                                src={(event as any).cover_image_url || (event.media as any)?.cover_image_url || (event.media as any)?.thumbnail_url || (event.media as any)?.thumbnail || (event.media as any)?.poster} 
-                                alt={event.title} 
-                                className={styles.heroImage} 
+                        {getEventImage(event) ? (
+                            <img
+                                src={getEventImage(event)}
+                                alt={event.title}
+                                className={styles.heroImage}
                             />
                         ) : (
                             <svg role="img" aria-label="No event image available" width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.heroIcon}>

@@ -4,6 +4,7 @@ import EventNotFoundView from '@/components/public/EventNotFoundView';
 import { notFound } from 'next/navigation';
 import { Event } from '@/types';
 import { Metadata, ResolvingMetadata } from 'next';
+import { getEventImage } from '@/utils/eventImage';
 
 export async function generateMetadata(
     { params }: { params: { reference: string } },
@@ -21,7 +22,7 @@ export async function generateMetadata(
     if (!event) return {};
 
     const previousImages = (await parent).openGraph?.images || [];
-    const eventImage = (event as any).cover_image_url || (event.media as any)?.thumbnail;
+    const eventImage = getEventImage(event);
 
     return {
         title: `${event.title} | Lynk-X`,
@@ -112,7 +113,7 @@ export default async function EventPage({ params }: { params: { reference: strin
         category: rawEvent.category,
     };
 
-    const eventImage = (rawEvent as any).cover_image_url || (event.media as any)?.thumbnail;
+    const eventImage = getEventImage(rawEvent);
     const eventSchema = {
         '@context': 'https://schema.org',
         '@type': 'Event',

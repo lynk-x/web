@@ -97,7 +97,7 @@ export default function AttendeesLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Where Every Event Becomes a Community</h2>
+                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Where Every Event Becomes a Community</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
@@ -126,7 +126,7 @@ export default function AttendeesLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Your Identity. Your Assets.</h2>
+                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Your Identity. Your Assets.</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
@@ -150,13 +150,12 @@ export default function AttendeesLandingPage() {
                 </section>
 
                 <motion.section 
-                    className={styles.hero} 
-                    style={{ padding: '80px 24px' }}
+                    className={`${styles.hero} ${styles.closingHero}`}
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                 >
-                    <h2 className={styles.title} style={{ fontSize: '32px' }}>Don't Just Attend. Participate.</h2>
+                    <h2 className={`${styles.title} ${styles.closingTitle}`}>Don't Just Attend. Participate.</h2>
                     <p className={styles.subtitle}>Join thousands of users discovering the best events in their city.</p>
                     <div className={styles.ctaBox}>
                         <Link href="/" className={styles.btnPrimary}>Start Exploring</Link>

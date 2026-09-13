@@ -99,7 +99,7 @@ export default function OrganizersLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Control the Conversation</h2>
+                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Control the Conversation</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
@@ -128,7 +128,7 @@ export default function OrganizersLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={styles.sectionTitle} style={{ textAlign: 'left' }}>Get Found. Get Started.</h2>
+                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Get Found. Get Started.</h2>
                             <div className={styles.valueProp}>
                                 <h4 className={styles.valueTitle}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
@@ -151,13 +151,12 @@ export default function OrganizersLandingPage() {
                 </section>
 
                 <motion.section 
-                    className={styles.hero} 
-                    style={{ padding: '80px 24px' }}
+                    className={`${styles.hero} ${styles.closingHero}`}
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                 >
-                    <h2 className={styles.title} style={{ fontSize: '32px' }}>Ready to Run a Better Event?</h2>
+                    <h2 className={`${styles.title} ${styles.closingTitle}`}>Ready to Run a Better Event?</h2>
                     <p className={styles.subtitle}>Join hundreds of organizers building the future of event interactions.</p>
                     <div className={styles.ctaBox}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Create Event Now</Link>

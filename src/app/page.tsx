@@ -1,7 +1,16 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/utils/supabase/server';
 import HomeLayout from "@/components/public/HomeLayout";
 import { Event } from "@/types";
 import HomeClient from "@/components/public/HomeClient";
+
+export const metadata: Metadata = {
+  title: 'Lynk-X — The Ultimate event app for seamless event interactions',
+  description: 'Lynk-X(Lynk x) is the event app for discovering, booking and hosting events near you — buy tickets, join event forums and manage your own events in one place.',
+  alternates: {
+    canonical: '/',
+  },
+};
 
 export default async function Home() {
   const supabase = await createClient();
@@ -46,8 +55,8 @@ export default async function Home() {
     end_datetime: event.ends_at,
     // Ensure media object has cover_image_url for component compatibility
     media: {
-        ...(event.media as any || {}),
-        cover_image_url: event.cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.cover_image_url
+      ...(event.media as any || {}),
+      cover_image_url: event.cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.cover_image_url
     }
   })) as Event[];
 

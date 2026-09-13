@@ -39,7 +39,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select('reference, starts_at')
         .in('status', ['published', 'active'])
         .eq('is_private', false)
-        .limit(100);
+        .order('starts_at', { ascending: false })
+        .limit(5000);
 
     const eventRoutes: MetadataRoute.Sitemap = (events || []).map((event) => ({
         url: `${baseUrl}/event/${event.reference}`,

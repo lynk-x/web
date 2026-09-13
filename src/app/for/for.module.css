@@ -112,6 +112,14 @@
     text-align: center;
 }
 
+/* Modifier for split-section headings (left-aligned on desktop to match the
+   two-column layout) — was previously an inline style={{textAlign:'left'}},
+   which meant the mobile breakpoint below couldn't override it without a
+   specificity fight against inline styles. */
+.sectionTitleLeft {
+    text-align: left;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -209,9 +217,85 @@
 }
 
 @media (max-width: 900px) {
-    .split {
+    .split,
+    .splitRev {
+        /* .splitRev's own row-reverse has equal specificity to .split's
+           column here and would otherwise win by source order, leaving the
+           second (reversed) split section side-by-side instead of stacked
+           on tablet/mobile. */
         flex-direction: column;
         gap: 40px;
+        margin-bottom: 80px;
+    }
+
+    .sectionTitleLeft {
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero {
+        padding: 88px 20px 56px;
+    }
+
+    .section {
+        padding: 56px 20px;
+    }
+
+    .sectionTitle {
+        font-size: 26px;
+        margin-bottom: 32px;
+    }
+
+    .card {
+        padding: 24px;
+    }
+
+    .split,
+    .splitRev {
+        gap: 28px;
+        margin-bottom: 56px;
+    }
+
+    .valueTitle {
+        font-size: 20px;
+    }
+
+    .btnPrimary,
+    .btnSecondary {
+        padding: 14px 24px;
+        font-size: 16px;
+    }
+
+    .ctaBox {
+        width: 100%;
+    }
+
+    .ctaBox .btnPrimary,
+    .ctaBox .btnSecondary {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+}
+
+/* Closing CTA section — was inline style={{ padding: '80px 24px' }} /
+   style={{ fontSize: '32px' }} on .title, repeated identically across all
+   three /for pages, which meant it couldn't be addressed by a media query. */
+.closingHero {
+    padding: 80px 24px;
+}
+
+.closingTitle {
+    font-size: 32px;
+}
+
+@media (max-width: 480px) {
+    .closingHero {
+        padding: 56px 20px;
+    }
+
+    .closingTitle {
+        font-size: 26px;
     }
 }
 
