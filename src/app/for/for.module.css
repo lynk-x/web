@@ -224,8 +224,13 @@
            second (reversed) split section side-by-side instead of stacked
            on tablet/mobile. */
         flex-direction: column;
+        align-items: stretch;
         gap: 40px;
         margin-bottom: 80px;
+    }
+
+    .splitMedia {
+        width: 100%;
     }
 
     .sectionTitleLeft {
