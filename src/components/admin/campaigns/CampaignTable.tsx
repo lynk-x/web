@@ -104,8 +104,8 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
             header: 'Budget / Spend',
             render: (campaign) => (
                 <div className={styles.metrics}>
-                    <span className={styles.metricValue}>{formatCurrency(campaign.budget)}</span>
-                    <span className={styles.metricLabel}>{formatCurrency(campaign.spend)} spent</span>
+                    <span className={styles.metricValue}>{formatCurrency(campaign.budget, campaign.currency)}</span>
+                    <span className={styles.metricLabel}>{formatCurrency(campaign.spend, campaign.currency)} spent</span>
                 </div>
             ),
         },

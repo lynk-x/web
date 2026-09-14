@@ -111,6 +111,7 @@ function CampaignsContent() {
                 adType: c.type,
                 budget: parseFloat(c.total_budget),
                 spend: parseFloat(c.spent_amount) || 0,
+                currency: c.currency || 'USD',
                 impressions: parseInt(c.total_impressions) || 0,
                 clicks: parseInt(c.total_clicks) || 0,
                 status: c.status,

@@ -113,10 +113,10 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
             )
         },
         {
-            header: 'Total Spend',
+            header: 'Total Spend (USD)',
             render: (r) => (
                 <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                    {formatCurrency(r.total_spend)}
+                    {formatCurrency(r.total_spend, 'USD')}
                 </div>
             )
         },
@@ -124,7 +124,7 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
             header: 'Efficiency',
             render: (r) => (
                 <div>
-                    <div style={{ fontWeight: 600 }}>{formatCurrency(r.avg_cpc)}</div>
+                    <div style={{ fontWeight: 600 }}>{formatCurrency(r.avg_cpc, 'USD')}</div>
                     <div style={{ fontSize: '11px', opacity: 0.6 }}>Avg. CPC</div>
                 </div>
             )

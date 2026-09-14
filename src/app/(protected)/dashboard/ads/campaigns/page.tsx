@@ -56,6 +56,7 @@ export default function CampaignsPage() {
                 status: AdsCampaign['status'];
                 total_budget: number;
                 spent_amount: number;
+                currency: string;
                 destination_url: string | null;
                 target_tags: string[];
                 target_regions: string[];
@@ -71,6 +72,7 @@ export default function CampaignsPage() {
                 status: c.status,
                 total_budget: Number(c.total_budget),
                 spent_amount: Number(c.spent_amount),
+                currency: c.currency || 'USD',
                 destination_url: c.destination_url || '',
                 target_tags: c.target_tags,
                 target_regions: c.target_regions

@@ -75,7 +75,7 @@ export default function AdsDashboard() {
                     { label: 'Total Campaigns', value: '0', change: 'Lifetime count' },
                     { label: 'Active Campaigns', value: '0', change: 'Running now' },
                     { label: 'Pending Approval', value: '0', change: 'Under review' },
-                    { label: 'Remaining Budget', value: formatCurrency(0), change: 'Available funds' },
+                    { label: 'Remaining Budget', value: formatCurrency(0, 'USD'), change: 'Available funds' },
                 ]);
                 setIsLoading(false);
             }

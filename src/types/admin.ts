@@ -30,6 +30,7 @@ export interface Campaign {
     client: string;
     budget: number;
     spend: number;
+    currency: string;
     impressions: number;
     clicks: number;
     /** Aligned to `campaign_status` enum: draft replaces the old 'pending' */

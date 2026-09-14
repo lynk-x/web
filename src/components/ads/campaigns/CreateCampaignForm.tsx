@@ -12,7 +12,6 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { useCountries, Country } from '@/hooks/useCountries';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { createReferenceRepository } from '@/lib/repositories';
 import { generateCampaignEmbedding, preloadEmbeddingModel } from '@/utils/embedding';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -42,6 +41,7 @@ export interface CampaignData {
     destination_url: string;
     target_event_id?: string;
     max_bid_amount: string;
+    currency: string;
     target_countries: string[];
     target_tags: string[];
     creatives: Creative[];
@@ -67,6 +67,12 @@ interface CreateCampaignFormProps {
     onSubmit?: (formData: CampaignData, isEditing: boolean, status?: 'draft' | 'pending_approval') => Promise<void>;
     /** When provided, seeds the initial account_id in the form data (admin reuse). */
     initialAccountId?: string;
+    /** Account whose wallets populate the currency dropdown. Defaults to the
+     *  signed-in user's activeAccount; admin pages creating a campaign on
+     *  behalf of a different advertiser must pass that advertiser's account
+     *  id here (their own activeAccount is the admin's org, not the
+     *  advertiser's). */
+    walletAccountId?: string;
     pageTitle?: string;
     pageSubtitle?: string;
     /** @deprecated no longer used — the close button is icon-only now. */
@@ -91,6 +97,7 @@ export default function CreateCampaignForm({
     onDirtyChange,
     onSubmit,
     initialAccountId,
+    walletAccountId,
     pageTitle,
     pageSubtitle,
     backHref,
@@ -141,7 +148,7 @@ export default function CreateCampaignForm({
     const [countryInput, setCountryInput] = useState('');
     const [countrySuggestions, setCountrySuggestions] = useState<Country[]>([]);
     const [marketSuggestions, setMarketSuggestions] = useState<MarketSuggestion[]>([]);
-    const [fxRates, setFxRates] = useState<{ currency: string; rate_to_usd: number }[]>([]);
+    const [walletCurrencies, setWalletCurrencies] = useState<string[]>([]);
 
 
 
@@ -166,10 +173,41 @@ export default function CreateCampaignForm({
         target_tags: [],
         creatives: [{ headline: '', imageUrl: '', preview: '', file: undefined }],
         max_bid_amount: '0.01',
+        currency: '',
         adHeadline: '',
         adImageUrl: '',
     };
     const [formData, setFormData] = useState<CampaignData>(defaultData);
+
+    // Account whose wallets should populate the currency dropdown —
+    // walletAccountId overrides activeAccount for admin pages creating a
+    // campaign on behalf of a different advertiser (activeAccount there is
+    // the admin's own org, not the advertiser's).
+    const effectiveWalletAccountId = walletAccountId || activeAccount?.id;
+
+    // Reset the selected currency whenever the target account changes (only
+    // matters for admin pages, where the advertiser being created for can
+    // change interactively after mount) so a stale selection from a
+    // previous account can't be submitted against a different account's
+    // wallets.
+    useEffect(() => {
+        if (isEditing) return;
+        setFormData(prev => prev.currency ? { ...prev, currency: '' } : prev);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [effectiveWalletAccountId]);
+
+    // Default the currency to the account's primary wallet once wallets
+    // load, but only for a NEW campaign (isEditing campaigns already have
+    // a real currency from initialData and it must never be overwritten —
+    // see the INSERT-only rule in upsert_advertiser_campaign).
+    useEffect(() => {
+        if (isEditing || formData.currency || walletCurrencies.length === 0) return;
+        const preferred = activeAccount?.wallet_currency;
+        const defaultCurrency = (preferred && walletCurrencies.includes(preferred))
+            ? preferred
+            : walletCurrencies[0];
+        setFormData(prev => prev.currency ? prev : { ...prev, currency: defaultCurrency });
+    }, [walletCurrencies, activeAccount, isEditing, formData.currency]);
 
     useEffect(() => {
         if (!isLoadingCountries && countries.length > 0) {
@@ -192,35 +230,27 @@ export default function CreateCampaignForm({
         fetchTags();
     }, [supabase]);
 
-    // ── Fetch FX Rates ──────────────────────────────────────────
+    // ── Fetch the target account's wallet currencies ───────────────────────
+    // A new campaign's currency is restricted to a currency the account
+    // actually holds a wallet in — advertising.upsert_advertiser_campaign
+    // enforces this server-side too (a campaign in a currency with no
+    // wallet can never win an ad auction, since bidding requires
+    // sufficient balance in that same currency).
     useEffect(() => {
-        const fetchFx = async () => {
-            const refRepo = createReferenceRepository(supabase);
-            const { data } = await refRepo.getFxRates();
-            if (data) setFxRates(data);
-        };
-        fetchFx();
-    }, [supabase]);
-
-    const localRate = useMemo(() => {
-        if (!activeAccount?.wallet_currency || activeAccount.wallet_currency === 'USD') return null;
-        return fxRates.find(r => r.currency === activeAccount.wallet_currency)?.rate_to_usd || null;
-    }, [fxRates, activeAccount]);
-
-    const formatLocal = (usdAmount: string) => {
-        if (!localRate) return null;
-        const amount = usdAmount === '' ? 0 : Number(usdAmount);
-        if (isNaN(amount)) return null;
-        try {
-            const local = amount / localRate;
-            return new Intl.NumberFormat(undefined, {
-                style: 'currency',
-                currency: activeAccount?.wallet_currency || 'USD',
-            }).format(local);
-        } catch (e) {
-            return null;
+        if (!effectiveWalletAccountId) {
+            setWalletCurrencies([]);
+            return;
         }
-    };
+        const fetchWallets = async () => {
+            const { data } = await supabase
+                .schema('api')
+                .from('v1_wallet_balances')
+                .select('currency')
+                .eq('account_id', effectiveWalletAccountId);
+            setWalletCurrencies((data || []).map(w => w.currency));
+        };
+        fetchWallets();
+    }, [supabase, effectiveWalletAccountId]);
 
     // ── Fetch Market Competition Suggestions ───────────────────────────
     useEffect(() => {
@@ -560,6 +590,10 @@ export default function CreateCampaignForm({
 
         if (!formData.title.trim()) newErrors.title = 'Campaign title is required.';
 
+        if (!isEditing && !formData.currency) {
+            newErrors.currency = 'A wallet currency is required.';
+        }
+
         const budget = parseFloat(formData.total_budget);
         if (isNaN(budget) || budget <= 0) newErrors.total_budget = 'Valid positive total budget is required.';
 
@@ -573,10 +607,10 @@ export default function CreateCampaignForm({
             newErrors.max_bid_amount = 'Valid positive max bid amount is required.';
         } else {
             if (formData.daily_limit && !isNaN(limit) && (bid > limit)) {
-                newErrors.max_bid_amount = `Max bid ($${bid}) cannot be higher than the daily limit ($${limit}).`;
+                newErrors.max_bid_amount = `Max bid (${bid}) cannot be higher than the daily limit (${limit}).`;
             }
             if (!isNaN(budget) && bid > budget) {
-                newErrors.max_bid_amount = `Max bid ($${bid}) cannot exceed the total campaign budget ($${budget}).`;
+                newErrors.max_bid_amount = `Max bid (${bid}) cannot exceed the total campaign budget (${budget}).`;
             }
         }
 
@@ -684,6 +718,7 @@ export default function CreateCampaignForm({
                     total_budget: parseFloat(formData.total_budget),
                     daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
                     max_bid_amount: parseFloat(formData.max_bid_amount),
+                    currency: formData.currency,
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
                     destination_url: formData.destination_url,
@@ -901,15 +936,34 @@ export default function CreateCampaignForm({
                                                 )}
                                             </div>
                                             <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="currency">
+                                                    Wallet Currency <span className={styles.requiredIndicator}>*Required</span>
+                                                    <span className={styles.infoIcon} title="the currency this campaign's budget, bids and spend are denominated in — fixed once the campaign is created">ⓘ</span>
+                                                </label>
+                                                <select id="currency" name="currency" className={`${styles.select} ${errors.currency ? styles.inputError : ''}`}
+                                                    value={formData.currency} onChange={handleInputChange} disabled={isEditing} required>
+                                                    {!formData.currency && <option value="" disabled>Select a currency</option>}
+                                                    {walletCurrencies.map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                                {isEditing ? (
+                                                    <p className={styles.pricingHint}>Currency can&apos;t be changed after a campaign is created.</p>
+                                                ) : walletCurrencies.length === 0 ? (
+                                                    <p className={styles.pricingHint}>No wallet found for this account yet — top up a wallet first.</p>
+                                                ) : null}
+                                                {errors.currency && <p className={styles.errorMessage}>{errors.currency}</p>}
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.row}>
+                                            <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="total_budget">
-                                                    Total Budget (USD) <span className={styles.requiredIndicator}>*Required</span>
+                                                    Total Budget ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
                                                     <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire advertising campaign over its lifetime">ⓘ</span>
                                                 </label>
                                                 <input id="total_budget" name="total_budget" type="number" className={styles.input}
                                                     placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
-                                                {localRate && (
-                                                    <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.total_budget)}</strong></p>
-                                                )}
                                             </div>
                                         </div>
 
@@ -917,26 +971,20 @@ export default function CreateCampaignForm({
                                         <div className={styles.row}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="daily_limit">
-                                                    Daily Limit (USD)
+                                                    Daily Limit ({formData.currency || 'USD'})
                                                     <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
                                                 </label>
                                                 <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
                                                     placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
-                                                {localRate && (
-                                                    <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.daily_limit)}</strong></p>
-                                                )}
                                                 {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
                                             </div>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="max_bid_amount">
-                                                    Max Bid (USD) <span className={styles.requiredIndicator}>*Required</span>
+                                                    Max Bid ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
                                                     <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
                                                 </label>
                                                 <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
                                                     placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
-                                                {localRate && (
-                                                    <p className={styles.pricingHint}>Approx. <strong>{formatLocal(formData.max_bid_amount)}</strong></p>
-                                                )}
                                                 {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
                                             </div>
                                         </div>
@@ -1283,7 +1331,7 @@ export default function CreateCampaignForm({
                                             <div className={styles.reviewItem}>
                                                 <label>Budget</label>
                                                 <div>
-                                                    USD {formData.total_budget} Total (USD {formData.max_bid_amount} Max Bid)
+                                                    {formData.currency || 'USD'} {formData.total_budget} Total ({formData.currency || 'USD'} {formData.max_bid_amount} Max Bid)
                                                 </div>
                                             </div>
                                             <div className={styles.reviewItem}>

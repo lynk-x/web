@@ -48,8 +48,8 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                         </div>
 
                         <div className={styles.grid}>
-                            <StatCard label="Total Budget" value={formatCurrency(campaign.budget)} />
-                            <StatCard label="Actual Spend" value={formatCurrency(campaign.spend)} />
+                            <StatCard label="Total Budget" value={formatCurrency(campaign.budget, campaign.currency)} />
+                            <StatCard label="Actual Spend" value={formatCurrency(campaign.spend, campaign.currency)} />
                             <StatCard label="Impressions" value={formatNumber(campaign.impressions)} />
                             <StatCard label="Total Clicks" value={formatNumber(campaign.clicks)} />
                             <StatCard

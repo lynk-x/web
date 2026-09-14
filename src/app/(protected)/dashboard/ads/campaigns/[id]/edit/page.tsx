@@ -82,6 +82,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 total_budget: String(campaignData.total_budget),
                 daily_limit: campaignData.daily_limit != null ? String(campaignData.daily_limit) : '',
                 max_bid_amount: campaignData.max_bid_amount != null ? String(campaignData.max_bid_amount) : '0.01',
+                currency: campaignData.currency || 'USD',
                 start_at: campaignData.start_at ? campaignData.start_at.slice(0, 10) : '',
                 end_at: campaignData.end_at ? campaignData.end_at.slice(0, 10) : '',
                 destination_url: campaignData.destination_url || '',

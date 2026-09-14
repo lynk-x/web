@@ -12,6 +12,7 @@ export interface CampaignPerformance {
     impressions: number;
     clicks: number;
     total_cost: number;
+    currency: string;
 }
 
 interface AdsPerformanceTableProps {
@@ -64,11 +65,11 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                                 <td style={{ fontWeight: 500, color: 'var(--color-utility-primaryText)' }}>
                                     {item.title}
                                 </td>
-                                <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.total_cost, 'USD')}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.total_cost, item.currency)}</td>
                                 <td style={{ textAlign: 'right' }}>{item.impressions.toLocaleString()}</td>
                                 <td style={{ textAlign: 'right' }}>{item.clicks.toLocaleString()}</td>
                                 <td style={{ textAlign: 'right' }}>{ctr.toFixed(2)}%</td>
-                                <td style={{ textAlign: 'right' }}>{formatCurrency(cpc, 'USD')}</td>
+                                <td style={{ textAlign: 'right' }}>{formatCurrency(cpc, item.currency)}</td>
                                 <td>
                                     <Badge 
                                         label={item.status.replace('_', ' ')}

@@ -15,6 +15,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import AdsPerformanceTable, { CampaignPerformance } from '@/components/ads/analytics/AdsPerformanceTable';
 import Spinner from '@/components/shared/Spinner';
+import { createReferenceRepository } from '@/lib/repositories';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -31,13 +32,27 @@ function AnalyticsContent() {
     const [endDate, setEndDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
-    
+    const [fxRates, setFxRates] = useState<{ currency: string; rate_to_usd: number }[]>([]);
+
     const [kpis, setKpis] = useState({
         impressions: '0',
         clicks: '0',
         ctr: '0.00%',
         cpc: '$0.00'
     });
+
+    // FX rates let the KPI totals below normalize per-campaign spend (each
+    // in that campaign's own currency) to USD before summing, instead of
+    // blending e.g. KES and USD into one meaningless number — an account
+    // can run campaigns in more than one currency.
+    useEffect(() => {
+        const fetchFx = async () => {
+            const refRepo = createReferenceRepository(supabase);
+            const { data } = await refRepo.getFxRates();
+            if (data) setFxRates(data);
+        };
+        fetchFx();
+    }, [supabase]);
 
     const fetchAnalytics = useCallback(async () => {
         if (!activeAccount) return;
@@ -46,16 +61,21 @@ function AnalyticsContent() {
             const params: any = { p_account_id: activeAccount.id };
             if (startDate) params.p_start_date = startDate;
             if (endDate) params.p_end_date = endDate;
-            
+
             const { data, error } = await supabase.schema('api').rpc('get_campaigns_performance_summary', params);
 
             if (error) throw error;
 
             const results = Array.isArray(data) ? data : [];
-            
+            const rateFor = (currency: string) =>
+                fxRates.find(r => r.currency === currency)?.rate_to_usd || 1.0;
+
             const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions || 0), 0);
             const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks || 0), 0);
-            const totalCost = results.reduce((acc: number, r: any) => acc + Number(r.total_cost || 0), 0);
+            const totalCost = results.reduce(
+                (acc: number, r: any) => acc + (Number(r.total_cost || 0) / rateFor(r.currency || 'USD')),
+                0
+            );
 
             const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
             const cpc = clicks > 0 ? totalCost / clicks : 0;
@@ -73,7 +93,7 @@ function AnalyticsContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeAccount, supabase, startDate, endDate, showToast]);
+    }, [activeAccount, supabase, startDate, endDate, showToast, fxRates]);
 
     useEffect(() => {
         if (!isOrgLoading) {
@@ -129,13 +149,13 @@ function AnalyticsContent() {
     const downloadCSV = () => {
         if (!filteredCampaigns || filteredCampaigns.length === 0) return;
         
-        const headers = ['Campaign', 'Status', 'Impressions', 'Clicks', 'CTR (%)', 'CPC ($)', 'Spend ($)'];
+        const headers = ['Campaign', 'Status', 'Impressions', 'Clicks', 'CTR (%)', 'CPC', 'Spend', 'Currency'];
         const csvRows = [headers.join(',')];
-        
+
         for (const item of filteredCampaigns) {
             const ctr = item.impressions > 0 ? ((item.clicks / item.impressions) * 100).toFixed(2) : '0.00';
             const cpc = item.clicks > 0 ? (item.total_cost / item.clicks).toFixed(2) : '0.00';
-            
+
             const row = [
                 `"${item.title.replace(/"/g, '""')}"`,
                 item.status,
@@ -143,7 +163,8 @@ function AnalyticsContent() {
                 item.clicks,
                 ctr,
                 cpc,
-                item.total_cost.toFixed(2)
+                item.total_cost.toFixed(2),
+                item.currency || 'USD'
             ];
             
             csvRows.push(row.join(','));

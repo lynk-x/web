@@ -22,6 +22,7 @@ export interface AdsCampaign {
     total_budget: number;
     daily_limit?: number;
     spent_amount: number;
+    currency: string;
     /** Creative/Targeting */
     destination_url: string;
     target_event_id?: string;

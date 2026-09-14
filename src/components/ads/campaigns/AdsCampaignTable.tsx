@@ -5,7 +5,7 @@ import styles from './AdsCampaignTable.module.css';
 import DataTable, { Column } from '../../shared/DataTable';
 import Badge, { BadgeVariant } from '../../shared/Badge';
 import { useToast } from '@/components/ui/Toast';
-import { formatString } from '@/utils/format';
+import { formatString, formatCurrency } from '@/utils/format';
 import type { ActionItem } from '../../shared/TableRowActions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -81,10 +81,10 @@ const AdsCampaignTable: React.FC<AdsCampaignTableProps> = ({
             render: (campaign) => (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <span style={{ fontWeight: 600 }}>
-                        ${campaign.total_budget.toLocaleString()}
+                        {formatCurrency(campaign.total_budget, campaign.currency)}
                     </span>
                     <span style={{ fontSize: '12px', opacity: 0.6 }}>
-                        ${campaign.spent_amount.toLocaleString()} spent
+                        {formatCurrency(campaign.spent_amount, campaign.currency)} spent
                     </span>
                 </div>
             ),

@@ -27,6 +27,13 @@ export default function CreateCampaignPage() {
             showToast('You must select an advertiser account.', 'error');
             return;
         }
+        // CreateCampaignForm's own validateForm() is skipped whenever a
+        // parent supplies onSubmit (see handleSubmit's early return there),
+        // so the currency requirement has to be re-checked here.
+        if (!formData.currency) {
+            showToast('Select a wallet currency for this campaign.', 'error');
+            return;
+        }
 
         try {
             const { data, error } = await supabase.schema('api').rpc('admin_create_campaign', {
@@ -35,7 +42,8 @@ export default function CreateCampaignPage() {
                 p_type: formData.type,
                 p_budget: parseFloat(formData.total_budget),
                 p_start_date: new Date(formData.start_at).toISOString(),
-                p_end_date: new Date(formData.end_at).toISOString()
+                p_end_date: new Date(formData.end_at).toISOString(),
+                p_currency: formData.currency || null
             });
 
             if (error) throw error;
@@ -73,11 +81,12 @@ export default function CreateCampaignPage() {
 
     return (
         <div className={adminStyles.container}>
-            <CreateCampaignForm 
+            <CreateCampaignForm
                 onSubmit={handleAdminSubmit}
                 pageTitle="Create Campaign"
                 pageSubtitle="Provision a new advertising campaign for an account"
                 backLabel="Back to Campaigns"
+                walletAccountId={accountId || undefined}
             >
                 <div style={{ marginBottom: '24px' }}>
                     <AccountSearchInput
