@@ -44,4 +44,5 @@ export interface Invoice {
     reason?: string;
     campaign_title?: string;
     currency?: string;
+    createdAtRaw?: string;
 }

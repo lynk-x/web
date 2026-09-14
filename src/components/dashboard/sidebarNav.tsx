@@ -127,6 +127,20 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             ]
         },
         {
+            title: 'Finance',
+            items: [
+                {
+                    name: 'Finance', href: '/dashboard/ads/finance', permission: 'can_view_finance', icon: (
+                        <svg {...svgProps}>
+                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
+            ]
+        },
+        {
             title: 'Advertising',
             items: [
                 {
@@ -141,20 +155,6 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                         <svg {...svgProps}>
                             <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    )
-                },
-            ]
-        },
-        {
-            title: 'Finance',
-            items: [
-                {
-                    name: 'Finance', href: '/dashboard/ads/finance', permission: 'can_view_finance', icon: (
-                        <svg {...svgProps}>
-                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 },

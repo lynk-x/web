@@ -297,6 +297,7 @@ function RevenueContent() {
                     label="Pending Refunds"
                     value={stats.refundsPending}
                     change="Needs review"
+                    trend="negative"
                     isLoading={isSummaryLoading}
                 />
                 <StatCard

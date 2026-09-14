@@ -4,6 +4,7 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AdsInvoiceTable, { Invoice } from '@/components/ads/billing/AdsInvoiceTable';
 import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
@@ -21,13 +22,17 @@ export default function AdsBillingPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
     const [walletBalance, setWalletBalance] = useState(0);
     const [adCredits, setAdCredits] = useState(0);
     const [rawTotalSpend, setRawTotalSpend] = useState(0);
+    const [currency, setCurrency] = useState('USD');
+    const [invoicesAvailable, setInvoicesAvailable] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
-    const { currentPage, setCurrentPage, totalCount, setTotalCount } = usePagination(itemsPerPage, [searchQuery]);
+    const { currentPage, setCurrentPage, totalCount, setTotalCount } = usePagination(itemsPerPage, [searchQuery, startDate, endDate]);
 
     const fetchBillingData = useCallback(async () => {
         if (!activeAccount) return;
@@ -41,14 +46,17 @@ export default function AdsBillingPage() {
 
             if (error) throw error;
 
-            const currency = 'USD';
             interface WalletItem {
                 currency: string;
                 cash_balance: number;
                 credit_balance: number;
             }
-            const primaryWallet = (data.wallets || []).find((w: WalletItem) => w.currency === currency) || data.wallets?.[0];
-            
+            // The account's first (or only, in the common case) wallet —
+            // was previously always assumed to be USD, so a non-USD advertiser
+            // silently got a wallets?.[0] fallback still mislabeled "USD".
+            const primaryWallet: WalletItem | undefined = data.wallets?.[0];
+            const primaryCurrency = primaryWallet?.currency || 'USD';
+
             interface TransactionItem {
                 id: string;
                 reference: string;
@@ -63,7 +71,8 @@ export default function AdsBillingPage() {
                 id: tx.id,
                 reference: tx.reference,
                 date: new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                amount: formatCurrency(Number(tx.amount), tx.currency || currency),
+                createdAtRaw: tx.created_at,
+                amount: formatCurrency(Number(tx.amount), tx.currency || primaryCurrency),
                 status: tx.status === 'completed' ? 'paid' : tx.status === 'pending' ? 'pending' : 'overdue',
                 reason: tx.reason,
                 campaign_title: tx.metadata?.campaign_title || (tx.reason === 'wallet_top_up' ? 'Wallet Deposit' : 'Ad Campaign Payment'),
@@ -75,6 +84,8 @@ export default function AdsBillingPage() {
             setRawTotalSpend(Number(data.total_spend || 0));
             setAdCredits(Number(data.total_credits || 0));
             setWalletBalance(Number(primaryWallet?.cash_balance ?? 0));
+            setCurrency(primaryCurrency);
+            setInvoicesAvailable(Number(data.completed_transaction_count || 0));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to sync billing data.', 'error');
         } finally {
@@ -92,24 +103,33 @@ export default function AdsBillingPage() {
         }
     }, [isOrgLoading, activeAccount, fetchBillingData]);
 
-    // Search is kept client-side since it filters over formatted date strings
-    const invoices = searchQuery
-        ? allInvoices.filter(inv =>
-            inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (inv.reference && inv.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            inv.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.status.toLowerCase().includes(searchQuery.toLowerCase())
-          )
+    // Search and date-range filtering are both kept client-side, over the
+    // currently-loaded page of transactions — get_advertiser_billing_data
+    // has no server-side date-range params, unlike the organizer revenue
+    // page's payout/refund RPCs.
+    const isFiltering = Boolean(searchQuery || startDate || endDate);
+    const invoices = isFiltering
+        ? allInvoices.filter(inv => {
+            const matchesSearch = !searchQuery ||
+                inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (inv.reference && inv.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                inv.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                inv.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+            const invDate = inv.createdAtRaw ? inv.createdAtRaw.slice(0, 10) : null;
+            const matchesStart = !startDate || (invDate !== null && invDate >= startDate);
+            const matchesEnd = !endDate || (invDate !== null && invDate <= endDate);
+
+            return matchesSearch && matchesStart && matchesEnd;
+          })
         : allInvoices;
 
-    const totalPages = searchQuery
+    const totalPages = isFiltering
         ? Math.ceil(invoices.length / itemsPerPage)
         : Math.ceil(totalCount / itemsPerPage);
-    const paginatedInvoices = searchQuery
+    const paginatedInvoices = isFiltering
         ? invoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
         : invoices;
-
-    const currency = 'USD';
 
     const handleExport = () => {
         window.print();
@@ -139,15 +159,15 @@ export default function AdsBillingPage() {
                     color="var(--color-success)"
                 />
                 <StatCard
-                    label="Total Ad Spend"
+                    label="Ad Spend"
                     value={formatCurrency(rawTotalSpend, currency)}
                     isLoading={isLoading}
                 />
                 <StatCard
-                    label="Total Transactions"
-                    value={totalCount}
+                    label="Invoices Available"
+                    value={invoicesAvailable}
+                    change="All time"
                     isLoading={isLoading}
-                    trend="neutral"
                 />
             </div>
 
@@ -155,8 +175,19 @@ export default function AdsBillingPage() {
                 <TableToolbar
                     onSearchChange={setSearchQuery}
                     searchValue={searchQuery}
-                    searchPlaceholder="Search by status, date..."
-                />
+                    searchPlaceholder="Search by status, reference..."
+                >
+                    <DateRangeRow
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                    />
+                </TableToolbar>
                 <div style={{ marginTop: '16px' }}>
                     <AdsInvoiceTable
                         invoices={paginatedInvoices}
