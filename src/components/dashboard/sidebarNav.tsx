@@ -127,6 +127,18 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             ]
         },
         {
+            title: 'Advertising',
+            items: [
+                {
+                    name: 'Campaigns', href: '/dashboard/ads/campaigns', permission: 'can_manage_ad_campaigns', icon: (
+                        <svg {...svgProps}>
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    )
+                },
+            ]
+        },
+        {
             title: 'Finance',
             items: [
                 {
@@ -141,15 +153,8 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             ]
         },
         {
-            title: 'Advertising',
+            title: 'Analytics',
             items: [
-                {
-                    name: 'Campaigns', href: '/dashboard/ads/campaigns', permission: 'can_manage_ad_campaigns', icon: (
-                        <svg {...svgProps}>
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    )
-                },
                 {
                     name: 'Analytics', href: '/dashboard/ads/analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
