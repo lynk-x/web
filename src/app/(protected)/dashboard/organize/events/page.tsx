@@ -40,7 +40,7 @@ export default function OrganizerEventsPage() {
     // Cancellation modal: stores the event to cancel + how many tickets were sold
     const [cancelTarget, setCancelTarget] = useState<{ event: OrganizerEvent; ticketsSold: number } | null>(null);
 
-    // Add Forum modal state
+    // Host Forum modal state
     const [isAddForumModalOpen, setIsAddForumModalOpen] = useState(false);
     const [isCreatingForum, setIsCreatingForum] = useState(false);
     const [forumImageFile, setForumImageFile] = useState<File | null>(null);
@@ -513,7 +513,7 @@ export default function OrganizerEventsPage() {
                     </svg>
                 }
                 secondaryAction={{
-                    label: 'Add Forum',
+                    label: 'Host Forum',
                     onClick: () => setIsAddForumModalOpen(true),
                 }}
             />
@@ -596,7 +596,7 @@ export default function OrganizerEventsPage() {
                 />
             )}
 
-            {/* Add Forum Modal */}
+            {/* Host Forum Modal */}
             {isAddForumModalOpen && (
                 <div style={{
                     position: 'fixed',

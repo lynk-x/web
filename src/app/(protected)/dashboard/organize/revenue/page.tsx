@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
-import { formatCurrency, formatString, formatDate } from '@/utils/format';
+import { formatString, formatDate } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import FilterChips from '@/components/shared/FilterChips';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -45,11 +45,10 @@ function RevenueContent() {
     const [wallets, setWallets] = useState<AccountWallet[]>([]);
     const [selectedPayoutForInvoice, setSelectedPayoutForInvoice] = useState<Payout | null>(null);
     const [stats, setStats] = useState({
-        grossRevenue: 0,
-        availableBalance: 0,
-        pendingEscrow: 0,
-        totalRefunded: 0,
-        totalPaidOut: 0,
+        payoutsCompleted: 0,
+        payoutsPending: 0,
+        refundsPending: 0,
+        invoicesAvailable: 0,
     });
 
     const [isPayoutsLoading, setIsPayoutsLoading] = useState(true);
@@ -115,11 +114,10 @@ function RevenueContent() {
             if (error) throw error;
             setWallets(data?.wallets || []);
             setStats({
-                grossRevenue:     Number(data?.total_revenue) || 0,
-                availableBalance: Number(data?.net_revenue) || 0,
-                pendingEscrow:    Number(data?.pending_escrow) || 0,
-                totalRefunded:    Number(data?.total_refunded) || 0,
-                totalPaidOut:     Number(data?.payouts) || 0,
+                payoutsCompleted:  Number(data?.payouts_completed_count) || 0,
+                payoutsPending:    Number(data?.payouts_pending_count) || 0,
+                refundsPending:    Number(data?.refunds_pending_count) || 0,
+                invoicesAvailable: Number(data?.invoices_available_count) || 0,
             });
         } catch (err) {
             console.error('Failed to fetch revenue summary:', err);
@@ -296,26 +294,27 @@ function RevenueContent() {
             {/* Stat Cards */}
             <div className={`tour-revenue-stats-grid ${styles.statsGrid}`}>
                 <StatCard
-                    label="Gross Revenue"
-                    value={formatCurrency(stats.grossRevenue)}
-                    trend="positive"
+                    label="Pending Refunds"
+                    value={stats.refundsPending}
+                    change="Needs review"
                     isLoading={isSummaryLoading}
                 />
                 <StatCard
-                    label="Available Balance"
-                    value={formatCurrency(stats.availableBalance)}
-                    change="Spendable"
+                    label="Pending Payouts"
+                    value={stats.payoutsPending}
+                    change="In progress"
                     isLoading={isSummaryLoading}
                 />
                 <StatCard
-                    label="Pending Escrow"
-                    value={formatCurrency(stats.pendingEscrow)}
-                    change="Locked"
+                    label="Total Payouts"
+                    value={stats.payoutsCompleted}
+                    change="Completed"
                     isLoading={isSummaryLoading}
                 />
                 <StatCard
-                    label="Total Paid Out"
-                    value={formatCurrency(stats.totalPaidOut)}
+                    label="Invoices Available"
+                    value={stats.invoicesAvailable}
+                    change="All time"
                     isLoading={isSummaryLoading}
                 />
             </div>

@@ -49,6 +49,55 @@ interface EventDetail {
     cancellation_reason: string | null;
 }
 
+
+function parseCsv(text: string): string[][] {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let field = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (inQuotes) {
+            if (char === '"') {
+                if (text[i + 1] === '"') {
+                    field += '"';
+                    i++;
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                field += char;
+            }
+            continue;
+        }
+
+        if (char === '"') {
+            inQuotes = true;
+        } else if (char === ',') {
+            row.push(field);
+            field = '';
+        } else if (char === '\r') {
+            // skip; \n (below) closes the row
+        } else if (char === '\n') {
+            row.push(field);
+            field = '';
+            if (row.some((col) => col.trim() !== '')) rows.push(row);
+            row = [];
+        } else {
+            field += char;
+        }
+    }
+
+    if (field !== '' || row.length > 0) {
+        row.push(field);
+        if (row.some((col) => col.trim() !== '')) rows.push(row);
+    }
+
+    return rows;
+}
+
 const STATUS_BADGE_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
     draft: { label: 'Draft', variant: 'subtle' },
     published: { label: 'Published', variant: 'info' },
@@ -167,15 +216,18 @@ export default function EventDetailPage() {
 
             if (forumError) throw forumError;
 
-            if (forumRow?.id) {
-                const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
-                    p_forum_id: forumRow.id,
-                    p_user_handle: phone || email,
-                    p_role_id: 'member',
-                });
-
-                if (inviteError) throw inviteError;
+            if (!forumRow?.id) {
+                throw new Error('This event doesn\'t have a forum yet — host one first.');
             }
+
+            const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
+                p_forum_id: forumRow.id,
+                p_email: email,
+                p_phone: phone || null,
+                p_role_id: 'member',
+            });
+
+            if (inviteError) throw inviteError;
 
             setInviteStatus('sent');
             setInviteEmail('');
@@ -194,13 +246,13 @@ export default function EventDetailPage() {
         setCsvImporting(true);
         try {
             const text = await csvFile.text();
-            const lines = text.split('\n').filter((line) => line.trim());
+            const lines = parseCsv(text);
             if (lines.length < 2) {
                 showToast('CSV must contain a header row and at least one attendee.', 'warning');
                 return;
             }
 
-            const header = lines[0].split(',').map((col) => col.trim().toLowerCase());
+            const header = lines[0].map((col) => col.trim().toLowerCase());
             const emailIdx = header.findIndex((col) => col === 'email');
             const phoneIdx = header.findIndex((col) => col === 'phone');
 
@@ -208,9 +260,6 @@ export default function EventDetailPage() {
                 showToast('CSV must contain an "email" column.', 'warning');
                 return;
             }
-
-            let successCount = 0;
-            let failCount = 0;
 
             const { data: forumRow, error: forumError } = await supabase
                 .schema('api')
@@ -221,8 +270,16 @@ export default function EventDetailPage() {
 
             if (forumError) throw forumError;
 
+            if (!forumRow?.id) {
+                showToast('This event doesn\'t have a forum yet — host one first.', 'error');
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
             for (let i = 1; i < lines.length; i++) {
-                const cols = lines[i].split(',');
+                const cols = lines[i];
                 const email = cols[emailIdx]?.trim();
                 const phone = phoneIdx !== -1 ? cols[phoneIdx]?.trim() : '';
 
@@ -231,15 +288,11 @@ export default function EventDetailPage() {
                     continue;
                 }
 
-                if (!forumRow?.id) {
-                    failCount++;
-                    continue;
-                }
-
                 try {
                     const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
                         p_forum_id: forumRow.id,
-                        p_user_handle: phone || email,
+                        p_email: email,
+                        p_phone: phone || null,
                         p_role_id: 'member',
                     });
 
@@ -565,7 +618,7 @@ export default function EventDetailPage() {
                     {/* CSV Import */}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
-                            CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email,phone</code>
+                            CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email,phone</code> — email column required, phone optional
                         </p>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <label
