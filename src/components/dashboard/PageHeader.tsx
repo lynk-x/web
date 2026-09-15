@@ -34,6 +34,8 @@ type PageHeaderProps = React.PropsWithChildren<{
     /** Custom close handler, e.g. to confirm unsaved changes before navigating. Takes precedence over closeHref. */
     onClose?: () => void;
     hideDivider?: boolean;
+    /** Extra inline styles merged onto the header element, e.g. to override its default bottom padding. */
+    style?: React.CSSProperties;
 
     /** @deprecated use `primaryAction` instead. */
     actionLabel?: string;
@@ -105,6 +107,7 @@ export default function PageHeader({
     closeHref,
     onClose,
     hideDivider = false,
+    style,
     children,
     // Deprecated single-action props, mapped onto primaryAction below.
     actionLabel,
@@ -135,6 +138,7 @@ export default function PageHeader({
             style={{
                 alignItems: 'center',
                 paddingBottom: hideDivider ? '0' : '24px',
+                ...style,
             }}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>

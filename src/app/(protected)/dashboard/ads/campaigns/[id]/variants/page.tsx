@@ -10,6 +10,7 @@ import { formatNumber } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
+import Toggle from '@/components/shared/Toggle';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
@@ -207,7 +208,7 @@ export default function CampaignVariantsPage() {
                                                 </div>
                                             </td>
                                             <td style={tdStyle}>
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                                                     {!v.is_primary && (
                                                         <button
                                                             className={adminStyles.btnSecondary}
@@ -218,22 +219,25 @@ export default function CampaignVariantsPage() {
                                                             Make Primary
                                                         </button>
                                                     )}
-                                                    <button
-                                                        className={adminStyles.btnSecondary}
-                                                        style={{ padding: '6px 10px', fontSize: '12px' }}
+                                                    <Toggle
+                                                        enabled={!v.is_hidden}
+                                                        onChange={() => handleToggleHidden(v)}
                                                         disabled={isBusy}
-                                                        onClick={() => handleToggleHidden(v)}
-                                                    >
-                                                        {v.is_hidden ? 'Show' : 'Hide'}
-                                                    </button>
+                                                        label="Visible"
+                                                    />
                                                     <button
                                                         className={adminStyles.btnDanger}
-                                                        style={{ padding: '6px 10px', fontSize: '12px' }}
+                                                        style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                         disabled={isBusy || variants.length <= 1}
-                                                        title={variants.length <= 1 ? 'A campaign must have at least one creative' : undefined}
+                                                        title={variants.length <= 1 ? 'A campaign must have at least one creative' : 'Delete variant'}
                                                         onClick={() => handleDelete(v, label)}
                                                     >
-                                                        Delete
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="3 6 5 6 21 6" />
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                            <line x1="10" y1="11" x2="10" y2="17" />
+                                                            <line x1="14" y1="11" x2="14" y2="17" />
+                                                        </svg>
                                                     </button>
                                                 </div>
                                             </td>

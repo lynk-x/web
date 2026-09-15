@@ -170,6 +170,7 @@ export default function CampaignDetailPage() {
                 subtitle={campaign.reference}
                 closeHref="/dashboard/ads/campaigns"
                 badge={badge}
+                style={{ paddingBottom: '12px' }}
                 primaryAction={{
                     label: campaign.status === 'rejected' ? 'Edit & Resubmit' : 'Edit Campaign',
                     onClick: () => router.push(`/dashboard/ads/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`),
@@ -188,11 +189,11 @@ export default function CampaignDetailPage() {
             {/* Rejection / Pending Approval Banner */}
             {campaign.status === 'rejected' && (
                 <div style={{
-                    padding: '16px 20px',
+                    padding: '8px 20px',
                     borderRadius: 'var(--radius-lg)',
                     background: 'rgba(239, 68, 68, 0.08)',
                     border: '1px solid rgba(239, 68, 68, 0.2)',
-                    marginBottom: '24px',
+                    marginBottom: '8px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '6px',
@@ -218,7 +219,7 @@ export default function CampaignDetailPage() {
 
             {campaign.status === 'pending_approval' && (
                 <div style={{
-                    padding: '4px 20px',
+                    padding: '8px 20px',
                     borderRadius: 'var(--radius-lg)',
                     background: 'rgba(250, 204, 21, 0.08)',
                     border: '1px solid rgba(250, 204, 21, 0.2)',
@@ -282,14 +283,16 @@ export default function CampaignDetailPage() {
 
                 {/* Right Column: Live Preview */}
                 <div className="tour-campaign-preview" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
-                    <AdPreviewMock
-                        type={campaign.type}
-                        title={campaign.title}
-                        headline={primaryVariant?.call_to_action}
-                        mediaUrl={primaryVariant?.url}
-                        mediaType={primaryVariant?.media_type}
-                    />
+                    <div className={adminStyles.pageCard}>
+                        <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
+                        <AdPreviewMock
+                            type={campaign.type}
+                            title={campaign.title}
+                            headline={primaryVariant?.call_to_action}
+                            mediaUrl={primaryVariant?.url}
+                            mediaType={primaryVariant?.media_type}
+                        />
+                    </div>
                 </div>
             </div>
 
