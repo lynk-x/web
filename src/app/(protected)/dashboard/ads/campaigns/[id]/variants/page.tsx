@@ -35,7 +35,6 @@ export default function CampaignVariantsPage() {
     const supabase = useMemo(() => createClient(), []);
     const { confirm, ConfirmDialog } = useConfirmModal();
 
-    const [campaignTitle, setCampaignTitle] = useState('');
     const [campaignCreatedAt, setCampaignCreatedAt] = useState('');
     const [variants, setVariants] = useState<AdVariant[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +61,6 @@ export default function CampaignVariantsPage() {
             }
             if (variantRes.error) throw variantRes.error;
 
-            setCampaignTitle(campRes.data.title);
             setCampaignCreatedAt(campRes.data.created_at);
             setVariants((variantRes.data || []) as AdVariant[]);
         } catch (err: unknown) {
@@ -153,7 +151,7 @@ export default function CampaignVariantsPage() {
             {ConfirmDialog}
             <PageHeader
                 title="Manage Variants"
-                subtitle={campaignTitle}
+                subtitle="Hide, delete or set a new primary creative for this campaign."
                 closeHref={`/dashboard/ads/campaigns/${id}`}
                 primaryAction={{
                     label: 'Add / Replace Creatives',

@@ -199,6 +199,7 @@ export default function CampaignDetailPage() {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <QuickLink href={`/dashboard/ads/campaigns/${id}/variants`} label="Manage Variants" />
                     <QuickLink href={`/dashboard/ads/campaigns/${id}/audience`} label="View Audience" />
+                    <QuickLink href={`/dashboard/ads/campaigns/${id}/spend-history`} label="Spend History" />
                     <QuickLink href={`/dashboard/ads/analytics/campaign/${id}`} label="Analytics" />
                 </div>
                 {campaign && (

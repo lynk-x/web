@@ -51,7 +51,6 @@ export default function CampaignAudiencePage() {
     const { activeAccount } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
 
-    const [campaignTitle, setCampaignTitle] = useState('');
     const [countryReach, setCountryReach] = useState<CountryReach[]>([]);
     const [demographicReach, setDemographicReach] = useState<DemographicReach[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +73,6 @@ export default function CampaignAudiencePage() {
             if (countryRes.error) throw countryRes.error;
             if (demoRes.error) throw demoRes.error;
 
-            setCampaignTitle(campRes.data.title);
             setCountryReach((countryRes.data || []) as CountryReach[]);
             setDemographicReach((demoRes.data || []) as DemographicReach[]);
         } catch (err: unknown) {
@@ -121,52 +119,64 @@ export default function CampaignAudiencePage() {
         <div className={adminStyles.container}>
             <PageHeader
                 title="Audience Insights"
-                subtitle={campaignTitle}
+                subtitle="See where and to whom your ads are being shown."
                 closeHref={`/dashboard/ads/campaigns/${id}`}
             />
 
-            {totalReach === 0 ? (
-                <EmptyState message="No impressions recorded yet for this campaign. Audience data will appear here once your ads start delivering." />
-            ) : (
-                <>
-                    {/* Reach by Country */}
-                    <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
-                        <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Reach by Country</h2>
+            {totalReach === 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                    <EmptyState message="No impressions recorded yet for this campaign. Audience data will appear here once your ads start delivering." />
+                </div>
+            )}
+
+            {/* Reach by Country */}
+            <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>
+                <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Reach by Country</h2>
+                {countryReach.length === 0 ? (
+                    <p style={{ fontSize: '13px', opacity: 0.5 }}>No data yet.</p>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {countryReach.map(row => (
+                            <BreakdownBar
+                                key={row.country_code}
+                                label={countryLabel(row.country_code)}
+                                reach={row.reach}
+                                total={totalReach}
+                                maxReach={maxCountryReach}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Reach by Age & Gender */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+                <div className={adminStyles.pageCard}>
+                    <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Reach by Age</h2>
+                    {ageRows.length === 0 ? (
+                        <p style={{ fontSize: '13px', opacity: 0.5 }}>No data yet.</p>
+                    ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                            {countryReach.map(row => (
-                                <BreakdownBar
-                                    key={row.country_code}
-                                    label={countryLabel(row.country_code)}
-                                    reach={row.reach}
-                                    total={totalReach}
-                                    maxReach={maxCountryReach}
-                                />
+                            {ageRows.map(row => (
+                                <BreakdownBar key={row.label} label={row.label} reach={row.reach} total={totalReach} maxReach={maxAgeReach} />
                             ))}
                         </div>
-                    </div>
+                    )}
+                </div>
 
-                    {/* Reach by Age & Gender */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                        <div className={adminStyles.pageCard}>
-                            <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Reach by Age</h2>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                {ageRows.map(row => (
-                                    <BreakdownBar key={row.label} label={row.label} reach={row.reach} total={totalReach} maxReach={maxAgeReach} />
-                                ))}
-                            </div>
+                <div className={adminStyles.pageCard}>
+                    <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Reach by Gender</h2>
+                    {genderRows.length === 0 ? (
+                        <p style={{ fontSize: '13px', opacity: 0.5 }}>No data yet.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            {genderRows.map(row => (
+                                <BreakdownBar key={row.label} label={row.label} reach={row.reach} total={totalReach} maxReach={maxGenderReach} />
+                            ))}
                         </div>
-
-                        <div className={adminStyles.pageCard}>
-                            <h2 className={adminStyles.sectionTitle} style={{ marginBottom: '20px' }}>Reach by Gender</h2>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                {genderRows.map(row => (
-                                    <BreakdownBar key={row.label} label={row.label} reach={row.reach} total={totalReach} maxReach={maxGenderReach} />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
