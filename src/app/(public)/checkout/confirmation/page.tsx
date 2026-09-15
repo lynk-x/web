@@ -140,7 +140,7 @@ const ConfirmationContent = () => {
                             const tokenRes = await fetch('/api/checkout/forum-bridge-token', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userId }),
+                                body: JSON.stringify({ userId, eventId }),
                             });
                             const tokenJson = await tokenRes.json();
                             if (!cancelled && tokenJson?.tokenHash) {
@@ -153,7 +153,8 @@ const ConfirmationContent = () => {
                 } else {
                     setVerifyState('unverified');
                 }
-            } catch {
+            } catch (err) {
+                console.error('Failed to verify completed order:', err);
                 if (!cancelled) setVerifyState('unverified');
             }
         };

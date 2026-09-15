@@ -4,16 +4,16 @@ import { mintForumBridgeToken } from '@/app/(public)/checkout/confirmation/actio
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { userId } = body;
+        const { userId, eventId } = body;
 
-        if (!userId) {
+        if (!userId || !eventId) {
             return NextResponse.json(
-                { error: 'userId is required.' },
+                { error: 'userId and eventId are required.' },
                 { status: 400 }
             );
         }
 
-        const result = await mintForumBridgeToken(userId);
+        const result = await mintForumBridgeToken(userId, eventId);
 
         if (result.error) {
             return NextResponse.json(

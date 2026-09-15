@@ -79,8 +79,9 @@ const CheckoutView: React.FC = () => {
                 if (!cancelled && row) {
                     setAlreadyClaimedForumRef(row.reference || null);
                 }
-            } catch {
+            } catch (err) {
                 // non-fatal; button will fall back to event page
+                console.error('Failed to resolve event forum for already-claimed redirect:', err);
             }
         };
         resolveForum();
@@ -446,10 +447,13 @@ const CheckoutView: React.FC = () => {
 
                 if (funcError) {
                     if (effectiveUserId) {
-                        const { data: pending } = await supabase.schema('api').rpc('check_pending_ticket_payment', {
+                        const { data: pending, error: pendingError } = await supabase.schema('api').rpc('check_pending_ticket_payment', {
                             p_user_id: effectiveUserId,
                             p_window_minutes: 5,
                         });
+                        if (pendingError) {
+                            console.error('Failed to check for a pending ticket payment:', pendingError);
+                        }
 
                         if (pending?.provider_ref) {
                             setCurrentCheckoutId(pending.provider_ref);
@@ -914,13 +918,17 @@ const CheckoutView: React.FC = () => {
                                             // the bridge link needs a magic-link token_hash for the PWA
                                             // to actually authenticate — otherwise api.v1_forums denies
                                             // the anon request. See checkout/confirmation/actions.ts.
+                                            // The bridge-token endpoint independently re-verifies that
+                                            // effectiveUserId holds a completed ticket for targetEventId
+                                            // before minting anything — it never trusts these values as
+                                            // proof of ownership on their own.
                                             let tokenParam = '';
-                                            if (effectiveUserId) {
+                                            if (effectiveUserId && targetEventId) {
                                                 try {
                                                     const tokenRes = await fetch('/api/checkout/forum-bridge-token', {
                                                         method: 'POST',
                                                         headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ userId: effectiveUserId }),
+                                                        body: JSON.stringify({ userId: effectiveUserId, eventId: targetEventId }),
                                                     });
                                                     const tokenJson = await tokenRes.json();
                                                     if (tokenJson?.tokenHash) {
