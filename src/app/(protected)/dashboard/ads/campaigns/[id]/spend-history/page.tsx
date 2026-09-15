@@ -9,9 +9,7 @@ import { useOrganization } from '@/context/OrganizationContext';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
-import StatCard from '@/components/dashboard/StatCard';
 import Spinner from '@/components/shared/Spinner';
-import EmptyState from '@/components/shared/EmptyState';
 
 interface SpendTransaction {
     id: string;
@@ -35,8 +33,6 @@ export default function CampaignSpendHistoryPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [transactions, setTransactions] = useState<SpendTransaction[]>([]);
-    const [totalSpend, setTotalSpend] = useState(0);
-    const [currency, setCurrency] = useState('USD');
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchSpendHistory = useCallback(async () => {
@@ -56,8 +52,6 @@ export default function CampaignSpendHistoryPage() {
             if (spendRes.error) throw spendRes.error;
 
             setTransactions((spendRes.data?.transactions || []) as SpendTransaction[]);
-            setTotalSpend(spendRes.data?.total_spend || 0);
-            setCurrency(spendRes.data?.currency || 'USD');
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load spend history.', 'error');
         } finally {
@@ -85,37 +79,36 @@ export default function CampaignSpendHistoryPage() {
                 closeHref={`/dashboard/ads/campaigns/${id}`}
             />
 
-            <div className={adminStyles.statsGrid} style={{ marginBottom: '28px' }}>
-                <StatCard label="Total Spend" value={formatCurrency(totalSpend, currency)} trend="neutral" />
-                <StatCard label="Charges" value={String(transactions.length)} trend="neutral" />
-            </div>
-
-            {transactions.length === 0 ? (
-                <EmptyState message="No charges recorded yet for this campaign." />
-            ) : (
-                <div className={adminStyles.pageCard}>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                                    <th style={thStyle}>Date</th>
-                                    <th style={thStyle}>Reference</th>
-                                    <th style={{ ...thStyle, textAlign: 'right' }}>Amount</th>
+            <div className={adminStyles.pageCard}>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
+                                <th style={thStyle}>Date</th>
+                                <th style={thStyle}>Reference</th>
+                                <th style={{ ...thStyle, textAlign: 'right' }}>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {transactions.length === 0 ? (
+                                <tr>
+                                    <td colSpan={3} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5 }}>
+                                        No charges recorded yet for this campaign.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {transactions.map(tx => (
+                            ) : (
+                                transactions.map(tx => (
                                     <tr key={tx.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
                                         <td style={tdStyle}>{formatDateTime(tx.created_at)}</td>
                                         <td style={{ ...tdStyle, opacity: 0.7 }}>{tx.reference}</td>
                                         <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>{formatCurrency(tx.amount, tx.currency)}</td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

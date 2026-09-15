@@ -10,7 +10,6 @@ import { formatNumber } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Spinner from '@/components/shared/Spinner';
-import EmptyState from '@/components/shared/EmptyState';
 
 interface CountryReach {
     country_code: string;
@@ -122,12 +121,6 @@ export default function CampaignAudiencePage() {
                 subtitle="See where and to whom your ads are being shown."
                 closeHref={`/dashboard/ads/campaigns/${id}`}
             />
-
-            {totalReach === 0 && (
-                <div style={{ marginBottom: '24px' }}>
-                    <EmptyState message="No impressions recorded yet for this campaign. Audience data will appear here once your ads start delivering." />
-                </div>
-            )}
 
             {/* Reach by Country */}
             <div className={adminStyles.pageCard} style={{ marginBottom: '24px' }}>

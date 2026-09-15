@@ -35,7 +35,6 @@ export default function CampaignVariantsPage() {
     const supabase = useMemo(() => createClient(), []);
     const { confirm, ConfirmDialog } = useConfirmModal();
 
-    const [campaignCreatedAt, setCampaignCreatedAt] = useState('');
     const [variants, setVariants] = useState<AdVariant[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [busyId, setBusyId] = useState<string | null>(null);
@@ -45,7 +44,7 @@ export default function CampaignVariantsPage() {
         setIsLoading(true);
         try {
             const [campRes, variantRes] = await Promise.all([
-                supabase.schema('api').from('v1_ad_campaigns').select('title, created_at').eq('id', id).eq('account_id', activeAccount.id).maybeSingle(),
+                supabase.schema('api').from('v1_ad_campaigns').select('title').eq('id', id).eq('account_id', activeAccount.id).maybeSingle(),
                 supabase
                     .schema('api')
                     .from('v1_ad_media')
@@ -61,7 +60,6 @@ export default function CampaignVariantsPage() {
             }
             if (variantRes.error) throw variantRes.error;
 
-            setCampaignCreatedAt(campRes.data.created_at);
             setVariants((variantRes.data || []) as AdVariant[]);
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load creative variants.', 'error');
@@ -153,10 +151,6 @@ export default function CampaignVariantsPage() {
                 title="Manage Variants"
                 subtitle="Hide, delete or set a new primary creative for this campaign."
                 closeHref={`/dashboard/ads/campaigns/${id}`}
-                primaryAction={{
-                    label: 'Add / Replace Creatives',
-                    onClick: () => router.push(`/dashboard/ads/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaignCreatedAt)}`),
-                }}
             />
 
             {variants.length === 0 ? (
@@ -173,7 +167,7 @@ export default function CampaignVariantsPage() {
                                     <th style={thStyle}>Clicks</th>
                                     <th style={thStyle}>CTR</th>
                                     <th style={thStyle}>Status</th>
-                                    <th style={thStyle}>Actions</th>
+                                    <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -206,7 +200,7 @@ export default function CampaignVariantsPage() {
                                                 </div>
                                             </td>
                                             <td style={tdStyle}>
-                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                                                     {!v.is_primary && (
                                                         <button
                                                             className={adminStyles.btnSecondary}
