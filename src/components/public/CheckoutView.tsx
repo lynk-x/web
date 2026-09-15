@@ -70,17 +70,14 @@ const CheckoutView: React.FC = () => {
         }
         let cancelled = false;
         const resolveForum = async () => {
-            const reservations: Array<{ tierId: string; reservationId: string }> = [];
         try {
                 const supabase = createClient();
                 const { data } = await supabase
                     .schema('api')
-                    .from('v1_forums')
-                    .select('reference')
-                    .eq('event_id', alreadyClaimedEventId)
-                    .maybeSingle();
-                if (!cancelled && data) {
-                    setAlreadyClaimedForumRef(data.reference || null);
+                    .rpc('get_checkout_forum_reference', { p_event_id: alreadyClaimedEventId });
+                const row = Array.isArray(data) ? data[0] : data;
+                if (!cancelled && row) {
+                    setAlreadyClaimedForumRef(row.reference || null);
                 }
             } catch {
                 // non-fatal; button will fall back to event page
