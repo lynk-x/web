@@ -186,53 +186,6 @@ export default function CampaignDetailPage() {
                 } : undefined}
             />
 
-            {/* Rejection / Pending Approval Banner */}
-            {campaign.status === 'rejected' && (
-                <div style={{
-                    padding: '8px 20px',
-                    borderRadius: 'var(--radius-lg)',
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: 'var(--color-interface-error)' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                        Campaign Rejected
-                    </div>
-                    <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }}>
-                        {rejectionReason || 'No reason provided. Contact support for more details.'}
-                    </p>
-                    {campaign.reviewed_at && (
-                        <p style={{ fontSize: '12px', opacity: 0.5, margin: 0 }}>Reviewed on {formatDate(campaign.reviewed_at)}</p>
-                    )}
-                    <Link
-                        href={`/dashboard/ads/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`}
-                        style={{ color: 'var(--color-brand-primary)', fontSize: '14px', fontWeight: 500, textDecoration: 'none', marginTop: '4px' }}
-                    >
-                        Edit and resubmit
-                    </Link>
-                </div>
-            )}
-
-            {campaign.status === 'pending_approval' && (
-                <div style={{
-                    padding: '8px 20px',
-                    borderRadius: 'var(--radius-lg)',
-                    background: 'rgba(250, 204, 21, 0.08)',
-                    border: '1px solid rgba(250, 204, 21, 0.2)',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#facc15' }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span style={{ fontSize: '14px' }}>Your campaign is under review. This typically takes 1-2 business days.</span>
-                </div>
-            )}
-
             {/* KPI Stats */}
             <div className={`${adminStyles.statsGrid} tour-campaign-stats`} style={{ marginBottom: '28px' }}>
                 <StatCard label="Impressions" value={formatNumber(campaign.total_impressions)} trend="neutral" />
@@ -259,6 +212,53 @@ export default function CampaignDetailPage() {
                     {/* Campaign Details Card */}
                     <div className={`${adminStyles.pageCard} tour-campaign-details`}>
                         <h2 className={adminStyles.sectionTitle}>Campaign Details</h2>
+
+                        {campaign.status === 'rejected' && (
+                            <div style={{
+                                padding: '8px 20px',
+                                borderRadius: 'var(--radius-lg)',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                marginBottom: '20px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: 'var(--color-interface-error)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                    Campaign Rejected
+                                </div>
+                                <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }}>
+                                    {rejectionReason || 'No reason provided. Contact support for more details.'}
+                                </p>
+                                {campaign.reviewed_at && (
+                                    <p style={{ fontSize: '12px', opacity: 0.5, margin: 0 }}>Reviewed on {formatDate(campaign.reviewed_at)}</p>
+                                )}
+                                <Link
+                                    href={`/dashboard/ads/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`}
+                                    style={{ color: 'var(--color-brand-primary)', fontSize: '14px', fontWeight: 500, textDecoration: 'none', marginTop: '4px' }}
+                                >
+                                    Edit and resubmit
+                                </Link>
+                            </div>
+                        )}
+
+                        {campaign.status === 'pending_approval' && (
+                            <div style={{
+                                padding: '8px 20px',
+                                borderRadius: 'var(--radius-lg)',
+                                background: 'rgba(250, 204, 21, 0.08)',
+                                border: '1px solid rgba(250, 204, 21, 0.2)',
+                                marginBottom: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                            }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#facc15' }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <span style={{ fontSize: '14px' }}>Your campaign is under review. This typically takes 1-2 business days.</span>
+                            </div>
+                        )}
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
                             <DetailRow label="Type" value={TYPE_LABELS[campaign.type] || campaign.type} />
                             <DetailRow label="Schedule" value={`${formatDate(campaign.start_at)} – ${formatDate(campaign.end_at)}`} />
