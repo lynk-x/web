@@ -158,8 +158,6 @@ export default function CampaignDetailPage() {
     }
 
     const badge = STATUS_MAP[campaign.status] || { label: campaign.status, variant: 'neutral' as BadgeVariant };
-    const ctr = campaign.total_impressions > 0 ? (campaign.total_clicks / campaign.total_impressions) * 100 : 0;
-    const cpc = campaign.total_clicks > 0 ? campaign.spent_amount / campaign.total_clicks : 0;
     const budgetUsed = campaign.total_budget > 0 ? (campaign.spent_amount / campaign.total_budget) * 100 : 0;
     const rejectionReason = campaign.metadata?.rejection_reason || campaign.metadata?.review_notes;
     const primaryVariant = variants.find(v => v.is_primary) || variants[0];
@@ -220,11 +218,11 @@ export default function CampaignDetailPage() {
 
             {campaign.status === 'pending_approval' && (
                 <div style={{
-                    padding: '16px 20px',
+                    padding: '4px 20px',
                     borderRadius: 'var(--radius-lg)',
                     background: 'rgba(250, 204, 21, 0.08)',
                     border: '1px solid rgba(250, 204, 21, 0.2)',
-                    marginBottom: '24px',
+                    marginBottom: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
@@ -238,8 +236,6 @@ export default function CampaignDetailPage() {
             <div className={`${adminStyles.statsGrid} tour-campaign-stats`} style={{ marginBottom: '28px' }}>
                 <StatCard label="Impressions" value={formatNumber(campaign.total_impressions)} trend="neutral" />
                 <StatCard label="Clicks" value={formatNumber(campaign.total_clicks)} trend="neutral" />
-                <StatCard label="CTR" value={`${ctr.toFixed(2)}%`} trend="neutral" />
-                <StatCard label="CPC" value={formatCurrency(cpc, campaign.currency)} trend="neutral" />
                 <StatCard label="Spent" value={formatCurrency(campaign.spent_amount, campaign.currency)} trend="neutral" change={`${budgetUsed.toFixed(0)}% of budget`} />
                 <StatCard label="Remaining" value={formatCurrency(campaign.remaining_budget, campaign.currency)} trend="neutral" />
             </div>
@@ -249,7 +245,7 @@ export default function CampaignDetailPage() {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <QuickLink href={`/dashboard/ads/campaigns/${id}/variants`} label="Manage Variants" />
                     <QuickLink href={`/dashboard/ads/campaigns/${id}/audience`} label="View Audience" />
-                    <QuickLink href={`/dashboard/ads/analytics/campaign/${id}`} label="View Analytics" />
+                    <QuickLink href={`/dashboard/ads/analytics/campaign/${id}`} label="Analytics" />
                 </div>
                 {campaign && (
                     <CopyableLinkChip label="DESTINATION URL" url={campaign.destination_url} />
@@ -286,16 +282,14 @@ export default function CampaignDetailPage() {
 
                 {/* Right Column: Live Preview */}
                 <div className="tour-campaign-preview" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className={adminStyles.pageCard}>
-                        <h2 className={adminStyles.sectionTitle}>Ad Preview</h2>
-                        <AdPreviewMock
-                            type={campaign.type}
-                            title={campaign.title}
-                            headline={primaryVariant?.call_to_action}
-                            mediaUrl={primaryVariant?.url}
-                            mediaType={primaryVariant?.media_type}
-                        />
-                    </div>
+                    <h2 className={adminStyles.sectionTitle}>Live Preview</h2>
+                    <AdPreviewMock
+                        type={campaign.type}
+                        title={campaign.title}
+                        headline={primaryVariant?.call_to_action}
+                        mediaUrl={primaryVariant?.url}
+                        mediaType={primaryVariant?.media_type}
+                    />
                 </div>
             </div>
 
