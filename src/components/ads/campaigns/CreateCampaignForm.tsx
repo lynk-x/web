@@ -55,6 +55,34 @@ interface PricingConfig {
     click: number;
 }
 
+// Client-side UX guard only — see the comment at handleAssetChange's size
+// check for why the real enforcement boundary lives in media-signer.
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;  // 10MB
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB
+
+// A draft persisted to localStorage can't carry a File object (it's not
+// JSON-serializable — JSON.stringify silently turns it into {}) or a
+// blob: object URL (revoked once the tab/session that created it ends), so
+// a naive JSON.stringify(formData) produces a "restored" creative that
+// looks present (preview is still a truthy string) but is actually dead —
+// no file to upload, and an image/video src that 404s. Stripping both
+// before persisting makes a restored draft honestly show "no asset yet"
+// instead of a broken one that silently passes validateForm()'s asset
+// check.
+function toDraftSnapshot(data: CampaignData): CampaignData {
+    return {
+        ...data,
+        creatives: data.creatives.map(c => ({
+            headline: c.headline,
+            imageUrl: c.imageUrl,
+            mediaType: c.mediaType,
+            // file and preview (a blob: URL) are dropped — neither survives
+            // a page reload, so persisting them would just recreate the
+            // "looks fine, is actually broken" state on restore.
+        })),
+    };
+}
+
 
 
 interface CreateCampaignFormProps {
@@ -317,7 +345,17 @@ export default function CreateCampaignForm({
             setFormData(draftData);
             setIsDraftLoaded(true);
             setHasDraft(false);
-            showToast('Draft restored successfully.', 'success');
+            // Creative files/previews are never persisted (see
+            // toDraftSnapshot) — a restored draft that had a pending,
+            // not-yet-uploaded asset needs it re-attached before it can be
+            // submitted.
+            const needsReupload = draftData.creatives.some(c => !c.imageUrl && !c.file);
+            showToast(
+                needsReupload
+                    ? 'Draft restored — please re-upload your creative asset(s).'
+                    : 'Draft restored successfully.',
+                needsReupload ? 'warning' : 'success'
+            );
         }
     };
 
@@ -346,7 +384,7 @@ export default function CreateCampaignForm({
             // Auto-save draft
             if (!isEditing && formData.title) {
                 const timer = setTimeout(() => {
-                    localStorage.setItem('campaign_draft', JSON.stringify(formData));
+                    localStorage.setItem('campaign_draft', JSON.stringify(toDraftSnapshot(formData)));
                 }, 1000);
                 return () => {
                     window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -470,6 +508,27 @@ export default function CreateCampaignForm({
         if (!file) return;
         const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
+        // UX-only guard — media-signer's presigned R2 PUT URL can't enforce a
+        // size ceiling itself (R2 only supports presigned PUT, not the
+        // presigned-POST flow that has a content-length-range condition), so
+        // the edge function backstops this with a post-upload HeadObject
+        // check + delete. This check just avoids a slow upload the backend
+        // is going to reject anyway.
+        const maxBytes = mediaType === 'video' ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+        if (file.size > maxBytes) {
+            const maxMb = Math.round(maxBytes / (1024 * 1024));
+            showToast(`${mediaType === 'video' ? 'Video' : 'Image'} exceeds the ${maxMb}MB limit.`, 'error');
+            e.target.value = '';
+            return;
+        }
+
+        if (mediaType === 'video') {
+            const url = URL.createObjectURL(file);
+            updateCreative(idx, { file, preview: url, mediaType: 'video' });
+            e.target.value = '';
+            return;
+        }
+
         const reader = new FileReader();
         reader.onloadend = () => {
             setPendingImage(reader.result as string);
@@ -478,7 +537,7 @@ export default function CreateCampaignForm({
             setIsCropperOpen(true);
         };
         reader.readAsDataURL(file);
-        
+
         e.target.value = '';
     };
 
@@ -655,7 +714,7 @@ export default function CreateCampaignForm({
             }
             return; 
         }
-        if (!activeAccount) { showToast('Please select an active account first.', 'error'); return; }
+        if (!effectiveWalletAccountId) { showToast('Please select an active account first.', 'error'); return; }
         if (!validateForm()) { showToast('Please review the form for errors.', 'error'); return; }
 
         setIsSubmitting(true);
@@ -670,7 +729,7 @@ export default function CreateCampaignForm({
                 };
                 
                 const ext = c.file.name.split('.').pop();
-                const filename = `${activeAccount.id}_${Date.now()}_creative_${idx}.${ext}`;
+                const filename = `${effectiveWalletAccountId}_${Date.now()}_creative_${idx}.${ext}`;
 
                 const { data: signData, error: signError } = await supabase.functions.invoke('media-signer', {
                     body: {
@@ -697,7 +756,18 @@ export default function CreateCampaignForm({
                 if (!putResponse.ok) {
                     throw new Error('Failed to upload creative to R2');
                 }
-                
+                const maxBytes = (c.mediaType || 'image') === 'video' ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+                const { data: verifyData, error: verifyError } = await supabase.functions.invoke('media-signer', {
+                    body: {
+                        action: 'verify_upload',
+                        fileKey: signData.fileKey,
+                        maxBytes,
+                    }
+                });
+                if (verifyError || !verifyData?.ok) {
+                    throw new Error(verifyError?.message || 'Uploaded file exceeds the allowed size limit.');
+                }
+
                 return {
                     media_type: c.mediaType || 'image',
                     call_to_action: c.headline,
@@ -708,7 +778,7 @@ export default function CreateCampaignForm({
 
             // 2. Submit to RPC for atomic persistence
             const { data, error } = await supabase.schema('api').rpc('upsert_advertiser_campaign', {
-                p_account_id: activeAccount.id,
+                p_account_id: effectiveWalletAccountId,
                 p_campaign_id: isEditing ? formData.id : null,
                 p_created_at: formData.created_at || null,
                 p_data: {
@@ -1353,7 +1423,7 @@ export default function CreateCampaignForm({
 
 
                                         <div className={styles.launchNote}>
-                                            By launching, your campaign will be submitted for admin approval before going live.
+                                            By launching, your campaign will be submitted for approval before going live.
                                         </div>
 
                                         {formError && (

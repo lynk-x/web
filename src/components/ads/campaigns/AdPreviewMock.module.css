@@ -1,0 +1,161 @@
+.mockDevice {
+    width: 260px;
+    height: 520px;
+    background: #111;
+    border: 10px solid #1e1e1e;
+    border-radius: 38px;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 2px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.mockDevice::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 16px;
+    background: #1e1e1e;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    z-index: 10;
+}
+
+.deviceContent {
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+.adPreviewWrapper {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    padding-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mockAppContent {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mockAppLine {
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+}
+
+/* Banner mock */
+.mockAdBanner {
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: row;
+    height: 40px;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.mockAdBanner .mockAdTitle {
+    flex: 1;
+    font-size: 10px;
+    margin-bottom: 0;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mockAdBanner .mockAdCTA {
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+/* Interstitial mock */
+.mockAdInterstitial {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+}
+
+.mockAdInterstitial .mockAdHeader {
+    padding: 10px 14px;
+    background: #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mockAdInterstitial .mockAdMedia {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111;
+}
+
+.mockAdInterstitial .mockAdInfo {
+    padding: 20px;
+    background: linear-gradient(0deg, #000 0%, transparent 100%);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.mockAdMedia {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mockAdInfo { padding: 10px; }
+
+.mockAdTitle {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #fff;
+}
+
+.mockAdDesc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.3;
+}
+
+.mockAdBadge {
+    display: inline-block;
+    padding: 2px 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: rgba(255, 255, 255, 0.8);
+}

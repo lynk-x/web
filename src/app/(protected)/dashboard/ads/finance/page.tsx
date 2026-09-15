@@ -147,10 +147,9 @@ export default function AdsBillingPage() {
 
             <div className={adminStyles.statsGrid}>
                 <StatCard
-                    label="Available Balance"
+                    label="Remaining Budget"
                     value={formatCurrency(walletBalance, currency)}
                     isLoading={isLoading}
-                    color="var(--color-brand-primary)"
                 />
                 <StatCard
                     label="Ad Credits"

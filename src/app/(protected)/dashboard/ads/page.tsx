@@ -9,7 +9,6 @@ import Link from 'next/link';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
-import { formatCurrency } from '@/utils/format';
 import { useToast } from '@/components/ui/Toast';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 import ProductTour from '@/components/dashboard/ProductTour';
@@ -37,7 +36,7 @@ export default function AdsDashboard() {
         { label: 'Total Campaigns', value: null, change: 'Lifetime count' },
         { label: 'Active Campaigns', value: null, change: 'Running now' },
         { label: 'Pending Approval', value: null, change: 'Under review' },
-        { label: 'Remaining Budget', value: null, change: 'Available funds' },
+        { label: 'Team Size', value: null, change: 'Account members' },
     ]);
 
     useEffect(() => {
@@ -56,7 +55,7 @@ export default function AdsDashboard() {
                     { label: 'Total Campaigns', value: (ds.total_campaigns || 0).toLocaleString(), change: 'Lifetime count' },
                     { label: 'Active Campaigns', value: (ds.active_campaigns || 0).toLocaleString(), change: 'Running now' },
                     { label: 'Pending Approval', value: (ds.pending_approval || 0).toLocaleString(), change: 'Under review' },
-                    { label: 'Remaining Budget', value: formatCurrency(ds.remaining_budget || 0, 'USD'), change: 'Available funds' },
+                    { label: 'Team Size', value: (ds.team_size || 0).toLocaleString(), change: 'Account members' },
                 ]);
 
                 setSpotlights(data.spotlights || []);
@@ -75,7 +74,7 @@ export default function AdsDashboard() {
                     { label: 'Total Campaigns', value: '0', change: 'Lifetime count' },
                     { label: 'Active Campaigns', value: '0', change: 'Running now' },
                     { label: 'Pending Approval', value: '0', change: 'Under review' },
-                    { label: 'Remaining Budget', value: formatCurrency(0, 'USD'), change: 'Available funds' },
+                    { label: 'Team Size', value: '0', change: 'Account members' },
                 ]);
                 setIsLoading(false);
             }

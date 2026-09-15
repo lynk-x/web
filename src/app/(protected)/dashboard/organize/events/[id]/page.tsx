@@ -17,7 +17,7 @@ import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
 import { getForumUrl } from '@/components/features/events/EventTable';
 import EventCancellationModal from '@/components/features/events/EventCancellationModal';
-import QuickLinksRow, { QuickLink } from '@/components/shared/QuickLinksRow';
+import QuickLinksRow, { QuickLink, CopyableLinkChip } from '@/components/shared/QuickLinksRow';
 
 interface TicketTier {
     id: string;
@@ -124,20 +124,12 @@ export default function EventDetailPage() {
     const [forumMemberCount, setForumMemberCount] = useState<number>(0);
     const [scanCount, setScanCount] = useState<number>(0);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const [copied, setCopied] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [invitePhone, setInvitePhone] = useState('');
     const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
     const [inviteError, setInviteError] = useState('');
     const [csvFile, setCsvFile] = useState<File | null>(null);
     const [csvImporting, setCsvImporting] = useState(false);
-
-    const handleCopyLink = useCallback((url: string) => {
-        navigator.clipboard.writeText(url);
-        setCopied(true);
-        showToast('Link copied to clipboard!', 'success');
-        setTimeout(() => setCopied(false), 2000);
-    }, [showToast]);
 
     const fetchEvent = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -398,50 +390,11 @@ export default function EventDetailPage() {
                     <QuickLink href={`/dashboard/organize/analytics/event/${id}`} label="Analytics" />
                 </div>
                 {event && (
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        background: 'rgba(255,255,255,0.03)', 
-                        border: '1px solid var(--color-interface-outline)', 
-                        borderRadius: '8px', 
-                        padding: '4px 6px 4px 12px', 
-                        height: '40px',
-                        boxSizing: 'border-box',
-                        width: '460px',
-                        maxWidth: '100%',
-                        flex: '0 1 460px'
-                    }}>
-                        <span style={{ fontSize: '11px', opacity: 0.5, fontWeight: 600, marginRight: '2px', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>EVENT LINK</span>
-                        <a 
-                            href={`/event/${event.reference}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Open event details page"
-                            style={{ 
-                                flex: 1, 
-                                fontSize: '13px',
-                                color: 'var(--color-utility-primaryText, #ffffff)',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textDecoration: 'none',
-                                cursor: 'pointer',
-                                padding: 0
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                        >
-                            {`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
-                        </a>
-                        <button 
-                            onClick={() => handleCopyLink(`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`)}
-                            className={adminStyles.btnSecondary} 
-                            style={{ padding: '6px 12px', whiteSpace: 'nowrap', height: '28px', fontSize: '12px', borderRadius: '6px' }}
-                        >
-                            {copied ? 'Copied!' : 'Copy'}
-                        </button>
-                    </div>
+                    <CopyableLinkChip
+                        label="EVENT LINK"
+                        href={`/event/${event.reference}`}
+                        url={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
+                    />
                 )}
             </QuickLinksRow>
 
