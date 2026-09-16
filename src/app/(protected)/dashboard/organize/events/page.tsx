@@ -618,7 +618,7 @@ export default function OrganizerEventsPage() {
                         overflow: 'auto'
                     }} onClick={(e) => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Add Event Forum</h2>
+                            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>   Host Forum</h2>
                             <button onClick={() => setIsAddForumModalOpen(false)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '4px' }}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -627,7 +627,7 @@ export default function OrganizerEventsPage() {
                             </button>
                         </div>
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-                            Create a minimal Lynk-X event to host your forum. You can link this from your external event page or send the forum link to attendees.
+                            Create a minimal Lynk-X event to host your forum. You can send the forum link to attendees through email invites to ensure they don't miss out and join.
                         </p>
                         <form onSubmit={(e) => {
                             e.preventDefault();

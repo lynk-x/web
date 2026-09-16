@@ -200,7 +200,7 @@ export default function EventInsightsPage() {
         <div className={adminStyles.container}>
             <PageHeader
                 title={eventTitle}
-                subtitle="Detailed performance metrics, sales velocity, and door telemetry."
+                subtitle="Detailed performance metrics, sales velocity and door telemetry."
                 closeHref={`/dashboard/organize/events/${id}`}
                 secondaryAction={{
                     label: 'Export Data',
