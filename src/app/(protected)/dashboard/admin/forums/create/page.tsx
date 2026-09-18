@@ -28,7 +28,7 @@ export default function CreateForumPage() {
 
     const [formData, setFormData] = useState({
         eventId: '',
-        status: 'Open',
+        status: 'open',
         hasAds: true,
         welcomeMessage: '',
     });
@@ -101,33 +101,14 @@ export default function CreateForumPage() {
 
         setIsSubmitting(true);
         try {
-            // 1. Create the forum
-            const { data: forum, error: forumError } = await supabase
-                .from('forums')
-                .insert({
-                    event_id: formData.eventId,
-                    status: formData.status,
-                    has_ads: formData.hasAds,
-                })
-                .select()
-                .single();
+            const { error } = await supabase.schema('api').rpc('admin_create_forum', {
+                p_event_id: formData.eventId,
+                p_status: formData.status,
+                p_has_ads: formData.hasAds,
+                p_welcome_message: formData.welcomeMessage.trim() || null,
+            });
 
-            if (forumError) throw forumError;
-
-            // 2. If there's a welcome message, post it as a pinned system announcement
-            if (formData.welcomeMessage.trim()) {
-                const { error: msgError } = await supabase
-                    .from('forum_messages')
-                    .insert({
-                        forum_id: forum.id,
-                        message_type: 'system_announcement',
-                        content: formData.welcomeMessage,
-                        is_pinned: true,
-                    });
-
-                if (msgError) showToast('Forum created but welcome message failed to post.', 'warning');
-            }
-
+            if (error) throw error;
 
             showToast('Forum created successfully!', 'success');
             router.push('/dashboard/admin/forums');
@@ -192,8 +173,8 @@ export default function CreateForumPage() {
                                         value={formData.status}
                                         onChange={handleInputChange}
                                     >
-                                        <option value="Open">Open (Standard)</option>
-                                        <option value="Read_only">Read Only (Announcements)</option>
+                                        <option value="open">Open (Standard)</option>
+                                        <option value="read_only">Read Only (Announcements)</option>
                                     </select>
                                 </div>
                                 <div className={styles.inputGroup}>
@@ -285,7 +266,7 @@ export default function CreateForumPage() {
 
                                 <div className={styles.previewFooter}>
                                     <div className={styles.inputMock}>
-                                        {formData.status === 'Read_only' ? 'Only moderators can post here' : 'Type a message...'}
+                                        {formData.status === 'read_only' ? 'Only moderators can post here' : 'Type a message...'}
                                     </div>
                                 </div>
                             </div>
