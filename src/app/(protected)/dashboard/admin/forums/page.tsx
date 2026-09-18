@@ -20,6 +20,7 @@ import { Report } from '@/types/admin';
 import type { ActionItem } from '@/types/shared';
 
 import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import { exportToCSV } from '@/utils/export';
@@ -59,6 +60,8 @@ function ForumsContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState('forums');
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
@@ -114,6 +117,14 @@ function ForumsContent() {
         if (statusFilter !== 'all') {
             filtered = filtered.filter((f: any) => f.status === statusFilter);
         }
+        if (startDate) {
+            const from = new Date(startDate).getTime();
+            filtered = filtered.filter((f: any) => new Date(f.created_at).getTime() >= from);
+        }
+        if (endDate) {
+            const to = new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
+            filtered = filtered.filter((f: any) => new Date(f.created_at).getTime() <= to);
+        }
         setTotalCount(filtered.length);
 
         const from = (currentPage - 1) * itemsPerPage;
@@ -134,7 +145,7 @@ function ForumsContent() {
             escalatedCount: parseInt(f.escalated_reports_count) || 0,
             oldestReportAt: f.oldest_report_at,
         })));
-    }, [allForums, searchTerm, statusFilter, currentPage, itemsPerPage, setTotalCount]);
+    }, [allForums, searchTerm, statusFilter, startDate, endDate, currentPage, itemsPerPage, setTotalCount]);
 
     const paginatedThreads = threads;
 
@@ -142,7 +153,7 @@ function ForumsContent() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedThreadIds(new Set());
-    }, [searchTerm, statusFilter, setCurrentPage]);
+    }, [searchTerm, statusFilter, startDate, endDate, setCurrentPage]);
 
     // Selection Logic
     const handleSelectThread = (id: string) => {
@@ -278,7 +289,18 @@ function ForumsContent() {
                 searchPlaceholder="Search forum name or event..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            />
+            >
+                <DateRangeRow
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onClear={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                />
+            </TableToolbar>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
                 <div className={adminStyles.tabsHeaderRow}>

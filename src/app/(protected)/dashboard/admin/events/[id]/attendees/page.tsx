@@ -11,6 +11,8 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import Spinner from '@/components/shared/Spinner';
 import Badge from '@/components/shared/Badge';
 import DataTable, { Column } from '@/components/shared/DataTable';
+import TableToolbar from '@/components/shared/TableToolbar';
+import FilterChips from '@/components/shared/FilterChips';
 
 interface EventBasics {
     id: string;
@@ -59,6 +61,8 @@ function AdminEventAttendeesContent({ params }: { params: Promise<{ id: string }
     const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAttendeesLoading, setIsAttendeesLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const fetchEvent = useCallback(async () => {
         setIsLoading(true);
@@ -123,6 +127,16 @@ function AdminEventAttendeesContent({ params }: { params: Promise<{ id: string }
 
     const currency = attendees[0]?.purchased_currency || 'USD';
 
+    const filteredAttendees = attendees.filter((a) => {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = !term
+            || (a.full_name && a.full_name.toLowerCase().includes(term))
+            || (a.email && a.email.toLowerCase().includes(term))
+            || a.ticket_code.toLowerCase().includes(term);
+        const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
     const attendeeColumns: Column<AttendeeRow>[] = [
         {
             header: 'Attendee',
@@ -153,12 +167,35 @@ function AdminEventAttendeesContent({ params }: { params: Promise<{ id: string }
                 subtitle={`${event.title} — organized by ${event.organizer}.`}
                 closeHref={`/dashboard/admin/events/${id}?created_at=${encodeURIComponent(eventCreatedAt || '')}`}
             />
-            <DataTable<AttendeeRow>
-                data={attendees}
-                columns={attendeeColumns}
-                isLoading={isAttendeesLoading}
-                emptyMessage="No attendees have purchased tickets for this event yet."
-            />
+
+            <TableToolbar
+                searchPlaceholder="Search by name, email or ticket code..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+                <FilterChips
+                    options={[
+                        { value: 'all', label: 'All' },
+                        { value: 'valid', label: 'Valid' },
+                        { value: 'used', label: 'Used' },
+                        { value: 'refunded', label: 'Refunded' },
+                        { value: 'cancelled', label: 'Cancelled' },
+                        { value: 'transferred', label: 'Transferred' },
+                        { value: 'expired', label: 'Expired' },
+                    ]}
+                    currentValue={statusFilter}
+                    onChange={setStatusFilter}
+                />
+            </TableToolbar>
+
+            <div style={{ marginTop: '16px' }}>
+                <DataTable<AttendeeRow>
+                    data={filteredAttendees}
+                    columns={attendeeColumns}
+                    isLoading={isAttendeesLoading}
+                    emptyMessage="No attendees have purchased tickets for this event yet."
+                />
+            </div>
         </div>
     );
 }

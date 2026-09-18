@@ -6,6 +6,7 @@ import styles from './TicketingTab.module.css';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
+import StatCard from '@/components/dashboard/StatCard';
 import { formatCurrency, formatRelativeTime } from '@/utils/format';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -73,23 +74,11 @@ export default function TicketingTab({ eventId }: TicketingTabProps) {
 
     return (
         <div className={styles.container}>
-            <div className={styles.statsGrid}>
-                <div className={styles.statBox}>
-                    <label>Total Capacity</label>
-                    <span>{data.stats.total_capacity}</span>
-                </div>
-                <div className={styles.statBox}>
-                    <label>Total Sold</label>
-                    <span>{data.stats.total_sold}</span>
-                </div>
-                <div className={styles.statBox}>
-                    <label>In Cart (Reserved)</label>
-                    <span>{data.stats.total_reserved}</span>
-                </div>
-                <div className={styles.statBox}>
-                    <label>Resale Listings</label>
-                    <span>{data.stats.active_listings}</span>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+                <StatCard label="Total Capacity" value={data.stats.total_capacity} />
+                <StatCard label="Total Sold" value={data.stats.total_sold} />
+                <StatCard label="In Cart (Reserved)" value={data.stats.total_reserved} />
+                <StatCard label="Resale Listings" value={data.stats.active_listings} />
             </div>
 
             <Tabs defaultValue="tiers" className={styles.subTabs}>

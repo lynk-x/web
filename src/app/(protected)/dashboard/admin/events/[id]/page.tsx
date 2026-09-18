@@ -274,20 +274,6 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                 } : undefined}
             />
 
-            <QuickLinksRow>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <QuickLink href={`/dashboard/admin/events/${id}/ticketing${subpageQuery}`} label="Ticketing & Resale" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/attendees${subpageQuery}`} label="Attendees" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/community${subpageQuery}`} label="Forum & Chat" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/moderation${subpageQuery}`} label="Moderation Queue" />
-                </div>
-                <CopyableLinkChip
-                    label="EVENT LINK"
-                    href={`/event/${event.reference}`}
-                    url={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
-                />
-            </QuickLinksRow>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 <StatCard
                     label="Tickets Sold"
@@ -299,6 +285,21 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                 <StatCard label="Attendees" value={formatNumber(totalSold)} />
                 <StatCard label="Reports" value={formatNumber(reportCount)} trend={reportCount > 0 ? 'negative' : 'positive'} />
             </div>
+
+            <QuickLinksRow>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <QuickLink href={`/dashboard/admin/events/${id}/ticketing${subpageQuery}`} label="Ticketing & Resale" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/attendees${subpageQuery}`} label="Attendees" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/finance${subpageQuery}`} label="Finance" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/community${subpageQuery}`} label="Forum & Chat" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/moderation${subpageQuery}`} label="Moderation Queue" />
+                </div>
+                <CopyableLinkChip
+                    label="EVENT LINK"
+                    href={`/event/${event.reference}`}
+                    url={`${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event.reference}`}
+                />
+            </QuickLinksRow>
 
             <div className={adminStyles.subPageGrid}>
                 {/* Left Column: Event Details & Communications */}
@@ -387,7 +388,10 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                             </div>
                         )}
                     </div>
+                </div>
 
+                {/* Right Column: Communications & Community Forum */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div className={adminStyles.pageCard}>
                         <h3 style={{ marginTop: 0 }}>Communications</h3>
                         <p style={{ opacity: 0.6, fontSize: '13px', marginBottom: '12px' }}>
@@ -407,10 +411,7 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                             </>
                         )}
                     </div>
-                </div>
 
-                {/* Right Column: Community Forum */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {forumReference && (
                         <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
