@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getSafeRedirect } from '@/utils/sanitization';
-import styles from '../login/page.module.css';
+import styles from '../page.module.css';
 
 export default function MfaChallengePage() {
     const router = useRouter();

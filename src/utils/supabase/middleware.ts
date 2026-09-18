@@ -40,6 +40,24 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
+    // ── Profile setup guard ─────────────────────────────────────────────────
+    // A brand-new sign-up must set up their profile (full_name) before doing
+    // anything else — including creating a workspace — so this runs ahead of
+    // the onboarding guard below and also covers /onboarding itself.
+    if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding'))) {
+        const { data: hasProfile, error } = await supabase.schema('api').rpc('user_has_complete_profile')
+
+        if (error) {
+            console.error('[Middleware] user_has_complete_profile RPC error:', error)
+        }
+
+        if (!error && !hasProfile) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/setup-profile'
+            return NextResponse.redirect(url)
+        }
+    }
+
     // ── Onboarding guard ────────────────────────────────────────────────────
     // A session with no account yet (e.g. signed up via login/OAuth, which
     // no longer auto-provisions an attendee account) must finish onboarding

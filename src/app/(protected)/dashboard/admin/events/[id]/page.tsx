@@ -59,9 +59,11 @@ const STATUS_BADGE_MAP: Record<string, { label: string; variant: BadgeVariant }>
  * Admin event detail control panel — the admin-scoped counterpart to the
  * organizer event detail page, built entirely on admin-gated RPCs so any
  * platform admin can inspect/act on any event regardless of which
- * organizer account owns it. Sub-areas (ticketing, attendees, forum &
- * chat, moderation queue) are real sub-routes rather than client-side
- * tabs, matching the organizer dashboard's event detail layout.
+ * organizer account owns it. Sub-areas (ticketing, attendees, finance,
+ * moderation queue) are real sub-routes rather than client-side tabs,
+ * matching the organizer dashboard's event detail layout. Forum/chat
+ * moderation and communications live inline on this page's right column
+ * rather than as their own sub-route.
  */
 export default function AdminEventDetailPage(props: { params: Promise<{ id: string }> }) {
     return (
@@ -291,7 +293,6 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                     <QuickLink href={`/dashboard/admin/events/${id}/ticketing${subpageQuery}`} label="Ticketing & Resale" />
                     <QuickLink href={`/dashboard/admin/events/${id}/attendees${subpageQuery}`} label="Attendees" />
                     <QuickLink href={`/dashboard/admin/events/${id}/finance${subpageQuery}`} label="Finance" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/community${subpageQuery}`} label="Forum & Chat" />
                     <QuickLink href={`/dashboard/admin/events/${id}/moderation${subpageQuery}`} label="Moderation Queue" />
                 </div>
                 <CopyableLinkChip
@@ -390,28 +391,8 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                     </div>
                 </div>
 
-                {/* Right Column: Communications & Community Forum */}
+                {/* Right Column: Community Forum & Communications */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div className={adminStyles.pageCard}>
-                        <h3 style={{ marginTop: 0 }}>Communications</h3>
-                        <p style={{ opacity: 0.6, fontSize: '13px', marginBottom: '12px' }}>
-                            Resend the ticket purchase confirmation email to every buyer of this event — e.g. after fixing a template issue that affected an already-sent batch.
-                        </p>
-                        <Button variant="secondary" onClick={handleResendTicketConfirmations}>
-                            Resend Ticket Confirmations
-                        </Button>
-                        {forumReference && (
-                            <>
-                                <p style={{ opacity: 0.6, fontSize: '13px', margin: '16px 0 12px' }}>
-                                    Resend the &quot;you&apos;re in the forum&quot; notification to every current forum member — separate from the ticket email above, since forum membership already exists by this point.
-                                </p>
-                                <Button variant="secondary" onClick={handleResendForumInvites}>
-                                    Resend Forum Invites
-                                </Button>
-                            </>
-                        )}
-                    </div>
-
                     {forumReference && (
                         <div className={adminStyles.pageCard} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
@@ -441,6 +422,26 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                             </a>
                         </div>
                     )}
+
+                    <div className={adminStyles.pageCard}>
+                        <h3 style={{ marginTop: 0 }}>Communications</h3>
+                        <p style={{ opacity: 0.6, fontSize: '13px', marginBottom: '12px' }}>
+                            Resend the ticket purchase confirmation email to every buyer of this event — e.g. after fixing a template issue that affected an already-sent batch.
+                        </p>
+                        <Button variant="secondary" onClick={handleResendTicketConfirmations}>
+                            Resend Ticket Confirmations
+                        </Button>
+                        {forumReference && (
+                            <>
+                                <p style={{ opacity: 0.6, fontSize: '13px', margin: '16px 0 12px' }}>
+                                    Resend the &quot;you&apos;re in the forum&quot; notification to every current forum member — separate from the ticket email above, since forum membership already exists by this point.
+                                </p>
+                                <Button variant="secondary" onClick={handleResendForumInvites}>
+                                    Resend Forum Invites
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

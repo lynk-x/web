@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import styles from '../login/page.module.css';
+import styles from '../page.module.css';
 import { processAccountRecovery } from './actions';
 
 export default function RecoverAccountPage() {

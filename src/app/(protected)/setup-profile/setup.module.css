@@ -21,6 +21,38 @@
     margin-bottom: 40px;
 }
 
+.stepIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stepDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stepDotActive {
+    background: var(--color-brand-primary);
+    width: 24px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(var(--color-brand-primary-rgb), 0.5);
+}
+
+.stepLabel {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
 .title {
     font-size: 32px;
     font-weight: 800;

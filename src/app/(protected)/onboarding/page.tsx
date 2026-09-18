@@ -295,9 +295,11 @@ function OnboardingFlow() {
 
             clearDraft(accountType);
 
-            // Redirect to the dashboard for the new account type
+            // Redirect to the dashboard for the new account type. A client-side
+            // push (not a full reload) since refreshAccounts() above already
+            // re-hydrated OrganizationContext with the new membership.
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
-            window.location.href = `/dashboard/${dashType}`;
+            router.push(`/dashboard/${dashType}`);
         } catch (err: unknown) {
             console.error('Error creating organization:', err);
             setError(getErrorMessage(err) || 'Failed to create organization. Please try again.');
@@ -324,6 +326,7 @@ function OnboardingFlow() {
                     </p>
                 </div>
 
+                <p className={styles.stepLabel}>Step 2 of 2 &middot; Workspace</p>
                 <div className={styles.stepIndicator}>
                     <div className={`${styles.stepDot} ${step === 'DETAILS' ? styles.stepDotActive : ''}`} />
                     <div className={`${styles.stepDot} ${step === 'VERIFICATION' ? styles.stepDotActive : ''}`} />

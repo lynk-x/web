@@ -9,21 +9,65 @@ import { createClient } from '@/utils/supabase/client';
 import { convertImageToWebP } from '@/utils/imageConversion';
 import styles from './setup.module.css';
 
+// Draft fields persisted across refresh/navigation, same pattern as
+// /onboarding's OnboardingDraft — a refresh mid-form previously lost
+// whatever the user had typed, since state was only ever seeded from the
+// (usually still-empty) profile fetched on mount.
+const DRAFT_KEY = 'lynkx_setup_profile_draft';
+
+interface ProfileDraft {
+    fullName: string;
+    userName: string;
+    avatarUrl: string | null;
+}
+
+function loadDraft(): Partial<ProfileDraft> | null {
+    try {
+        const raw = sessionStorage.getItem(DRAFT_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveDraft(draft: ProfileDraft) {
+    try {
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+        // Best-effort only — quota/private-mode failures shouldn't block setup.
+    }
+}
+
+function clearDraft() {
+    try {
+        sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+        // no-op
+    }
+}
+
 export default function ProfileSetupPage() {
     const router = useRouter();
     const { user, profile, isLoading: isLoadingAuth, isLoadingProfile } = useAuth();
 
     const supabase = createClient();
 
-    const [fullName, setFullName] = useState(profile?.full_name || '');
-    const [userName, setUserName] = useState(profile?.user_name || '');
+    const draft = typeof window !== 'undefined' ? loadDraft() : null;
+
+    const [fullName, setFullName] = useState(draft?.fullName ?? profile?.full_name ?? '');
+    const [userName, setUserName] = useState(draft?.userName ?? profile?.user_name ?? '');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(draft?.avatarUrl ?? profile?.avatar_url ?? null);
     const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
+
+    // Persist the resumable subset of form state on every change.
+    useEffect(() => {
+        saveDraft({ fullName, userName, avatarUrl });
+    }, [fullName, userName, avatarUrl]);
 
     // Auto-redirect if profile is already complete
     useEffect(() => {
@@ -128,7 +172,8 @@ export default function ProfileSetupPage() {
                 .eq('id', user.id);
 
             if (updateError) throw updateError;
-            
+
+            clearDraft();
             // Success: Direct them to the dashboard
             router.push('/dashboard');
         } catch (err: unknown) {
@@ -138,10 +183,22 @@ export default function ProfileSetupPage() {
         }
     };
 
+    // Render nothing until the "already complete" check above resolves,
+    // rather than flashing the (empty, since profile hasn't loaded yet)
+    // form before redirecting an already-set-up user away to /dashboard.
+    if (!hasCheckedInitial) {
+        return <div className={styles.container} />;
+    }
+
     return (
         <div className={styles.container}>
             <div className={styles.setupCard}>
                 <div className={styles.header}>
+                    <p className={styles.stepLabel}>Step 1 of 2 &middot; Profile</p>
+                    <div className={styles.stepIndicator}>
+                        <div className={`${styles.stepDot} ${styles.stepDotActive}`} />
+                        <div className={styles.stepDot} />
+                    </div>
                     <h1 className={styles.title}>Complete Your Personal Profile</h1>
                     <p className={styles.subtitle}>Tell us a bit about yourself. This profile is your global identity across Lynk-X.</p>
                 </div>

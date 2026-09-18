@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
-import AuthPage from './AuthPage';
+import AuthPage from '../AuthPage';
 
 export const metadata: Metadata = {
     title: 'Login',
 };
 
 export default function LoginPage() {
-    return <AuthPage />;
+    return <AuthPage initialMode="login" />;
 }
