@@ -69,50 +69,6 @@ export async function login(formData: FormData): Promise<AuthActionResult> {
     return { success: true, redirectTo: next }
 }
 
-/**
- * Registers a new user account with email or phone number.
- */
-export async function signup(formData: FormData): Promise<AuthActionResult> {
-    const supabase = await createClient()
-
-    let email = formData.get('email') ? sanitizeInputServer(formData.get('email') as string) : null
-    let phone = formData.get('phone') ? sanitizeInputServer(formData.get('phone') as string) : null
-    const password = formData.get('password') as string
-    const next = getSafeRedirect(sanitizeInputServer((formData.get('next') as string) || ''), '/dashboard')
-
-    if (!email && !phone) {
-        return { error: 'Please enter an email address or phone number.' }
-    }
-
-    if (!password || password.length < 6) {
-        return { error: 'Password must be at least 6 characters long.' }
-    }
-
-    if (phone && phone.includes('@')) {
-        email = phone
-        phone = null
-    } else if (email && !email.includes('@') && email.match(/^[\d\+\-\s\(\)]+$/)) {
-        phone = email
-        email = null
-    }
-
-    if (phone && !phone.startsWith('+')) {
-        const normalized = normalizeToE164(phone, '+254')
-        if (normalized) phone = normalized
-    }
-
-    const { error } = await supabase.auth.signUp(
-        phone ? { phone, password } : { email: email!, password }
-    )
-
-    if (error) {
-        return { error: error.message || 'Could not create account.' }
-    }
-
-    revalidatePath('/', 'layout')
-    return { success: true, redirectTo: next }
-}
-
 export async function resetPassword(formData: FormData): Promise<AuthActionResult> {
     const supabase = await createClient()
 

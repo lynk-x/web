@@ -27,6 +27,7 @@ const supabase = createClient();
 interface UserProfile {
     id: string;
     email: string;
+    phone_number: string | null;
     user_name: string;
     full_name: string | null;
     avatar_url: string | null;

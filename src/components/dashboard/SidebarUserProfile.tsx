@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import styles from './Sidebar.module.css';
 import { useAuth } from '@/context/AuthContext';
 
@@ -32,17 +33,19 @@ const SidebarUserProfile: React.FC = () => {
     return (
         <div className={styles.footer}>
             <div className={styles.userProfile}>
-                <div className={styles.avatar}>
-                    {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                    ) : (
-                        initials
-                    )}
-                </div>
-                <div className={styles.userInfo}>
-                    <span className={styles.userName}>{displayName}</span>
-                    <span className={styles.userEmail}>{displayEmail}</span>
-                </div>
+                <Link href="/account" className={styles.userProfileLink} aria-label="Account settings">
+                    <div className={styles.avatar}>
+                        {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                            initials
+                        )}
+                    </div>
+                    <div className={styles.userInfo}>
+                        <span className={styles.userName}>{displayName}</span>
+                        <span className={styles.userEmail}>{displayEmail}</span>
+                    </div>
+                </Link>
                 <button
                     className={styles.logoutBtn}
                     onClick={logout}

@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
-import AuthPage from '../AuthPage';
+import SignupPage from '../SignupPage';
 
 export const metadata: Metadata = {
     title: 'Create Account',
 };
 
-export default function SignupPage() {
-    return <AuthPage initialMode="signup" />;
+export default function SignupRoute() {
+    return <SignupPage />;
 }

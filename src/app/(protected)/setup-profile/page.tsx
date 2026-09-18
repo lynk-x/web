@@ -161,6 +161,14 @@ export default function ProfileSetupPage() {
         setError(null);
 
         try {
+            // internal.handle_new_user() only auto-creates a user_profile row
+            // for account_type='attendee' signups — an organizer/advertiser
+            // signup (password, OTP, or Google OAuth) never gets one this
+            // way, and api.v1_profiles has no INSTEAD OF INSERT rule, so the
+            // update below would silently affect zero rows without this.
+            const { error: ensureError } = await supabase.schema('api').rpc('ensure_own_profile');
+            if (ensureError) throw ensureError;
+
             const { error: updateError } = await supabase
                 .schema('api')
                 .from('v1_profiles')

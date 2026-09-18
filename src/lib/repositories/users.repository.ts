@@ -10,6 +10,7 @@ import { toError } from './types';
 export interface UserProfile {
     id: string;
     email: string;
+    phone_number: string | null;
     user_name: string;
     full_name: string | null;
     avatar_url: string | null;
@@ -27,7 +28,7 @@ export function createUsersRepository(client: DbClient) {
             const { data, error } = await client
                 .schema('api')
                 .from('v1_profiles')
-                .select('id, email, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
+                .select('id, email, phone_number, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
                 .eq('id', userId)
                 .maybeSingle();
 
