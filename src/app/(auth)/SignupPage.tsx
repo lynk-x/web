@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeToE164 } from '@/utils/phone';
 import { getErrorMessage } from '@/utils/error';
+import ReportIssueModal from './ReportIssueModal';
 import styles from './page.module.css';
 
 type SignupStage = 'email' | 'email-code' | 'phone';
@@ -37,6 +38,7 @@ export default function SignupPage() {
     const [formError, setFormError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Bypass sign-up if already logged in — same guard as AuthPage's login form.
     useEffect(() => {
@@ -320,6 +322,23 @@ export default function SignupPage() {
                     Log In
                 </Link>
             </div>
+
+            <div style={{ textAlign: 'center', marginTop: 24 }}>
+                <button
+                    type="button"
+                    onClick={() => setIsReportModalOpen(true)}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                    Trouble signing up? Report an issue
+                </button>
+            </div>
+
+            <ReportIssueModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                identifier={email.trim() || undefined}
+                subject="Failed signup (web)"
+            />
         </div>
     );
 }

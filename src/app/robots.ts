@@ -11,10 +11,9 @@ export default function robots(): MetadataRoute.Robots {
                 '/api/', 
                 '/checkout/', 
                 '/cart/', 
-                '/onboarding/', 
-                '/verify-success/', 
-                '/callback/', 
-                '/update-password/',
+                '/onboarding/',
+                '/verify-success/',
+                '/callback/',
                 '/invite/'
             ],
         },
