@@ -59,7 +59,7 @@ const STATUS_BADGE_MAP: Record<string, { label: string; variant: BadgeVariant }>
  * Admin event detail control panel — the admin-scoped counterpart to the
  * organizer event detail page, built entirely on admin-gated RPCs so any
  * platform admin can inspect/act on any event regardless of which
- * organizer account owns it. Sub-areas (ticketing, attendees, finance,
+ * organizer account owns it. Sub-areas (ticketing, attendees, revenue,
  * moderation queue) are real sub-routes rather than client-side tabs,
  * matching the organizer dashboard's event detail layout. Forum/chat
  * moderation and communications live inline on this page's right column
@@ -290,10 +290,10 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
 
             <QuickLinksRow>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <QuickLink href={`/dashboard/admin/events/${id}/ticketing${subpageQuery}`} label="Ticketing & Resale" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/attendees${subpageQuery}`} label="Attendees" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/finance${subpageQuery}`} label="Finance" />
-                    <QuickLink href={`/dashboard/admin/events/${id}/moderation${subpageQuery}`} label="Moderation Queue" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/ticketing${subpageQuery}`} label="Manage Tickets" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/attendees${subpageQuery}`} label="View Attendees" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/revenue${subpageQuery}`} label="Track Revenue" />
+                    <QuickLink href={`/dashboard/admin/events/${id}/moderation${subpageQuery}`} label="Moderation" />
                 </div>
                 <CopyableLinkChip
                     label="EVENT LINK"
@@ -306,35 +306,7 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                 {/* Left Column: Event Details & Communications */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div className={adminStyles.pageCard}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '4px' }}>
-                            <h2 className={adminStyles.sectionTitle} style={{ margin: 0 }}>Event Details</h2>
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                {(event.status === 'active' || event.status === 'published') && (
-                                    <Button
-                                        variant="danger"
-                                        onClick={() => handleModerateEvent(
-                                            'suspended',
-                                            'Suspend Event',
-                                            `Suspend "${event.title}"? It will be hidden from public listings without cancelling tickets or issuing refunds — reversible via Reinstate.`
-                                        )}
-                                    >
-                                        Suspend Event
-                                    </Button>
-                                )}
-                                {event.status === 'suspended' && (
-                                    <Button
-                                        variant="secondary"
-                                        onClick={() => handleModerateEvent(
-                                            'published',
-                                            'Reinstate Event',
-                                            `Reinstate "${event.title}" and make it publicly visible again?`
-                                        )}
-                                    >
-                                        Reinstate Event
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
+                        <h2 className={adminStyles.sectionTitle}>Event Details</h2>
 
                         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                             <div style={{ flex: '1 1 300px', maxWidth: '360px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
@@ -386,6 +358,35 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                             <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-interface-outline)' }}>
                                 <p style={{ fontSize: '13px', opacity: 0.5, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</p>
                                 <p style={{ fontSize: '14px', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>{event.description}</p>
+                            </div>
+                        )}
+
+                        {(event.status === 'active' || event.status === 'published' || event.status === 'suspended') && (
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--color-interface-outline)' }}>
+                                {(event.status === 'active' || event.status === 'published') && (
+                                    <Button
+                                        variant="danger"
+                                        onClick={() => handleModerateEvent(
+                                            'suspended',
+                                            'Suspend Event',
+                                            `Suspend "${event.title}"? It will be hidden from public listings without cancelling tickets or issuing refunds — reversible via Reinstate.`
+                                        )}
+                                    >
+                                        Suspend Event
+                                    </Button>
+                                )}
+                                {event.status === 'suspended' && (
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => handleModerateEvent(
+                                            'published',
+                                            'Reinstate Event',
+                                            `Reinstate "${event.title}" and make it publicly visible again?`
+                                        )}
+                                    >
+                                        Reinstate Event
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>

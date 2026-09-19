@@ -21,7 +21,7 @@ interface EventBasics {
     organizer: string;
 }
 
-interface FinanceSummary {
+interface RevenueSummary {
     currency: string;
     gross_sales: number;
     platform_fees_total: number;
@@ -79,28 +79,28 @@ const REFUND_STATUS_BADGE: Record<string, BadgeVariant> = {
     rejected: 'error',
 };
 
-const ESCROW_LABEL: Record<FinanceSummary['escrow_status'], string> = {
-    not_applicable: 'No completed sales yet',
-    held: 'Held in escrow — releases once the event completes',
-    released: 'Released to organizer wallet',
+const PAYOUT_STATUS_BADGE: Record<string, BadgeVariant> = {
+    completed: 'success',
+    failed: 'error',
+    rejected: 'error',
 };
 
 /**
  * Admin sub-page giving a per-event financial breakdown — gross sales,
- * platform fees/tax, net payable, escrow/settlement status, and full
- * transaction/refund ledgers. Split out as a real sub-route matching the
- * event detail page's other sub-areas (ticketing, attendees, community,
- * moderation).
+ * platform fees/tax, net payable, and full transaction/refund ledgers.
+ * Payout/settlement status is surfaced as a header badge rather than its
+ * own card. Split out as a real sub-route matching the event detail page's
+ * other sub-areas (ticketing, attendees, community, moderation).
  */
-export default function AdminEventFinancePage(props: { params: Promise<{ id: string }> }) {
+export default function AdminEventRevenuePage(props: { params: Promise<{ id: string }> }) {
     return (
         <Suspense fallback={<div className={adminStyles.container}><Spinner label="Loading..." centered /></div>}>
-            <AdminEventFinanceContent {...props} />
+            <AdminEventRevenueContent {...props} />
         </Suspense>
     );
 }
 
-function AdminEventFinanceContent({ params }: { params: Promise<{ id: string }> }) {
+function AdminEventRevenueContent({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -109,7 +109,7 @@ function AdminEventFinanceContent({ params }: { params: Promise<{ id: string }> 
     const supabase = useMemo(() => createClient(), []);
 
     const [event, setEvent] = useState<EventBasics | null>(null);
-    const [summary, setSummary] = useState<FinanceSummary | null>(null);
+    const [summary, setSummary] = useState<RevenueSummary | null>(null);
     const [transactions, setTransactions] = useState<TransactionRow[]>([]);
     const [refunds, setRefunds] = useState<RefundRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -144,9 +144,9 @@ function AdminEventFinanceContent({ params }: { params: Promise<{ id: string }> 
                 p_event_created_at: eventCreatedAt,
             });
             if (summaryError) throw summaryError;
-            setSummary(summaryData as FinanceSummary);
+            setSummary(summaryData as RevenueSummary);
         } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to load event finance details.', 'error');
+            showToast(getErrorMessage(err) || 'Failed to load event revenue details.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -221,7 +221,7 @@ function AdminEventFinanceContent({ params }: { params: Promise<{ id: string }> 
         return (
             <div className={adminStyles.container}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', width: '100%' }}>
-                    <Spinner label="Loading event finance details..." centered />
+                    <Spinner label="Loading event revenue details..." centered />
                 </div>
             </div>
         );
@@ -260,9 +260,13 @@ function AdminEventFinanceContent({ params }: { params: Promise<{ id: string }> 
     return (
         <div className={adminStyles.container}>
             <PageHeader
-                title="Finance"
+                title="Revenue"
                 subtitle={`${event.title} — organized by ${event.organizer}.`}
                 closeHref={`/dashboard/admin/events/${id}?created_at=${encodeURIComponent(eventCreatedAt || '')}`}
+                badge={summary.payout_status ? {
+                    label: summary.payout_status.toUpperCase(),
+                    variant: PAYOUT_STATUS_BADGE[summary.payout_status] || 'warning',
+                } : undefined}
             />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
@@ -275,27 +279,6 @@ function AdminEventFinanceContent({ params }: { params: Promise<{ id: string }> 
                     change={`${summary.refund_count} request${summary.refund_count === 1 ? '' : 's'}`}
                     trend={summary.refund_count > 0 ? 'negative' : 'neutral'}
                 />
-            </div>
-
-            <div className={adminStyles.pageCard} style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                    <h3 style={{ margin: '0 0 4px' }}>Settlement Status</h3>
-                    <p style={{ opacity: 0.6, fontSize: '13px', margin: 0 }}>{ESCROW_LABEL[summary.escrow_status]}</p>
-                </div>
-                {summary.payout_status && (
-                    <div style={{ textAlign: 'right' }}>
-                        <Badge
-                            label={summary.payout_status.toUpperCase()}
-                            variant={summary.payout_status === 'completed' ? 'success' : summary.payout_status === 'failed' || summary.payout_status === 'rejected' ? 'error' : 'warning'}
-                            showDot
-                        />
-                        {summary.payout_amount != null && (
-                            <p style={{ opacity: 0.6, fontSize: '12px', margin: '4px 0 0' }}>
-                                {formatCurrency(summary.payout_amount, summary.currency)} settled to organizer wallet
-                            </p>
-                        )}
-                    </div>
-                )}
             </div>
 
             <Tabs defaultValue="transactions">
