@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeToE164 } from '@/utils/phone';
+import { OTP_CODE_LENGTH } from '@/utils/otp';
 import PageHeader from '@/components/dashboard/PageHeader';
 import styles from './account.module.css';
 
@@ -71,13 +72,13 @@ export default function AccountPage() {
         try {
             const normalized = normalizeToE164(trimmed, '+254') || trimmed;
             // Attaches this phone to the current session and sends it a
-            // 6-digit code — the same mechanism the PWA's account settings
-            // already uses to add/change a contact identifier post-signup.
+            // code — the same mechanism the PWA's account settings already
+            // uses to add/change a contact identifier post-signup.
             const { error: updateError } = await supabase.auth.updateUser({ phone: normalized });
             if (updateError) throw updateError;
 
             setPhoneInput(normalized);
-            setNotice(`We sent a 6-digit code to ${normalized}.`);
+            setNotice(`We sent a ${OTP_CODE_LENGTH}-digit code to ${normalized}.`);
             setResendCooldown(30);
             setStage('code');
         } catch (err: unknown) {
@@ -217,10 +218,10 @@ export default function AccountPage() {
                             <input
                                 type="text"
                                 inputMode="numeric"
-                                maxLength={6}
+                                maxLength={OTP_CODE_LENGTH}
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                placeholder="000000"
+                                placeholder={'0'.repeat(OTP_CODE_LENGTH)}
                                 className={styles.codeInput}
                                 required
                                 autoFocus

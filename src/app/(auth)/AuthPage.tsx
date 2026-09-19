@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeToE164 } from '@/utils/phone';
 import { getErrorMessage } from '@/utils/error';
+import { OTP_CODE_LENGTH } from '@/utils/otp';
 import ReportIssueModal from './ReportIssueModal';
 import styles from './page.module.css';
 
@@ -174,7 +175,11 @@ export default function AuthPage() {
             </div>
 
             <h1 className={styles.title}>Welcome Back</h1>
-            <p className={styles.subtitle}>Enter your email or phone number and we&apos;ll send you a one-time code.</p>
+            <p className={styles.subtitle}>
+                {otpStage === 'request'
+                    ? "Enter your email or phone number and we'll send you a one-time code."
+                    : `Enter the ${OTP_CODE_LENGTH}-digit code sent to ${otpIdentifier}.`}
+            </p>
 
             {formError && (
                 <div style={{ color: 'var(--color-interface-error)', background: 'rgba(239,68,68,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
@@ -207,17 +212,14 @@ export default function AuthPage() {
                 </form>
             ) : (
                 <form className={styles.form} onSubmit={handleVerifyOtp}>
-                    <p className={styles.subtitle} style={{ marginTop: 0 }}>
-                        Enter the 6-digit code sent to {otpIdentifier}.
-                    </p>
                     <div className={styles.inputWrapper}>
                         <input
                             type="text"
                             inputMode="numeric"
-                            maxLength={6}
+                            maxLength={OTP_CODE_LENGTH}
                             value={otpCode}
                             onChange={(e) => setOtpCode(e.target.value)}
-                            placeholder="000000"
+                            placeholder={'0'.repeat(OTP_CODE_LENGTH)}
                             className={styles.input}
                             style={{ textAlign: 'center', letterSpacing: '4px', fontFamily: 'monospace' }}
                             required
@@ -292,7 +294,7 @@ export default function AuthPage() {
                     onClick={() => setIsReportModalOpen(true)}
                     style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}
                 >
-                    Trouble logging in? Report an issue
+                    Trouble logging in?
                 </button>
             </div>
 

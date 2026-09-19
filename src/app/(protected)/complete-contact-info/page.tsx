@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeToE164 } from '@/utils/phone';
+import { OTP_CODE_LENGTH } from '@/utils/otp';
 import styles from './complete-contact-info.module.css';
 
 type Stage = 'email' | 'email-code' | 'phone' | 'done';
@@ -76,13 +77,13 @@ export default function CompleteContactInfoPage() {
         setIsSubmitting(true);
         setError(null);
         try {
-            // Attaches email to the current session and sends it a 6-digit
-            // code — the same mechanism the PWA's account settings already
-            // uses to add/change a contact identifier post-signup.
+            // Attaches email to the current session and sends it a code —
+            // the same mechanism the PWA's account settings already uses to
+            // add/change a contact identifier post-signup.
             const { error: updateError } = await supabase.auth.updateUser({ email: email.trim() });
             if (updateError) throw updateError;
 
-            setNotice(`We sent a 6-digit code to ${email.trim()}.`);
+            setNotice(`We sent a ${OTP_CODE_LENGTH}-digit code to ${email.trim()}.`);
             setResendCooldown(30);
             setStage('email-code');
         } catch (err: unknown) {
@@ -216,7 +217,7 @@ export default function CompleteContactInfoPage() {
                     </h1>
                     <p className={styles.subtitle}>
                         {stage === 'email' && 'We need an email on file so you can sign in with a one-time code, and recover your account if needed.'}
-                        {stage === 'email-code' && 'Enter the 6-digit code we just sent you.'}
+                        {stage === 'email-code' && `Enter the ${OTP_CODE_LENGTH}-digit code we just sent you.`}
                         {stage === 'phone' && 'A phone number gives you a backup way to sign in. You can verify it later from account settings.'}
                     </p>
                 </div>
@@ -247,15 +248,15 @@ export default function CompleteContactInfoPage() {
                 {stage === 'email-code' && (
                     <form onSubmit={handleVerifyEmailCode} className={styles.form}>
                         <div className={styles.inputGroup}>
-                            <label className={styles.label}>6-Digit Code</label>
+                            <label className={styles.label}>{OTP_CODE_LENGTH}-Digit Code</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
-                                maxLength={6}
+                                maxLength={OTP_CODE_LENGTH}
                                 value={emailCode}
                                 onChange={(e) => setEmailCode(e.target.value)}
                                 className={styles.codeInput}
-                                placeholder="000000"
+                                placeholder={'0'.repeat(OTP_CODE_LENGTH)}
                                 required
                                 autoFocus
                             />

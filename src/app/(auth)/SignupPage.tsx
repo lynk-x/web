@@ -7,20 +7,21 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { normalizeToE164 } from '@/utils/phone';
 import { getErrorMessage } from '@/utils/error';
+import { OTP_CODE_LENGTH } from '@/utils/otp';
 import ReportIssueModal from './ReportIssueModal';
 import styles from './page.module.css';
 
 type SignupStage = 'email' | 'email-code' | 'phone';
 
 /**
- * OTP-based sign-up — email is the primary identifier, verified with a
- * 6-digit code (creates the auth.users row); phone is collected right
- * after but only ever stored, not verified, matching /complete-contact-info's
- * migration-gate behavior for pre-existing accounts. No password anywhere
- * in this flow. Kept as its own component (not folded into AuthPage,
- * which still owns the password + OTP LOGIN paths) since signup's shape —
- * three sequential stages, no password fields at all — no longer shares
- * enough markup with login to justify one shared component.
+ * OTP-based sign-up — email is the primary identifier, verified with an
+ * OTP_CODE_LENGTH-digit code (creates the auth.users row); phone is
+ * collected right after but only ever stored, not verified, matching
+ * /complete-contact-info's migration-gate behavior for pre-existing
+ * accounts. Kept as its own component (not folded into AuthPage, which
+ * owns the OTP LOGIN path) since signup's shape — three sequential
+ * stages — doesn't share enough markup with login to justify one shared
+ * component.
  */
 export default function SignupPage() {
     const router = useRouter();
@@ -74,7 +75,7 @@ export default function SignupPage() {
             const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
             if (error) throw error;
 
-            setNotice(`We sent a 6-digit code to ${email.trim()}.`);
+            setNotice(`We sent a ${OTP_CODE_LENGTH}-digit code to ${email.trim()}.`);
             setResendCooldown(30);
             setStage('email-code');
         } catch (err: unknown) {
@@ -197,7 +198,7 @@ export default function SignupPage() {
             </h1>
             <p className={styles.subtitle}>
                 {stage === 'email' && "Let's get started — we'll email you a code, no password needed."}
-                {stage === 'email-code' && 'Enter the 6-digit code we just sent you.'}
+                {stage === 'email-code' && `Enter the ${OTP_CODE_LENGTH}-digit code we just sent you.`}
                 {stage === 'phone' && 'A phone number gives you a backup way to sign in. You can verify it later from account settings.'}
             </p>
 
@@ -238,10 +239,10 @@ export default function SignupPage() {
                         <input
                             type="text"
                             inputMode="numeric"
-                            maxLength={6}
+                            maxLength={OTP_CODE_LENGTH}
                             value={emailCode}
                             onChange={(e) => setEmailCode(e.target.value)}
-                            placeholder="000000"
+                            placeholder={'0'.repeat(OTP_CODE_LENGTH)}
                             className={styles.input}
                             style={{ textAlign: 'center', letterSpacing: '4px', fontFamily: 'monospace' }}
                             required
@@ -329,7 +330,7 @@ export default function SignupPage() {
                     onClick={() => setIsReportModalOpen(true)}
                     style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}
                 >
-                    Trouble signing up? Report an issue
+                    Trouble signing up?
                 </button>
             </div>
 
