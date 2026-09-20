@@ -55,16 +55,6 @@ export interface TicketTier {
     updated_at: string;
 }
 
-/** Shape returned by `get_event_analytics` RPC (jsonb). */
-export interface EventAnalytics {
-    tickets_sold: number;
-    total_capacity: number;
-    gross_revenue: number;
-    waitlist_count: number;
-    scan_count: number;
-    forum_members: number;
-}
-
 /** Matches DB enum `waitlist_status`. */
 export type WaitlistStatus = 'pending' | 'invited' | 'joined' | 'expired';
 
@@ -243,14 +233,20 @@ export function createEventsRepository(client: DbClient) {
             return { data: null, error: null };
         },
 
-        /** Fetch analytics for a single event. Wraps `get_event_analytics` RPC. */
-        async getAnalytics(eventId: string): Promise<RepoResult<EventAnalytics>> {
-            const { data, error } = await client.schema('api').rpc('get_event_analytics', {
-                p_event_id: eventId,
-            });
+        /**
+         * Fetch an event's tags. Wraps `get_event_tags` RPC rather than an
+         * embedded `event_tags(tags(...))` select: public.event_tags is a
+         * plain proxy view (see 12_api/views/00_public_proxies.sql) and
+         * views carry no FK metadata for PostgREST to resolve an embed
+         * through.
+         */
+        async getEventTags(eventId: string): Promise<RepoResult<{ name: string }[]>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('get_event_tags', { p_event_id: eventId });
 
             if (error) return { data: null, error: toError(error) };
-            return { data: data as EventAnalytics, error: null };
+            return { data: (data as { name: string }[]) ?? [], error: null };
         },
 
         /** Fetch all ticket tiers for an event. */

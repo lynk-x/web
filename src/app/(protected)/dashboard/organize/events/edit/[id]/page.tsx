@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import EventForm from '@/components/features/events/EventForm';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { createEventsRepository } from '@/lib/repositories';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 import { toUtcIso } from '@/utils/format';
@@ -38,40 +39,32 @@ export default function EditEventPage() {
             }
 
             try {
-                // Fetch event
-                const { data: event, error: eventError } = await supabase
-                    .from('events')
-                    .select(`
-                        id, created_at, title, description, category_id, is_online, is_private,
-                        location, starts_at, ends_at, media, timezone
-                    `)
-                    .eq('id', eventId)
-                    .eq('account_id', activeAccount.id)
-                    .single();
+                const eventsRepo = createEventsRepository(supabase);
 
-                if (eventError) throw eventError;
+                // Event, tiers, and tags are all independent reads keyed
+                // only on eventId/activeAccount — fired together instead of
+                // three sequential round trips.
+                const [eventResult, tiersResult, tagsResult] = await Promise.all([
+                    eventsRepo.findById(eventId),
+                    eventsRepo.getTiers(eventId),
+                    eventsRepo.getEventTags(eventId),
+                ]);
 
-                // Fetch ticket tiers separately
-                const { data: tiers } = await supabase
-                    .from('ticket_tiers')
-                    .select('id, display_name, price, capacity, description, sales_start, sales_end, max_per_order')
-                    .eq('event_id', eventId);
+                if (eventResult.error) throw eventResult.error;
+                const event = eventResult.data;
+                if (!event || event.account_id !== activeAccount.id) {
+                    throw new Error('Event not found or access denied.');
+                }
 
-                if (eventError) throw eventError;
+                if (tiersResult.error) throw tiersResult.error;
+                const tiers = tiersResult.data ?? [];
 
-                // Fetch tags via RPC rather than an embedded event_tags(tags(...))
-                // select: public.event_tags is a plain proxy view (see
-                // 12_api/views/00_public_proxies.sql), and views carry no FK
-                // metadata for PostgREST to resolve an embed through.
-                const { data: eventTags, error: tagsError } = await supabase
-                    .schema('api')
-                    .rpc('get_event_tags', { p_event_id: eventId });
-
-                if (tagsError) throw tagsError;
+                if (tagsResult.error) throw tagsResult.error;
+                const eventTags = tagsResult.data ?? [];
 
                 // Parse dates
-                const startDt = new Date(event.starts_at);
-                const endDt = new Date(event.ends_at);
+                const startDt = new Date(event.start_datetime);
+                const endDt = new Date(event.end_datetime);
 
                 const formatDate = (d: Date) => d.toISOString().split('T')[0];
                 const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
