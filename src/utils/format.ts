@@ -189,8 +189,7 @@ export function formatFileSize(bytes: number): string {
  * Falls back to `formatDateTime` if the timezone is missing or unrecognised.
  *
  * @param date    UTC timestamp (ISO string or Date)
- * @param tz      IANA timezone string, e.g. 'Africa/Nairobi'. From `events.timezone`
- *                or `vw_user_tickets.display_timezone`.
+ * @param tz      IANA timezone string, e.g. 'Africa/Nairobi'. From `events.timezone`.
  *
  * @example
  * formatDateInTimezone('2026-08-15T17:00:00Z', 'Africa/Nairobi')
@@ -223,8 +222,7 @@ export function formatDateInTimezone(date: string | Date | number, tz?: string |
  * and event detail views. Do NOT use `formatDateTime` for event times.
  *
  * @param date    UTC timestamp (ISO string or Date)
- * @param tz      IANA timezone string, e.g. 'Africa/Nairobi'. From `events.timezone`
- *                or `vw_user_tickets.display_timezone`.
+ * @param tz      IANA timezone string, e.g. 'Africa/Nairobi'. From `events.timezone`.
  * @param showTz  If true, appends the short timezone abbreviation (e.g. 'EAT').
  *
  * @example

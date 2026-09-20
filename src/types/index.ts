@@ -12,7 +12,7 @@ export interface Event {
      * IANA display timezone for the event (e.g. 'Africa/Nairobi').
      * This is a CLIENT DISPLAY HINT — starts_at / ends_at are always UTC.
      * NULL means inherit from the organiser's country timezone.
-     * Exposed by vw_public_events and vw_user_tickets as `display_timezone`.
+     * Exposed by vw_public_events as `display_timezone`.
      */
     timezone?: string;
     /** 

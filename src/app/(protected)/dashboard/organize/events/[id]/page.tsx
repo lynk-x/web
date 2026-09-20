@@ -135,22 +135,25 @@ export default function EventDetailPage() {
         if (!id || !activeAccount) return;
         setIsLoading(true);
         try {
-            const [{ data, error }, { data: analytics, error: analyticsError }] = await Promise.all([
-                supabase.schema('api').rpc('get_organizer_event_details', {
-                    p_account_id: activeAccount.id,
-                    p_event_id: id,
-                }),
-                supabase.schema('api').rpc('get_event_analytics', { p_event_id: id }),
-            ]);
+            // get_organizer_event_details computes its metrics block via the
+            // same live query as the old separate get_event_analytics call —
+            // p_include_metrics folds that into this one round trip instead
+            // of two calls independently computing (slightly differently
+            // defined) revenue numbers.
+            const { data, error } = await supabase.schema('api').rpc('get_organizer_event_details', {
+                p_account_id: activeAccount.id,
+                p_event_id: id,
+                p_include_metrics: true,
+            });
 
             if (error) throw error;
-            if (analyticsError) throw analyticsError;
             if (!data) {
                 showToast('Event not found or access denied.', 'error');
                 router.push('/dashboard/organize/events');
                 return;
             }
 
+            const analytics = data.metrics as { gross_revenue?: number; scan_count?: number; forum_members?: number } | null;
             setEvent(data.event as EventDetail);
             setRevenueTotal(analytics?.gross_revenue || 0);
             setScanCount(analytics?.scan_count || 0);
