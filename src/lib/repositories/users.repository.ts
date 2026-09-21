@@ -19,6 +19,7 @@ export interface UserProfile {
     last_seen_at?: string | null;
     created_at?: string;
     active_account_id?: string | null;
+    is_premium?: boolean;
 }
 
 export function createUsersRepository(client: DbClient) {
@@ -28,7 +29,7 @@ export function createUsersRepository(client: DbClient) {
             const { data, error } = await client
                 .schema('api')
                 .from('v1_profiles')
-                .select('id, email, phone_number, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at')
+                .select('id, email, phone_number, user_name, full_name, avatar_url, country_code, gender, last_seen_at, created_at, is_premium')
                 .eq('id', userId)
                 .maybeSingle();
 
@@ -104,6 +105,14 @@ export function createUsersRepository(client: DbClient) {
 
             if (error) return { data: null, error: toError(error) };
             return { data: null, error: null };
+        },
+
+        /** Draw a fresh anonymous username for the caller. Wraps `regenerate_username` RPC. */
+        async regenerateUsername(): Promise<RepoResult<string>> {
+            const { data, error } = await client.schema('api').rpc('regenerate_username');
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: (data as { user_name: string }).user_name, error: null };
         },
     };
 }

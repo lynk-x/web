@@ -61,8 +61,16 @@ export default function ProfileSetupPage() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(draft?.avatarUrl ?? profile?.avatar_url ?? null);
     const [isCheckingUsername, setIsCheckingUsername] = useState(false);
     const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
+    const [isRegeneratingUsername, setIsRegeneratingUsername] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
+    const isPremium = profile?.is_premium === true;
+    useEffect(() => {
+        if (!draft?.userName && profile?.user_name) {
+            setUserName(profile.user_name);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profile?.user_name]);
 
     // Persist the resumable subset of form state on every change.
     useEffect(() => {
@@ -79,8 +87,13 @@ export default function ProfileSetupPage() {
         }
     }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router]);
 
-    // Debounced username check
+    // Debounced username check — only meaningful for premium accounts,
+    // since non-premium users can't edit the field at all.
     useEffect(() => {
+        if (!isPremium) {
+            setIsUsernameAvailable(null);
+            return;
+        }
         const handler = setTimeout(async () => {
             const trimmedName = userName.trim();
             if (trimmedName.length >= 3 && trimmedName !== profile?.user_name) {
@@ -102,7 +115,21 @@ export default function ProfileSetupPage() {
         }, 500);
 
         return () => clearTimeout(handler);
-    }, [userName, profile?.user_name, supabase]);
+    }, [userName, profile?.user_name, supabase, isPremium]);
+
+    const handleRegenerateUsername = async () => {
+        setIsRegeneratingUsername(true);
+        setError(null);
+        try {
+            const { data, error: rpcError } = await supabase.schema('api').rpc('regenerate_username');
+            if (rpcError) throw rpcError;
+            setUserName((data as { user_name: string }).user_name);
+        } catch (err: unknown) {
+            setError(getErrorMessage(err) || 'Failed to generate a new username.');
+        } finally {
+            setIsRegeneratingUsername(false);
+        }
+    };
 
 
     const handleUploadClick = () => {
@@ -174,7 +201,7 @@ export default function ProfileSetupPage() {
                 .from('v1_profiles')
                 .update({
                     full_name: fullName.trim(),
-                    user_name: userName.trim(),
+                    ...(isPremium ? { user_name: userName.trim() } : {}),
                     avatar_url: avatarUrl
                 })
                 .eq('id', user.id);
@@ -253,24 +280,40 @@ export default function ProfileSetupPage() {
                     <div className={styles.inputGroup}>
                         <div className={styles.labelRow}>
                             <label className={styles.label}>Username</label>
-                            {isCheckingUsername && <span className={styles.checking}>Checking...</span>}
-                            {!isCheckingUsername && isUsernameAvailable === true && <span className={styles.available}>Available</span>}
-                            {!isCheckingUsername && isUsernameAvailable === false && <span className={styles.taken}>Unavailable</span>}
+                            {isPremium && isCheckingUsername && <span className={styles.checking}>Checking...</span>}
+                            {isPremium && !isCheckingUsername && isUsernameAvailable === true && <span className={styles.available}>Available</span>}
+                            {isPremium && !isCheckingUsername && isUsernameAvailable === false && <span className={styles.taken}>Unavailable</span>}
+                            {!isPremium && <span className={styles.lockHint}>Premium feature</span>}
                         </div>
-                        <input 
-                            type="text" 
-                            value={userName}
-                            onChange={(e) => setUserName(e.target.value)}
-                            className={`${styles.input} ${isUsernameAvailable === false ? styles.inputError : ''}`}
-                            placeholder="johndoe_organize"
-                            required
-                        />
+                        <div className={styles.usernameRow}>
+                            <input
+                                type="text"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                                disabled={!isPremium}
+                                className={`${styles.input} ${isPremium && isUsernameAvailable === false ? styles.inputError : ''}`}
+                                placeholder="johndoe_organize"
+                                required
+                            />
+                            {!isPremium && (
+                                <button
+                                    type="button"
+                                    className={`${styles.regenerateBtn} ${isRegeneratingUsername ? styles.spinning : ''}`}
+                                    onClick={handleRegenerateUsername}
+                                    disabled={isRegeneratingUsername || isSubmitting}
+                                    aria-label="Generate a new username"
+                                    title="Generate a new username"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         className={styles.submitBtn}
-                        disabled={isSubmitting || isCheckingUsername || isUsernameAvailable === false}
+                        disabled={isSubmitting || (isPremium && (isCheckingUsername || isUsernameAvailable === false))}
                     >
                         {isSubmitting ? 'Saving...' : 'Finish Profile Setup'}
                     </button>
