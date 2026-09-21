@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import styles from './CheckoutView.module.css';
 import Skeleton from './Skeleton';
+import Spinner from '@/components/shared/Spinner';
 import CheckoutErrorView from './CheckoutErrorView';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/components/ui/Toast';
@@ -837,7 +838,7 @@ const CheckoutView: React.FC = () => {
             {paymentStatus === 'waiting' && (
                 <div className={styles.overlay}>
                     <div className={styles.modal}>
-                        <div className={styles.spinner}></div>
+                        <Spinner size={40} />
                         <h2 className={styles.waitingTitle}>Check your phone</h2>
                         <p className={styles.waitingText}>
                             A prompt has been sent to <strong>{formData.mpesaNumber}</strong>.<br />

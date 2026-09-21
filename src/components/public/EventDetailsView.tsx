@@ -127,8 +127,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
 
             setWaitlistStatus('joined');
         } catch (err: unknown) {
-            const msg = err instanceof Error ? getErrorMessage(err) : 'Could not join waitlist. Please try again.';
-            setWaitlistError(msg);
+            setWaitlistError(getErrorMessage(err));
             setWaitlistStatus('error');
         }
     };

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { getSafeRedirect } from '@/utils/sanitization'
+import { getErrorMessage } from '@/utils/error'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
       }
       return NextResponse.redirect(`${origin}${next}`)
     } else {
-      return NextResponse.redirect(`${origin}/verify-success?error=${encodeURIComponent(error.message)}`)
+      return NextResponse.redirect(`${origin}/verify-success?error=${encodeURIComponent(getErrorMessage(error))}`)
     }
   }
 
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
 
       return NextResponse.redirect(`${origin}${next}`)
     } else {
-      return NextResponse.redirect(`${origin}/verify-success?error=${encodeURIComponent(error.message)}`)
+      return NextResponse.redirect(`${origin}/verify-success?error=${encodeURIComponent(getErrorMessage(error))}`)
     }
   }
 

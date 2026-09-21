@@ -97,7 +97,7 @@ export default function EditEventPage() {
                     category: event.category_id || '',
                     tags: mappedTags,
                     thumbnailUrl: (event.media as any)?.thumbnail || '',
-                    isOnline: event.is_online,
+                    isOnline: event.is_online ?? false,
                     location: (event.location as any)?.name || '',
                     startDate: formatDate(startDt),
                     startTime: formatTime(startDt),

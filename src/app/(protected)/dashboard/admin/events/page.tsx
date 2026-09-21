@@ -784,7 +784,7 @@ export default function AdminEventsPage() {
                                 p_action: 'update_status',
                                 p_payload: { status }
                             });
-                            if (error) showToast(error.message, 'error');
+                            if (error) showToast(getErrorMessage(error), 'error');
                             else {
                                 showToast('Forum status updated.', 'success');
                                 fetchEvents();
