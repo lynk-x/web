@@ -888,10 +888,9 @@ const CheckoutView: React.FC = () => {
             {alreadyClaimedEventId && (
                 <div className={styles.overlay} onClick={() => setAlreadyClaimedEventId(null)}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                        <h2 className={styles.title}>Free tickets already claimed</h2>
-                        <p className={styles.subtitle}>
+                        <h2 className={styles.title}>
                             You have already claimed free tickets for this event.
-                        </p>
+                        </h2>
                         <div className={styles.body}>
                             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.6 }}>
                                 Each user can claim free tickets only once per event. Head to the event forum to join the conversation, meet other attendees, and get event updates.
