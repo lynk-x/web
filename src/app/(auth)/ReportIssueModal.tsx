@@ -21,14 +21,27 @@ interface ReportIssueModalProps {
  * specifically so this works pre-session, from /login and /signup where no
  * authenticated user exists yet.
  */
+/** Minimal shape check — catches typos, not meant to be fully RFC 5322-compliant. */
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export default function ReportIssueModal({ isOpen, onClose, identifier, subject }: ReportIssueModalProps) {
     const [message, setMessage] = useState('');
+    const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
 
+    const isEmail = identifier?.includes('@');
+    // A phone-based sign-in identifier isn't an email — support needs a way
+    // to follow up, so one is collected explicitly rather than sent as null
+    // (reports.support_tickets.email is NOT NULL) or a placeholder.
+    const needsEmailField = !identifier || !isEmail;
+
     const handleClose = () => {
         setMessage('');
+        setEmail('');
+        setEmailError(null);
         setError(null);
         setSubmitted(false);
         onClose();
@@ -36,12 +49,25 @@ export default function ReportIssueModal({ isOpen, onClose, identifier, subject 
 
     const handleSubmit = async () => {
         setError(null);
+
+        const resolvedEmail = isEmail ? identifier! : email.trim();
+        if (needsEmailField) {
+            if (!resolvedEmail) {
+                setEmailError('Please enter your email so we can follow up');
+                return;
+            }
+            if (!EMAIL_PATTERN.test(resolvedEmail)) {
+                setEmailError('Please enter a valid email address');
+                return;
+            }
+        }
+        setEmailError(null);
+
         setIsSubmitting(true);
         try {
             const supabase = createClient();
-            const isEmail = identifier?.includes('@');
             const { error: insertError } = await supabase.schema('api').from('v1_support_tickets').insert({
-                email: identifier && isEmail ? identifier : null,
+                email: resolvedEmail,
                 phone: identifier && !isEmail ? identifier : null,
                 subject,
                 message: message.trim() || 'User reported an issue with no additional details.',
@@ -80,6 +106,35 @@ export default function ReportIssueModal({ isOpen, onClose, identifier, subject 
                     {error && (
                         <div style={{ color: 'var(--color-interface-error)', background: 'rgba(239,68,68,0.1)', padding: '10px 12px', borderRadius: 10, fontSize: 13 }}>
                             {error}
+                        </div>
+                    )}
+                    {needsEmailField && (
+                        <div>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    if (emailError) setEmailError(null);
+                                }}
+                                placeholder="Your email, so we can follow up"
+                                style={{
+                                    width: '100%',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: emailError ? '1px solid var(--color-interface-error)' : '1px solid transparent',
+                                    borderRadius: 8,
+                                    padding: 12,
+                                    color: 'white',
+                                    fontSize: 14,
+                                    fontFamily: 'inherit',
+                                    boxSizing: 'border-box',
+                                }}
+                            />
+                            {emailError && (
+                                <p style={{ color: 'var(--color-interface-error)', fontSize: 12, margin: '4px 0 0' }}>
+                                    {emailError}
+                                </p>
+                            )}
                         </div>
                     )}
                     <textarea
