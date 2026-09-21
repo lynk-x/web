@@ -58,8 +58,15 @@ const CheckoutView: React.FC = () => {
     const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
     const [reservationSecondsLeft, setReservationSecondsLeft] = useState(0);
 
-    // Already-claimed free-ticket modal state
+    // Already-claimed free-ticket modal state.
+    // alreadyClaimedEventId drives the single-item case (whole cart is just
+    // this one already-claimed item — nothing left to purchase, so the
+    // primary action sends the user to the event forum instead).
+    // alreadyClaimedItemIds drives the multi-item case (other legitimate
+    // items remain in the cart — primary action removes just the
+    // already-claimed item(s) so the user can continue with the rest).
     const [alreadyClaimedEventId, setAlreadyClaimedEventId] = useState<string | null>(null);
+    const [alreadyClaimedItemIds, setAlreadyClaimedItemIds] = useState<string[] | null>(null);
     const [alreadyClaimedForumRef, setAlreadyClaimedForumRef] = useState<string | null>(null);
     const [effectiveUserId, setEffectiveUserId] = useState<string | null>(null);
 
@@ -424,7 +431,19 @@ const CheckoutView: React.FC = () => {
                     await Promise.all(reservations.map(r =>
                         supabase.schema('api').rpc('release_ticket_reservation', { p_reservation_id: r.reservationId })
                     ));
-                    throw new Error(reserveError.message || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
+
+                    const reserveMsg = reserveError.message || '';
+                    if (reserveMsg.toLowerCase().includes('already claimed free tickets')) {
+                        if (items.length === 1) {
+                            setAlreadyClaimedEventId(item.eventId);
+                        } else {
+                            setAlreadyClaimedItemIds([item.id]);
+                        }
+                        setIsSubmitting(false);
+                        return;
+                    }
+
+                    throw new Error(reserveMsg || `Failed to reserve tickets for "${item.ticketType}". They may have just sold out.`);
                 }
                 reservations.push({ tierId: item.tierId, reservationId: resId as string });
             }
@@ -986,6 +1005,40 @@ const CheckoutView: React.FC = () => {
                                 <button
                                     className={styles.cancelBtn}
                                     onClick={() => setAlreadyClaimedEventId(null)}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {alreadyClaimedItemIds && (
+                <div className={styles.overlay} onClick={() => setAlreadyClaimedItemIds(null)}>
+                    <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                        <h2 className={styles.title}>
+                            You have already claimed a free ticket for one of these events.
+                        </h2>
+                        <div className={styles.body}>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.6 }}>
+                                Each user can claim free tickets only once per event. Remove it from your order to continue with the rest of your cart.
+                            </p>
+                        </div>
+                        <div className={styles.footer}>
+                            <div className={styles.actions}>
+                                <button
+                                    className={styles.confirmBtn}
+                                    onClick={() => {
+                                        alreadyClaimedItemIds.forEach(id => removeFromCart(id));
+                                        setAlreadyClaimedItemIds(null);
+                                    }}
+                                >
+                                    Remove and Continue
+                                </button>
+                                <button
+                                    className={styles.cancelBtn}
+                                    onClick={() => setAlreadyClaimedItemIds(null)}
                                 >
                                     Close
                                 </button>
