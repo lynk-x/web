@@ -9,7 +9,6 @@ import styles from './page.module.css';
 
 const ConfirmationContent = () => {
     const searchParams = useSearchParams();
-    const orderRef = searchParams.get('order_ref') || 'LX-CONFIRMED';
     const eventId = searchParams.get('event_id') || '';
     const eventCreatedAtParam = searchParams.get('event_created_at') || '';
     const userId = searchParams.get('user_id') || '';
@@ -29,6 +28,13 @@ const ConfirmationContent = () => {
     // a real session via verifyOtp before forwarding to the forum.
     const [verifyState, setVerifyState] = useState<'checking' | 'verified' | 'unverified'>('checking');
     const [ticketCount, setTicketCount] = useState(0);
+    // Human-readable order reference (e.g. 'TKT-1234') resolved server-side
+    // by verify_completed_order — orderRef from the URL is NOT used for
+    // display: for free checkouts it's a raw ticket uuid, and its shape
+    // varies across checkout paths (M-Pesa checkoutRequestId, ticket uuid,
+    // or a synthetic 'FREE-<timestamp>' string), none of which are
+    // something a user should see as "their order number."
+    const [orderReference, setOrderReference] = useState<string | null>(null);
     // Forum reference is a single opaque slug passed to the PWA's /auth/bridge
     // route — no timestamp to mangle in transit. The bridge link only renders
     // once this resolves.
@@ -119,6 +125,7 @@ const ConfirmationContent = () => {
                 const row = Array.isArray(data) ? data[0] : data;
                 if (!error && row && row.ticket_count > 0) {
                     setTicketCount(row.ticket_count);
+                    setOrderReference(row.order_reference || null);
                     setVerifyState('verified');
 
                     const { data: forumRows, error: forumErr } = await supabase
@@ -192,9 +199,12 @@ const ConfirmationContent = () => {
             {/* 🎊 Success Header Section */}
             <div className={styles.successHeader}>
                 <h1 className={styles.title}>You're In!</h1>
-                <p className={styles.message}>Order #{orderRef} confirmed. {ticketCount > 1 ? `Your ${ticketCount} tickets are` : 'Your ticket is'} ready.</p>
+                <p className={styles.message}>
+                    {orderReference ? `Order #${orderReference} confirmed. ` : ''}
+                    {ticketCount > 1 ? `Your ${ticketCount} tickets are` : 'Your ticket is'} ready.
+                </p>
                 <div className={styles.successIcon}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M20 6L9 17L4 12" stroke="var(--color-brand-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </div>
