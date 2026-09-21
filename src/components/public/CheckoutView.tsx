@@ -369,6 +369,51 @@ const CheckoutView: React.FC = () => {
 
             setEffectiveUserId(resolvedUserId);
 
+            // Upfront already-claimed check: for every free ($0) item in the
+            // cart, ask which of those events the user already holds a
+            // ticket for, BEFORE reserving anything. Catching this here
+            // (rather than only at lock_tickets_for_checkout/purchase time)
+            // means an already-claimed item never ties up real inventory for
+            // the 15-minute hold window, and — for a mixed cart — the other,
+            // legitimate items aren't blocked by it either. If any item is
+            // filtered out, the user sees exactly what changed and the new
+            // total BEFORE any payment amount is shown/authorized, rather
+            // than a silently smaller charge going through.
+            const freeEventIds = Array.from(
+                new Set(items.filter(i => i.price === 0).map(i => i.eventId))
+            );
+            if (freeEventIds.length > 0) {
+                const { data: claimedRows, error: claimedCheckError } = await supabase
+                    .schema('api')
+                    .rpc('check_already_claimed_events', {
+                        p_event_ids: freeEventIds,
+                        p_user_id: resolvedUserId,
+                    });
+
+                if (claimedCheckError) {
+                    // Non-fatal: lock_tickets_for_checkout's own guard still
+                    // catches this later if the upfront check itself fails —
+                    // don't block checkout on a check that's advisory by design.
+                    console.error('Already-claimed pre-check failed:', claimedCheckError);
+                } else if (claimedRows && claimedRows.length > 0) {
+                    const claimedEventIds = new Set(
+                        (claimedRows as Array<{ event_id: string }>).map(r => r.event_id)
+                    );
+                    const claimedItems = items.filter(i => claimedEventIds.has(i.eventId));
+                    claimedItems.forEach(i => removeFromCart(i.id));
+
+                    const names = claimedItems.map(i => i.eventTitle).join(', ');
+                    showToast(
+                        claimedItems.length === items.length
+                            ? `You already have a ticket for ${names}. Removed from your cart.`
+                            : `You already have a ticket for ${names} — removed from your cart. Review your updated order and continue when ready.`,
+                        'info',
+                    );
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             for (const item of items) {
                 const { data: resId, error: reserveError } = await supabase.schema('api').rpc('lock_tickets_for_checkout', {
                     p_tier_id: item.tierId,
@@ -893,7 +938,7 @@ const CheckoutView: React.FC = () => {
                         </h2>
                         <div className={styles.body}>
                             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.6 }}>
-                                Each user can claim free tickets only once per event. Head to the event forum to join the conversation, meet other attendees, and get event updates.
+                                Each user can claim free tickets only once per event. Head to the event forum to join the conversation, meet other attendees and get event updates.
                             </p>
                         </div>
                         <div className={styles.footer}>
