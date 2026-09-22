@@ -14,6 +14,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import FilterChips from '@/components/shared/FilterChips';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
+import DateRangeRow from '@/components/shared/DateRangeRow';
 
 interface TicketTier {
     id: string;
@@ -26,12 +27,12 @@ interface TicketTier {
     max_per_order: number | null;
 }
 
-/** Converts an ISO timestamp to the value a `datetime-local` input expects (local time, no offset/seconds). */
-const toDateTimeLocalValue = (iso: string | null): string => {
+/** Converts an ISO timestamp to the YYYY-MM-DD value DatePicker/DateRangeRow expect. */
+const toDateOnlyValue = (iso: string | null): string => {
     if (!iso) return '';
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
 interface EventDetail {
@@ -102,12 +103,9 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     const handleTierFieldSave = useCallback(async (
         tierId: string,
         field: 'sale_starts_at' | 'sale_ends_at' | 'max_per_order',
-        value: string,
+        dbValue: string | number | null,
     ) => {
         const dbField = field === 'sale_starts_at' ? 'sales_start' : field === 'sale_ends_at' ? 'sales_end' : 'max_per_order';
-        const dbValue = field === 'max_per_order'
-            ? (value ? parseInt(value, 10) : null)
-            : (value ? new Date(value).toISOString() : null);
 
         setSavingTierId(tierId);
         try {
@@ -200,92 +198,15 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTiers.map(tier => {
-                                const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
-                                const isSavingThisTier = savingTierId === tier.id;
-
-                                return (
-                                    <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                        <td style={tdStyle}>
-                                            <span style={{ fontWeight: 600 }}>{tier.display_name}</span>
-                                        </td>
-                                        <td style={tdStyle}>
-                                            {tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}
-                                        </td>
-                                        <td style={tdStyle}>
-                                            {formatNumber(tier.tickets_sold)} / {formatNumber(tier.capacity)}
-                                        </td>
-                                        <td style={tdStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                                                    <div 
-                                                        style={{ 
-                                                            width: `${fill}%`, 
-                                                            height: '100%', 
-                                                            borderRadius: '3px', 
-                                                            background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)' 
-                                                        }} 
-                                                    />
-                                                </div>
-                                                <span style={{ opacity: 0.8, fontSize: '13px', fontWeight: 500 }}>{fill}%</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ ...tdStyle, fontSize: '13px' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: isSavingThisTier ? 0.5 : 1 }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span style={{ opacity: 0.6, minWidth: '32px' }}>From</span>
-                                                    <input
-                                                        type="datetime-local"
-                                                        className={adminStyles.input}
-                                                        style={inputStyle}
-                                                        disabled={isSavingThisTier}
-                                                        defaultValue={toDateTimeLocalValue(tier.sale_starts_at)}
-                                                        onBlur={(e) => {
-                                                            const current = toDateTimeLocalValue(tier.sale_starts_at);
-                                                            if (e.target.value !== current) {
-                                                                handleTierFieldSave(tier.id, 'sale_starts_at', e.target.value);
-                                                            }
-                                                        }}
-                                                    />
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span style={{ opacity: 0.6, minWidth: '32px' }}>Until</span>
-                                                    <input
-                                                        type="datetime-local"
-                                                        className={adminStyles.input}
-                                                        style={inputStyle}
-                                                        disabled={isSavingThisTier}
-                                                        defaultValue={toDateTimeLocalValue(tier.sale_ends_at)}
-                                                        onBlur={(e) => {
-                                                            const current = toDateTimeLocalValue(tier.sale_ends_at);
-                                                            if (e.target.value !== current) {
-                                                                handleTierFieldSave(tier.id, 'sale_ends_at', e.target.value);
-                                                            }
-                                                        }}
-                                                    />
-                                                </label>
-                                            </div>
-                                        </td>
-                                        <td style={{ ...tdStyle, fontSize: '13px' }}>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                placeholder="Unlimited"
-                                                className={adminStyles.input}
-                                                style={{ ...inputStyle, width: '90px', opacity: isSavingThisTier ? 0.5 : 1 }}
-                                                disabled={isSavingThisTier}
-                                                defaultValue={tier.max_per_order ?? ''}
-                                                onBlur={(e) => {
-                                                    const current = tier.max_per_order?.toString() ?? '';
-                                                    if (e.target.value !== current) {
-                                                        handleTierFieldSave(tier.id, 'max_per_order', e.target.value);
-                                                    }
-                                                }}
-                                            />
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                            {filteredTiers.map(tier => (
+                                <TierRow
+                                    key={tier.id}
+                                    tier={tier}
+                                    currency={event.currency}
+                                    isSaving={savingTierId === tier.id}
+                                    onFieldSave={handleTierFieldSave}
+                                />
+                            ))}
                             {filteredTiers.length === 0 && (
                                 <tr>
                                     <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
@@ -301,6 +222,99 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     );
 }
 
+interface TierRowProps {
+    tier: TicketTier;
+    currency: string;
+    isSaving: boolean;
+    onFieldSave: (tierId: string, field: 'sale_starts_at' | 'sale_ends_at' | 'max_per_order', dbValue: string | number | null) => void;
+}
+
+/**
+ * A single ticket tier row. Keeps its own local sale-window state so
+ * DateRangeRow (a controlled component) has somewhere to read/write from —
+ * seeded from the tier's current sales_start/sales_end on every load.
+ */
+const TierRow: React.FC<TierRowProps> = ({ tier, currency, isSaving, onFieldSave }) => {
+    const [startDate, setStartDate] = useState(() => toDateOnlyValue(tier.sale_starts_at));
+    const [endDate, setEndDate] = useState(() => toDateOnlyValue(tier.sale_ends_at));
+
+    const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
+
+    // Sales open at local midnight on the start date, close at local end-of-day
+    // on the end date — same convention as the event create/edit forms.
+    const handleStartDateChange = (date: string) => {
+        setStartDate(date);
+        onFieldSave(tier.id, 'sale_starts_at', date ? new Date(`${date}T00:00:00`).toISOString() : null);
+    };
+
+    const handleEndDateChange = (date: string) => {
+        setEndDate(date);
+        onFieldSave(tier.id, 'sale_ends_at', date ? new Date(`${date}T23:59:59`).toISOString() : null);
+    };
+
+    const handleClear = () => {
+        setStartDate('');
+        setEndDate('');
+        onFieldSave(tier.id, 'sale_starts_at', null);
+        onFieldSave(tier.id, 'sale_ends_at', null);
+    };
+
+    return (
+        <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', opacity: isSaving ? 0.6 : 1 }}>
+            <td style={tdStyle}>
+                <span style={{ fontWeight: 600 }}>{tier.display_name}</span>
+            </td>
+            <td style={tdStyle}>
+                {tier.price > 0 ? formatCurrency(tier.price, currency) : 'Free'}
+            </td>
+            <td style={tdStyle}>
+                {formatNumber(tier.tickets_sold)} / {formatNumber(tier.capacity)}
+            </td>
+            <td style={tdStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                        <div
+                            style={{
+                                width: `${fill}%`,
+                                height: '100%',
+                                borderRadius: '3px',
+                                background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)'
+                            }}
+                        />
+                    </div>
+                    <span style={{ opacity: 0.8, fontSize: '13px', fontWeight: 500 }}>{fill}%</span>
+                </div>
+            </td>
+            <td style={tdStyle}>
+                <DateRangeRow
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={handleStartDateChange}
+                    onEndDateChange={handleEndDateChange}
+                    onClear={handleClear}
+                />
+            </td>
+            <td style={tdStyle}>
+                <input
+                    type="number"
+                    min="1"
+                    placeholder="Unlimited"
+                    className={adminStyles.input}
+                    style={{ fontSize: '13px', padding: '4px 8px', width: '90px' }}
+                    disabled={isSaving}
+                    defaultValue={tier.max_per_order ?? ''}
+                    onBlur={(e) => {
+                        const current = tier.max_per_order?.toString() ?? '';
+                        if (e.target.value !== current) {
+                            onFieldSave(tier.id, 'max_per_order', e.target.value ? parseInt(e.target.value, 10) : null);
+                        }
+                    }}
+                />
+            </td>
+        </tr>
+    );
+};
+
 const thStyle: React.CSSProperties = {
     padding: '12px 16px',
     fontSize: '12px',
@@ -312,10 +326,4 @@ const thStyle: React.CSSProperties = {
 
 const tdStyle: React.CSSProperties = {
     padding: '16px 16px',
-};
-
-const inputStyle: React.CSSProperties = {
-    fontSize: '13px',
-    padding: '4px 8px',
-    height: 'auto',
 };
