@@ -25,6 +25,8 @@ interface EventDetailsViewProps {
     isSoldOut?: boolean;
     /** True when the event's end_datetime has passed, or its status is 'completed'/'cancelled' */
     isEventEnded?: boolean;
+    /** Official tag names linked to the event, via api.v1_tags (public/anon-safe). */
+    tags?: string[];
 }
 
 const stripHtml = (html: string) => {
@@ -37,6 +39,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     disclaimers = [],
     isSoldOut = false,
     isEventEnded = false,
+    tags = [],
 }) => {
     const plainText = stripHtml(event.description || '');
     const router = useRouter();
@@ -278,6 +281,14 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             </div>
                         </div>
 
+                        {tags.length > 0 && (
+                            <div className={styles.tagGrid} style={{ marginBottom: 'var(--spacing-lg)' }}>
+                                {tags.map((tag) => (
+                                    <span key={tag} className={styles.tag}>{tag}</span>
+                                ))}
+                            </div>
+                        )}
+
                         <div className={styles.sectionHeader} onClick={() => setIsAboutExpanded(!isAboutExpanded)}>
                             <h2 className={styles.sectionTitle}>About the event</h2>
                             <svg
@@ -387,7 +398,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                     <div className={styles.ticketDetails}>
                                         <div className={styles.ticketNamePrice}>
                                             <span className={styles.tierName}>{tier.display_name || tier.name}</span>
-                                            <span className={styles.tierPrice}>{event.currency || 'KES'} {tier.price.toLocaleString()}</span>
+                                            <span className={styles.tierPrice}>
+                                                {tier.price > 0 ? `${event.currency || 'KES'} ${tier.price.toLocaleString()}` : 'FREE'}
+                                            </span>
                                         </div>
                                         <div className={styles.ticketInfoRow}>
                                             <div className={styles.ticketMeta}>
@@ -447,7 +460,12 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 className={`${styles.getTicketBtn} ${selectedTicket === null ? styles.disabled : ''}`}
                             >
                                 {selectedTicket !== null
-                                    ? `Proceed to Checkout \u2014 ${event.currency || 'KES'} ${((ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity).toLocaleString()}`
+                                    ? (() => {
+                                        const total = (ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity;
+                                        return total > 0
+                                            ? `Proceed to Checkout — ${event.currency || 'KES'} ${total.toLocaleString()}`
+                                            : 'Proceed to Checkout — Free';
+                                    })()
                                     : 'Select a ticket'}
                             </button>
                         </motion.div>

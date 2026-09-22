@@ -78,6 +78,17 @@ export default async function EventPage({ params }: { params: { reference: strin
 
     const tagIds = eventTagRows?.map((r: any) => r.tag_id).filter(Boolean) || [];
 
+    let tagNames: string[] = [];
+    if (tagIds.length > 0) {
+        const { data: tagRows } = await supabase
+            .schema('api')
+            .from('v1_tags')
+            .select('id, name')
+            .in('id', tagIds);
+
+        tagNames = (tagRows || []).map((t: any) => t.name).filter(Boolean);
+    }
+
     let disclaimers: any[] = [];
     if (tagIds.length > 0) {
         // Step 2: fetch approved, effective disclaimers matching those tags
@@ -175,6 +186,7 @@ export default async function EventPage({ params }: { params: { reference: strin
                 disclaimers={disclaimers}
                 isSoldOut={isSoldOut}
                 isEventEnded={isEventEnded}
+                tags={tagNames}
             />
         </>
     );
