@@ -360,14 +360,14 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 // locked in checkout — not just what's already sold.
                                 const tierRemaining = tier.capacity !== null ? Math.max(0, tier.tickets_available ?? 0) : Infinity;
                                 const isCapacitySoldOut = tier.capacity !== null && tierRemaining === 0;
-                                // A tier past its sales_end reads the same as sold out to attendees —
-                                // there's no meaningful difference between "none left" and "no longer
-                                // on sale" from a buying standpoint. sales_start in the future is kept
-                                // separate (isTierNotYetOpen) since "sold out" would be misleading there.
-                                const isTierClosed = Boolean(tier.sales_end && new Date(tier.sales_end).getTime() < Date.now());
-                                const isTierNotYetOpen = Boolean(tier.sales_start && new Date(tier.sales_start).getTime() > Date.now());
-                                const isTierSoldOut = isCapacitySoldOut || isTierClosed;
-                                const isTierUnavailable = isTierSoldOut || isTierNotYetOpen;
+                                // Outside its sale window in either direction (not yet open, or
+                                // closed) reads identically to sold-out-by-capacity to attendees —
+                                // there's no separate "sales open on X" messaging, just unavailable.
+                                const isOutsideSaleWindow = Boolean(
+                                    (tier.sales_end && new Date(tier.sales_end).getTime() < Date.now())
+                                    || (tier.sales_start && new Date(tier.sales_start).getTime() > Date.now())
+                                );
+                                const isTierUnavailable = isCapacitySoldOut || isOutsideSaleWindow;
                                 return (
                                 <motion.div
                                     key={tier.id}
@@ -392,13 +392,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                         <div className={styles.ticketInfoRow}>
                                             <div className={styles.ticketMeta}>
                                                 <div className={styles.ticketDescription}>{tier.description || 'General admission'}</div>
-                                                {isTierSoldOut ? (
+                                                {isTierUnavailable ? (
                                                     <div className={styles.remainingBadge} style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--color-interface-error)' }}>
                                                         Sold Out
-                                                    </div>
-                                                ) : isTierNotYetOpen ? (
-                                                    <div className={styles.remainingBadge}>
-                                                        Sales open {formatEventDate(tier.sales_start)}
                                                     </div>
                                                 ) : tier.capacity !== null && (
                                                     <div className={styles.remainingBadge}>
