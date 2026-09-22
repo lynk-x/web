@@ -226,6 +226,16 @@
     text-transform: uppercase;
 }
 
+.tagNeutral {
+    padding: 6px 12px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--color-utility-secondaryText);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 400;
+    text-transform: none;
+}
+
 .logoWrapper {
     display: flex;
     justify-content: center;

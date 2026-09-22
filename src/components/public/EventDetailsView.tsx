@@ -284,7 +284,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         {tags.length > 0 && (
                             <div className={styles.tagGrid} style={{ marginBottom: 'var(--spacing-lg)' }}>
                                 {tags.map((tag) => (
-                                    <span key={tag} className={styles.tag}>{tag}</span>
+                                    <span key={tag} className={styles.tagNeutral}>{tag}</span>
                                 ))}
                             </div>
                         )}
