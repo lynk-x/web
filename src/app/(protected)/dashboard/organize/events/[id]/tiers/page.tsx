@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
-import { formatCurrency, formatNumber } from '@/utils/format';
+import { formatCurrency, formatNumber, formatDate } from '@/utils/format';
 import { createEventsRepository } from '@/lib/repositories';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -14,6 +14,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import FilterChips from '@/components/shared/FilterChips';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
+import Modal from '@/components/shared/Modal';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 
 interface TicketTier {
@@ -22,8 +23,8 @@ interface TicketTier {
     price: number;
     capacity: number;
     tickets_sold: number;
-    sale_starts_at: string | null;
-    sale_ends_at: string | null;
+    sales_start: string | null;
+    sales_end: string | null;
     max_per_order: number | null;
 }
 
@@ -59,7 +60,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all');
-    const [savingTierId, setSavingTierId] = useState<string | null>(null);
+    const [editingTier, setEditingTier] = useState<TicketTier | null>(null);
 
     const fetchTiersData = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -95,31 +96,6 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     useEffect(() => {
         fetchTiersData();
     }, [fetchTiersData]);
-
-    /**
-     * Persists a sale-window or max-per-order edit for a single tier, optimistically
-     * updating local state so the row reflects the change immediately.
-     */
-    const handleTierFieldSave = useCallback(async (
-        tierId: string,
-        field: 'sale_starts_at' | 'sale_ends_at' | 'max_per_order',
-        dbValue: string | number | null,
-    ) => {
-        const dbField = field === 'sale_starts_at' ? 'sales_start' : field === 'sale_ends_at' ? 'sales_end' : 'max_per_order';
-
-        setSavingTierId(tierId);
-        try {
-            const eventsRepo = createEventsRepository(supabase);
-            const { error } = await eventsRepo.updateTier(tierId, { [dbField]: dbValue });
-            if (error) throw error;
-
-            setTiers(prev => prev.map(t => t.id === tierId ? { ...t, [field]: dbValue } : t));
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to update ticket tier.', 'error');
-        } finally {
-            setSavingTierId(null);
-        }
-    }, [supabase, showToast]);
 
     const filteredTiers = useMemo(() => {
         return tiers.filter((tier) => {
@@ -195,21 +171,67 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                                 <th style={thStyle}>Sell-through</th>
                                 <th style={thStyle}>Sale Window</th>
                                 <th style={thStyle}>Max Per Order</th>
+                                <th style={thStyle}></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTiers.map(tier => (
-                                <TierRow
-                                    key={tier.id}
-                                    tier={tier}
-                                    currency={event.currency}
-                                    isSaving={savingTierId === tier.id}
-                                    onFieldSave={handleTierFieldSave}
-                                />
-                            ))}
+                            {filteredTiers.map(tier => {
+                                const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
+
+                                let saleWindow = 'Always Active';
+                                if (tier.sales_start || tier.sales_end) {
+                                    const startStr = tier.sales_start ? formatDate(tier.sales_start) : 'Now';
+                                    const endStr = tier.sales_end ? formatDate(tier.sales_end) : 'Event End';
+                                    saleWindow = `${startStr} — ${endStr}`;
+                                }
+
+                                return (
+                                    <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
+                                        <td style={tdStyle}>
+                                            <span style={{ fontWeight: 600 }}>{tier.display_name}</span>
+                                        </td>
+                                        <td style={tdStyle}>
+                                            {tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}
+                                        </td>
+                                        <td style={tdStyle}>
+                                            {formatNumber(tier.tickets_sold)} / {formatNumber(tier.capacity)}
+                                        </td>
+                                        <td style={tdStyle}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                                                    <div
+                                                        style={{
+                                                            width: `${fill}%`,
+                                                            height: '100%',
+                                                            borderRadius: '3px',
+                                                            background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)'
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span style={{ opacity: 0.8, fontSize: '13px', fontWeight: 500 }}>{fill}%</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
+                                            {saleWindow}
+                                        </td>
+                                        <td style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
+                                            {tier.max_per_order ? `${tier.max_per_order} tickets` : 'Unlimited'}
+                                        </td>
+                                        <td style={tdStyle}>
+                                            <button
+                                                className={adminStyles.btnSecondary}
+                                                style={{ padding: '6px 14px', fontSize: '13px' }}
+                                                onClick={() => setEditingTier(tier)}
+                                            >
+                                                Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {filteredTiers.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
+                                    <td colSpan={7} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
                                         {searchTerm || filter !== 'all' ? 'No ticket tiers match your search and filter criteria.' : 'No ticket tiers configured for this event.'}
                                     </td>
                                 </tr>
@@ -218,100 +240,99 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                     </table>
                 </div>
             </div>
+
+            {editingTier && (
+                <TierEditModal
+                    tier={editingTier}
+                    onClose={() => setEditingTier(null)}
+                    onSaved={(updated) => {
+                        setTiers(prev => prev.map(t => t.id === updated.id ? updated : t));
+                        setEditingTier(null);
+                    }}
+                />
+            )}
         </div>
     );
 }
 
-interface TierRowProps {
+interface TierEditModalProps {
     tier: TicketTier;
-    currency: string;
-    isSaving: boolean;
-    onFieldSave: (tierId: string, field: 'sale_starts_at' | 'sale_ends_at' | 'max_per_order', dbValue: string | number | null) => void;
+    onClose: () => void;
+    onSaved: (updated: TicketTier) => void;
 }
 
 /**
- * A single ticket tier row. Keeps its own local sale-window state so
- * DateRangeRow (a controlled component) has somewhere to read/write from —
- * seeded from the tier's current sales_start/sales_end on every load.
+ * Edits a tier's sale window and max-per-order in a modal rather than
+ * inline in the table — DateRangeRow's popup calendar needs room to render
+ * outside the table's own horizontal-scroll container, which clips any
+ * absolutely-positioned popup that tries to open from inside a cell.
  */
-const TierRow: React.FC<TierRowProps> = ({ tier, currency, isSaving, onFieldSave }) => {
-    const [startDate, setStartDate] = useState(() => toDateOnlyValue(tier.sale_starts_at));
-    const [endDate, setEndDate] = useState(() => toDateOnlyValue(tier.sale_ends_at));
+const TierEditModal: React.FC<TierEditModalProps> = ({ tier, onClose, onSaved }) => {
+    const supabase = useMemo(() => createClient(), []);
+    const { showToast } = useToast();
+    const [isSaving, setIsSaving] = useState(false);
+    const [startDate, setStartDate] = useState(() => toDateOnlyValue(tier.sales_start));
+    const [endDate, setEndDate] = useState(() => toDateOnlyValue(tier.sales_end));
+    const [maxPerOrder, setMaxPerOrder] = useState(tier.max_per_order?.toString() ?? '');
 
-    const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        try {
+            const eventsRepo = createEventsRepository(supabase);
+            const fields = {
+                sales_start: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : null,
+                sales_end: endDate ? new Date(`${endDate}T23:59:59`).toISOString() : null,
+                max_per_order: maxPerOrder ? parseInt(maxPerOrder, 10) : null,
+            };
+            const { error } = await eventsRepo.updateTier(tier.id, fields);
+            if (error) throw error;
 
-    // Sales open at local midnight on the start date, close at local end-of-day
-    // on the end date — same convention as the event create/edit forms.
-    const handleStartDateChange = (date: string) => {
-        setStartDate(date);
-        onFieldSave(tier.id, 'sale_starts_at', date ? new Date(`${date}T00:00:00`).toISOString() : null);
-    };
-
-    const handleEndDateChange = (date: string) => {
-        setEndDate(date);
-        onFieldSave(tier.id, 'sale_ends_at', date ? new Date(`${date}T23:59:59`).toISOString() : null);
-    };
-
-    const handleClear = () => {
-        setStartDate('');
-        setEndDate('');
-        onFieldSave(tier.id, 'sale_starts_at', null);
-        onFieldSave(tier.id, 'sale_ends_at', null);
+            showToast('Ticket tier updated.', 'success');
+            onSaved({ ...tier, ...fields });
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update ticket tier.', 'error');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
-        <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', opacity: isSaving ? 0.6 : 1 }}>
-            <td style={tdStyle}>
-                <span style={{ fontWeight: 600 }}>{tier.display_name}</span>
-            </td>
-            <td style={tdStyle}>
-                {tier.price > 0 ? formatCurrency(tier.price, currency) : 'Free'}
-            </td>
-            <td style={tdStyle}>
-                {formatNumber(tier.tickets_sold)} / {formatNumber(tier.capacity)}
-            </td>
-            <td style={tdStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                        <div
-                            style={{
-                                width: `${fill}%`,
-                                height: '100%',
-                                borderRadius: '3px',
-                                background: Number(fill) >= 90 ? 'var(--color-interface-error)' : 'var(--color-brand-primary)'
-                            }}
-                        />
-                    </div>
-                    <span style={{ opacity: 0.8, fontSize: '13px', fontWeight: 500 }}>{fill}%</span>
+        <Modal isOpen={true} title={`Edit ${tier.display_name}`} onClose={onClose} size="medium">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px' }}>
+                <div>
+                    <label style={{ ...labelStyle, marginBottom: '8px', display: 'block' }}>Sale Window</label>
+                    <DateRangeRow
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => { setStartDate(''); setEndDate(''); }}
+                    />
                 </div>
-            </td>
-            <td style={tdStyle}>
-                <DateRangeRow
-                    startDate={startDate}
-                    endDate={endDate}
-                    onStartDateChange={handleStartDateChange}
-                    onEndDateChange={handleEndDateChange}
-                    onClear={handleClear}
-                />
-            </td>
-            <td style={tdStyle}>
-                <input
-                    type="number"
-                    min="1"
-                    placeholder="Unlimited"
-                    className={adminStyles.input}
-                    style={{ fontSize: '13px', padding: '4px 8px', width: '90px' }}
-                    disabled={isSaving}
-                    defaultValue={tier.max_per_order ?? ''}
-                    onBlur={(e) => {
-                        const current = tier.max_per_order?.toString() ?? '';
-                        if (e.target.value !== current) {
-                            onFieldSave(tier.id, 'max_per_order', e.target.value ? parseInt(e.target.value, 10) : null);
-                        }
-                    }}
-                />
-            </td>
-        </tr>
+
+                <div className={adminStyles.inputGroup}>
+                    <label style={labelStyle}>Max Per Order</label>
+                    <input
+                        type="number"
+                        min="1"
+                        placeholder="Unlimited"
+                        className={adminStyles.input}
+                        value={maxPerOrder}
+                        onChange={(e) => setMaxPerOrder(e.target.value)}
+                    />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                    <button type="button" className={adminStyles.btnSecondary} onClick={onClose} style={{ flex: 1 }}>
+                        Cancel
+                    </button>
+                    <button type="submit" className={adminStyles.btnPrimary} disabled={isSaving} style={{ flex: 2 }}>
+                        {isSaving ? 'Saving…' : 'Save Changes'}
+                    </button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 
@@ -326,4 +347,12 @@ const thStyle: React.CSSProperties = {
 
 const tdStyle: React.CSSProperties = {
     padding: '16px 16px',
+};
+
+const labelStyle: React.CSSProperties = {
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    opacity: 0.6,
 };

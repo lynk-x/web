@@ -25,8 +25,8 @@ interface TicketTier {
     price: number;
     capacity: number;
     tickets_sold: number;
-    sale_starts_at: string | null;
-    sale_ends_at: string | null;
+    sales_start: string | null;
+    sales_end: string | null;
     max_per_order: number | null;
 }
 
