@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './DatePicker.module.css';
 
 interface DatePickerProps {
@@ -28,7 +29,33 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const [viewDate, setViewDate] = useState(() => value ? new Date(value) : new Date());
     const [inputValue, setInputValue] = useState('');
+    const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const popupRef = useRef<HTMLDivElement>(null);
+
+    // Renders the calendar via a portal to document.body, positioned from the
+    // input's live viewport coordinates — needed because this component is
+    // sometimes used inside scrolling containers (e.g. a modal body with
+    // overflow-y: auto), and any such ancestor clips a plain CSS
+    // position: absolute popup regardless of z-index.
+    useLayoutEffect(() => {
+        if (!isOpen || !containerRef.current) return;
+
+        const updatePosition = () => {
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (rect) {
+                setPopupPosition({ top: rect.bottom + 8, left: rect.left });
+            }
+        };
+
+        updatePosition();
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [isOpen]);
 
     // Sync external value to internal text display (DD/MM/YYYY)
     useEffect(() => {
@@ -42,10 +69,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         }
     }, [value]);
 
-    // Handle clicks outside to close calendar
+    // Handle clicks outside to close calendar. The calendar itself is
+    // portaled to document.body (see popupPosition effect above), so it's
+    // no longer a DOM descendant of containerRef — a click inside it must
+    // be checked against popupRef separately or it would look like an
+    // outside click and close the calendar before selectDate ever fires.
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            const target = e.target as Node;
+            if (
+                containerRef.current && !containerRef.current.contains(target)
+                && popupRef.current && !popupRef.current.contains(target)
+            ) {
                 setIsOpen(false);
             }
         };
@@ -156,8 +191,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 </svg>
             </div>
 
-            {isOpen && (
-                <div className={styles.calendarPortal}>
+            {isOpen && popupPosition && createPortal(
+                <div
+                    ref={popupRef}
+                    className={styles.calendarPortal}
+                    style={{ position: 'fixed', top: popupPosition.top, left: popupPosition.left }}
+                >
                     <div className={styles.calendarHeader}>
                         <button type="button" className={styles.navBtn} onClick={prevMonth}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -206,7 +245,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                             );
                         })}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

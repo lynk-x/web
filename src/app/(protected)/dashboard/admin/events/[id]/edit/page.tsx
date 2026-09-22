@@ -259,8 +259,8 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                         price: parseFloat(t.price),
                         capacity: parseInt(t.capacity),
                         max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : null,
-                        sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                        sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                        sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : eventCreatedAt,
+                        sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : startDateTime,
                         description: t.description || null,
                         updated_at: new Date().toISOString()
                     };

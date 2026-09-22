@@ -188,13 +188,14 @@ export default function EditEventPage() {
                     is_private: data.isPrivate,
                     status: data.status || undefined
                 },
+
                 p_tiers: data.tickets.map(t => ({
                     id: t.id || undefined,
                     name: t.display_name,
                     price: data.isPaid ? parseFloat(t.price || '0') : 0,
                     capacity: parseInt(t.capacity || '0'),
-                    sales_start: t.saleStart ? toUtcIso(t.saleStart, '00:00', data.timezone) : startDateTime,
-                    sales_end: t.saleEnd ? toUtcIso(t.saleEnd, '23:59', data.timezone) : endDateTime,
+                    sales_start: t.saleStart ? toUtcIso(t.saleStart, '00:00', data.timezone) : null,
+                    sales_end: t.saleEnd ? toUtcIso(t.saleEnd, '23:59', data.timezone) : null,
                     description: t.description || null,
                     max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5
                 }))

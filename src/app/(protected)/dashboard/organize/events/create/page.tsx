@@ -86,8 +86,8 @@ export default function CreateEventPage() {
                     name: t.display_name,
                     price: data.isPaid ? parseFloat(t.price || '0') : 0,
                     capacity: parseInt(t.capacity || '0'),
-                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : null,
+                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : null,
                     max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : 5
                 }))
             });

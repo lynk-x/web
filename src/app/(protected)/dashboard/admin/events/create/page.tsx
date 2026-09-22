@@ -104,8 +104,8 @@ export default function AdminCreateEventPage() {
                     price: parseFloat(t.price),
                     capacity: parseInt(t.capacity),
                     max_per_order: t.maxPerOrder ? parseInt(t.maxPerOrder) : null,
-                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : startDateTime,
-                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : endDateTime,
+                    sales_start: t.saleStart ? new Date(t.saleStart).toISOString() : newEvent.created_at,
+                    sales_end: t.saleEnd ? new Date(t.saleEnd).toISOString() : startDateTime,
                 }));
 
                 const { error: ticketError } = await supabase
