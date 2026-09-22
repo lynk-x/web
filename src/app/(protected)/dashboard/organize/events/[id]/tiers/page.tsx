@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
-import { formatCurrency, formatNumber, formatDate } from '@/utils/format';
+import { formatCurrency, formatNumber } from '@/utils/format';
+import { createEventsRepository } from '@/lib/repositories';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -24,6 +25,14 @@ interface TicketTier {
     sale_ends_at: string | null;
     max_per_order: number | null;
 }
+
+/** Converts an ISO timestamp to the value a `datetime-local` input expects (local time, no offset/seconds). */
+const toDateTimeLocalValue = (iso: string | null): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 interface EventDetail {
     id: string;
@@ -49,6 +58,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all');
+    const [savingTierId, setSavingTierId] = useState<string | null>(null);
 
     const fetchTiersData = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -84,6 +94,34 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
     useEffect(() => {
         fetchTiersData();
     }, [fetchTiersData]);
+
+    /**
+     * Persists a sale-window or max-per-order edit for a single tier, optimistically
+     * updating local state so the row reflects the change immediately.
+     */
+    const handleTierFieldSave = useCallback(async (
+        tierId: string,
+        field: 'sale_starts_at' | 'sale_ends_at' | 'max_per_order',
+        value: string,
+    ) => {
+        const dbField = field === 'sale_starts_at' ? 'sales_start' : field === 'sale_ends_at' ? 'sales_end' : 'max_per_order';
+        const dbValue = field === 'max_per_order'
+            ? (value ? parseInt(value, 10) : null)
+            : (value ? new Date(value).toISOString() : null);
+
+        setSavingTierId(tierId);
+        try {
+            const eventsRepo = createEventsRepository(supabase);
+            const { error } = await eventsRepo.updateTier(tierId, { [dbField]: dbValue });
+            if (error) throw error;
+
+            setTiers(prev => prev.map(t => t.id === tierId ? { ...t, [field]: dbValue } : t));
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update ticket tier.', 'error');
+        } finally {
+            setSavingTierId(null);
+        }
+    }, [supabase, showToast]);
 
     const filteredTiers = useMemo(() => {
         return tiers.filter((tier) => {
@@ -164,14 +202,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                         <tbody>
                             {filteredTiers.map(tier => {
                                 const fill = tier.capacity > 0 ? ((tier.tickets_sold / tier.capacity) * 100).toFixed(0) : '0';
-                                
-                                // Format sale window dates
-                                let saleWindow = 'Always Active';
-                                if (tier.sale_starts_at || tier.sale_ends_at) {
-                                    const startStr = tier.sale_starts_at ? `${formatDate(tier.sale_starts_at)}` : 'Now';
-                                    const endStr = tier.sale_ends_at ? `${formatDate(tier.sale_ends_at)}` : 'Event End';
-                                    saleWindow = `${startStr} — ${endStr}`;
-                                }
+                                const isSavingThisTier = savingTierId === tier.id;
 
                                 return (
                                     <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
@@ -199,11 +230,58 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                                                 <span style={{ opacity: 0.8, fontSize: '13px', fontWeight: 500 }}>{fill}%</span>
                                             </div>
                                         </td>
-                                        <td style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
-                                            {saleWindow}
+                                        <td style={{ ...tdStyle, fontSize: '13px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: isSavingThisTier ? 0.5 : 1 }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ opacity: 0.6, minWidth: '32px' }}>From</span>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className={adminStyles.input}
+                                                        style={inputStyle}
+                                                        disabled={isSavingThisTier}
+                                                        defaultValue={toDateTimeLocalValue(tier.sale_starts_at)}
+                                                        onBlur={(e) => {
+                                                            const current = toDateTimeLocalValue(tier.sale_starts_at);
+                                                            if (e.target.value !== current) {
+                                                                handleTierFieldSave(tier.id, 'sale_starts_at', e.target.value);
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ opacity: 0.6, minWidth: '32px' }}>Until</span>
+                                                    <input
+                                                        type="datetime-local"
+                                                        className={adminStyles.input}
+                                                        style={inputStyle}
+                                                        disabled={isSavingThisTier}
+                                                        defaultValue={toDateTimeLocalValue(tier.sale_ends_at)}
+                                                        onBlur={(e) => {
+                                                            const current = toDateTimeLocalValue(tier.sale_ends_at);
+                                                            if (e.target.value !== current) {
+                                                                handleTierFieldSave(tier.id, 'sale_ends_at', e.target.value);
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
                                         </td>
-                                        <td style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
-                                            {tier.max_per_order ? `${tier.max_per_order} tickets` : 'Unlimited'}
+                                        <td style={{ ...tdStyle, fontSize: '13px' }}>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                placeholder="Unlimited"
+                                                className={adminStyles.input}
+                                                style={{ ...inputStyle, width: '90px', opacity: isSavingThisTier ? 0.5 : 1 }}
+                                                disabled={isSavingThisTier}
+                                                defaultValue={tier.max_per_order ?? ''}
+                                                onBlur={(e) => {
+                                                    const current = tier.max_per_order?.toString() ?? '';
+                                                    if (e.target.value !== current) {
+                                                        handleTierFieldSave(tier.id, 'max_per_order', e.target.value);
+                                                    }
+                                                }}
+                                            />
                                         </td>
                                     </tr>
                                 );
@@ -234,4 +312,10 @@ const thStyle: React.CSSProperties = {
 
 const tdStyle: React.CSSProperties = {
     padding: '16px 16px',
+};
+
+const inputStyle: React.CSSProperties = {
+    fontSize: '13px',
+    padding: '4px 8px',
+    height: 'auto',
 };

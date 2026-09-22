@@ -359,15 +359,23 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 // tickets_reserved, so it reflects tickets other buyers currently have
                                 // locked in checkout — not just what's already sold.
                                 const tierRemaining = tier.capacity !== null ? Math.max(0, tier.tickets_available ?? 0) : Infinity;
-                                const isTierSoldOut = tier.capacity !== null && tierRemaining === 0;
+                                const isCapacitySoldOut = tier.capacity !== null && tierRemaining === 0;
+                                // A tier past its sales_end reads the same as sold out to attendees —
+                                // there's no meaningful difference between "none left" and "no longer
+                                // on sale" from a buying standpoint. sales_start in the future is kept
+                                // separate (isTierNotYetOpen) since "sold out" would be misleading there.
+                                const isTierClosed = Boolean(tier.sales_end && new Date(tier.sales_end).getTime() < Date.now());
+                                const isTierNotYetOpen = Boolean(tier.sales_start && new Date(tier.sales_start).getTime() > Date.now());
+                                const isTierSoldOut = isCapacitySoldOut || isTierClosed;
+                                const isTierUnavailable = isTierSoldOut || isTierNotYetOpen;
                                 return (
                                 <motion.div
                                     key={tier.id}
-                                    className={`${styles.ticketItem} ${selectedTicket === tier.id ? styles.ticketItemActive : ''} ${isTierSoldOut ? styles.ticketItemSoldOut : ''}`}
-                                    onClick={() => !isTierSoldOut && toggleTicket(tier.id)}
-                                    style={{ cursor: isTierSoldOut ? 'not-allowed' : 'pointer', opacity: isTierSoldOut ? 0.55 : 1 }}
-                                    whileHover={!isTierSoldOut ? { scale: 1.01, borderColor: 'var(--color-brand-primary)' } : {}}
-                                    whileTap={!isTierSoldOut ? { scale: 0.98 } : {}}
+                                    className={`${styles.ticketItem} ${selectedTicket === tier.id ? styles.ticketItemActive : ''} ${isTierUnavailable ? styles.ticketItemSoldOut : ''}`}
+                                    onClick={() => !isTierUnavailable && toggleTicket(tier.id)}
+                                    style={{ cursor: isTierUnavailable ? 'not-allowed' : 'pointer', opacity: isTierUnavailable ? 0.55 : 1 }}
+                                    whileHover={!isTierUnavailable ? { scale: 1.01, borderColor: 'var(--color-brand-primary)' } : {}}
+                                    whileTap={!isTierUnavailable ? { scale: 0.98 } : {}}
                                 >
                                     <div className={`${styles.checkbox} ${selectedTicket === tier.id ? styles.checkboxChecked : ''}`}>
                                         {selectedTicket === tier.id && (
@@ -387,6 +395,10 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                                 {isTierSoldOut ? (
                                                     <div className={styles.remainingBadge} style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--color-interface-error)' }}>
                                                         Sold Out
+                                                    </div>
+                                                ) : isTierNotYetOpen ? (
+                                                    <div className={styles.remainingBadge}>
+                                                        Sales open {formatEventDate(tier.sales_start)}
                                                     </div>
                                                 ) : tier.capacity !== null && (
                                                     <div className={styles.remainingBadge}>

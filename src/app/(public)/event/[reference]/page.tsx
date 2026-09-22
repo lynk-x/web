@@ -64,7 +64,7 @@ export default async function EventPage({ params }: { params: { reference: strin
     // could show availability that other buyers already have locked.
     const { data: ticketTiers } = await supabase
         .from('event_ticket_tiers')
-        .select('id, display_name, description, price, capacity, tickets_sold, tickets_available')
+        .select('id, display_name, description, price, capacity, tickets_sold, tickets_available, sales_start, sales_end')
         .eq('event_id', rawEvent.id)
         .eq('is_hidden', false)
         .order('price', { ascending: true });
@@ -99,10 +99,13 @@ export default async function EventPage({ params }: { params: { reference: strin
         }
     }
 
-    // Determine if the event is sold out across all tiers
+    // Determine if the event is sold out across all tiers — a tier whose
+    // sales_end has passed reads as unavailable the same way a
+    // capacity-exhausted tier does (see isTierSoldOut in EventDetailsView).
     const tiers = ticketTiers || [];
     const isSoldOut = tiers.length > 0 && tiers.every(
-        (t: any) => t.capacity !== null && (t.tickets_available ?? 0) <= 0
+        (t: any) => ((t.capacity !== null && (t.tickets_available ?? 0) <= 0))
+            || (t.sales_end && new Date(t.sales_end) < new Date())
     );
 
     // api.v1_event_detail has no ends_at cutoff (unlike vw_events), so an
@@ -154,7 +157,8 @@ export default async function EventPage({ params }: { params: { reference: strin
             'name': t.display_name,
             'price': t.price,
             'priceCurrency': event.currency || 'KES',
-            'availability': (t.tickets_available ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+            'availability': (t.tickets_available ?? 0) > 0 && !(t.sales_end && new Date(t.sales_end) < new Date())
+                ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
             'url': `https://lynk-x.app/event/${reference}`,
         })),
     };
