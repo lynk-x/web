@@ -229,6 +229,7 @@
 .tagNeutral {
     padding: 6px 12px;
     background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--color-interface-outline);
     color: var(--color-utility-primaryText);
     opacity: 0.7;
     border-radius: var(--radius-full);
@@ -339,15 +340,10 @@
     font-size: 13px;
     opacity: 0.6;
     line-height: 1.4;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
 }
 
 .remainingBadge {
     display: inline-block;
-    flex-shrink: 0;
     white-space: nowrap;
     font-size: 11px;
     font-weight: 600;
@@ -355,6 +351,7 @@
     background: rgba(32, 249, 40, 0.1);
     padding: 2px 8px;
     border-radius: 4px;
+    margin-top: 8px;
 }
 
 .ticketItemActive {
@@ -380,10 +377,6 @@
 
 .ticketMeta {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
     min-width: 0;
 }
 
