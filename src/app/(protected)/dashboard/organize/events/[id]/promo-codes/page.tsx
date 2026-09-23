@@ -12,6 +12,7 @@ import type { OrganizerPromoCode } from '@/types/organize';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TableToolbar from '@/components/shared/TableToolbar';
+import FilterChips from '@/components/shared/FilterChips';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
@@ -74,6 +75,7 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
     const [promoCodes, setPromoCodes] = useState<OrganizerPromoCode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,9 +118,12 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
     }, [fetchData]);
 
     const filteredCodes = useMemo(() => {
-        if (!searchTerm) return promoCodes;
-        return promoCodes.filter((p) => p.code.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [promoCodes, searchTerm]);
+        return promoCodes.filter((p) => {
+            const matchesSearch = !searchTerm || p.code.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = typeFilter === 'all' || p.type === typeFilter;
+            return matchesSearch && matchesType;
+        });
+    }, [promoCodes, searchTerm, typeFilter]);
 
     const openCreateModal = () => {
         setForm(emptyForm);
@@ -240,7 +245,18 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
                 searchPlaceholder="Search by code..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-            />
+            >
+                <FilterChips
+                    options={[
+                        { value: 'all', label: 'All Types' },
+                        { value: 'percent', label: 'Percent' },
+                        { value: 'fixed', label: 'Fixed' },
+                        { value: 'free_entry', label: 'Free Entry' },
+                    ]}
+                    currentValue={typeFilter}
+                    onChange={setTypeFilter}
+                />
+            </TableToolbar>
 
             <div className={adminStyles.pageCard}>
                 <div style={{ overflowX: 'auto' }}>

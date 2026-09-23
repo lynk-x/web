@@ -136,9 +136,6 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
         showToast(`Checking in ${selectedIds.size} attendee${selectedIds.size === 1 ? '' : 's'}...`, 'info');
         try {
             const { error } = await supabase.schema('api').rpc('bulk_check_in_tickets', {
-                p_account_id: eventMeta.accountId,
-                p_event_id: id,
-                p_event_created_at: eventMeta.createdAt,
                 p_ticket_ids: Array.from(selectedIds)
             });
             if (error) throw error;

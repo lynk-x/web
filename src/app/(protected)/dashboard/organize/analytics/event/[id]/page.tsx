@@ -26,6 +26,7 @@ interface TierMeta {
 
 interface TierSlice { name: string; value: number; }
 interface CheckInSlice { name: string; value: number; color: string; }
+interface DailySale { date: string; tier_name: string | null; count: number; revenue: number; }
 
 export default function EventInsightsPage() {
     const { id } = useParams<{ id: string }>();
@@ -35,11 +36,11 @@ export default function EventInsightsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [eventTitle, setEventTitle] = useState('Event Insights');
     const [currency, setCurrency] = useState('KES');
-    
+
     const [tiersList, setTiersList] = useState<TierMeta[]>([]);
     const [tierData, setTierData] = useState<TierSlice[]>([]);
     const [checkInData, setCheckInData] = useState<CheckInSlice[]>([]);
-    const [rawTickets, setRawTickets] = useState<any[]>([]);
+    const [dailySales, setDailySales] = useState<DailySale[]>([]);
     const [selectedTierFilter, setSelectedTierFilter] = useState('all');
 
     const fetchData = useCallback(async () => {
@@ -69,45 +70,36 @@ export default function EventInsightsPage() {
                 }));
 
                 setTiersList(tiers);
-
-                const slices: TierSlice[] = [];
-                tiers.forEach(t => {
-                    if (t.tickets_sold > 0) {
-                        slices.push({ name: t.display_name, value: t.tickets_sold });
-                    }
-                });
-                setTierData(slices);
             }
 
-            // 2. Fetch Tickets Telemetry for Velocity Timeline & Gate Check-In Stats
-            const { data: ticketsData, error: tickErr } = await supabase
+            // 2. Fetch pre-aggregated sales analytics (check-in status counts,
+            // tier distribution, day-bucketed sales timeline) via a single
+            // RPC rather than pulling every ticket row for the event and
+            // aggregating client-side — see events.get_event_sales_analytics
+            // (03_events/functions/public_rpc/13_analytics_logic.sql) for why:
+            // the old approach scaled linearly with tickets sold and was the
+            // dominant cost on large events.
+            const { data: analytics, error: analyticsErr } = await supabase
                 .schema('api')
-                .from('v1_tickets')
-                .select('id, status, created_at, redeemed_at, purchased_price, tier_name')
-                .eq('event_id', id);
+                .rpc('get_event_sales_analytics', { p_event_id: id });
 
-            if (!tickErr && ticketsData) {
-                setRawTickets(ticketsData);
+            if (analyticsErr) throw analyticsErr;
 
-                let checkedInCount = 0;
-                let pendingCount = 0;
-                let otherCount = 0;
+            if (analytics) {
+                const tierSlices: TierSlice[] = (analytics.tier_distribution || []).map((t: any) => ({
+                    name: t.name,
+                    value: t.value,
+                }));
+                setTierData(tierSlices);
 
-                ticketsData.forEach((ticket: any) => {
-                    if (ticket.status === 'used' || ticket.redeemed_at) {
-                        checkedInCount++;
-                    } else if (ticket.status === 'valid') {
-                        pendingCount++;
-                    } else {
-                        otherCount++;
-                    }
-                });
-
+                const s = analytics.check_in_status || {};
                 setCheckInData([
-                    { name: 'Checked In', value: checkedInCount, color: '#FF8042' },
-                    { name: 'Unused / Pending', value: pendingCount, color: '#0088FE' },
-                    ...(otherCount > 0 ? [{ name: 'Cancelled / Other', value: otherCount, color: '#20F928' }] : [])
+                    { name: 'Checked In', value: s.checked_in || 0, color: '#FF8042' },
+                    { name: 'Unused / Pending', value: s.pending || 0, color: '#0088FE' },
+                    ...((s.other || 0) > 0 ? [{ name: 'Cancelled / Other', value: s.other || 0, color: '#20F928' }] : [])
                 ]);
+
+                setDailySales((analytics.daily_sales || []) as DailySale[]);
             }
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load event analytics.', 'error');
@@ -129,29 +121,28 @@ export default function EventInsightsPage() {
         return target ? target.capacity : totalCapacity;
     }, [selectedTierFilter, totalCapacity, tiersList]);
 
-    // Computed Sales Velocity Timeline Data
+    // Computed Sales Velocity Timeline Data — dailySales is already grouped
+    // by (day, tier_name) server-side; this just re-groups by day (applying
+    // the tier filter, if any) and runs the cumulative sum.
     const timelineData = useMemo(() => {
-        if (!rawTickets.length) return [];
+        if (!dailySales.length) return [];
 
-        const targetTierName = selectedTierFilter !== 'all' 
-            ? tiersList.find(t => t.id === selectedTierFilter)?.display_name 
+        const targetTierName = selectedTierFilter !== 'all'
+            ? tiersList.find(t => t.id === selectedTierFilter)?.display_name
             : null;
 
         const dateMap: { [dateStr: string]: { count: number; rev: number } } = {};
 
-        rawTickets.forEach((ticket: any) => {
-            if (targetTierName && ticket.tier_name !== targetTierName) {
+        dailySales.forEach((row) => {
+            if (targetTierName && row.tier_name !== targetTierName) {
                 return;
             }
 
-            if (ticket.created_at) {
-                const dateStr = ticket.created_at.split('T')[0];
-                if (!dateMap[dateStr]) {
-                    dateMap[dateStr] = { count: 0, rev: 0 };
-                }
-                dateMap[dateStr].count += 1;
-                dateMap[dateStr].rev += Number(ticket.purchased_price || 0);
+            if (!dateMap[row.date]) {
+                dateMap[row.date] = { count: 0, rev: 0 };
             }
+            dateMap[row.date].count += row.count;
+            dateMap[row.date].rev += Number(row.revenue || 0);
         });
 
         const sortedDates = Object.keys(dateMap).sort();
@@ -168,7 +159,7 @@ export default function EventInsightsPage() {
                 revenue: cumRev,
             };
         });
-    }, [rawTickets, selectedTierFilter, tiersList]);
+    }, [dailySales, selectedTierFilter, tiersList]);
 
     const handleExport = () => {
         showToast('Preparing export...', 'info');
