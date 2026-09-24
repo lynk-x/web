@@ -32,12 +32,12 @@
 }
 
 .successHeader {
-    margin-bottom: 8px;
+    margin-bottom: 24px;
     animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .successIcon {
-    margin: 8px auto 16px;
+    margin: 8px auto 0;
     width: 56px;
     height: 56px;
     background: rgba(32, 249, 40, 0.1);

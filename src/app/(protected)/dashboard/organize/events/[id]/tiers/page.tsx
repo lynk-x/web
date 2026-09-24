@@ -42,6 +42,7 @@ interface EventDetail {
     currency: string;
     reference: string;
     created_at: string;
+    starts_at: string;
 }
 
 /**
@@ -84,6 +85,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                 currency: data.event.currency,
                 reference: data.event.reference,
                 created_at: data.event.created_at,
+                starts_at: data.event.starts_at,
             });
             setTiers(data.tiers || []);
         } catch (err: unknown) {
@@ -241,9 +243,10 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                 </div>
             </div>
 
-            {editingTier && (
+            {editingTier && event && (
                 <TierEditModal
                     tier={editingTier}
+                    event={event}
                     onClose={() => setEditingTier(null)}
                     onSaved={(updated) => {
                         setTiers(prev => prev.map(t => t.id === updated.id ? updated : t));
@@ -257,6 +260,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
 
 interface TierEditModalProps {
     tier: TicketTier;
+    event: EventDetail;
     onClose: () => void;
     onSaved: (updated: TicketTier) => void;
 }
@@ -266,14 +270,23 @@ interface TierEditModalProps {
  * inline in the table — DateRangeRow's popup calendar needs room to render
  * outside the table's own horizontal-scroll container, which clips any
  * absolutely-positioned popup that tries to open from inside a cell.
+ *
+ * A tier with no sale window/max-per-order set yet presets to the event's
+ * own created_at -> starts_at span and a max of 1 per order, rather than
+ * opening blank — the common case is "sales open now through the event
+ * start," so this saves the organizer from typing it every time.
  */
-const TierEditModal: React.FC<TierEditModalProps> = ({ tier, onClose, onSaved }) => {
+const TierEditModal: React.FC<TierEditModalProps> = ({ tier, event, onClose, onSaved }) => {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
-    const [startDate, setStartDate] = useState(() => toDateOnlyValue(tier.sales_start));
-    const [endDate, setEndDate] = useState(() => toDateOnlyValue(tier.sales_end));
-    const [maxPerOrder, setMaxPerOrder] = useState(tier.max_per_order?.toString() ?? '');
+    const [startDate, setStartDate] = useState(
+        () => toDateOnlyValue(tier.sales_start) || toDateOnlyValue(event.created_at)
+    );
+    const [endDate, setEndDate] = useState(
+        () => toDateOnlyValue(tier.sales_end) || toDateOnlyValue(event.starts_at)
+    );
+    const [maxPerOrder, setMaxPerOrder] = useState(tier.max_per_order?.toString() ?? '1');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -1,7 +1,7 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -51,6 +51,20 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+
+    // Ticket tier availability (isTierPresale/isTierClosed below) is a
+    // one-shot Date.now() comparison against sales_start/sales_end — without
+    // a periodic re-check, a tier that renders a moment before its
+    // sales_start (page load race, minor client/server clock skew) shows
+    // "Coming Soon" and then never re-evaluates, staying stuck there even
+    // after sales_start has actually passed, until something else happens
+    // to re-render the page. Ticking `now` every 30s keeps availability
+    // self-correcting without needing a manual refresh.
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 30_000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Waitlist state
     const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle');
@@ -375,8 +389,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 // neither can be bought, no need to distinguish them to attendees.
                                 // A tier before its sales_start is a distinct "not open yet" state
                                 // (Coming Soon), not a failure state, so it gets its own badge/color.
-                                const isTierClosed = Boolean(tier.sales_end && new Date(tier.sales_end).getTime() < Date.now());
-                                const isTierPresale = Boolean(tier.sales_start && new Date(tier.sales_start).getTime() > Date.now());
+                                const isTierClosed = Boolean(tier.sales_end && new Date(tier.sales_end).getTime() < now);
+                                const isTierPresale = Boolean(tier.sales_start && new Date(tier.sales_start).getTime() > now);
                                 const isTierSoldOut = isCapacitySoldOut || isTierClosed;
                                 const isTierUnavailable = isTierSoldOut || isTierPresale;
                                 return (
