@@ -129,7 +129,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
             // Joins via RPC rather than a raw table insert: join_waitlist() resolves the
             // caller's account, validates the event/tier is actually sold out, and derives
             // `position`/`event_created_at` server-side.
-            const { error } = await supabase.rpc('join_waitlist', {
+            const { error } = await supabase.schema('api').rpc('join_waitlist', {
                 p_event_id: event.id,
                 // p_ticket_tier_id: undefined — joins the general waitlist, not tier-specific
             });
