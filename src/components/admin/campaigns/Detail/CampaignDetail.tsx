@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './CampaignDetail.module.css';
 import { Campaign } from '@/types/admin';
 import Badge from '../../../shared/Badge';
@@ -32,6 +32,19 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
     const msInDay = 1000 * 60 * 60 * 24;
     const daysRemaining = Math.ceil((end.getTime() - now.getTime()) / msInDay);
     const totalDays = Math.ceil(totalDuration / msInDay);
+
+    const [showApproveDialog, setShowApproveDialog] = useState(false);
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
+
+    const handleApprove = () => {
+        onStatusChange?.(campaign.id, 'active');
+        setShowApproveDialog(false);
+    };
+
+    const handleReject = () => {
+        onStatusChange?.(campaign.id, 'rejected');
+        setShowRejectDialog(false);
+    };
 
     return (
         <div className={styles.container}>
@@ -177,13 +190,13 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                             <>
                                 <button
                                     className={adminStyles.btnPrimary}
-                                    onClick={() => onStatusChange?.(campaign.id, 'active')}
+                                    onClick={() => setShowApproveDialog(true)}
                                 >
                                     Approve Campaign
                                 </button>
                                 <button
                                     className={adminStyles.btnSecondary}
-                                    onClick={() => onStatusChange?.(campaign.id, 'rejected')}
+                                    onClick={() => setShowRejectDialog(true)}
                                 >
                                     Reject
                                 </button>
@@ -206,6 +219,72 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                             </button>
                         )}
                     </div>
+
+                    {showApproveDialog && (
+                        <div style={{
+                            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                        }}>
+                            <div style={{
+                                background: '#1A1A1A', border: '1px solid #333', borderRadius: '12px',
+                                padding: '32px', maxWidth: '400px', width: '90%', textAlign: 'center'
+                            }}>
+                                <h3 style={{ color: '#fff', marginBottom: '12px', fontSize: '18px' }}>Approve Campaign</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '24px', fontSize: '14px', lineHeight: 1.5 }}>
+                                    Are you sure you want to approve <strong style={{ color: '#fff' }}>{campaign.name}</strong>? This will make the campaign active and it will start serving ads.
+                                </p>
+                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                                    <button
+                                        className={adminStyles.btnSecondary}
+                                        onClick={() => setShowApproveDialog(false)}
+                                        style={{ minWidth: '100px' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className={adminStyles.btnPrimary}
+                                        onClick={handleApprove}
+                                        style={{ minWidth: '100px' }}
+                                    >
+                                        Approve
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showRejectDialog && (
+                        <div style={{
+                            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                        }}>
+                            <div style={{
+                                background: '#1A1A1A', border: '1px solid #333', borderRadius: '12px',
+                                padding: '32px', maxWidth: '400px', width: '90%', textAlign: 'center'
+                            }}>
+                                <h3 style={{ color: '#fff', marginBottom: '12px', fontSize: '18px' }}>Reject Campaign</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '24px', fontSize: '14px', lineHeight: 1.5 }}>
+                                    Are you sure you want to reject <strong style={{ color: '#fff' }}>{campaign.name}</strong>? This action cannot be undone.
+                                </p>
+                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                                    <button
+                                        className={adminStyles.btnSecondary}
+                                        onClick={() => setShowRejectDialog(false)}
+                                        style={{ minWidth: '100px' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className={adminStyles.btnSecondary}
+                                        onClick={handleReject}
+                                        style={{ minWidth: '100px', background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}
+                                    >
+                                        Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.previewColumn}>
