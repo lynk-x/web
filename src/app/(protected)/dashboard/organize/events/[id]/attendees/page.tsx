@@ -72,6 +72,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 id: row.ticket_id,
                 name: row.full_name || 'Anonymous',
                 username: row.user_name || '',
+                email: row.email || '',
                 tierName: row.tier_name,
                 purchaseDate: new Date(row.created_at).toLocaleDateString(),
                 status: row.status,

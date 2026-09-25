@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { formatDate, formatCurrency } from '@/utils/format';
+import { exportToCSV } from '@/utils/export';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Spinner from '@/components/shared/Spinner';
@@ -166,6 +167,14 @@ function AdminEventAttendeesContent({ params }: { params: Promise<{ id: string }
                 title="Attendees"
                 subtitle={`${event.title} — organized by ${event.organizer}.`}
                 closeHref={`/dashboard/admin/events/${id}?created_at=${encodeURIComponent(eventCreatedAt || '')}`}
+                secondaryAction={{
+                    label: 'Export CSV',
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+                    onClick: () => {
+                        showToast('Generating export...', 'info');
+                        exportToCSV(filteredAttendees, `attendees_export_${id}`);
+                    }
+                }}
             />
 
             <TableToolbar

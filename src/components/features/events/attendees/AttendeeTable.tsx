@@ -46,8 +46,8 @@ const AttendeeTable: React.FC<AttendeeTableProps> = ({
             render: (attendee) => (
                 <div>
                     <div style={{ fontWeight: 600 }}>{attendee.name}</div>
-                    {attendee.username && (
-                        <div style={{ fontSize: '12px', opacity: 0.6 }}>@{attendee.username}</div>
+                    {attendee.email && (
+                        <div style={{ fontSize: '12px', opacity: 0.6 }}>{attendee.email}</div>
                     )}
                 </div>
             ),

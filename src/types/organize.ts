@@ -236,6 +236,7 @@ export interface Attendee {
     id: string;
     name: string;
     username?: string;
+    email?: string;
     /** From `ticket_tiers.name` */
     tierName: string; // Matches display_name in DB
     purchaseDate: string;
