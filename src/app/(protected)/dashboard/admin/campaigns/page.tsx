@@ -238,24 +238,35 @@ function CampaignsContent() {
         showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
 
         try {
-            const moderationIds = campaigns
-                .filter(c => selectedCampaignIds.has(c.id) && c.moderationId)
-                .map(c => c.moderationId);
+            const selectedCampaigns = campaigns.filter(c => selectedCampaignIds.has(c.id));
+            const withModeration = selectedCampaigns.filter(c => c.moderationId);
+            const withoutModeration = selectedCampaigns.filter(c => !c.moderationId);
 
-            if (moderationIds.length === 0) {
-                showToast('No campaigns with moderation records found.', 'error');
-                return;
+            if (withModeration.length > 0) {
+                const { error } = await supabase.schema('api').rpc('bulk_moderate_items', {
+                    p_moderation_ids: withModeration.map(c => c.moderationId),
+                    p_status: newStatus === 'active' ? 'approved' : 'rejected',
+                    p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
+                });
+
+                if (error) throw error;
             }
 
-            const { error } = await supabase.schema('api').rpc('bulk_moderate_items', {
-                p_moderation_ids: moderationIds,
-                p_status: newStatus === 'active' ? 'approved' : 'rejected',
-                p_reason: `Bulk status update to ${newStatus} via Admin Dashboard.`
-            });
+            if (withoutModeration.length > 0) {
+                for (const campaign of withoutModeration) {
+                    const { error } = await supabase
+                        .schema('api')
+                        .from('v1_ad_campaigns')
+                        .update({ status: newStatus, updated_at: new Date().toISOString() })
+                        .eq('id', campaign.id)
+                        .eq('created_at', campaign.createdAt);
 
-            if (error) throw error;
+                    if (error) throw error;
+                }
+            }
 
-            showToast(`Successfully moved ${selectedCampaignIds.size} campaigns to ${newStatus}.`, 'success');
+            const totalUpdated = withModeration.length + withoutModeration.length;
+            showToast(`Successfully moved ${totalUpdated} campaigns to ${newStatus}.`, 'success');
             fetchCampaigns();
             fetchDashboardSummary();
             setSelectedCampaignIds(new Set());

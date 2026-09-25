@@ -186,7 +186,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                     </div>
 
                     <div className={styles.actions}>
-                        {campaign.status === 'draft' && (
+                        {(campaign.status === 'draft' || campaign.status === 'pending_approval') && (
                             <>
                                 <button
                                     className={adminStyles.btnPrimary}
