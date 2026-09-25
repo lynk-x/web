@@ -87,8 +87,32 @@ export default function ProfileSetupPage() {
         }
     }, [profile, isLoadingAuth, isLoadingProfile, hasCheckedInitial, router]);
 
-    // Debounced username check — only meaningful for premium accounts,
-    // since non-premium users can't edit the field at all.
+    // Pre-populate a username for users who don't have one yet — required
+    // by the middleware's `user_has_complete_profile` gate.
+    useEffect(() => {
+        if (!user && !profile) return;
+        const existing = userName.trim();
+        if (existing.length > 0) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const { data, error: rpcError } = await supabase.schema('api').rpc('regenerate_username');
+                if (rpcError) throw rpcError;
+                if (!cancelled && data) {
+                    setUserName((data as { user_name: string }).user_name);
+                }
+            } catch {
+                // Non-fatal — user can still type or regenerate manually.
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Debounced username check — only for premium accounts, since only they
+    // can edit the field manually. Non-premium users rely on the auto-generated
+    // value and the regenerate button instead.
     useEffect(() => {
         if (!isPremium) {
             setIsUsernameAvailable(null);
@@ -283,7 +307,6 @@ export default function ProfileSetupPage() {
                             {isPremium && isCheckingUsername && <span className={styles.checking}>Checking...</span>}
                             {isPremium && !isCheckingUsername && isUsernameAvailable === true && <span className={styles.available}>Available</span>}
                             {isPremium && !isCheckingUsername && isUsernameAvailable === false && <span className={styles.taken}>Unavailable</span>}
-                            {!isPremium && <span className={styles.lockHint}>Premium feature</span>}
                         </div>
                         <div className={styles.usernameRow}>
                             <input
@@ -295,18 +318,16 @@ export default function ProfileSetupPage() {
                                 placeholder="johndoe_organize"
                                 required
                             />
-                            {!isPremium && (
-                                <button
-                                    type="button"
-                                    className={`${styles.regenerateBtn} ${isRegeneratingUsername ? styles.spinning : ''}`}
-                                    onClick={handleRegenerateUsername}
-                                    disabled={isRegeneratingUsername || isSubmitting}
-                                    aria-label="Generate a new username"
-                                    title="Generate a new username"
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className={`${styles.regenerateBtn} ${isRegeneratingUsername ? styles.spinning : ''}`}
+                                onClick={handleRegenerateUsername}
+                                disabled={isRegeneratingUsername || isSubmitting}
+                                aria-label="Generate a new username"
+                                title="Generate a new username"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                            </button>
                         </div>
                     </div>
 
