@@ -94,7 +94,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
     // Filter Logic
     const filteredAttendees = attendees.filter(a => {
         const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (a.username && a.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (a.email && a.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
             a.ticketCode.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -179,7 +179,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
             />
 
             <TableToolbar
-                searchPlaceholder="Search by name, username or order ID..."
+                searchPlaceholder="Search by name, email or ticket code..."
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
