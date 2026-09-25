@@ -343,38 +343,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             </div>
                         ) : isSoldOut ? (
                             <div style={{ padding: '20px 0' }}>
-                                <p style={{ opacity: 0.7, marginBottom: '12px', fontSize: '14px' }}>
+                                <p style={{ opacity: 0.7, fontSize: '14px' }}>
                                     All tickets for this event are sold out.
                                 </p>
-                                {waitlistStatus === 'joined' ? (
-                                    <div style={{
-                                        display: 'flex', alignItems: 'center', gap: '8px',
-                                        padding: '12px 16px', borderRadius: '10px',
-                                        background: 'rgba(34,197,94,0.12)', color: 'var(--color-interface-success)',
-                                        fontSize: '14px'
-                                    }}>
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                        {"You're on the waitlist! We'll notify you if a spot opens."}
-                                    </div>
-                                ) : (
-                                    <>
-                                        <button
-                                            onClick={handleJoinWaitlist}
-                                            disabled={waitlistStatus === 'joining'}
-                                            className={styles.getTicketBtn}
-                                            style={{ opacity: waitlistStatus === 'joining' ? 0.6 : 1 }}
-                                        >
-                                            {waitlistStatus === 'joining' ? 'Joining…' : 'Join Waitlist'}
-                                        </button>
-                                        {waitlistStatus === 'error' && (
-                                            <p style={{ color: 'var(--color-interface-error)', fontSize: '13px', marginTop: '8px' }}>
-                                                {waitlistError}
-                                            </p>
-                                        )}
-                                    </>
-                                )}
                             </div>
                         ) : ticketTiers.length === 0 ? (
                             <p>No tickets currently available for this event.</p>
