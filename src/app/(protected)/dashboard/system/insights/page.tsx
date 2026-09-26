@@ -7,7 +7,7 @@
  * /dashboard/admin/analytics page (api.get_admin_analytics).
  */
 
-import { Suspense, type CSSProperties } from 'react';
+import { Suspense, useState as useReactState, type CSSProperties } from 'react';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -171,6 +171,10 @@ function SearchTab() {
         }
     );
 
+    const [topPage, setTopPage] = useReactState(1);
+    const [gapPage, setGapPage] = useReactState(1);
+    const PAGE_SIZE = 10;
+
     const topColumns: Column<SearchQueryRow>[] = [
         { header: 'Query', render: (r) => <div style={{ fontWeight: 600 }}>{r.search_query}</div> },
         { header: 'Attempts (90d)', render: (r) => r.attempt_count },
@@ -184,18 +188,37 @@ function SearchTab() {
         { header: 'Last Seen', render: (r) => new Date(r.last_attempt_at).toLocaleDateString() }
     ];
 
+    const topQueries = data?.top_queries ?? [];
+    const zeroResultQueries = data?.zero_result_queries ?? [];
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Top Search Queries (90 days)</h3>
-                <DataTable data={(data?.top_queries ?? []).map(r => ({ ...r, id: r.search_query }))} columns={topColumns} isLoading={isLoading} emptyMessage="No search activity in the last 90 days." />
+                <DataTable
+                    data={topQueries.slice((topPage - 1) * PAGE_SIZE, topPage * PAGE_SIZE).map(r => ({ ...r, id: r.search_query }))}
+                    columns={topColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No search activity in the last 90 days."
+                    currentPage={topPage}
+                    totalPages={Math.max(1, Math.ceil(topQueries.length / PAGE_SIZE))}
+                    onPageChange={setTopPage}
+                />
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Search Gaps (queries returning zero results)</h3>
                 <p style={{ margin: '0 0 12px 0', fontSize: '13px', opacity: 0.6 }}>
                     Recurring zero-result queries indicate missing content, tags, or events worth adding.
                 </p>
-                <DataTable data={(data?.zero_result_queries ?? []).map(r => ({ ...r, id: r.search_query }))} columns={gapColumns} isLoading={isLoading} emptyMessage="No zero-result search gaps in the last 90 days." />
+                <DataTable
+                    data={zeroResultQueries.slice((gapPage - 1) * PAGE_SIZE, gapPage * PAGE_SIZE).map(r => ({ ...r, id: r.search_query }))}
+                    columns={gapColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No zero-result search gaps in the last 90 days."
+                    currentPage={gapPage}
+                    totalPages={Math.max(1, Math.ceil(zeroResultQueries.length / PAGE_SIZE))}
+                    onPageChange={setGapPage}
+                />
             </div>
         </div>
     );
@@ -220,6 +243,8 @@ function DemographicsTab() {
         return acc;
     }, []).sort((a, b) => b.count - a.count).slice(0, 15);
 
+    const [agePage, setAgePage] = useReactState(1);
+    const PAGE_SIZE = 10;
     const ageColumns: Column<AgeGenderRow>[] = [
         { header: 'Country', render: (r) => r.country },
         { header: 'Gender', render: (r) => r.gender || 'Unspecified' },
@@ -227,6 +252,8 @@ function DemographicsTab() {
         { header: 'Age Bucket', render: (r) => r.age_bucket },
         { header: 'Users', render: (r) => r.user_count }
     ];
+
+    const ageGenderData = (data?.by_age_gender ?? []);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
@@ -252,7 +279,15 @@ function DemographicsTab() {
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Age &amp; Gender Breakdown</h3>
-                <DataTable data={(data?.by_age_gender ?? []).map((r, i) => ({ ...r, id: `${r.country}-${r.gender}-${r.account_role}-${r.age_bucket}-${i}` }))} columns={ageColumns} isLoading={isLoading} emptyMessage="No age/gender data available." />
+                <DataTable
+                    data={ageGenderData.slice((agePage - 1) * PAGE_SIZE, agePage * PAGE_SIZE).map((r, i) => ({ ...r, id: `${r.country}-${r.gender}-${r.account_role}-${r.age_bucket}-${i}` }))}
+                    columns={ageColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No age/gender data available."
+                    currentPage={agePage}
+                    totalPages={Math.max(1, Math.ceil(ageGenderData.length / PAGE_SIZE))}
+                    onPageChange={setAgePage}
+                />
             </div>
         </div>
     );
@@ -270,6 +305,9 @@ function EventsTab() {
         }
     );
 
+    const [topPage, setTopPage] = useReactState(1);
+    const [flaggedPage, setFlaggedPage] = useReactState(1);
+    const PAGE_SIZE = 10;
     const topColumns: Column<EventPerformanceRow>[] = [
         { header: 'Event', render: (r) => <div style={{ fontWeight: 600 }}>{r.event_title}</div> },
         { header: 'Organizer', render: (r) => r.account_name },
@@ -285,15 +323,34 @@ function EventsTab() {
         { header: 'Pending Reports', render: (r) => <Badge label={String(r.reports_count)} variant="error" /> }
     ];
 
+    const topEvents = data?.top_events ?? [];
+    const flaggedEvents = data?.flagged_events ?? [];
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Top Events by Attendance</h3>
-                <DataTable data={(data?.top_events ?? []).map(r => ({ ...r, id: r.id }))} columns={topColumns} isLoading={isLoading} emptyMessage="No event performance data available." />
+                <DataTable
+                    data={topEvents.slice((topPage - 1) * PAGE_SIZE, topPage * PAGE_SIZE).map(r => ({ ...r, id: r.id }))}
+                    columns={topColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No event performance data available."
+                    currentPage={topPage}
+                    totalPages={Math.max(1, Math.ceil(topEvents.length / PAGE_SIZE))}
+                    onPageChange={setTopPage}
+                />
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Flagged Events (pending reports)</h3>
-                <DataTable data={(data?.flagged_events ?? []).map(r => ({ ...r, id: r.id }))} columns={flaggedColumns} isLoading={isLoading} emptyMessage="No flagged events." />
+                <DataTable
+                    data={flaggedEvents.slice((flaggedPage - 1) * PAGE_SIZE, flaggedPage * PAGE_SIZE).map(r => ({ ...r, id: r.id }))}
+                    columns={flaggedColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No flagged events."
+                    currentPage={flaggedPage}
+                    totalPages={Math.max(1, Math.ceil(flaggedEvents.length / PAGE_SIZE))}
+                    onPageChange={setFlaggedPage}
+                />
             </div>
         </div>
     );
@@ -311,6 +368,9 @@ function ForumsTab() {
         }
     );
 
+    const [activePage, setActivePage] = useReactState(1);
+    const [flaggedPage, setFlaggedPage] = useReactState(1);
+    const PAGE_SIZE = 10;
     const activeColumns: Column<ActiveForumRow>[] = [
         { header: 'Event', render: (r) => <div style={{ fontWeight: 600 }}>{r.event_title}</div> },
         { header: 'Status', render: (r) => <Badge label={r.status} variant={r.status === 'active' ? 'success' : 'neutral'} /> },
@@ -329,15 +389,34 @@ function ForumsTab() {
         { header: 'Oldest Pending', render: (r) => r.oldest_report_at ? new Date(r.oldest_report_at).toLocaleDateString() : '—' }
     ];
 
+    const mostActive = data?.most_active ?? [];
+    const flaggedForums = data?.flagged_forums ?? [];
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Most Active Forums</h3>
-                <DataTable data={(data?.most_active ?? []).map(r => ({ ...r, id: r.id }))} columns={activeColumns} isLoading={isLoading} emptyMessage="No forum activity data available." />
+                <DataTable
+                    data={mostActive.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE).map(r => ({ ...r, id: r.id }))}
+                    columns={activeColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No forum activity data available."
+                    currentPage={activePage}
+                    totalPages={Math.max(1, Math.ceil(mostActive.length / PAGE_SIZE))}
+                    onPageChange={setActivePage}
+                />
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Flagged Forums (pending reports)</h3>
-                <DataTable data={(data?.flagged_forums ?? []).map(r => ({ ...r, id: r.id }))} columns={flaggedColumns} isLoading={isLoading} emptyMessage="No flagged forums." />
+                <DataTable
+                    data={flaggedForums.slice((flaggedPage - 1) * PAGE_SIZE, flaggedPage * PAGE_SIZE).map(r => ({ ...r, id: r.id }))}
+                    columns={flaggedColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No flagged forums."
+                    currentPage={flaggedPage}
+                    totalPages={Math.max(1, Math.ceil(flaggedForums.length / PAGE_SIZE))}
+                    onPageChange={setFlaggedPage}
+                />
             </div>
         </div>
     );
@@ -355,6 +434,8 @@ function AdvertisingTab() {
         }
     );
 
+    const [campaignPage, setCampaignPage] = useReactState(1);
+    const PAGE_SIZE = 10;
     const trendData = (data?.daily_series ?? []).reduce((acc: { day: string; impressions: number; clicks: number; spend: number }[], row) => {
         const existing = acc.find(a => a.day === row.day);
         if (existing) {
@@ -374,6 +455,8 @@ function AdvertisingTab() {
         { header: 'CTR', render: (r) => <Badge label={`${r.ctr_pct?.toFixed(2) ?? 0}%`} variant="info" /> },
         { header: 'Spend', render: (r) => `$${Number(r.total_spend).toLocaleString(undefined, { maximumFractionDigits: 2 })}` }
     ];
+
+    const topCampaigns = data?.top_campaigns ?? [];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
@@ -406,7 +489,15 @@ function AdvertisingTab() {
             </div>
             <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Top Campaigns by Spend</h3>
-                <DataTable data={(data?.top_campaigns ?? []).map(r => ({ ...r, id: r.campaign_id }))} columns={campaignColumns} isLoading={isLoading} emptyMessage="No campaign activity found." />
+                <DataTable
+                    data={topCampaigns.slice((campaignPage - 1) * PAGE_SIZE, campaignPage * PAGE_SIZE).map(r => ({ ...r, id: r.campaign_id }))}
+                    columns={campaignColumns}
+                    isLoading={isLoading}
+                    emptyMessage="No campaign activity found."
+                    currentPage={campaignPage}
+                    totalPages={Math.max(1, Math.ceil(topCampaigns.length / PAGE_SIZE))}
+                    onPageChange={setCampaignPage}
+                />
             </div>
         </div>
     );

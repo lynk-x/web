@@ -69,6 +69,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     // Waitlist state
     const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle');
     const [waitlistError, setWaitlistError] = useState('');
+    const [waitlistEmail, setWaitlistEmail] = useState('');
+    const [showWaitlistEmailForm, setShowWaitlistEmailForm] = useState(false);
 
     const toggleTicket = (id: string) => {
         setSelectedTicket(prev => (prev === id ? null : id));
@@ -113,36 +115,52 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     };
 
     // ── Waitlist join ──────────────────────────────────────────────────────────
-    const handleJoinWaitlist = async () => {
+    const handleJoinWaitlist = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         setWaitlistStatus('joining');
         setWaitlistError('');
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
 
-            if (!user) {
-                // Redirect to login with return path
-                router.push(`/login?next=/event/${event.reference}`);
-                return;
-            }
+            if (user) {
+                const { error } = await supabase.schema('api').rpc('join_waitlist', {
+                    p_event_id: event.id,
+                });
 
-            // Joins via RPC rather than a raw table insert: join_waitlist() resolves the
-            // caller's account, validates the event/tier is actually sold out, and derives
-            // `position`/`event_created_at` server-side.
-            const { error } = await supabase.schema('api').rpc('join_waitlist', {
-                p_event_id: event.id,
-                // p_ticket_tier_id: undefined — joins the general waitlist, not tier-specific
-            });
-
-            if (error) {
-                if (error.message?.includes('already on the waitlist')) {
-                    setWaitlistStatus('joined');
+                if (error) {
+                    if (error.message?.includes('already on the waitlist')) {
+                        setWaitlistStatus('joined');
+                        setShowWaitlistEmailForm(false);
+                        return;
+                    }
+                    throw error;
+                }
+            } else {
+                const email = waitlistEmail.trim();
+                if (!email) {
+                    setWaitlistError('Please enter your email address.');
+                    setWaitlistStatus('error');
                     return;
                 }
-                throw error;
+
+                const { error } = await supabase.schema('api').rpc('join_waitlist_anonymous', {
+                    p_event_id: event.id,
+                    p_email: email,
+                });
+
+                if (error) {
+                    if (error.message?.includes('already on the waitlist')) {
+                        setWaitlistStatus('joined');
+                        setShowWaitlistEmailForm(false);
+                        return;
+                    }
+                    throw error;
+                }
             }
 
             setWaitlistStatus('joined');
+            setShowWaitlistEmailForm(false);
         } catch (err: unknown) {
             setWaitlistError(getErrorMessage(err));
             setWaitlistStatus('error');
@@ -343,9 +361,59 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             </div>
                         ) : isSoldOut ? (
                             <div style={{ padding: '20px 0' }}>
-                                <p style={{ opacity: 0.7, fontSize: '14px' }}>
+                                <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '12px' }}>
                                     All tickets for this event are sold out.
                                 </p>
+                                {waitlistStatus === 'joined' ? (
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        padding: '12px 16px', borderRadius: '10px',
+                                        background: 'rgba(34,197,94,0.12)', color: 'var(--color-interface-success)',
+                                        fontSize: '14px'
+                                    }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                        {"You're on the waitlist! We'll notify you if a spot opens."}
+                                    </div>
+                                ) : showWaitlistEmailForm ? (
+                                    <form onSubmit={handleJoinWaitlist} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <input
+                                            type="email"
+                                            value={waitlistEmail}
+                                            onChange={(e) => setWaitlistEmail(e.target.value)}
+                                            placeholder="Enter your email address"
+                                            required
+                                            style={{
+                                                width: '100%', padding: '12px 14px', borderRadius: '10px',
+                                                border: '1px solid #333', background: '#1A1A1A', color: '#FFF',
+                                                fontSize: '14px', outline: 'none'
+                                            }}
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={waitlistStatus === 'joining'}
+                                            className={styles.getTicketBtn}
+                                            style={{ opacity: waitlistStatus === 'joining' ? 0.6 : 1 }}
+                                        >
+                                            {waitlistStatus === 'joining' ? 'Joining…' : 'Join Waitlist'}
+                                        </button>
+                                        {waitlistStatus === 'error' && (
+                                            <p style={{ color: 'var(--color-interface-error)', fontSize: '13px', marginTop: '8px' }}>
+                                                {waitlistError}
+                                            </p>
+                                        )}
+                                    </form>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => setShowWaitlistEmailForm(true)}
+                                            className={styles.getTicketBtn}
+                                        >
+                                            Join Waitlist
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         ) : ticketTiers.length === 0 ? (
                             <p>No tickets currently available for this event.</p>
