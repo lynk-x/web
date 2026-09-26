@@ -72,8 +72,6 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
     // Invitation Modal State
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
-    const [invitePhone, setInvitePhone] = useState('');
-    const [invitePhoneCountry, setInvitePhoneCountry] = useState<DialCodeCountry>(DEFAULT_PHONE_COUNTRY);
     const [inviteRole, setInviteRole] = useState('member');
     const [isInviting, setIsInviting] = useState(false);
 
@@ -190,17 +188,8 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
         e.preventDefault();
         if (!activeAccount) return;
 
-        let normalizedPhone: string | null = null;
-        if (invitePhone) {
-            normalizedPhone = normalizeToE164(invitePhone, invitePhoneCountry.phone_prefix, invitePhoneCountry.phone_digits ?? undefined);
-            if (!normalizedPhone) {
-                showToast("Enter a valid phone number for the selected country.", "error");
-                return;
-            }
-        }
-
-        if (!inviteEmail && !normalizedPhone) {
-            showToast("Enter an email address or a phone number.", "error");
+        if (!inviteEmail) {
+            showToast("Enter an email address.", "error");
             return;
         }
 
@@ -208,18 +197,15 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
         try {
             const { error } = await supabase.schema('api').rpc('create_account_invitation', {
                 p_account_id: activeAccount.id,
-                p_invitee_email: inviteEmail ? inviteEmail.toLowerCase() : null,
-                p_invitee_phone: normalizedPhone,
+                p_invitee_email: inviteEmail.toLowerCase(),
                 p_role_slug: inviteRole
             });
 
             if (error) throw error;
 
-            showToast(`An access invite has been sent to ${inviteEmail || normalizedPhone}.`, "success", "Invite Sent");
+            showToast(`An access invite has been sent to ${inviteEmail}.`, "success", "Invite Sent");
             setIsInviteModalOpen(false);
             setInviteEmail('');
-            setInvitePhone('');
-            setInvitePhoneCountry(DEFAULT_PHONE_COUNTRY);
             setInviteRole('member');
             fetchMembers(); // refresh
         } catch (err: unknown) {
@@ -557,7 +543,7 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                         width: '100%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)'
                     }}>
                         <h3 style={{ marginTop: 0, marginBottom: '8px', fontSize: '1.25rem', color: 'white' }}>Invite Team Member</h3>
-                        <p style={{ color: 'gray', fontSize: '0.875rem', marginBottom: '24px' }}>Enter an email, a phone number, or both. They&apos;ll receive an invite link by email, or it&apos;ll be applied automatically if they sign up with this phone number.</p>
+                        <p style={{ color: 'gray', fontSize: '0.875rem', marginBottom: '24px' }}>They&apos;ll receive an invite link by email.</p>
 
                         <form onSubmit={handleInviteSubmit}>
                             <div style={{ marginBottom: '16px' }}>
@@ -566,6 +552,7 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                                 </label>
                                 <input
                                     type="email"
+                                    required
                                     value={inviteEmail}
                                     onChange={e => setInviteEmail(sanitizeInput(e.target.value.toLowerCase()))}
                                     placeholder="colleague@example.com"
@@ -574,29 +561,6 @@ export default function MemberTable({ onMissingPhoneChange }: MemberTableProps =
                                         border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
                                     }}
                                 />
-                            </div>
-
-                            <div style={{ marginBottom: '16px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
-                                    Phone Number
-                                </label>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <CountryPhoneSelect
-                                        value={invitePhoneCountry.code}
-                                        onChange={setInvitePhoneCountry}
-                                        className="w-[110px] rounded-md border border-white/20 bg-[#1a1a1a] px-2.5 py-2.5 text-white"
-                                    />
-                                    <input
-                                        type="tel"
-                                        value={invitePhone}
-                                        onChange={e => setInvitePhone(sanitizeInput(e.target.value))}
-                                        placeholder="712345678"
-                                        style={{
-                                            flex: 1, padding: '10px', borderRadius: '6px',
-                                            border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'white'
-                                        }}
-                                    />
-                                </div>
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>

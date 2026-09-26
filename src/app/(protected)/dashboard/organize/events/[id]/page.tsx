@@ -125,7 +125,6 @@ export default function EventDetailPage() {
     const [scanCount, setScanCount] = useState<number>(0);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
-    const [invitePhone, setInvitePhone] = useState('');
     const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
     const [inviteError, setInviteError] = useState('');
     const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -191,7 +190,6 @@ export default function EventDetailPage() {
     const handleSendIndividualInvite = async () => {
         if (!event || !activeAccount) return;
         const email = inviteEmail.trim();
-        const phone = invitePhone.trim();
         if (!email) {
             setInviteError('Email is required to send the invite.');
             setInviteStatus('error');
@@ -218,7 +216,6 @@ export default function EventDetailPage() {
             const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
                 p_forum_id: forumRow.id,
                 p_email: email,
-                p_phone: phone || null,
                 p_role_id: 'member',
             });
 
@@ -226,7 +223,6 @@ export default function EventDetailPage() {
 
             setInviteStatus('sent');
             setInviteEmail('');
-            setInvitePhone('');
             showToast('Invite sent successfully.', 'success');
         } catch (err: unknown) {
             const message = getErrorMessage(err) || 'Failed to send invite.';
@@ -249,7 +245,6 @@ export default function EventDetailPage() {
 
             const header = lines[0].map((col) => col.trim().toLowerCase());
             const emailIdx = header.findIndex((col) => col === 'email');
-            const phoneIdx = header.findIndex((col) => col === 'phone');
 
             if (emailIdx === -1) {
                 showToast('CSV must contain an "email" column.', 'warning');
@@ -276,7 +271,6 @@ export default function EventDetailPage() {
             for (let i = 1; i < lines.length; i++) {
                 const cols = lines[i];
                 const email = cols[emailIdx]?.trim();
-                const phone = phoneIdx !== -1 ? cols[phoneIdx]?.trim() : '';
 
                 if (!email) {
                     failCount++;
@@ -287,7 +281,6 @@ export default function EventDetailPage() {
                     const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
                         p_forum_id: forumRow.id,
                         p_email: email,
-                        p_phone: phone || null,
                         p_role_id: 'member',
                     });
 
@@ -516,38 +509,21 @@ export default function EventDetailPage() {
 
                     {/* Individual Invite */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <input
-                                type="email"
-                                placeholder="attendee@example.com"
-                                value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
-                                style={{
-                                    padding: '8px 12px',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    backgroundColor: 'rgba(255,255,255,0.05)',
-                                    color: 'var(--color-utility-primaryText)',
-                                    fontSize: '13px',
-                                    outline: 'none'
-                                }}
-                            />
-                            <input
-                                type="tel"
-                                placeholder="+254 712 345 678"
-                                value={invitePhone}
-                                onChange={(e) => setInvitePhone(e.target.value)}
-                                style={{
-                                    padding: '8px 12px',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    backgroundColor: 'rgba(255,255,255,0.05)',
-                                    color: 'var(--color-utility-primaryText)',
-                                    fontSize: '13px',
-                                    outline: 'none'
-                                }}
-                            />
-                        </div>
+                        <input
+                            type="email"
+                            placeholder="attendee@example.com"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                color: 'var(--color-utility-primaryText)',
+                                fontSize: '13px',
+                                outline: 'none'
+                            }}
+                        />
                         {inviteError && (
                             <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0 }}>{inviteError}</p>
                         )}
@@ -574,7 +550,7 @@ export default function EventDetailPage() {
                     {/* CSV Import */}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
-                            CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email,phone</code> — email column required, phone optional
+                            CSV format: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>email</code> — one email address per row
                         </p>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <label
