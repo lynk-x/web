@@ -274,7 +274,7 @@ function OnboardingFlow() {
                         const { error: rpcUpdateError } = await supabase.schema('api').rpc('update_account_settings', {
                             p_account_id: currentAccountId,
                             p_display_name: null,
-                            p_info: { description: cleanDesc }
+                            p_info: { profile: { description: cleanDesc } }
                         });
                         if (rpcUpdateError) console.error('Branding description update failed (non-fatal):', rpcUpdateError);
                     }
