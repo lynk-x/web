@@ -509,42 +509,47 @@ export default function EventDetailPage() {
 
                     {/* Individual Invite */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <input
-                            type="email"
-                            placeholder="attendee@example.com"
-                            value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
-                            style={{
-                                padding: '8px 12px',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                color: 'var(--color-utility-primaryText)',
-                                fontSize: '13px',
-                                outline: 'none'
-                            }}
-                        />
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                            <div style={{ flex: 1 }}>
+                                <input
+                                    type="email"
+                                    placeholder="attendee@example.com"
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                    style={{
+                                        padding: '8px 12px',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        color: 'var(--color-utility-primaryText)',
+                                        fontSize: '13px',
+                                        outline: 'none',
+                                        width: '100%'
+                                    }}
+                                />
+                            </div>
+                            <button
+                                onClick={handleSendIndividualInvite}
+                                disabled={inviteStatus === 'sending' || !inviteEmail.trim()}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: 'none',
+                                    backgroundColor: 'var(--color-brand-primary)',
+                                    color: 'var(--color-utility-secondaryText)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    opacity: inviteStatus === 'sending' ? 0.6 : 1,
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                {inviteStatus === 'sending' ? 'Sending...' : inviteStatus === 'sent' ? 'Sent!' : 'Send Invite'}
+                            </button>
+                        </div>
                         {inviteError && (
                             <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0 }}>{inviteError}</p>
                         )}
-                        <button
-                            onClick={handleSendIndividualInvite}
-                            disabled={inviteStatus === 'sending' || !inviteEmail.trim()}
-                            style={{
-                                padding: '8px 16px',
-                                borderRadius: 'var(--radius-md)',
-                                border: 'none',
-                                backgroundColor: 'var(--color-brand-primary)',
-                                color: 'var(--color-utility-secondaryText)',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                opacity: inviteStatus === 'sending' ? 0.6 : 1,
-                                alignSelf: 'flex-start'
-                            }}
-                        >
-                            {inviteStatus === 'sending' ? 'Sending...' : inviteStatus === 'sent' ? 'Sent!' : 'Send Invite'}
-                        </button>
                     </div>
 
                     {/* CSV Import */}
