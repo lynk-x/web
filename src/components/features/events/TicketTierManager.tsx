@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './EventForm.module.css';
 import type { OrganizerEventTicket as Ticket } from '@/types/organize';
 import { useToast } from '@/components/ui/Toast';
@@ -32,6 +33,7 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
     tickets, currency, isPaid, onPaidChange, onCurrencyChange, errors, onAdd, onRemove, onChange, onboardingStatus,
 }) => {
     const { showToast } = useToast();
+    const router = useRouter();
     const canCreatePaidEvents = onboardingStatus?.can_create_paid_events ?? true;
 
     return (
@@ -49,7 +51,8 @@ const TicketTierManager: React.FC<TicketTierManagerProps> = ({
                                 checked={isPaid}
                                 onChange={(e) => {
                                     if (e.target.checked && !canCreatePaidEvents) {
-                                        showToast('Complete account verification before creating paid tickets.', 'warning');
+                                        showToast('Verify your account to create paid ticket tiers.', 'warning');
+                                        router.push('/verify');
                                         return;
                                     }
                                     onPaidChange(e.target.checked);

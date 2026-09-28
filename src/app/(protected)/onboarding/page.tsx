@@ -10,26 +10,12 @@ import { sanitizeInput } from '@/utils/sanitization';
 import { convertImageToWebP } from '@/utils/imageConversion';
 import styles from './onboarding.module.css';
 import { useCountries } from '@/hooks/useCountries';
-import {
-    KycRequirementsForm,
-    kycRequirementsSatisfied,
-    submitKycRequirements,
-    type KycRequirement,
-    type KycFileMap,
-    type KycTextMap,
-} from '@/components/features/kyc/KycRequirementsForm';
 
-type OnboardingStep = 'DETAILS' | 'VERIFICATION';
 type AccountType = 'organizer' | 'advertiser';
 
-// Draft fields persisted across refresh/navigation. File selections (kycFiles)
-// are NOT persisted — File objects aren't serializable and re-picking a few
-// files is far cheaper than the alternative this replaces: re-running
-// create_organization_account (which has no dedupe guard, unlike
-// handle_new_user's own provisioning path) and creating a duplicate org.
+// Draft fields persisted across refresh/navigation.
 interface OnboardingDraft {
     accountType: AccountType;
-    step: OnboardingStep;
     orgName: string;
     orgDesc: string;
     country: string;
@@ -81,7 +67,6 @@ function OnboardingFlow() {
     const resolvedAccountType = typeParam ?? 'organizer';
     const draft = typeof window !== 'undefined' ? loadDraft(resolvedAccountType) : null;
 
-    const [step, setStep] = useState<OnboardingStep>(draft?.step ?? 'DETAILS');
     const [accountType, setAccountType] = useState<AccountType>(draft?.accountType ?? resolvedAccountType);
 
     // Form state — initialized from a persisted draft (if any) so a refresh
@@ -97,34 +82,13 @@ function OnboardingFlow() {
     // Set once create_organization_account succeeds. Its presence gates
     // handleCreateOrganization against calling that RPC a second time on
     // retry — the RPC has no idempotency guard, so re-calling it after a
-    // refresh mid-KYC-upload would create a second, orphaned organization.
+    // dropped connection would create a second, orphaned organization.
     const [accountId, setAccountId] = useState<string | null>(draft?.accountId ?? null);
-
-    // KYC state. File selections are session-only (File objects aren't
-    // serializable) — everything else survives a refresh via sessionStorage.
-    const [kycRequirements, setKycRequirements] = useState<KycRequirement[]>([]);
-    const [kycFiles, setKycFiles] = useState<KycFileMap>({});
-    const [kycTextData, setKycTextData] = useState<KycTextMap>({});
-    const [skipping, setSkipping] = useState(false);
 
     // Persist the resumable subset of form state on every change.
     useEffect(() => {
-        saveDraft(accountType, { accountType, step, orgName, orgDesc, country, logoUrl, accountId });
-    }, [accountType, step, orgName, orgDesc, country, logoUrl, accountId]);
-
-    // Re-fetch KYC requirements if we resumed directly into VERIFICATION
-    // (kycRequirements itself isn't persisted — it's cheap to refetch and
-    // country/account type could theoretically have changed).
-    useEffect(() => {
-        if (step !== 'VERIFICATION' || kycRequirements.length > 0) return;
-        supabase.schema('api').rpc('get_kyc_requirements', {
-            p_country_code: country,
-            p_account_type: accountType,
-        }).then(({ data, error: fetchError }) => {
-            if (!fetchError) setKycRequirements(data || []);
-        });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [step]);
+        saveDraft(accountType, { accountType, orgName, orgDesc, country, logoUrl, accountId });
+    }, [accountType, orgName, orgDesc, country, logoUrl, accountId]);
 
     // Redirect logged-in users who already have an account of this type,
     // unless they are explicitly creating a new one.
@@ -135,7 +99,7 @@ function OnboardingFlow() {
         const existingAccount = existingAccounts.find(a => a.type === accountType);
         if (existingAccount) {
             const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
-            router.push(`/${dashType}/${existingAccount.slug || existingAccount.id}/dashboard`);
+            router.push(`/dashboard/${dashType}`);
         }
     }, [isCreatingNew, existingAccounts, accountType, router, isLoadingAuth]);
 
@@ -198,30 +162,7 @@ function OnboardingFlow() {
         }
     };
 
-    const handleProceedToVerification = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const cleanName = sanitizeInput(orgName.trim());
-        if (!cleanName) { setError('Organization name is required.'); return; }
-
-        setLoading(true);
-        setError(null);
-        try {
-            const { data, error: fetchError } = await supabase.schema('api').rpc('get_kyc_requirements', {
-                p_country_code: country,
-                p_account_type: accountType
-            });
-            if (fetchError) throw fetchError;
-            setKycRequirements(data || []);
-            setStep('VERIFICATION');
-        } catch (err) {
-            console.error('Error fetching KYC requirements:', err);
-            setError('Failed to fetch verification requirements for your country.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCreateOrganization = async (e?: React.FormEvent | null, isSkipAction = false) => {
+    const handleCreateOrganization = async (e?: React.FormEvent | null) => {
         if (e) e.preventDefault();
 
         // Ensure the user is authenticated
@@ -235,16 +176,15 @@ function OnboardingFlow() {
         const cleanDesc = sanitizeInput(orgDesc.trim());
         if (!cleanName) { setError('Organization name is required.'); return; }
 
-        if (isSkipAction) setSkipping(true);
-        else setLoading(true);
+        setLoading(true);
         setError(null);
 
         try {
             // If a prior attempt already created the org (e.g. this attempt is
-            // a retry after a network drop during KYC upload), reuse that id
-            // instead of calling create_organization_account again —
-            // the RPC has no dedupe guard and would create a second, orphaned
-            // organization on every retry.
+            // a retry after a dropped connection) reuse that id instead of
+            // calling create_organization_account again — the RPC has no
+            // dedupe guard and would create a second, orphaned organization
+            // on every retry.
             let currentAccountId = accountId;
             if (!currentAccountId) {
                 const { data: newAccountId, error: rpcError } = await supabase.schema('api').rpc('create_organization_account', {
@@ -283,7 +223,10 @@ function OnboardingFlow() {
 
             if (!currentAccountId) throw new Error('Organization could not be created. Please try again.');
 
-            await submitKycRequirements(supabase, currentAccountId, kycRequirements, kycFiles, kycTextData);
+            // No KYC step here — identity verification is deferred until the
+            // organizer actually needs it (creating a paid ticket tier or
+            // requesting a payout), prompted from /verify at that point.
+            // See api.upsert_organizer_event's can_create_paid_events check.
 
             // Refresh context and set active account
             let memberships = await refreshAccounts();
@@ -304,7 +247,6 @@ function OnboardingFlow() {
             console.error('Error creating organization:', err);
             setError(getErrorMessage(err) || 'Failed to create organization. Please try again.');
             setLoading(false);
-            setSkipping(false);
         }
     };
 
@@ -316,133 +258,83 @@ function OnboardingFlow() {
         <div className={styles.container}>
             <div className={styles.onboardingWrapper}>
                 <div className={styles.header}>
-                    <h1 className={styles.title}>
-                        {step === 'DETAILS' ? 'Set Up Your Workspace' : 'Identity Verification'}
-                    </h1>
+                    <h1 className={styles.title}>Set Up Your Workspace</h1>
                     <p className={styles.subtitle}>
-                        {step === 'DETAILS'
-                            ? `Let's get your ${isAdvertiser ? 'Advertising' : 'Organiser'} brand ready.`
-                            : 'Upload your identification documents to verify your account.'}
+                        Let&apos;s get your {isAdvertiser ? 'Advertising' : 'Organiser'} brand ready.
                     </p>
                 </div>
 
-                <p className={styles.stepLabel}>Step 2 of 2 &middot; Workspace</p>
-                <div className={styles.stepIndicator}>
-                    <div className={`${styles.stepDot} ${step === 'DETAILS' ? styles.stepDotActive : ''}`} />
-                    <div className={`${styles.stepDot} ${step === 'VERIFICATION' ? styles.stepDotActive : ''}`} />
-                </div>
+                <div className={styles.formCard}>
+                    {error && <div className={styles.errorBox}>{error}</div>}
 
-                {step === 'DETAILS' && (
-                    <div className={styles.formCard}>
-                        <form onSubmit={handleProceedToVerification} className={styles.form}>
-                            {/* Logo Upload */}
-                            <div className={styles.logoSection}>
-                                <div className={styles.logoPreview} onClick={() => fileInputRef.current?.click()}>
-                                    {logoUrl ? <img src={logoUrl} alt="Logo" /> : <div className={styles.plusIcon}>+</div>}
-                                    <div className={styles.logoOverlay}>Upload Branding</div>
-                                </div>
-                                <input type="file" ref={fileInputRef} onChange={handleLogoUpload} style={{ display: 'none' }} accept="image/*" />
-                                <span className={styles.label}>Organization Logo</span>
+                    <form onSubmit={handleCreateOrganization} className={styles.form}>
+                        {/* Logo Upload */}
+                        <div className={styles.logoSection}>
+                            <div className={styles.logoPreview} onClick={() => fileInputRef.current?.click()}>
+                                {logoUrl ? <img src={logoUrl} alt="Logo" /> : <div className={styles.plusIcon}>+</div>}
+                                <div className={styles.logoOverlay}>Upload Branding</div>
                             </div>
+                            <input type="file" ref={fileInputRef} onChange={handleLogoUpload} style={{ display: 'none' }} accept="image/*" />
+                            <span className={styles.label}>Organization Logo</span>
+                        </div>
 
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Operating Country</label>
-                                <select
-                                    className={styles.input}
-                                    value={country}
-                                    onChange={(e) => setCountry(e.target.value)}
-                                    style={{ background: 'rgba(0, 0, 0, 0.4)' }}
-                                    disabled={isLoadingCountries}
-                                >
-                                    {isLoadingCountries ? (
-                                        <option value="">Loading Countries...</option>
-                                    ) : (
-                                        countries.map(c => (
-                                            <option key={c.code} value={c.code}>{c.display_name}</option>
-                                        ))
-                                    )}
-                                    {!isLoadingCountries && countries.length === 0 && (
-                                        <option value="KE">Kenya</option>
-                                    )}
-                                </select>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Organization Name</label>
-                                <input
-                                    type="text"
-                                    value={orgName}
-                                    onChange={(e) => setOrgName(e.target.value)}
-                                    placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
-                                    className={styles.input}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Description <span style={{ fontSize: '12px', opacity: 0.5 }}>(Optional)</span></label>
-                                <textarea
-                                    value={orgDesc}
-                                    onChange={(e) => setOrgDesc(e.target.value)}
-                                    placeholder="Briefly describe your organization..."
-                                    className={styles.textarea}
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div className={styles.actions}>
-                                <button
-                                    type="submit"
-                                    className={styles.submitBtn}
-                                    disabled={loading || !orgName.trim()}
-                                    style={{ background: accentColor }}
-                                >
-                                    {loading ? 'Processing...' : 'Continue to Verification'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {step === 'VERIFICATION' && (
-                    <div className={styles.formCard}>
-                        {error && <div className={styles.errorBox}>{error}</div>}
-
-                        <form onSubmit={(e) => handleCreateOrganization(e)} className={styles.form}>
-                            <KycRequirementsForm
-                                requirements={kycRequirements}
-                                files={kycFiles}
-                                textValues={kycTextData}
-                                onFilesChange={setKycFiles}
-                                onTextValuesChange={setKycTextData}
-                                emptyStateHint="You can proceed to launch your workspace."
-                            />
-
-                            <div className={styles.actions}>
-                                <button type="button" className={styles.backBtn} onClick={() => { setStep('DETAILS'); setError(null); }} disabled={loading}>
-                                    Go Back
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={styles.submitBtn}
-                                    disabled={loading || !kycRequirementsSatisfied(kycRequirements, kycFiles, kycTextData)}
-                                    style={{ background: accentColor }}
-                                >
-                                    {loading ? 'Processing...' : 'Complete & Launch'}
-                                </button>
-                            </div>
-
-                            <button
-                                type="button"
-                                className={styles.skipBtn}
-                                onClick={() => handleCreateOrganization(null, true)}
-                                disabled={loading || skipping}
+                        <div className={styles.inputGroup}>
+                            <label className={styles.label}>Operating Country</label>
+                            <select
+                                className={styles.input}
+                                value={country}
+                                onChange={(e) => setCountry(e.target.value)}
+                                style={{ background: 'rgba(0, 0, 0, 0.4)' }}
+                                disabled={isLoadingCountries}
                             >
-                                {skipping ? 'Redirecting...' : 'Skip for now (Limited access)'}
+                                {isLoadingCountries ? (
+                                    <option value="">Loading Countries...</option>
+                                ) : (
+                                    countries.map(c => (
+                                        <option key={c.code} value={c.code}>{c.display_name}</option>
+                                    ))
+                                )}
+                                {!isLoadingCountries && countries.length === 0 && (
+                                    <option value="KE">Kenya</option>
+                                )}
+                            </select>
+                        </div>
+
+                        <div className={styles.inputGroup}>
+                            <label className={styles.label}>Organization Name</label>
+                            <input
+                                type="text"
+                                value={orgName}
+                                onChange={(e) => setOrgName(e.target.value)}
+                                placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
+                                className={styles.input}
+                                required
+                            />
+                        </div>
+
+                        <div className={styles.inputGroup}>
+                            <label className={styles.label}>Description <span style={{ fontSize: '12px', opacity: 0.5 }}>(Optional)</span></label>
+                            <textarea
+                                value={orgDesc}
+                                onChange={(e) => setOrgDesc(e.target.value)}
+                                placeholder="Briefly describe your organization..."
+                                className={styles.textarea}
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className={styles.actions}>
+                            <button
+                                type="submit"
+                                className={styles.submitBtn}
+                                disabled={loading || !orgName.trim()}
+                                style={{ background: accentColor }}
+                            >
+                                {loading ? 'Processing...' : 'Launch Workspace'}
                             </button>
-                        </form>
-                    </div>
-                )}
+                        </div>
+                    </form>
+                </div>
             </div>
             <style jsx>{`
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

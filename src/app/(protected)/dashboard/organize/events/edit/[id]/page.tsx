@@ -274,7 +274,19 @@ export default function EditEventPage() {
 
         } catch (error: unknown) {
             console.error("Error updating event:", error);
-            showToast(getErrorMessage(error) || 'Failed to update event. Please verify inputs.', 'error');
+            const message = getErrorMessage(error) || 'Failed to update event. Please verify inputs.';
+
+            // Organizer onboarding no longer collects KYC upfront (deferred
+            // until it's actually needed) — this is the moment it becomes
+            // needed, so route straight to /verify instead of leaving them
+            // stuck on a generic error with a paid tier they can't save.
+            if (message.includes('Complete account verification')) {
+                showToast('Verify your account to create paid ticket tiers.', 'error');
+                router.push('/verify');
+                return;
+            }
+
+            showToast(message, 'error');
         }
     };
 
