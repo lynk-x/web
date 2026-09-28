@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
+import ClusterSentimentChart from '@/components/pulse/ClusterSentimentChart';
 import styles from './page.module.css';
 
 interface AudienceCluster {
@@ -61,10 +62,8 @@ export default function AudienceInsights({ accountId }: { accountId: string }) {
                     />
                 </div>
                 <div className={styles.card}>
-                    <h4 className={styles.sectionTitle}>Engagement Breakdown</h4>
-                    <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                        <span style={{ fontSize: '13px' }}>Demographic visualization...</span>
-                    </div>
+                    <h4 className={styles.sectionTitle}>Sentiment by Cluster</h4>
+                    <ClusterSentimentChart clusters={data?.clusters || []} isLoading={isLoading} />
                 </div>
             </div>
         </div>

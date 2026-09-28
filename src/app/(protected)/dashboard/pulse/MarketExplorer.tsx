@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import styles from './page.module.css';
@@ -15,30 +14,14 @@ interface TrendingTopic {
     velocity: number;
 }
 
-export default function MarketExplorer({ accountId, searchTerm }: { accountId: string, searchTerm: string }) {
-    const supabase = useMemo(() => createClient(), []);
-    const [data, setData] = useState<{ trending_topics: TrendingTopic[], stats: any } | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const fetchData = useCallback(async () => {
-        setIsLoading(true);
-        const { data: overview, error } = await supabase.schema('api').rpc('get_pulse_dashboard_overview', {
-            p_account_id: accountId
-        });
-        
-        if (error) console.error("Error fetching overview:", error);
-        else setData(overview);
-        setIsLoading(false);
-    }, [supabase, accountId]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
-
+/** Market Explorer tab — top trending topics table. Reuses the dashboard-overview RPC data already fetched by the parent Overview component instead of refetching it. */
+export default function MarketExplorer({ overviewData, isLoading, searchTerm }: { overviewData: { trending_topics?: TrendingTopic[] } | null, isLoading: boolean, searchTerm: string }) {
     const filteredTrends = useMemo(() => {
-        if (!data?.trending_topics) return [];
-        return data.trending_topics.filter((t: TrendingTopic) => 
+        if (!overviewData?.trending_topics) return [];
+        return overviewData.trending_topics.filter((t: TrendingTopic) =>
             t.display_name.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [data, searchTerm]);
+    }, [overviewData, searchTerm]);
 
     const columns: Column<TrendingTopic>[] = [
         { 

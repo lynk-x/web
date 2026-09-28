@@ -121,32 +121,32 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
             />
 
             <div className={`${styles.statsGrid} tour-pulse-stats`}>
-                <StatCard 
-                    label="Market Sentiment" 
-                    value={overviewData?.stats?.global_sentiment ? `${(overviewData.stats.global_sentiment * 100).toFixed(1)}%` : 'Bullish'} 
-                    change="+12% velocity" 
-                    trend="positive" 
+                <StatCard
+                    label="Market Sentiment"
+                    value={typeof overviewData?.stats?.global_sentiment === 'number' ? `${(overviewData.stats.global_sentiment * 100).toFixed(1)}%` : null}
+                    change={typeof overviewData?.stats?.global_sentiment === 'number' ? undefined : 'No data yet'}
+                    trend={overviewData?.stats?.global_sentiment > 0 ? 'positive' : overviewData?.stats?.global_sentiment < 0 ? 'negative' : 'neutral'}
                     isLoading={isLoadingData}
                 />
-                <StatCard 
-                    label="Active Topics" 
-                    value={overviewData?.stats?.active_topics_count || '...'} 
-                    change="Across 8 categories" 
-                    trend="neutral" 
+                <StatCard
+                    label="Active Topics"
+                    value={overviewData?.stats?.active_topics_count ?? null}
+                    change={overviewData?.stats?.active_topics_count != null ? 'Currently tracked' : 'No data yet'}
+                    trend="neutral"
                     isLoading={isLoadingData}
                 />
-                <StatCard 
-                    label="Intent Velocity" 
-                    value={overviewData?.stats?.intent_velocity ? `${overviewData.stats.intent_velocity}%` : '78.5%'} 
-                    change={`+${overviewData?.stats?.velocity_trend || '5.2'}% this week`} 
-                    trend="positive" 
+                <StatCard
+                    label="Intent Velocity"
+                    value={typeof overviewData?.stats?.intent_velocity === 'number' ? `${overviewData.stats.intent_velocity}%` : null}
+                    change={typeof overviewData?.stats?.velocity_trend === 'number' ? `${overviewData.stats.velocity_trend > 0 ? '+' : ''}${overviewData.stats.velocity_trend}% this week` : undefined}
+                    trend={overviewData?.stats?.velocity_trend > 0 ? 'positive' : overviewData?.stats?.velocity_trend < 0 ? 'negative' : 'neutral'}
                     isLoading={isLoadingData}
                 />
-                <StatCard 
-                    label="Tier Status" 
-                    value={overviewData?.tier?.toUpperCase() || 'FREE'} 
-                    change="Account level" 
-                    trend="neutral" 
+                <StatCard
+                    label="Tier Status"
+                    value={overviewData?.tier?.toUpperCase() || 'FREE'}
+                    change="Account level"
+                    trend="neutral"
                     isLoading={isLoadingData}
                 />
             </div>
@@ -179,13 +179,13 @@ export function PulseDashboardContent({ initialTab, hideTabs = false }: { initia
                     <PulseOverviewTab accountId={activeAccount?.id || ''} overviewData={overviewData} />
                 )}
                 {activeTab === 'explorer' && (
-                    <MarketExplorer accountId={activeAccount?.id || ''} searchTerm={searchTerm} />
+                    <MarketExplorer overviewData={overviewData} isLoading={isLoadingData} searchTerm={searchTerm} />
                 )}
                 {activeTab === 'audience' && (
                     <AudienceInsights accountId={activeAccount?.id || ''} />
                 )}
                 {activeTab === 'trends' && (
-                    <TrendsAnalysis overviewData={overviewData} />
+                    <TrendsAnalysis accountId={activeAccount?.id || ''} overviewData={overviewData} />
                 )}
                 {activeTab === 'reports' && (
                     <div className={styles.section} style={{ marginTop: 'var(--spacing-md)' }}>
