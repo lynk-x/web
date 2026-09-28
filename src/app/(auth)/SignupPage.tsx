@@ -118,6 +118,9 @@ export default function SignupPage() {
             });
             if (error) throw error;
 
+            const { error: ensureError } = await supabase.schema('api').rpc('ensure_own_profile');
+            if (ensureError) throw ensureError;
+
             setNotice(null);
             setEmailCode('');
             // Full name, username, and phone are all collected together on
