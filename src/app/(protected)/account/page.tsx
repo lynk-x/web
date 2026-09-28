@@ -10,15 +10,19 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import styles from './account.module.css';
 
 type PhoneStage = 'idle' | 'enter' | 'code';
+type EmailStage = 'idle' | 'enter' | 'code';
 
 /**
- * Personal account settings — currently just contact-info verification
- * status. Phone here is "stored" (identity.user_profile.phone_number,
- * possibly self-reported and never confirmed — see /complete-contact-info
- * and /signup) versus "verified" (matches auth.users.phone, meaning it
- * went through a real Supabase OTP flow at some point). Verifying here is
- * what promotes a stored-only phone into a valid OTP login channel,
- * per the OTP-login migration this is step 4 of.
+ * Personal account settings — contact-info verification status for both
+ * email and phone. Phone is "stored" (identity.user_profile.phone_number,
+ * possibly self-reported and never confirmed) versus "verified" (matches
+ * auth.users.phone, meaning it went through a real Supabase OTP flow at some
+ * point) — verifying here is what promotes a stored-only phone into a valid
+ * OTP login channel. Email's add/change flow lives here too (replacing the
+ * old full-page /complete-contact-info interstitial) for legacy accounts
+ * (pre-OTP-migration password/Google signups) still missing one — every
+ * current signup path (web /signup, PWA, Google OAuth) already guarantees
+ * email upfront, so this only matters for that shrinking legacy population.
  */
 export default function AccountPage() {
     const { user, profile, isLoadingProfile } = useAuth();
@@ -32,6 +36,14 @@ export default function AccountPage() {
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [resendCooldown, setResendCooldown] = useState(0);
+
+    const [emailStage, setEmailStage] = useState<EmailStage>('idle');
+    const [emailInput, setEmailInput] = useState('');
+    const [emailCode, setEmailCode] = useState('');
+    const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
+    const [emailError, setEmailError] = useState<string | null>(null);
+    const [emailNotice, setEmailNotice] = useState<string | null>(null);
+    const [emailResendCooldown, setEmailResendCooldown] = useState(0);
 
     // auth.users.phone (not identity.user_profile.phone_number) is the
     // source of truth for "actually OTP-verified" — refetched independently
@@ -49,8 +61,15 @@ export default function AccountPage() {
         return () => clearTimeout(timer);
     }, [resendCooldown]);
 
+    useEffect(() => {
+        if (emailResendCooldown <= 0) return;
+        const timer = setTimeout(() => setEmailResendCooldown((s) => s - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [emailResendCooldown]);
+
     const storedPhone = profile?.phone_number?.trim() || null;
     const isPhoneVerified = Boolean(storedPhone && authPhone && storedPhone === authPhone);
+    const storedEmail = profile?.email?.trim() || user?.email?.trim() || null;
 
     const handleStartVerify = () => {
         setError(null);
@@ -138,6 +157,90 @@ export default function AccountPage() {
         }
     };
 
+    const handleStartAddEmail = () => {
+        setEmailError(null);
+        setEmailNotice(null);
+        setEmailInput(storedEmail || '');
+        setEmailStage('enter');
+    };
+
+    const handleSendEmailCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = emailInput.trim();
+        if (!trimmed) {
+            setEmailError('Please enter an email address.');
+            return;
+        }
+
+        setEmailError(null);
+        setIsEmailSubmitting(true);
+        try {
+            // Attaches this email to the current session and sends it a code
+            // — same mechanism the phone flow above uses for phone.
+            const { error: updateError } = await supabase.auth.updateUser({ email: trimmed });
+            if (updateError) throw updateError;
+
+            setEmailNotice(`We sent a ${OTP_CODE_LENGTH}-digit code to ${trimmed}.`);
+            setEmailResendCooldown(30);
+            setEmailStage('code');
+        } catch (err: unknown) {
+            setEmailError(getErrorMessage(err) || 'Failed to send verification code.');
+        } finally {
+            setIsEmailSubmitting(false);
+        }
+    };
+
+    const handleResendEmailCode = async () => {
+        if (emailResendCooldown > 0) return;
+        setEmailError(null);
+        setIsEmailSubmitting(true);
+        try {
+            const { error: updateError } = await supabase.auth.updateUser({ email: emailInput.trim() });
+            if (updateError) throw updateError;
+            setEmailNotice(`Sent a new code to ${emailInput.trim()}.`);
+            setEmailResendCooldown(30);
+        } catch (err: unknown) {
+            setEmailError(getErrorMessage(err) || 'Failed to resend code.');
+        } finally {
+            setIsEmailSubmitting(false);
+        }
+    };
+
+    const handleVerifyEmailCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!emailCode.trim()) {
+            setEmailError('Please enter the code.');
+            return;
+        }
+
+        setEmailError(null);
+        setIsEmailSubmitting(true);
+        try {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+                email: emailInput.trim(),
+                token: emailCode.trim(),
+                type: 'email_change',
+            });
+            if (verifyError) throw verifyError;
+
+            // No identity.user_profile row is guaranteed to exist for a
+            // legacy account reaching this page (only /signup and
+            // /dashboard/organize onboarding create one today) — ensure it
+            // exists so handle_user_update()'s sync UPDATE below has a row
+            // to land on rather than silently affecting zero rows.
+            const { error: ensureError } = await supabase.schema('api').rpc('ensure_own_profile');
+            if (ensureError) throw ensureError;
+
+            setEmailNotice(null);
+            setEmailCode('');
+            setEmailStage('idle');
+        } catch (err: unknown) {
+            setEmailError(getErrorMessage(err) || 'Invalid or expired code. Please try again.');
+        } finally {
+            setIsEmailSubmitting(false);
+        }
+    };
+
     if (isLoadingProfile) {
         return <div className={styles.container} />;
     }
@@ -150,19 +253,77 @@ export default function AccountPage() {
                 <div className={styles.cardHeader}>
                     <div>
                         <h3 className={styles.cardTitle}>Email Address</h3>
-                        <p className={styles.cardValue}>{profile?.email || user?.email || 'Not set'}</p>
+                        <p className={styles.cardValue}>{storedEmail || 'Not set'}</p>
                     </div>
-                    {(profile?.email || user?.email) && (
+                    {storedEmail ? (
                         <span className={`${styles.badge} ${user?.email_confirmed_at ? styles.badgeVerified : styles.badgeUnverified}`}>
                             {user?.email_confirmed_at ? 'Verified' : 'Unverified'}
                         </span>
+                    ) : (
+                        <span className={`${styles.badge} ${styles.badgeNone}`}>Not set</span>
                     )}
                 </div>
-                <p className={styles.cardDesc}>
-                    {user?.email_confirmed_at
-                        ? 'Your email can only be changed through a verification code — this keeps it always trustworthy as a sign-in method.'
-                        : "This email hasn't been confirmed yet. Check your inbox for a confirmation link, or use email sign-in to confirm it automatically."}
-                </p>
+
+                {!user?.email_confirmed_at && (
+                    <p className={styles.cardDesc}>
+                        {storedEmail
+                            ? "This email hasn't been confirmed yet. Verify it to use it as a sign-in method."
+                            : 'Add an email so you can sign in with a one-time code, and recover your account if needed.'}
+                    </p>
+                )}
+
+                {emailError && <div className={styles.errorBox} style={{ marginBottom: 12 }}>{emailError}</div>}
+                {emailNotice && !emailError && <div className={styles.successBox} style={{ marginBottom: 12 }}>{emailNotice}</div>}
+
+                {user?.email_confirmed_at ? null : emailStage === 'idle' ? (
+                    <button type="button" className={styles.btn} onClick={handleStartAddEmail}>
+                        {storedEmail ? 'Verify Email Address' : 'Add Email Address'}
+                    </button>
+                ) : emailStage === 'enter' ? (
+                    <form className={styles.form} onSubmit={handleSendEmailCode}>
+                        <div className={styles.inputRow}>
+                            <input
+                                type="email"
+                                value={emailInput}
+                                onChange={(e) => setEmailInput(e.target.value)}
+                                placeholder="you@example.com"
+                                className={styles.input}
+                                required
+                                autoFocus
+                            />
+                            <button type="submit" className={styles.btn} disabled={isEmailSubmitting}>
+                                {isEmailSubmitting ? 'Sending...' : 'Send Code'}
+                            </button>
+                        </div>
+                    </form>
+                ) : (
+                    <form className={styles.form} onSubmit={handleVerifyEmailCode}>
+                        <div className={styles.inputRow}>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={OTP_CODE_LENGTH}
+                                value={emailCode}
+                                onChange={(e) => setEmailCode(e.target.value)}
+                                placeholder={'0'.repeat(OTP_CODE_LENGTH)}
+                                className={styles.codeInput}
+                                required
+                                autoFocus
+                            />
+                            <button type="submit" className={styles.btn} disabled={isEmailSubmitting}>
+                                {isEmailSubmitting ? 'Verifying...' : 'Verify'}
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            className={styles.linkBtn}
+                            onClick={handleResendEmailCode}
+                            disabled={isEmailSubmitting || emailResendCooldown > 0}
+                        >
+                            {emailResendCooldown > 0 ? `Resend code (${emailResendCooldown}s)` : 'Resend code'}
+                        </button>
+                    </form>
+                )}
             </div>
 
             <div className={styles.card}>

@@ -15,10 +15,10 @@ type OtpStage = 'request' | 'verify';
 
 /**
  * Login view — one-time-code sign-in (email or phone) and Google OAuth SSO.
- * Password sign-in was retired once /complete-contact-info made it
- * guaranteed that every account (however it originally signed up) has an
- * email on file by the time it reaches /dashboard, which is all OTP login
- * needs. Sign-up lives at /signup (see SignupPage.tsx).
+ * Password sign-in was retired once every signup path started guaranteeing
+ * an email on file, which is all OTP login needs. A legacy account still
+ * missing email can add one voluntarily from /account. Sign-up lives at
+ * /signup (see SignupPage.tsx).
  */
 export default function AuthPage() {
     const router = useRouter();

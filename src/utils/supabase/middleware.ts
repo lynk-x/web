@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // ── Protect authenticated routes ───────────────────────────────────────
-    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile', '/complete-contact-info', '/account']
+    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile', '/account']
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
     if (!user && isProtectedRoute) {
@@ -40,25 +40,11 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    // ── Contact info guard ──────────────────────────────────────────────────
-    // Runs ahead of every other gate below: accounts that predate OTP-based
-    // auth (password/Google signups that only ever collected one identifier)
-    // must add whichever of email/phone is missing before doing anything
-    // else, since OTP login depends on both eventually being on file.
-    if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding') || pathname.startsWith('/setup-profile'))) {
-        const { data: hasContactInfo, error } = await supabase.schema('api').rpc('user_has_contact_info')
-
-        if (error) {
-            console.error('[Middleware] user_has_contact_info RPC error:', error)
-        }
-
-        if (!error && !hasContactInfo) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/complete-contact-info'
-            url.searchParams.set('next', pathname + request.nextUrl.search)
-            return NextResponse.redirect(url)
-        }
-    }
+    // Email for a legacy account (pre-OTP-migration password/Google signup
+    // missing it) is no longer force-gated here — every current signup path
+    // (web /signup, PWA, Google OAuth) already guarantees email upfront, so
+    // the remaining legacy population can add it voluntarily from /account
+    // instead of hitting a mandatory full-page interstitial on every visit.
 
     // ── Profile setup guard ─────────────────────────────────────────────────
     // A brand-new sign-up must set up their profile (full_name) before doing
