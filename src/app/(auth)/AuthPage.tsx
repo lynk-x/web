@@ -30,6 +30,7 @@ export default function AuthPage() {
     const nextQuery = next ? `?next=${encodeURIComponent(next)}` : '';
 
     const [formError, setFormError] = useState<string | null>(serverError || null);
+    const [noAccountFound, setNoAccountFound] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isOAuthPending, setIsOAuthPending] = useState(false);
     const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -82,6 +83,7 @@ export default function AuthPage() {
         }
 
         setFormError(null);
+        setNoAccountFound(false);
         setIsSubmitting(true);
         try {
             const supabase = createClient();
@@ -97,7 +99,11 @@ export default function AuthPage() {
             setOtpResendCooldown(30);
             setOtpStage('verify');
         } catch (err: unknown) {
-            setFormError(getErrorMessage(err) || 'Failed to send a one-time code. Please check the details and try again.');
+            if (err instanceof Error && err.message.includes('Signups not allowed for otp')) {
+                setNoAccountFound(true);
+            } else {
+                setFormError(getErrorMessage(err) || 'Failed to send a one-time code. Please check the details and try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -181,13 +187,26 @@ export default function AuthPage() {
                     : `Enter the ${OTP_CODE_LENGTH}-digit code sent to ${otpIdentifier}.`}
             </p>
 
-            {formError && (
+            {noAccountFound && (
+                <div style={{ color: 'var(--color-interface-error)', background: 'rgba(239,68,68,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
+                    We couldn&apos;t find an account for that {otpIdentifier.includes('@') ? 'email' : 'phone number'}.{' '}
+                    <Link
+                        href={`/signup${otpIdentifier.includes('@') ? `?email=${encodeURIComponent(otpIdentifier.trim())}` : ''}${next ? `${otpIdentifier.includes('@') ? '&' : '?'}next=${encodeURIComponent(next)}` : ''}`}
+                        style={{ color: 'var(--color-brand-primary)', textDecoration: 'underline', fontWeight: 600 }}
+                    >
+                        Create an account
+                    </Link>
+                    {' '}instead?
+                </div>
+            )}
+
+            {formError && !noAccountFound && (
                 <div style={{ color: 'var(--color-interface-error)', background: 'rgba(239,68,68,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
                     {formError}
                 </div>
             )}
 
-            {serverMessage && !formError && (
+            {serverMessage && !formError && !noAccountFound && (
                 <div style={{ color: 'var(--color-interface-success)', background: 'rgba(34,197,94,0.1)', padding: '12px', borderRadius: '8px', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
                     {serverMessage}
                 </div>
@@ -199,7 +218,10 @@ export default function AuthPage() {
                         <input
                             type="text"
                             value={otpIdentifier}
-                            onChange={(e) => setOtpIdentifier(e.target.value)}
+                            onChange={(e) => {
+                                setOtpIdentifier(e.target.value);
+                                if (noAccountFound) setNoAccountFound(false);
+                            }}
                             placeholder="Email or Phone Number"
                             className={styles.input}
                             required

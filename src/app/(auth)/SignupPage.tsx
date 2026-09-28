@@ -30,7 +30,7 @@ export default function SignupPage() {
 
     const [isCheckingSession, setIsCheckingSession] = useState(true);
     const [stage, setStage] = useState<SignupStage>('email');
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(searchParams.get('email') || '');
     const [emailCode, setEmailCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isOAuthPending, setIsOAuthPending] = useState(false);
