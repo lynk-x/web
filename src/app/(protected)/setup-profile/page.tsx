@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { convertImageToWebP } from '@/utils/imageConversion';
+import { normalizeToE164 } from '@/utils/phone';
 import styles from './setup.module.css';
 
 // Draft fields persisted across refresh/navigation, same pattern as
@@ -19,6 +20,7 @@ interface ProfileDraft {
     fullName: string;
     userName: string;
     avatarUrl: string | null;
+    phone: string;
 }
 
 function loadDraft(): Partial<ProfileDraft> | null {
@@ -48,7 +50,7 @@ function clearDraft() {
 
 export default function ProfileSetupPage() {
     const router = useRouter();
-    const { user, profile, isLoading: isLoadingAuth, isLoadingProfile } = useAuth();
+    const { user, profile, isLoading: isLoadingAuth, isLoadingProfile, refreshProfile } = useAuth();
 
     const supabase = createClient();
 
@@ -56,6 +58,7 @@ export default function ProfileSetupPage() {
 
     const [fullName, setFullName] = useState(draft?.fullName ?? profile?.full_name ?? '');
     const [userName, setUserName] = useState(draft?.userName ?? profile?.user_name ?? '');
+    const [phone, setPhone] = useState(draft?.phone ?? profile?.phone_number ?? '');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(draft?.avatarUrl ?? profile?.avatar_url ?? null);
@@ -74,13 +77,21 @@ export default function ProfileSetupPage() {
 
     // Persist the resumable subset of form state on every change.
     useEffect(() => {
-        saveDraft({ fullName, userName, avatarUrl });
-    }, [fullName, userName, avatarUrl]);
+        saveDraft({ fullName, userName, avatarUrl, phone });
+    }, [fullName, userName, avatarUrl, phone]);
 
-    // Auto-redirect if profile is already complete
+    // Auto-redirect if profile is already complete — mirrors the middleware's
+    // user_has_complete_profile gate (full_name AND user_name AND phone_number)
+    // exactly, so this page never sends someone to /dashboard only for
+    // middleware to immediately bounce them back here.
     useEffect(() => {
         if (!isLoadingAuth && !isLoadingProfile && !hasCheckedInitial) {
-            if (profile && profile.full_name && profile.full_name.trim() !== '') {
+            if (
+                profile &&
+                profile.full_name?.trim() &&
+                profile.user_name?.trim() &&
+                profile.phone_number?.trim()
+            ) {
                 router.replace('/dashboard');
             }
             setHasCheckedInitial(true);
@@ -203,7 +214,7 @@ export default function ProfileSetupPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!fullName.trim() || !userName.trim() || !user) {
+        if (!fullName.trim() || !userName.trim() || !phone.trim() || !user) {
             setError('Please fill in all fields.');
             return;
         }
@@ -212,6 +223,8 @@ export default function ProfileSetupPage() {
         setError(null);
 
         try {
+            const normalizedPhone = normalizeToE164(phone.trim(), '+254') || phone.trim();
+
             // internal.handle_new_user() only auto-creates a user_profile row
             // for account_type='attendee' signups — an organizer/advertiser
             // signup (password, OTP, or Google OAuth) never gets one this
@@ -220,17 +233,29 @@ export default function ProfileSetupPage() {
             const { error: ensureError } = await supabase.schema('api').rpc('ensure_own_profile');
             if (ensureError) throw ensureError;
 
+            // Stored as-is, not OTP-verified — phone_number isn't guarded by
+            // tr_profiles_security the way email is, so this direct write is
+            // allowed. It becomes a valid OTP login channel only once
+            // separately confirmed via account settings' "Verify phone" flow.
             const { error: updateError } = await supabase
                 .schema('api')
                 .from('v1_profiles')
                 .update({
                     full_name: fullName.trim(),
                     ...(isPremium ? { user_name: userName.trim() } : {}),
-                    avatar_url: avatarUrl
+                    avatar_url: avatarUrl,
+                    phone_number: normalizedPhone
                 })
                 .eq('id', user.id);
 
             if (updateError) throw updateError;
+
+            // AuthContext's `profile` only refreshes on real Supabase auth
+            // events — this direct api.v1_profiles write is invisible to it,
+            // so without this /dashboard (and anything else reading
+            // useAuth().profile) could briefly render stale data after the
+            // client-side navigation below.
+            await refreshProfile();
 
             clearDraft();
             // Success: Direct them to the dashboard
@@ -290,18 +315,6 @@ export default function ProfileSetupPage() {
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Full Name</label>
-                        <input 
-                            type="text" 
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            className={styles.input}
-                            placeholder="John Doe"
-                            required
-                        />
-                    </div>
-
-                    <div className={styles.inputGroup}>
                         <div className={styles.labelRow}>
                             <label className={styles.label}>Username</label>
                             {isPremium && isCheckingUsername && <span className={styles.checking}>Checking...</span>}
@@ -329,6 +342,31 @@ export default function ProfileSetupPage() {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                             </button>
                         </div>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Full Name</label>
+                        <input
+                            type="text"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            className={styles.input}
+                            placeholder="John Doe"
+                            required
+                        />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label className={styles.label}>Phone Number</label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className={styles.input}
+                            placeholder="+254 712 345 678"
+                            required
+                        />
+                        <p className={styles.helperText}>You can confirm this number later from account settings to use it for sign-in.</p>
                     </div>
 
                     <button

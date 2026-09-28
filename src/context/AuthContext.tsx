@@ -43,6 +43,14 @@ interface AuthContextType {
     /** True when the profile has at least a full_name set. */
     isProfileComplete: boolean;
     logout: () => Promise<void>;
+    /**
+     * Re-fetches the current user's profile. Needed after any write that
+     * bypasses Supabase auth events (e.g. a direct api.v1_profiles update) —
+     * onAuthStateChange never fires for those, so `profile` would otherwise
+     * stay stale until something else (a real auth event, or a full page
+     * reload re-mounting AuthProvider) happens to refresh it.
+     */
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -169,6 +177,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     /** Derived: true when the user has completed their profile setup. */
     const isProfileComplete = Boolean(profile?.full_name?.trim());
 
+    const refreshProfile = React.useCallback(async () => {
+        if (!user) return;
+        await loadProfile(user.id, () => true);
+    }, [user, loadProfile]);
+
     const logout = async () => {
         setIsLoading(true);
         try {
@@ -189,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isLoading,
             isLoadingProfile,
             isProfileComplete,
+            refreshProfile,
             logout
         }}>
             {children}

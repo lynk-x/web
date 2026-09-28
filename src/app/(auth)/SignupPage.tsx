@@ -5,23 +5,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { normalizeToE164 } from '@/utils/phone';
 import { getErrorMessage } from '@/utils/error';
 import { OTP_CODE_LENGTH } from '@/utils/otp';
 import ReportIssueModal from './ReportIssueModal';
 import styles from './page.module.css';
 
-type SignupStage = 'email' | 'email-code' | 'phone';
+type SignupStage = 'email' | 'email-code';
 
 /**
  * OTP-based sign-up — email is the primary identifier, verified with an
- * OTP_CODE_LENGTH-digit code (creates the auth.users row); phone is
- * collected right after but only ever stored, not verified, matching
- * /complete-contact-info's migration-gate behavior for pre-existing
- * accounts. Kept as its own component (not folded into AuthPage, which
- * owns the OTP LOGIN path) since signup's shape — three sequential
- * stages — doesn't share enough markup with login to justify one shared
- * component.
+ * OTP_CODE_LENGTH-digit code (creates the auth.users row). Full name,
+ * username, and phone number are all collected together afterward on
+ * /setup-profile (the middleware's user_has_complete_profile gate routes
+ * there automatically) rather than as further stages here. Kept as its own
+ * component (not folded into AuthPage, which owns the OTP LOGIN path) since
+ * signup's shape doesn't share enough markup with login to justify one
+ * shared component.
  */
 export default function SignupPage() {
     const router = useRouter();
@@ -33,7 +32,6 @@ export default function SignupPage() {
     const [stage, setStage] = useState<SignupStage>('email');
     const [email, setEmail] = useState('');
     const [emailCode, setEmailCode] = useState('');
-    const [phone, setPhone] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isOAuthPending, setIsOAuthPending] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
@@ -122,53 +120,13 @@ export default function SignupPage() {
 
             setNotice(null);
             setEmailCode('');
-            setStage('phone');
-        } catch (err: unknown) {
-            setFormError(getErrorMessage(err) || 'Invalid or expired code. Please try again.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleSubmitPhone = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!phone.trim()) {
-            setFormError('Please enter a phone number.');
-            return;
-        }
-
-        setFormError(null);
-        setIsSubmitting(true);
-        try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Session lost during sign-up.');
-
-            const normalized = normalizeToE164(phone.trim(), '+254') || phone.trim();
-
-            // internal.handle_new_user() only auto-creates a user_profile row
-            // for account_type='attendee' signups — this is an
-            // organizer/advertiser signup, so no row exists yet at all.
-            // api.v1_profiles has no INSTEAD OF INSERT rule, so an update
-            // against a missing row would silently affect zero rows;
-            // ensure_own_profile() creates the bare row first.
-            const { error: ensureError } = await supabase.schema('api').rpc('ensure_own_profile');
-            if (ensureError) throw ensureError;
-
-            // Stored as-is, not OTP-verified — see /complete-contact-info's
-            // phone stage for why this direct write is safe (phone_number
-            // isn't guarded by tr_profiles_security the way email is).
-            const { error: updateError } = await supabase
-                .schema('api')
-                .from('v1_profiles')
-                .update({ phone_number: normalized })
-                .eq('id', user.id);
-
-            if (updateError) throw updateError;
-
+            // Full name, username, and phone are all collected together on
+            // /setup-profile — the middleware's user_has_complete_profile
+            // gate routes a brand-new account there automatically, so this
+            // push just needs to land somewhere protected.
             router.push(next || '/dashboard');
         } catch (err: unknown) {
-            setFormError(getErrorMessage(err) || 'Failed to save phone number.');
+            setFormError(getErrorMessage(err) || 'Invalid or expired code. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -194,12 +152,10 @@ export default function SignupPage() {
             <h1 className={styles.title}>
                 {stage === 'email' && 'Create Account'}
                 {stage === 'email-code' && 'Confirm Your Email'}
-                {stage === 'phone' && 'Add Your Phone Number'}
             </h1>
             <p className={styles.subtitle}>
                 {stage === 'email' && "Let's get started — we'll email you a code, no password needed."}
                 {stage === 'email-code' && `Enter the ${OTP_CODE_LENGTH}-digit code we just sent you.`}
-                {stage === 'phone' && 'A phone number gives you a backup way to sign in. You can verify it later from account settings.'}
             </p>
 
             {formError && (
@@ -260,25 +216,6 @@ export default function SignupPage() {
                         style={{ alignSelf: 'center' }}
                     >
                         {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
-                    </button>
-                </form>
-            )}
-
-            {stage === 'phone' && (
-                <form className={styles.form} onSubmit={handleSubmitPhone}>
-                    <div className={styles.inputWrapper}>
-                        <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="Phone Number (e.g. +254...)"
-                            className={styles.input}
-                            required
-                            autoFocus
-                        />
-                    </div>
-                    <button type="submit" className={styles.signInBtn} disabled={isSubmitting} aria-busy={isSubmitting}>
-                        {isSubmitting ? 'Saving...' : 'Continue'}
                     </button>
                 </form>
             )}

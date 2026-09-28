@@ -5,55 +5,46 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
-import { normalizeToE164 } from '@/utils/phone';
 import { OTP_CODE_LENGTH } from '@/utils/otp';
 import styles from './complete-contact-info.module.css';
 
-type Stage = 'email' | 'email-code' | 'phone' | 'done';
+type Stage = 'email' | 'email-code' | 'done';
 
 /**
  * Mandatory one-time interstitial for accounts that predate OTP-based auth
- * (password/Google signups that only ever collected one identifier) or that
- * signed up before phone became a required field. Middleware redirects any
- * session missing email or phone here before letting it reach /dashboard,
- * /onboarding, or /setup-profile — mirrors /setup-profile's gate pattern,
- * just for a different piece of required account state.
+ * (password/Google signups that only ever collected email or predate email
+ * being required). Middleware redirects any session missing email here
+ * before letting it reach /dashboard, /onboarding, or /setup-profile — phone
+ * is collected separately, on /setup-profile alongside full_name/user_name,
+ * not here.
  *
  * Email is verified via the real Supabase OTP-attach flow (updateUser +
  * verifyOTP type=email_change) since identity.user_profile.email can only
- * change through that trusted path (see tr_profiles_security). Phone is
- * only ever stored, not verified here — it becomes a valid OTP login
- * channel later, via a separate "Verify phone" step in account settings.
+ * change through that trusted path (see tr_profiles_security).
  */
 export default function CompleteContactInfoPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const next = searchParams.get('next') || '/dashboard';
-    const { user, profile, isLoading: isLoadingAuth, isLoadingProfile } = useAuth();
+    const { profile, isLoading: isLoadingAuth, isLoadingProfile, refreshProfile } = useAuth();
     const supabase = useMemo(() => createClient(), []);
 
     const [stage, setStage] = useState<Stage | null>(null);
     const [email, setEmail] = useState('');
     const [emailCode, setEmailCode] = useState('');
-    const [phone, setPhone] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [resendCooldown, setResendCooldown] = useState(0);
 
-    // Decide which field(s) are missing once profile has loaded, and pick
-    // the first stage to show — email always comes first since it's the
-    // one that needs real verification.
+    // Decide whether email is missing once profile has loaded.
     useEffect(() => {
         if (isLoadingAuth || isLoadingProfile || stage !== null) return;
 
         const missingEmail = !profile?.email?.trim();
-        const missingPhone = !profile?.phone_number?.trim();
 
         if (missingEmail) {
             setStage('email');
-        } else if (missingPhone) {
-            setStage('phone');
         } else {
             // Nothing missing (e.g. reached directly, or resolved in another
             // tab) — nothing to do here.
@@ -132,62 +123,16 @@ export default function CompleteContactInfoPage() {
             // handle_user_update() syncs auth.users.email into user_profile
             // as part of this same verifyOtp call, but AuthContext's own
             // `profile` may not have re-fetched yet (its refresh is async,
-            // triggered by the auth-state-change listener) — query directly
-            // rather than trust a possibly-stale closure value.
-            if (!user) throw new Error('Session lost during verification.');
-            const { data: freshProfile, error: fetchError } = await supabase
-                .schema('api')
-                .from('v1_profiles')
-                .select('phone_number')
-                .eq('id', user.id)
-                .maybeSingle();
-            if (fetchError) throw fetchError;
-
-            const missingPhone = !freshProfile?.phone_number?.trim();
-            setStage(missingPhone ? 'phone' : 'done');
-        } catch (err: unknown) {
-            setError(getErrorMessage(err) || 'Invalid or expired code. Please try again.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleSubmitPhone = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user || !phone.trim()) {
-            setError('Please enter a phone number.');
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError(null);
-        try {
-            const normalized = normalizeToE164(phone.trim(), '+254') || phone.trim();
-
-            // Defensive: user_has_contact_info() (which routed us here)
-            // returns false both when the row is missing AND when it exists
-            // with empty fields, so a missing row is possible in principle
-            // even though it shouldn't be for a session that reached this
-            // page. api.v1_profiles has no INSTEAD OF INSERT rule, so
-            // ensure the row exists before the update below.
-            const { error: ensureError } = await supabase.schema('api').rpc('ensure_own_profile');
-            if (ensureError) throw ensureError;
-
-            // Stored as-is, not OTP-verified — phone_number isn't guarded by
-            // tr_profiles_security the way email is, so this direct write is
-            // allowed. It becomes a valid OTP login channel only once
-            // separately confirmed via account settings' "Verify phone" flow.
-            const { error: updateError } = await supabase
-                .schema('api')
-                .from('v1_profiles')
-                .update({ phone_number: normalized })
-                .eq('id', user.id);
-
-            if (updateError) throw updateError;
+            // triggered by the auth-state-change listener) — force it so the
+            // next page (whichever the middleware redirects to) doesn't
+            // render against stale context state after the client-side
+            // navigation below, since that redirect doesn't remount
+            // AuthProvider the way a full page load would.
+            await refreshProfile();
 
             setStage('done');
         } catch (err: unknown) {
-            setError(getErrorMessage(err) || 'Failed to save phone number.');
+            setError(getErrorMessage(err) || 'Invalid or expired code. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -213,12 +158,10 @@ export default function CompleteContactInfoPage() {
                     <h1 className={styles.title}>
                         {stage === 'email' && 'Add Your Email Address'}
                         {stage === 'email-code' && 'Confirm Your Email'}
-                        {stage === 'phone' && 'Add Your Phone Number'}
                     </h1>
                     <p className={styles.subtitle}>
                         {stage === 'email' && 'We need an email on file so you can sign in with a one-time code, and recover your account if needed.'}
                         {stage === 'email-code' && `Enter the ${OTP_CODE_LENGTH}-digit code we just sent you.`}
-                        {stage === 'phone' && 'A phone number gives you a backup way to sign in. You can verify it later from account settings.'}
                     </p>
                 </div>
 
@@ -271,27 +214,6 @@ export default function CompleteContactInfoPage() {
                             disabled={isSubmitting || resendCooldown > 0}
                         >
                             {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
-                        </button>
-                    </form>
-                )}
-
-                {stage === 'phone' && (
-                    <form onSubmit={handleSubmitPhone} className={styles.form}>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Phone Number</label>
-                            <input
-                                type="tel"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className={styles.input}
-                                placeholder="+254 712 345 678"
-                                required
-                                autoFocus
-                            />
-                            <p className={styles.helperText}>You can confirm this number later from account settings to use it for sign-in.</p>
-                        </div>
-                        <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                            {isSubmitting ? 'Saving...' : 'Continue'}
                         </button>
                     </form>
                 )}
