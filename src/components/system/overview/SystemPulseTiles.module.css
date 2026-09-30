@@ -1,0 +1,47 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.tile {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.tileHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tileLabel {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+}
+
+.statusDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.statusGood { background-color: var(--color-interface-success); }
+.statusWarning { background-color: var(--color-interface-warning); }
+.statusCritical { background-color: var(--color-interface-error); }
+.statusNeutral { background-color: var(--color-interface-outline); }
+
+.tileValue {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    font-family: var(--font-heading), sans-serif;
+}

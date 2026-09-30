@@ -370,7 +370,18 @@ function CampaignsContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <DateRangeRow 
+                {activeTab === 'campaigns' && (
+                    <select
+                        className={adminStyles.filterSelect}
+                        value={adTypeFilter}
+                        onChange={(e) => setAdTypeFilter(e.target.value)}
+                    >
+                        <option value="all">All Types</option>
+                        <option value="banner">Banner</option>
+                        <option value="interstitial">Interstitial</option>
+                    </select>
+                )}
+                <DateRangeRow
                     startDate={startDate}
                     endDate={endDate}
                     onStartDateChange={setStartDate}
@@ -391,31 +402,19 @@ function CampaignsContent() {
 
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         {activeTab === 'campaigns' && (
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                <select 
-                                    className={adminStyles.filterSelect}
-                                    value={adTypeFilter}
-                                    onChange={(e) => setAdTypeFilter(e.target.value)}
-                                >
-                                    <option value="all">All Types</option>
-                                    <option value="banner">Banner</option>
-                                    <option value="interstitial">Interstitial</option>
-                                </select>
-                                <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-interface-outline)', opacity: 0.3, margin: '0 4px' }} />
-                                <FilterChips
-                                    options={[
-                                        { value: 'all', label: 'All Status' },
-                                        { value: 'active', label: 'Active' },
-                                        { value: 'pending_approval', label: 'Pending' },
-                                        { value: 'paused', label: 'Paused' },
-                                        { value: 'rejected', label: 'Rejected' },
-                                        { value: 'completed', label: 'Completed' },
-                                        { value: 'scheduled', label: 'Scheduled' },
-                                    ]}
-                                    currentValue={statusFilter}
-                                    onChange={setStatusFilter}
-                                />
-                            </div>
+                            <FilterChips
+                                options={[
+                                    { value: 'all', label: 'All Status' },
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'pending_approval', label: 'Pending' },
+                                    { value: 'paused', label: 'Paused' },
+                                    { value: 'rejected', label: 'Rejected' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'scheduled', label: 'Scheduled' },
+                                ]}
+                                currentValue={statusFilter}
+                                onChange={setStatusFilter}
+                            />
                         )}
                     </div>
                 </div>

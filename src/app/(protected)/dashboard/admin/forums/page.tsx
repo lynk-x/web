@@ -63,6 +63,8 @@ function ForumsContent() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [memberStartDate, setMemberStartDate] = useState('');
+    const [memberEndDate, setMemberEndDate] = useState('');
     const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState('forums');
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
@@ -327,6 +329,19 @@ function ForumsContent() {
                             />
                         </div>
                     )}
+
+                    {activeTab === 'members' && (
+                        <DateRangeRow
+                            startDate={memberStartDate}
+                            endDate={memberEndDate}
+                            onStartDateChange={setMemberStartDate}
+                            onEndDateChange={setMemberEndDate}
+                            onClear={() => {
+                                setMemberStartDate('');
+                                setMemberEndDate('');
+                            }}
+                        />
+                    )}
                 </div>
 
                 <TabsContent value="forums">
@@ -358,7 +373,7 @@ function ForumsContent() {
                 </TabsContent>
 
                 <TabsContent value="members">
-                    <ForumMembersTab />
+                    <ForumMembersTab startDate={memberStartDate} endDate={memberEndDate} />
                 </TabsContent>
             </Tabs>
             

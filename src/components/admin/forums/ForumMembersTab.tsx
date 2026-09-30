@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
-import DateRangeRow from '@/components/shared/DateRangeRow';
 import Modal from '@/components/shared/Modal';
 import Button from '@/components/shared/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -44,8 +43,10 @@ const roleVariant: Record<string, BadgeVariant> = {
  * Reads api.v1_forum_members (forum_members joined with profile info), scoped
  * to a single forum when forumId is given, otherwise platform-wide.
  * Lets admins change a member's role or remove them from the forum.
+ * startDate/endDate (joined_at range) are controlled by the page's tab row,
+ * not owned here — see admin/forums/page.tsx's "members" tab-row filter.
  */
-export default function ForumMembersTab({ forumId }: { forumId?: string }) {
+export default function ForumMembersTab({ forumId, startDate = '', endDate = '' }: { forumId?: string, startDate?: string, endDate?: string }) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
@@ -53,8 +54,6 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [roleModalMember, setRoleModalMember] = useState<ForumMember | null>(null);
     const [pendingRole, setPendingRole] = useState('member');
@@ -85,6 +84,10 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
     }, [supabase, showToast, forumId]);
 
     useEffect(() => { fetchMembers(); }, [fetchMembers]);
+
+    // Reset to page 1 whenever the tab row's date range (owned by the parent
+    // page) or the local search/role filters change.
+    useEffect(() => { setCurrentPage(1); }, [startDate, endDate, searchTerm, roleFilter]);
 
     // Writes go through the plain public.forum_members passthrough (RLS-gated,
     // admin-writable) rather than api.v1_forum_members, which is a read-only
@@ -240,13 +243,6 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
                         </button>
                     ))}
                 </div>
-                <DateRangeRow
-                    startDate={startDate}
-                    endDate={endDate}
-                    onStartDateChange={v => { setStartDate(v); setCurrentPage(1); }}
-                    onEndDateChange={v => { setEndDate(v); setCurrentPage(1); }}
-                    onClear={() => { setStartDate(''); setEndDate(''); setCurrentPage(1); }}
-                />
             </TableToolbar>
 
             <DataTable<ForumMember & { id: string }>

@@ -3,24 +3,47 @@
 /**
  * Global System Dashboard landing page.
  * Mirrors the Admin Overview page with high-fidelity world clocks,
- * and a live global activity tracking map.
+ * a system-health tile grid, and a 48h activity sparkline strip.
  */
 
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import WorldClock from '@/components/system/overview/WorldClock';
+import SystemPulseTiles from '@/components/system/overview/SystemPulseTiles';
+import ActivitySparklines from '@/components/system/overview/ActivitySparklines';
+import { createClient } from '@/utils/supabase/client';
 
-// Dynamically import the Live Activity Map to prevent server-side rendering issues
-const AdminMap = dynamic(() => import('@/components/admin/overview/AdminMap'), { ssr: false });
+interface SystemPulse {
+    tiles: {
+        payment_failure_rate_pct: number;
+        open_reports: number;
+        dead_letters_24h: number;
+        max_toxicity: number;
+        kyc_pending: number;
+        active_campaigns: number;
+    };
+    series: Array<{
+        hour: string;
+        events_published: number;
+        tickets_sold: number;
+        reports_filed: number;
+    }>;
+}
 
 export default function SystemDashboardPage() {
-    const [isMounted, setIsMounted] = useState(false);
+    const supabase = useMemo(() => createClient(), []);
+    const [pulse, setPulse] = useState<SystemPulse | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const fetchPulse = useCallback(async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase.schema('api').rpc('get_system_pulse');
+        if (!error && data) setPulse(data as SystemPulse);
+        setIsLoading(false);
+    }, [supabase]);
+
+    useEffect(() => { fetchPulse(); }, [fetchPulse]);
 
     return (
         <div className={sharedStyles.container}>
@@ -32,18 +55,16 @@ export default function SystemDashboardPage() {
             {/* High-Fidelity World Clocks */}
             <WorldClock />
 
-            {/* Live Activity Monitoring Map */}
+            {/* System Health Tiles */}
+            <section style={{ marginTop: '32px' }}>
+                <h2 className={sharedStyles.sectionTitle}>System Health</h2>
+                <SystemPulseTiles data={pulse?.tiles ?? null} isLoading={isLoading} />
+            </section>
+
+            {/* Activity Sparklines */}
             <section style={{ marginTop: '32px', marginBottom: '32px' }}>
-                <h2 className={sharedStyles.sectionTitle}>Global Activity Map</h2>
-                <div style={{ border: '1px solid var(--color-interface-border-subtle)', borderRadius: '12px', overflow: 'hidden', height: '500px', position: 'relative', background: 'var(--color-interface-surface-alt)' }}>
-                    {isMounted ? (
-                        <AdminMap />
-                    ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.5 }}>
-                            Initializing Global Activity Tracking...
-                        </div>
-                    )}
-                </div>
+                <h2 className={sharedStyles.sectionTitle}>Activity (Last 48h)</h2>
+                <ActivitySparklines series={pulse?.series ?? []} isLoading={isLoading} />
             </section>
         </div>
     );
