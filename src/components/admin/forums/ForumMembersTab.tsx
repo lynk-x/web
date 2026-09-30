@@ -5,10 +5,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
+import Modal from '@/components/shared/Modal';
+import Button from '@/components/shared/Button';
 import { useToast } from '@/components/ui/Toast';
-import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { formatRelativeTime } from '@/utils/format';
+import styles from './ForumMembersTab.module.css';
+
+const ASSIGNABLE_ROLES = ['member', 'moderator', 'organizer', 'owner'];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,7 +53,12 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [roleModalMember, setRoleModalMember] = useState<ForumMember | null>(null);
+    const [pendingRole, setPendingRole] = useState('member');
+    const [isSavingRole, setIsSavingRole] = useState(false);
     const itemsPerPage = 12;
 
     const fetchMembers = useCallback(async () => {
@@ -113,12 +123,43 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
         }
     };
 
+    const openRoleModal = (member: ForumMember) => {
+        setPendingRole(member.role_id);
+        setRoleModalMember(member);
+    };
+
+    const handleChangeRole = async () => {
+        if (!roleModalMember) return;
+        setIsSavingRole(true);
+        try {
+            const { error } = await supabase
+                .from('forum_members')
+                .update({ role_id: pendingRole })
+                .eq('forum_id', roleModalMember.forum_id)
+                .eq('user_id', roleModalMember.user_id);
+            if (error) throw error;
+            setMembers(prev => prev.map(m =>
+                m.forum_id === roleModalMember.forum_id && m.user_id === roleModalMember.user_id
+                    ? { ...m, role_id: pendingRole }
+                    : m
+            ));
+            showToast('Member role updated', 'success');
+            setRoleModalMember(null);
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        } finally {
+            setIsSavingRole(false);
+        }
+    };
+
     const filtered = members.filter(m => {
         const matchSearch =
             (m.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (m.user_name || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchRole = roleFilter === 'all' || m.role_id === roleFilter;
-        return matchSearch && matchRole;
+        const matchStart = !startDate || new Date(m.joined_at).getTime() >= new Date(startDate).getTime();
+        const matchEnd = !endDate || new Date(m.joined_at).getTime() <= new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
+        return matchSearch && matchRole && matchStart && matchEnd;
     });
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -175,6 +216,10 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
 
     const getActions = (m: ForumMember) => [
         {
+            label: 'Change Role',
+            onClick: () => openRoleModal(m),
+        },
+        {
             label: m.is_muted ? 'Unmute' : 'Mute',
             onClick: () => handleToggleMute(m),
         },
@@ -190,11 +235,18 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
             <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {['all', 'member', 'moderator', 'organizer', 'owner'].map(r => (
-                        <button key={r} className={`${adminStyles.chip} ${roleFilter === r ? adminStyles.chipActive : ''}`} onClick={() => { setRoleFilter(r); setCurrentPage(1); }}>
+                        <button key={r} className={roleFilter === r ? styles.chipActive : styles.chip} onClick={() => { setRoleFilter(r); setCurrentPage(1); }}>
                             {r === 'all' ? 'All Roles' : r.charAt(0).toUpperCase() + r.slice(1)}
                         </button>
                     ))}
                 </div>
+                <DateRangeRow
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={v => { setStartDate(v); setCurrentPage(1); }}
+                    onEndDateChange={v => { setEndDate(v); setCurrentPage(1); }}
+                    onClear={() => { setStartDate(''); setEndDate(''); setCurrentPage(1); }}
+                />
             </TableToolbar>
 
             <DataTable<ForumMember & { id: string }>
@@ -207,6 +259,29 @@ export default function ForumMembersTab({ forumId }: { forumId?: string }) {
                 onPageChange={setCurrentPage}
                 emptyMessage="No forum members found."
             />
+
+            <Modal
+                isOpen={!!roleModalMember}
+                onClose={() => setRoleModalMember(null)}
+                title={`Change Role: ${roleModalMember?.full_name || roleModalMember?.user_name || 'Member'}`}
+                size="small"
+                footer={
+                    <div className={styles.modalFooter}>
+                        <Button variant="secondary" onClick={() => setRoleModalMember(null)}>Cancel</Button>
+                        <Button variant="primary" isLoading={isSavingRole} onClick={handleChangeRole}>Save</Button>
+                    </div>
+                }
+            >
+                <select
+                    className={styles.roleSelect}
+                    value={pendingRole}
+                    onChange={e => setPendingRole(e.target.value)}
+                >
+                    {ASSIGNABLE_ROLES.map(r => (
+                        <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                    ))}
+                </select>
+            </Modal>
         </div>
     );
 }
