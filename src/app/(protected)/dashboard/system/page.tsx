@@ -3,47 +3,34 @@
 /**
  * Global System Dashboard landing page.
  * Mirrors the Admin Overview page with high-fidelity world clocks,
- * a system-health tile grid, and a 48h activity sparkline strip.
+ * and a 90-day event-activity heatmap calendar.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import WorldClock from '@/components/system/overview/WorldClock';
-import SystemPulseTiles from '@/components/system/overview/SystemPulseTiles';
-import ActivitySparklines from '@/components/system/overview/ActivitySparklines';
+import ActivityHeatmapCalendar from '@/components/system/overview/ActivityHeatmapCalendar';
 import { createClient } from '@/utils/supabase/client';
 
-interface SystemPulse {
-    tiles: {
-        payment_failure_rate_pct: number;
-        open_reports: number;
-        dead_letters_24h: number;
-        max_toxicity: number;
-        kyc_pending: number;
-        active_campaigns: number;
-    };
-    series: Array<{
-        hour: string;
-        events_published: number;
-        tickets_sold: number;
-        reports_filed: number;
-    }>;
+interface DayCount {
+    day: string;
+    count: number;
 }
 
 export default function SystemDashboardPage() {
     const supabase = useMemo(() => createClient(), []);
-    const [pulse, setPulse] = useState<SystemPulse | null>(null);
+    const [heatmapData, setHeatmapData] = useState<DayCount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchPulse = useCallback(async () => {
+    const fetchHeatmap = useCallback(async () => {
         setIsLoading(true);
-        const { data, error } = await supabase.schema('api').rpc('get_system_pulse');
-        if (!error && data) setPulse(data as SystemPulse);
+        const { data, error } = await supabase.schema('api').rpc('get_events_daily_heatmap');
+        if (!error && data) setHeatmapData(data as DayCount[]);
         setIsLoading(false);
     }, [supabase]);
 
-    useEffect(() => { fetchPulse(); }, [fetchPulse]);
+    useEffect(() => { fetchHeatmap(); }, [fetchHeatmap]);
 
     return (
         <div className={sharedStyles.container}>
@@ -55,16 +42,10 @@ export default function SystemDashboardPage() {
             {/* High-Fidelity World Clocks */}
             <WorldClock />
 
-            {/* System Health Tiles */}
-            <section style={{ marginTop: '32px' }}>
-                <h2 className={sharedStyles.sectionTitle}>System Health</h2>
-                <SystemPulseTiles data={pulse?.tiles ?? null} isLoading={isLoading} />
-            </section>
-
-            {/* Activity Sparklines */}
+            {/* Activity Heatmap Calendar */}
             <section style={{ marginTop: '32px', marginBottom: '32px' }}>
-                <h2 className={sharedStyles.sectionTitle}>Activity (Last 48h)</h2>
-                <ActivitySparklines series={pulse?.series ?? []} isLoading={isLoading} />
+                <h2 className={sharedStyles.sectionTitle}>Event Activity (Last 90 Days)</h2>
+                <ActivityHeatmapCalendar data={heatmapData} isLoading={isLoading} />
             </section>
         </div>
     );
