@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 // Cron jobs we track for last-run recency (all must have run within 2× their schedule)
 const MONITORED_CRONS = [
   'cleanup_expired_reservations',
-  'expire_events',
+  'run_hourly_jobs', // was 'expire_events' before the hourly-tasks dispatcher consolidation
   'janitor_purge_audit_logs',
   'janitor_lifecycle_updates',
   'janitor_pgmq_maintenance',
