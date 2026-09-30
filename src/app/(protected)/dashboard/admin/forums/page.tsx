@@ -10,6 +10,7 @@ import adminStyles from '../page.module.css';
 import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
 import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
 import ForumMediaTab from '@/components/admin/forums/ForumMediaTab';
+import ForumMembersTab from '@/components/admin/forums/ForumMembersTab';
 import Link from 'next/link';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Modal from '@/components/shared/Modal';
@@ -72,7 +73,7 @@ function ForumsContent() {
     const [allForums, setAllForums] = useState<any[]>([]);
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+        const { data, error } = await supabase.schema('api').rpc('get_forums_stat_summary', {
             p_country_code: resolvedCountryFilter
         });
         if (!error && data) {
@@ -250,77 +251,82 @@ function ForumsContent() {
         <div className={adminStyles.container}>
             {ConfirmDialog}
             <PageHeader
-                title="Forum Management" 
-                subtitle="Monitor and moderate event forums and messages." 
+                title="Forum Management"
+                subtitle="Monitor and moderate event forums and messages."
+                primaryAction={{ label: '+ Create Forum', href: '/dashboard/admin/forums/create' }}
             />
 
             <div className={adminStyles.statsGrid}>
                 <StatCard 
                     label="Total Forums (T30)" 
-                    value={summary?.forums?.total_30d ?? 0} 
+                    value={summary?.total_30d ?? 0} 
                     change="Volume created"
                     trend="neutral"
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Open Forums (T30)" 
-                    value={summary?.forums?.open_30d ?? 0} 
+                    value={summary?.open_30d ?? 0} 
                     change="Active interaction"
                     trend="positive"
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Pending Review" 
-                    value={summary?.forums?.pending ?? 0} 
+                    value={summary?.pending ?? 0} 
                     change="Requires attention"
-                    trend={(summary?.forums?.pending ?? 0) > 0 ? "negative" : "positive"}
+                    trend={(summary?.pending ?? 0) > 0 ? "negative" : "positive"}
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Flagged Forums" 
-                    value={summary?.forums?.flagged ?? 0} 
+                    value={summary?.flagged ?? 0} 
                     change="Moderated read-only"
                     trend="negative"
                     isLoading={!summary} 
                 />
             </div>
 
-            <TableToolbar
-                searchPlaceholder="Search forum name or event..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <DateRangeRow
-                    startDate={startDate}
-                    endDate={endDate}
-                    onStartDateChange={setStartDate}
-                    onEndDateChange={setEndDate}
-                    onClear={() => {
-                        setStartDate('');
-                        setEndDate('');
-                    }}
-                />
-            </TableToolbar>
+            {activeTab === 'forums' && (
+                <TableToolbar
+                    searchPlaceholder="Search forum name or event..."
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                >
+                    <DateRangeRow
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                            setStartDate('');
+                            setEndDate('');
+                        }}
+                    />
+                </TableToolbar>
+            )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabs}>
                 <div className={adminStyles.tabsHeaderRow}>
                     <TabsList>
                         <TabsTrigger value="forums">Forums</TabsTrigger>
-                        <TabsTrigger value="surveys">Surveys</TabsTrigger>
+                        <TabsTrigger value="members">Members</TabsTrigger>
                     </TabsList>
 
-                    <div className={adminStyles.chipsWrapper}>
-                        <FilterChips
-                            options={[
-                                { value: 'all', label: 'All' },
-                                { value: 'open', label: 'Open' },
-                                { value: 'read_only', label: 'Read Only' },
-                                { value: 'archived', label: 'Archived' },
-                            ]}
-                            currentValue={statusFilter}
-                            onChange={setStatusFilter}
-                        />
-                    </div>
+                    {activeTab === 'forums' && (
+                        <div className={adminStyles.chipsWrapper}>
+                            <FilterChips
+                                options={[
+                                    { value: 'all', label: 'All' },
+                                    { value: 'open', label: 'Open' },
+                                    { value: 'read_only', label: 'Read Only' },
+                                    { value: 'archived', label: 'Archived' },
+                                ]}
+                                currentValue={statusFilter}
+                                onChange={setStatusFilter}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <TabsContent value="forums">
@@ -351,10 +357,8 @@ function ForumsContent() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="surveys">
-                    <div style={{ padding: '60px', textAlign: 'center', background: 'var(--color-interface-surface)', border: '1px dashed var(--color-interface-border-subtle)', borderRadius: '12px', opacity: 0.6 }}>
-                        No surveys configured in this territory.
-                    </div>
+                <TabsContent value="members">
+                    <ForumMembersTab />
                 </TabsContent>
             </Tabs>
             

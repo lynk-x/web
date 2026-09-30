@@ -102,7 +102,7 @@ export default function AdminEventsPage() {
     );
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+        const { data, error } = await supabase.schema('api').rpc('get_events_stat_summary', {
             p_country_code: resolvedCountryFilter
         });
         if (!error && data) {
@@ -573,28 +573,28 @@ export default function AdminEventsPage() {
             <div className={adminStyles.statsGrid}>
                 <StatCard 
                     label="Total Events (30d)" 
-                    value={summary?.events?.total_30d ?? 0} 
+                    value={summary?.total_30d ?? 0} 
                     change="Volume created"
                     trend="neutral"
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Active Events (30d)" 
-                    value={summary?.events?.active_30d ?? 0} 
+                    value={summary?.active_30d ?? 0} 
                     change="Live engagement"
                     trend="positive"
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Pending Review" 
-                    value={summary?.events?.pending ?? 0} 
+                    value={summary?.pending ?? 0} 
                     change="Requires attention"
-                    trend={(summary?.events?.pending ?? 0) > 0 ? "negative" : "positive"}
+                    trend={(summary?.pending ?? 0) > 0 ? "negative" : "positive"}
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Flagged Events" 
-                    value={summary?.events?.flagged ?? 0} 
+                    value={summary?.flagged ?? 0} 
                     change="Safety suspensions"
                     trend="negative"
                     isLoading={!summary} 

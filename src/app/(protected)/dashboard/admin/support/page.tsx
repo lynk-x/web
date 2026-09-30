@@ -42,7 +42,7 @@ function SupportContent() {
     const fetchSummary = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
+            const { data, error } = await supabase.schema('api').rpc('get_moderation_stat_summary');
             if (!error && data) setSummary(data);
         } finally {
             setIsLoading(false);
@@ -64,30 +64,30 @@ function SupportContent() {
             <div className={sharedStyles.statsGrid}>
                 <StatCard
                     label="Pending Reports"
-                    value={summary?.moderation?.total_reports || 0}
+                    value={summary?.total_reports || 0}
                     change="Requires Attention"
                     trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Unresolved Moderation"
-                    value={summary?.moderation?.pending || 0}
+                    value={summary?.pending || 0}
                     change="Content flagged"
                     trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Resolved (30d)"
-                    value={summary?.moderation?.resolved_30d || 0}
+                    value={summary?.resolved_30d || 0}
                     change="Closed tickets"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Max Toxicity"
-                    value={summary?.moderation?.max_toxicity !== undefined ? `${summary.moderation.max_toxicity.toFixed(1)}%` : '—'}
+                    value={summary?.max_toxicity !== undefined ? `${summary.max_toxicity.toFixed(1)}%` : '—'}
                     change="Community health"
-                    trend={(summary?.moderation?.max_toxicity || 0) < 5 ? "positive" : "negative"}
+                    trend={(summary?.max_toxicity || 0) < 5 ? "positive" : "negative"}
                     isLoading={isLoading}
                 />
             </div>

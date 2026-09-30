@@ -157,13 +157,13 @@ function FinanceContent() {
     const fetchGlobalStats = useCallback(async () => {
         setIsStatsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+            const { data, error } = await supabase.schema('api').rpc('get_finance_stat_summary', {
                 p_country_code: resolvedCountryFilter
             });
             if (error) throw error;
-    
+
             setGlobalStats({
-                balances: data.finance.balances || []
+                balances: data.balances || []
             });
         } catch (error: unknown) {
             showToast(getErrorMessage(error) || 'Failed to load financial aggregates.', 'error');

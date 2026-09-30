@@ -44,12 +44,10 @@ function AccountsContent() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     interface AdminSummary {
-        users?: {
-            total: number;
-            kyc_pending: number;
-            growth_30d: number;
-            churn_30d: number;
-        };
+        total: number;
+        kyc_pending: number;
+        growth_30d: number;
+        churn_30d: number;
     }
     const [summary, setSummary] = useState<AdminSummary | null>(null);
 
@@ -64,7 +62,7 @@ function AccountsContent() {
     );
 
     const fetchSummary = useCallback(async () => {
-        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary');
+        const { data, error } = await supabase.schema('api').rpc('get_users_stat_summary');
         if (!error && data) setSummary(data);
     }, [supabase]);
 
@@ -143,27 +141,27 @@ function AccountsContent() {
             <div className={sharedStyles.statsGrid}>
                 <StatCard
                     label="Total Accounts"
-                    value={summary?.users?.total || 0}
+                    value={summary?.total || 0}
                     change="Platform entities"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Pending KYC"
-                    value={summary?.users?.kyc_pending || 0}
+                    value={summary?.kyc_pending || 0}
                     change="Verifications needed"
                     trend="negative"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Growth (30d)"
-                    value={summary?.users?.growth_30d || 0}
+                    value={summary?.growth_30d || 0}
                     change="New accounts"
                     trend="positive"
                     isLoading={isLoading}
                 />
                 <StatCard
                     label="Churn (30d)"
-                    value={summary?.users?.churn_30d || 0}
+                    value={summary?.churn_30d || 0}
                     change="Deleted accounts"
                     trend="negative"
                     isLoading={isLoading}

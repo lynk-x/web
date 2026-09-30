@@ -63,7 +63,7 @@ function CampaignsContent() {
     );
 
     const fetchDashboardSummary = useCallback(async () => {
-        const { data, error } = await supabase.schema('api').rpc('admin_stat_summary', {
+        const { data, error } = await supabase.schema('api').rpc('get_advertising_stat_summary', {
             p_country_code: resolvedCountryFilter
         });
         if (!error && data) {
@@ -335,28 +335,28 @@ function CampaignsContent() {
             <div className={adminStyles.statsGrid} style={{ marginBottom: 'var(--spacing-xs)' }}>
                 <StatCard 
                     label="Total Campaigns (30d)" 
-                    value={summary?.advertising?.total_30d ?? 0} 
+                    value={summary?.total_30d ?? 0} 
                     change="Volume created"
                     trend="neutral"
                     isLoading={!summary} 
                 />
                 <StatCard 
                     label="Active Campaigns (30d)" 
-                    value={summary?.advertising?.active_30d ?? 0} 
+                    value={summary?.active_30d ?? 0} 
                     change="Active engagement"
                     trend="positive"
                     isLoading={!summary} 
                 />
                 <StatCard
                     label="Pending Review"
-                    value={summary?.advertising?.pending ?? 0}
+                    value={summary?.pending ?? 0}
                     change="Awaiting approval"
                     trend="neutral"
                     isLoading={!summary}
                 />
                 <StatCard
                     label="Flagged Ads"
-                    value={summary?.advertising?.flagged ?? 0}
+                    value={summary?.flagged ?? 0}
                     change="Compliance violations"
                     trend="negative"
                     isLoading={!summary}
