@@ -44,6 +44,7 @@ export default function CheckInLogsPage() {
     const [showManualModal, setShowManualModal] = useState(false);
     const [manualCode, setManualCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
+    const [eventCreatedAt, setEventCreatedAt] = useState<string | null>(null);
 
     const fetchLogs = useCallback(async () => {
         setIsLoading(true);
@@ -56,7 +57,7 @@ export default function CheckInLogsPage() {
             const { data, error } = await supabase
                 .schema('api')
                 .from('v1_tickets')
-                .select('id, status, redeemed_at, tier_name, holder_name, holder_user_name, scanner_name, scanner_user_name')
+                .select('id, event_created_at, status, redeemed_at, tier_name, holder_name, holder_user_name, scanner_name, scanner_user_name')
                 .eq('event_id', eventId)
                 .order('redeemed_at', { ascending: false, nullsFirst: false });
 
@@ -64,6 +65,7 @@ export default function CheckInLogsPage() {
 
             interface TicketRow {
                 id: string;
+                event_created_at: string;
                 status: CheckInLog['status'];
                 redeemed_at: string | null;
                 tier_name: string | null;
@@ -86,6 +88,7 @@ export default function CheckInLogsPage() {
             }));
 
             setLogs(mappedLogs);
+            if (data && data.length > 0) setEventCreatedAt(data[0].event_created_at);
 
             const scanned = mappedLogs.filter(l => l.status === 'used').length;
             const valid = mappedLogs.filter(l => l.status === 'valid').length;
@@ -126,7 +129,8 @@ export default function CheckInLogsPage() {
         try {
             const { data, error } = await supabase.schema('api').rpc('verify_and_use_ticket', {
                 p_ticket_code: manualCode.trim(),
-                p_event_id: eventId
+                p_event_id: eventId,
+                p_event_created_at: eventCreatedAt
             });
 
             if (error) throw error;
