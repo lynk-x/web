@@ -84,38 +84,40 @@ export default function ActivityHeatmapCalendar({ data, isLoading }: { data: Day
 
     if (isLoading) {
         return (
-            <div className={styles.wrapper} style={{ height: 140, opacity: 0.4 }} />
+            <div className={styles.wrapper} style={{ opacity: 0.4 }} />
         );
     }
 
     return (
         <div className={styles.wrapper}>
-            <div className={styles.monthLabels} style={{ gridTemplateColumns: `repeat(${weekCount}, 12px)` }}>
-                {Array.from({ length: weekCount }).map((_, i) => {
-                    const label = monthLabels.find(m => m.colIndex === i);
-                    return <span key={i}>{label?.label ?? ''}</span>;
-                })}
-            </div>
+            <div className={styles.inner}>
+                <div className={styles.monthLabels} style={{ gridTemplateColumns: `repeat(${weekCount}, 22px)` }}>
+                    {Array.from({ length: weekCount }).map((_, i) => {
+                        const label = monthLabels.find(m => m.colIndex === i);
+                        return <span key={i}>{label?.label ?? ''}</span>;
+                    })}
+                </div>
 
-            <div className={styles.grid} style={{ gridTemplateColumns: `repeat(${weekCount}, 12px)` }}>
-                {cells.map(cell => (
-                    <div
-                        key={cell.dateKey}
-                        className={styles.cell}
-                        style={{ background: BUCKET_COLORS[bucketFor(cell.count, maxCount)] }}
-                        onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
-                        onMouseMove={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
-                        onMouseLeave={() => setHovered(null)}
-                    />
-                ))}
-            </div>
+                <div className={styles.grid} style={{ gridTemplateColumns: `repeat(${weekCount}, 22px)` }}>
+                    {cells.map(cell => (
+                        <div
+                            key={cell.dateKey}
+                            className={styles.cell}
+                            style={{ background: BUCKET_COLORS[bucketFor(cell.count, maxCount)] }}
+                            onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
+                            onMouseMove={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
+                            onMouseLeave={() => setHovered(null)}
+                        />
+                    ))}
+                </div>
 
-            <div className={styles.footer}>
-                <span>Less</span>
-                {BUCKET_COLORS.map((color, i) => (
-                    <div key={i} className={styles.scaleCell} style={{ background: color }} />
-                ))}
-                <span>More</span>
+                <div className={styles.footer}>
+                    <span>Less</span>
+                    {BUCKET_COLORS.map((color, i) => (
+                        <div key={i} className={styles.scaleCell} style={{ background: color }} />
+                    ))}
+                    <span>More</span>
+                </div>
             </div>
 
             {hovered && (
