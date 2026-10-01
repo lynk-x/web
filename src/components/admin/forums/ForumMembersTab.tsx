@@ -12,7 +12,7 @@ import { createClient } from '@/utils/supabase/client';
 import { formatRelativeTime } from '@/utils/format';
 import styles from './ForumMembersTab.module.css';
 
-const ASSIGNABLE_ROLES = ['member', 'moderator', 'organizer', 'owner'];
+const ASSIGNABLE_ROLES = ['member', 'organizer'];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,9 +32,7 @@ interface ForumMember {
 }
 
 const roleVariant: Record<string, BadgeVariant> = {
-    owner: 'primary',
     organizer: 'primary',
-    moderator: 'info',
     member: 'neutral',
 };
 
@@ -237,7 +235,7 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {['all', 'member', 'moderator', 'organizer', 'owner'].map(r => (
+                    {['all', 'member', 'organizer'].map(r => (
                         <button key={r} className={roleFilter === r ? styles.chipActive : styles.chip} onClick={() => { setRoleFilter(r); setCurrentPage(1); }}>
                             {r === 'all' ? 'All Roles' : r.charAt(0).toUpperCase() + r.slice(1)}
                         </button>

@@ -40,7 +40,7 @@ export interface ForumMember {
     forum_id: string;
     user_id: string;
     role_id: string;
-    /** Derived: role_id IN ('moderator', 'admin'). */
+    /** Derived: role_id === 'organizer' (binary forum role model). */
     is_moderator: boolean;
     joined_at: string;
 }
@@ -124,7 +124,7 @@ export function createForumRepository(client: DbClient) {
                 forum_id: row.forum_id,
                 user_id: row.user_id,
                 role_id: row.role_id,
-                is_moderator: row.role_id === 'moderator' || row.role_id === 'admin' || row.role_id === 'owner',
+                is_moderator: row.role_id === 'organizer',
                 joined_at: row.joined_at,
             }));
 
