@@ -7,7 +7,7 @@ import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
-import SplitMediaMotion from '@/components/public/SplitMediaMotion';
+import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -115,9 +115,7 @@ export default function OrganizersLandingPage() {
                                 <p className={styles.cardDesc}>From pre-event polls to mid-event reactions, our forums turn passive attendees into active ambassadors for your event’s energy.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="pulseWave" />
-                        </div>
+                        <div className={styles.splitMedia} />
                     </motion.div>
 
                     <motion.div
@@ -128,24 +126,11 @@ export default function OrganizersLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Get Found. Get Started.</h2>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-                                    Findable, Not Just Listed
-                                </h4>
-                                <p className={styles.cardDesc}>Attendees search by category and tag. Your event shows up for people actually looking, not buried in a generic list.</p>
-                            </div>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>
-                                    Free to Start. Setting up is easy.
-                                </h4>
-                                <p className={styles.cardDesc}>List your first event and see how it runs at your own pace. Free events cost nothing; paid ticket sales carry a small platform fee.</p>
-                            </div>
-                        </div>
-                        <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="flowLines" />
+                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Your Event Lifecycle</h2>
+                            <p className={styles.cardDesc} style={{ marginBottom: 24 }}>
+                                From creation to post-event insights — see how Lynk-X compares to external ticketing tools.
+                            </p>
+                            <JourneyFlowMotion variant="organizers" />
                         </div>
                     </motion.div>
                 </section>

@@ -7,7 +7,7 @@ import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
-import SplitMediaMotion from '@/components/public/SplitMediaMotion';
+import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -113,9 +113,7 @@ export default function AdvertisersLandingPage() {
                                 <p className={styles.cardDesc}>We cap how often the same person sees your ad, so instead of hammering the same few people, your budget keeps reaching new faces.</p>
                             </div>
                         </div>
-                        <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="constellation" />
-                        </div>
+                        <div className={styles.splitMedia} />
                     </motion.div>
 
                     <motion.div 
@@ -126,24 +124,11 @@ export default function AdvertisersLandingPage() {
                         transition={{ duration: 1 }}
                     >
                         <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Everything in One Place</h2>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                                    All Your Ad Variations, One Dashboard
-                                </h4>
-                                <p className={styles.cardDesc}>Keep every version of your ad in one place and swap between them in seconds instead of digging through folders and old campaigns.</p>
-                            </div>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                                    Set a Budget and Forget It
-                                </h4>
-                                <p className={styles.cardDesc}>Set a spending cap once and billing takes care of itself — no manual top-ups, no campaigns quietly pausing because you forgot to check on them.</p>
-                            </div>
-                        </div>
-                        <div className={styles.splitMedia}>
-                            <SplitMediaMotion variant="stackingBars" />
+                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Campaign Lifecycle</h2>
+                            <p className={styles.cardDesc} style={{ marginBottom: 24 }}>
+                                From launch to measurement — see how Lynk-X streamlines every stage of your ad campaign.
+                            </p>
+                            <JourneyFlowMotion variant="advertisers" />
                         </div>
                     </motion.div>
                 </section>

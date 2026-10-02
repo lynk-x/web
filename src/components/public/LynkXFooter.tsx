@@ -10,10 +10,6 @@ const LynkXFooter: React.FC = () => {
             <div className={styles.backgroundGlow} />
 
             <div className={styles.content}>
-                <p style={{ textAlign: 'center', opacity: 0.7, fontSize: '14px', marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
-                    The ultimate event app — create events, buy tickets and join event forums.
-                </p>
-
                 <div className={styles.topRow}>
 
                     <div className={styles.column}>
