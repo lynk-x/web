@@ -281,6 +281,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 <span className={styles.tag}>{event.category || 'Event'}</span>
                             </div>
                         </div>
+                        <p style={{ opacity: 0.8, fontSize: '15px', marginTop: '12px' }}>
+                            Buy tickets to {event.title} on Lynk-X. Join the event forum for updates, live chat and shared media.
+                        </p>
                         <div className={styles.metaSection}>
                             <div className={styles.metaItem}>
                                 <div className={styles.metaIcon}>

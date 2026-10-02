@@ -1494,7 +1494,7 @@ export default function CreateCampaignForm({
                                                     {formData.type === 'banner' && (
                                                         <div className={styles.mockAdBanner}>
                                                             {(activeCreative.preview || activeCreative.imageUrl) ? (
-                                                                <img src={activeCreative.preview || activeCreative.imageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
+                                                                 <img src={activeCreative.preview || activeCreative.imageUrl} alt="Ad creative" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
                                                             ) : null}
                                                             <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
                                                                 {activeCreative.headline || formData.adHeadline || 'AD'}

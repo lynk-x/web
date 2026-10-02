@@ -4,6 +4,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: 'Accept Invitation',
+    robots: { index: false, follow: false },
 };
 
 export default async function AcceptInvitePage({

@@ -42,7 +42,7 @@ export default function AdPreviewMock({ type, title, headline, mediaUrl, mediaTy
                                         isVideo ? (
                                             <video src={mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} autoPlay muted loop />
                                         ) : (
-                                            <img src={mediaUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={mediaUrl} alt="Ad creative" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         )
                                     ) : isVideo ? (
                                         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5">
@@ -72,7 +72,7 @@ export default function AdPreviewMock({ type, title, headline, mediaUrl, mediaTy
                                 {type === 'banner' && (
                                     <div className={styles.mockAdBanner}>
                                         {mediaUrl ? (
-                                            <img src={mediaUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
+                                            <img src={mediaUrl} alt="Ad creative" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
                                         ) : null}
                                         <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
                                             {headline || 'AD'}

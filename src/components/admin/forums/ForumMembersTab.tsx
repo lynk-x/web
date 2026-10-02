@@ -173,7 +173,7 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {m.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                        <img src={m.avatar_url} alt={m.full_name || m.user_name || 'Member avatar'} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                     ) : (
                         <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-interface-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, opacity: 0.6 }}>
                             {(m.full_name || m.user_name || '?').charAt(0).toUpperCase()}

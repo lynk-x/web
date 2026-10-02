@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     template: '%s',
     default: 'Lynk-x — The Ultimate Event App',
   },
-  description: "Experience the ultimate event app designed for seamless event interactions.",
-  keywords: ['Lynk-X', 'Lynk X', 'Lynk', 'events app', 'event tickets', 'event discovery','event interactions', 'local events'],
+  description: "The ultimate event app — create events, buy tickets and join event forums.",
+  keywords: ['Lynk-X', 'Lynk X', 'Lynk', 'events app', 'event tickets', 'event discovery', 'event interactions', 'local events', 'event app for Africa', 'event community app', 'no app required event', 'offline event app', 'PWA event app', 'event organizer app', 'event check-in', 'QR ticket scanner', 'event forums', 'event live chat', 'event media wall'],
   icons: {
     icon: "/lynk-x_logo.svg",
   },
   openGraph: {
     title: 'Lynk-x — The Ultimate Event App',
-    description: "Experience the ultimate event app designed for seamless event interactions.",
+    description: "The ultimate event app \— create events, buy tickets and join event forums.",
     url: 'https://lynk-x.app',
     siteName: 'Lynk-X',
     images: [
@@ -45,10 +45,19 @@ export const metadata: Metadata = {
     locale: 'en_GB',
     type: 'website',
   },
+  alternates: {
+    canonical: '/',
+    languages: {
+      'en-GB': '/',
+      'en': '/',
+      'x-default': '/',
+    },
+  },
   twitter: {
     card: 'summary_large_image',
     title: 'Lynk-X — The Ultimate Event App',
-    description: "Experience the ultimate event app designed for seamless event interactions.",
+    description: "The ultimate event app \— create events, buy tickets and join event forums.",
+    site: '@lynkxapp',
     images: ['/lynk-x-combined-logo.png'],
   },
 };

@@ -5,10 +5,22 @@ import { Event } from "@/types";
 import HomeClient from "@/components/public/HomeClient";
 
 export const metadata: Metadata = {
-  title: 'Lynk-X — The Ultimate event app for seamless event interactions',
-  description: 'Lynk-X(Lynk x) is the event app for discovering, booking and hosting events near you — buy tickets, join event forums and manage your own events in one place.',
+  title: 'Lynk-X — The Ultimate Event App',
+  description: 'The ultimate event app — create events, buy tickets and join event forums.',
   alternates: {
     canonical: '/',
+  },
+  openGraph: {
+    title: 'Lynk-X — The Ultimate Event App',
+    description: 'The ultimate event app — create events, buy tickets and join event forums.',
+    url: '/',
+    siteName: 'Lynk-X',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Lynk-X — The Ultimate Event App',
+    description: 'The ultimate event app — create events, buy tickets and join event forums.',
   },
 };
 

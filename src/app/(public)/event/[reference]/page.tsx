@@ -31,7 +31,10 @@ export async function generateMetadata(
         openGraph: {
             title: event.title,
             description: event.description,
+            url: `/event/${reference}`,
+            siteName: 'Lynk-X',
             images: eventImage ? [eventImage, ...previousImages] : previousImages,
+            type: 'website',
         },
         twitter: {
             card: 'summary_large_image',

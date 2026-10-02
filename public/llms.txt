@@ -1,0 +1,15 @@
+# Llms.txt for Lynk-X
+
+Lynk-X is a real-time event discovery and community platform built for Sub-Saharan Africa.
+
+## Products
+- **Organizer Dashboard**: Web app for event creation, attendee management and analytics.
+- **Attendee PWA**: Progressive web app for event discovery, ticketing and event forums.
+
+## Key Systems
+- **Ticketing**: Ticket tiers, M-Pesa STK push checkout, reservation countdown, P2P resale, QR redemption.
+- **Forums**: Real-time chat, polls, media wall, attendee bridging from checkout to app.
+
+## Canonical URLs
+- Landing: `https://lynk-x.app/`
+- Events: `https://lynk-x.app/event/{reference}`

@@ -182,7 +182,7 @@ export default function CampaignVariantsPage() {
                                                     {v.media_type === 'video' ? (
                                                         <video src={v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
                                                     ) : (
-                                                        <img src={v.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <img src={v.url} alt="Ad variant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     )}
                                                 </div>
                                             </td>
