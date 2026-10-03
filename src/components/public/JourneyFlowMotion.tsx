@@ -60,8 +60,8 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
         ],
         external: [
             {
-                label: 'Create Event',
-                desc: 'Set up your event in minutes with tickets, tiers and forum access.',
+                label: 'Bring your event',
+                desc: 'Already selling tickets elsewhere? Bring your event to Lynk-X and unlock the forum layer on top of your existing ticketing.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 5v14M5 12h14" />
@@ -69,18 +69,17 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 ),
             },
             {
-                label: 'Sell Tickets Elsewhere',
-                desc: 'Keep your existing checkout, payment provider or agency.',
+                label: 'Create forum',
+                desc: 'Set up a dedicated event forum in minutes. Same simple flow as any organizer would use.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 6v6l4 2" />
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                 ),
             },
             {
-                label: 'Send Invites',
-                desc: 'Upload a CSV or invite attendees one by one into the event forum.',
+                label: 'Send invites',
+                desc: 'Add attendees one at a time or upload a CSV. We handle the rest.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -89,8 +88,8 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 ),
             },
             {
-                label: 'Check-In & Insights',
-                desc: 'Effortless entry. Post-event clarity on attendance and forum engagement.',
+                label: 'Engage attendees',
+                desc: 'Your crowd gets live chat, polls and shared media — no extra apps, no friction.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
