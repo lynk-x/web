@@ -42,6 +42,9 @@ export async function generateMetadata(
             description: event.description,
             images: eventImage ? [eventImage] : previousImages,
         },
+        alternates: {
+            canonical: `/event/${reference}`,
+        },
     };
 }
 
