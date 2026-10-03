@@ -44,7 +44,6 @@ export default function AttendeesLandingPage() {
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/" className={styles.btnPrimary}>Browse Events</Link>
-                        <Link href="#why-lynk-x" className={styles.btnSecondary}>Learn More</Link>
                     </motion.div>
                 </motion.section>
 
@@ -89,48 +88,11 @@ export default function AttendeesLandingPage() {
                 </section>
 
                 <section className={styles.section}>
-                    <motion.div 
-                        className={styles.split}
-                        initial={{ opacity: 0, x: -50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1 }}
-                    >
-                        <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Where Every Event Becomes a Community</h2>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                                    High-Velocity Live Chat
-                                </h4>
-                                <p className={styles.cardDesc}>Stay connected with real-time threads. Share the excitement, coordinate meetups, and get instant crowd-sourced answers from fellow attendees.</p>
-                            </div>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                                    Collaborative Event Media
-                                </h4>
-                                <p className={styles.cardDesc}>Capture the moment together. Browse shared galleries of photos and videos uploaded by the community to see the event from every angle.</p>
-                            </div>
-                        </div>
-                        <div className={styles.splitMedia} />
-                    </motion.div>
-
-                    <motion.div 
-                        className={styles.split + ' ' + styles.splitRev}
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1 }}
-                    >
-                        <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Your Event Experience</h2>
-                            <p className={styles.cardDesc} style={{ marginBottom: 24 }}>
-                                From discovery to connection — see how Lynk-X turns a single ticket into an event community.
-                            </p>
-                            <JourneyFlowMotion variant="attendees" />
-                        </div>
-                    </motion.div>
+                    <h2 className={styles.sectionTitle}>Your Event Experience</h2>
+                    <p className={styles.cardDesc} style={{ marginBottom: 24, textAlign: 'center' }}>
+                        From discovery to connection — see how Lynk-X turns a single ticket into an event community.
+                    </p>
+                    <JourneyFlowMotion variant="attendees" />
                 </section>
 
                 <motion.section 

@@ -44,7 +44,6 @@ export default function AdvertisersLandingPage() {
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/dashboard/ads" className={styles.btnPrimary}>Create Campaign</Link>
-                        <Link href="#how-it-works" className={styles.btnSecondary}>See How It Works</Link>
                     </motion.div>
                 </motion.section>
 
@@ -89,48 +88,11 @@ export default function AdvertisersLandingPage() {
                 </section>
 
                 <section className={styles.section}>
-                    <motion.div 
-                        className={styles.split}
-                        initial={{ opacity: 0, x: -50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1 }}
-                    >
-                        <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Pick Your Crowd, Not a Guess</h2>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 2.1l4 2v14l-4-2-6 3-4-2-4 2V4.1l4-2 6 3 4-2z" /><polyline points="9 5.1 9 21.1" /><polyline points="15 2.1 15 18.1" /></svg>
-                                    Go As Narrow or As Wide As You Want
-                                </h4>
-                                <p className={styles.cardDesc}>Put your ad in front of people going to one specific event, or open it up across a city, a category, or an audience type — you decide how tight the crowd is.</p>
-                            </div>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-                                    Nobody Gets Sick of Your Ad
-                                </h4>
-                                <p className={styles.cardDesc}>We cap how often the same person sees your ad, so instead of hammering the same few people, your budget keeps reaching new faces.</p>
-                            </div>
-                        </div>
-                        <div className={styles.splitMedia} />
-                    </motion.div>
-
-                    <motion.div 
-                        className={styles.split + ' ' + styles.splitRev}
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1 }}
-                    >
-                        <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Campaign Lifecycle</h2>
-                            <p className={styles.cardDesc} style={{ marginBottom: 24 }}>
-                                From launch to measurement — see how Lynk-X streamlines every stage of your ad campaign.
-                            </p>
-                            <JourneyFlowMotion variant="advertisers" />
-                        </div>
-                    </motion.div>
+                    <h2 className={styles.sectionTitle}>Campaign Lifecycle</h2>
+                    <p className={styles.cardDesc} style={{ marginBottom: 24, textAlign: 'center' }}>
+                        From launch to measurement — see how Lynk-X streamlines every stage of your ad campaign.
+                    </p>
+                    <JourneyFlowMotion variant="advertisers" />
                 </section>
 
                 <motion.section 

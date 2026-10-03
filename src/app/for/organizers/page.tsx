@@ -44,7 +44,6 @@ export default function OrganizersLandingPage() {
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Start Hosting Free</Link>
-                        <Link href="#features" className={styles.btnSecondary}>Explore Features</Link>
                     </motion.div>
                 </motion.section>
 
@@ -91,48 +90,11 @@ export default function OrganizersLandingPage() {
                 </section>
 
                 <section className={styles.section}>
-                    <motion.div 
-                        className={styles.split}
-                        initial={{ opacity: 0, x: -50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1 }}
-                    >
-                        <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Control the Conversation</h2>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
-                                    Broadcast Notifications
-                                </h4>
-                                <p className={styles.cardDesc}>Pin important news to the top of your event forums. Our integrated alert system ensures that no critical update goes unseen.</p>
-                            </div>
-                            <div className={styles.valueProp}>
-                                <h4 className={styles.valueTitle}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-                                    Live Interaction Feeds
-                                </h4>
-                                <p className={styles.cardDesc}>From pre-event polls to mid-event reactions, our forums turn passive attendees into active ambassadors for your event’s energy.</p>
-                            </div>
-                        </div>
-                        <div className={styles.splitMedia} />
-                    </motion.div>
-
-                    <motion.div
-                        className={styles.split + ' ' + styles.splitRev}
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1 }}
-                    >
-                        <div className={styles.splitContent}>
-                            <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLeft}`}>Your Event Lifecycle</h2>
-                            <p className={styles.cardDesc} style={{ marginBottom: 24 }}>
-                                From creation to post-event insights — see how Lynk-X compares to external ticketing tools.
-                            </p>
-                            <JourneyFlowMotion variant="organizers" />
-                        </div>
-                    </motion.div>
+                    <h2 className={styles.sectionTitle}>Your Event Lifecycle</h2>
+                    <p className={styles.cardDesc} style={{ marginBottom: 24, textAlign: 'center' }}>
+                        From creation to post-event insights — see how Lynk-X compares to external ticketing tools.
+                    </p>
+                    <JourneyFlowMotion variant="organizers" />
                 </section>
 
                 <motion.section 

@@ -30,7 +30,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Sell Tickets',
-                desc: 'M-Pesa, card or mobile money. Reservations hold while people pay.',
+                desc: 'Flexible payment with instant reservation holds while people pay.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -50,7 +50,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Check-In & Insights',
-                desc: 'QR scan at the door. Post-event analytics on sales, attendance and engagement.',
+                desc: 'Effortless entry. Post-event clarity on attendance, sales and engagement.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -90,7 +90,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Check-In & Insights',
-                desc: 'QR scan at the door. Post-event analytics on attendance and forum engagement.',
+                desc: 'Effortless entry. Post-event clarity on attendance and forum engagement.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -113,18 +113,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Book Ticket',
-                desc: 'Reserve your spot with M-Pesa, card or cash. Instant confirmation.',
-                icon: (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                ),
-            },
-            {
-                label: 'Attend',
-                desc: 'Show your QR ticket at the door. No app install, no printing.',
+                desc: 'Reserve your spot and get instant confirmation.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -139,6 +128,17 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                ),
+            },
+            {
+                label: 'Attend',
+                desc: 'Show your QR ticket at the door. No app install, no printing.',
+                icon: (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
                     </svg>
                 ),
             },
@@ -169,7 +169,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Auto-Optimize',
-                desc: 'Thompson Sampling shifts spend toward the best-performing variant.',
+                desc: 'We automatically shift spend toward the best-performing variant so your budget improves over time.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -189,12 +189,6 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
         ],
         external: [],
     },
-};
-
-const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
 };
 
 function OrganizerComparison({ steps }: { steps: { lynkx: Step[]; external: Step[] } }) {
