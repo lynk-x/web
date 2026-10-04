@@ -95,19 +95,6 @@ export default function AdvertisersLandingPage() {
                     <JourneyFlowMotion variant="advertisers" />
                 </section>
 
-                <motion.section 
-                    className={`${styles.hero} ${styles.closingHero}`}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                >
-                    <h2 className={`${styles.title} ${styles.closingTitle}`}>Stop Guessing Who Sees Your Ad</h2>
-                    <p className={styles.subtitle}>Put your brand in front of people who already showed up for something they care about.</p>
-                    <div className={styles.ctaBox}>
-                        <Link href="/dashboard/ads" className={styles.btnPrimary}>Launch Your First Ad</Link>
-                    </div>
-                </motion.section>
-
                 <LynkXFooter />
             </div>
         </HomeLayout>

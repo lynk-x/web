@@ -33,9 +33,8 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 desc: 'Flexible payment with instant reservation holds while people pay.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
+                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1v-20" />
+                        <path d="M16 6h4v4" />
                     </svg>
                 ),
             },
@@ -121,9 +120,8 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 desc: 'Reserve your spot and get instant confirmation.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
+                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1v-20" />
+                        <path d="M16 6h4v4" />
                     </svg>
                 ),
             },

@@ -97,19 +97,6 @@ export default function OrganizersLandingPage() {
                     <JourneyFlowMotion variant="organizers" />
                 </section>
 
-                <motion.section 
-                    className={`${styles.hero} ${styles.closingHero}`}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                >
-                    <h2 className={`${styles.title} ${styles.closingTitle}`}>Ready to Run a Better Event?</h2>
-                    <p className={styles.subtitle}>Join hundreds of organizers building the future of event interactions.</p>
-                    <div className={styles.ctaBox}>
-                        <Link href="/dashboard/organize" className={styles.btnPrimary}>Create Event Now</Link>
-                    </div>
-                </motion.section>
-
                 <LynkXFooter />
             </div>
         </HomeLayout>

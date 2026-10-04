@@ -64,7 +64,7 @@
 }
 
 .btnPrimary {
-    padding: 16px 32px;
+    padding: 16px 64px;
     background: var(--color-brand-primary);
     color: #000;
     border-radius: var(--radius-lg);

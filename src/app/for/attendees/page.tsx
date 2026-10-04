@@ -95,20 +95,6 @@ export default function AttendeesLandingPage() {
                     <JourneyFlowMotion variant="attendees" />
                 </section>
 
-                <motion.section 
-                    className={`${styles.hero} ${styles.closingHero}`}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                >
-                    <h2 className={`${styles.title} ${styles.closingTitle}`}>Don't Just Attend. Participate.</h2>
-                    <p className={styles.subtitle}>Join thousands of users discovering the best events in their city.</p>
-                    <div className={styles.ctaBox}>
-                        <Link href="/" className={styles.btnPrimary}>Start Exploring</Link>
-                        <a href="https://app.lynk-x.app" className={styles.btnSecondary}>Join Lynk-X</a>
-                    </div>
-                </motion.section>
-
                 <LynkXFooter />
             </div>
         </HomeLayout>
