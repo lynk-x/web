@@ -49,11 +49,14 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 ),
             },
             {
-                label: 'Check-In & Insights',
-                desc: 'Effortless entry. Post-event clarity on attendance, sales and engagement.',
+                label: 'Engage attendees',
+                desc: 'Your crowd gets notified updates, live chat, polls and shared media — no extra apps, no friction.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                 ),
             },
@@ -89,7 +92,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Engage attendees',
-                desc: 'Your crowd gets live chat, polls and shared media — no extra apps, no friction.',
+                desc: 'Your crowd gets notified updates, live chat, polls and shared media — no extra apps, no friction.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -135,12 +138,13 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
             },
             {
                 label: 'Attend',
-                desc: 'Show your QR ticket at the door. No app install, no printing.',
+                desc: 'You’re in. Now experience the event and connect with everyone there.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                 ),
             },
