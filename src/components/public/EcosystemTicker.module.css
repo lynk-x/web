@@ -1,0 +1,174 @@
+.container {
+    position: relative;
+    width: 100%;
+    max-width: 1300px;
+    margin: 20px auto 90px;
+    padding: 16px 0;
+    overflow: hidden;
+    user-select: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+    z-index: 1;
+}
+
+.track {
+    display: flex;
+    width: max-content;
+    align-items: center;
+    gap: 18px;
+    animation: marquee 34s linear infinite;
+    will-change: transform;
+}
+
+.track:hover {
+    animation-play-state: paused;
+}
+
+.group {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+/* ── Option 2 Category Badges ── */
+.categoryPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 22px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-full, 9999px);
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+}
+
+.categoryPill:hover {
+    background: rgba(32, 249, 40, 0.04);
+    border-color: rgba(32, 249, 40, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.iconWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(32, 249, 40, 0.1);
+    color: var(--color-brand-primary, #20F928);
+    flex-shrink: 0;
+}
+
+.textWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+}
+
+.label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+}
+
+.sublabel {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.45);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+}
+
+/* ── Option 3 Real Partner Logo Badges (When enabled) ── */
+.realLogoItem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 28px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg, 12px);
+    color: rgba(255, 255, 255, 0.45);
+    transition: all 0.25s ease;
+}
+
+.realLogoItem:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(32, 249, 40, 0.25);
+    transform: translateY(-2px);
+}
+
+.realLogoSvgWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+}
+
+.realLogoSvgWrap :global(svg) {
+    height: 24px;
+    width: auto;
+    display: block;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 16px auto 60px;
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+    }
+
+    .track {
+        gap: 12px;
+        animation-duration: 26s;
+    }
+
+    .group {
+        gap: 12px;
+    }
+
+    .categoryPill {
+        padding: 8px 16px;
+        gap: 10px;
+    }
+
+    .label {
+        font-size: 12.5px;
+    }
+
+    .sublabel {
+        font-size: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .container {
+        overflow-x: auto;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    .track {
+        animation: none;
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

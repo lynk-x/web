@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
 import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
+import EcosystemTicker from '@/components/public/EcosystemTicker';
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -96,6 +97,8 @@ export default function OrganizersLandingPage() {
                     </p>
                     <JourneyFlowMotion variant="organizers" />
                 </section>
+
+                <EcosystemTicker variant="organizers" />
 
                 <LynkXFooter />
             </div>
