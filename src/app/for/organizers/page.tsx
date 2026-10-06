@@ -66,26 +66,42 @@ export default function OrganizersLandingPage() {
                     >
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                                </svg>
+                            </div>
+                            <h3 className={styles.cardTitle}>Frictionless Setup</h3>
+                            <p className={styles.cardDesc}>Launch your event page and ticket tiers in minutes. Zero upfront costs, no complicated payment setups and no developer required.</p>
+                        </motion.div>
+
+                        <motion.div className={styles.card} variants={fadeInUp}>
+                            <div className={styles.cardIcon}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
                             </div>
                             <h3 className={styles.cardTitle}>Private Event Forums</h3>
                             <p className={styles.cardDesc}>Every event includes a dedicated forum. Build hype through networking and live discussions before the first ticket is scanned.</p>
                         </motion.div>
 
+                        {/*
+                         * PLANNED REPLACEMENT: "Built-In Sponsor Revenue"
+                         * Once the sponsor/ad placement product flow is finalized, replace Card 3 with:
+                         * Title: Built-In Sponsor Revenue
+                         * Desc: Give sponsors measurable digital exposure inside your event space. Offer interactive partner polls, pinned announcements and verified engagement instead of static logos.
+                         * Icon:
+                         * <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                         *     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                         * </svg>
+                         */}
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3zM20 14v3M17 20h3" /></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+                                </svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Instant Gate Scan</h3>
-                            <p className={styles.cardDesc}>QR check-in that works even when the venue WiFi doesn’t. No manual lookups, no queues at the door.</p>
-                        </motion.div>
-
-                        <motion.div className={styles.card} variants={fadeInUp}>
-                            <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                            </div>
-                            <h3 className={styles.cardTitle}>Shared Media Wall</h3>
-                            <p className={styles.cardDesc}>Every photo and clip attendees share lands in one place — yours to keep after the event ends.</p>
+                            <h3 className={styles.cardTitle}>Fast, Direct Payouts</h3>
+                            <p className={styles.cardDesc}>Access your ticket revenue when you need it rather than waiting weeks after the curtains close. Transparent pricing with zero hidden deductions.</p>
                         </motion.div>
                     </motion.div>
                 </section>

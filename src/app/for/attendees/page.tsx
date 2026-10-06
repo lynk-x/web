@@ -68,22 +68,22 @@ export default function AttendeesLandingPage() {
                             <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Find Your Tribe</h3>
+                            <h3 className={styles.cardTitle}>Join the Conversation</h3>
                             <p className={styles.cardDesc}>Join dedicated forums for every event. Talk to organizers, meet other attendees and share photos—before, during and after the show.</p>
                         </motion.div>
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Safe & Secure</h3>
-                            <p className={styles.cardDesc}>Our cryptographic tickets are unique to you. No more worrying about fake tickets or duplicate entries at the door.</p>
+                            <h3 className={styles.cardTitle}>Fraud-Proof Ticketing</h3>
+                            <p className={styles.cardDesc}>Each ticket is unique to your identity. No fake screenshots, duplicate entries or unauthorized reselling.</p>
                         </motion.div>
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>No App Required</h3>
-                            <p className={styles.cardDesc}>Lynk-X works perfectly on any device without installing a bulky app. Fast, reliable and always in your pocket.</p>
+                            <h3 className={styles.cardTitle}>No App Store Required</h3>
+                            <p className={styles.cardDesc}>Lynk-X works perfectly on any device without app store downloads. Fast, reliable and always in your pocket.</p>
                         </motion.div>
                     </motion.div>
                 </section>
