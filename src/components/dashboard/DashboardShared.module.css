@@ -553,6 +553,16 @@
     .headerActions > * {
         flex: 1;
     }
+
+    /* The close button leads the title on phones, so it reads like a back control, instead of wrapping below the
+       actions. Desktop keeps it at the right. */
+    .headerCloseBtn {
+        order: -1;
+        align-self: flex-start;
+        min-width: 44px;
+        min-height: 44px;
+        margin-left: 0;
+    }
 }
 
 

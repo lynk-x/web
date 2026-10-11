@@ -245,21 +245,17 @@
 }
 
 
-/* Filter chips wrap on wide screens and become one swipeable row on phones. */
+/* Filter chips wrap onto several lines at every width. */
 .filter-chips {
     flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
 }
 
 @media (max-width: 639.98px) {
+    /* Phones keep the chips wrapping onto as many lines as they need, so every option is visible at once. */
     .filter-chips {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-        padding-bottom: 2px;
-    }
-
-    .filter-chips::-webkit-scrollbar {
-        display: none;
+        gap: var(--spacing-sm);
     }
 
     .filter-chips > .chip-base {

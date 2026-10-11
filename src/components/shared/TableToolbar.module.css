@@ -4,6 +4,9 @@
     align-items: center;
     gap: var(--spacing-lg);
     flex-wrap: wrap;
+    /* Lets the toolbar shrink to its parent instead of growing to fit a long row of filter chips. */
+    min-width: 0;
+    max-width: 100%;
 }
 
 .searchContainer {
@@ -45,6 +48,8 @@
     gap: var(--spacing-md);
     flex-wrap: wrap;
     margin-left: auto;
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* Response handling for smaller screens */
@@ -60,5 +65,13 @@
 
     .filtersContainer {
         justify-content: flex-start;
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 639.98px) {
+    .searchContainer {
+        min-width: 0;
     }
 }
