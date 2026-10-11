@@ -731,3 +731,119 @@
     color: var(--color-utility-primaryText);
     opacity: 0.5;
 }
+
+/* ─── Tablets and phones ──────────────────────────────────────────────────────
+   Below 1024 px the dashboard's top bar is sticky, so the form header scrolls with the page instead of sliding
+   underneath it. */
+@media (max-width: 1023.98px) {
+    .header {
+        position: static;
+    }
+}
+
+/* ─── Phones ──────────────────────────────────────────────────────────────────
+   One-column forms. The header wraps: close button, then title, then the draft banner and the actions on rows of
+   their own. A ticket's name, price and quantity stack, and its remove button moves into the card's top row
+   instead of floating over the first field. */
+@media (max-width: 639.98px) {
+    .header {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md) 0;
+    }
+
+    .header > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .title {
+        font-size: 20px;
+    }
+
+    /* The wrapper around the actions and the close button steps aside so each can be placed in the header. */
+    .headerEnd {
+        display: contents !important;
+    }
+
+    .headerClose {
+        order: -1;
+        align-self: flex-start;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .draftBanner {
+        order: 2;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
+
+    .draftActions {
+        width: 100%;
+    }
+
+    .draftActions > * {
+        flex: 1;
+    }
+
+    .actions {
+        order: 3;
+        width: 100%;
+    }
+
+    .actions > * {
+        flex: 1;
+    }
+
+    .tabs {
+        flex: 1;
+        min-width: 0;
+        gap: var(--spacing-lg);
+    }
+
+    .tabItem {
+        flex: none;
+        white-space: nowrap;
+    }
+
+    /* The 40 px section padding leaves too little width on a phone. */
+    .section {
+        padding: var(--spacing-lg);
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .ticketRow {
+        flex-direction: column;
+        padding-right: 0;
+    }
+
+    /* Beats the flex ratios set inline on each ticket field. */
+    .ticketRow > * {
+        flex: none !important;
+        width: 100%;
+    }
+
+    .ticketAdvanced {
+        grid-template-columns: 1fr;
+    }
+
+    .ticketDescription {
+        grid-column: span 1;
+    }
+
+    .removeBtn {
+        position: static;
+        order: -1;
+        align-self: flex-end;
+        min-width: 44px;
+        min-height: 44px;
+        margin: calc(var(--spacing-sm) * -1) calc(var(--spacing-sm) * -1) calc(var(--spacing-sm) * -1) 0;
+    }
+}

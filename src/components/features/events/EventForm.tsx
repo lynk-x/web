@@ -198,7 +198,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                     </div>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div className={styles.headerEnd} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div className={`${styles.actions} tour-form-actions`}>
                         {!isEditMode && (
                             <button
@@ -213,7 +213,7 @@ export default function EventForm({ initialData, pageTitle, submitBtnText, onSub
                             {loading ? 'Saving...' : submitBtnText}
                         </button>
                     </div>
-                    <CloseButton onClick={handleClose} aria-label="Back to Events" />
+                    <CloseButton onClick={handleClose} aria-label="Back to Events" className={styles.headerClose} />
                 </div>
             </header>
 

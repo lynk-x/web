@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getSafeRedirect } from '@/utils/sanitization';
+import { isPasskeySupported, listPasskeys, verifyWithPasskey, type Passkey } from '@/utils/passkeys';
 import styles from '../page.module.css';
 
 export default function MfaChallengeClient() {
@@ -19,22 +20,38 @@ export default function MfaChallengeClient() {
     const [error, setError] = useState<string | null>(null);
     const [code, setCode] = useState('');
     const [factorId, setFactorId] = useState<string | null>(null);
+    const [passkeys, setPasskeys] = useState<Passkey[]>([]);
 
     useEffect(() => {
-        // Find the verified TOTP factor ID on load
-        supabase.auth.mfa.listFactors().then(({ data, error }) => {
-            if (error) {
-                setError('Failed to load authentication factors.');
-                return;
-            }
-            const totpFactor = data.totp.find(f => f.status === 'verified');
-            if (totpFactor) {
-                setFactorId(totpFactor.id);
-            } else {
-                setError('No verified Two-Factor Authentication method found.');
-            }
-        });
-    }, [supabase.auth.mfa]);
+        // Find the verified authenticator-app factor and any passkeys on load
+        Promise.all([supabase.auth.mfa.listFactors(), isPasskeySupported() ? listPasskeys(supabase) : Promise.resolve([])]).then(
+            ([{ data, error }, keys]) => {
+                if (error) {
+                    setError('Failed to load authentication factors.');
+                    return;
+                }
+                const totpFactor = data.totp.find(f => f.status === 'verified');
+                setFactorId(totpFactor?.id ?? null);
+                setPasskeys(keys);
+                if (!totpFactor && keys.length === 0) {
+                    setError('No verified Two-Factor Authentication method found.');
+                }
+            },
+        );
+    }, [supabase]);
+
+    const handlePasskey = async (passkey: Passkey) => {
+        setError(null);
+        setIsLoading(true);
+        const result = await verifyWithPasskey(supabase, passkey.id);
+        if (result.ok) {
+            router.push(next);
+            router.refresh();
+            return;
+        }
+        if (!result.cancelled) setError(result.message);
+        setIsLoading(false);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -86,7 +103,11 @@ export default function MfaChallengeClient() {
 
             <h1 className={styles.title}>Two-Factor Authentication</h1>
             <p className={styles.subtitle}>
-                Your account is protected by MFA. Please open your authenticator app and enter the 6-digit code.
+                {passkeys.length > 0 && !factorId
+                    ? 'Your account is protected by MFA. Please confirm with your passkey.'
+                    : passkeys.length > 0
+                        ? 'Your account is protected by MFA. Use a passkey, or open your authenticator app and enter the 6-digit code.'
+                        : 'Your account is protected by MFA. Please open your authenticator app and enter the 6-digit code.'}
             </p>
 
             <form className={styles.form} onSubmit={handleSubmit}>
@@ -96,6 +117,20 @@ export default function MfaChallengeClient() {
                     </div>
                 )}
 
+                {passkeys.map((passkey) => (
+                    <button
+                        key={passkey.id}
+                        type="button"
+                        className={styles.signInBtn}
+                        onClick={() => handlePasskey(passkey)}
+                        disabled={isLoading}
+                    >
+                        {passkeys.length > 1 ? `Use passkey: ${passkey.name}` : 'Use a passkey'}
+                    </button>
+                ))}
+
+                {factorId && (
+                <>
                 <div className={styles.inputWrapper}>
                     <input
                         type="text"
@@ -112,6 +147,8 @@ export default function MfaChallengeClient() {
                 <button type="submit" className={styles.signInBtn} disabled={isLoading || !factorId}>
                     {isLoading ? 'Verifying...' : 'Verify Code'}
                 </button>
+                </>
+                )}
             </form>
         </div>
     );

@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import Button from '@/components/shared/Button';
 import { useToast } from '@/components/ui/Toast';
 import { getErrorMessage } from '@/utils/error';
+import { PasskeyManager } from '@/components/PasskeyManager';
 
 export function MfaManager() {
     const supabase = createClient();
@@ -136,7 +137,8 @@ export function MfaManager() {
     }
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
             <div>
                 <h3 style={{ margin: '0 0 8px 0', fontWeight: 500, fontSize: '15px', color: 'var(--color-text-primary)' }}>
                     Two-Factor Authentication (MFA)
@@ -156,6 +158,8 @@ export function MfaManager() {
                     <Button variant="secondary" onClick={handleEnableMfa} isLoading={isEnrolling || isLoading}>Enable 2FA</Button>
                 )}
             </div>
+        </div>
+        <PasskeyManager />
         </div>
     );
 }
