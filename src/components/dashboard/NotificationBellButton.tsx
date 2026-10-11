@@ -11,14 +11,14 @@ import styles from './NotificationBellButton.module.css';
  * Sidebar link to the full notifications page. Polls the unread count on
  * mount and on navigation (not realtime — this is a lightweight indicator,
  * not a live feed) so the badge stays reasonably fresh without an open
- * channel per dashboard session.
+ * channel per dashboard session. The `icon` variant is the compact bell used in the mobile top bar.
  *
  * Scoped to the currently active account (same default as the notifications
  * page itself) so the badge count matches what a user sees when they land
  * on the page — a notification belonging to a different account they hold
  * doesn't count toward this badge.
  */
-const NotificationBellButton = () => {
+const NotificationBellButton = ({ variant = 'sidebar' }: { variant?: 'sidebar' | 'icon' }) => {
     const pathname = usePathname();
     const { activeAccount } = useOrganization();
     const [unreadCount, setUnreadCount] = useState(0);
@@ -53,6 +53,22 @@ const NotificationBellButton = () => {
     }, [pathname, activeAccount?.id]);
 
     const isActive = pathname === '/dashboard/notifications';
+
+    if (variant === 'icon') {
+        return (
+            <Link
+                href="/dashboard/notifications"
+                className={`${styles.iconButton} ${isActive ? styles.iconActive : ''}`}
+                aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+            >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                {unreadCount > 0 && <span className={styles.iconDot} aria-hidden="true" />}
+            </Link>
+        );
+    }
 
     return (
         <Link

@@ -6,12 +6,13 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
 import Link from 'next/link';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 import ProductTour from '@/components/dashboard/ProductTour';
+import { formatCurrency } from '@/utils/format';
 
 export default function AdsDashboard() {
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
@@ -27,6 +28,13 @@ export default function AdsDashboard() {
         ctaHref: string;
     }
     const [spotlights, setSpotlights] = useState<Spotlight[]>([]);
+    /** What active campaigns have spent so far in one currency, against the sum of their total budgets. */
+    interface BudgetUse {
+        currency: string;
+        spent: number;
+        budget: number;
+    }
+    const [budgetUse, setBudgetUse] = useState<BudgetUse[]>([]);
     interface DashboardStat {
         label: string;
         value: string | null;
@@ -38,6 +46,31 @@ export default function AdsDashboard() {
         { label: 'Pending Approval', value: null, change: 'Under review' },
         { label: 'Team Size', value: null, change: 'Account members' },
     ]);
+
+    /**
+     * Sums spend and budget across the account's active campaigns, one row per currency so mixed-currency accounts
+     * are never blended. Uses the same campaigns RPC as the campaigns page; a failure only hides the card.
+     */
+    const loadBudgetUse = useCallback(async (accountId: string): Promise<BudgetUse[]> => {
+        try {
+            const { data, error } = await supabase.schema('api').rpc('get_advertiser_campaigns', {
+                p_account_id: accountId,
+                p_params: { status: 'active', limit: 100, offset: 0 },
+            });
+            if (error) throw error;
+
+            const totals = new Map<string, BudgetUse>();
+            for (const c of (data?.items ?? []) as { currency: string; spent_amount: number | string; total_budget: number | string }[]) {
+                const row = totals.get(c.currency) ?? { currency: c.currency, spent: 0, budget: 0 };
+                row.spent += Number(c.spent_amount) || 0;
+                row.budget += Number(c.total_budget) || 0;
+                totals.set(c.currency, row);
+            }
+            return [...totals.values()].sort((a, b) => b.spent - a.spent);
+        } catch {
+            return [];
+        }
+    }, [supabase]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -59,6 +92,7 @@ export default function AdsDashboard() {
                 ]);
 
                 setSpotlights(data.spotlights || []);
+                setBudgetUse(await loadBudgetUse(activeAccount.id));
             } catch (error: unknown) {
                 showToast(getErrorMessage(error) || 'Failed to sync dashboard performance.', 'error');
             } finally {
@@ -79,13 +113,45 @@ export default function AdsDashboard() {
                 setIsLoading(false);
             }
         }
-    }, [activeAccount, isOrgLoading, supabase, showToast]);
+    }, [activeAccount, isOrgLoading, supabase, showToast, loadBudgetUse]);
     return (
         <div className={sharedStyles.container}>
             <PageHeader
                 title={activeAccount ? `Welcome back, ${activeAccount.name}👋` : 'Hi there👋...Ready to post ads?'}
                 subtitle="Manage your campaigns and track performance."
             />
+
+            {budgetUse.length > 0 && (
+                <section className={styles.pacingCard} aria-label="Active campaign budget">
+                    <h2 className={styles.pacingTitle}>Active campaign budget</h2>
+                    {budgetUse.map((p) => {
+                        const pct = p.budget > 0 ? Math.min(100, (p.spent / p.budget) * 100) : null;
+                        return (
+                            <div key={p.currency} className={styles.pacingRow}>
+                                <div className={styles.pacingNumbers}>
+                                    <span className={styles.pacingSpent}>{formatCurrency(p.spent, p.currency)}</span>
+                                    <span className={styles.pacingCap}>
+                                        {`spent of ${formatCurrency(p.budget, p.currency)} budget`}
+                                    </span>
+                                </div>
+                                {pct !== null && (
+                                    <div
+                                        className={styles.pacingBar}
+                                        role="progressbar"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={Math.round(pct)}
+                                        aria-label={`${p.currency} spend against the campaign budget`}
+                                    >
+                                        <div className={styles.pacingBarFill} style={{ width: `${pct}%` }} />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                    <Link href="/dashboard/ads/finance" className={styles.pacingAction}>Top up wallet</Link>
+                </section>
+            )}
 
             {/* Key Metrics */}
             <div className={`${sharedStyles.statsGrid} tour-ads-stats`}>

@@ -56,3 +56,24 @@
     opacity: 0.6;
     color: var(--color-utility-primaryText);
 }
+
+
+/* Phones: two cards sit side by side, so the type and padding scale down to fit. */
+@media (max-width: 639.98px) {
+    .statCard {
+        padding: var(--spacing-md);
+        gap: var(--spacing-xs);
+    }
+
+    .statLabel {
+        font-size: 11px;
+    }
+
+    .statValue {
+        font-size: 22px;
+    }
+
+    .statChange {
+        font-size: 12px;
+    }
+}

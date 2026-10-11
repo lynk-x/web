@@ -15,8 +15,10 @@ import { createClient } from '@/utils/supabase/client';
 import ProductTour from '@/components/dashboard/ProductTour';
 import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 import { usePagination } from '@/hooks/usePagination';
+import { useCreateHandoff } from '@/components/dashboard/CreateHandoffModal';
 
 export default function CampaignsPage() {
+    const createHandoff = useCreateHandoff('/dashboard/ads/campaigns/create', 'campaign');
     const { showToast } = useToast();
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
     const supabase = useMemo(() => createClient(), []);
@@ -255,13 +257,15 @@ export default function CampaignsPage() {
                 title="Campaigns"
                 subtitle="Track and optimize your active advertising campaigns."
                 actionLabel="Create Campaign"
-                actionHref="/dashboard/ads/campaigns/create"
+                onActionClick={createHandoff.open}
                 actionIcon={
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 }
             />
+
+            {createHandoff.modal}
 
             <div className="tour-campaigns-filter">
                 <TableToolbar

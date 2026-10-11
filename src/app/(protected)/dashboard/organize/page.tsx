@@ -1,7 +1,8 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -12,6 +13,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import SystemBannerSpotlight from '@/components/shared/SystemBannerSpotlight';
 import ProductTour from '@/components/dashboard/ProductTour';
+import { formatTime } from '@/utils/format';
 
 export default function DashboardOverview() {
     const { showToast } = useToast();
@@ -39,8 +41,58 @@ export default function DashboardOverview() {
         ctaLabel: string;
         ctaHref: string;
     }
+    /** The account's event that is on right now; null when none is live. */
+    interface LiveEvent {
+        id: string;
+        title: string;
+        startsAt: string;
+        ticketsSold: number;
+        checkedIn: number;
+    }
+    const [liveEvent, setLiveEvent] = useState<LiveEvent | null>(null);
     const [spotlights, setSpotlights] = useState<Spotlight[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    /**
+     * Finds the account's event that is on right now, using the same organizer RPCs as the events pages: the recent
+     * events list for the live window, then the event details for tickets sold and scanned. A failure here only
+     * hides the card, so it never blocks the rest of the dashboard.
+     */
+    const findLiveEvent = useCallback(async (accountId: string): Promise<LiveEvent | null> => {
+        try {
+            const { data: list, error: listError } = await supabase.schema('api').rpc('get_organizer_events', {
+                p_account_id: accountId,
+                p_params: { search: '', status: 'all', limit: 20, offset: 0 },
+            });
+            if (listError) throw listError;
+
+            const now = Date.now();
+            const live = (list?.items ?? []).find((e: { status: string; starts_at: string; ends_at: string | null }) =>
+                (e.status === 'published' || e.status === 'active') &&
+                new Date(e.starts_at).getTime() <= now &&
+                (!e.ends_at || new Date(e.ends_at).getTime() >= now),
+            );
+            if (!live) return null;
+
+            const { data: details, error: detailsError } = await supabase.schema('api').rpc('get_organizer_event_details', {
+                p_account_id: accountId,
+                p_event_id: live.id,
+                p_include_metrics: true,
+            });
+            if (detailsError) throw detailsError;
+
+            const tiers = (details?.tiers ?? []) as { tickets_sold?: number }[];
+            return {
+                id: live.id,
+                title: live.title,
+                startsAt: live.starts_at,
+                ticketsSold: tiers.reduce((sum, t) => sum + (t.tickets_sold || 0), 0),
+                checkedIn: details?.metrics?.scan_count ?? 0,
+            };
+        } catch {
+            return null;
+        }
+    }, [supabase]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -72,6 +124,8 @@ export default function DashboardOverview() {
                     teamSize: data.team_size
                 });
 
+                setLiveEvent(await findLiveEvent(activeAccount.id));
+
                 // Set Spotlights
                 if (spotlightsRes.data) {
                     setSpotlights(spotlightsRes.data.map(s => ({
@@ -101,13 +155,44 @@ export default function DashboardOverview() {
                 }
             }
         }
-    }, [isOrgLoading, activeAccount, accounts, supabase, showToast]);
+    }, [isOrgLoading, activeAccount, accounts, supabase, showToast, findLiveEvent]);
     return (
         <div className={sharedStyles.container}>
             <PageHeader
                 title={activeAccount ? `Welcome back to ${activeAccount.name} 👋` : 'Hi there👋...Ready to host events?'}
                 subtitle="Here is what is happening with your events today."
             />
+
+            {liveEvent && (
+                <section className={styles.liveCard} aria-label="Event happening now">
+                    <div className={styles.liveHeader}>
+                        <span className={styles.livePill}>LIVE NOW</span>
+                        <span className={styles.liveMeta}>Started {formatTime(liveEvent.startsAt)}</span>
+                    </div>
+                    <h2 className={styles.liveTitle}>{liveEvent.title}</h2>
+                    <div className={styles.liveProgressRow}>
+                        <span>Checked in</span>
+                        <span><strong>{liveEvent.checkedIn}</strong> of {liveEvent.ticketsSold}</span>
+                    </div>
+                    <div
+                        className={styles.liveBar}
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={liveEvent.ticketsSold}
+                        aria-valuenow={liveEvent.checkedIn}
+                        aria-label="Guests checked in"
+                    >
+                        <div
+                            className={styles.liveBarFill}
+                            style={{ width: `${liveEvent.ticketsSold > 0 ? Math.min(100, (liveEvent.checkedIn / liveEvent.ticketsSold) * 100) : 0}%` }}
+                        />
+                    </div>
+                    <p className={styles.liveNote}>Guests are scanned in at the door with the Lynk-X app.</p>
+                    <Link href={`/dashboard/organize/events/${liveEvent.id}`} className={styles.liveAction}>
+                        Event details
+                    </Link>
+                </section>
+            )}
 
             <div className={`${sharedStyles.statsGrid} tour-stats`}>
                 <StatCard

@@ -23,11 +23,13 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 import { usePagination } from '@/hooks/usePagination';
+import { useCreateHandoff } from '@/components/dashboard/CreateHandoffModal';
 
 // Main Component
 export default function OrganizerEventsPage() {
     const { showToast } = useToast();
     const router = useRouter();
+    const createHandoff = useCreateHandoff('/dashboard/organize/events/create', 'event');
     const supabase = useMemo(() => createClient(), []);
     const { activeAccount, isLoading: isOrgLoading } = useOrganization();
 
@@ -506,7 +508,7 @@ export default function OrganizerEventsPage() {
                 title="My Events"
                 subtitle="Manage and track all your scheduled events."
                 actionLabel="Create Event"
-                onActionClick={() => router.push('/dashboard/organize/events/create')}
+                onActionClick={createHandoff.open}
                 actionIcon={
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -517,6 +519,8 @@ export default function OrganizerEventsPage() {
                     onClick: () => setIsAddForumModalOpen(true),
                 }}
             />
+
+            {createHandoff.modal}
 
             {/* Toolbar */}
             <div className="tour-events-filter">

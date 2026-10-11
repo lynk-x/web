@@ -161,6 +161,7 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
                 title="Attendee List"
                 subtitle="Manage registrations and check-ins for this event."
                 closeHref={`/dashboard/organize/events/${id}`}
+                dockActionsOnMobile
                 hideDivider
                 primaryAction={{
                     label: 'Add Attendee',

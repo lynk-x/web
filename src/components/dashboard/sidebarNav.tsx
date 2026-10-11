@@ -18,6 +18,8 @@ export interface NavItem {
     icon: React.ReactNode;
     /** Optional permission slug required to see this item. */
     permission?: string;
+    /** Shorter label for the phone and tablet tab bar, when the sidebar name is too long or too technical. */
+    mobileLabel?: string;
 }
 
 /** A group of navigation items with an optional title. */
@@ -51,7 +53,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
         {
             items: [
                 {
-                    name: 'Overview', href: '/dashboard/organize', icon: (
+                    name: 'Overview', href: '/dashboard/organize', mobileLabel: 'Home', icon: (
                         <svg {...svgProps}>
                             <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
                             <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
@@ -76,7 +78,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
                     )
                 },
                 {
-                    name: 'Revenue', href: '/dashboard/organize/revenue', permission: 'can_view_finance', icon: (
+                    name: 'Revenue', href: '/dashboard/organize/revenue', mobileLabel: 'Revenue', permission: 'can_view_finance', icon: (
                         <svg {...svgProps}>
                             <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -89,7 +91,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Intelligence',
             items: [
                 {
-                    name: 'Analytics', href: '/dashboard/organize/analytics', permission: 'can_view_analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/organize/analytics', mobileLabel: 'Analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
                             <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -118,7 +120,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
         {
             items: [
                 {
-                    name: 'Overview', href: '/dashboard/ads', icon: (
+                    name: 'Overview', href: '/dashboard/ads', mobileLabel: 'Home', icon: (
                         <svg {...svgProps}>
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -142,7 +144,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Finance',
             items: [
                 {
-                    name: 'Finance', href: '/dashboard/ads/finance', permission: 'can_view_finance', icon: (
+                    name: 'Finance', href: '/dashboard/ads/finance', mobileLabel: 'Finance', permission: 'can_view_finance', icon: (
                         <svg {...svgProps}>
                             <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -156,7 +158,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Analytics',
             items: [
                 {
-                    name: 'Analytics', href: '/dashboard/ads/analytics', permission: 'can_view_analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/ads/analytics', mobileLabel: 'Analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
                             <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -435,3 +437,22 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
         }
     ],
 };
+
+
+/** Maps the second URL segment under /dashboard to its mode; unknown segments fall back to the organizer workspace. */
+const MODE_BY_SEGMENT: Record<string, DashboardMode> = {
+    admin: 'admin',
+    ads: 'ads',
+    pulse: 'pulse',
+    organize: 'events',
+    system: 'system',
+};
+
+/**
+ * Derives the dashboard mode from the current URL path.
+ *
+ * Shared by the sidebar, the shell and the mobile navigation so they always agree on which workspace is open.
+ */
+export function modeFromPathname(pathname: string): DashboardMode {
+    return MODE_BY_SEGMENT[pathname.split('/')[2]] || 'events';
+}

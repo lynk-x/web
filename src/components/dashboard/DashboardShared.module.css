@@ -516,3 +516,80 @@
     margin: 0;
     color: var(--color-utility-primaryText);
 }
+
+/* Phones: two stat cards per row, tighter headings and gaps. */
+@media (max-width: 639.98px) {
+    .container {
+        gap: var(--spacing-lg);
+    }
+
+    .title {
+        font-size: 20px;
+    }
+
+    .statsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--spacing-md);
+    }
+
+    .sectionTitle {
+        font-size: 16px;
+        margin-bottom: var(--spacing-md);
+    }
+}
+
+
+/* Phones: the page header wraps and its action buttons share the full width below the title. */
+@media (max-width: 639.98px) {
+    .header {
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .headerActions {
+        width: 100%;
+    }
+
+    .headerActions > * {
+        flex: 1;
+    }
+}
+
+
+/* Phones: forms use one column and the tab header row wraps. */
+@media (max-width: 639.98px) {
+    .formGrid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    .tabsHeaderRow {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+}
+
+
+/* Phones: the shared button styles meet the 44 px touch target. */
+@media (max-width: 639.98px) {
+    .btnPrimary,
+    .btnSecondary {
+        min-height: 44px;
+    }
+}
+
+
+/* Phones: docked actions sit in a bar above the bottom tab bar, secondary then primary as on desktop. */
+@media (max-width: 639.98px) {
+    .headerActionsDocked {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+        z-index: 190;
+        width: auto;
+        padding: var(--spacing-md) var(--spacing-lg);
+        background: var(--color-utility-primaryBackground);
+        border-top: 1px solid var(--color-interface-border-subtle);
+    }
+}

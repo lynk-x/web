@@ -237,6 +237,7 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
                 title="Promo Codes"
                 subtitle={`Manage discount codes for "${event.title}"`}
                 closeHref={`/dashboard/organize/events/${id}`}
+                dockActionsOnMobile
                 actionLabel="Create Promo Code"
                 onActionClick={openCreateModal}
             />
@@ -260,7 +261,7 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
 
             <div className={adminStyles.pageCard}>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                    <table className="stack-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
                                 <th style={thStyle}>Code</th>
@@ -275,26 +276,26 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
                         <tbody>
                             {filteredCodes.map((promo) => (
                                 <tr key={promo.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                    <td style={tdStyle}>
+                                    <td data-title style={tdStyle}>
                                         <span style={{ fontWeight: 600, color: 'var(--color-brand-primary)', letterSpacing: '0.05em' }}>
                                             {promo.code}
                                         </span>
                                     </td>
-                                    <td style={tdStyle}>
+                                    <td data-label="Type" style={tdStyle}>
                                         <Badge label={promo.type.replace('_', ' ').toUpperCase()} variant={getTypeVariant(promo.type)} />
                                     </td>
-                                    <td style={tdStyle}>
+                                    <td data-label="Value" style={tdStyle}>
                                         {promo.type === 'percent' ? `${promo.value}%` : promo.type === 'free_entry' ? 'FREE' : `${promo.value}`}
                                     </td>
-                                    <td style={tdStyle}>
+                                    <td data-label="Usage" style={tdStyle}>
                                         <span style={{ fontWeight: 600 }}>{promo.uses_count}</span>
                                         <span style={{ opacity: 0.5 }}> / {promo.max_uses ?? '∞'}</span>
                                     </td>
-                                    <td style={tdStyle}>
+                                    <td data-label="Status" style={tdStyle}>
                                         <Badge label={promo.is_active ? 'ACTIVE' : 'INACTIVE'} variant={promo.is_active ? 'success' : 'subtle'} showDot />
                                     </td>
-                                    <td style={{ ...tdStyle, fontSize: '12px', opacity: 0.7 }}>{formatDate(promo.created_at)}</td>
-                                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                    <td data-label="Created" style={{ ...tdStyle, fontSize: '12px', opacity: 0.7 }}>{formatDate(promo.created_at)}</td>
+                                    <td data-actions style={{ ...tdStyle, textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                             <button className={adminStyles.btnSecondary} onClick={() => openEditModal(promo)}>Edit</button>
                                             <button className={adminStyles.btnSecondary} onClick={() => handleToggleActive(promo)}>
@@ -306,7 +307,7 @@ export default function EventPromoCodesPage({ params }: { params: Promise<{ id: 
                             ))}
                             {filteredCodes.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
+                                    <td data-empty colSpan={7} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
                                         {searchTerm ? 'No promo codes match your search.' : 'No promo codes configured for this event yet.'}
                                     </td>
                                 </tr>

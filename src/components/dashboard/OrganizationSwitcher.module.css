@@ -254,3 +254,49 @@
     background: rgba(255, 255, 255, 0.06);
     color: white;
 }
+
+/* ─── Compact variant: the pill in the mobile top bar ─────────────────────────
+   Round avatar, name over the open workspace, chevron. The container drops its sidebar padding and becomes
+   static so the dropdown spans the whole top bar instead of the narrow slot the pill sits in. */
+.containerCompact {
+    position: static;
+    width: auto;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.triggerCompact {
+    width: auto;
+    max-width: 100%;
+    gap: var(--spacing-sm);
+    padding: 5px 12px 5px 5px;
+    background: var(--color-interface-surface);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-full);
+}
+
+.avatarCompact {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-brand-primary);
+    border: 0;
+}
+
+.avatarCompact .avatarFallback {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-utility-secondaryText);
+}
+
+.triggerCompact .accountName {
+    font-size: 13px;
+}
+
+.modeLabel {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 1px;
+}

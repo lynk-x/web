@@ -219,3 +219,9 @@
         background-position: 200% 0;
     }
 }
+/* Below 1024 px the events and ads workspaces navigate with the mobile top bar and bottom tabs instead. */
+@media (max-width: 1023.98px) {
+    .hideBelowDesktop {
+        display: none;
+    }
+}

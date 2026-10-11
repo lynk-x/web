@@ -82,3 +82,30 @@
     opacity: 1;
     font-weight: 600;
 }
+
+/* Phones: page numbers are hidden, so Previous and Next share the row at full touch height. */
+@media (max-width: 639.98px) {
+    .paginationContainer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+
+    .pageInfo {
+        text-align: center;
+    }
+
+    .pageControls {
+        gap: var(--spacing-sm);
+    }
+
+    .pageNumbers {
+        display: none;
+    }
+
+    .paginationBtn {
+        flex: 1;
+        min-height: 44px;
+        min-width: 0;
+    }
+}

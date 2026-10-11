@@ -91,3 +91,37 @@
     background-color: rgba(255, 255, 255, 0.02);
     border-top: 1px solid var(--color-interface-outline);
 }
+
+
+/* Phones: tighter padding, a viewport height that follows the browser bar, a real tap target for close, and
+   footer buttons that share the full width. */
+@media (max-width: 639.98px) {
+    .overlay {
+        padding: var(--spacing-md);
+    }
+
+    .modal {
+        max-height: 90dvh;
+    }
+
+    .header,
+    .content {
+        padding: var(--spacing-lg);
+    }
+
+    .footer {
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .footer > * {
+        flex: 1;
+    }
+
+    .closeBtn {
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin: -10px -10px -10px 0;
+    }
+}

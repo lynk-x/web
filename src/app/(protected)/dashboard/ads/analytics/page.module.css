@@ -105,3 +105,16 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Phones: two summary cards per row and a shorter chart section. */
+@media (max-width: 639.98px) {
+    .overviewCards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--spacing-md);
+    }
+
+    .chartSection {
+        min-height: 280px;
+        padding: var(--spacing-lg);
+    }
+}

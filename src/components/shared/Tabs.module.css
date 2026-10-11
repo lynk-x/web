@@ -50,3 +50,25 @@
     color: var(--color-interface-warning);
     opacity: 1;
 }
+
+
+/* Phones: the tab row scrolls sideways inside its own width instead of pushing the page wider. */
+@media (max-width: 639.98px) {
+    .tabsList {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .tabsList::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab {
+        flex: none;
+        min-height: 44px;
+        padding: 12px 14px;
+        white-space: nowrap;
+    }
+}

@@ -1,16 +1,13 @@
 /**
- * Dashboard shell layout — provides the sidebar chrome for all /dashboard/* pages.
+ * Dashboard layout — wraps all /dashboard/* pages in the shell (sidebar, mobile top bar and bottom tabs).
  *
  * Auth and organization providers are supplied by the parent (protected) layout,
- * so this file only handles the visual shell (sidebar + main content area).
+ * so this file only mounts the shell, which picks the right chrome for the current path.
  */
 
-import Sidebar from '@/components/dashboard/Sidebar';
-import MobileNudge from '@/components/dashboard/MobileNudge';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 import InactivityGuard from '@/components/dashboard/InactivityGuard';
-import SupportFAB from '@/components/dashboard/SupportFAB';
 import '@/theme/dashboard.css';
-import styles from './layout.module.css';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -24,14 +21,7 @@ export default function DashboardLayout({
 }) {
     return (
         <InactivityGuard>
-            <div className={styles.layout}>
-                <Sidebar />
-                <MobileNudge />
-                <main className={`${styles.main} dashboard-scroll`}>
-                    {children}
-                </main>
-                <SupportFAB />
-            </div>
+            <DashboardShell>{children}</DashboardShell>
         </InactivityGuard>
     );
 }

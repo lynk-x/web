@@ -7,7 +7,26 @@ import { useAuth } from '@/context/AuthContext';
 import styles from './OrganizationSwitcher.module.css';
 import type { DashboardMode } from '@/types/shared';
 
-const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
+/** Label shown under the account name in the compact (mobile top bar) variant: which workspace is open. */
+const MODE_LABEL: Record<DashboardMode, string> = {
+    events: 'Events',
+    ads: 'Ads',
+    pulse: 'Pulse',
+    admin: 'Admin',
+    system: 'System',
+};
+
+/** Up to two initials from an account name ("Afrofest Co" becomes "AC"), for the compact avatar. */
+function initialsOf(name: string): string {
+    return name.trim().split(/\s+/).slice(0, 2).map((word) => word.charAt(0)).join('') || '?';
+}
+
+/**
+ * Account switcher. The default variant is the sidebar's full-width row; `compact` is the pill used in the mobile
+ * top bar, which shows the open workspace under the name instead of the member's role.
+ */
+const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top' | 'bottom'; variant?: 'sidebar' | 'compact' }) => {
+    const isCompact = variant === 'compact';
     const { accounts, activeAccount, setActiveAccountId, isLoading } = useOrganization();
     const { user, profile, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -55,24 +74,26 @@ const OrganizationSwitcher = ({ pos = 'top' }: { pos?: 'top' | 'bottom' }) => {
     }
 
     return (
-        <div className={styles.container} ref={dropdownRef}>
+        <div className={`${styles.container} ${isCompact ? styles.containerCompact : ''}`} ref={dropdownRef}>
             <button
-                className={styles.trigger}
+                className={`${styles.trigger} ${isCompact ? styles.triggerCompact : ''}`}
                 onClick={() => setIsOpen(!isOpen)}
                 aria-expanded={isOpen}
             >
                 <div className={styles.activeAccountInfo}>
-                    <div className={styles.avatar}>
+                    <div className={`${styles.avatar} ${isCompact ? styles.avatarCompact : ''}`}>
                         {activeAccount.logoUrl ? (
                             <img src={activeAccount.logoUrl} alt={activeAccount.name} />
                         ) : (
-                            <div className={styles.avatarFallback}>{activeAccount.name.charAt(0)}</div>
+                            <div className={styles.avatarFallback}>{isCompact ? initialsOf(activeAccount.name) : activeAccount.name.charAt(0)}</div>
                         )}
                     </div>
                     <div className={styles.textContainer}>
                         <span className={styles.accountName}>{activeAccount.name}</span>
-                        <span className={styles.accountRole}>
-                            {activeAccount.role ? activeAccount.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                        <span className={`${styles.accountRole} ${isCompact ? styles.modeLabel : ''}`}>
+                            {isCompact
+                                ? MODE_LABEL[currentMode]
+                                : activeAccount.role ? activeAccount.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
                         </span>
                     </div>
                 </div>

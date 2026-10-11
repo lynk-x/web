@@ -337,6 +337,7 @@ export default function EventDetailPage() {
                 title={event.title}
                 subtitle="Manage event details, monitor ticket sales and track live performance analytics."
                 closeHref="/dashboard/organize/events"
+                dockActionsOnMobile
                 badge={badge}
                 primaryAction={{
                     label: 'Edit Event',
@@ -352,7 +353,7 @@ export default function EventDetailPage() {
             />
 
             {/* Stats Row */}
-            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+            <div className="tour-event-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 <StatCard 
                     label="Tickets Sold" 
                     value={`${formatNumber(totalSold)} / ${formatNumber(totalCapacity)}`} 
@@ -378,7 +379,7 @@ export default function EventDetailPage() {
 
             {/* Quick Links */}
             <QuickLinksRow className="tour-event-links">
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div className="desktop-only" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <QuickLink href={`/dashboard/organize/events/${id}/tiers`} label="Manage Ticket Tiers" />
                     <QuickLink href={`/dashboard/organize/events/${id}/promo-codes`} label="Setup Promo Codes" />
                     <QuickLink href={`/dashboard/organize/events/${id}/attendees`} label="View Attendees" />

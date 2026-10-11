@@ -80,3 +80,12 @@
 .checkboxContainer .input:focus-visible~.checkmark {
     box-shadow: 0 0 0 2px rgba(var(--color-brand-primary-rgb), 0.3);
 }
+
+/* Phones: the visible box stays 18 px but its tap area grows to 44 px. */
+@media (max-width: 639.98px) {
+    .checkboxContainer::before {
+        content: '';
+        position: absolute;
+        inset: -13px;
+    }
+}

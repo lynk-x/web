@@ -140,3 +140,18 @@
     background: linear-gradient(to top, #1a1a1a 0%, rgba(26, 26, 26, 0) 100%);
 }
 
+
+
+/* Phones: the time wheel opens as a centred panel at the bottom of the screen, clear of any scrolling modal body
+   that would otherwise cut it off. */
+@media (max-width: 639.98px) {
+    .dropdown {
+        position: fixed;
+        top: auto;
+        left: 50%;
+        bottom: 16px;
+        translate: -50% 0;
+        width: min(320px, calc(100vw - 32px));
+        z-index: 1100;
+    }
+}

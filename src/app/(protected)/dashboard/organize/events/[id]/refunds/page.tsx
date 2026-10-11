@@ -204,7 +204,7 @@ export default function EventRefundsPage() {
             ) : refunds.length === 0 ? (
                 <EmptyState message="No refund requests for this event." />
             ) : (
-                <table className={adminStyles.table}>
+                <table className={`${adminStyles.table} stack-table`}>
                     <thead>
                         <tr>
                             <th style={{ width: 40 }}>
@@ -229,7 +229,7 @@ export default function EventRefundsPage() {
                             const isPending = r.status === 'pending';
                             return (
                                 <tr key={r.id}>
-                                    <td>
+                                    <td data-select>
                                         <input
                                             type="checkbox"
                                             aria-label={`Select refund from ${r.user_profile?.full_name ?? r.user_id.slice(0, 8)}`}
@@ -238,23 +238,24 @@ export default function EventRefundsPage() {
                                             disabled={!isPending}
                                         />
                                     </td>
-                                    <td>{formatDate(r.created_at)}</td>
-                                    <td>
+                                    <td data-label="Requested">{formatDate(r.created_at)}</td>
+                                    <td data-title>
                                         {r.user_profile
                                             ? r.user_profile.full_name || `@${r.user_profile.user_name}`
                                             : r.user_id.slice(0, 8) + '...'}
                                     </td>
                                     <td
+                                        data-label="Reason"
                                         title={r.reason || undefined}
                                         style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: r.reason ? 'help' : 'default' }}
                                     >
                                         {r.reason || '—'}
                                     </td>
-                                    <td style={{ fontWeight: 600 }}>
+                                    <td data-label="Amount" style={{ fontWeight: 600 }}>
                                         {r.amount != null ? formatCurrency(r.amount, r.currency || eventCurrency) : '—'}
                                     </td>
-                                    <td><Badge variant={badge.variant} label={badge.label} /></td>
-                                    <td>
+                                    <td data-label="Status"><Badge variant={badge.variant} label={badge.label} /></td>
+                                    <td data-actions>
                                         {isPending && (
                                             <button
                                                 className={adminStyles.secondaryButton}

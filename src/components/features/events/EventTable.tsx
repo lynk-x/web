@@ -230,6 +230,7 @@ export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: E
             },
             {
                 header: 'Event',
+                primary: true,
                 render: (event) => (
                     <div className={styles.eventInfo}>
                         <div
@@ -366,6 +367,7 @@ export default function EventTable<T extends AnyEventRow = AnyEventRow>(props: E
         },
         {
             header: 'Event Name',
+            primary: true,
             render: (event) => (
                 <div className={styles.eventInfo}>
                     <div

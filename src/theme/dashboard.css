@@ -243,3 +243,148 @@
 .table-base tr:hover td {
     background-color: rgba(255, 255, 255, 0.02);
 }
+
+
+/* Filter chips wrap on wide screens and become one swipeable row on phones. */
+.filter-chips {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 639.98px) {
+    .filter-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+
+    .filter-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-chips > .chip-base {
+        flex: none;
+    }
+}
+
+
+/* ─── Stacked tables on phones ────────────────────────────────────────────────
+   Opt-in for hand-written tables: add class "stack-table" to the <table> and mark cells with
+   data-label (label and value row), data-title (card title), data-select (checkbox in the corner),
+   data-actions (buttons along the bottom) or data-empty (full-width message). The shared
+   DataTable does the same on its own. Inline cell styles are overridden with !important. */
+@media (max-width: 639.98px) {
+    .stack-table,
+    .stack-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    /* Tables that carry their own surface (the dashboard table style) drop it, since each row is now a card. */
+    .stack-table {
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    .stack-table thead {
+        display: none;
+    }
+
+    .stack-table tbody tr {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: var(--color-interface-surface);
+        border: 1px solid var(--color-interface-outline) !important;
+        border-radius: var(--radius-lg);
+    }
+
+    .stack-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+        min-width: 0;
+        max-width: none !important;
+        padding: 0 !important;
+        border: 0 !important;
+        text-align: right !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    .stack-table td[data-label]::before {
+        content: attr(data-label);
+        flex: none;
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0.55;
+        text-align: left;
+    }
+
+    .stack-table td[data-title] {
+        display: block;
+        order: -1;
+        font-weight: 600;
+        text-align: left !important;
+    }
+
+    .stack-table tr:has(td[data-select]) td[data-title] {
+        padding-left: 32px !important;
+    }
+
+    .stack-table td[data-select] {
+        position: absolute;
+        top: var(--spacing-md);
+        left: var(--spacing-md);
+    }
+
+    .stack-table td[data-actions] {
+        order: 99;
+        justify-content: flex-end;
+        padding-top: var(--spacing-sm) !important;
+        border-top: 1px solid var(--color-interface-border-subtle) !important;
+    }
+
+    .stack-table td[data-actions]:empty {
+        display: none;
+    }
+
+    .stack-table td[data-empty] {
+        display: block;
+        text-align: center !important;
+        padding: var(--spacing-xl) var(--spacing-md) !important;
+    }
+}
+
+/* Hidden below 1024 px, where the phone navigation replaces it. */
+@media (max-width: 1023.98px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+
+/* ─── Touch targets on phones ─────────────────────────────────────────────────
+   Buttons, chips and the small action buttons inside stacked table cards are at least 44 px tall. */
+@media (max-width: 639.98px) {
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-ghost,
+    .btn-back,
+    .chip-base {
+        min-height: 44px;
+    }
+
+    .stack-table td[data-actions] button {
+        min-height: 44px;
+        padding: 0 16px !important;
+        font-size: 14px !important;
+    }
+}

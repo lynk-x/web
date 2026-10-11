@@ -21,3 +21,38 @@
         /* Space for mobile nav if we add one */
     }
 }
+
+/* Events and ads workspaces: a column holding the mobile top bar and the page, beside the desktop sidebar. */
+.column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mainInColumn {
+    flex: 1;
+    min-width: 0;
+    padding: var(--spacing-md) var(--spacing-lg);
+    /* Clear the fixed bottom tab bar (56px) plus the phone's home indicator. */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--spacing-lg));
+}
+
+@media (min-width: 1024px) {
+    .column {
+        margin-left: 260px;
+        max-width: calc(100vw - 260px);
+    }
+
+    .mainInColumn {
+        padding: var(--spacing-xxl);
+    }
+}
+
+
+/* A page with docked actions (PageHeader dockActionsOnMobile) needs room for that 68px bar above the tab bar. */
+@media (max-width: 639.98px) {
+    :global(body[data-docked-actions]) .mainInColumn {
+        padding-bottom: calc(56px + 68px + env(safe-area-inset-bottom, 0px) + var(--spacing-lg));
+    }
+}

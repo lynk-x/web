@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import styles from './Sidebar.module.css';
-import { navGroups } from './sidebarNav';
+import { modeFromPathname, navGroups } from './sidebarNav';
 import type { DashboardMode } from '@/types/shared';
 import OrganizationSwitcher from './OrganizationSwitcher';
 import NotificationBellButton from './NotificationBellButton';
@@ -28,20 +28,7 @@ const Sidebar = () => {
     const pathname = usePathname();
     const { user } = useAuth();
 
-    const mode = useMemo<DashboardMode>(() => {
-        const segments = pathname.split('/');
-        const modeSegment = segments[2];
-
-        const modeMap: Record<string, DashboardMode> = {
-            admin: 'admin',
-            ads: 'ads',
-            pulse: 'pulse',
-            organize: 'events',
-            system: 'system'
-        };
-
-        return modeMap[modeSegment] || 'events';
-    }, [pathname]);
+    const mode = useMemo<DashboardMode>(() => modeFromPathname(pathname), [pathname]);
 
     const navItems = useMemo(() => {
         if (!navGroups[mode]) return [];
@@ -56,8 +43,11 @@ const Sidebar = () => {
     const SIDEBAR_HIDDEN_PATHS = ['/dashboard'];
     if (SIDEBAR_HIDDEN_PATHS.includes(pathname)) return null;
 
+    // Events and ads use the mobile top bar and bottom tabs below 1024 px; the other modes keep the sidebar.
+    const hasMobileShell = mode === 'events' || mode === 'ads';
+
     return (
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${hasMobileShell ? styles.hideBelowDesktop : ''}`}>
             {isUnverified && (
                 <div className={styles.verificationBanner}>
                     <div className={styles.bannerContent}>

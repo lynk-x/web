@@ -217,6 +217,7 @@ export default function CheckInLogsPage() {
                 title="Check-in Logs"
                 subtitle="Real-time scanner feed and manual entry logs for this event."
                 closeHref={`/dashboard/organize/events/${eventId}`}
+                dockActionsOnMobile
                 primaryAction={{
                     label: 'Manual Check-in',
                     onClick: () => setShowManualModal(true),

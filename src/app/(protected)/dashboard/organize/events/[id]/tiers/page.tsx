@@ -164,7 +164,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
             {/* Tiers List Card */}
             <div className={adminStyles.pageCard}>
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                    <table className="stack-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
                                 <th style={thStyle}>Tier Name</th>
@@ -189,16 +189,16 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
 
                                 return (
                                     <tr key={tier.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                        <td style={tdStyle}>
+                                        <td data-title style={tdStyle}>
                                             <span style={{ fontWeight: 600 }}>{tier.display_name}</span>
                                         </td>
-                                        <td style={tdStyle}>
+                                        <td data-label="Price" style={tdStyle}>
                                             {tier.price > 0 ? formatCurrency(tier.price, event.currency) : 'Free'}
                                         </td>
-                                        <td style={tdStyle}>
+                                        <td data-label="Sold / capacity" style={tdStyle}>
                                             {formatNumber(tier.tickets_sold)} / {formatNumber(tier.capacity)}
                                         </td>
-                                        <td style={tdStyle}>
+                                        <td data-label="Sell-through" style={tdStyle}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <div style={{ width: '80px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
                                                     <div
@@ -213,13 +213,13 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                                                 <span style={{ opacity: 0.8, fontSize: '13px', fontWeight: 500 }}>{fill}%</span>
                                             </div>
                                         </td>
-                                        <td style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
+                                        <td data-label="Sale window" style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
                                             {saleWindow}
                                         </td>
-                                        <td style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
+                                        <td data-label="Max per order" style={{ ...tdStyle, fontSize: '13px', opacity: 0.8 }}>
                                             {tier.max_per_order ? `${tier.max_per_order} tickets` : 'Unlimited'}
                                         </td>
-                                        <td style={tdStyle}>
+                                        <td data-actions style={tdStyle}>
                                             <button
                                                 className={adminStyles.btnSecondary}
                                                 style={{ padding: '6px 14px', fontSize: '13px' }}
@@ -233,7 +233,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
                             })}
                             {filteredTiers.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
+                                    <td data-empty colSpan={7} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '30px 16px' }}>
                                         {searchTerm || filter !== 'all' ? 'No ticket tiers match your search and filter criteria.' : 'No ticket tiers configured for this event.'}
                                     </td>
                                 </tr>

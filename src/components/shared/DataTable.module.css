@@ -80,3 +80,106 @@
     padding: 32px;
     opacity: 0.5;
 }
+
+
+/* ─── Phones: each row becomes a stacked card ─────────────────────────────────
+   The first column is the title; the rest are label and value pairs using each
+   column's header (data-label). The header row is hidden, so select-all is not
+   offered on phones. */
+@media (max-width: 639.98px) {
+    .tableContainer {
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .table,
+    .table tbody {
+        display: block;
+    }
+
+    .table thead {
+        display: none;
+    }
+
+    .table tbody tr {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        padding: var(--spacing-md);
+        background-color: var(--color-interface-surface);
+        border: 1px solid var(--color-interface-outline);
+        border-radius: var(--radius-lg);
+    }
+
+    .table tbody tr:hover {
+        background-color: var(--color-interface-surface);
+    }
+
+    .table tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        text-align: right;
+        min-width: 0;
+    }
+
+    .table td[data-label]::before {
+        content: attr(data-label);
+        flex: none;
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0.55;
+        text-align: left;
+    }
+
+    /* Title cell: first in the card, no label, left-aligned, leaves room for the corner menu and checkbox. */
+    .table td[data-first] {
+        display: block;
+        order: -1;
+        padding-right: 52px;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .table tr:has(td.selectCell) td[data-first] {
+        padding-left: 36px;
+    }
+
+    .table td[data-first]::before {
+        content: none;
+    }
+
+    .table td.selectCell {
+        position: absolute;
+        top: var(--spacing-md);
+        left: var(--spacing-md);
+        display: block;
+        text-align: left;
+    }
+
+    .table td.actionsCell {
+        position: absolute;
+        top: var(--spacing-xs);
+        right: var(--spacing-xs);
+        width: auto !important;
+        padding: 0 !important;
+    }
+
+    /* Loading and empty rows span the full width as a plain message. */
+    .table td.emptyState {
+        display: block;
+        text-align: center;
+        padding: var(--spacing-xl);
+    }
+}

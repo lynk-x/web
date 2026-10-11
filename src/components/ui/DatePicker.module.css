@@ -136,3 +136,18 @@
 .otherMonth {
     opacity: 0.2;
 }
+
+
+/* Phones: the calendar opens as a centred panel at the bottom of the screen. Beside an input in the right-hand
+   column it would run off the edge, and the inline top and left it is given are overridden for that reason. */
+@media (max-width: 639.98px) {
+    .calendarPortal {
+        position: fixed !important;
+        top: auto !important;
+        left: 50% !important;
+        bottom: 16px;
+        translate: -50% 0;
+        width: min(320px, calc(100vw - 32px));
+        z-index: 1100;
+    }
+}

@@ -108,3 +108,16 @@
     background-color: var(--color-interface-outline);
     margin: 4px 0;
 }
+
+/* Phones: the row menu button is a 44 px touch target. */
+@media (max-width: 639.98px) {
+    .trigger {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .menuItem {
+        min-height: 44px;
+        font-size: 14px;
+    }
+}

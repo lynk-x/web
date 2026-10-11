@@ -52,6 +52,8 @@ export interface Column<T> {
     cellStyle?: React.CSSProperties;
     /** Optional explicit width for the column (e.g. '200px' or '15%'). */
     width?: string;
+    /** Marks this column as the card title on phones, where rows stack as cards. Defaults to the first column. */
+    primary?: boolean;
 }
 
 /** Props for the generic `DataTable` component. */

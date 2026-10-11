@@ -116,3 +116,17 @@
     align-items: center;
     opacity: 0.8;
 }
+
+/* Phones: stack the count above the actions so long labels do not push past the screen. */
+@media (max-width: 639.98px) {
+    .container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
+
+    .actions {
+        flex-wrap: wrap;
+    }
+}

@@ -77,3 +77,18 @@
     background-color: var(--color-interface-surface);
     color: var(--color-utility-primaryText);
 }
+
+/* Phones: two stat cards per row, and the table wrapper steps aside because each row is its own card. */
+@media (max-width: 639.98px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--spacing-md);
+    }
+
+    .tableWrapper {
+        background-color: transparent;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+    }
+}

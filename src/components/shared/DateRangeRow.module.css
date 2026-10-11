@@ -75,3 +75,35 @@
         align-items: stretch;
     }
 }
+
+/* Phones: the two date pickers share one row at equal width instead of overflowing it. */
+@media (max-width: 639.98px) {
+    .container {
+        justify-content: stretch;
+    }
+
+    .group {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        width: 100%;
+        gap: var(--spacing-md);
+    }
+
+    .inputWrapper {
+        flex: 1 1 140px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-xs);
+        min-width: 0;
+    }
+
+    .relative {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .inputWrapper input.dateInput {
+        width: 100%;
+    }
+}

@@ -20,6 +20,9 @@ import type { Column, DataTableProps } from '@/types/shared';
  * Generic, column-driven data table with built-in selection,
  * pagination, row actions, and empty-state handling.
  *
+ * Below 640 px every row turns into a stacked card: the first column is the card title, the other columns
+ * show as label and value pairs, and the actions menu sits in the top-right corner.
+ *
  * Domain tables (e.g. UserTable, ForumTable) become thin wrappers
  * that provide `columns` and `getActions` — all structural
  * boilerplate lives here.
@@ -55,6 +58,9 @@ function DataTable<T extends { id: string | number }>({
 }: DataTableProps<T>) {
     const { allSelected, isIndeterminate } = useTableSelection(data, selectedIds);
 
+    // The title column on phones: the one marked primary, otherwise the first.
+    const titleIndex = Math.max(0, columns.findIndex((col) => col.primary));
+
     // Total columns = checkbox + user columns + optional actions column
     const totalColumns = columns.length + (onSelect ? 1 : 0) + (getActions ? 1 : 0);
 
@@ -65,7 +71,7 @@ function DataTable<T extends { id: string | number }>({
                     <tr>
                         {/* Select-all checkbox */}
                         {onSelect && (
-                            <th style={{ width: '40px' }}>
+                            <th className={styles.selectCell} style={{ width: '40px' }}>
                                 <TableCheckbox
                                     checked={allSelected}
                                     onChange={() => onSelectAll?.()}
@@ -97,7 +103,7 @@ function DataTable<T extends { id: string | number }>({
                         >
                             {/* Row checkbox */}
                             {onSelect && (
-                                <td>
+                                <td className={styles.selectCell}>
                                     <TableCheckbox
                                         checked={selectedIds?.has(String(item.id)) || false}
                                         onChange={() => onSelect(String(item.id))}
@@ -106,13 +112,21 @@ function DataTable<T extends { id: string | number }>({
                             )}
 
                             {/* Data cells */}
+                            {/* data-label and data-first drive the stacked card layout on phones (see the CSS). */}
                             {columns.map((col, idx) => (
-                                <td key={idx} style={col.cellStyle}>{col.render(item, rowIndex)}</td>
+                                <td
+                                    key={idx}
+                                    style={col.cellStyle}
+                                    data-label={col.header}
+                                    data-first={idx === titleIndex ? '' : undefined}
+                                >
+                                    {col.render(item, rowIndex)}
+                                </td>
                             ))}
 
                             {/* Row actions */}
                             {getActions && (
-                                <td style={{ paddingLeft: '0', textAlign: 'right', width: '80px' }}>
+                                <td className={styles.actionsCell} style={{ paddingLeft: '0', textAlign: 'right', width: '80px' }}>
                                     <div className={styles.actions}>
                                         <TableRowActions actions={getActions(item)} />
                                     </div>

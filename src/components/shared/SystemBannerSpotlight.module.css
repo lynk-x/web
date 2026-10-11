@@ -172,3 +172,35 @@
         left: 40px;
     }
 }
+
+/* Phones: a shorter banner so it does not push the page content off the first screen. */
+@media (max-width: 639.98px) {
+    .container {
+        height: 360px;
+        border-radius: 16px;
+    }
+
+    .slide {
+        padding: 24px;
+    }
+
+    .title {
+        font-size: 26px;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+
+    .ctaButton {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+
+    .dots {
+        left: 24px;
+    }
+}

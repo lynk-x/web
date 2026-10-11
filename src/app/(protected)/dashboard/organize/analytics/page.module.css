@@ -232,3 +232,25 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Phones: two stat cards per row, shorter charts, and the header wraps. */
+@media (max-width: 639.98px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--spacing-md);
+    }
+
+    .pageHeader {
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .filterSelect {
+        min-width: 0;
+    }
+
+    .chartContainer {
+        height: 240px;
+        min-height: 240px;
+    }
+}

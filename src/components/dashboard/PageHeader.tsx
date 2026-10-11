@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/shared/Button';
 import Badge, { BadgeVariant } from '@/components/shared/Badge';
@@ -31,6 +31,11 @@ type PageHeaderProps = React.PropsWithChildren<{
     secondaryAction?: HeaderAction;
     /** Where the close (X) button navigates. Omit to hide the close button. */
     closeHref?: string;
+    /**
+     * On phones, pin the action buttons to the bottom of the screen above the tab bar, in the same
+     * secondary-then-primary order as desktop. The page content gains matching bottom space.
+     */
+    dockActionsOnMobile?: boolean;
     /** Custom close handler, e.g. to confirm unsaved changes before navigating. Takes precedence over closeHref. */
     onClose?: () => void;
     hideDivider?: boolean;
@@ -106,6 +111,7 @@ export default function PageHeader({
     secondaryAction,
     closeHref,
     onClose,
+    dockActionsOnMobile = false,
     hideDivider = false,
     style,
     children,
@@ -126,6 +132,16 @@ export default function PageHeader({
         icon: actionIcon,
         className: actionClassName,
     } : undefined);
+
+    const hasActions = Boolean(customAction || secondaryAction || resolvedPrimaryAction);
+    const isDocked = dockActionsOnMobile && hasActions;
+
+    // Tells the layout to leave room under the page for the docked bar (the layout and support button read this).
+    useEffect(() => {
+        if (!isDocked) return;
+        document.body.dataset.dockedActions = '1';
+        return () => { delete document.body.dataset.dockedActions; };
+    }, [isDocked]);
 
     const handleClose = () => {
         if (onClose) return onClose();
@@ -150,7 +166,7 @@ export default function PageHeader({
                 {children}
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div className={`${styles.headerActions} ${isDocked ? styles.headerActionsDocked : ''}`} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {customAction}
                 {secondaryAction && renderAction(secondaryAction, 'secondary')}
                 {resolvedPrimaryAction && renderAction(resolvedPrimaryAction, 'primary')}

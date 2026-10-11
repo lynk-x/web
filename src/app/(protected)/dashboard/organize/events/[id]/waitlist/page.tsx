@@ -186,7 +186,7 @@ export default function EventWaitlistPage() {
             ) : filtered.length === 0 ? (
                 <EmptyState message={filterStatus === 'all' ? 'No one on the waitlist yet.' : `No ${filterStatus} entries.`} />
             ) : (
-                <table className={adminStyles.table}>
+                <table className={`${adminStyles.table} stack-table`}>
                     <thead>
                         <tr>
                             <th scope="col">#</th>
@@ -202,8 +202,8 @@ export default function EventWaitlistPage() {
                             const badge = STATUS_MAP[entry.status] || { label: entry.status, variant: 'neutral' as BadgeVariant };
                             return (
                                 <tr key={entry.id}>
-                                    <td>{entry.position}</td>
-                                    <td>
+                                    <td data-label="Position">{entry.position}</td>
+                                    <td data-title>
                                         <div>
                                             <span style={{ fontWeight: 500 }}>
                                                 {entry.user_profile?.full_name || `@${entry.user_profile?.user_name || entry.user_id.slice(0, 8)}`}
@@ -215,10 +215,10 @@ export default function EventWaitlistPage() {
                                             )}
                                         </div>
                                     </td>
-                                    <td>{entry.ticket_tier?.name || 'General'}</td>
-                                    <td>{formatDate(entry.created_at)}</td>
-                                    <td><Badge variant={badge.variant} label={badge.label} /></td>
-                                    <td>
+                                    <td data-label="Ticket tier">{entry.ticket_tier?.name || 'General'}</td>
+                                    <td data-label="Joined">{formatDate(entry.created_at)}</td>
+                                    <td data-label="Status"><Badge variant={badge.variant} label={badge.label} /></td>
+                                    <td data-actions>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             {entry.status === 'pending' && (
                                                 <button

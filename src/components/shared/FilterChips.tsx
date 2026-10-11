@@ -25,7 +25,7 @@ export default function FilterChips({
     className = '',
 }: FilterChipsProps) {
     return (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} className={className}>
+        <div style={{ display: 'flex', gap: '8px' }} className={`filter-chips ${className}`}>
             {options.map((option) => (
                 <button
                     key={option.value}
