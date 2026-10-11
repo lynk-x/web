@@ -65,7 +65,7 @@ const AdsInvoiceTable: React.FC<AdsInvoiceTableProps> = ({
         {
             header: 'Currency',
             width: '220px',
-            cellStyle: { color: 'var(--color-utility-secondaryText)' },
+            cellStyle: { opacity: 0.7 },
             render: (invoice) => <div>{invoice.currency || 'USD'}</div>,
         },
         {

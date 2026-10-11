@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import styles from './Sidebar.module.css';
 import { modeFromPathname, navGroups } from './sidebarNav';
+import { usesMobileShell } from './mobileReady';
 import type { DashboardMode } from '@/types/shared';
 import OrganizationSwitcher from './OrganizationSwitcher';
 import NotificationBellButton from './NotificationBellButton';
@@ -43,8 +44,9 @@ const Sidebar = () => {
     const SIDEBAR_HIDDEN_PATHS = ['/dashboard'];
     if (SIDEBAR_HIDDEN_PATHS.includes(pathname)) return null;
 
-    // Events and ads use the mobile top bar and bottom tabs below 1024 px; the other modes keep the sidebar.
-    const hasMobileShell = mode === 'events' || mode === 'ads';
+    // With the mobile dashboard on, events and ads use the top bar and bottom tabs below 1024 px; otherwise the
+    // sidebar stays (behind the "Desktop Only" notice).
+    const hasMobileShell = usesMobileShell(mode);
 
     return (
         <aside className={`${styles.sidebar} ${hasMobileShell ? styles.hideBelowDesktop : ''}`}>

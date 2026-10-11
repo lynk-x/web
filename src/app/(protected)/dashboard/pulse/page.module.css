@@ -48,7 +48,7 @@
     align-items: center;
     justify-content: center;
     padding: var(--spacing-2xl);
-    color: var(--color-text-tertiary);
+    opacity: 0.5;
     font-size: 14px;
 }
 

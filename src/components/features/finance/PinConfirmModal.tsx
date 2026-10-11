@@ -75,7 +75,7 @@ export default function PinConfirmModal({ isOpen, title = 'Confirm Your PIN', on
                         onClick={onForgotPin}
                         style={{
                             background: 'none', border: 'none', padding: 0,
-                            color: 'var(--color-utility-secondaryText, rgba(255,255,255,0.6))',
+                            color: 'var(--color-utility-primaryText)', opacity: 0.6,
                             fontSize: '13px', textDecoration: 'underline', cursor: 'pointer',
                             alignSelf: 'center',
                         }}

@@ -92,7 +92,7 @@ export function PasskeyManager() {
                         aria-label="Passkey name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        style={{ flex: '1 1 200px', minWidth: 0, padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--color-interface-outline)', backgroundColor: 'var(--color-background-surface)', color: 'var(--color-text-primary)', fontSize: '14px' }}
+                        style={{ flex: '1 1 240px', minWidth: 0, padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--color-interface-outline)', backgroundColor: 'var(--color-background-surface)', color: 'var(--color-text-primary)', fontSize: '14px' }}
                     />
                     <Button variant="secondary" onClick={handleAdd} isLoading={isAdding} disabled={isLoading}>Add a passkey</Button>
                 </div>

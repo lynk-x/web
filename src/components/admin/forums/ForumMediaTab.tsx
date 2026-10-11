@@ -117,9 +117,9 @@ export default function ForumMediaTab({ forumId }: { forumId?: string }) {
             </TableToolbar>
 
             {isLoading ? (
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6 }}>Loading media...</div>
+                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5 }}>Loading media...</div>
             ) : filtered.length === 0 ? (
-                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.6, background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <div style={{ padding: '60px', textAlign: 'center', opacity: 0.5, background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                     No media found matching your criteria.
                 </div>
             ) : (

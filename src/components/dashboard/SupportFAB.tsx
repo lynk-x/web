@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import styles from './SupportFAB.module.css';
 import { modeFromPathname } from './sidebarNav';
+import { usesMobileShell } from './mobileReady';
 
 export default function SupportFAB() {
     const router = useRouter();
@@ -24,9 +25,8 @@ export default function SupportFAB() {
         return null;
     }
 
-    // Events and ads show a bottom tab bar below 1024 px; lift the button clear of it.
-    const mode = modeFromPathname(pathname);
-    const hasTabBar = mode === 'events' || mode === 'ads';
+    // Events and ads show a bottom tab bar below 1024 px when the mobile dashboard is on; lift the button clear of it.
+    const hasTabBar = usesMobileShell(modeFromPathname(pathname));
 
     const handleClick = () => {
         router.push('/dashboard/support');

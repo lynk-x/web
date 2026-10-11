@@ -51,7 +51,7 @@ export default function AdsPerformanceTable({ data }: AdsPerformanceTableProps) 
                 <tbody>
                     {data.length === 0 ? (
                         <tr>
-                            <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-utility-secondaryText)' }}>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
                                 No campaigns found matching criteria.
                             </td>
                         </tr>

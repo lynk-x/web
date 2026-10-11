@@ -335,8 +335,8 @@ function AdsSettingsContent() {
                         <div className={`${adminStyles.pageCard} tour-ads-settings-danger`} style={{ marginBottom: '24px' }}>
                             <h2 className={adminStyles.sectionTitle} style={{ color: '#ffffff' }}>Account Security</h2>
                             
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
-                                <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px 24px', flexWrap: 'wrap' }}>
+                                <div style={{ flex: '1 1 280px', minWidth: 0 }}>
                                     <h3 className={adminStyles.label} style={{ marginBottom: '8px', fontWeight: 500, fontSize: '15px' }}>
                                         Generate Recovery Code
                                     </h3>

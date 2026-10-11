@@ -318,7 +318,7 @@ export default function SubscriptionPlansPage() {
                                     </button>
                                 </div>
                                 {plan.subscription_prices.length === 0 ? (
-                                    <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)', margin: 0 }}>No prices configured</p>
+                                    <p style={{ fontSize: 13, opacity: 0.5, margin: 0 }}>No prices configured</p>
                                 ) : (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
                                         {plan.subscription_prices.map(price => (

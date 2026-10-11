@@ -183,7 +183,7 @@ export default function WalletPage() {
                     {/* Balance cards */}
                     <div className="tour-wallet-balances" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginBottom: 32 }}>
                         {balances.length === 0 ? (
-                            <div className={adminStyles.card} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-tertiary)' }}>
+                            <div className={adminStyles.card} style={{ padding: 24, textAlign: 'center', opacity: 0.5 }}>
                                 No wallets yet. Top up to get started.
                             </div>
                         ) : balances.map(b => (

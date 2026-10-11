@@ -289,9 +289,9 @@
 
     .stack-table tbody tr {
         position: relative;
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: var(--spacing-sm) var(--spacing-md);
         margin-bottom: var(--spacing-md);
         padding: var(--spacing-md);
         background: var(--color-interface-surface);
@@ -300,6 +300,7 @@
     }
 
     .stack-table td {
+        grid-column: 1 / -1;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -323,21 +324,24 @@
         text-align: left;
     }
 
+    /* Title on the first row; with a checkbox, the two share that row and centre on each other. */
     .stack-table td[data-title] {
         display: block;
-        order: -1;
+        grid-column: 2;
+        grid-row: 1;
+        align-self: center;
         font-weight: 600;
         text-align: left !important;
     }
 
-    .stack-table tr:has(td[data-select]) td[data-title] {
-        padding-left: 32px !important;
+    .stack-table tr:not(:has(td[data-select])) td[data-title] {
+        grid-column: 1 / -1;
     }
 
     .stack-table td[data-select] {
-        position: absolute;
-        top: var(--spacing-md);
-        left: var(--spacing-md);
+        grid-column: 1;
+        grid-row: 1;
+        align-self: center;
     }
 
     .stack-table td[data-actions] {

@@ -1,3 +1,18 @@
+import type { DashboardMode } from '@/types/shared';
+
+/**
+ * Master switch for the phone and tablet dashboard (top bar, bottom tabs, per-page layouts).
+ *
+ * While false, the events and ads workspaces show the full-screen "Desktop Only" notice below 1024 px, exactly as
+ * before the mobile work; the mobile code stays in place and switches on by setting this to true.
+ */
+export const MOBILE_DASHBOARD_ENABLED = false;
+
+/** True when [mode] gets the mobile shell below 1024 px. Only the events and ads workspaces have one. */
+export function usesMobileShell(mode: DashboardMode): boolean {
+    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'ads');
+}
+
 /**
  * Dashboard routes whose layout has been redesigned for phones and tablets.
  *

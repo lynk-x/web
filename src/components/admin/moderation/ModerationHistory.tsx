@@ -47,7 +47,7 @@ const ModerationHistory: React.FC<ModerationHistoryProps> = ({ itemId, itemType 
     }, [itemId, itemType, supabase]);
 
     if (isLoading) return <div style={{ opacity: 0.5, fontSize: '14px' }}>Loading history...</div>;
-    if (history.length === 0) return <div style={{ opacity: 0.4, fontSize: '14px', fontStyle: 'italic' }}>No moderation history found.</div>;
+    if (history.length === 0) return <div style={{ opacity: 0.5, fontSize: '14px' }}>No moderation history found.</div>;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
