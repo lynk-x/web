@@ -56,7 +56,7 @@ export default function PartnersFinancePage() {
                 credit_balance: number;
             }
             // The account's first (or only, in the common case) wallet —
-            // was previously always assumed to be USD, so a non-USD advertiser
+            // was previously always assumed to be USD, so a non-USD partner
             // silently got a wallets?.[0] fallback still mislabeled "USD".
             const primaryWallet: WalletItem | undefined = data.wallets?.[0];
             const primaryCurrency = primaryWallet?.currency || 'USD';

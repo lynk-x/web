@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 /**
  * Layout wrapper for the partner workspace.
- * Restricts access to advertiser and partner accounts via AccountGuard.
+ * Restricts access to partner accounts via AccountGuard.
  */
 export default function PartnersLayout({ children }: { children: React.ReactNode }) {
     return (

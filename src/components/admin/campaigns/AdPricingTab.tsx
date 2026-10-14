@@ -100,7 +100,7 @@ export default function AdPricingTab() {
 
     const columns: Column<PricingRow>[] = [
         {
-            header: 'Ad Format',
+            header: 'Placement Format',
             render: (r) => (
                 <div>
                     <div style={{ fontWeight: 600, fontSize: '14px' }}>{adTypeLabel[r.ad_type] ?? r.ad_type}</div>
@@ -161,8 +161,8 @@ export default function AdPricingTab() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
             <TableToolbar>
                 <div>
-                    <div style={{ fontSize: '15px', fontWeight: 600 }}>Ad Pricing Config</div>
-                    <div style={{ fontSize: '13px', opacity: 0.6 }}>USD base rates per ad format and interaction. A 1.2× peak multiplier applies between 18:00–22:00.</div>
+                    <div style={{ fontSize: '15px', fontWeight: 600 }}>Campaign Pricing Config</div>
+                    <div style={{ fontSize: '13px', opacity: 0.6 }}>USD base rates per campaign placement and interaction. A 1.2× peak multiplier applies between 18:00–22:00.</div>
                 </div>
             </TableToolbar>
             <DataTable<PricingRow>

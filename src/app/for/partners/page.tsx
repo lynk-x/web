@@ -28,7 +28,7 @@ const staggerContainer = {
  * Public landing page explaining value propositions, contextual reach
  * and campaign automation for event sponsors and brand partners.
  */
-export default function AdvertisersLandingPage() {
+export default function PartnersLandingPage() {
     return (
         <HomeLayout hideCart={true} hideMenu={true}>
             <div className={styles.landingPage}>
@@ -97,10 +97,10 @@ export default function AdvertisersLandingPage() {
                     <p className={styles.cardDesc} style={{ marginBottom: 24, textAlign: 'center' }}>
                         From launch to measurement — see how Lynk-X streamlines every stage of your campaign.
                     </p>
-                    <JourneyFlowMotion variant="advertisers" />
+                    <JourneyFlowMotion variant="partners" />
                 </section>
 
-                <EcosystemTicker variant="advertisers" />
+                <EcosystemTicker variant="partners" />
 
                 <LynkXFooter />
             </div>

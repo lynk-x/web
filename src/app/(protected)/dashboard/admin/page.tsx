@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     const [isActivityLoading, setIsActivityLoading] = useState(true);
     const [stats, setStats] = useState({
         organizers: 0,
-        advertisers: 0,
+        partners: 0,
         pulseUsers: 0,
         teamSize: 0
     });
@@ -61,16 +61,16 @@ export default function AdminDashboard() {
             }
             const { count: orgs } = await orgQuery;
 
-            // Count advertisers in the active country
-            let advQuery = supabase
+            // Count partners in the active country
+            let partnerQuery = supabase
                 .schema('api' as any)
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'advertiser');
             if (country !== 'all') {
-                advQuery = advQuery.eq('country_code', country);
+                partnerQuery = partnerQuery.eq('country_code', country);
             }
-            const { count: advs } = await advQuery;
+            const { count: partnersCount } = await partnerQuery;
 
             let pulseQuery = supabase
                 .schema('api' as any)
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
             setStats({
                 organizers: orgs || 0,
-                advertisers: advs || 0,
+                partners: partnersCount || 0,
                 pulseUsers: pulses || 0,
                 teamSize: team || 0
             });
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
             if (recentAccounts) {
                 recentAccounts.forEach(acc => {
                     const profileLabel = acc.type === 'organizer' ? 'Organizer'
-                        : acc.type === 'advertiser' ? 'Advertiser'
+                        : acc.type === 'advertiser' ? 'Partner'
                         : acc.type === 'pulse_user' ? 'Pulse User'
                         : 'Attendee';
                     logList.push({
@@ -205,8 +205,8 @@ export default function AdminDashboard() {
                     href="/dashboard/admin/users?type=organizer"
                 />
                 <StatCard 
-                    label="Local Advertisers" 
-                    value={stats.advertisers} 
+                    label="Local Partners" 
+                    value={stats.partners} 
                     change="Brand partners" 
                     trend="neutral"
                     isLoading={isStatsLoading}

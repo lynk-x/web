@@ -125,7 +125,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
 
                             <div className={styles.summaryGrid}>
                                 <div className={styles.summaryRow}>
-                                    <span className={styles.summaryLabel}>Ad Type</span>
+                                    <span className={styles.summaryLabel}>Placement Format</span>
                                     <div style={{ marginTop: '4px' }}>
                                         {campaign.adType ? (
                                             <Badge
@@ -231,7 +231,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                             }}>
                                 <h3 style={{ color: '#fff', marginBottom: '12px', fontSize: '18px' }}>Approve Campaign</h3>
                                 <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '24px', fontSize: '14px', lineHeight: 1.5 }}>
-                                    Are you sure you want to approve <strong style={{ color: '#fff' }}>{campaign.name}</strong>? This will make the campaign active and it will start serving ads.
+                                    Are you sure you want to approve <strong style={{ color: '#fff' }}>{campaign.name}</strong>? This will make the campaign active and it will start serving.
                                 </p>
                                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                                     <button
@@ -295,9 +295,9 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                 {campaign.adType === 'interstitial' || campaign.adType === 'interstitial_video' ? (
                                     <div className={styles.mockAdInterstitial}>
                                         <div className={styles.mockAdHeader}>
-                                            <div style={{ color: '#fff', fontSize: '12px', fontWeight: 800 }}>AD</div>
+                                            <div style={{ color: '#fff', fontSize: '12px', fontWeight: 800 }}>PARTNER</div>
                                             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
-                                                {campaign.mediaType === 'video' ? 'Video playing' : 'Sponsor Ad'}
+                                                {campaign.mediaType === 'video' ? 'Video playing' : 'Partner Spotlight'}
                                             </div>
                                             <div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>05</div>
                                         </div>
@@ -328,7 +328,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                             )}
                                         </div>
                                         <div className={styles.mockAdInfo}>
-                                            <span className={styles.mockAdBadge}>Ad • INTERSTITIAL</span>
+                                            <span className={styles.mockAdBadge}>PARTNER • INTERSTITIAL</span>
                                             <div className={styles.mockAdTitle} style={{ fontSize: '20px' }}>{campaign.name}</div>
                                             <div className={styles.mockAdDesc} style={{ fontSize: '14px' }}>
                                                 {campaign.description || `Join ${campaign.client} for an exclusive experience. Click to learn more!`}
@@ -353,7 +353,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                                     paddingRight: '12px'
                                                 } : {}}
                                             >
-                                                {!campaign.mediaUrl && <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>AD</div>}
+                                                {!campaign.mediaUrl && <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>PARTNER</div>}
                                                 <div className={styles.mockAdCTA}>
                                                     {campaign.callToAction || 'Learn More'}
                                                 </div>

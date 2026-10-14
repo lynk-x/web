@@ -115,7 +115,7 @@ export default function CampaignAssetsPage() {
     return (
         <div className={styles.container}>
             <PageHeader
-                title={campaignTitle || 'Ad Assets'}
+                title={campaignTitle || 'Campaign Assets'}
                 subtitle="Review and manage creative assets for this campaign."
                 closeHref="/dashboard/admin/campaigns"
                 primaryAction={{
@@ -135,7 +135,7 @@ export default function CampaignAssetsPage() {
                 <div style={{ textAlign: 'center', padding: 48, opacity: 0.5 }}>Loading assets...</div>
             ) : assets.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 48, opacity: 0.5 }}>
-                    <p>No ad assets found for this campaign.</p>
+                    <p>No campaign assets found for this campaign.</p>
                 </div>
             ) : (
                 <div className={styles.gallery}>
@@ -148,7 +148,7 @@ export default function CampaignAssetsPage() {
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={asset.url}
-                                            alt={asset.call_to_action || 'Ad asset'}
+                                            alt={asset.call_to_action || 'Campaign asset'}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={e => {
                                                 (e.currentTarget as HTMLImageElement).style.display = 'none';

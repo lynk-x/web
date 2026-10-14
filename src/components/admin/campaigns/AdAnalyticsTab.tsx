@@ -10,7 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
 
-interface AdvertiserAnalytics {
+interface PartnerAnalytics {
     account_id: string;
     account_name: string;
     campaign_count: number;
@@ -30,7 +30,7 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
     const supabase = React.useMemo(() => createClient(), []);
     const { showToast } = useToast();
     
-    const [data, setData] = useState<AdvertiserAnalytics[]>([]);
+    const [data, setData] = useState<PartnerAnalytics[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -65,11 +65,11 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
         setCurrentPage(1);
     }, [search]);
 
-    const columns: Column<AdvertiserAnalytics>[] = [
+    const columns: Column<PartnerAnalytics>[] = [
         {
             header: '#',
             width: '50px',
-            render: (r: AdvertiserAnalytics, index: number) => (
+            render: (r: PartnerAnalytics, index: number) => (
                 <div style={{ opacity: 0.5, fontWeight: 600 }}>
                     {(currentPage - 1) * itemsPerPage + index + 1}
                 </div>

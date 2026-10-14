@@ -38,7 +38,7 @@ interface GuardResult {
 
 /**
  * @param allowedTypes  Account types permitted to view this section.
- *                      e.g. ['organizer'] or ['advertiser']
+ *                      e.g. ['organizer'] or ['partner']
  * @param allowedRoles  Optional list of role slugs permitted to view this section.
  */
 export function useAccountTypeGuard(allowedTypes: AccountType[], allowedRoles?: string[]): GuardResult {
@@ -101,7 +101,7 @@ export function useAccountTypeGuard(allowedTypes: AccountType[], allowedRoles?: 
 
         // 4. Case: wrong account type or role is active, but they DO have a matching one
         // User has matching accounts, force them to pick one from the picker.
-        const defaultType = allowedTypes.includes('advertiser') ? 'advertiser' : 'organizer';
+        const defaultType = allowedTypes.includes('advertiser') ? 'partner' : 'organizer';
         router.replace(`/dashboard?type=${defaultType}`);
 
         setIsAuthorized(false);

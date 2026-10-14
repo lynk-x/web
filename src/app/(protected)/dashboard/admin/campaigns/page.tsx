@@ -365,7 +365,7 @@ function CampaignsContent() {
 
             <TableToolbar
                 searchPlaceholder={
-                    activeTab === 'analytics' ? "Search by advertiser..." : "Search campaigns or clients..."
+                    activeTab === 'analytics' ? "Search by partner..." : "Search campaigns or clients..."
                 }
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}

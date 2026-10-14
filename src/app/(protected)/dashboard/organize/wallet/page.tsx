@@ -338,13 +338,13 @@ export default function WalletPage() {
                         target: 'body',
                         placement: 'center',
                         title: 'Your Wallet',
-                        content: 'Your wallet holds funds used for advertising campaigns and receives deposited revenue from ticket sales. Keep your balance healthy to ensure campaigns continue running without interruption.',
+                        content: 'Your wallet holds funds used for campaigns and receives deposited revenue from ticket sales. Keep your balance healthy to ensure campaigns continue running without interruption.',
                         skipBeacon: true,
                     },
                     {
                         target: '.tour-wallet-topup',
                         title: 'Top Up Your Balance',
-                        content: 'Add funds to power your ad campaigns. Supported payment methods include mobile money and card. Funds are credited instantly upon payment confirmation.',
+                        content: 'Add funds to power your campaigns. Supported payment methods include mobile money and card. Funds are credited instantly upon payment confirmation.',
                     },
                     {
                         target: '.tour-wallet-balances',
@@ -353,13 +353,13 @@ export default function WalletPage() {
                     },
                     {
                         target: '.tour-wallet-credits',
-                        title: 'Promotional Ad Credits',
-                        content: 'Any bonus credits from Lynk-X promotions or referral rewards appear here. They are applied automatically to your ad campaigns before drawing from your cash balance.',
+                        title: 'Promotional Campaign Credits',
+                        content: 'Any bonus credits from Lynk-X promotions or referral rewards appear here. They are applied automatically to your campaigns before drawing from your cash balance.',
                     },
                     {
                         target: '.tour-wallet-history',
                         title: 'Transaction History',
-                        content: 'A full log of all wallet activity — top-ups, ad spend deductions and credit applications. Use this to reconcile your advertising budget.',
+                        content: 'A full log of all wallet activity — top-ups, campaign spend deductions and credit applications. Use this to reconcile your campaign budget.',
                     }
                 ]}
             />

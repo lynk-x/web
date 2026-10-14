@@ -461,7 +461,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
         }
     );
 
-    if (isLoading) return <div className={styles.loading}>Loading Advertising...</div>;
+    if (isLoading) return <div className={styles.loading}>Loading Partners...</div>;
 
     const timeline = data?.timeline || [];
     const adTypes = (data?.ad_types || []).map(t => ({
@@ -477,7 +477,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
         <div className={styles.tabContent}>
             <div className={styles.splitRow}>
                 <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Ad Type Distribution</h3>
+                    <h3 className={styles.cardTitle}>Placement Format Distribution</h3>
                     {adTypes.length > 0 ? (
                         <div style={{ width: '100%', height: 240 }}>
                             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -778,7 +778,7 @@ function AnalyticsContent() {
                         <TabsList>
                             <TabsTrigger value="demographics">Demographics</TabsTrigger>
                             <TabsTrigger value="events">Events</TabsTrigger>
-                            <TabsTrigger value="advertising">Advertising</TabsTrigger>
+                            <TabsTrigger value="advertising">Partners</TabsTrigger>
                             <TabsTrigger value="community">Community</TabsTrigger>
                             <TabsTrigger value="finance">Finance</TabsTrigger>
                         </TabsList>

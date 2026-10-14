@@ -154,7 +154,7 @@ export default function AdCreditsTab({
                 },
             });
             if (error) throw error;
-            showToast('Ad credit issued successfully.', 'success');
+            showToast('Campaign credit issued successfully.', 'success');
             setIsIssueModalOpen(false);
             setIssueAccountId(''); setIssueAmount(''); setIssueExpiry(''); setIssueNote('');
             fetchCredits();
@@ -167,7 +167,7 @@ export default function AdCreditsTab({
 
     const handleRevoke = async (credit: AdCredit) => {
         if (!await confirm(`Revoke this credit grant for ${credit.account_name}? The remaining ${formatCurrency(credit.remaining, credit.currency)} will no longer be usable.`, {
-            title: 'Revoke Ad Credit',
+            title: 'Revoke Campaign Credit',
             confirmLabel: 'Revoke',
         })) return;
         try {

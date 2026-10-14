@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import styles from './JourneyFlowMotion.module.css';
 
-type ForVariant = 'organizers' | 'attendees' | 'advertisers';
+type ForVariant = 'organizers' | 'attendees' | 'partners';
 
 type Step = {
     label: string;
@@ -149,7 +149,7 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
         ],
         external: [],
     },
-    advertisers: {
+    partners: {
         lynkx: [
             {
                 label: 'Create Campaign',

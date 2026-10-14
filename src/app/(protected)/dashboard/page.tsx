@@ -10,7 +10,7 @@ import styles from './page.module.css';
  * Root workspace selector for authenticated users.
  *
  * Evaluates account memberships to display available workspaces (organizer,
- * advertiser, platform, or system) or prompts users to create their first account.
+ * partner, platform or system) or prompts users to create their first account.
  */
 function DashboardRoot() {
     const router = useRouter();
@@ -19,10 +19,16 @@ function DashboardRoot() {
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
-    // ?type=organizer|advertiser — set by the drawer to pre-filter the workspace list
-    const typeParam = searchParams.get('type') as 'organizer' | 'advertiser' | null;
+    // Query params support ?type=partner|partners|organizer
+    const rawType = searchParams.get('type');
+    const isPartnerParam = rawType === 'partner' || rawType === 'partners';
+    const normalizedType: 'organizer' | 'advertiser' | null = isPartnerParam
+        ? 'advertiser'
+        : rawType === 'organizer'
+            ? 'organizer'
+            : null;
 
-    // Non-attendee accounts, optionally filtered by typeParam. Organizer/advertiser/
+    // Non-attendee accounts, optionally filtered by typeParam. Organizer/partner/
     // pulse_user accounts use an open-ended, admin-configurable role-builder (role_slug
     // is plain text, not a fixed enum), so any membership role counts as a real
     // workspace — `allAccounts` is already scoped to genuine memberships. Platform/
@@ -36,8 +42,8 @@ function DashboardRoot() {
         return true;
     });
 
-    const displayAccounts = typeParam
-        ? businessAccounts.filter(a => a.type === typeParam)
+    const displayAccounts = normalizedType
+        ? businessAccounts.filter(a => a.type === normalizedType)
         : businessAccounts;
 
     const handleSelectWorkspace = useCallback((account: any) => {
@@ -106,8 +112,8 @@ function DashboardRoot() {
         );
     }
 
-    const typeLabel = typeParam === 'advertiser' ? 'Ad Center' : typeParam === 'organizer' ? 'Organizer' : null;
-    const createUrl = typeParam ? `/onboarding?type=${typeParam}` : '/onboarding';
+    const typeLabel = isPartnerParam ? 'Partner Center' : normalizedType === 'organizer' ? 'Organizer' : null;
+    const createUrl = isPartnerParam ? '/onboarding?type=partner' : normalizedType ? `/onboarding?type=${normalizedType}` : '/onboarding';
 
     if (displayAccounts.length > 0) {
         return (
@@ -139,7 +145,7 @@ function DashboardRoot() {
                                     </div>
                                     <div className={styles.orgInfo}>
                                         <h3 className={styles.orgName}>{acc.name}</h3>
-                                        <span className={styles.orgType}>{acc.type}</span>
+                                        <span className={styles.orgType}>{acc.type === 'advertiser' ? 'partner' : acc.type}</span>
                                     </div>
                                 </div>
 

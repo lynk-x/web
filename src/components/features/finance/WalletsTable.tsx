@@ -383,7 +383,7 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
             <Modal isOpen={activeModal === 'topup'} onClose={closeModal} title={`Top Up ${selectedWallet?.currency}`}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <p style={{ opacity: 0.8, fontSize: '14px' }}>
-                        Add funds to your {selectedWallet?.currency} wallet for refunds or ad purchases.
+                        Add funds to your {selectedWallet?.currency} wallet for refunds or campaign purchases.
                     </p>
                     <Input
                         label="Amount"

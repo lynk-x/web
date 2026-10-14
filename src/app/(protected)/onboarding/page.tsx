@@ -60,9 +60,9 @@ function OnboardingFlow() {
     const { profile, isLoading: isLoadingAuth } = useAuth();
     const { countries, isLoading: isLoadingCountries } = useCountries();
 
-    // Query params support ?type=partner|partners|advertiser|organizer and ?create=true (adding a new workspace)
+    // Query params support ?type=partner|partners|organizer and ?create=true (adding a new workspace)
     const rawType = searchParams.get('type');
-    const isPartnerParam = rawType === 'partner' || rawType === 'partners' || rawType === 'advertiser';
+    const isPartnerParam = rawType === 'partner' || rawType === 'partners';
     const resolvedAccountType: AccountType = isPartnerParam ? 'advertiser' : 'organizer';
     const isCreatingNew = searchParams.get('create') === 'true';
 
@@ -251,9 +251,9 @@ function OnboardingFlow() {
         }
     };
 
-    const isAdvertiser = accountType === 'advertiser';
-    const accentColor = isAdvertiser ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
-    const accentBg = isAdvertiser ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)';
+    const isPartner = accountType === 'advertiser';
+    const accentColor = isPartner ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
+    const accentBg = isPartner ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)';
 
     return (
         <div className={styles.container}>
@@ -261,7 +261,7 @@ function OnboardingFlow() {
                 <div className={styles.header}>
                     <h1 className={styles.title}>Set Up Your Workspace</h1>
                     <p className={styles.subtitle}>
-                        Let&apos;s get your {isAdvertiser ? 'Partner' : 'Organiser'} brand ready.
+                        Let&apos;s get your {isPartner ? 'Partner' : 'Organiser'} brand ready.
                     </p>
                 </div>
 
@@ -307,7 +307,7 @@ function OnboardingFlow() {
                                 type="text"
                                 value={orgName}
                                 onChange={(e) => setOrgName(e.target.value)}
-                                placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
+                                placeholder={isPartner ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
                                 className={styles.input}
                                 required
                             />

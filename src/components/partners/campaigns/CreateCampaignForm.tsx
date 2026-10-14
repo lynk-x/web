@@ -97,9 +97,9 @@ interface CreateCampaignFormProps {
     initialAccountId?: string;
     /** Account whose wallets populate the currency dropdown. Defaults to the
      *  signed-in user's activeAccount; admin pages creating a campaign on
-     *  behalf of a different advertiser must pass that advertiser's account
+     *  behalf of a different partner must pass that partner's account
      *  id here (their own activeAccount is the admin's org, not the
-     *  advertiser's). */
+     *  partner's). */
     walletAccountId?: string;
     pageTitle?: string;
     pageSubtitle?: string;
@@ -213,12 +213,12 @@ export default function CreateCampaignForm({
 
     // Account whose wallets should populate the currency dropdown —
     // walletAccountId overrides activeAccount for admin pages creating a
-    // campaign on behalf of a different advertiser (activeAccount there is
-    // the admin's own org, not the advertiser's).
+    // campaign on behalf of a different partner (activeAccount there is
+    // the admin's own org, not the partner's).
     const effectiveWalletAccountId = walletAccountId || activeAccount?.id;
 
     // Reset the selected currency whenever the target account changes (only
-    // matters for admin pages, where the advertiser being created for can
+    // matters for admin pages, where the partner being created for can
     // change interactively after mount) so a stale selection from a
     // previous account can't be submitted against a different account's
     // wallets.
@@ -264,9 +264,8 @@ export default function CreateCampaignForm({
 
     // ── Fetch the target account's wallet currencies ───────────────────────
     // A new campaign's currency is restricted to a currency the account
-    // actually holds a wallet in — advertising.upsert_advertiser_campaign
-    // enforces this server-side too (a campaign in a currency with no
-    // wallet can never win an ad auction, since bidding requires
+    // actually holds a wallet in (a campaign in a currency with no
+    // wallet cannot win a placement auction, since bidding requires
     // sufficient balance in that same currency).
     useEffect(() => {
         if (!effectiveWalletAccountId) {
@@ -681,9 +680,9 @@ export default function CreateCampaignForm({
         if (!formData.end_at) newErrors.end_at = 'End date is required.';
 
         const primaryCreative = formData.creatives[0];
-        if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Ad headline is required.';
+        if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Campaign headline is required.';
         if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
-            newErrors['creative.0.asset'] = 'An ad asset is required.';
+            newErrors['creative.0.asset'] = 'A creative asset is required.';
         }
 
         const url = formData.destination_url.trim();
@@ -865,7 +864,7 @@ export default function CreateCampaignForm({
                 {ConfirmDialog}
                 <PageHeader
                     title={pageTitle || (isEditing ? "Edit Campaign" : "Create New Campaign")}
-                    subtitle={pageSubtitle || (isEditing ? "Update your campaign details and creative." : "Set up a new ad campaign to reach more users.")}
+                    subtitle={pageSubtitle || (isEditing ? "Update your campaign details and creative." : "Set up a new campaign to reach more users.")}
                     onClose={handleClose}
                     primaryAction={{
                         label: isEditing ? 'Save Changes' : 'Launch Campaign',
@@ -991,7 +990,7 @@ export default function CreateCampaignForm({
                                         <div className={styles.row}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="type">
-                                                    Ad Type <span className={styles.requiredIndicator}>*Required</span>
+                                                    Placement Format <span className={styles.requiredIndicator}>*Required</span>
                                                 </label>
                                                 <select id="type" name="type" className={styles.select}
                                                     value={formData.type} onChange={handleInputChange} required>
@@ -1046,7 +1045,7 @@ export default function CreateCampaignForm({
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="daily_limit">
                                                     Daily Limit ({formData.currency || 'USD'})
-                                                    <span className={styles.infoIcon} title="the maximum amount you want to spend on the ad in a single day">ⓘ</span>
+                                                    <span className={styles.infoIcon} title="the maximum amount you want to spend on the campaign in a single day">ⓘ</span>
                                                 </label>
                                                 <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
                                                     placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
@@ -1271,7 +1270,7 @@ export default function CreateCampaignForm({
                                     <div className={styles.formSection}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
-                                                <h3 style={{ margin: 0, fontSize: '16px' }}>Ad Creatives</h3>
+                                                <h3 style={{ margin: 0, fontSize: '16px' }}>Campaign Creatives</h3>
                                                 <p style={{ margin: '4px 0 0', fontSize: '13px', opacity: 0.6 }}>Add up to 3 variants for A/B rotation</p>
                                             </div>
                                             {formData.creatives.length < 3 && (
@@ -1477,7 +1476,7 @@ export default function CreateCampaignForm({
                                                         )}
                                                     </div>
                                                     <div className={styles.mockAdInfo}>
-                                                        <span className={styles.mockAdBadge}>Ad • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
+                                                        <span className={styles.mockAdBadge}>PARTNER • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
                                                         <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{activeCreative.headline || formData.adHeadline || 'Your Catchy Headline'}</div>
                                                         <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
                                                         {/* #7 Interactive Preview Button */}
@@ -1498,10 +1497,10 @@ export default function CreateCampaignForm({
                                                     {formData.type === 'banner' && (
                                                         <div className={styles.mockAdBanner}>
                                                             {(activeCreative.preview || activeCreative.imageUrl) ? (
-                                                                 <img src={activeCreative.preview || activeCreative.imageUrl} alt="Ad creative" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
+                                                                 <img src={activeCreative.preview || activeCreative.imageUrl} alt="Campaign creative" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
                                                             ) : null}
                                                             <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
-                                                                {activeCreative.headline || formData.adHeadline || 'AD'}
+                                                                {activeCreative.headline || formData.adHeadline || 'PARTNER'}
                                                             </div>
                                                             {/* #7 Interactive CTA */}
                                                             <div

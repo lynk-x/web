@@ -226,7 +226,7 @@ export default function ProfileSetupPage() {
             const normalizedPhone = normalizeToE164(phone.trim(), '+254') || phone.trim();
 
             // internal.handle_new_user() only auto-creates a user_profile row
-            // for account_type='attendee' signups — an organizer/advertiser
+            // for account_type='attendee' signups — an organizer/partner
             // signup (password, OTP, or Google OAuth) never gets one this
             // way, and api.v1_profiles has no INSTEAD OF INSERT rule, so the
             // update below would silently affect zero rows without this.

@@ -42,7 +42,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
         }
     }, [isLoadingCurrencies, currencies]);
 
-    const handlePortalClick = (type: 'organizer' | 'advertiser') => {
+    const handlePortalClick = (type: 'organizer' | 'partner') => {
         onClose();
         // Route directly to dashboard portal. Middleware automatically guards unauthenticated users.
         router.push(`/dashboard?type=${type}`);
@@ -84,7 +84,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                 </div>
                             </button>
 
-                            <button className={styles.portalItem} onClick={() => handlePortalClick('advertiser')}>
+                            <button className={styles.portalItem} onClick={() => handlePortalClick('partner')}>
                                 <div className={`${styles.portalIcon} ${styles.adsIcon}`}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />

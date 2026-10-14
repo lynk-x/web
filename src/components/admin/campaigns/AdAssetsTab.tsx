@@ -91,7 +91,7 @@ export default function AdAssetsTab() {
                 };
             }));
         } catch (err: unknown) {
-            showToast(getErrorMessage(err) || 'Failed to load ad assets', 'error');
+            showToast(getErrorMessage(err) || 'Failed to load campaign assets', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -152,7 +152,7 @@ export default function AdAssetsTab() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {/* Thumbnail preview for images */}
                     {a.media_type === 'image' ? (
-                        <img src={a.url} alt="ad asset" style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <img src={a.url} alt="creative asset" style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
                         <div style={{ width: 48, height: 32, borderRadius: '4px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', opacity: 0.5 }}>
                             {a.media_type.toUpperCase()}
@@ -209,7 +209,7 @@ export default function AdAssetsTab() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
-                emptyMessage="No ad assets found."
+                emptyMessage="No campaign assets found."
             />
         </div>
     );

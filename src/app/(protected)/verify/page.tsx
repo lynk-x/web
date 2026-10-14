@@ -150,8 +150,8 @@ function VerifyFlow() {
         );
     }
 
-    const isAdvertiser = activeAccount?.type === 'advertiser';
-    const accentColor = isAdvertiser ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
+    const isPartner = activeAccount?.type === 'advertiser';
+    const accentColor = isPartner ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
 
     return (
         <div className={styles.container}>

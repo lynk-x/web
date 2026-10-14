@@ -470,7 +470,7 @@ function GlobalFinanceContent() {
                             onChange={e => setTaxForm({ ...taxForm, applicable_reason: e.target.value })}
                         >
                             <option value="ticket_sale">Ticket Sale</option>
-                            <option value="ad_campaign_payment">Ad Campaign</option>
+                            <option value="ad_campaign_payment">Partner Campaign</option>
                             <option value="subscription_payment">Subscription</option>
                             <option value="wallet_top_up">Wallet Top-up</option>
                             <option value="organizer_payout">Organizer Payout</option>

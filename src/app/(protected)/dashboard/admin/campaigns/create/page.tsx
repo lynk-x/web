@@ -18,7 +18,7 @@ export default function CreateCampaignPage() {
         <div className={adminStyles.container}>
             <CreateCampaignForm
                 pageTitle="Create Campaign"
-                pageSubtitle="Provision a new advertising campaign for an account"
+                pageSubtitle="Provision a new campaign for an account"
                 backLabel="Back to Campaigns"
                 redirectPath="/dashboard/admin/campaigns"
                 walletAccountId={accountId || undefined}
@@ -27,7 +27,7 @@ export default function CreateCampaignPage() {
                     <AccountSearchInput
                         value={accountId}
                         onChange={setAccountId}
-                        label="Advertiser Account"
+                        label="Partner Account"
                         placeholder="Search accounts by name or reference…"
                         countryCode={activeAccount?.country_code || null}
                     />

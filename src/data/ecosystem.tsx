@@ -32,12 +32,12 @@ export interface RealEcosystemLogo {
     websiteUrl?: string;
 }
 
-export const REAL_ECOSYSTEM_LOGOS: Record<'organizers' | 'advertisers' | 'attendees', RealEcosystemLogo[]> = {
+export const REAL_ECOSYSTEM_LOGOS: Record<'organizers' | 'partners' | 'attendees', RealEcosystemLogo[]> = {
     organizers: [
         // Example template for when real partner SVGs are supplied:
         // { id: 'partner-1', name: 'Partner Name', logoSvg: <svg ... /> },
     ],
-    advertisers: [
+    partners: [
         // { id: 'sponsor-1', name: 'Sponsor Brand', logoSvg: <svg ... /> },
     ],
     attendees: [
@@ -125,7 +125,7 @@ export const ORGANIZER_CATEGORIES: VerticalCategory[] = [
     },
 ];
 
-export const ADVERTISER_CATEGORIES: VerticalCategory[] = [
+export const PARTNER_CATEGORIES: VerticalCategory[] = [
     {
         id: 'beverage-brands',
         label: 'Beverage & Consumer Brands',

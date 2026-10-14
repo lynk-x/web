@@ -87,7 +87,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({
             ),
         },
         {
-            header: 'Ad Type',
+            header: 'Placement Format',
             // From `ad_type` enum: banner | interstitial
             render: (campaign) => (
                 campaign.adType
