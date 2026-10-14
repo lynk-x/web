@@ -93,8 +93,8 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                     </svg>
                                 </div>
                                 <div className={styles.portalText}>
-                                    <span className={styles.portalTitle}>Ad Center</span>
-                                    <span className={styles.portalDesc}>Manage your ads</span>
+                                    <span className={styles.portalTitle}>Partner Center</span>
+                                    <span className={styles.portalDesc}>Manage campaigns & sponsorships</span>
                                 </div>
                             </button>
                         </div>

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import CreateCampaignForm, { CampaignData } from '@/components/ads/campaigns/CreateCampaignForm';
+import CreateCampaignForm, { CampaignData } from '@/components/partners/campaigns/CreateCampaignForm';
 import styles from '../../page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -10,6 +10,10 @@ import { getErrorMessage } from '@/utils/error';
 import { generateCampaignEmbedding } from '@/utils/embedding';
 import { useRouter } from 'next/navigation';
 
+/**
+ * Admin campaign edit page.
+ * Allows administrators to review, modify or resubmit campaigns for partner accounts.
+ */
 export default function AdminEditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const searchParams = useSearchParams();

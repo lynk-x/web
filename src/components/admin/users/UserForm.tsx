@@ -321,7 +321,7 @@ export default function UserForm({
                         >
                             <option value="attendee">Attendee</option>
                             <option value="organizer">Organizer</option>
-                            <option value="advertiser">Advertiser</option>
+                            <option value="advertiser">Partner</option>
                             <option value="platform">Platform Admin</option>
                             <option value="system">System Admin</option>
                         </select>

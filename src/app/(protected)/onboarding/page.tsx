@@ -60,11 +60,12 @@ function OnboardingFlow() {
     const { profile, isLoading: isLoadingAuth } = useAuth();
     const { countries, isLoading: isLoadingCountries } = useCountries();
 
-    // ?type=organizer|advertiser  ?create=true (adding a new workspace)
-    const typeParam = searchParams.get('type') as AccountType | null;
+    // Query params support ?type=partner|partners|advertiser|organizer and ?create=true (adding a new workspace)
+    const rawType = searchParams.get('type');
+    const isPartnerParam = rawType === 'partner' || rawType === 'partners' || rawType === 'advertiser';
+    const resolvedAccountType: AccountType = isPartnerParam ? 'advertiser' : 'organizer';
     const isCreatingNew = searchParams.get('create') === 'true';
 
-    const resolvedAccountType = typeParam ?? 'organizer';
     const draft = typeof window !== 'undefined' ? loadDraft(resolvedAccountType) : null;
 
     const [accountType, setAccountType] = useState<AccountType>(draft?.accountType ?? resolvedAccountType);
@@ -98,7 +99,7 @@ function OnboardingFlow() {
         // If they already have an account of this type, redirect to its dashboard
         const existingAccount = existingAccounts.find(a => a.type === accountType);
         if (existingAccount) {
-            const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
+            const dashType = accountType === 'advertiser' ? 'partners' : 'organize';
             router.push(`/dashboard/${dashType}`);
         }
     }, [isCreatingNew, existingAccounts, accountType, router, isLoadingAuth]);
@@ -241,7 +242,7 @@ function OnboardingFlow() {
             // Redirect to the dashboard for the new account type. A client-side
             // push (not a full reload) since refreshAccounts() above already
             // re-hydrated OrganizationContext with the new membership.
-            const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
+            const dashType = accountType === 'advertiser' ? 'partners' : 'organize';
             router.push(`/dashboard/${dashType}`);
         } catch (err: unknown) {
             console.error('Error creating organization:', err);
@@ -260,7 +261,7 @@ function OnboardingFlow() {
                 <div className={styles.header}>
                     <h1 className={styles.title}>Set Up Your Workspace</h1>
                     <p className={styles.subtitle}>
-                        Let&apos;s get your {isAdvertiser ? 'Advertising' : 'Organiser'} brand ready.
+                        Let&apos;s get your {isAdvertiser ? 'Partner' : 'Organiser'} brand ready.
                     </p>
                 </div>
 
@@ -343,6 +344,10 @@ function OnboardingFlow() {
     );
 }
 
+/**
+ * Workspace onboarding page that guides new organizers and partners through
+ * initial organization setup, country selection and branding asset uploads.
+ */
 export default function OnboardingPage() {
     return (
         <Suspense fallback={

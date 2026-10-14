@@ -48,7 +48,7 @@ function DashboardRoot() {
             : account.type === 'pulse_user'
                 ? '/dashboard/pulse'
                 : account.type === 'advertiser'
-                    ? '/dashboard/ads'
+                    ? '/dashboard/partners'
                     : '/dashboard/organize';
 
         if (!isProfileComplete) {

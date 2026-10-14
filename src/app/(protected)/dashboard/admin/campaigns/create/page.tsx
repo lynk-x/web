@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import { useOrganization } from '@/context/OrganizationContext';
-import CreateCampaignForm from '@/components/ads/campaigns/CreateCampaignForm';
+import CreateCampaignForm from '@/components/partners/campaigns/CreateCampaignForm';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
+/**
+ * Admin campaign provisioning page.
+ * Allows administrators to configure and launch campaigns on behalf of partner accounts.
+ */
 export default function CreateCampaignPage() {
     const { activeAccount } = useOrganization();
     const [accountId, setAccountId] = useState('');

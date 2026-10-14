@@ -4,6 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import styles from './LynkXFooter.module.css';
 
+/**
+ * Global footer rendering product navigation, resource guides, legal policies
+ * and social channels across public marketing pages.
+ */
 const LynkXFooter: React.FC = () => {
     return (
         <footer className={styles.footer}>
@@ -16,7 +20,7 @@ const LynkXFooter: React.FC = () => {
                         <h4 className={styles.columnTitle}>Product</h4>
                         <ul className={styles.linkList}>
                             <li><Link href="/for/organizers" className={styles.link}>For Organizers</Link></li>
-                            <li><Link href="/for/advertisers" className={styles.link}>For Advertisers</Link></li>
+                            <li><Link href="/for/advertisers" className={styles.link}>For Partners</Link></li>
                             <li><Link href="/for/attendees" className={styles.link}>For Attendees</Link></li>
                             <li><Link href="/resources/pricing" className={styles.link}>Pricing & Fees</Link></li>
                         </ul>

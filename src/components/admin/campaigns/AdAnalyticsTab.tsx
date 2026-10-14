@@ -76,7 +76,7 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
             )
         },
         {
-            header: 'Advertiser',
+            header: 'Partner',
             render: (r) => (
                 <div>
                     <div style={{ fontWeight: 600 }}>{r.account_name}</div>
@@ -142,7 +142,7 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
                     currentPage={currentPage}
                     totalPages={Math.ceil(totalCount / itemsPerPage)}
                     onPageChange={setCurrentPage}
-                    emptyMessage="No advertiser data found."
+                    emptyMessage="No partner data found."
                 />
             </div>
         </div>

@@ -8,9 +8,9 @@ import type { DashboardMode } from '@/types/shared';
  */
 export const MOBILE_DASHBOARD_ENABLED = false;
 
-/** True when [mode] gets the mobile shell below 1024 px. Only the events and ads workspaces have one. */
+/** True when [mode] gets the mobile shell below 1024 px. Only the events and partners workspaces have one. */
 export function usesMobileShell(mode: DashboardMode): boolean {
-    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'ads');
+    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'partners');
 }
 
 /**
@@ -21,15 +21,15 @@ export function usesMobileShell(mode: DashboardMode): boolean {
  */
 export const MOBILE_READY_PATHS: readonly string[] = [
     '/dashboard/organize', // overview
-    '/dashboard/ads', // overview
+    '/dashboard/partners', // overview
     '/dashboard/organize/events', // events list
-    '/dashboard/ads/campaigns', // campaigns list
+    '/dashboard/partners/campaigns', // campaigns list
     '/dashboard/organize/revenue', // revenue and payouts
-    '/dashboard/ads/finance', // finance and ad spend
+    '/dashboard/partners/finance', // finance and partner spend
     '/dashboard/organize/settings', // organizer settings
-    '/dashboard/ads/settings', // advertiser settings
+    '/dashboard/partners/settings', // partner settings
     '/dashboard/organize/analytics', // organizer analytics
-    '/dashboard/ads/analytics', // advertiser analytics
+    '/dashboard/partners/analytics', // partner analytics
 ];
 
 /**
@@ -39,7 +39,7 @@ export const MOBILE_READY_PATHS: readonly string[] = [
 const MOBILE_READY_PATTERNS: readonly RegExp[] = [
     /^\/dashboard\/organize\/events\/(?!create$)[^/]+(\/(tiers|attendees|check-ins|promo-codes|refunds|waitlist))?$/,
     /^\/dashboard\/organize\/analytics\/event\/[^/]+$/,
-    /^\/dashboard\/ads\/analytics\/campaign\/[^/]+$/,
+    /^\/dashboard\/partners\/analytics\/campaign\/[^/]+$/,
 ];
 
 /** True when [pathname] has been redesigned for small screens. */

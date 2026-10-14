@@ -67,7 +67,7 @@ export default function KycStatusCard({ accountId }: KycStatusCardProps) {
             <div className={styles.info}>
                 <h3 className={styles.title}>Identity Verification</h3>
                 <p className={styles.desc}>
-                    Verified accounts can sell tickets, run high-budget ads, and access faster payouts.
+                    Verified accounts can sell tickets, scale campaign budgets and access faster payouts.
                 </p>
             </div>
             <div className={styles.statusBadge} style={{ color, background: bg }}>

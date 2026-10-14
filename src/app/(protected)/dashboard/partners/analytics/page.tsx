@@ -1,0 +1,287 @@
+"use client";
+import { getErrorMessage } from '@/utils/error';
+
+import styles from './page.module.css';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { formatCurrency } from '@/utils/format';
+import StatCard from '@/components/dashboard/StatCard';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import ProductTour from '@/components/dashboard/ProductTour';
+import TableToolbar from '@/components/shared/TableToolbar';
+import DateRangeRow from '@/components/shared/DateRangeRow';
+import PerformanceTable, { CampaignPerformance } from '@/components/partners/analytics/PerformanceTable';
+import Spinner from '@/components/shared/Spinner';
+import { createReferenceRepository } from '@/lib/repositories';
+
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
+function AnalyticsContent() {
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const supabase = useMemo(() => createClient(), []);
+    const { showToast } = useToast();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [campaigns, setCampaigns] = useState<CampaignPerformance[]>([]);
+    const [fxRates, setFxRates] = useState<{ currency: string; rate_to_usd: number }[]>([]);
+
+    const [kpis, setKpis] = useState({
+        impressions: '0',
+        clicks: '0',
+        ctr: '0.00%',
+        cpc: '$0.00'
+    });
+
+    // FX rates let the KPI totals below normalize per-campaign spend (each
+    // in that campaign's own currency) to USD before summing, instead of
+    // blending e.g. KES and USD into one meaningless number — an account
+    // can run campaigns in more than one currency.
+    useEffect(() => {
+        const fetchFx = async () => {
+            const refRepo = createReferenceRepository(supabase);
+            const { data } = await refRepo.getFxRates();
+            if (data) setFxRates(data);
+        };
+        fetchFx();
+    }, [supabase]);
+
+    const fetchAnalytics = useCallback(async () => {
+        if (!activeAccount) return;
+        setIsLoading(true);
+        try {
+            const params: any = { p_account_id: activeAccount.id };
+            if (startDate) params.p_start_date = startDate;
+            if (endDate) params.p_end_date = endDate;
+
+            const { data, error } = await supabase.schema('api').rpc('get_campaigns_performance_summary', params);
+
+            if (error) throw error;
+
+            const results = Array.isArray(data) ? data : [];
+            const rateFor = (currency: string) =>
+                fxRates.find(r => r.currency === currency)?.rate_to_usd || 1.0;
+
+            const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions || 0), 0);
+            const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks || 0), 0);
+            const totalCost = results.reduce(
+                (acc: number, r: any) => acc + (Number(r.total_cost || 0) / rateFor(r.currency || 'USD')),
+                0
+            );
+
+            const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+            const cpc = clicks > 0 ? totalCost / clicks : 0;
+
+            setKpis({
+                impressions: impressions.toLocaleString(),
+                clicks: clicks.toLocaleString(),
+                ctr: `${ctr.toFixed(2)}%`,
+                cpc: formatCurrency(cpc, 'USD')
+            });
+
+            setCampaigns(results);
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to sync your performance data.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeAccount, supabase, startDate, endDate, showToast, fxRates]);
+
+    useEffect(() => {
+        if (!isOrgLoading) {
+            if (activeAccount) {
+                fetchAnalytics();
+            } else {
+                setIsLoading(false);
+            }
+        }
+    }, [isOrgLoading, activeAccount, fetchAnalytics]);
+
+    useEffect(() => {
+        const urlStart = searchParams.get('startDate');
+        const urlEnd = searchParams.get('endDate');
+        if (urlStart) setStartDate(urlStart);
+        if (urlEnd) setEndDate(urlEnd);
+    }, [searchParams]);
+
+    const handleStartDateChange = (date: string) => {
+        setStartDate(date);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('startDate', date);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const handleEndDateChange = (date: string) => {
+        setEndDate(date);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('endDate', date);
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const handleClearDates = () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        const defaultStart = d.toISOString().split('T')[0];
+        const defaultEnd = new Date().toISOString().split('T')[0];
+        
+        setStartDate(defaultStart);
+        setEndDate(defaultEnd);
+        
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('startDate');
+        params.delete('endDate');
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
+    const filteredCampaigns = useMemo(() => {
+        if (!searchQuery) return campaigns;
+        return campaigns.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [campaigns, searchQuery]);
+
+    const downloadCSV = () => {
+        if (!filteredCampaigns || filteredCampaigns.length === 0) return;
+        
+        const headers = ['Campaign', 'Status', 'Impressions', 'Clicks', 'CTR (%)', 'CPC', 'Spend', 'Currency'];
+        const csvRows = [headers.join(',')];
+
+        for (const item of filteredCampaigns) {
+            const ctr = item.impressions > 0 ? ((item.clicks / item.impressions) * 100).toFixed(2) : '0.00';
+            const cpc = item.clicks > 0 ? (item.total_cost / item.clicks).toFixed(2) : '0.00';
+
+            const row = [
+                `"${item.title.replace(/"/g, '""')}"`,
+                item.status,
+                item.impressions,
+                item.clicks,
+                ctr,
+                cpc,
+                item.total_cost.toFixed(2),
+                item.currency || 'USD'
+            ];
+            
+            csvRows.push(row.join(','));
+        }
+        
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Partner_Analytics_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    return (
+        <div className={styles.container}>
+            <PageHeader
+                title="Partner Analytics"
+                subtitle="Analyze your campaign reach and performance."
+                actionLabel="Generate Report"
+                onActionClick={downloadCSV}
+                actionIcon={
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                }
+            />
+
+            {/* Overview Cards */}
+            <div className={`${sharedStyles.statsGrid} tour-partners-analytics-stats`}>
+                <StatCard
+                    label="Total Impressions"
+                    value={kpis.impressions}
+                    change="Campaign reach"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Total Clicks"
+                    value={kpis.clicks}
+                    change="User interactions"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Click-Through Rate"
+                    value={kpis.ctr}
+                    change="Performance (%)"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+                <StatCard
+                    label="Cost Per Click"
+                    value={kpis.cpc}
+                    change="Avg. efficiency"
+                    trend="positive"
+                    isLoading={isLoading}
+                />
+            </div>
+
+            <div className="tour-partners-analytics-range" style={{ marginTop: 'var(--spacing-md)' }}>
+                <TableToolbar 
+                    searchPlaceholder="Search campaigns..." 
+                    searchValue={searchQuery} 
+                    onSearchChange={setSearchQuery}
+                >
+                    <DateRangeRow
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={handleStartDateChange}
+                        onEndDateChange={handleEndDateChange}
+                        onClear={handleClearDates}
+                    />
+                </TableToolbar>
+            </div>
+
+            <div style={{ marginTop: 'var(--spacing-md)' }}>
+                <PerformanceTable data={filteredCampaigns} />
+            </div>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenAnalyticsJoyride_${activeAccount.id}` : 'hasSeenAnalyticsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Performance Intelligence',
+                        content: 'Analyze how your campaigns and sponsorships are performing across the Lynk-X ecosystem — understand which campaigns are generating clicks and which need optimization.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-partners-analytics-range',
+                        title: 'Filter by Time Period',
+                        content: 'Adjust the date range to see performance over different windows. Narrow it to a week to evaluate a recent campaign push, or go broader to assess long-term trends.',
+                    },
+                    {
+                        target: '.tour-partners-analytics-stats',
+                        title: 'Key Campaign Metrics',
+                        content: 'CTR (Click-Through Rate) shows what percentage of people who see your campaign click it — higher is better. CPC (Cost Per Click) shows how much each click costs you. Monitor both to optimize ROI.',
+                    }
+                ]}
+            />
+        </div>
+    );
+}
+
+/**
+ * Partner campaign performance analytics page.
+ * Displays aggregated impressions, clicks, CTR, CPC and individual campaign breakdowns.
+ */
+export default function AnalyticsPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center' }}><Spinner label="Loading analytics..." /></div>}>
+            <AnalyticsContent />
+        </Suspense>
+    );
+}

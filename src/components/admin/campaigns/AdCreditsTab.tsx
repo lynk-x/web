@@ -137,7 +137,7 @@ export default function AdCreditsTab({
 
     const handleIssue = async () => {
         const amount = parseFloat(issueAmount);
-        if (!issueAccountId) { showToast('Select an advertiser account', 'error'); return; }
+        if (!issueAccountId) { showToast('Select a partner account', 'error'); return; }
         if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
 
         setIsSubmitting(true);
@@ -228,7 +228,7 @@ export default function AdCreditsTab({
 
     const columns: Column<AdCredit>[] = [
         {
-            header: 'Advertiser',
+            header: 'Partner',
             render: (r) => (
                 <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{r.account_name}</div>
@@ -291,7 +291,7 @@ export default function AdCreditsTab({
 
             {!hideToolbar && (
                 <TableToolbar
-                    searchPlaceholder="Search by advertiser..."
+                    searchPlaceholder="Search by partner..."
                     searchValue={searchTerm}
                     onSearchChange={setInternalSearchTerm}
                 >
@@ -345,10 +345,10 @@ export default function AdCreditsTab({
             />
 
             {isIssueModalOpen && (
-                <Modal isOpen title="Issue Ad Credit" onClose={() => setIsIssueModalOpen(false)}>
+                <Modal isOpen title="Issue Partner Credit" onClose={() => setIsIssueModalOpen(false)}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <label className={adminStyles.fieldLabel}>
-                            Advertiser Account
+                            Partner Account
                             <select
                                 className={adminStyles.select}
                                 value={issueAccountId}

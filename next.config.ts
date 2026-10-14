@@ -39,6 +39,20 @@ const nextConfig: NextConfig = {
             },
         ];
     },
+    async redirects() {
+        return [
+            {
+                source: '/dashboard/ads',
+                destination: '/dashboard/partners',
+                permanent: true,
+            },
+            {
+                source: '/dashboard/ads/:path*',
+                destination: '/dashboard/partners/:path*',
+                permanent: true,
+            },
+        ];
+    },
     images: {
         loader: 'custom',
         loaderFile: './src/utils/imageLoader.ts',

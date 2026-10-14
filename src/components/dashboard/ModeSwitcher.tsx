@@ -16,7 +16,7 @@ interface ModeSwitcherProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
- * Three-button pill that switches between Events, Ads, and Admin modes.
+ * Pill switcher for toggling between Events, Partners and Admin workspace modes.
  *
  * Uses styles from the parent `Sidebar.module.css` so there's no visual
  * change — the component is purely a structural extraction.
@@ -24,21 +24,24 @@ interface ModeSwitcherProps {
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ mode, onModeChange }) => {
     const modes: { key: DashboardMode; label: string }[] = [
         { key: 'events', label: 'Events' },
-        { key: 'ads', label: 'Ads' },
+        { key: 'partners', label: 'Partners' },
         { key: 'admin', label: 'Admin' },
     ];
 
     return (
         <div className={styles.modeSwitcherPill}>
-            {modes.map(({ key, label }) => (
-                <button
-                    key={key}
-                    className={`${styles.modeBtn} ${mode === key ? styles.activeMode : ''}`}
-                    onClick={() => onModeChange(key)}
-                >
-                    {label}
-                </button>
-            ))}
+            {modes.map(({ key, label }) => {
+                const isActive = mode === key;
+                return (
+                    <button
+                        key={key}
+                        className={`${styles.modeBtn} ${isActive ? styles.activeMode : ''}`}
+                        onClick={() => onModeChange(key)}
+                    >
+                        {label}
+                    </button>
+                );
+            })}
         </div>
     );
 };

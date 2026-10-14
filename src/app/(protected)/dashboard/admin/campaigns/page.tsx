@@ -326,8 +326,8 @@ function CampaignsContent() {
         <>
             {ConfirmDialog}
             <PageHeader
-                title="Ad Campaign Moderation" 
-                subtitle="Manage brand visibility and ad revenue distribution."
+                title="Campaign Moderation" 
+                subtitle="Manage partner visibility and campaign revenue distribution."
                 actionLabel="+ Create Campaign"
                 actionHref="/dashboard/admin/campaigns/create"
             />
@@ -355,7 +355,7 @@ function CampaignsContent() {
                     isLoading={!summary}
                 />
                 <StatCard
-                    label="Flagged Ads"
+                    label="Flagged Campaigns"
                     value={summary?.flagged ?? 0}
                     change="Compliance violations"
                     trend="negative"
