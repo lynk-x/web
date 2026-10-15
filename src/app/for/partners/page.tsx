@@ -40,7 +40,7 @@ export default function PartnersLandingPage() {
                     animate="animate"
                     variants={staggerContainer}
                 >
-                    <motion.div className={styles.badge} variants={fadeInUp}>For Partners</motion.div>
+                    <motion.div className={styles.badge} variants={fadeInUp}>For AD Partners</motion.div>
                     <motion.h1 className={styles.title} variants={fadeInUp}>
                         <SlotCounterText text="Sell to the right crowd." delay={0.5} />
                     </motion.h1>

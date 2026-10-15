@@ -20,7 +20,7 @@ const LynkXFooter: React.FC = () => {
                         <h4 className={styles.columnTitle}>Product</h4>
                         <ul className={styles.linkList}>
                             <li><Link href="/for/organizers" className={styles.link}>For Organizers</Link></li>
-                            <li><Link href="/for/partners" className={styles.link}>For AD Partners</Link></li>
+                            <li><Link href="/for/partners" className={styles.link}>For ad Partners</Link></li>
                             <li><Link href="/for/attendees" className={styles.link}>For Attendees</Link></li>
                             <li><Link href="/resources/pricing" className={styles.link}>Pricing & Fees</Link></li>
                         </ul>
