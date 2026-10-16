@@ -92,6 +92,30 @@ export interface ValuationResult {
     calculated_at: string;
 }
 
+export interface UpsertTierParams {
+    eventId: string;
+    tierId?: string;
+    name: string;
+    rank?: number;
+    price: number;
+    currency?: string;
+    maxSlots: number;
+    perks: SponsorshipPerks;
+    isActive?: boolean;
+}
+
+export interface CreateInviteParams {
+    eventId: string;
+    tierId: string;
+    companyName: string;
+    inviteeEmail: string;
+    inviteeName?: string;
+    customPrice?: number | null;
+    currency?: string;
+    expiryDays?: number;
+    metadata?: Record<string, unknown>;
+}
+
 export function createSponsorshipsRepository(client: DbClient) {
     return {
         /**
@@ -161,5 +185,84 @@ export function createSponsorshipsRepository(client: DbClient) {
             if (error) return { data: null, error: toError(error) };
             return { data: data as ValuationResult, error: null };
         },
+
+        /**
+         * Create or update a sponsorship tier package for an event ([P2]).
+         * Validates organizer permissions, slot constraints, and updates inventory.
+         */
+        async upsertTier(params: UpsertTierParams): Promise<RepoResult<SponsorshipTierItem>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('upsert_sponsorship_tier', {
+                    p_event_id: params.eventId,
+                    p_tier_id: params.tierId ?? null,
+                    p_name: params.name,
+                    p_rank: params.rank ?? 1,
+                    p_price: params.price,
+                    p_currency: params.currency ?? 'KES',
+                    p_max_slots: params.maxSlots,
+                    p_perks: params.perks ?? {},
+                    p_is_active: params.isActive ?? true,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as SponsorshipTierItem, error: null };
+        },
+
+        /**
+         * Delete an unused sponsorship tier from an event ([P2]).
+         * Fails with a descriptive error if active sponsors are attached to the tier.
+         */
+        async deleteTier(eventId: string, tierId: string): Promise<RepoResult<boolean>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('delete_sponsorship_tier', {
+                    p_event_id: eventId,
+                    p_tier_id: tierId,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: Boolean(data), error: null };
+        },
+
+        /**
+         * Issue a direct tokenized sponsorship invite for private sponsor outreach ([P3]).
+         * Provisions a secure cryptographic token for claiming on the inbound landing route.
+         */
+        async createInvite(params: CreateInviteParams): Promise<RepoResult<SponsorshipInviteItem>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('create_sponsorship_invite', {
+                    p_event_id: params.eventId,
+                    p_tier_id: params.tierId,
+                    p_company_name: params.companyName,
+                    p_invitee_email: params.inviteeEmail,
+                    p_invitee_name: params.inviteeName ?? null,
+                    p_custom_price: params.customPrice ?? null,
+                    p_currency: params.currency ?? null,
+                    p_expiry_days: params.expiryDays ?? 14,
+                    p_metadata: params.metadata ?? {},
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as SponsorshipInviteItem, error: null };
+        },
+
+        /**
+         * Revoke an outstanding pending direct sponsorship invite ([P3]).
+         * Disables the token from being claimed on the public claim route.
+         */
+        async revokeInvite(eventId: string, inviteId: string): Promise<RepoResult<boolean>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('revoke_sponsorship_invite', {
+                    p_event_id: eventId,
+                    p_invite_id: inviteId,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: Boolean(data), error: null };
+        },
     };
 }
+

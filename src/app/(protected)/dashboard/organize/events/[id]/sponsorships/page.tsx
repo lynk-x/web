@@ -25,6 +25,8 @@ import FilterChips from '@/components/shared/FilterChips';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
+import TierBuilderModal from '@/components/dashboard/TierBuilderModal';
+import DirectInviteModal from '@/components/dashboard/DirectInviteModal';
 
 const thStyle: React.CSSProperties = {
     padding: '12px 16px',
@@ -108,6 +110,14 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
     const [tierFilter, setTierFilter] = useState('all');
     const [sponsorFilter, setSponsorFilter] = useState('all');
 
+    // [P2] Tier Builder modal state
+    const [isTierModalOpen, setIsTierModalOpen] = useState(false);
+    const [editingTier, setEditingTier] = useState<SponsorshipTierItem | null>(null);
+
+    // [P3] Direct Invite modal state
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [selectedTierForInvite, setSelectedTierForInvite] = useState<SponsorshipTierItem | null>(null);
+
     const loadData = useCallback(async () => {
         if (!id || !activeAccount) return;
         setIsLoading(true);
@@ -146,7 +156,41 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
         const claimUrl = `${origin}/sponsorships/claim/${token}`;
         copyToClipboard(claimUrl);
-    }, [copyToClipboard]);
+        showToast('Direct invite link copied to clipboard.', 'success');
+    }, [copyToClipboard, showToast]);
+
+    const handleOpenNewTier = useCallback(() => {
+        setEditingTier(null);
+        setIsTierModalOpen(true);
+    }, []);
+
+    const handleConfigureTier = useCallback((tier: SponsorshipTierItem) => {
+        setEditingTier(tier);
+        setIsTierModalOpen(true);
+    }, []);
+
+    const handleOpenNewInvite = useCallback((tier?: SponsorshipTierItem) => {
+        setSelectedTierForInvite(tier || null);
+        setIsInviteModalOpen(true);
+    }, []);
+
+    const handleRevokeInvite = useCallback(async (inviteId: string) => {
+        if (!window.confirm('Are you sure you want to revoke this invitation? The link will no longer be claimable.')) {
+            return;
+        }
+        try {
+            const res = await sponsorshipsRepo.revokeInvite(id, inviteId);
+            if (res.error) {
+                showToast(res.error.message || 'Failed to revoke invite.', 'error');
+                return;
+            }
+            showToast('Invitation revoked successfully.', 'success');
+            loadData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to revoke invite.', 'error');
+        }
+    }, [id, sponsorshipsRepo, showToast, loadData]);
+
 
     // Merge contracted sponsors and invitations into a unified sponsors list with status 'pending' for open invites
     const allSponsors = useMemo((): SponsorRowItem[] => {
@@ -291,17 +335,14 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                     variant: activeCount > 0 ? 'success' : 'neutral',
                 }}
                 primaryAction={{
-                    label: '+ Invite Sponsor',
-                    onClick: () => {
-                        showToast('Direct sponsor invitation modal will open here in [P3]', 'info');
-                    },
+                    label: '+ Direct Invite',
+                    onClick: () => handleOpenNewInvite(),
                 }}
                 secondaryAction={{
                     label: '+ New Tier',
-                    onClick: () => {
-                        showToast('Sponsorship tier builder with algorithmic pricing will open here in [P2]', 'info');
-                    },
+                    onClick: handleOpenNewTier,
                 }}
+
                 closeHref={`/dashboard/organize/events/${id}`}
             />
 
@@ -383,10 +424,11 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                     <button
                                         type="button"
                                         className={adminStyles.btnPrimary}
-                                        onClick={() => showToast('Tier builder will open here in [P2]', 'info')}
+                                        onClick={handleOpenNewTier}
                                     >
                                         + New Tier
                                     </button>
+
                                 )
                             }
                         />
@@ -461,7 +503,7 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                                 type="button"
                                                 className={styles.actionBtn}
                                                 style={{ flex: 1, justifyContent: 'center' }}
-                                                onClick={() => showToast('Tier editor will open here in [P2]', 'info')}
+                                                onClick={() => handleConfigureTier(tier)}
                                             >
                                                 Configure Tier
                                             </button>
@@ -469,11 +511,12 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                                 type="button"
                                                 className={styles.actionBtn}
                                                 style={{ flex: 1, justifyContent: 'center' }}
-                                                onClick={() => showToast('Direct invite modal will open here in [P3]', 'info')}
+                                                onClick={() => handleOpenNewInvite(tier)}
                                             >
-                                                Invite Partner
+                                                Invite Sponsor
                                             </button>
                                         </div>
+
                                     </div>
                                 );
                             })}
@@ -497,7 +540,7 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                     <button
                                         type="button"
                                         className={adminStyles.btnPrimary}
-                                        onClick={() => showToast('Direct invite modal will open here in [P3]', 'info')}
+                                        onClick={() => handleOpenNewInvite()}
                                     >
                                         + Invite Sponsor
                                     </button>
@@ -526,7 +569,7 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                                 <tr key={row.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
                                                     <td data-title style={tdStyle}>
                                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                            <span style={{ fontWeight: 600 }}>{row.sponsor_name}</span>
+                                                             <span style={{ fontWeight: 600 }}>{row.sponsor_name}</span>
                                                             <span style={{ fontSize: '12px', opacity: 0.55 }}>{row.contact_info}</span>
                                                         </div>
                                                     </td>
@@ -563,13 +606,25 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                                     </td>
                                                     <td data-actions style={tdStyle}>
                                                         {row.invite_token ? (
-                                                            <button
-                                                                type="button"
-                                                                className={styles.actionBtn}
-                                                                onClick={() => handleCopyInviteLink(row.invite_token!)}
-                                                            >
-                                                                Copy Invite Link
-                                                            </button>
+                                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className={styles.actionBtn}
+                                                                    onClick={() => handleCopyInviteLink(row.invite_token!)}
+                                                                >
+                                                                    Copy Link
+                                                                </button>
+                                                                {row.status === 'pending' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={styles.actionBtn}
+                                                                        style={{ color: 'var(--color-interface-error)' }}
+                                                                        onClick={() => handleRevokeInvite(row.id)}
+                                                                    >
+                                                                        Revoke
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         ) : row.reference ? (
                                                             <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.65 }}>
                                                                 {row.reference}
@@ -586,6 +641,28 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                     )}
                 </div>
             )}
+
+            {/* [P2] Sponsorship Tier Builder Modal */}
+            <TierBuilderModal
+                isOpen={isTierModalOpen}
+                onClose={() => setIsTierModalOpen(false)}
+                eventId={id}
+                currency={event?.currency || 'KES'}
+                tier={editingTier}
+                onSuccess={loadData}
+            />
+
+            {/* [P3] Tokenized Direct Invite Modal */}
+            <DirectInviteModal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                eventId={id}
+                currency={event?.currency || 'KES'}
+                tiers={overview?.tiers || []}
+                initialTier={selectedTierForInvite}
+                onSuccess={loadData}
+            />
         </div>
     );
 }
+

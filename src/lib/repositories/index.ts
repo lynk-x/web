@@ -32,7 +32,10 @@ export type {
     SponsorshipInviteItem,
     SponsorshipPerks,
     ValuationResult,
+    UpsertTierParams,
+    CreateInviteParams,
 } from './sponsorships.repository';
+
 
 export type { DbClient, RepoResult, RepoListResult, RepoError, ListOptions } from './types';
 export { isNotFound, isPermissionDenied, isUniqueViolation } from './types';
