@@ -42,7 +42,7 @@ export default function PartnersFinancePage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_advertiser_billing_data', {
+            const { data, error } = await supabase.schema('api').rpc('get_billing_data', {
                 p_account_id: activeAccount.id,
                 p_limit: itemsPerPage,
                 p_offset: (currentPage - 1) * itemsPerPage
@@ -108,7 +108,7 @@ export default function PartnersFinancePage() {
     }, [isOrgLoading, activeAccount, fetchBillingData]);
 
     // Search and date-range filtering are both kept client-side, over the
-    // currently-loaded page of transactions — get_advertiser_billing_data
+    // currently-loaded page of transactions — get_billing_data
     // has no server-side date-range params, unlike the organizer revenue
     // page's payout/refund RPCs.
     const isFiltering = Boolean(searchQuery || startDate || endDate);

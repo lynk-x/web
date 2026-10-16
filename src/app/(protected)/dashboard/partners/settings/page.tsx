@@ -215,7 +215,7 @@ function PartnerSettingsContent() {
         if (!activeAccount) return;
         setIsDeactivating(true);
         try {
-            const { error: accountError } = await supabase.schema('api').rpc('deactivate_ads_account', {
+            const { error: accountError } = await supabase.schema('api').rpc('deactivate_account', {
                 p_account_id: activeAccount.id
             });
             if (accountError) throw accountError;

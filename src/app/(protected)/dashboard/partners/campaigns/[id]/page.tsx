@@ -93,14 +93,14 @@ export default function CampaignDetailPage() {
             const [campRes, variantRes] = await Promise.all([
                 supabase
                     .schema('api')
-                    .from('v1_ad_campaigns')
+                    .from('v1_campaigns')
                     .select('*')
                     .eq('id', id)
                     .eq('account_id', activeAccount.id)
                     .maybeSingle(),
                 supabase
                     .schema('api')
-                    .from('v1_ad_media')
+                    .from('v1_campaign_media')
                     .select('id, url, media_type, call_to_action, is_primary, is_hidden, impressions_count, clicks_count')
                     .eq('campaign_id', id)
                     .order('is_primary', { ascending: false })

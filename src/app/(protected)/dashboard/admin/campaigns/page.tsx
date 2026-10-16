@@ -72,7 +72,7 @@ function CampaignsContent() {
     }, [supabase, resolvedCountryFilter]);
 
     const fetchCampaignPerf = useCallback(async () => {
-        const { data, error } = await supabase.schema('api').rpc('get_admin_ad_performance', {
+        const { data, error } = await supabase.schema('api').rpc('get_admin_campaign_performance', {
             p_country_code: resolvedCountryFilter
         });
 
@@ -256,7 +256,7 @@ function CampaignsContent() {
                 for (const campaign of withoutModeration) {
                     const { error } = await supabase
                         .schema('api')
-                        .from('v1_ad_campaigns')
+                        .from('v1_campaigns')
                         .update({ status: newStatus, updated_at: new Date().toISOString() })
                         .eq('id', campaign.id)
                         .eq('created_at', campaign.createdAt);

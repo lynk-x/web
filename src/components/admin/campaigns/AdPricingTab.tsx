@@ -45,7 +45,7 @@ export default function AdPricingTab() {
         try {
             const { data, error } = await supabase
                 .schema('api')
-                .from('v1_ad_pricing_config')
+                .from('v1_pricing_config')
                 .select('*')
                 .order('ad_type')
                 .order('interaction_type');

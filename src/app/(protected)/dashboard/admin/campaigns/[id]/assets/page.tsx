@@ -46,7 +46,7 @@ export default function CampaignAssetsPage() {
         try {
             const campaignQuery = supabase
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .select('title, created_at')
                 .eq('id', campaignId);
             if (campaignCreatedAt) {
@@ -57,7 +57,7 @@ export default function CampaignAssetsPage() {
                 campaignQuery.single(),
                 supabase
                     .schema('api')
-                    .from('v1_ad_media')
+                    .from('v1_campaign_media')
                     .select('*')
                     .eq('campaign_id', campaignId)
                     .order('created_at', { ascending: false }),

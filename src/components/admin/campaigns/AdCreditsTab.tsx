@@ -30,6 +30,8 @@ interface AdCredit {
     revoked_at: string | null;
 }
 
+export type CampaignCredit = AdCredit;
+
 interface AccountOption {
     id: string;
     display_name: string;
@@ -93,7 +95,7 @@ export default function AdCreditsTab({
         try {
             const { data: creditsData, error: creditsError } = await supabase
                 .schema('api')
-                .rpc('get_ad_credits');
+                .rpc('get_campaign_credits');
             if (creditsError) throw creditsError;
 
             const { data: accountsData } = await supabase
@@ -142,7 +144,7 @@ export default function AdCreditsTab({
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.schema('api').rpc('bulk_manage_ad_credits', {
+            const { error } = await supabase.schema('api').rpc('bulk_manage_campaign_credits', {
                 p_credit_ids: [],
                 p_action: 'grant',
                 p_params: {
@@ -173,7 +175,7 @@ export default function AdCreditsTab({
         try {
             const { error } = await supabase
                 .schema('api')
-                .rpc('admin_revoke_ad_credit', { p_credit_id: credit.id });
+                .rpc('admin_revoke_campaign_credit', { p_credit_id: credit.id });
             if (error) throw error;
             showToast('Credit revoked.', 'success');
             fetchCredits();
@@ -199,7 +201,7 @@ export default function AdCreditsTab({
 
         setIsBulkLoading(true);
         try {
-            const { error } = await supabase.schema('api').rpc('bulk_manage_ad_credits', {
+            const { error } = await supabase.schema('api').rpc('bulk_manage_campaign_credits', {
                 p_credit_ids: Array.from(selectedIds),
                 p_action: action,
                 p_params: params

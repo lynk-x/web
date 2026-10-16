@@ -30,7 +30,7 @@ export default function AdminCampaignDetailPage() {
                 // Fetch all campaign IDs to enable next/previous navigation
                 const { data: allCamps } = await supabase
                     .schema('api')
-                    .from('v1_ad_campaigns')
+                    .from('v1_campaigns')
                     .select('id, created_at')
                     .order('created_at', { ascending: false });
                 
@@ -38,10 +38,10 @@ export default function AdminCampaignDetailPage() {
                     setAllCampaigns(allCamps);
                 }
 
-                // Fetch campaign data from api.v1_ad_campaigns
+                // Fetch campaign data from api.v1_campaigns
                 const query = supabase
                     .schema('api')
-                    .from('v1_ad_campaigns')
+                    .from('v1_campaigns')
                     .select(`
                         id,
                         account_id,
@@ -87,14 +87,14 @@ export default function AdminCampaignDetailPage() {
                 // Fetch target countries/regions
                 const { data: regionsData } = await supabase
                     .schema('api')
-                    .from('v1_ad_campaign_regions')
+                    .from('v1_campaign_regions')
                     .select('country_code')
                     .eq('campaign_id', id);
 
                 // Fetch target tags
                 const { data: tagsData } = await supabase
                     .schema('api')
-                    .from('v1_ad_campaign_tags')
+                    .from('v1_campaign_tags')
                     .select('tag_id')
                     .eq('campaign_id', id);
 
@@ -111,7 +111,7 @@ export default function AdminCampaignDetailPage() {
                 // Fetch primary ad media
                 const { data: mediaData } = await supabase
                     .schema('api')
-                    .from('v1_ad_media')
+                    .from('v1_campaign_media')
                     .select('url, call_to_action, media_type, is_primary')
                     .eq('campaign_id', id);
 
@@ -155,7 +155,8 @@ export default function AdminCampaignDetailPage() {
     const handleStatusChange = async (campaignId: string, newStatus: string) => {
         try {
             const { error } = await supabase
-                .from('v1_ad_campaigns')
+                .schema('api')
+                .from('v1_campaigns')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('id', campaignId)
                 .eq('created_at', campaign?.createdAt);

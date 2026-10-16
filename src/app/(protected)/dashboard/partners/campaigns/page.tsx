@@ -40,7 +40,7 @@ export default function CampaignsPage() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_advertiser_campaigns', {
+            const { data, error } = await supabase.schema('api').rpc('get_campaigns', {
                 p_account_id: activeAccount.id,
                 p_params: {
                     search: searchTerm || null,

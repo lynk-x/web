@@ -231,7 +231,7 @@ export default function CreateCampaignForm({
     // Default the currency to the account's primary wallet once wallets
     // load, but only for a NEW campaign (isEditing campaigns already have
     // a real currency from initialData and it must never be overwritten —
-    // see the INSERT-only rule in upsert_advertiser_campaign).
+    // see the INSERT-only rule in upsert_campaign).
     useEffect(() => {
         if (isEditing || formData.currency || walletCurrencies.length === 0) return;
         const preferred = activeAccount?.wallet_currency;
@@ -307,7 +307,7 @@ export default function CreateCampaignForm({
         const fetchPricing = async () => {
             const { data, error } = await supabase
                 .schema('api')
-                .from('v1_ad_pricing_config')
+                .from('v1_pricing_config')
                 .select('interaction_type, base_price')
                 .eq('ad_type', formData.type);
 
@@ -780,7 +780,7 @@ export default function CreateCampaignForm({
             }));
 
             // 2. Submit to RPC for atomic persistence
-            const { data, error } = await supabase.schema('api').rpc('upsert_advertiser_campaign', {
+            const { data, error } = await supabase.schema('api').rpc('upsert_campaign', {
                 p_account_id: effectiveWalletAccountId,
                 p_campaign_id: isEditing ? formData.id : null,
                 p_created_at: formData.created_at || null,
@@ -816,7 +816,8 @@ export default function CreateCampaignForm({
                     );
                     if (vector && vector.length > 0) {
                         const { error: embedError } = await supabase
-                            .from('v1_ad_campaigns')
+                            .schema('api')
+                            .from('v1_campaigns')
                             .update({ embedding: vector })
                             .eq('id', campaignId);
                         if (embedError) {

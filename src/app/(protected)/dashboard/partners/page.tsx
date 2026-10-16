@@ -57,7 +57,7 @@ export default function PartnersDashboard() {
      */
     const loadBudgetUse = useCallback(async (accountId: string): Promise<BudgetUse[]> => {
         try {
-            const { data, error } = await supabase.schema('api').rpc('get_advertiser_campaigns', {
+            const { data, error } = await supabase.schema('api').rpc('get_campaigns', {
                 p_account_id: accountId,
                 p_params: { status: 'active', limit: 100, offset: 0 },
             });
@@ -81,7 +81,7 @@ export default function PartnersDashboard() {
             if (!activeAccount) return;
             setIsLoading(true);
             try {
-                const { data, error } = await supabase.schema('api').rpc('get_ads_dashboard_stats', { 
+                const { data, error } = await supabase.schema('api').rpc('get_campaign_stats', { 
                     p_account_id: activeAccount.id 
                 });
 

@@ -32,7 +32,8 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
             setIsLoading(true);
             
             let query = supabase
-                .from('v1_ad_campaigns')
+                .schema('api')
+                .from('v1_campaigns')
                 .select('*')
                 .eq('id', id)
                 .eq('account_id', activeAccount.id);
@@ -52,15 +53,18 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
             // Fetch related media, regions, and tags in parallel from api.v1_ views
             const [mediaRes, regionsRes, tagsRes] = await Promise.all([
                 supabase
-                    .from('v1_ad_media')
+                    .schema('api')
+                    .from('v1_campaign_media')
                     .select('call_to_action, url, is_primary, media_type')
                     .eq('campaign_id', id),
                 supabase
-                    .from('v1_ad_campaign_regions')
+                    .schema('api')
+                    .from('v1_campaign_regions')
                     .select('country_code')
                     .eq('campaign_id', id),
                 supabase
-                    .from('v1_ad_campaign_tags')
+                    .schema('api')
+                    .from('v1_campaign_tags')
                     .select('tag_id')
                     .eq('campaign_id', id)
             ]);

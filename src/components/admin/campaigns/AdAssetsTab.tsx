@@ -51,7 +51,7 @@ export default function AdAssetsTab() {
         try {
             const { data: mediaData, error: mediaError } = await supabase
                 .schema('api')
-                .from('v1_ad_media')
+                .from('v1_campaign_media')
                 .select('*')
                 .order('created_at', { ascending: false });
             if (mediaError) throw mediaError;
@@ -63,7 +63,7 @@ export default function AdAssetsTab() {
             if (campaignIds.length > 0) {
                 const { data: campaignData, error: campaignError } = await supabase
                     .schema('api')
-                    .from('v1_ad_campaigns')
+                    .from('v1_campaigns')
                     .select('id, title, type, status, reference')
                     .in('id', campaignIds);
                 if (campaignError) throw campaignError;

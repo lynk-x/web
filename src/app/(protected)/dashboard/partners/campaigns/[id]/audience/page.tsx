@@ -63,7 +63,7 @@ export default function CampaignAudiencePage() {
         setIsLoading(true);
         try {
             const [campRes, countryRes, demoRes] = await Promise.all([
-                supabase.schema('api').from('v1_ad_campaigns').select('title').eq('id', id).eq('account_id', activeAccount.id).maybeSingle(),
+                supabase.schema('api').from('v1_campaigns').select('title').eq('id', id).eq('account_id', activeAccount.id).maybeSingle(),
                 supabase.schema('api').rpc('get_campaign_audience_by_country', { p_account_id: activeAccount.id, p_campaign_id: id }),
                 supabase.schema('api').rpc('get_campaign_audience_by_demographic', { p_account_id: activeAccount.id, p_campaign_id: id }),
             ]);

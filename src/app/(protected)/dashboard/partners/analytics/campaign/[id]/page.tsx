@@ -29,7 +29,7 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
             // Get Campaign Title
             const { data: campaignData } = await supabase
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .select('title')
                 .eq('id', id)
                 .eq('account_id', activeAccount.id)
@@ -43,7 +43,7 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
             d.setDate(d.getDate() - 30);
             const startDate = d.toISOString().split('T')[0];
 
-            const { data, error } = await supabase.schema('api').rpc('get_ads_performance_metrics', {
+            const { data, error } = await supabase.schema('api').rpc('get_campaign_performance_metrics', {
                 p_account_id: activeAccount.id,
                 p_start_date: startDate,
                 p_end_date: endDate,

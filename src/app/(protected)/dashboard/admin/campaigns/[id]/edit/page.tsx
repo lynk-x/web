@@ -31,7 +31,8 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
         const fetchCampaign = async () => {
             setIsLoading(true);
             let query = supabase
-                .from('v1_ad_campaigns')
+                .schema('api')
+                .from('v1_campaigns')
                 .select('*')
                 .eq('id', id);
 
@@ -50,15 +51,18 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
             // Fetch related media, regions, and tags in parallel from api.v1_ views
             const [mediaRes, regionsRes, tagsRes] = await Promise.all([
                 supabase
-                    .from('v1_ad_media')
+                    .schema('api')
+                    .from('v1_campaign_media')
                     .select('call_to_action, url, is_primary, media_type')
                     .eq('campaign_id', id),
                 supabase
-                    .from('v1_ad_campaign_regions')
+                    .schema('api')
+                    .from('v1_campaign_regions')
                     .select('country_code')
                     .eq('campaign_id', id),
                 supabase
-                    .from('v1_ad_campaign_tags')
+                    .schema('api')
+                    .from('v1_campaign_tags')
                     .select('tag_id')
                     .eq('campaign_id', id)
             ]);
@@ -159,7 +163,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
             }));
 
             // 2. Submit to RPC for atomic persistence
-            const { data, error } = await supabase.schema('api').rpc('upsert_advertiser_campaign', {
+            const { data, error } = await supabase.schema('api').rpc('upsert_campaign', {
                 p_account_id: formData.account_id,
                 p_campaign_id: formData.id || null,
                 p_created_at: formData.created_at || null,
@@ -193,7 +197,8 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                     );
                     if (vector && vector.length > 0) {
                         const { error: embedError } = await supabase
-                            .from('v1_ad_campaigns')
+                            .schema('api')
+                            .from('v1_campaigns')
                             .update({ embedding: vector })
                             .eq('id', campaignId);
                         if (embedError) {

@@ -40,7 +40,7 @@ export default function CampaignSpendHistoryPage() {
         setIsLoading(true);
         try {
             const [campRes, spendRes] = await Promise.all([
-                supabase.schema('api').from('v1_ad_campaigns').select('title').eq('id', id).eq('account_id', activeAccount.id).maybeSingle(),
+                supabase.schema('api').from('v1_campaigns').select('title').eq('id', id).eq('account_id', activeAccount.id).maybeSingle(),
                 supabase.schema('api').rpc('get_campaign_billing_history', { p_account_id: activeAccount.id, p_campaign_id: id }),
             ]);
 

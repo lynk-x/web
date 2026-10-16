@@ -1,8 +1,8 @@
 /**
- * Ads repository — wraps queries against:
- *   ad_campaigns, ad_media, ad_campaign_regions, campaign_tags, ad_analytics
+ * Campaigns repository — wraps queries against:
+ *   api.v1_campaigns, api.v1_campaign_media, api.v1_campaign_regions, api.v1_campaign_tags
  *
- * Used by advertiser dashboard campaign management and admin ads panel.
+ * Used by partner dashboard campaign management, event sponsorships, and admin campaign review.
  */
 
 import type { DbClient, ListOptions, RepoResult, RepoListResult } from './types';
@@ -71,7 +71,7 @@ export function createAdsRepository(client: DbClient) {
             const selectOpts = opts?.withCount ? { count: 'exact' as const } : undefined;
             let query = client
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .select(
                     'id, account_id, title, description, type, status, start_at, end_at, total_budget, daily_limit, spent_amount, destination_url, target_event_id, target_country_code, total_impressions, total_clicks, reference, created_at',
                     selectOpts
@@ -91,7 +91,7 @@ export function createAdsRepository(client: DbClient) {
         async findById(campaignId: string): Promise<RepoResult<AdCampaign | null>> {
             const { data, error } = await client
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .select('*')
                 .eq('id', campaignId)
                 .maybeSingle();
@@ -100,7 +100,7 @@ export function createAdsRepository(client: DbClient) {
             return { data: data as AdCampaign | null, error: null };
         },
 
-        /** Create a new ad campaign. `description` is NOT NULL in the DB. */
+        /** Create a new campaign. `description` is NOT NULL in the DB. */
         async create(params: {
             accountId: string;
             title: string;
@@ -116,7 +116,7 @@ export function createAdsRepository(client: DbClient) {
         }): Promise<RepoResult<AdCampaign>> {
             const { data, error } = await client
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .insert({
                     account_id: params.accountId,
                     title: params.title,
@@ -142,7 +142,7 @@ export function createAdsRepository(client: DbClient) {
         async update(campaignId: string, fields: Partial<Pick<AdCampaign, 'title' | 'description' | 'start_at' | 'end_at' | 'total_budget' | 'daily_limit' | 'destination_url' | 'target_event_id' | 'target_country_code'>>): Promise<RepoResult<AdCampaign>> {
             const { data, error } = await client
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .update(fields)
                 .eq('id', campaignId)
                 .select()
@@ -158,7 +158,7 @@ export function createAdsRepository(client: DbClient) {
         async updateStatus(campaignId: string, status: CampaignStatus): Promise<RepoResult<null>> {
             const { error } = await client
                 .schema('api')
-                .from('v1_ad_campaigns')
+                .from('v1_campaigns')
                 .update({ status })
                 .eq('id', campaignId);
 
@@ -170,7 +170,7 @@ export function createAdsRepository(client: DbClient) {
         async getMedia(campaignId: string): Promise<RepoResult<AdMedia[]>> {
             const { data, error } = await client
                 .schema('api')
-                .from('v1_ad_media')
+                .from('v1_campaign_media')
                 .select('id, campaign_id, media_type, url, call_to_action, is_primary, is_hidden, metadata, impressions_count, clicks_count, created_at')
                 .eq('campaign_id', campaignId)
                 .eq('is_hidden', false)
@@ -184,7 +184,7 @@ export function createAdsRepository(client: DbClient) {
         async getRegions(campaignId: string): Promise<RepoResult<AdCampaignRegion[]>> {
             const { data, error } = await client
                 .schema('api')
-                .from('v1_ad_campaign_regions')
+                .from('v1_campaign_regions')
                 .select('campaign_id, country_code, bid_modifier')
                 .eq('campaign_id', campaignId);
 
@@ -206,17 +206,17 @@ export function createAdsRepository(client: DbClient) {
         },
 
         /**
-         * Log an ad interaction or click. Wraps `log_ad_interaction` RPC, which verifies the
-         * HMAC-signed serve token (from the matched ad's `metadata.serve_token`) and pushes the
+         * Log a campaign interaction or click. Wraps `log_interaction` RPC, which verifies the
+         * HMAC-signed serve token (from the matched campaign's `metadata.serve_token`) and pushes the
          * interaction onto the `ad_interactions` PGMQ queue for async billing.
          * Requires an authenticated session; the RPC rejects anon callers.
          */
         async logInteraction(params: {
-            /** `metadata.serve_token` from the ad returned by `match_ad_campaigns`. */
+            /** `metadata.serve_token` from the campaign returned by `match_campaigns`. */
             serveToken: string;
             interactionType: 'impression' | 'click' | 'video_view_10' | 'visit_verified';
         }): Promise<RepoResult<null>> {
-            const { error } = await client.schema('api').rpc('log_ad_interaction', {
+            const { error } = await client.schema('api').rpc('log_interaction', {
                 p_serve_token: params.serveToken,
                 p_interaction_type: params.interactionType,
             });
