@@ -74,7 +74,7 @@ const Sidebar = () => {
             <div className={styles.modeContextSection}>
                 <span className={styles.modeContextLabel}>
                     {mode === 'admin' ? 'Admin Dashboard' : 
-                     mode === 'partners' ? 'Partner Dashboard' : 
+                     mode === 'commercial' ? 'Commercial Dashboard' : 
                      mode === 'pulse' ? 'Pulse Dashboard' :
                      mode === 'system' ? 'System Control' :
                      'Events Dashboard'}

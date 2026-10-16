@@ -8,9 +8,9 @@ import type { DashboardMode } from '@/types/shared';
  */
 export const MOBILE_DASHBOARD_ENABLED = false;
 
-/** True when [mode] gets the mobile shell below 1024 px. Only the events and partners workspaces have one. */
+/** True when [mode] gets the mobile shell below 1024 px. Only the events and commercial workspaces have one. */
 export function usesMobileShell(mode: DashboardMode): boolean {
-    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'partners');
+    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'commercial');
 }
 
 /**
@@ -21,15 +21,15 @@ export function usesMobileShell(mode: DashboardMode): boolean {
  */
 export const MOBILE_READY_PATHS: readonly string[] = [
     '/dashboard/organize', // overview
-    '/dashboard/partners', // overview
+    '/dashboard/commercial', // overview
     '/dashboard/organize/events', // events list
-    '/dashboard/partners/campaigns', // campaigns list
+    '/dashboard/commercial/campaigns', // campaigns list
     '/dashboard/organize/revenue', // revenue and payouts
-    '/dashboard/partners/finance', // finance and partner spend
+    '/dashboard/commercial/finance', // finance and commercial spend
     '/dashboard/organize/settings', // organizer settings
-    '/dashboard/partners/settings', // partner settings
+    '/dashboard/commercial/settings', // commercial settings
     '/dashboard/organize/analytics', // organizer analytics
-    '/dashboard/partners/analytics', // partner analytics
+    '/dashboard/commercial/analytics', // commercial analytics
 ];
 
 /**
@@ -39,7 +39,7 @@ export const MOBILE_READY_PATHS: readonly string[] = [
 const MOBILE_READY_PATTERNS: readonly RegExp[] = [
     /^\/dashboard\/organize\/events\/(?!create$)[^/]+(\/(tiers|attendees|check-ins|promo-codes|refunds|waitlist))?$/,
     /^\/dashboard\/organize\/analytics\/event\/[^/]+$/,
-    /^\/dashboard\/partners\/analytics\/campaign\/[^/]+$/,
+    /^\/dashboard\/commercial\/analytics\/campaign\/[^/]+$/,
 ];
 
 /** True when [pathname] has been redesigned for small screens. */

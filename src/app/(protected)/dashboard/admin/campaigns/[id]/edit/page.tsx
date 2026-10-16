@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import CreateCampaignForm, { CampaignData } from '@/components/partners/campaigns/CreateCampaignForm';
+import CreateCampaignForm, { CampaignData } from '@/components/commercial/campaigns/CreateCampaignForm';
 import styles from '../../page.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';

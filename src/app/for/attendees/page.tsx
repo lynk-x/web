@@ -41,7 +41,7 @@ export default function AttendeesLandingPage() {
                         <SlotCounterText text="Every Event. Every Connection." delay={0.5} />
                     </motion.h1>
                     <motion.p className={styles.subtitle} variants={fadeInUp}>
-                        Discover the events you love and the communities that make them special. Security, discovery and community—all in one place.
+                        Discover the events you love and the communities that make them special. From ticket to the connection to the community — all in one place.
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/" className={styles.btnPrimary}>Browse Events</Link>

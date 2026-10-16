@@ -41,7 +41,7 @@ export default function OrganizersLandingPage() {
                         <SlotCounterText text="Dominate the Event Lifecycle" delay={0.5} />
                     </motion.h1>
                     <motion.p className={styles.subtitle} variants={fadeInUp}>
-                        The all-in-one platform designed for organizers who care about meaningful engagement. Secure ticketing, verified payouts and a thriving social ecosystem.
+                        The all-in-one platform designed for organizers who care about meaningful engagement. Give your event a forum alongside your ticketing.
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Start Hosting Free</Link>

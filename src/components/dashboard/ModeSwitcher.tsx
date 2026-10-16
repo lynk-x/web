@@ -24,7 +24,7 @@ interface ModeSwitcherProps {
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ mode, onModeChange }) => {
     const modes: { key: DashboardMode; label: string }[] = [
         { key: 'events', label: 'Events' },
-        { key: 'partners', label: 'Partners' },
+        { key: 'commercial', label: 'Commercial' },
         { key: 'admin', label: 'Admin' },
     ];
 

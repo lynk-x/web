@@ -1,0 +1,345 @@
+"use client";
+import { getErrorMessage } from '@/utils/error';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
+import PageHeader from '@/components/dashboard/PageHeader';
+import FilterChips from '@/components/shared/FilterChips';
+import CampaignTable, { Campaign } from '@/components/commercial/campaigns/CampaignTable';
+import TableToolbar from '@/components/shared/TableToolbar';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
+import type { BulkAction } from '@/components/shared/BulkActionsBar';
+import { useToast } from '@/components/ui/Toast';
+import { useOrganization } from '@/context/OrganizationContext';
+import { createClient } from '@/utils/supabase/client';
+import ProductTour from '@/components/dashboard/ProductTour';
+import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
+import { usePagination } from '@/hooks/usePagination';
+import { useCreateHandoff } from '@/components/dashboard/CreateHandoffModal';
+
+/**
+ * Commercial campaigns overview page.
+ * Lists, filters and manages advertising or sponsorship campaigns for the active organization.
+ */
+export default function CampaignsPage() {
+    const createHandoff = useCreateHandoff('/dashboard/commercial/campaigns/create', 'campaign');
+    const { showToast } = useToast();
+    const { activeAccount, isLoading: isOrgLoading } = useOrganization();
+    const supabase = useMemo(() => createClient(), []);
+
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const itemsPerPage = useResponsivePageSize();
+
+    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
+
+    const fetchCampaigns = useCallback(async () => {
+        if (!activeAccount) return;
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.schema('api').rpc('get_campaigns', {
+                p_account_id: activeAccount.id,
+                p_params: {
+                    search: searchTerm || null,
+                    status: statusFilter === 'all' ? null : statusFilter,
+                    limit: itemsPerPage,
+                    offset: (currentPage - 1) * itemsPerPage
+                }
+            });
+
+            if (error) throw error;
+
+            interface CampaignItem {
+                id: string;
+                created_at: string;
+                title: string;
+                type: string;
+                start_at: string;
+                end_at: string | null;
+                status: Campaign['status'];
+                total_budget: number;
+                spent_amount: number;
+                currency: string;
+                destination_url: string | null;
+                target_tags: string[];
+                target_regions: string[];
+            }
+
+            const formatted: Campaign[] = (data.items || []).map((c: CampaignItem) => ({
+                id: c.id,
+                created_at: c.created_at,
+                title: c.title,
+                type: c.type,
+                start_at: c.start_at,
+                end_at: c.end_at,
+                status: c.status,
+                total_budget: Number(c.total_budget),
+                spent_amount: Number(c.spent_amount),
+                currency: c.currency || 'USD',
+                destination_url: c.destination_url || '',
+                target_tags: c.target_tags,
+                target_regions: c.target_regions
+            }));
+            setCampaigns(formatted);
+            setTotalCount(data.total || 0);
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to sync your campaigns.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeAccount, supabase, showToast, currentPage, itemsPerPage, searchTerm, statusFilter, setTotalCount]);
+
+    useEffect(() => {
+        if (!isOrgLoading && activeAccount) {
+            fetchCampaigns();
+        }
+    }, [isOrgLoading, activeAccount, fetchCampaigns]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedIds(new Set());
+    }, [searchTerm, statusFilter, setCurrentPage]);
+
+    // Selection Logic
+    const handleSelect = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) newSelected.delete(id);
+        else newSelected.add(id);
+        setSelectedIds(newSelected);
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.size === campaigns.length) {
+            setSelectedIds(new Set());
+        } else {
+            const newSelected = new Set(selectedIds);
+            campaigns.forEach(c => newSelected.add(c.id));
+            setSelectedIds(newSelected);
+        }
+    };
+
+    const handleBulkPause = async () => {
+        if (!activeAccount || selectedIds.size === 0) return;
+        showToast(`Pausing ${selectedIds.size} campaigns...`, 'info');
+        try {
+            const selectedCampaigns = campaigns
+                .filter(c => selectedIds.has(c.id))
+                .map(c => ({ id: c.id, created_at: c.created_at }));
+
+            const { error } = await supabase.schema('api').rpc('bulk_toggle_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: selectedCampaigns,
+                p_status: 'paused'
+            });
+
+            if (error) throw error;
+            showToast('Selected campaigns paused.', 'success');
+            setSelectedIds(new Set());
+            fetchCampaigns();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to pause campaigns', 'error');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!activeAccount || selectedIds.size === 0) return;
+        showToast(`Deleting ${selectedIds.size} campaigns...`, 'info');
+        try {
+            const selectedCampaigns = campaigns
+                .filter(c => selectedIds.has(c.id))
+                .map(c => ({ id: c.id, created_at: c.created_at }));
+
+            const { error } = await supabase.schema('api').rpc('bulk_delete_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: selectedCampaigns
+            });
+
+            if (error) throw error;
+            showToast(`Successfully archived ${selectedIds.size} campaigns.`, 'success');
+            setSelectedIds(new Set());
+            fetchCampaigns();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Failed to delete campaigns', 'error');
+        }
+    };
+
+    const handleDuplicate = async (id: string) => {
+        if (!activeAccount) return;
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+
+        showToast('Cloning campaign...', 'info');
+        try {
+            const { error } = await supabase.schema('api').rpc('bulk_duplicate_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }]
+            });
+            if (error) throw error;
+            showToast('Campaign duplicated to draft.', 'success');
+            fetchCampaigns();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Duplication failed', 'error');
+        }
+    };
+
+    const handleBulkDuplicate = async () => {
+        if (!activeAccount || selectedIds.size === 0) return;
+        showToast(`Cloning ${selectedIds.size} campaigns...`, 'info');
+        try {
+            const selectedCampaigns = campaigns
+                .filter(c => selectedIds.has(c.id))
+                .map(c => ({ id: c.id, created_at: c.created_at }));
+
+            const { data, error } = await supabase.schema('api').rpc('bulk_duplicate_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: selectedCampaigns
+            });
+            if (error) throw error;
+            showToast(`Batch duplication complete: ${data.processed_count} campaigns added to drafts.`, 'success');
+            setSelectedIds(new Set());
+            fetchCampaigns();
+        } catch (error: unknown) {
+            showToast(getErrorMessage(error) || 'Bulk duplication failed', 'error');
+        }
+    };
+
+    const bulkActions: BulkAction[] = [
+        { label: 'Duplicate Selected', onClick: handleBulkDuplicate },
+        { label: 'Pause Selected', onClick: handleBulkPause },
+        { label: 'Delete Selected', onClick: handleBulkDelete, variant: 'danger' }
+    ];
+
+    /** Single-row status change (pause or resume/launch). */
+    const handleStatusChange = async (id: string, newStatus: 'active' | 'paused') => {
+        if (!activeAccount) return;
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+
+        const label = newStatus === 'paused' ? 'Pausing' : 'Activating';
+        showToast(`${label} campaign...`, 'info');
+        try {
+            const { error } = await supabase.schema('api').rpc('bulk_toggle_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }],
+                p_status: newStatus
+            });
+            if (error) throw error;
+            showToast(`Campaign ${newStatus === 'paused' ? 'paused' : 'is now active'}.`, newStatus === 'paused' ? 'warning' : 'success');
+            fetchCampaigns();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to update campaign status.', 'error');
+        }
+    };
+
+    /** Single-row delete. */
+    const handleSingleDelete = async (id: string, title: string) => {
+        if (!activeAccount) return;
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+
+        showToast(`Archiving "${title}"...`, 'info');
+        try {
+            const { error } = await supabase.schema('api').rpc('bulk_delete_campaigns', {
+                p_account_id: activeAccount.id,
+                p_campaigns: [{ id: campaign.id, created_at: campaign.created_at }]
+            });
+            if (error) throw error;
+            showToast(`"${title}" archived.`, 'success');
+            fetchCampaigns();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to delete campaign.', 'error');
+        }
+    };
+
+    return (
+        <div className={sharedStyles.container}>
+            <PageHeader
+                title="Campaigns"
+                subtitle="Track and optimize your active campaigns and sponsorships."
+                actionLabel="Create Campaign"
+                onActionClick={createHandoff.open}
+                actionIcon={
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                }
+            />
+
+            {createHandoff.modal}
+
+            <div className="tour-campaigns-filter">
+                <TableToolbar
+                    searchPlaceholder="Search campaigns..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+            >
+<FilterChips
+                     options={[
+                         { value: 'all', label: 'All' },
+                         { value: 'active', label: 'Active' },
+                         { value: 'pending_approval', label: 'Pending' },
+                         { value: 'paused', label: 'Paused' },
+                         { value: 'draft', label: 'Draft' },
+                         { value: 'completed', label: 'Completed' },
+                         { value: 'rejected', label: 'Rejected' },
+                         { value: 'scheduled', label: 'Scheduled' },
+                     ]}
+                     currentValue={statusFilter}
+                     onChange={setStatusFilter}
+                 />
+                </TableToolbar>
+            </div>
+
+            <div style={{ marginTop: '20px' }} className="tour-campaigns-table">
+                <BulkActionsBar
+                    selectedCount={selectedIds.size}
+                    actions={bulkActions}
+                    onCancel={() => setSelectedIds(new Set())}
+                    itemTypeLabel="campaigns"
+                />
+
+                <div className="tour-campaigns-list">
+                    <CampaignTable
+                        campaigns={campaigns}
+                        selectedIds={selectedIds}
+                        onSelect={handleSelect}
+                        onSelectAll={handleSelectAll}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleSingleDelete}
+                        onDuplicate={handleDuplicate}
+                    />
+                </div>
+            </div>
+
+            <ProductTour
+                storageKey={activeAccount ? `hasSeenCampaignsJoyride_${activeAccount.id}` : 'hasSeenCampaignsJoyride_guest'}
+                steps={[
+                    {
+                        target: 'body',
+                        placement: 'center',
+                        title: 'Your Campaigns',
+                        content: 'Every campaign you create lives here. Monitor budget utilization, campaign status and delivery schedules — and take action on individual campaigns from this centralized list.',
+                        skipBeacon: true,
+                    },
+                    {
+                        target: '.tour-campaigns-filter',
+                        title: 'Filter by Status',
+                        content: 'Use these chips to narrow your view to Active, Paused, Under Review or Completed campaigns. Combine with the search bar to find specific campaigns instantly.',
+                    },
+                    {
+                        target: '.tour-campaigns-table',
+                        title: 'Campaign Summary',
+                        content: 'Each row shows remaining budget, total spend, delivery status and creation date. Click a campaign row to open the full performance dashboard for that campaign.',
+                    },
+                ]}
+            />
+        </div>
+    );
+}

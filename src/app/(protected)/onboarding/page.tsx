@@ -60,10 +60,9 @@ function OnboardingFlow() {
     const { profile, isLoading: isLoadingAuth } = useAuth();
     const { countries, isLoading: isLoadingCountries } = useCountries();
 
-    // Query params support ?type=partner|partners|organizer and ?create=true (adding a new workspace)
+    // Query params support ?type=commercial|organizer and ?create=true (adding a new workspace)
     const rawType = searchParams.get('type');
-    const isPartnerParam = rawType === 'partner' || rawType === 'partners';
-    const resolvedAccountType: AccountType = isPartnerParam ? 'advertiser' : 'organizer';
+    const resolvedAccountType: AccountType = rawType === 'commercial' ? 'advertiser' : 'organizer';
     const isCreatingNew = searchParams.get('create') === 'true';
 
     const draft = typeof window !== 'undefined' ? loadDraft(resolvedAccountType) : null;
@@ -99,7 +98,7 @@ function OnboardingFlow() {
         // If they already have an account of this type, redirect to its dashboard
         const existingAccount = existingAccounts.find(a => a.type === accountType);
         if (existingAccount) {
-            const dashType = accountType === 'advertiser' ? 'partners' : 'organize';
+            const dashType = accountType === 'advertiser' ? 'commercial' : 'organize';
             router.push(`/dashboard/${dashType}`);
         }
     }, [isCreatingNew, existingAccounts, accountType, router, isLoadingAuth]);
@@ -242,7 +241,7 @@ function OnboardingFlow() {
             // Redirect to the dashboard for the new account type. A client-side
             // push (not a full reload) since refreshAccounts() above already
             // re-hydrated OrganizationContext with the new membership.
-            const dashType = accountType === 'advertiser' ? 'partners' : 'organize';
+            const dashType = accountType === 'advertiser' ? 'commercial' : 'organize';
             router.push(`/dashboard/${dashType}`);
         } catch (err: unknown) {
             console.error('Error creating organization:', err);

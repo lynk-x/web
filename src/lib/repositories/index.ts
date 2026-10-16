@@ -15,6 +15,7 @@
 export { createUsersRepository } from './users.repository';
 export { createAccountsRepository } from './accounts.repository';
 export { createEventsRepository } from './events.repository';
+export type { EventRow, TicketTier } from './events.repository';
 export { createTicketsRepository } from './tickets.repository';
 export { createFinanceRepository } from './finance.repository';
 export { createAdsRepository } from './ads.repository';
@@ -22,6 +23,16 @@ export { createForumRepository } from './forum.repository';
 export { createNotificationsRepository } from './notifications.repository';
 export { createReferenceRepository } from './reference.repository';
 export { createSupportRepository } from './support.repository';
+export { createSponsorshipsRepository } from './sponsorships.repository';
+export type {
+    SponsorshipOverview,
+    SponsorshipKPIs,
+    SponsorshipTierItem,
+    SponsorshipRosterItem,
+    SponsorshipInviteItem,
+    SponsorshipPerks,
+    ValuationResult,
+} from './sponsorships.repository';
 
 export type { DbClient, RepoResult, RepoListResult, RepoError, ListOptions } from './types';
 export { isNotFound, isPermissionDenied, isUniqueViolation } from './types';

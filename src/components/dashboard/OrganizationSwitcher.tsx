@@ -10,7 +10,7 @@ import type { DashboardMode } from '@/types/shared';
 /** Label shown under the account name in the compact (mobile top bar) variant: which workspace is open. */
 const MODE_LABEL: Record<DashboardMode, string> = {
     events: 'Events',
-    partners: 'Partners',
+    commercial: 'Commercial',
     pulse: 'Pulse',
     admin: 'Admin',
     system: 'System',
@@ -39,7 +39,7 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
     const [currentMode, setCurrentMode] = useState<DashboardMode>('events');
     useEffect(() => {
         if (pathname.startsWith('/dashboard/admin')) setCurrentMode('admin');
-        else if (pathname.startsWith('/dashboard/partners') || pathname.startsWith('/dashboard/ads')) setCurrentMode('partners');
+        else if (pathname.startsWith('/dashboard/commercial')) setCurrentMode('commercial');
         else if (pathname.startsWith('/dashboard/pulse')) setCurrentMode('pulse');
         else if (pathname.startsWith('/dashboard/system')) setCurrentMode('system');
         else setCurrentMode('events');
@@ -119,7 +119,7 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
                                 return true;
                             })
                             .filter(a => {
-                                if (filterMode === 'partners') return a.type === 'advertiser';
+                                if (filterMode === 'commercial') return a.type === 'advertiser';
                                 if (filterMode === 'system') return a.type === 'platform' || a.type === 'system';
                                 if (filterMode === 'events') return a.type === 'organizer' || a.type === 'platform' || a.type === 'system';
                                 return true; // Show all for admin or others
@@ -133,7 +133,7 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
                                     setIsOpen(false);
                                     // Ensure we go to the correct root if switching types
                                     if (account.type === 'advertiser') {
-                                        router.push('/dashboard/partners');
+                                        router.push('/dashboard/commercial');
                                     } else if (account.type === 'pulse_user') {
                                         router.push('/dashboard/pulse');
                                     } else if (account.type === 'platform' || account.type === 'system') {

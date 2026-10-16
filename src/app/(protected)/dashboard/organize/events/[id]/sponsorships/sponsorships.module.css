@@ -1,0 +1,241 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.kpiCard {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpiCard:hover {
+    border-color: rgba(32, 249, 40, 0.3);
+}
+
+.kpiHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kpiLabel {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+}
+
+.kpiValue {
+    font-size: 28px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 4px 0 2px 0;
+}
+
+.kpiSubtext {
+    font-size: 13px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.55;
+}
+
+/* Progress bar for slot utilization and inventory */
+.progressTrack {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--color-brand-primary);
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease;
+}
+
+.progressFillWarning {
+    background: #ffab00;
+}
+
+.progressFillFull {
+    background: var(--color-interface-error);
+}
+
+/* Perk tags on tier cards */
+.perksList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.perkBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    color: var(--color-utility-primaryText);
+    opacity: 0.85;
+}
+
+/* Sub-nav tabs */
+.tabBar {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--color-interface-outline);
+    padding-bottom: 1px;
+    margin-bottom: var(--spacing-md);
+}
+
+.tabItem {
+    background: transparent;
+    border: none;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+    opacity: 0.6;
+    cursor: pointer;
+    position: relative;
+    transition: opacity 0.2s, color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tabItem:hover {
+    opacity: 0.9;
+}
+
+.tabActive {
+    opacity: 1;
+    color: var(--color-brand-primary);
+}
+
+.tabActive::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-brand-primary);
+    border-radius: 2px 2px 0 0;
+}
+
+.tabBadge {
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-utility-primaryText);
+}
+
+.tabActive .tabBadge {
+    background: rgba(32, 249, 40, 0.15);
+    color: var(--color-brand-primary);
+}
+
+/* Tiers Grid View */
+.tiersGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.tierCard {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    transition: border-color 0.2s;
+}
+
+.tierCard:hover {
+    border-color: rgba(32, 249, 40, 0.3);
+}
+
+.tierHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.tierRank {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--color-brand-primary);
+    margin-bottom: 2px;
+}
+
+.tierTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin: 0;
+}
+
+.tierPrice {
+    font-size: 22px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+    margin-top: 6px;
+}
+
+.tierSlotLabel {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--color-utility-primaryText);
+    opacity: 0.7;
+    margin-bottom: 4px;
+}
+
+/* Action button inside table cells */
+.actionBtn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-utility-primaryText);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.actionBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--color-brand-primary);
+    color: #fff;
+}

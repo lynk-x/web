@@ -6,13 +6,13 @@ import {
     ENABLE_REAL_ECOSYSTEM_LOGOS,
     REAL_ECOSYSTEM_LOGOS,
     ORGANIZER_CATEGORIES,
-    PARTNER_CATEGORIES,
+    COMMERCIAL_CATEGORIES,
     ATTENDEE_CATEGORIES,
     VerticalCategory,
 } from '@/data/ecosystem';
 
 export interface EcosystemTickerProps {
-    variant: 'organizers' | 'partners' | 'attendees';
+    variant: 'organizers' | 'commercial' | 'attendees';
 }
 
 /**
@@ -67,8 +67,8 @@ export default function EcosystemTicker({ variant }: EcosystemTickerProps) {
         case 'organizers':
             categories = ORGANIZER_CATEGORIES;
             break;
-        case 'partners':
-            categories = PARTNER_CATEGORIES;
+        case 'commercial':
+            categories = COMMERCIAL_CATEGORIES;
             break;
         case 'attendees':
             categories = ATTENDEE_CATEGORIES;

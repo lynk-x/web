@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AccountSearchInput } from '@/components/shared/AccountSearchInput';
 import { useOrganization } from '@/context/OrganizationContext';
-import CreateCampaignForm from '@/components/partners/campaigns/CreateCampaignForm';
+import CreateCampaignForm from '@/components/commercial/campaigns/CreateCampaignForm';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 /**

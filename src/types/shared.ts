@@ -8,7 +8,7 @@
 import type React from 'react';
 
 /** The dashboard modes the sidebar can display. */
-export type DashboardMode = 'events' | 'partners' | 'pulse' | 'admin' | 'system';
+export type DashboardMode = 'events' | 'commercial' | 'pulse' | 'admin' | 'system';
 
 
 /** Available badge colour variants. */

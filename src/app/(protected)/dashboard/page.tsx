@@ -19,16 +19,15 @@ function DashboardRoot() {
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
-    // Query params support ?type=partner|partners|organizer
+    // Query params support ?type=commercial|organizer
     const rawType = searchParams.get('type');
-    const isPartnerParam = rawType === 'partner' || rawType === 'partners';
-    const normalizedType: 'organizer' | 'advertiser' | null = isPartnerParam
+    const normalizedType: 'organizer' | 'advertiser' | null = rawType === 'commercial'
         ? 'advertiser'
         : rawType === 'organizer'
             ? 'organizer'
             : null;
 
-    // Non-attendee accounts, optionally filtered by typeParam. Organizer/partner/
+    // Non-attendee accounts, optionally filtered by typeParam. Organizer/commercial/
     // pulse_user accounts use an open-ended, admin-configurable role-builder (role_slug
     // is plain text, not a fixed enum), so any membership role counts as a real
     // workspace — `allAccounts` is already scoped to genuine memberships. Platform/
@@ -54,7 +53,7 @@ function DashboardRoot() {
             : account.type === 'pulse_user'
                 ? '/dashboard/pulse'
                 : account.type === 'advertiser'
-                    ? '/dashboard/partners'
+                    ? '/dashboard/commercial'
                     : '/dashboard/organize';
 
         if (!isProfileComplete) {
@@ -112,8 +111,8 @@ function DashboardRoot() {
         );
     }
 
-    const typeLabel = isPartnerParam ? 'Partner Center' : normalizedType === 'organizer' ? 'Organizer' : null;
-    const createUrl = isPartnerParam ? '/onboarding?type=partner' : normalizedType ? `/onboarding?type=${normalizedType}` : '/onboarding';
+    const typeLabel = normalizedType === 'advertiser' ? 'Commercial Center' : normalizedType === 'organizer' ? 'Organizer' : null;
+    const createUrl = normalizedType === 'advertiser' ? '/onboarding?type=commercial' : normalizedType === 'organizer' ? '/onboarding?type=organizer' : '/onboarding';
 
     if (displayAccounts.length > 0) {
         return (
