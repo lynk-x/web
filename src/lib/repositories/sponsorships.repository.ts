@@ -116,6 +116,81 @@ export interface CreateInviteParams {
     metadata?: Record<string, unknown>;
 }
 
+export interface ClaimInviteEvent {
+    id: string;
+    reference: string;
+    title: string;
+    description: string;
+    starts_at: string;
+    ends_at: string;
+    location?: {
+        venue?: string;
+        address?: string;
+        [key: string]: unknown;
+    };
+    media?: {
+        hero?: string;
+        poster?: string;
+        thumbnail?: string;
+        [key: string]: unknown;
+    };
+    is_online: boolean;
+    total_capacity: number;
+    organizer_name: string;
+    organizer_logo?: string;
+}
+
+export interface ClaimInviteTier {
+    id: string;
+    name: string;
+    rank: number;
+    catalog_price: number;
+    currency: string;
+    max_slots: number;
+    claimed_slots: number;
+    available_slots: number;
+    perks: SponsorshipPerks;
+    is_active: boolean;
+}
+
+export interface ClaimInviteData {
+    found: boolean;
+    message?: string;
+    id: string;
+    invite_token: string;
+    company_name: string;
+    invitee_name: string | null;
+    invitee_email: string;
+    status: 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked';
+    is_expired: boolean;
+    expires_at: string;
+    custom_price: number | null;
+    effective_price: number;
+    currency: string;
+    event: ClaimInviteEvent;
+    tier: ClaimInviteTier;
+    metadata?: Record<string, unknown>;
+}
+
+export interface AcceptInviteParams {
+    inviteToken: string;
+    accountId: string;
+    campaignTitle?: string;
+    destinationUrl?: string;
+}
+
+export interface AcceptInviteResult {
+    success: boolean;
+    invite_id: string;
+    campaign_id: string;
+    campaign_reference: string;
+    status: string;
+    event_id: string;
+    tier_name: string;
+    total_budget: number;
+    currency: string;
+}
+
 export function createSponsorshipsRepository(client: DbClient) {
     return {
         /**
@@ -258,6 +333,55 @@ export function createSponsorshipsRepository(client: DbClient) {
                 .rpc('revoke_sponsorship_invite', {
                     p_event_id: eventId,
                     p_invite_id: inviteId,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: Boolean(data), error: null };
+        },
+
+        /**
+         * Lookup public sponsorship invitation details using an unguessable 128-bit hex token ([P7]).
+         * Callable publicly by prospective corporate sponsors without prior session authentication.
+         */
+        async getInviteByToken(token: string): Promise<RepoResult<ClaimInviteData>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('get_sponsorship_invite_by_token', {
+                    p_invite_token: token,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as ClaimInviteData, error: null };
+        },
+
+        /**
+         * Accept a direct sponsorship invitation and atomically provision an advertising campaign ([P7]).
+         * Requires authenticated sponsor user who manages the target business account.
+         */
+        async acceptInvite(params: AcceptInviteParams): Promise<RepoResult<AcceptInviteResult>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('accept_sponsorship_invite', {
+                    p_invite_token: params.inviteToken,
+                    p_account_id: params.accountId,
+                    p_campaign_title: params.campaignTitle ?? null,
+                    p_destination_url: params.destinationUrl ?? null,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as AcceptInviteResult, error: null };
+        },
+
+        /**
+         * Decline a pending direct sponsorship invitation with optional sponsor feedback ([P7]).
+         * Updates invite record to declined status and persists reason in audit metadata.
+         */
+        async declineInvite(token: string, reason?: string): Promise<RepoResult<boolean>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('decline_sponsorship_invite', {
+                    p_invite_token: token,
+                    p_reason: reason ?? null,
                 });
 
             if (error) return { data: null, error: toError(error) };

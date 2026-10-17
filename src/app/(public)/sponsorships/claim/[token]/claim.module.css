@@ -1,0 +1,651 @@
+/* Inbound Sponsorship Claim Portal Styles */
+
+.pageContainer {
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 0%, rgba(32, 249, 40, 0.07) 0%, rgba(10, 11, 14, 0.98) 60%), #0a0b0e;
+    color: var(--color-utility-primaryText, #f3f4f6);
+    padding: var(--spacing-xl, 32px) var(--spacing-md, 16px) 80px;
+    display: flex;
+    justify-content: center;
+    font-family: var(--font-primary, sans-serif);
+}
+
+.contentWrapper {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl, 24px);
+}
+
+/* Header & Brand Nav */
+.headerNav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--spacing-md, 16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brandLogo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+}
+
+.brandPill {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    background: rgba(32, 249, 40, 0.12);
+    border: 1px solid rgba(32, 249, 40, 0.25);
+    color: var(--color-brand-primary, #20f928);
+    border-radius: 9999px;
+}
+
+.userStatus {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 12px);
+    font-size: 13px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+}
+
+.userStatus strong {
+    color: #fff;
+}
+
+/* Event Hero Showcase */
+.eventHero {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #14171d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.heroImageContainer {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    background: #181c24;
+    overflow: hidden;
+}
+
+.heroImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.75;
+    filter: brightness(0.85);
+}
+
+.heroGradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20, 23, 29, 0.1) 0%, rgba(20, 23, 29, 0.95) 100%);
+}
+
+.heroBadgeBar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inviteTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.statusPill {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 9999px;
+}
+
+.statusPending {
+    background: rgba(32, 249, 40, 0.15);
+    border: 1px solid rgba(32, 249, 40, 0.35);
+    color: #20f928;
+}
+
+.statusExpired {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #f59e0b;
+}
+
+.statusAccepted {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #60a5fa;
+}
+
+.statusRevoked, .statusDeclined {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+.heroContent {
+    position: relative;
+    padding: 0 24px 24px;
+    margin-top: -60px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eventTitle {
+    font-size: 28px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.eventMetaRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+}
+
+.metaItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.organizerBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    font-size: 12px;
+    color: #e5e7eb;
+}
+
+.organizerLogo {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Two-Column Grid */
+.mainGrid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .mainGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Left Column: Deliverables & Contract Spec */
+.card {
+    background: #14171d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 14px;
+}
+
+.cardTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tierRankBadge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+    border-radius: 6px;
+}
+
+/* Deliverables Grid */
+.deliverablesList {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 580px) {
+    .deliverablesList {
+        grid-template-columns: 1fr;
+    }
+}
+
+.deliverableItem {
+    background: #191d24;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.deliverableTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.deliverableIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(32, 249, 40, 0.1);
+    color: var(--color-brand-primary, #20f928);
+}
+
+.deliverableLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-utility-secondaryText, #9ca3af);
+}
+
+.deliverableValue {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.01em;
+}
+
+.deliverableDesc {
+    font-size: 11px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+    line-height: 1.4;
+}
+
+/* Share of voice meter */
+.sovMeterTrack {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.sovMeterFill {
+    height: 100%;
+    background: linear-gradient(90deg, #20f928 0%, #10b981 100%);
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+}
+
+/* Exclusivity Shield Notice */
+.shieldBanner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 12px;
+    padding: 16px;
+    color: #bfdbfe;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.shieldBanner strong {
+    color: #fff;
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* Formats Showcase */
+.formatsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sectionSubtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-utility-secondaryText, #9ca3af);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.formatsTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.formatTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+/* Right Column: Pricing & Contract Claim */
+.actionCard {
+    background: #14171d;
+    border: 1px solid rgba(32, 249, 40, 0.25);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    position: sticky;
+    top: 24px;
+}
+
+.priceDisplay {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: #181c24;
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.priceLabel {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-utility-secondaryText, #9ca3af);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.customQuoteTag {
+    color: #20f928;
+    background: rgba(32, 249, 40, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.priceAmount {
+    font-size: 32px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.catalogStrikethrough {
+    font-size: 12px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+    text-decoration: line-through;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+.expiryNotice {
+    font-size: 11px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+/* Form inputs */
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fieldLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.select, .input, .textarea {
+    width: 100%;
+    padding: 10px 14px;
+    background: #1a1e27;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.select:focus, .input:focus, .textarea:focus {
+    border-color: var(--color-brand-primary, #20f928);
+    box-shadow: 0 0 0 3px rgba(32, 249, 40, 0.12);
+}
+
+.fieldHint {
+    font-size: 11px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+}
+
+/* Action Buttons */
+.buttonGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.primaryButton {
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--color-brand-primary, #20f928);
+    color: #0b0c10;
+    font-weight: 700;
+    font-size: 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    box-shadow: 0 4px 16px rgba(32, 249, 40, 0.35);
+}
+
+.primaryButton:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.primaryButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.secondaryButton {
+    width: 100%;
+    padding: 12px 18px;
+    background: transparent;
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+
+.secondaryButton:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.authGateNotice {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+}
+
+.authLink {
+    color: var(--color-brand-primary, #20f928);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+/* Status Alert Banners */
+.alertCard {
+    background: #14171d;
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.alertIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alertTitle {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+}
+
+.alertMessage {
+    font-size: 14px;
+    color: var(--color-utility-secondaryText, #9ca3af);
+    max-width: 480px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Success State Screen */
+.successContainer {
+    background: #14171d;
+    border: 1px solid rgba(32, 249, 40, 0.4);
+    border-radius: 20px;
+    padding: 40px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 16px 48px rgba(32, 249, 40, 0.1);
+}
+
+.successIconBadge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(32, 249, 40, 0.15);
+    border: 2px solid #20f928;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #20f928;
+}
+
+.campaignRefBox {
+    background: #191d24;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: monospace;
+    font-size: 15px;
+    color: #fff;
+}

@@ -14,6 +14,7 @@
 
 export { createUsersRepository } from './users.repository';
 export { createAccountsRepository } from './accounts.repository';
+export type { AccountMembership, AccountWallet, AccountPaymentMethod, InvitationStatus } from './accounts.repository';
 export { createEventsRepository } from './events.repository';
 export type { EventRow, TicketTier } from './events.repository';
 export { createTicketsRepository } from './tickets.repository';
@@ -34,6 +35,11 @@ export type {
     ValuationResult,
     UpsertTierParams,
     CreateInviteParams,
+    ClaimInviteData,
+    ClaimInviteEvent,
+    ClaimInviteTier,
+    AcceptInviteParams,
+    AcceptInviteResult,
 } from './sponsorships.repository';
 
 
