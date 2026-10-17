@@ -24,11 +24,10 @@ interface TierBuilderModalProps {
     onSuccess: () => void;
 }
 
-const AVAILABLE_FORMATS = [
-    { id: 'banner', label: 'Forum In-Feed Takeover', desc: 'Guaranteed 100% share of voice banners across Chat & Media streams' },
-    { id: 'interstitial', label: 'Interstitial Image Takeover', desc: 'High-impact visual display modal on media download interactions' },
-    { id: 'interstitial_video', label: 'High-Def Video Takeover', desc: 'Autoplaying modal video spot during attendee asset download' },
-    { id: 'omnichannel', label: 'Omnichannel Brand Co-Presence', desc: 'Prominent badge, forum header taglines, and ticket quest integration' },
+const PLACEMENT_OPTIONS = [
+    { value: 'banner', label: 'Banner Placement (16:9)' },
+    { value: 'interstitial', label: 'Interstitial (9:16 – Full Screen)' },
+    { value: 'interstitial_video', label: 'Interstitial Video (9:16 – Auto-play)' },
 ];
 
 /**
@@ -54,10 +53,7 @@ export default function TierBuilderModal({
     const [price, setPrice] = useState<number | ''>(0);
     const [maxSlots, setMaxSlots] = useState(1);
     const [shareOfVoice, setShareOfVoice] = useState(1.0);
-    const [ticketPasses, setTicketPasses] = useState(0);
-    const [questSlots, setQuestSlots] = useState(0);
-    const [selectedFormats, setSelectedFormats] = useState<string[]>(['banner']);
-    const [isActive, setIsActive] = useState(true);
+    const [placementFormat, setPlacementFormat] = useState('banner');
 
     // Submission & Valuation state
     const [isSaving, setIsSaving] = useState(false);
@@ -74,20 +70,17 @@ export default function TierBuilderModal({
                 setPrice(tier.price);
                 setMaxSlots(tier.max_slots);
                 setShareOfVoice(tier.perks?.share_of_voice ?? 1.0);
-                setTicketPasses(tier.perks?.ticket_passes ?? 0);
-                setQuestSlots(tier.perks?.quest_slots ?? 0);
-                setSelectedFormats(Array.isArray(tier.perks?.formats) ? tier.perks.formats : ['banner']);
-                setIsActive(tier.is_active);
+                const format = Array.isArray(tier.perks?.formats) && tier.perks.formats.length > 0
+                    ? tier.perks.formats[0]
+                    : (typeof tier.perks?.formats === 'string' ? tier.perks.formats : 'banner');
+                setPlacementFormat(format);
             } else {
                 setName('');
                 setRank(1);
                 setPrice('');
                 setMaxSlots(1);
                 setShareOfVoice(1.0);
-                setTicketPasses(2);
-                setQuestSlots(1);
-                setSelectedFormats(['banner', 'interstitial']);
-                setIsActive(true);
+                setPlacementFormat('banner');
             }
         }
     }, [isOpen, tier]);
@@ -101,9 +94,7 @@ export default function TierBuilderModal({
             setIsCalculating(true);
             const customPerks = {
                 share_of_voice: shareOfVoice,
-                ticket_passes: ticketPasses,
-                quest_slots: questSlots,
-                formats: selectedFormats,
+                formats: [placementFormat],
             };
 
             const res = await sponsorshipsRepo.calculateMarketValuation(
@@ -124,15 +115,7 @@ export default function TierBuilderModal({
             isMounted = false;
             clearTimeout(timer);
         };
-    }, [isOpen, eventId, tier?.id, shareOfVoice, ticketPasses, questSlots, selectedFormats, sponsorshipsRepo]);
-
-    const handleToggleFormat = useCallback((formatId: string) => {
-        setSelectedFormats(prev =>
-            prev.includes(formatId)
-                ? prev.filter(f => f !== formatId)
-                : [...prev, formatId]
-        );
-    }, []);
+    }, [isOpen, eventId, tier?.id, shareOfVoice, placementFormat, sponsorshipsRepo]);
 
     const handleApplyValuationPrice = useCallback(() => {
         if (valuation?.suggested_price) {
@@ -172,11 +155,9 @@ export default function TierBuilderModal({
                 maxSlots: Number(maxSlots) || 1,
                 perks: {
                     share_of_voice: shareOfVoice,
-                    ticket_passes: Number(ticketPasses) || 0,
-                    quest_slots: Number(questSlots) || 0,
-                    formats: selectedFormats,
+                    formats: [placementFormat],
                 },
-                isActive,
+                isActive: tier ? tier.is_active : true,
             });
 
             if (res.error || !res.data) {
@@ -357,81 +338,26 @@ export default function TierBuilderModal({
                         </span>
                     </div>
 
-                    {/* Deliverable Formats */}
+                    {/* Campaign Placement Format */}
                     <div className={styles.field}>
-                        <label className={styles.label}>Placement Formats Included</label>
-                        <div className={styles.checkboxGrid}>
-                            {AVAILABLE_FORMATS.map(fmt => {
-                                const isChecked = selectedFormats.includes(fmt.id);
-                                return (
-                                    <label
-                                        key={fmt.id}
-                                        className={`${styles.checkboxCard} ${isChecked ? styles.checkboxActive : ''}`}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            className={styles.checkboxInput}
-                                            checked={isChecked}
-                                            onChange={() => handleToggleFormat(fmt.id)}
-                                        />
-                                        <div>
-                                            <div className={styles.checkboxTitle}>{fmt.label}</div>
-                                            <div className={styles.checkboxDesc}>{fmt.desc}</div>
-                                        </div>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Tangible Passes & Gamified Quests */}
-                    <div className={styles.rowGroup}>
-                        <div className={styles.field}>
-                            <label className={styles.label} htmlFor="tier-passes">
-                                VIP / Delegate Passes
-                            </label>
-                            <input
-                                id="tier-passes"
-                                type="number"
-                                min={0}
-                                max={100}
-                                className={styles.input}
-                                value={ticketPasses}
-                                onChange={e => setTicketPasses(parseInt(e.target.value, 10) || 0)}
-                            />
-                            <span className={styles.hint}>Complimentary barcode tickets bundled with package</span>
-                        </div>
-                        <div className={styles.field}>
-                            <label className={styles.label} htmlFor="tier-quests">
-                                Dynamic Quest Slots
-                            </label>
-                            <input
-                                id="tier-quests"
-                                type="number"
-                                min={0}
-                                max={5}
-                                className={styles.input}
-                                value={questSlots}
-                                onChange={e => setQuestSlots(parseInt(e.target.value, 10) || 0)}
-                            />
-                            <span className={styles.hint}>Interactive gamified badge tasks on digital tickets</span>
-                        </div>
-                    </div>
-
-                    {/* Active Status */}
-                    <div className={styles.field}>
-                        <label className={styles.checkboxCard} style={{ width: 'fit-content' }}>
-                            <input
-                                type="checkbox"
-                                className={styles.checkboxInput}
-                                checked={isActive}
-                                onChange={e => setIsActive(e.target.checked)}
-                            />
-                            <div>
-                                <div className={styles.checkboxTitle}>Tier is Active</div>
-                                <div className={styles.checkboxDesc}>Allow organizers to issue invitations for this tier</div>
-                            </div>
+                        <label className={styles.label} htmlFor="tier-placement">
+                            Placement Format
                         </label>
+                        <select
+                            id="tier-placement"
+                            className={styles.select}
+                            value={placementFormat}
+                            onChange={e => setPlacementFormat(e.target.value)}
+                        >
+                            {PLACEMENT_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <span className={styles.hint}>
+                            Ad creative format and screen placement assigned to this sponsorship tier
+                        </span>
                     </div>
                 </div>
 
@@ -467,12 +393,14 @@ export default function TierBuilderModal({
                                         {formatCurrency(valuation.digital_value, valuation.currency)}
                                     </span>
                                 </div>
-                                <div className={styles.breakdownItem}>
-                                    <span className={styles.breakdownLabel}>VIP Passes Allocation</span>
-                                    <span className={styles.breakdownValue}>
-                                        {formatCurrency(valuation.tangible_value, valuation.currency)}
-                                    </span>
-                                </div>
+                                {Number(valuation.tangible_value) > 0 && (
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>VIP Passes Allocation</span>
+                                        <span className={styles.breakdownValue}>
+                                            {formatCurrency(valuation.tangible_value, valuation.currency)}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className={styles.breakdownItem}>
                                     <span className={styles.breakdownLabel}>Experiential Activation</span>
                                     <span className={styles.breakdownValue}>
