@@ -103,6 +103,18 @@
     color: #81c784 !important;
 }
 
+.success:hover:not(:disabled) {
+    background-color: rgba(129, 199, 132, 0.1) !important;
+}
+
+.primary {
+    color: var(--color-brand-primary) !important;
+}
+
+.primary:hover:not(:disabled) {
+    background-color: rgba(var(--color-brand-primary-rgb, 124, 58, 237), 0.1) !important;
+}
+
 .divider {
     height: 1px;
     background-color: var(--color-interface-outline);

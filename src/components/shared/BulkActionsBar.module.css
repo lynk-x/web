@@ -111,6 +111,15 @@
     background-color: rgba(129, 199, 132, 0.1) !important;
 }
 
+.primary {
+    color: var(--color-brand-primary) !important;
+    border-color: var(--color-brand-primary) !important;
+}
+
+.primary:hover {
+    background-color: rgba(var(--color-brand-primary-rgb, 124, 58, 237), 0.1) !important;
+}
+
 .icon {
     display: flex;
     align-items: center;

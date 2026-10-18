@@ -18,7 +18,7 @@ export type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'subtle' |
 export interface BulkAction {
     label: string;
     onClick: () => void;
-    variant?: 'default' | 'danger' | 'success';
+    variant?: 'default' | 'danger' | 'success' | 'primary';
     icon?: React.ReactNode;
 }
 
@@ -32,7 +32,7 @@ export type ActionItem =
         label: string;
         icon?: React.ReactNode;
         onClick: () => void;
-        variant?: 'default' | 'danger' | 'success';
+        variant?: 'default' | 'danger' | 'success' | 'primary';
         disabled?: boolean;
         divider?: never;
     };
