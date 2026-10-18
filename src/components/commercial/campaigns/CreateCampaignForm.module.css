@@ -967,7 +967,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 @media (max-width: 640px) {
@@ -978,45 +978,123 @@
 
 .channelCard {
     background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--color-interface-outline);
-    border-radius: var(--radius-lg);
-    padding: 16px 18px;
+    border: 1px solid var(--color-interface-outline, rgba(255, 255, 255, 0.08));
+    border-radius: var(--radius-lg, 12px);
+    padding: 18px 20px;
     cursor: pointer;
     text-align: left;
-    transition: all 0.2s ease;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 12px;
     position: relative;
+    user-select: none;
 }
 
-.channelCard:hover {
+.channelCard:hover:not(:disabled) {
     border-color: rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
+}
+
+.channelCard:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .channelCardActive {
     border-color: var(--color-brand-primary);
-    background: rgba(32, 249, 40, 0.04);
-    box-shadow: 0 0 16px rgba(32, 249, 40, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
 }
 
-.channelCardHeader {
+.channelCardTop {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
+}
+
+.channelCardMain {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.channelIconWrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-utility-secondaryText);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.channelCardActive .channelIconWrap {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-brand-primary);
+}
+
+.channelTitleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .channelCardTitle {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--color-utility-primaryText);
+    letter-spacing: -0.2px;
+}
+
+.channelCardSubtitle {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--color-utility-secondaryText);
+}
+
+.channelCardActive .channelCardSubtitle {
+    color: var(--color-brand-primary);
 }
 
 .channelCardDesc {
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 12.5px;
+    line-height: 1.45;
     color: var(--color-utility-secondaryText);
+    margin: 0;
+}
+
+.channelFeatureList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.channelFeaturePill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-utility-secondaryText);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.channelCardActive .channelFeaturePill {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: var(--color-utility-primaryText);
 }
 
 .channelBadge {

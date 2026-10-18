@@ -10,7 +10,7 @@ import styles from './page.module.css';
  * Root workspace selector for authenticated users.
  *
  * Evaluates account memberships to display available workspaces (organizer,
- * partner, platform or system) or prompts users to create their first account.
+ * commercial, platform or system) or prompts users to create their first account.
  */
 function DashboardRoot() {
     const router = useRouter();
@@ -144,7 +144,7 @@ function DashboardRoot() {
                                     </div>
                                     <div className={styles.orgInfo}>
                                         <h3 className={styles.orgName}>{acc.name}</h3>
-                                        <span className={styles.orgType}>{acc.type === 'advertiser' ? 'partner' : acc.type}</span>
+                                        <span className={styles.orgType}>{acc.type === 'advertiser' ? 'commercial' : acc.type}</span>
                                     </div>
                                 </div>
 

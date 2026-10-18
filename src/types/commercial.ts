@@ -30,10 +30,6 @@ export interface Campaign {
     target_country_code?: string;
     target_tags?: string[];
     target_regions?: string[];
-    /** Backward compatibility / UI display fields */
-    name?: string; // mapping from title
-    spent?: string; // formatted spent_amount
-    dates?: string; // formatted range
 }
 
 /** A partner billing invoice. */

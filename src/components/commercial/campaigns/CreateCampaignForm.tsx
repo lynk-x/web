@@ -153,7 +153,7 @@ export default function CreateCampaignForm({
     }, []);
 
     // ── UI State ──────────────────────────────────────────────────────────────
-    const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'review'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'targeting' | 'creative' | 'budget' | 'review'>('details');
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [isOrgLoading, setIsOrgLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -830,7 +830,7 @@ export default function CreateCampaignForm({
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleTabSwitch = (target: 'details' | 'targeting' | 'creative' | 'review') => {
+    const handleTabSwitch = (target: 'details' | 'targeting' | 'creative' | 'budget' | 'review') => {
         setActiveTab(target);
     };
 
@@ -993,6 +993,70 @@ export default function CreateCampaignForm({
         const fmtNum = (n: number) =>
             n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : `${n}`;
 
+        /**
+         * Render dynamic placement quote card and Category Sponsor Shield status
+         * for event sponsorship campaigns when a target event is selected.
+         */
+        const renderPlacementQuoteCard = () => {
+            if (formData.channel !== 'event_sponsorship' || !formData.target_event_id) return null;
+            return (
+                <div className={styles.placementQuoteCard}>
+                    <div className={styles.quoteHeader}>
+                        <span className={styles.quoteHeaderTitle}>
+                            {isQuoteLoading ? 'Calculating Placement Quote...' : 'Live Placement Quote & Inventory'}
+                        </span>
+                        {placementQuote?.is_exclusive_takeover && (
+                            <span className={styles.quoteExclusiveBadge}>★ 100% Exclusive Takeover</span>
+                        )}
+                    </div>
+
+                    {quoteError ? (
+                        <div className={styles.quoteWarningBox}>
+                            <span>⚠️ {quoteError}</span>
+                        </div>
+                    ) : placementQuote ? (
+                        <>
+                            <div className={styles.quoteMetricsGrid}>
+                                <div className={styles.quoteMetricItem}>
+                                    <span className={styles.quoteMetricLabel}>Total Contract</span>
+                                    <span className={`${styles.quoteMetricValue} ${styles.quoteMetricHighlight}`}>
+                                        {formatCurrency(placementQuote.total_price, placementQuote.currency)}
+                                    </span>
+                                </div>
+                                <div className={styles.quoteMetricItem}>
+                                    <span className={styles.quoteMetricLabel}>Price per Slot</span>
+                                    <span className={styles.quoteMetricValue}>
+                                        {formatCurrency(placementQuote.price_per_slot, placementQuote.currency)}
+                                    </span>
+                                </div>
+                                <div className={styles.quoteMetricItem}>
+                                    <span className={styles.quoteMetricLabel}>Share of Voice (SOV)</span>
+                                    <span className={styles.quoteMetricValue}>
+                                        {(placementQuote.share_of_voice * 100).toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div className={styles.quoteMetricItem}>
+                                    <span className={styles.quoteMetricLabel}>Available Slots</span>
+                                    <span className={styles.quoteMetricValue}>
+                                        {placementQuote.available_slots} / {placementQuote.max_slots}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className={styles.quoteShieldBox}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                                <span>
+                                    <strong>Category Sponsor Shield Active:</strong> Competing sponsors in your event category are automatically locked out for this placement.
+                                </span>
+                            </div>
+                        </>
+                    ) : null}
+                </div>
+            );
+        };
+
         // ─── JSX ──────────────────────────────────────────────────────────────────
 
         const handleClose = async () => {
@@ -1062,13 +1126,13 @@ export default function CreateCampaignForm({
                             {/* Tab Nav */}
                             <div className={styles.tabsContainer} style={{ padding: '0 24px' }}>
                                 <div className={`${styles.tabs} tour-partners-form-tabs`}>
-                                    {(['details', 'targeting', 'creative', 'review'] as const).map(tab => (
+                                    {(['details', 'targeting', 'creative', 'budget', 'review'] as const).map(tab => (
                                         <div
                                             key={tab}
                                             className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-partners-tab-${tab}`}
                                             onClick={() => handleTabSwitch(tab)}
                                         >
-                                            {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : 'Review & Launch'}
+                                            {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : tab === 'budget' ? 'Budget' : 'Review & Launch'}
                                         </div>
                                     ))}
                                 </div>
@@ -1077,7 +1141,7 @@ export default function CreateCampaignForm({
                                         type="button" 
                                         className={styles.tabArrowBtn} 
                                         onClick={() => {
-                                            const flow = ['details', 'targeting', 'creative', 'review'];
+                                            const flow = ['details', 'targeting', 'creative', 'budget', 'review'];
                                             const idx = flow.indexOf(activeTab);
                                             if (idx > 0) handleTabSwitch(flow[idx - 1] as any);
                                         }} 
@@ -1091,7 +1155,7 @@ export default function CreateCampaignForm({
                                         type="button" 
                                         className={styles.tabArrowBtn} 
                                         onClick={() => {
-                                            const flow = ['details', 'targeting', 'creative', 'review'];
+                                            const flow = ['details', 'targeting', 'creative', 'budget', 'review'];
                                             const idx = flow.indexOf(activeTab);
                                             if (idx < flow.length - 1) handleTabSwitch(flow[idx + 1] as any);
                                         }} 
@@ -1115,87 +1179,72 @@ export default function CreateCampaignForm({
                                             <label className={styles.label}>
                                                 Campaign Channel <span className={styles.requiredIndicator}>*Required</span>
                                             </label>
-                                            <div className={styles.channelToggleGrid}>
+                                            <div className={styles.channelToggleGrid} role="radiogroup" aria-label="Campaign Channel Selection">
                                                 <button
                                                     type="button"
                                                     className={`${styles.channelCard} ${formData.channel !== 'event_sponsorship' ? styles.channelCardActive : ''}`}
                                                     onClick={() => handleChannelChange('network')}
+                                                    disabled={isEditing}
+                                                    role="radio"
+                                                    aria-checked={formData.channel !== 'event_sponsorship'}
                                                 >
-                                                    <div className={styles.channelCardHeader}>
-                                                        <span className={styles.channelCardTitle}>Network Auction</span>
-                                                        {formData.channel !== 'event_sponsorship' && <span className={styles.channelBadge}>Selected</span>}
+                                                    <div className={styles.channelCardTop}>
+                                                        <div className={styles.channelIconWrap}>
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <circle cx="12" cy="12" r="10" />
+                                                                <line x1="2" y1="12" x2="22" y2="12" />
+                                                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className={styles.channelTitleGroup}>
+                                                            <span className={styles.channelCardTitle}>Network Ad Campaign</span>
+                                                            <span className={styles.channelCardSubtitle}>Cross-Event & Audience Reach</span>
+                                                        </div>
                                                     </div>
                                                     <p className={styles.channelCardDesc}>
-                                                        Algorithmically distributed across all forums, public feeds, and sessions using programmatic bidding.
+                                                        Deliver targeted ads across multiple event forums and attendee feeds based on user interests, location and search topics.
                                                     </p>
+                                                    <div className={styles.channelFeatureList}>
+                                                        <span className={styles.channelFeaturePill}>🌐 Cross-event reach</span>
+                                                        <span className={styles.channelFeaturePill}>🎯 Interest & region targeting</span>
+                                                        <span className={styles.channelFeaturePill}>⚡ Pay-as-you-go</span>
+                                                    </div>
                                                 </button>
 
                                                 <button
                                                     type="button"
                                                     className={`${styles.channelCard} ${formData.channel === 'event_sponsorship' ? styles.channelCardActive : ''}`}
                                                     onClick={() => handleChannelChange('event_sponsorship')}
+                                                    disabled={isEditing}
+                                                    role="radio"
+                                                    aria-checked={formData.channel === 'event_sponsorship'}
                                                 >
-                                                    <div className={styles.channelCardHeader}>
-                                                        <span className={styles.channelCardTitle}>Event Sponsorship</span>
-                                                        {formData.channel === 'event_sponsorship' && <span className={styles.channelBadge}>Selected</span>}
+                                                    <div className={styles.channelCardTop}>
+                                                        <div className={styles.channelIconWrap}>
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                                                                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                                                                <path d="M4 22h16" />
+                                                                <path d="M10 14.66V17c0 .55-.45 1-1 1H8v2h8v-2h-1c-.55 0-1-.45-1-1v-2.34" />
+                                                                <path d="M18 4H6v7a6 6 0 0 0 12 0V4z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className={styles.channelTitleGroup}>
+                                                            <span className={styles.channelCardTitle}>Event Sponsorship</span>
+                                                            <span className={styles.channelCardSubtitle}>Dedicated Event Placement</span>
+                                                        </div>
                                                     </div>
                                                     <p className={styles.channelCardDesc}>
-                                                        Guaranteed placement within a specific event forum with Category Sponsor Shield protection.
+                                                        Sponsor a specific event with guaranteed ad rotation inside its official forum.
                                                     </p>
+                                                    <div className={styles.channelFeatureList}>
+                                                        <span className={styles.channelFeaturePill}>📍 Single event focus</span>
+                                                        <span className={styles.channelFeaturePill}>📊 Guaranteed rotation slots</span>
+                                                        <span className={styles.channelFeaturePill}>🛡️ Category shield</span>
+                                                    </div>
                                                 </button>
                                             </div>
                                         </div>
-
-                                        {/* ── Event Sponsorship: Event Picker & Slot Count ── */}
-                                        {formData.channel === 'event_sponsorship' && (
-                                            <div className={styles.row}>
-                                                <div className={styles.inputGroup} style={{ flex: 2 }}>
-                                                    <label className={styles.label} htmlFor="target_event_id">
-                                                        Target Event <span className={styles.requiredIndicator}>*Required</span>
-                                                    </label>
-                                                    <select
-                                                        id="target_event_id"
-                                                        name="target_event_id"
-                                                        className={`${styles.select} ${errors.target_event_id ? styles.inputError : ''}`}
-                                                        value={formData.target_event_id || ''}
-                                                        onChange={handleInputChange}
-                                                        disabled={isEditing}
-                                                        required
-                                                    >
-                                                        <option value="" disabled>
-                                                            {isLoadingEvents ? 'Loading sponsorable events...' : 'Select an event to sponsor'}
-                                                        </option>
-                                                        {sponsorableEvents.map(ev => (
-                                                            <option key={ev.id} value={ev.id}>
-                                                                {ev.title} ({ev.currency || 'KES'}) — {new Date(ev.start_datetime).toLocaleDateString()}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {errors.target_event_id && <p className={styles.errorMessage}>{errors.target_event_id}</p>}
-                                                </div>
-
-                                                <div className={styles.inputGroup} style={{ flex: 1 }}>
-                                                    <label className={styles.label} htmlFor="slots">
-                                                        Slot Allocation ({formData.slots || 1} of {formData.type === 'banner' ? 8 : 2} max)
-                                                        <span className={styles.infoIcon} title="Number of guaranteed rotation slots booked in this event forum">ⓘ</span>
-                                                    </label>
-                                                    <select
-                                                        id="slots"
-                                                        name="slots"
-                                                        className={styles.select}
-                                                        value={formData.slots || 1}
-                                                        onChange={(e) => handleSlotsChange(parseInt(e.target.value, 10))}
-                                                    >
-                                                        {Array.from({ length: formData.type === 'banner' ? 8 : 2 }, (_, i) => i + 1).map(slotNum => (
-                                                            <option key={slotNum} value={slotNum}>
-                                                                {slotNum} {slotNum === 1 ? 'Slot' : 'Slots'} ({((slotNum / (formData.type === 'banner' ? 8 : 2)) * 100).toFixed(1)}% SOV)
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {errors.slots && <p className={styles.errorMessage}>{errors.slots}</p>}
-                                                </div>
-                                            </div>
-                                        )}
 
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label} htmlFor="title">
@@ -1245,7 +1294,43 @@ export default function CreateCampaignForm({
                                             </div>
                                         </div>
 
-                                        <div className={styles.row}>
+                                        {/* Placement Format: In Event Sponsorship, Slot Allocation is on the same row. In Network Auction, Placement Format is full width. */}
+                                        {formData.channel === 'event_sponsorship' ? (
+                                            <div className={styles.row}>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="type">
+                                                        Placement Format <span className={styles.requiredIndicator}>*Required</span>
+                                                    </label>
+                                                    <select id="type" name="type" className={styles.select}
+                                                        value={formData.type} onChange={handleInputChange} required>
+                                                        <option value="banner">Banner Placement (16:9)</option>
+                                                        <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
+                                                        <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="slots">
+                                                        Slot Allocation ({formData.slots || 1} of {formData.type === 'banner' ? 8 : 2} max)
+                                                        <span className={styles.infoIcon} title="Number of guaranteed rotation slots booked in this event forum">ⓘ</span>
+                                                    </label>
+                                                    <select
+                                                        id="slots"
+                                                        name="slots"
+                                                        className={styles.select}
+                                                        value={formData.slots || 1}
+                                                        onChange={(e) => handleSlotsChange(parseInt(e.target.value, 10))}
+                                                    >
+                                                        {Array.from({ length: formData.type === 'banner' ? 8 : 2 }, (_, i) => i + 1).map(slotNum => (
+                                                            <option key={slotNum} value={slotNum}>
+                                                                {slotNum} {slotNum === 1 ? 'Slot' : 'Slots'} ({((slotNum / (formData.type === 'banner' ? 8 : 2)) * 100).toFixed(1)}% SOV)
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.slots && <p className={styles.errorMessage}>{errors.slots}</p>}
+                                                </div>
+                                            </div>
+                                        ) : (
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="type">
                                                     Placement Format <span className={styles.requiredIndicator}>*Required</span>
@@ -1256,8 +1341,8 @@ export default function CreateCampaignForm({
                                                     <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
                                                     <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
                                                 </select>
-                                                {/* #3 CPM/CPC Estimator */}
-                                                {formData.channel !== 'event_sponsorship' && pricing.impression > 0 && (
+                                                {/* CPM/CPC Estimator for Network Channel */}
+                                                {pricing.impression > 0 && (
                                                     <div className={`${styles.pricingHint} tour-partners-pricing-hint`}>
                                                         <span>Starting at</span>
                                                         <strong>${pricing.impression.toFixed(3)}</strong> / impression
@@ -1266,130 +1351,51 @@ export default function CreateCampaignForm({
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="currency">
-                                                    Wallet Currency <span className={styles.requiredIndicator}>*Required</span>
-                                                    <span className={styles.infoIcon} title="the currency this campaign's budget, bids and spend are denominated in — fixed once the campaign is created">ⓘ</span>
-                                                </label>
-                                                <select id="currency" name="currency" className={`${styles.select} ${errors.currency ? styles.inputError : ''}`}
-                                                    value={formData.currency} onChange={handleInputChange} disabled={isEditing || formData.channel === 'event_sponsorship'} required>
-                                                    {!formData.currency && <option value="" disabled>Select a currency</option>}
-                                                    {walletCurrencies.map(c => (
-                                                        <option key={c} value={c}>{c}</option>
-                                                    ))}
-                                                </select>
-                                                {isEditing ? (
-                                                    <p className={styles.pricingHint}>Currency can&apos;t be changed after a campaign is created.</p>
-                                                ) : formData.channel === 'event_sponsorship' ? (
-                                                    <p className={styles.pricingHint}>Locked to target event currency ({formData.currency || 'KES'}).</p>
-                                                ) : walletCurrencies.length === 0 ? (
-                                                    <p className={styles.pricingHint}>No wallet found for this account yet — top up a wallet first.</p>
-                                                ) : null}
-                                                {errors.currency && <p className={styles.errorMessage}>{errors.currency}</p>}
-                                            </div>
-                                        </div>
-
-                                        {/* ── Dynamic Placement Quote Card for Event Sponsorship ── */}
-                                        {formData.channel === 'event_sponsorship' && formData.target_event_id && (
-                                            <div className={styles.placementQuoteCard}>
-                                                <div className={styles.quoteHeader}>
-                                                    <span className={styles.quoteHeaderTitle}>
-                                                        {isQuoteLoading ? 'Calculating Placement Quote...' : 'Live Placement Quote & Inventory'}
-                                                    </span>
-                                                    {placementQuote?.is_exclusive_takeover && (
-                                                        <span className={styles.quoteExclusiveBadge}>★ 100% Exclusive Takeover</span>
-                                                    )}
-                                                </div>
-
-                                                {quoteError ? (
-                                                    <div className={styles.quoteWarningBox}>
-                                                        <span>⚠️ {quoteError}</span>
-                                                    </div>
-                                                ) : placementQuote ? (
-                                                    <>
-                                                        <div className={styles.quoteMetricsGrid}>
-                                                            <div className={styles.quoteMetricItem}>
-                                                                <span className={styles.quoteMetricLabel}>Total Contract</span>
-                                                                <span className={`${styles.quoteMetricValue} ${styles.quoteMetricHighlight}`}>
-                                                                    {formatCurrency(placementQuote.total_price, placementQuote.currency)}
-                                                                </span>
-                                                            </div>
-                                                            <div className={styles.quoteMetricItem}>
-                                                                <span className={styles.quoteMetricLabel}>Price per Slot</span>
-                                                                <span className={styles.quoteMetricValue}>
-                                                                    {formatCurrency(placementQuote.price_per_slot, placementQuote.currency)}
-                                                                </span>
-                                                            </div>
-                                                            <div className={styles.quoteMetricItem}>
-                                                                <span className={styles.quoteMetricLabel}>Share of Voice (SOV)</span>
-                                                                <span className={styles.quoteMetricValue}>
-                                                                    {(placementQuote.share_of_voice * 100).toFixed(1)}%
-                                                                </span>
-                                                            </div>
-                                                            <div className={styles.quoteMetricItem}>
-                                                                <span className={styles.quoteMetricLabel}>Available Slots</span>
-                                                                <span className={styles.quoteMetricValue}>
-                                                                    {placementQuote.available_slots} / {placementQuote.max_slots}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className={styles.quoteShieldBox}>
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                                            </svg>
-                                                            <span>
-                                                                <strong>Category Sponsor Shield Active:</strong> Competing sponsors in your event category are automatically locked out for this placement.
-                                                            </span>
-                                                        </div>
-                                                    </>
-                                                ) : null}
-                                            </div>
                                         )}
 
-                                        <div className={styles.row}>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="total_budget">
-                                                    Total Budget ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
-                                                    <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire campaign over its lifetime">ⓘ</span>
-                                                </label>
-                                                <input id="total_budget" name="total_budget" type="number" className={styles.input}
-                                                    placeholder="1000" value={formData.total_budget} onChange={handleInputChange} readOnly={formData.channel === 'event_sponsorship'} required />
-                                                {formData.channel === 'event_sponsorship' && (
-                                                    <p className={styles.pricingHint}>Fixed contract price determined by event placement quote.</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Budget & Bidding (Network Auction only) */}
-                                        {formData.channel !== 'event_sponsorship' && (
-                                            <div className={styles.row}>
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label} htmlFor="daily_limit">
-                                                        Daily Limit ({formData.currency || 'USD'})
-                                                        <span className={styles.infoIcon} title="the maximum amount you want to spend on the campaign in a single day">ⓘ</span>
-                                                    </label>
-                                                    <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
-                                                        placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
-                                                    {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
-                                                </div>
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label} htmlFor="max_bid_amount">
-                                                        Max Bid ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
-                                                        <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
-                                                    </label>
-                                                    <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
-                                                        placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
-                                                    {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
 
                                 {/* ── Tab: Targeting ── */}
                                 {activeTab === 'targeting' && (
                                     <div className={styles.formSection}>
+
+                                        {/* ── Conditional Event Sponsorship: Target Event Selector ── */}
+                                        {formData.channel === 'event_sponsorship' && (
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="target_event_id">
+                                                    Target Event <span className={styles.requiredIndicator}>*Required</span>
+                                                    <span className={styles.infoIcon} title="Audience impressions and Category Sponsor Shield exclusivity are anchored to this event forum.">ⓘ</span>
+                                                </label>
+                                                <select
+                                                    id="target_event_id"
+                                                    name="target_event_id"
+                                                    className={`${styles.select} ${errors.target_event_id ? styles.inputError : ''}`}
+                                                    value={formData.target_event_id || ''}
+                                                    onChange={handleInputChange}
+                                                    disabled={isEditing}
+                                                    required
+                                                >
+                                                    <option value="" disabled>
+                                                        {isLoadingEvents ? 'Loading sponsorable events...' : 'Select an event to sponsor'}
+                                                    </option>
+                                                    {sponsorableEvents.map(ev => (
+                                                        <option key={ev.id} value={ev.id}>
+                                                            {ev.title} ({ev.currency || 'KES'}) — {new Date(ev.start_datetime).toLocaleDateString()}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {errors.target_event_id && <p className={styles.errorMessage}>{errors.target_event_id}</p>}
+                                                <p className={styles.pricingHint}>
+                                                    {formData.target_event_id
+                                                        ? 'Event Forum & Attendee Targeting: Ad delivery and category exclusivity are locked to this event\'s audience.'
+                                                        : 'Select an event to sponsor. Ad placement, attendees, and Category Sponsor Shield exclusivity will anchor to this event.'}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* ── Dynamic Placement Quote Card in Targeting Tab ── */}
+                                        {renderPlacementQuoteCard()}
 
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label} htmlFor="destination_url">
@@ -1401,190 +1407,215 @@ export default function CreateCampaignForm({
                                             {errors.destination_url && <p className={styles.errorMessage}>{errors.destination_url}</p>}
                                         </div>
 
-                                        {/* Multi-Country Targeting */}
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Leave empty for worldwide)</span></label>
-                                            <div className={styles.tagInput}>
-                                                <input
-                                                    className={styles.tagInputField}
-                                                    placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Leave empty for worldwide'}
-                                                    value={countryInput}
-                                                    onChange={e => setCountryInput(e.target.value)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            // Add the first matching country if any
-                                                            const match = countries.find(c =>
-                                                                c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
-                                                                !formData.target_countries?.includes(c.code)
-                                                            );
-                                                            if (match) addCountry(match.code);
-                                                        }
-                                                    }}
-                                                    disabled={(formData.target_countries?.length || 0) >= 5}
-                                                />
-                                                {/* Dropdown for search results */}
-                                                {countryInput && (
-                                                    <div className={styles.countryDropdown}>
-                                                        {countries
-                                                            .filter(c =>
-                                                                c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
-                                                                !formData.target_countries?.includes(c.code)
-                                                            )
-                                                            .slice(0, 5)
-                                                            .map(c => (
-                                                                <div key={c.code} className={styles.countryDropdownItem} onClick={() => addCountry(c.code)}>
-                                                                    {c.display_name}
-                                                                </div>
-                                                            ))
-                                                        }
+                                        {/* Multi-Country & Tag Targeting (Network Auction only) */}
+                                        {formData.channel !== 'event_sponsorship' ? (
+                                            <>
+                                                {/* Multi-Country Targeting */}
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label}>Target Regions <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(Leave empty for worldwide)</span></label>
+                                                    <div className={styles.tagInput}>
+                                                        <input
+                                                            className={styles.tagInputField}
+                                                            placeholder={(formData.target_countries?.length || 0) < 5 ? 'Search region...' : 'Leave empty for worldwide'}
+                                                            value={countryInput}
+                                                            onChange={e => setCountryInput(e.target.value)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    // Add the first matching country if any
+                                                                    const match = countries.find(c =>
+                                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
+                                                                        !formData.target_countries?.includes(c.code)
+                                                                    );
+                                                                    if (match) addCountry(match.code);
+                                                                }
+                                                            }}
+                                                            disabled={(formData.target_countries?.length || 0) >= 5}
+                                                        />
+                                                        {/* Dropdown for search results */}
+                                                        {countryInput && (
+                                                            <div className={styles.countryDropdown}>
+                                                                {countries
+                                                                    .filter(c =>
+                                                                        c.display_name.toLowerCase().includes(countryInput.toLowerCase()) &&
+                                                                        !formData.target_countries?.includes(c.code)
+                                                                    )
+                                                                    .slice(0, 5)
+                                                                    .map(c => (
+                                                                        <div key={c.code} className={styles.countryDropdownItem} onClick={() => addCountry(c.code)}>
+                                                                            {c.display_name}
+                                                                        </div>
+                                                                    ))
+                                                                }
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {formData.target_countries && formData.target_countries.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                            {formData.target_countries.map(code => {
+                                                                const country = countries.find(c => c.code === code);
+                                                                return (
+                                                                    <span key={code} className={styles.tag}>
+                                                                        {country?.display_name || code}
+                                                                        <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                    {countrySuggestions.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                            {countrySuggestions
+                                                                .filter(c => !formData.target_countries?.includes(c.code))
+                                                                .filter(c => !countryInput || c.display_name.toLowerCase().includes(countryInput.toLowerCase()))
+                                                                .map(c => (
+                                                                <button 
+                                                                    key={c.code} 
+                                                                    type="button" 
+                                                                    onClick={() => addCountry(c.code)}
+                                                                    style={{ 
+                                                                        padding: '4px 12px', 
+                                                                        fontSize: '12px', 
+                                                                        borderRadius: '16px', 
+                                                                        border: '1px solid rgba(255,255,255,0.1)', 
+                                                                        background: 'rgba(255,255,255,0.02)',
+                                                                        color: 'rgba(255,255,255,0.7)',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                                                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                                                                >
+                                                                    + {c.display_name}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Market Competition Insights */}
+                                                {marketSuggestions.length > 0 && (
+                                                    <div className={styles.marketInsights}>
+                                                        <div className={styles.marketInsightsTitle}>Regional Market Density</div>
+                                                        <div className={styles.marketGrid}>
+                                                            {marketSuggestions.map(s => {
+                                                                const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
+                                                                const compLevel = s.competition_level || 'low';
+                                                                const badgeClass = styles['badge' + compLevel.charAt(0).toUpperCase() + compLevel.slice(1)] || styles.badgeNormal;
+                                                                
+                                                                const baseBid = parseFloat(formData.max_bid_amount) || 0.01;
+                                                                const suggestedBid = baseBid * (s.suggested_modifier || 1.0);
+                                                                
+                                                                return (
+                                                                    <div key={s.country_code} className={styles.marketItem}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                            <span className={styles.marketCountry}>{name}</span>
+                                                                            <span className={`${styles.badge} ${badgeClass}`}>
+                                                                                {compLevel.toUpperCase()}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className={styles.marketNote}>
+                                                                            Suggested Bid: ${suggestedBid.toFixed(3)} (modifier: {(s.suggested_modifier || 1.0).toFixed(2)}x)
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                            {formData.target_countries && formData.target_countries.length > 0 && (
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                                    {formData.target_countries.map(code => {
-                                                        const country = countries.find(c => c.code === code);
-                                                        return (
-                                                            <span key={code} className={styles.tag}>
-                                                                {country?.display_name || code}
-                                                                <button type="button" className={styles.tagRemove} onClick={() => removeCountry(code)}>×</button>
-                                                            </span>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                            {countrySuggestions.length > 0 && (
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                                    {countrySuggestions
-                                                        .filter(c => !formData.target_countries?.includes(c.code))
-                                                        .filter(c => !countryInput || c.display_name.toLowerCase().includes(countryInput.toLowerCase()))
-                                                        .map(c => (
-                                                        <button 
-                                                            key={c.code} 
-                                                            type="button" 
-                                                            onClick={() => addCountry(c.code)}
-                                                            style={{ 
-                                                                padding: '4px 12px', 
-                                                                fontSize: '12px', 
-                                                                borderRadius: '16px', 
-                                                                border: '1px solid rgba(255,255,255,0.1)', 
-                                                                background: 'rgba(255,255,255,0.02)',
-                                                                color: 'rgba(255,255,255,0.7)',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.2s ease'
-                                                            }}
-                                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-                                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-                                                        >
-                                                            + {c.display_name}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
 
-                                        {/* Market Competition Insights */}
-                                        {marketSuggestions.length > 0 && (
-                                            <div className={styles.marketInsights}>
-                                                <div className={styles.marketInsightsTitle}>Regional Market Density</div>
-                                                <div className={styles.marketGrid}>
-                                                    {marketSuggestions.map(s => {
-                                                        const name = countries.find(c => c.code === s.country_code)?.display_name || s.country_code;
-                                                        const compLevel = s.competition_level || 'low';
-                                                        const badgeClass = styles['badge' + compLevel.charAt(0).toUpperCase() + compLevel.slice(1)] || styles.badgeNormal;
-                                                        
-                                                        const baseBid = parseFloat(formData.max_bid_amount) || 0.01;
-                                                        const suggestedBid = baseBid * (s.suggested_modifier || 1.0);
-                                                        
-                                                        return (
-                                                            <div key={s.country_code} className={styles.marketItem}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <span className={styles.marketCountry}>{name}</span>
-                                                                    <span className={`${styles.badge} ${badgeClass}`}>
-                                                                        {compLevel.toUpperCase()}
-                                                                    </span>
-                                                                </div>
-                                                                <div className={styles.marketNote}>
-                                                                    Suggested Bid: ${suggestedBid.toFixed(3)} (modifier: {(s.suggested_modifier || 1.0).toFixed(2)}x)
-                                                                </div>
+                                                {/* Targeting Tags */}
+                                                <div className={styles.inputGroup} style={{ marginTop: '24px' }}>
+                                                    <label className={styles.label}>Interest-Based Targeting <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(e.g. Music, Tech)</span></label>
+                                                    <div className={styles.tagInput}>
+                                                        <input
+                                                            className={styles.tagInputField}
+                                                            placeholder="Type interest and press enter..."
+                                                            value={tagInput}
+                                                            onChange={e => setTagInput(e.target.value)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    addTag(tagInput);
+                                                                }
+                                                            }}
+                                                        />
+                                                        {tagInput && tagSuggestions.length > 0 && (
+                                                            <div className={styles.countryDropdown}>
+                                                                {tagSuggestions
+                                                                    .filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !formData.target_tags.includes(t))
+                                                                    .slice(0, 5)
+                                                                    .map(t => (
+                                                                        <div key={t} className={styles.countryDropdownItem} onClick={() => addTag(t)}>
+                                                                            {t}
+                                                                        </div>
+                                                                    ))
+                                                                }
                                                             </div>
-                                                        );
-                                                    })}
+                                                        )}
+                                                    </div>
+                                                    {formData.target_tags && formData.target_tags.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                            {formData.target_tags.map(tag => (
+                                                                <span key={tag} className={styles.tag}>
+                                                                    {tag}
+                                                                    <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {tagSuggestions.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                                            {tagSuggestions
+                                                                .filter(t => !formData.target_tags?.includes(t))
+                                                                .filter(t => !tagInput || t.toLowerCase().includes(tagInput.toLowerCase()))
+                                                                .slice(0, 5)
+                                                                .map(t => (
+                                                                <button 
+                                                                    key={t} 
+                                                                    type="button" 
+                                                                    onClick={() => addTag(t)}
+                                                                    style={{ 
+                                                                        padding: '4px 12px', 
+                                                                        fontSize: '12px', 
+                                                                        borderRadius: '16px', 
+                                                                        border: '1px solid rgba(255,255,255,0.1)', 
+                                                                        background: 'rgba(255,255,255,0.02)',
+                                                                        color: 'rgba(255,255,255,0.7)',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                                                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                                                                >
+                                                                    + {t}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
+                                            </>
+                                        ) : (
+                                            <div style={{
+                                                padding: '16px 20px',
+                                                borderRadius: 'var(--radius-md)',
+                                                background: 'rgba(255, 255, 255, 0.02)',
+                                                border: '1px solid rgba(255, 255, 255, 0.08)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '12px',
+                                                marginTop: '8px'
+                                            }}>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                                    <circle cx="12" cy="12" r="10"/>
+                                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                                </svg>
+                                                <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
+                                                    <strong>Event-Specific Targeting:</strong> Audience demographics, attendee geolocation, and forum impressions are anchored to the selected event. Network-wide country bidding and keyword filters do not apply to direct event sponsorships.
+                                                </span>
                                             </div>
                                         )}
-
-                                        {/* Targeting Tags */}
-                                        <div className={styles.inputGroup} style={{ marginTop: '24px' }}>
-                                            <label className={styles.label}>Interest-Based Targeting <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '12px' }}>(e.g. Music, Tech)</span></label>
-                                            <div className={styles.tagInput}>
-                                                <input
-                                                    className={styles.tagInputField}
-                                                    placeholder="Type interest and press enter..."
-                                                    value={tagInput}
-                                                    onChange={e => setTagInput(e.target.value)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            addTag(tagInput);
-                                                        }
-                                                    }}
-                                                />
-                                                {tagInput && tagSuggestions.length > 0 && (
-                                                    <div className={styles.countryDropdown}>
-                                                        {tagSuggestions
-                                                            .filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !formData.target_tags.includes(t))
-                                                            .slice(0, 5)
-                                                            .map(t => (
-                                                                <div key={t} className={styles.countryDropdownItem} onClick={() => addTag(t)}>
-                                                                    {t}
-                                                                </div>
-                                                            ))
-                                                        }
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {formData.target_tags && formData.target_tags.length > 0 && (
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                                    {formData.target_tags.map(tag => (
-                                                        <span key={tag} className={styles.tag}>
-                                                            {tag}
-                                                            <button type="button" className={styles.tagRemove} onClick={() => removeTag(tag)}>×</button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {tagSuggestions.length > 0 && (
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                                    {tagSuggestions
-                                                        .filter(t => !formData.target_tags?.includes(t))
-                                                        .filter(t => !tagInput || t.toLowerCase().includes(tagInput.toLowerCase()))
-                                                        .slice(0, 5)
-                                                        .map(t => (
-                                                        <button 
-                                                            key={t} 
-                                                            type="button" 
-                                                            onClick={() => addTag(t)}
-                                                            style={{ 
-                                                                padding: '4px 12px', 
-                                                                fontSize: '12px', 
-                                                                borderRadius: '16px', 
-                                                                border: '1px solid rgba(255,255,255,0.1)', 
-                                                                background: 'rgba(255,255,255,0.02)',
-                                                                color: 'rgba(255,255,255,0.7)',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.2s ease'
-                                                            }}
-                                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-                                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-                                                        >
-                                                            + {t}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
                                     </div>
                                 )}
 
@@ -1716,13 +1747,114 @@ export default function CreateCampaignForm({
                                     </div>
                                 )}
 
+                                {/* ── Tab: Budget ── */}
+                                {activeTab === 'budget' && (
+                                    <div className={styles.formSection}>
+                                        {/* Dynamic Placement Quote Card for Event Sponsorship */}
+                                        {formData.channel === 'event_sponsorship' && renderPlacementQuoteCard()}
+
+                                        {/* ── Financial Row: Wallet Currency & Total Budget Paired in Same Row ── */}
+                                        <div className={styles.row}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="currency">
+                                                    Wallet Currency <span className={styles.requiredIndicator}>*Required</span>
+                                                    <span className={styles.infoIcon} title="The currency this campaign's budget, bids and spend are denominated in — fixed once the campaign is created">ⓘ</span>
+                                                </label>
+                                                <select id="currency" name="currency" className={`${styles.select} ${errors.currency ? styles.inputError : ''}`}
+                                                    value={formData.currency} onChange={handleInputChange} disabled={isEditing || formData.channel === 'event_sponsorship'} required>
+                                                    {!formData.currency && <option value="" disabled>Select a currency</option>}
+                                                    {walletCurrencies.map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                                {isEditing ? (
+                                                    <p className={styles.pricingHint}>Currency can&apos;t be changed after a campaign is created.</p>
+                                                ) : formData.channel === 'event_sponsorship' ? (
+                                                    <p className={styles.pricingHint}>Locked to target event currency ({formData.currency || 'KES'}).</p>
+                                                ) : walletCurrencies.length === 0 ? (
+                                                    <p className={styles.pricingHint}>No wallet found for this account yet — top up a wallet first.</p>
+                                                ) : null}
+                                                {errors.currency && <p className={styles.errorMessage}>{errors.currency}</p>}
+                                            </div>
+
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="total_budget">
+                                                    Total Budget ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
+                                                    <span className={styles.infoIcon} title="The maximum amount of money you are willing to spend on an entire campaign over its lifetime">ⓘ</span>
+                                                </label>
+                                                <input id="total_budget" name="total_budget" type="number" className={`${styles.input} ${errors.total_budget ? styles.inputError : ''}`}
+                                                    placeholder="1000" value={formData.total_budget} onChange={handleInputChange} readOnly={formData.channel === 'event_sponsorship'} required />
+                                                {formData.channel === 'event_sponsorship' && (
+                                                    <p className={styles.pricingHint}>Fixed contract price determined by event placement quote.</p>
+                                                )}
+                                                {errors.total_budget && <p className={styles.errorMessage}>{errors.total_budget}</p>}
+                                            </div>
+                                        </div>
+
+                                        {/* Budget & Bidding (Network Auction only) */}
+                                        {formData.channel !== 'event_sponsorship' && (
+                                            <div className={styles.row}>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="daily_limit">
+                                                        Daily Limit ({formData.currency || 'USD'})
+                                                        <span className={styles.infoIcon} title="The maximum amount you want to spend on the campaign in a single day">ⓘ</span>
+                                                    </label>
+                                                    <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
+                                                        placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
+                                                    {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
+                                                </div>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="max_bid_amount">
+                                                        Max Bid ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
+                                                        <span className={styles.infoIcon} title="The highest amount you are willing to pay for a single action">ⓘ</span>
+                                                    </label>
+                                                    <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
+                                                        placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
+                                                    {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Escrow & Bidding Security Callout */}
+                                        <div style={{
+                                            padding: '14px 18px',
+                                            borderRadius: 'var(--radius-md)',
+                                            background: 'var(--color-surface-hover, rgba(255, 255, 255, 0.03))',
+                                            border: '1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08))',
+                                            marginTop: '8px',
+                                            display: 'flex',
+                                            gap: '12px',
+                                            alignItems: 'flex-start'
+                                        }}>
+                                            <div style={{ color: 'var(--color-brand-primary, #6366f1)', marginTop: '2px', flexShrink: 0 }}>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="12" cy="12" r="10" />
+                                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                                </svg>
+                                            </div>
+                                            <div style={{ fontSize: '13px', lineHeight: '1.5', color: 'var(--color-utility-secondaryText, #9ca3af)' }}>
+                                                {formData.channel === 'event_sponsorship' ? (
+                                                    <span>
+                                                        <strong style={{ color: 'var(--color-utility-primaryText, #fff)' }}>Escrow Protected:</strong> Upon campaign launch, the contract budget will be held in escrow. Funds are only settled once the event commences. If an organizer cancels or rejects the sponsorship, all funds are immediately returned to your commercial wallet.
+                                                    </span>
+                                                ) : (
+                                                    <span>
+                                                        <strong style={{ color: 'var(--color-utility-primaryText, #fff)' }}>Programmatic Auction:</strong> Spend is governed dynamically based on real-time CPM/CPC auction bids. Your campaign will pause automatically if the daily limit or total budget is reached.
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* ── Tab: Review ── */}
                                 {activeTab === 'review' && (
                                     <div className={styles.formSection}>
                                         <div className={styles.reviewGrid}>
                                             <div className={styles.reviewItem}>
                                                 <label>Channel</label>
-                                                <div>{formData.channel === 'event_sponsorship' ? 'Event Sponsorship' : 'Network Auction'}</div>
+                                                <div>{formData.channel === 'event_sponsorship' ? 'Event Sponsorship' : 'Network Ad Campaign'}</div>
                                             </div>
                                             {formData.channel === 'event_sponsorship' && (
                                                 <div className={styles.reviewItem}>
@@ -1902,7 +2034,7 @@ export default function CreateCampaignForm({
                         {
                             target: '.tour-partners-form-tabs',
                             title: 'Campaign Sections',
-                            content: 'We\'ve broken down the process into 4 easy steps: Basic Details, Targeting, Creatives (A/B testing) and Final Review.',
+                            content: 'We\'ve broken down the process into 5 easy steps: Campaign Details, Targeting, Creatives (A/B testing), Budget, and Final Review.',
                         },
                         {
                             target: '.tour-partners-pricing-hint',
@@ -1918,6 +2050,11 @@ export default function CreateCampaignForm({
                             target: '.tour-partners-tab-creative',
                             title: 'A/B Testing',
                             content: 'Add up to 3 different creative variants. Our system automatically rotates them to find the highest performing version for your audience.',
+                        },
+                        {
+                            target: '.tour-partners-tab-budget',
+                            title: 'Budget & Currency',
+                            content: 'Configure your campaign budget, wallet currency, daily spend caps, and maximum bids with built-in escrow protection.',
                         },
                         {
                             target: '.tour-partners-preview-panel',

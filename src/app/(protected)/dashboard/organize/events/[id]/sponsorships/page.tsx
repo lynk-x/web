@@ -101,9 +101,9 @@ function getPlacementLabel(placement?: string): string {
 
 /**
  * Sell-side event sponsorships dashboard for organizers (Single-table unified view - Option 3).
- * Eliminates all tabs. Provides a single comprehensive table with status filter chips,
+ * Eliminates tabs and stat cards in favor of a clean, persistent data table with status filter chips,
  * inline Option 4.2 creative review actions (Approve, Request Changes, Decline),
- * KPI financial telemetry, and direct 7-day reserve invite management.
+ * and direct 7-day reserve invite management.
  */
 export default function EventSponsorshipsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -372,64 +372,6 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                 closeHref={`/dashboard/organize/events/${id}`}
             />
 
-            {/* KPI Summary Cards */}
-            <div className={adminStyles.grid}>
-                <div className={styles.kpiCard}>
-                    <div className={styles.kpiHeader}>
-                        <span className={styles.kpiLabel}>Total Revenue</span>
-                        <span style={{ fontSize: '18px' }}>💰</span>
-                    </div>
-                    <div className={styles.kpiValue}>
-                        {formatCurrency(kpis.total_revenue, overview.currency || event.currency || 'KES')}
-                    </div>
-                    <div className={styles.kpiSubtext}>
-                        Contracted across active sponsorships
-                    </div>
-                </div>
-
-                <div className={styles.kpiCard}>
-                    <div className={styles.kpiHeader}>
-                        <span className={styles.kpiLabel}>Held in Escrow</span>
-                        <span style={{ fontSize: '18px' }}>🔒</span>
-                    </div>
-                    <div className={styles.kpiValue}>
-                        {formatCurrency(kpis.in_escrow, overview.currency || event.currency || 'KES')}
-                    </div>
-                    <div className={styles.kpiSubtext}>
-                        Awaiting review clearance or completion
-                    </div>
-                </div>
-
-                <div className={styles.kpiCard}>
-                    <div className={styles.kpiHeader}>
-                        <span className={styles.kpiLabel}>Review Queue</span>
-                        <span style={{ fontSize: '18px' }}>⚡</span>
-                    </div>
-                    <div className={styles.kpiValue} style={{ color: reviewCount > 0 ? '#facc15' : undefined }}>
-                        {reviewCount}
-                    </div>
-                    <div className={styles.kpiSubtext}>
-                        {kpis.pending_reviews || 0} pending · {kpis.revision_requests || 0} in revision
-                    </div>
-                </div>
-
-                <div className={styles.kpiCard}>
-                    <div className={styles.kpiHeader}>
-                        <span className={styles.kpiLabel}>Slot Utilization</span>
-                        <span style={{ fontSize: '18px' }}>📊</span>
-                    </div>
-                    <div className={styles.kpiValue}>
-                        {kpis.slot_utilization_pct}%
-                    </div>
-                    <div className={styles.progressTrack}>
-                        <div
-                            className={`${styles.progressFill} ${kpis.slot_utilization_pct >= 90 ? styles.progressFillWarning : ''}`}
-                            style={{ width: `${Math.min(kpis.slot_utilization_pct, 100)}%` }}
-                        />
-                    </div>
-                </div>
-            </div>
-
             {/* Unified Search & Filter Toolbar */}
             <TableToolbar
                 searchPlaceholder="Search sponsorships by brand name, campaign, or contact..."
@@ -451,37 +393,17 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
             </TableToolbar>
 
             {/* Unified Single Table View (Option 3) */}
-            {filteredSponsors.length === 0 ? (
-                <EmptyState
-                    message={
-                        searchQuery || sponsorFilter !== 'all'
-                            ? 'No sponsorships match your filter criteria.'
-                            : 'No active sponsorships or direct invitations configured for this event yet.'
-                    }
-                    action={
-                        searchQuery || sponsorFilter !== 'all' ? undefined : (
-                            <button
-                                type="button"
-                                className={adminStyles.btnPrimary}
-                                onClick={handleOpenNewInvite}
-                            >
-                                + Issue Direct Invite
-                            </button>
-                        )
-                    }
-                />
-            ) : (
-                <div className={adminStyles.pageCard} style={{ padding: 0, overflow: 'hidden' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="stack-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                                    <th style={thStyle}>Sponsor & Campaign</th>
-                                    <th style={thStyle}>Placement</th>
-                                    <th style={thStyle}>Contract Value</th>
-                                    <th style={thStyle}>Status</th>
-                                    <th style={thStyle}>Performance / Status Detail</th>
-                                    <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
+            <div className={adminStyles.pageCard} style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                    <table className="stack-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
+                                <th style={thStyle}>Sponsor & Campaign</th>
+                                <th style={thStyle}>Placement</th>
+                                <th style={thStyle}>Contract Value</th>
+                                <th style={thStyle}>Status</th>
+                                <th style={thStyle}>Performance / Status Detail</th>
+                                <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -622,11 +544,19 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                                         </tr>
                                     );
                                 })}
+                                {filteredSponsors.length === 0 && (
+                                    <tr>
+                                        <td data-empty colSpan={6} style={{ ...tdStyle, textAlign: 'center', opacity: 0.5, padding: '36px 16px' }}>
+                                            {searchQuery || sponsorFilter !== 'all'
+                                                ? 'No sponsorships match your search and filter criteria.'
+                                                : 'No active sponsorships or direct invitations configured for this event yet.'}
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            )}
 
             {/* ─── Modal 1: Tokenized Direct Invite Modal (7-Day Reservation Hold) ─── */}
             <DirectInviteModal
