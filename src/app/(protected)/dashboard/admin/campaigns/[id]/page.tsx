@@ -112,7 +112,7 @@ export default function AdminCampaignDetailPage() {
                 const { data: mediaData } = await supabase
                     .schema('api')
                     .from('v1_campaign_media')
-                    .select('url, call_to_action, media_type, is_primary')
+                    .select('media_url, url, call_to_action, media_type, is_primary')
                     .eq('campaign_id', id);
 
                 const primaryMedia = mediaData?.find(m => m.is_primary) || mediaData?.[0];
@@ -137,7 +137,7 @@ export default function AdminCampaignDetailPage() {
                     targetEventId: data.target_event_id || undefined,
                     targetCountries: regionsData?.map(r => r.country_code) || [],
                     targetTags: tagNames,
-                    mediaUrl: primaryMedia?.url || '',
+                    mediaUrl: (primaryMedia as any)?.media_url || primaryMedia?.url || '',
                     mediaType: primaryMedia?.media_type || '',
                     callToAction: primaryMedia?.call_to_action || '',
                 });

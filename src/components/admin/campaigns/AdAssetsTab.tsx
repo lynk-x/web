@@ -23,7 +23,9 @@ interface AdAsset {
     /** asset MIME/media type (e.g. 'image', 'video') */
     media_type: string;
     call_to_action: string | null;
+    media_url?: string;
     url: string;
+    destination_url?: string | null;
     is_primary: boolean;
     created_at: string;
 }
@@ -76,6 +78,7 @@ export default function AdAssetsTab() {
 
             setAssets((mediaData || []).map((a: any) => {
                 const campaign = campaignsMap[a.campaign_id];
+                const resolvedUrl = a.media_url || a.url || '';
                 return {
                     id: a.id,
                     campaign_id: a.campaign_id,
@@ -85,7 +88,9 @@ export default function AdAssetsTab() {
                     campaign_status: campaign?.status ?? '—',
                     media_type: a.media_type,
                     call_to_action: a.call_to_action,
-                    url: a.url,
+                    media_url: resolvedUrl,
+                    url: resolvedUrl,
+                    destination_url: a.destination_url || null,
                     is_primary: a.is_primary,
                     created_at: a.created_at,
                 };

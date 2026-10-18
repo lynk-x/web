@@ -147,7 +147,7 @@ export default function CampaignAssetsPage() {
                                     <div className={styles.imagePreview}>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
-                                            src={asset.url}
+                                            src={asset.media_url || asset.url}
                                             alt={asset.call_to_action || 'Campaign asset'}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={e => {
@@ -158,7 +158,7 @@ export default function CampaignAssetsPage() {
                                 ) : isVideoType(asset.media_type) ? (
                                     <div className={styles.videoPreview}>
                                         <video
-                                            src={asset.url}
+                                            src={asset.media_url || asset.url}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             muted
                                             preload="metadata"
@@ -166,7 +166,7 @@ export default function CampaignAssetsPage() {
                                     </div>
                                 ) : (
                                     <div className={styles.textPreview}>
-                                        <p>"{asset.call_to_action || asset.url}"</p>
+                                        <p>"{asset.call_to_action || asset.media_url || asset.url}"</p>
                                     </div>
                                 )}
 

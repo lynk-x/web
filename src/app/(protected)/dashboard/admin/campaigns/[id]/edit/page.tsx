@@ -53,7 +53,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                 supabase
                     .schema('api')
                     .from('v1_campaign_media')
-                    .select('call_to_action, url, is_primary, media_type')
+                    .select('call_to_action, media_url, url, is_primary, media_type, destination_url')
                     .eq('campaign_id', id),
                 supabase
                     .schema('api')
@@ -96,14 +96,19 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                 target_event_id: campaignData.target_event_id || '',
                 target_countries: regions.map(r => r.country_code),
                 target_tags: tagNames,
-                creatives: assets.map(a => ({
-                    headline: a.call_to_action || '',
-                    imageUrl: a.url || '',
-                    preview: a.url || '',
-                    mediaType: a.media_type
-                })),
+                creatives: assets.map(a => {
+                    const resolvedMediaUrl = (a as any).media_url || a.url || '';
+                    return {
+                        headline: a.call_to_action || '',
+                        destination_url: (a as any).destination_url || campaignData.destination_url || '',
+                        media_url: resolvedMediaUrl,
+                        imageUrl: resolvedMediaUrl,
+                        preview: resolvedMediaUrl,
+                        mediaType: a.media_type
+                    };
+                }),
                 adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
-                adImageUrl: assets.find(a => a.is_primary)?.url || '',
+                adImageUrl: (assets.find(a => a.is_primary) as any)?.media_url || assets.find(a => a.is_primary)?.url || '',
                 account_id: campaignData.account_id
             });
             setIsLoading(false);
@@ -118,10 +123,13 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
         try {
             // 1. Upload all creative assets (if any new files)
             const uploadedCreatives = await Promise.all(formData.creatives.map(async (c, idx) => {
+                const targetUrl = (c.destination_url || formData.destination_url || '').trim();
                 if (!c.file) return {
                     media_type: c.mediaType || 'image',
                     call_to_action: c.headline,
-                    url: c.imageUrl || formData.adImageUrl,
+                    destination_url: targetUrl,
+                    media_url: c.media_url || c.imageUrl || formData.adImageUrl,
+                    url: c.media_url || c.imageUrl || formData.adImageUrl,
                     is_primary: idx === 0
                 };
                 
@@ -157,6 +165,8 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                 return {
                     media_type: c.mediaType || 'image',
                     call_to_action: c.headline,
+                    destination_url: targetUrl,
+                    media_url: signData.fileUrl,
                     url: signData.fileUrl,
                     is_primary: idx === 0
                 };

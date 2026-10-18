@@ -34,7 +34,9 @@ export interface AdMedia {
     id: string;
     campaign_id: string;
     media_type: 'image' | 'video' | 'audio' | 'document';
-    url: string;
+    media_url: string;
+    url?: string;
+    destination_url?: string | null;
     call_to_action?: string | null;
     is_primary: boolean;
     is_hidden: boolean;
@@ -171,7 +173,7 @@ export function createAdsRepository(client: DbClient) {
             const { data, error } = await client
                 .schema('api')
                 .from('v1_campaign_media')
-                .select('id, campaign_id, media_type, url, call_to_action, is_primary, is_hidden, metadata, impressions_count, clicks_count, created_at')
+                .select('id, campaign_id, media_type, media_url, url, call_to_action, destination_url, is_primary, is_hidden, metadata, impressions_count, clicks_count, created_at')
                 .eq('campaign_id', campaignId)
                 .eq('is_hidden', false)
                 .order('created_at', { ascending: false });

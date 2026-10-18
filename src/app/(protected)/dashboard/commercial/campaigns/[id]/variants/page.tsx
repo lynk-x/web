@@ -19,10 +19,12 @@ interface AdVariant {
     id: string;
     created_at: string;
     url: string;
+    media_url?: string;
     media_type: string;
     call_to_action: string;
     is_primary: boolean;
     is_hidden: boolean;
+    destination_url?: string;
     impressions_count: number;
     clicks_count: number;
 }
@@ -52,7 +54,7 @@ export default function CampaignVariantsPage() {
                 supabase
                     .schema('api')
                     .from('v1_campaign_media')
-                    .select('id, created_at, url, media_type, call_to_action, is_primary, is_hidden, impressions_count, clicks_count')
+                    .select('id, created_at, media_url, url, media_type, call_to_action, destination_url, is_primary, is_hidden, impressions_count, clicks_count')
                     .eq('campaign_id', id)
                     .order('is_primary', { ascending: false }),
             ]);
@@ -184,13 +186,20 @@ export default function CampaignVariantsPage() {
                                             <td style={tdStyle}>
                                                 <div style={{ width: '56px', height: '56px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
                                                     {v.media_type === 'video' ? (
-                                                        <video src={v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                                                        <video src={v.media_url || v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
                                                     ) : (
-                                                        <img src={v.url} alt="Creative variant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <img src={v.media_url || v.url} alt="Creative variant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     )}
                                                 </div>
                                             </td>
-                                            <td style={{ ...tdStyle, opacity: 0.7 }}>{v.call_to_action || '-'}</td>
+                                            <td style={{ ...tdStyle, opacity: 0.85 }}>
+                                                <div style={{ fontWeight: 500 }}>{v.call_to_action || '-'}</div>
+                                                {v.destination_url && (
+                                                    <a href={v.destination_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: 'var(--color-brand-primary)', textDecoration: 'none', display: 'block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                                                        {v.destination_url}
+                                                    </a>
+                                                )}
+                                            </td>
                                             <td style={tdStyle}>{formatNumber(v.impressions_count)}</td>
                                             <td style={tdStyle}>{formatNumber(v.clicks_count)}</td>
                                             <td style={tdStyle}>{vCtr.toFixed(2)}%</td>

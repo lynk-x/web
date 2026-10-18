@@ -25,6 +25,8 @@ import type { CampaignStatus } from '@/types/status';
 /** A single ad creative (headline + image). Supports up to 3 per campaign for A/B rotation. */
 export interface Creative {
     headline: string;
+    destination_url?: string;
+    media_url?: string;
     imageUrl?: string;
     file?: File;
     preview?: string;
@@ -81,6 +83,8 @@ function toDraftSnapshot(data: CampaignData): CampaignData {
         ...data,
         creatives: data.creatives.map(c => ({
             headline: c.headline,
+            destination_url: c.destination_url,
+            media_url: c.media_url,
             imageUrl: c.imageUrl,
             mediaType: c.mediaType,
             // file and preview (a blob: URL) are dropped — neither survives
@@ -213,7 +217,7 @@ export default function CreateCampaignForm({
 
         target_countries: [],
         target_tags: [],
-        creatives: [{ headline: '', imageUrl: '', preview: '', file: undefined }],
+        creatives: [{ headline: '', destination_url: '', imageUrl: '', preview: '', file: undefined }],
         max_bid_amount: '0.01',
         currency: '',
         adHeadline: '',
@@ -609,15 +613,20 @@ export default function CreateCampaignForm({
         setFormData(prev => {
             const creatives = [...prev.creatives];
             creatives[idx] = { ...creatives[idx], ...patch };
-            return { ...prev, creatives };
+            // If primary creative's destination_url is updated, keep top-level destination_url in sync as fallback
+            const nextDestinationUrl = (idx === 0 && patch.destination_url !== undefined)
+                ? patch.destination_url
+                : prev.destination_url;
+            return { ...prev, creatives, destination_url: nextDestinationUrl };
         });
     };
 
     const addCreative = () => {
         if (formData.creatives.length >= 3) return;
+        const defaultUrl = formData.creatives[0]?.destination_url || formData.destination_url || '';
         setFormData(prev => ({
             ...prev,
-            creatives: [...prev.creatives, { headline: '', imageUrl: '', preview: '', file: undefined }],
+            creatives: [...prev.creatives, { headline: '', destination_url: defaultUrl, imageUrl: '', preview: '', file: undefined }],
         }));
         setActiveCreativeIdx(formData.creatives.length);
     };
@@ -813,18 +822,21 @@ export default function CreateCampaignForm({
         if (!formData.start_at) newErrors.start_at = 'Start date is required.';
         if (!formData.end_at) newErrors.end_at = 'End date is required.';
 
-        const primaryCreative = formData.creatives[0];
-        if (!primaryCreative.headline.trim()) newErrors['creative.0.headline'] = 'Campaign headline is required.';
-        if (!primaryCreative.preview && !primaryCreative.imageUrl && !formData.adImageUrl) {
-            newErrors['creative.0.asset'] = 'A creative asset is required.';
-        }
-
-        const url = formData.destination_url.trim();
-        if (!url) {
-            newErrors.destination_url = 'Destination URL is required.';
-        } else if (!url.startsWith('https://')) {
-            newErrors.destination_url = 'A secure destination URL (https://...) is required.';
-        }
+        formData.creatives.forEach((c, idx) => {
+            const label = idx === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + idx)}`;
+            if (!c.headline.trim()) {
+                newErrors[`creative.${idx}.headline`] = `${label} headline is required.`;
+            }
+            if (!c.preview && !c.imageUrl && !formData.adImageUrl) {
+                newErrors[`creative.${idx}.asset`] = `${label} creative asset is required.`;
+            }
+            const cUrl = (c.destination_url || formData.destination_url || '').trim();
+            if (!cUrl) {
+                newErrors[`creative.${idx}.destination_url`] = `${label} destination URL is required.`;
+            } else if (!cUrl.startsWith('https://')) {
+                newErrors[`creative.${idx}.destination_url`] = 'A secure destination URL (https://...) is required.';
+            }
+        });
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -858,10 +870,13 @@ export default function CreateCampaignForm({
         try {
             // 1. Upload all creative assets (if any new files)
             const uploadedCreatives = await Promise.all(formData.creatives.map(async (c, idx) => {
+                const targetUrl = (c.destination_url || formData.destination_url || '').trim();
                 if (!c.file) return {
                     media_type: c.mediaType || 'image',
                     call_to_action: c.headline,
-                    url: c.imageUrl || formData.adImageUrl,
+                    destination_url: targetUrl,
+                    media_url: c.media_url || c.imageUrl || formData.adImageUrl,
+                    url: c.media_url || c.imageUrl || formData.adImageUrl,
                     is_primary: idx === 0
                 };
                 
@@ -908,6 +923,8 @@ export default function CreateCampaignForm({
                 return {
                     media_type: c.mediaType || 'image',
                     call_to_action: c.headline,
+                    destination_url: targetUrl,
+                    media_url: signData.fileUrl,
                     url: signData.fileUrl,
                     is_primary: idx === 0
                 };
@@ -1204,11 +1221,6 @@ export default function CreateCampaignForm({
                                                     <p className={styles.channelCardDesc}>
                                                         Deliver targeted ads across multiple event forums and attendee feeds based on user interests, location and search topics.
                                                     </p>
-                                                    <div className={styles.channelFeatureList}>
-                                                        <span className={styles.channelFeaturePill}>🌐 Cross-event reach</span>
-                                                        <span className={styles.channelFeaturePill}>🎯 Interest & region targeting</span>
-                                                        <span className={styles.channelFeaturePill}>⚡ Pay-as-you-go</span>
-                                                    </div>
                                                 </button>
 
                                                 <button
@@ -1237,11 +1249,6 @@ export default function CreateCampaignForm({
                                                     <p className={styles.channelCardDesc}>
                                                         Sponsor a specific event with guaranteed ad rotation inside its official forum.
                                                     </p>
-                                                    <div className={styles.channelFeatureList}>
-                                                        <span className={styles.channelFeaturePill}>📍 Single event focus</span>
-                                                        <span className={styles.channelFeaturePill}>📊 Guaranteed rotation slots</span>
-                                                        <span className={styles.channelFeaturePill}>🛡️ Category shield</span>
-                                                    </div>
                                                 </button>
                                             </div>
                                         </div>
@@ -1264,34 +1271,6 @@ export default function CreateCampaignForm({
                                                 placeholder="Internal description or overview..." value={formData.description}
                                                 onChange={handleInputChange} />
                                             {errors.description && <p className={styles.errorMessage}>{errors.description}</p>}
-                                        </div>
-
-                                        {/* Dates - Moved up below Description */}
-                                        <div className={styles.row}>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="start_at">
-                                                    Start Date <span className={styles.requiredIndicator}>*Required</span>
-                                                </label>
-                                                <DatePicker
-                                                    value={formData.start_at}
-                                                    onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
-                                                    placeholder="dd/mm/yyyy"
-                                                    className={errors.start_at ? styles.inputError : ''}
-                                                />
-                                                {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
-                                            </div>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="end_at">
-                                                    End Date <span className={styles.requiredIndicator}>*Required</span>
-                                                </label>
-                                                <DatePicker
-                                                    value={formData.end_at}
-                                                    onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
-                                                    placeholder="dd/mm/yyyy"
-                                                    className={errors.end_at ? styles.inputError : ''}
-                                                />
-                                                {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
-                                            </div>
                                         </div>
 
                                         {/* Placement Format: In Event Sponsorship, Slot Allocation is on the same row. In Network Auction, Placement Format is full width. */}
@@ -1397,14 +1376,32 @@ export default function CreateCampaignForm({
                                         {/* ── Dynamic Placement Quote Card in Targeting Tab ── */}
                                         {renderPlacementQuoteCard()}
 
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label} htmlFor="destination_url">
-                                                Destination URL <span className={styles.requiredIndicator}>*Required</span>
-                                            </label>
-                                            <input id="destination_url" name="destination_url" type="url" className={`${styles.input} ${errors.destination_url ? styles.inputError : ''}`}
-                                                placeholder="https://lynk-x.app/..." value={formData.destination_url}
-                                                onChange={handleInputChange} required />
-                                            {errors.destination_url && <p className={styles.errorMessage}>{errors.destination_url}</p>}
+                                        {/* ── Campaign Schedule (Flight Dates) ── */}
+                                        <div className={styles.row}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="start_at">
+                                                    Start Date <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <DatePicker
+                                                    value={formData.start_at}
+                                                    onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
+                                                    placeholder="dd/mm/yyyy"
+                                                    className={errors.start_at ? styles.inputError : ''}
+                                                />
+                                                {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
+                                            </div>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="end_at">
+                                                    End Date <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <DatePicker
+                                                    value={formData.end_at}
+                                                    onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
+                                                    placeholder="dd/mm/yyyy"
+                                                    className={errors.end_at ? styles.inputError : ''}
+                                                />
+                                                {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
+                                            </div>
                                         </div>
 
                                         {/* Multi-Country & Tag Targeting (Network Auction only) */}
@@ -1699,6 +1696,30 @@ export default function CreateCampaignForm({
                                                 {errors[`creative.${activeCreativeIdx}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.headline`]}</p>}
                                             </div>
 
+                                            {/* Destination URL per creative variant */}
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor={`creative_${activeCreativeIdx}_destination_url`}>
+                                                    Destination URL <span className={styles.requiredIndicator}>*Required</span>
+                                                    {activeCreativeIdx > 0 && (
+                                                        <span style={{ opacity: 0.6, fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
+                                                            (Defaults to Primary landing page)
+                                                        </span>
+                                                    )}
+                                                </label>
+                                                <input
+                                                    id={`creative_${activeCreativeIdx}_destination_url`}
+                                                    type="url"
+                                                    className={`${styles.input} ${errors[`creative.${activeCreativeIdx}.destination_url`] ? styles.inputError : ''}`}
+                                                    placeholder="https://lynk-x.app/..."
+                                                    value={activeCreative.destination_url ?? (activeCreativeIdx === 0 ? formData.destination_url : '')}
+                                                    onChange={(e) => updateCreative(activeCreativeIdx, { destination_url: e.target.value })}
+                                                    required
+                                                />
+                                                {errors[`creative.${activeCreativeIdx}.destination_url`] && (
+                                                    <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.destination_url`]}</p>
+                                                )}
+                                            </div>
+
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label}>
                                                     Creative Asset <span className={styles.requiredIndicator}>*Required</span>
@@ -1833,14 +1854,14 @@ export default function CreateCampaignForm({
                                                     <line x1="12" y1="8" x2="12.01" y2="8" />
                                                 </svg>
                                             </div>
-                                            <div style={{ fontSize: '13px', lineHeight: '1.5', color: 'var(--color-utility-secondaryText, #9ca3af)' }}>
+                                            <div style={{ fontSize: '13px', lineHeight: '1.5', color: 'rgba(255, 255, 255, 0.75)' }}>
                                                 {formData.channel === 'event_sponsorship' ? (
                                                     <span>
-                                                        <strong style={{ color: 'var(--color-utility-primaryText, #fff)' }}>Escrow Protected:</strong> Upon campaign launch, the contract budget will be held in escrow. Funds are only settled once the event commences. If an organizer cancels or rejects the sponsorship, all funds are immediately returned to your commercial wallet.
+                                                        <strong style={{ color: '#ffffff' }}>Escrow Protected:</strong> Upon campaign launch, the contract budget will be held in escrow. Funds are only settled once the event commences. If an organizer cancels or rejects the sponsorship, all funds are immediately returned to your commercial wallet.
                                                     </span>
                                                 ) : (
                                                     <span>
-                                                        <strong style={{ color: 'var(--color-utility-primaryText, #fff)' }}>Programmatic Auction:</strong> Spend is governed dynamically based on real-time CPM/CPC auction bids. Your campaign will pause automatically if the daily limit or total budget is reached.
+                                                        <strong style={{ color: '#ffffff' }}>Programmatic Auction:</strong> Spend is governed dynamically based on real-time CPM/CPC auction bids. Your campaign will pause automatically if the daily limit or total budget is reached.
                                                     </span>
                                                 )}
                                             </div>
@@ -1891,8 +1912,17 @@ export default function CreateCampaignForm({
                                                 </div>
                                             </div>
                                             <div className={styles.reviewItem}>
-                                                <label>Destination URL</label>
-                                                <div style={{ wordBreak: 'break-all' }}>{formData.destination_url}</div>
+                                                <label>Destination URLs</label>
+                                                <div>
+                                                    {formData.creatives.map((c, i) => (
+                                                        <div key={i} style={{ wordBreak: 'break-all', marginBottom: '4px' }}>
+                                                            <span style={{ opacity: 0.6, fontSize: '12px' }}>
+                                                                {i === 0 ? 'Primary: ' : `Variant ${String.fromCharCode(65 + i)}: `}
+                                                            </span>
+                                                            {c.destination_url || formData.destination_url || 'Not set'}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
 

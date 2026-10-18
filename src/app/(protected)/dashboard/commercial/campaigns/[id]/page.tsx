@@ -72,7 +72,9 @@ interface CampaignDetail {
 
 interface AdVariant {
     id: string;
+    media_url?: string;
     url: string;
+    destination_url?: string;
     media_type: string;
     call_to_action: string;
     is_primary: boolean;
@@ -112,7 +114,7 @@ export default function CampaignDetailPage() {
                 supabase
                     .schema('api')
                     .from('v1_campaign_media')
-                    .select('id, url, media_type, call_to_action, is_primary, is_hidden, impressions_count, clicks_count')
+                    .select('id, media_url, url, destination_url, media_type, call_to_action, is_primary, is_hidden, impressions_count, clicks_count')
                     .eq('campaign_id', id)
                     .order('is_primary', { ascending: false })
             ]);
@@ -336,7 +338,7 @@ export default function CampaignDetailPage() {
                             type={campaign.type}
                             title={campaign.title}
                             headline={primaryVariant?.call_to_action}
-                            mediaUrl={primaryVariant?.url}
+                            mediaUrl={primaryVariant?.media_url || primaryVariant?.url}
                             mediaType={primaryVariant?.media_type}
                         />
                     </div>

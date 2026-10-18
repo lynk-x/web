@@ -55,7 +55,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 supabase
                     .schema('api')
                     .from('v1_campaign_media')
-                    .select('call_to_action, url, is_primary, media_type')
+                    .select('call_to_action, media_url, url, is_primary, media_type, destination_url')
                     .eq('campaign_id', id),
                 supabase
                     .schema('api')
@@ -103,14 +103,19 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 target_event_id: campaignData.target_event_id || '',
                 target_countries: regions.map(r => r.country_code),
                 target_tags: tagNames,
-                creatives: assets.map(a => ({
-                    headline: a.call_to_action || '',
-                    imageUrl: a.url || '',
-                    preview: a.url || '',
-                    mediaType: a.media_type
-                })),
+                creatives: assets.map(a => {
+                    const resolvedMediaUrl = (a as any).media_url || a.url || '';
+                    return {
+                        headline: a.call_to_action || '',
+                        destination_url: (a as any).destination_url || campaignData.destination_url || '',
+                        media_url: resolvedMediaUrl,
+                        imageUrl: resolvedMediaUrl,
+                        preview: resolvedMediaUrl,
+                        mediaType: a.media_type
+                    };
+                }),
                 adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
-                adImageUrl: assets.find(a => a.is_primary)?.url || ''
+                adImageUrl: (assets.find(a => a.is_primary) as any)?.media_url || assets.find(a => a.is_primary)?.url || ''
             });
             setIsLoading(false);
         };
