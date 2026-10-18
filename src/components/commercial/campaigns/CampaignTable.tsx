@@ -43,7 +43,7 @@ const getStatusVariant = (status: string): BadgeVariant => {
         case 'completed': return 'info';
         case 'scheduled': return 'primary';
         case 'rejected':
-        case 'declined': return 'danger';
+        case 'declined': return 'error';
         default: return 'neutral';
     }
 };
