@@ -21,6 +21,8 @@ export interface AuditLog {
     details?: string;
 }
 
+import type { CampaignStatus } from './status';
+
 /** An admin-managed advertising campaign. */
 export interface Campaign {
     id: string;
@@ -33,8 +35,8 @@ export interface Campaign {
     currency: string;
     impressions: number;
     clicks: number;
-    /** Aligned to `campaign_status` enum: draft replaces the old 'pending' */
-    status: 'active' | 'draft' | 'pending_approval' | 'paused' | 'rejected' | 'completed';
+    /** Aligned to `campaign_status` enum */
+    status: CampaignStatus;
     /** Aligned to `ad_type` enum: banner | interstitial */
     adType?: 'banner' | 'interstitial' | 'interstitial_video';
     targetEventId?: string;

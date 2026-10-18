@@ -17,6 +17,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { createSponsorshipsRepository, type PlacementQuoteResult } from '@/lib/repositories/sponsorships.repository';
 import { formatCurrency } from '@/utils/format';
+import type { CampaignStatus } from '@/types/status';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ export interface CampaignData {
     description: string;
     type: 'banner' | 'interstitial' | 'interstitial_video';
     channel?: 'network' | 'event_sponsorship';
+    status?: CampaignStatus;
     slots?: number;
     total_budget: string;
     daily_limit: string;
@@ -52,6 +54,7 @@ export interface CampaignData {
     adHeadline: string;
     adImageUrl?: string;
     account_id?: string;
+    revision_notes?: string;
 }
 
 interface PricingConfig {
@@ -837,7 +840,7 @@ export default function CreateCampaignForm({
         if (e) e.preventDefault();
         setFormError('');
         
-        const targetStatus = forceStatus || (isEditing ? undefined : 'pending_approval');
+        const targetStatus = forceStatus || (isEditing ? (formData.status === 'revision_requested' ? 'pending_approval' : undefined) : 'pending_approval');
 
         if (onSubmit) { 
             setIsSubmitting(true);
@@ -970,7 +973,7 @@ export default function CreateCampaignForm({
                 }
             }
 
-            showToast(isEditing ? 'Campaign updated successfully!' : 'Campaign submitted for approval!', 'success');
+            showToast(isEditing ? (formData.status === 'revision_requested' ? 'Revision submitted for approval!' : 'Campaign updated successfully!') : 'Campaign submitted for approval!', 'success');
             onDirtyChange?.(false);
             localStorage.removeItem('campaign_draft');
             router.push(redirectPath);
@@ -1009,7 +1012,7 @@ export default function CreateCampaignForm({
                     subtitle={pageSubtitle || (isEditing ? "Update your campaign details and creative." : "Set up a new campaign to reach more users.")}
                     onClose={handleClose}
                     primaryAction={{
-                        label: isEditing ? 'Save Changes' : 'Launch Campaign',
+                        label: isEditing ? (formData.status === 'revision_requested' ? 'Submit Revision' : 'Save Changes') : 'Launch Campaign',
                         type: 'submit',
                         formId: 'campaign-form',
                         isLoading: isSubmitting,
@@ -1023,6 +1026,32 @@ export default function CreateCampaignForm({
                 />
 
                 {children}
+
+                {formData.status === 'revision_requested' && (
+                    <div style={{
+                        padding: '16px 20px',
+                        marginBottom: '20px',
+                        borderRadius: 'var(--radius-lg)',
+                        background: 'rgba(245, 158, 11, 0.08)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: 'var(--color-interface-warning)' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Changes Requested by Event Organizer
+                        </div>
+                        {formData.revision_notes && (
+                            <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--color-text-primary)' }}>
+                                &ldquo;{formData.revision_notes}&rdquo;
+                            </p>
+                        )}
+                        <p style={{ margin: 0, fontSize: '12px', opacity: 0.75 }}>
+                            Please review the requested changes, update your creative assets or details, and click &ldquo;Submit Revision&rdquo;. Your reserved slot and escrow balance remain held.
+                        </p>
+                    </div>
+                )}
 
                 <div className={adminStyles.subPageGrid}>
 

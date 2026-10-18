@@ -282,11 +282,11 @@ export default function CampaignsPage() {
                          { value: 'all', label: 'All' },
                          { value: 'active', label: 'Active' },
                          { value: 'pending_approval', label: 'Pending' },
+                         { value: 'revision_requested', label: 'Needs Revision' },
                          { value: 'paused', label: 'Paused' },
                          { value: 'draft', label: 'Draft' },
                          { value: 'completed', label: 'Completed' },
                          { value: 'rejected', label: 'Rejected' },
-                         { value: 'scheduled', label: 'Scheduled' },
                      ]}
                      currentValue={statusFilter}
                      onChange={setStatusFilter}

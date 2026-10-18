@@ -82,11 +82,16 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
                 tagNames = tagsData?.map(t => t.slug) || [];
             }
 
+            const sponsorshipDetails = campaignData.sponsorship_details || {};
             setCampaign({
                 id: campaignData.id,
                 title: campaignData.title,
                 description: campaignData.description || '',
                 type: campaignData.type,
+                channel: campaignData.channel || 'network',
+                status: campaignData.status,
+                slots: sponsorshipDetails.slots || 1,
+                revision_notes: sponsorshipDetails.revision_notes || '',
                 total_budget: String(campaignData.total_budget),
                 daily_limit: campaignData.daily_limit != null ? String(campaignData.daily_limit) : '',
                 max_bid_amount: campaignData.max_bid_amount != null ? String(campaignData.max_bid_amount) : '0.01',

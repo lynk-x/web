@@ -22,6 +22,7 @@ import CampaignPreviewMock from '@/components/commercial/campaigns/CampaignPrevi
 const STATUS_MAP: Record<string, { label: string; variant: BadgeVariant }> = {
     draft: { label: 'Draft', variant: 'subtle' },
     pending_approval: { label: 'Pending Approval', variant: 'warning' },
+    revision_requested: { label: 'Revision Requested', variant: 'warning' },
     active: { label: 'Active', variant: 'success' },
     paused: { label: 'Paused', variant: 'neutral' },
     completed: { label: 'Completed', variant: 'info' },
@@ -57,6 +58,16 @@ interface CampaignDetail {
     metadata: any;
     created_at: string;
     reference: string;
+    channel?: string;
+    sponsorship_details?: {
+        slots?: number;
+        share_of_voice?: number;
+        price_per_slot?: number;
+        quote_total?: number;
+        revision_notes?: string;
+        reviewed_at?: string;
+        hold_until?: string;
+    };
 }
 
 interface AdVariant {
@@ -164,6 +175,7 @@ export default function CampaignDetailPage() {
     const badge = STATUS_MAP[campaign.status] || { label: campaign.status, variant: 'neutral' as BadgeVariant };
     const budgetUsed = campaign.total_budget > 0 ? (campaign.spent_amount / campaign.total_budget) * 100 : 0;
     const rejectionReason = campaign.metadata?.rejection_reason || campaign.metadata?.review_notes;
+    const revisionNotes = campaign.sponsorship_details?.revision_notes || campaign.metadata?.revision_notes || campaign.metadata?.review_notes;
     const primaryVariant = variants.find(v => v.is_primary) || variants[0];
 
     return (
@@ -176,7 +188,7 @@ export default function CampaignDetailPage() {
                 badge={badge}
                 style={{ paddingBottom: '12px' }}
                 primaryAction={{
-                    label: campaign.status === 'rejected' ? 'Edit & Resubmit' : 'Edit Campaign',
+                    label: campaign.status === 'revision_requested' ? 'Upload Revision' : campaign.status === 'rejected' ? 'Edit & Resubmit' : 'Edit Campaign',
                     onClick: () => router.push(`/dashboard/commercial/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`),
                     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 }}
@@ -217,6 +229,36 @@ export default function CampaignDetailPage() {
                     {/* Campaign Details Card */}
                     <div className={`${adminStyles.pageCard} tour-campaign-details`}>
                         <h2 className={adminStyles.sectionTitle}>Campaign Details</h2>
+
+                        {campaign.status === 'revision_requested' && (
+                            <div style={{
+                                padding: '12px 20px',
+                                borderRadius: 'var(--radius-lg)',
+                                background: 'rgba(245, 158, 11, 0.08)',
+                                border: '1px solid rgba(245, 158, 11, 0.25)',
+                                marginBottom: '20px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: 'var(--color-interface-warning)' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    Changes Requested by Event Organizer
+                                </div>
+                                <p style={{ fontSize: '14px', margin: 0, color: 'var(--color-text-primary)' }}>
+                                    {revisionNotes || 'The event organizer requested adjustments to your creative assets or placement details.'}
+                                </p>
+                                <p style={{ fontSize: '12px', opacity: 0.7, margin: 0 }}>
+                                    Your placement slot reservation and escrow deposit remain held. Please update your creative assets and resubmit for approval.
+                                </p>
+                                <Link
+                                    href={`/dashboard/commercial/campaigns/${id}/edit?createdAt=${encodeURIComponent(campaign.created_at)}`}
+                                    style={{ color: 'var(--color-brand-primary)', fontSize: '14px', fontWeight: 500, textDecoration: 'none', marginTop: '4px' }}
+                                >
+                                    Upload revised creative →
+                                </Link>
+                            </div>
+                        )}
 
                         {campaign.status === 'rejected' && (
                             <div style={{

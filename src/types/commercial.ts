@@ -4,6 +4,8 @@
  * Centralised definitions used by commercial dashboard components and campaign management.
  */
 
+import type { CampaignStatus } from './status';
+
 /** Partner or advertising campaign entity. */
 export interface Campaign {
     id: string;
@@ -13,7 +15,7 @@ export interface Campaign {
     /** From `ad_type` enum */
     type: 'banner' | 'interstitial' | 'interstitial_video';
     /** From `campaign_status` enum */
-    status: 'draft' | 'pending_approval' | 'active' | 'paused' | 'completed' | 'rejected';
+    status: CampaignStatus;
     /** ISO dates from start_at and end_at */
     start_at: string;
     end_at: string;

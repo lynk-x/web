@@ -40,6 +40,7 @@ const getStatusVariant = (status: string): BadgeVariant => {
     switch (status) {
         case 'active': return 'success';
         case 'pending_approval': return 'primary';
+        case 'revision_requested': return 'warning';
         case 'draft': return 'warning';
         case 'paused': return 'info';
         case 'rejected': return 'error';
