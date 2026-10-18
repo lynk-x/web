@@ -295,9 +295,9 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                 {campaign.adType === 'interstitial' || campaign.adType === 'interstitial_video' ? (
                                     <div className={styles.mockAdInterstitial}>
                                         <div className={styles.mockAdHeader}>
-                                            <div style={{ color: '#fff', fontSize: '12px', fontWeight: 800 }}>PARTNER</div>
+                                            <div style={{ color: '#fff', fontSize: '12px', fontWeight: 800 }}>SPONSOR</div>
                                             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
-                                                {campaign.mediaType === 'video' ? 'Video playing' : 'Partner Spotlight'}
+                                                {campaign.mediaType === 'video' ? 'Video playing' : 'Sponsor Spotlight'}
                                             </div>
                                             <div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>05</div>
                                         </div>
@@ -328,7 +328,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                             )}
                                         </div>
                                         <div className={styles.mockAdInfo}>
-                                            <span className={styles.mockAdBadge}>PARTNER • INTERSTITIAL</span>
+                                            <span className={styles.mockAdBadge}>SPONSOR • INTERSTITIAL</span>
                                             <div className={styles.mockAdTitle} style={{ fontSize: '20px' }}>{campaign.name}</div>
                                             <div className={styles.mockAdDesc} style={{ fontSize: '14px' }}>
                                                 {campaign.description || `Join ${campaign.client} for an exclusive experience. Click to learn more!`}
@@ -353,7 +353,7 @@ export default function CampaignDetail({ campaign, onStatusChange }: CampaignDet
                                                     paddingRight: '12px'
                                                 } : {}}
                                             >
-                                                {!campaign.mediaUrl && <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>PARTNER</div>}
+                                                {!campaign.mediaUrl && <div className={styles.mockAdTitle} style={{ fontWeight: 800 }}>SPONSOR</div>}
                                                 <div className={styles.mockAdCTA}>
                                                     {campaign.callToAction || 'Learn More'}
                                                 </div>

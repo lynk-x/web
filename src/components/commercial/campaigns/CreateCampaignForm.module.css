@@ -214,7 +214,7 @@
 
 .reviewItem:last-child { border-bottom: none; }
 .reviewLabel { opacity: 0.6; font-size: 13px; flex-shrink: 0; }
-.reviewValue { font-weight: 600; font-size: 13px; text-align: right; word-break: break-all; }
+.reviewValue { font-weight: 600; font-size: 13px; text-align: right; word-break: break-word; overflow-wrap: break-word; max-width: 65%; }
 
 .launchNote {
     font-size: 12px;

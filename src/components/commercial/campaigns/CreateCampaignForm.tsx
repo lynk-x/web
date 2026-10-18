@@ -568,6 +568,40 @@ export default function CreateCampaignForm({
 
     const getMaxSlotsForType = (type: string) => (type === 'banner' ? 8 : 2);
 
+    /**
+     * Formats slot allocation numbers into intuitive attendee exposure ratios.
+     * Replaces ad-tech jargon with concrete attendee frequency and milestone indicators.
+     */
+    const getSlotOptionLabel = (slotNum: number, type: string) => {
+        const max = type === 'banner' ? 8 : 2;
+        if (slotNum === max) {
+            return 'Full Exclusive Takeover';
+        }
+
+        if (max === 2) {
+            return '1 in 2 Attendee Views';
+        }
+
+        switch (slotNum) {
+            case 1:
+                return '1 in 8 Attendee Views';
+            case 2:
+                return '1 in 4 Attendee Views';
+            case 3:
+                return '3 in 8 Attendee Views';
+            case 4:
+                return '1 in 2 Attendee Views';
+            case 5:
+                return '5 in 8 Attendee Views';
+            case 6:
+                return '3 in 4 Attendee Views';
+            case 7:
+                return '7 in 8 Attendee Views';
+            default:
+                return `${slotNum} ${slotNum === 1 ? 'Slot' : 'Slots'}`;
+        }
+    };
+
     const handleChannelChange = (channel: 'network' | 'event_sponsorship') => {
         setFormData(prev => ({
             ...prev,
@@ -1078,9 +1112,9 @@ export default function CreateCampaignForm({
                                     </span>
                                 </div>
                                 <div className={styles.quoteMetricItem}>
-                                    <span className={styles.quoteMetricLabel}>Share of Voice (SOV)</span>
+                                    <span className={styles.quoteMetricLabel}>Audience Exposure</span>
                                     <span className={styles.quoteMetricValue}>
-                                        {(placementQuote.share_of_voice * 100).toFixed(1)}%
+                                        {parseFloat((placementQuote.share_of_voice * 100).toFixed(1))}% of Views
                                     </span>
                                 </div>
                                 <div className={styles.quoteMetricItem}>
@@ -1225,7 +1259,7 @@ export default function CreateCampaignForm({
                                         {/* ── Channel Selector: Network vs Event Sponsorship ── */}
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label}>
-                                                Campaign Channel <span className={styles.requiredIndicator}>*Required</span>
+                                                Channel <span className={styles.requiredIndicator}>*Required</span>
                                             </label>
                                             <div className={styles.channelToggleGrid} role="radiogroup" aria-label="Campaign Channel Selection">
                                                 <button
@@ -1303,66 +1337,6 @@ export default function CreateCampaignForm({
                                                 onChange={handleInputChange} />
                                             {errors.description && <p className={styles.errorMessage}>{errors.description}</p>}
                                         </div>
-
-                                        {/* Placement Format: In Event Sponsorship, Slot Allocation is on the same row. In Network Auction, Placement Format is full width. */}
-                                        {formData.channel === 'event_sponsorship' ? (
-                                            <div className={styles.row}>
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label} htmlFor="type">
-                                                        Placement Format <span className={styles.requiredIndicator}>*Required</span>
-                                                    </label>
-                                                    <select id="type" name="type" className={styles.select}
-                                                        value={formData.type} onChange={handleInputChange} required>
-                                                        <option value="banner">Banner Placement (16:9)</option>
-                                                        <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
-                                                        <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className={styles.inputGroup}>
-                                                    <label className={styles.label} htmlFor="slots">
-                                                        Slot Allocation ({formData.slots || 1} of {formData.type === 'banner' ? 8 : 2} max)
-                                                        <span className={styles.infoIcon} title="Number of guaranteed rotation slots booked in this event forum">ⓘ</span>
-                                                    </label>
-                                                    <select
-                                                        id="slots"
-                                                        name="slots"
-                                                        className={styles.select}
-                                                        value={formData.slots || 1}
-                                                        onChange={(e) => handleSlotsChange(parseInt(e.target.value, 10))}
-                                                    >
-                                                        {Array.from({ length: formData.type === 'banner' ? 8 : 2 }, (_, i) => i + 1).map(slotNum => (
-                                                            <option key={slotNum} value={slotNum}>
-                                                                {slotNum} {slotNum === 1 ? 'Slot' : 'Slots'} ({((slotNum / (formData.type === 'banner' ? 8 : 2)) * 100).toFixed(1)}% SOV)
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {errors.slots && <p className={styles.errorMessage}>{errors.slots}</p>}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="type">
-                                                    Placement Format <span className={styles.requiredIndicator}>*Required</span>
-                                                </label>
-                                                <select id="type" name="type" className={styles.select}
-                                                    value={formData.type} onChange={handleInputChange} required>
-                                                    <option value="banner">Banner Placement (16:9)</option>
-                                                    <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
-                                                    <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
-                                                </select>
-                                                {/* CPM/CPC Estimator for Network Channel */}
-                                                {pricing.impression > 0 && (
-                                                    <div className={`${styles.pricingHint} tour-partners-pricing-hint`}>
-                                                        <span>Starting at</span>
-                                                        <strong>${pricing.impression.toFixed(3)}</strong> / impression
-                                                        &nbsp;·&nbsp;
-                                                        <strong>${pricing.click.toFixed(2)}</strong> / click
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
                                     </div>
                                 )}
 
@@ -1399,7 +1373,7 @@ export default function CreateCampaignForm({
                                                 <p className={styles.pricingHint}>
                                                     {formData.target_event_id
                                                         ? 'Event Forum & Attendee Targeting: Ad delivery and category exclusivity are locked to this event\'s audience.'
-                                                        : 'Select an event to sponsor. Ad placement, attendees, and Category Sponsor Shield exclusivity will anchor to this event.'}
+                                                        : 'Select an event to sponsor. Ad placement, attendees and Category Sponsor Shield exclusivity will anchor to this event.'}
                                                 </p>
                                             </div>
                                         )}
@@ -1642,7 +1616,7 @@ export default function CreateCampaignForm({
                                                     <line x1="12" y1="8" x2="12.01" y2="8"/>
                                                 </svg>
                                                 <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
-                                                    <strong>Event-Specific Targeting:</strong> Audience demographics, attendee geolocation, and forum impressions are anchored to the selected event. Network-wide country bidding and keyword filters do not apply to direct event sponsorships.
+                                                    <strong>Event-Specific Targeting:</strong> Audience demographics, attendee geolocation and forum impressions are anchored to the selected event. Network-wide country bidding and keyword filters do not apply to direct event sponsorships.
                                                 </span>
                                             </div>
                                         )}
@@ -1652,6 +1626,55 @@ export default function CreateCampaignForm({
                                 {/* ── Tab: Creative ── */}
                                 {activeTab === 'creative' && (
                                     <div className={styles.formSection}>
+                                        {/* ── Placement Format & Audience Exposure Row ── */}
+                                        {formData.channel === 'event_sponsorship' ? (
+                                            <div className={styles.row}>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="type">
+                                                        Placement Format <span className={styles.requiredIndicator}>*Required</span>
+                                                    </label>
+                                                    <select id="type" name="type" className={styles.select}
+                                                        value={formData.type} onChange={handleInputChange} required>
+                                                        <option value="banner">Banner Placement (16:9)</option>
+                                                        <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
+                                                        <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="slots">
+                                                        Audience Exposure
+                                                        <span className={styles.infoIcon} title="Guaranteed share of attendee impressions and rotation in this event forum">ⓘ</span>
+                                                    </label>
+                                                    <select
+                                                        id="slots"
+                                                        name="slots"
+                                                        className={styles.select}
+                                                        value={formData.slots || 1}
+                                                        onChange={(e) => handleSlotsChange(parseInt(e.target.value, 10))}
+                                                    >
+                                                        {Array.from({ length: formData.type === 'banner' ? 8 : 2 }, (_, i) => i + 1).map(slotNum => (
+                                                            <option key={slotNum} value={slotNum}>
+                                                                {getSlotOptionLabel(slotNum, formData.type)}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.slots && <p className={styles.errorMessage}>{errors.slots}</p>}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="type">
+                                                    Placement Format <span className={styles.requiredIndicator}>*Required</span>
+                                                </label>
+                                                <select id="type" name="type" className={styles.select}
+                                                    value={formData.type} onChange={handleInputChange} required>
+                                                    <option value="banner">Banner Placement (16:9)</option>
+                                                    <option value="interstitial">Interstitial (9:16 – Full Screen)</option>
+                                                    <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
+                                                </select>
+                                            </div>
+                                        )}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <h3 style={{ margin: 0, fontSize: '16px' }}>Campaign Creatives</h3>
@@ -1867,61 +1890,46 @@ export default function CreateCampaignForm({
                                 {/* ── Tab: Review ── */}
                                 {activeTab === 'review' && (
                                     <div className={styles.formSection}>
-                                        <div className={styles.reviewGrid}>
+                                        <div className={styles.previewCard}>
                                             <div className={styles.reviewItem}>
-                                                <label>Channel</label>
-                                                <div>{formData.channel === 'event_sponsorship' ? 'Event Sponsorship' : 'Network Ad Campaign'}</div>
-                                            </div>
-                                            {formData.channel === 'event_sponsorship' && (
-                                                <div className={styles.reviewItem}>
-                                                    <label>Target Event & Slots</label>
-                                                    <div>
-                                                        {sponsorableEvents.find(e => e.id === formData.target_event_id)?.title || 'Selected Event'}
-                                                        {' '}• {formData.slots || 1} of {formData.type === 'banner' ? 8 : 2} Slots
-                                                        {placementQuote && ` (${(placementQuote.share_of_voice * 100).toFixed(1)}% SOV)`}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className={styles.reviewItem}>
-                                                <label>Title</label>
-                                                <div>{formData.title}</div>
+                                                <span className={styles.reviewLabel}>Title</span>
+                                                <span className={styles.reviewValue}>{formData.title || 'Untitled Campaign'}</span>
                                             </div>
                                             <div className={styles.reviewItem}>
-                                                <label>Budget</label>
-                                                <div>
-                                                    {formData.currency || 'USD'} {formData.total_budget} Total
-                                                    {formData.channel !== 'event_sponsorship' && ` (${formData.currency || 'USD'} ${formData.max_bid_amount} Max Bid)`}
-                                                </div>
+                                                <span className={styles.reviewLabel}>Description</span>
+                                                <span className={styles.reviewValue}>{formData.description || 'No description provided'}</span>
                                             </div>
                                             <div className={styles.reviewItem}>
-                                                <label>Timeline</label>
-                                                <div>
+                                                <span className={styles.reviewLabel}>Channel</span>
+                                                <span className={styles.reviewValue}>{formData.channel === 'event_sponsorship' ? 'Event Sponsorship' : 'Network Ad Campaign'}</span>
+                                            </div>
+                                            <div className={styles.reviewItem}>
+                                                <span className={styles.reviewLabel}>Placement</span>
+                                                <span className={styles.reviewValue}>
+                                                    {formData.type === 'banner'
+                                                        ? 'Banner Placement (16:9)'
+                                                        : formData.type === 'interstitial_video'
+                                                        ? 'Interstitial Video (9:16)'
+                                                        : 'Interstitial (9:16)'}
+                                                    {formData.channel === 'event_sponsorship' && ` • ${getSlotOptionLabel(formData.slots || 1, formData.type)}`}
+                                                </span>
+                                            </div>
+                                            <div className={styles.reviewItem}>
+                                                <span className={styles.reviewLabel}>Timeline</span>
+                                                <span className={styles.reviewValue}>
                                                     {formData.channel === 'event_sponsorship'
-                                                        ? `Live upon approval – ${formData.end_at} (Includes 48h post-event forum recap)`
-                                                        : `${formData.start_at} – ${formData.end_at}`}
-                                                </div>
+                                                        ? `Live upon approval – ${formData.end_at || 'TBD'} (Includes 48h post-event forum recap)`
+                                                        : `${formData.start_at || 'TBD'} – ${formData.end_at || 'TBD'}`}
+                                                </span>
                                             </div>
                                             <div className={styles.reviewItem}>
-                                                <label>Targeting</label>
-                                                <div>
+                                                <span className={styles.reviewLabel}>Targeting</span>
+                                                <span className={styles.reviewValue}>
                                                     {formData.channel === 'event_sponsorship'
-                                                        ? 'Locked to event attendees & forum audience'
+                                                        ? `${sponsorableEvents.find(e => e.id === formData.target_event_id)?.title || 'Selected Event'} • Attendees and Forum Audience`
                                                         : (formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Anywhere') +
                                                           (formData.target_tags.length > 0 ? ` • ${formData.target_tags.join(', ')}` : '')}
-                                                </div>
-                                            </div>
-                                            <div className={styles.reviewItem}>
-                                                <label>Destination URLs</label>
-                                                <div>
-                                                    {formData.creatives.map((c, i) => (
-                                                        <div key={i} style={{ wordBreak: 'break-all', marginBottom: '4px' }}>
-                                                            <span style={{ opacity: 0.6, fontSize: '12px' }}>
-                                                                {i === 0 ? 'Primary: ' : `Variant ${String.fromCharCode(65 + i)}: `}
-                                                            </span>
-                                                            {c.destination_url || formData.destination_url || 'Not set'}
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                </span>
                                             </div>
                                         </div>
 
@@ -1955,7 +1963,7 @@ export default function CreateCampaignForm({
                                             {formData.type === 'interstitial' || formData.type === 'interstitial_video' ? (
                                                 <div className={styles.mockAdInterstitial}>
                                                     <div className={styles.mockAdHeader}>
-                                                        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>PARTNER</div>
+                                                        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>SPONSOR</div>
                                                         <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Download in progress</div>
                                                         <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
                                                     </div>
@@ -1979,7 +1987,7 @@ export default function CreateCampaignForm({
                                                         )}
                                                     </div>
                                                     <div className={styles.mockAdInfo}>
-                                                        <span className={styles.mockAdBadge}>PARTNER • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
+                                                        <span className={styles.mockAdBadge}>SPONSOR • {formData.type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
                                                         <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{activeCreative.headline || formData.adHeadline || 'Your Catchy Headline'}</div>
                                                         <div className={styles.mockAdDesc}>{formData.title || 'Campaign Name'}</div>
                                                         {/* #7 Interactive Preview Button */}
@@ -2003,7 +2011,7 @@ export default function CreateCampaignForm({
                                                                  <img src={activeCreative.preview || activeCreative.imageUrl} alt="Campaign creative" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
                                                             ) : null}
                                                             <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
-                                                                {activeCreative.headline || formData.adHeadline || 'PARTNER'}
+                                                                {activeCreative.headline || formData.adHeadline || 'SPONSOR'}
                                                             </div>
                                                             {/* #7 Interactive CTA */}
                                                             <div
@@ -2057,18 +2065,13 @@ export default function CreateCampaignForm({
                             target: 'body',
                             placement: 'center',
                             title: isEditing ? 'Edit Your Campaign' : 'Create a Campaign',
-                            content: 'Welcome to the Partner Dashboard! Let\'s walk through creating a high-performing campaign to boost your brand\'s visibility.',
+                            content: 'Welcome to the Sponsor Dashboard! Let\'s walk through creating a high-performing campaign to boost your brand\'s visibility.',
                             skipBeacon: true,
                         },
                         {
                             target: '.tour-partners-form-tabs',
                             title: 'Campaign Sections',
-                            content: 'We\'ve broken down the process into 5 easy steps: Campaign Details, Targeting, Creatives (A/B testing), Budget, and Final Review.',
-                        },
-                        {
-                            target: '.tour-partners-pricing-hint',
-                            title: 'Transparent Pricing',
-                            content: 'See real-time estimates for impressions and clicks based on your selected placement type. We optimize for the best ROI.',
+                            content: 'We\'ve broken down the process into 5 easy steps: Campaign Details, Targeting, Creatives (A/B testing), Budget and Final Review.',
                         },
                         {
                             target: '.tour-partners-tab-targeting',
@@ -2083,7 +2086,7 @@ export default function CreateCampaignForm({
                         {
                             target: '.tour-partners-tab-budget',
                             title: 'Budget & Currency',
-                            content: 'Configure your campaign budget, wallet currency, daily spend caps, and maximum bids with built-in escrow protection.',
+                            content: 'Configure your campaign budget, wallet currency, daily spend caps and maximum bids with built-in escrow protection.',
                         },
                         {
                             target: '.tour-partners-preview-panel',

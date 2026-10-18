@@ -10,6 +10,10 @@ interface AppDrawerProps {
     onClose: () => void;
 }
 
+/**
+ * Public navigation drawer providing quick portal access to the organizer and
+ * commercial dashboards, PWA mobile forum app download and user locale preferences.
+ */
 const AppDrawer: React.FC<AppDrawerProps> = ({
     isOpen,
     onClose
@@ -93,8 +97,8 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                     </svg>
                                 </div>
                                 <div className={styles.portalText}>
-                                    <span className={styles.portalTitle}>Commercial Center</span>
-                                    <span className={styles.portalDesc}>Manage ad campaigns & sponsorships</span>
+                                    <span className={styles.portalTitle}>Commercial Center(S&A)</span>
+                                    <span className={styles.portalDesc}>Manage campaigns</span>
                                 </div>
                             </button>
                         </div>

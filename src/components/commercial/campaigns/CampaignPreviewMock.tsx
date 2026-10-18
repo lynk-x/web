@@ -33,7 +33,7 @@ export default function CampaignPreviewMock({ type, title, headline, mediaUrl, m
                         {isInterstitial ? (
                             <div className={styles.mockAdInterstitial}>
                                 <div className={styles.mockAdHeader}>
-                                    <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>PARTNER</div>
+                                    <div style={{ color: '#fff', fontSize: '10px', fontWeight: 800 }}>SPONSOR</div>
                                     <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Download in progress</div>
                                     <div style={{ color: '#fff', fontSize: '10px', fontWeight: 600 }}>05</div>
                                 </div>
@@ -55,7 +55,7 @@ export default function CampaignPreviewMock({ type, title, headline, mediaUrl, m
                                     )}
                                 </div>
                                 <div className={styles.mockAdInfo}>
-                                    <span className={styles.mockAdBadge}>Partner • {type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
+                                    <span className={styles.mockAdBadge}>SPONSOR • {type === 'interstitial_video' ? 'VIDEO' : 'INTERSTITIAL'}</span>
                                     <div className={styles.mockAdTitle} style={{ fontSize: '18px' }}>{headline || 'Your Catchy Headline'}</div>
                                     <div className={styles.mockAdDesc}>{title || 'Campaign Name'}</div>
                                     <div style={{
@@ -75,7 +75,7 @@ export default function CampaignPreviewMock({ type, title, headline, mediaUrl, m
                                             <img src={mediaUrl} alt="Campaign creative" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', opacity: 0.5 }} />
                                         ) : null}
                                         <div className={styles.mockAdTitle} style={{ fontWeight: 800, zIndex: 1, position: 'relative' }}>
-                                            {headline || 'PARTNER'}
+                                            {headline || 'SPONSOR'}
                                         </div>
                                         <div className={styles.mockAdCTA} style={{ zIndex: 1, position: 'relative', color: '#fff' }}>
                                             Learn More
