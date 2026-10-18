@@ -15,7 +15,9 @@ interface AdMedia {
     campaign_id: string;
     media_type: string;
     call_to_action: string | null;
+    media_url?: string;
     url: string;
+    destination_url?: string | null;
     is_primary: boolean;
     is_hidden: boolean;
     impressions_count: number;
