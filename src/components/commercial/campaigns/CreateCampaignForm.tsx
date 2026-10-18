@@ -412,17 +412,23 @@ export default function CreateCampaignForm({
                     setQuoteError(data.reason || 'Placement is not available for requested slots.');
                 }
                 // Auto-sync currency, fixed contract budget, and timeline from quote & event
+                // Option 1: start_at runs immediately upon approval (today) for pre-event forum coverage;
+                // end_at includes a 48-hour buffer after the event ends for post-event discussion recaps.
                 setFormData(prev => {
                     const selectedEv = sponsorableEvents.find(e => e.id === prev.target_event_id);
-                    const formattedStart = selectedEv?.start_datetime ? new Date(selectedEv.start_datetime).toISOString().split('T')[0] : prev.start_at;
-                    const formattedEnd = selectedEv?.end_datetime ? new Date(selectedEv.end_datetime).toISOString().split('T')[0] : prev.end_at;
+                    const today = new Date().toISOString().split('T')[0];
+                    let bufferedEnd = '';
+                    if (selectedEv?.end_datetime) {
+                        const endMs = new Date(selectedEv.end_datetime).getTime() + (48 * 60 * 60 * 1000);
+                        bufferedEnd = new Date(endMs).toISOString().split('T')[0];
+                    }
                     return {
                         ...prev,
                         currency: data.currency || prev.currency,
                         total_budget: data.total_price ? String(data.total_price) : prev.total_budget,
                         daily_limit: data.total_price ? String(data.total_price) : prev.daily_limit,
-                        start_at: prev.start_at || formattedStart,
-                        end_at: prev.end_at || formattedEnd,
+                        start_at: today,
+                        end_at: bufferedEnd || prev.end_at,
                     };
                 });
             }
@@ -507,10 +513,20 @@ export default function CreateCampaignForm({
 
     /**
      * Live validation for campaign dates.
+     * Note: Bypassed for event sponsorship because flight dates are strictly dictated by the sponsored event.
      */
     useEffect(() => {
         const nextErrors = { ...errors };
         let hasChanges = false;
+
+        if (formData.channel === 'event_sponsorship') {
+            if (nextErrors.start_at || nextErrors.end_at) {
+                delete nextErrors.start_at;
+                delete nextErrors.end_at;
+                setErrors(nextErrors);
+            }
+            return;
+        }
 
         if (formData.start_at) {
             const start = new Date(formData.start_at);
@@ -546,7 +562,7 @@ export default function CreateCampaignForm({
         if (hasChanges) {
             setErrors(nextErrors);
         }
-    }, [formData.start_at, formData.end_at, isEditing]);
+    }, [formData.start_at, formData.end_at, formData.channel, isEditing]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -572,6 +588,20 @@ export default function CreateCampaignForm({
                 ...prev,
                 type: value as any,
                 slots: Math.min(prev.slots || 1, maxAllowed),
+            }));
+        } else if (name === 'target_event_id') {
+            const selectedEv = sponsorableEvents.find(ev => ev.id === value);
+            const today = new Date().toISOString().split('T')[0];
+            let bufferedEnd = '';
+            if (selectedEv?.end_datetime) {
+                const endMs = new Date(selectedEv.end_datetime).getTime() + (48 * 60 * 60 * 1000);
+                bufferedEnd = new Date(endMs).toISOString().split('T')[0];
+            }
+            setFormData(prev => ({
+                ...prev,
+                target_event_id: value,
+                start_at: today,
+                ...(bufferedEnd ? { end_at: bufferedEnd } : {})
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -765,20 +795,6 @@ export default function CreateCampaignForm({
         return timeline;
     }, [formData.start_at, formData.end_at]);
 
-    const suggestiveHeadlines = useMemo(() => {
-        const list = [
-            "Limited Time Offer!",
-            "Join the Community",
-            "Exclusive Access",
-            "Don't Miss Out!",
-        ];
-        if (formData.title) {
-            list.unshift(`Join ${formData.title}!`);
-            list.unshift(`Discover ${formData.title}`);
-        }
-        return Array.from(new Set(list)).slice(0, 5);
-    }, [formData.title]);
-
     // ── Validation ────────────────────────────────────────────────────────────
     const validateForm = (): boolean => {
         setFormError('');
@@ -819,8 +835,23 @@ export default function CreateCampaignForm({
             }
         }
 
-        if (!formData.start_at) newErrors.start_at = 'Start date is required.';
-        if (!formData.end_at) newErrors.end_at = 'End date is required.';
+        if (formData.channel !== 'event_sponsorship') {
+            if (!formData.start_at) newErrors.start_at = 'Start date is required.';
+            if (!formData.end_at) newErrors.end_at = 'End date is required.';
+        } else {
+            // For event sponsorship, ensure start_at is today and end_at has +48h buffer from the event
+            const today = new Date().toISOString().split('T')[0];
+            if (!formData.start_at) formData.start_at = today;
+            if (!formData.end_at) {
+                const selectedEv = sponsorableEvents.find(e => e.id === formData.target_event_id);
+                if (selectedEv?.end_datetime) {
+                    const endMs = new Date(selectedEv.end_datetime).getTime() + (48 * 60 * 60 * 1000);
+                    formData.end_at = new Date(endMs).toISOString().split('T')[0];
+                } else {
+                    formData.end_at = today;
+                }
+            }
+        }
 
         formData.creatives.forEach((c, idx) => {
             const label = idx === 0 ? 'Primary' : `Variant ${String.fromCharCode(65 + idx)}`;
@@ -1065,7 +1096,7 @@ export default function CreateCampaignForm({
                                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                 </svg>
                                 <span>
-                                    <strong>Category Sponsor Shield Active:</strong> Competing sponsors in your event category are automatically locked out for this placement.
+                                    <strong>Category Sponsor Shield Active:</strong> Competing sponsors in your category are locked out for this placement. Includes immediate pre-event delivery and 48-hour post-event forum recap coverage.
                                 </span>
                             </div>
                         </>
@@ -1149,7 +1180,7 @@ export default function CreateCampaignForm({
                                             className={`${styles.tabItem} ${activeTab === tab ? styles.activeTab : ''} tour-partners-tab-${tab}`}
                                             onClick={() => handleTabSwitch(tab)}
                                         >
-                                            {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : tab === 'budget' ? 'Budget' : 'Review & Launch'}
+                                            {tab === 'details' ? 'Campaign' : tab === 'targeting' ? 'Targeting' : tab === 'creative' ? 'Creatives' : tab === 'budget' ? 'Budget' : 'Review'}
                                         </div>
                                     ))}
                                 </div>
@@ -1376,33 +1407,35 @@ export default function CreateCampaignForm({
                                         {/* ── Dynamic Placement Quote Card in Targeting Tab ── */}
                                         {renderPlacementQuoteCard()}
 
-                                        {/* ── Campaign Schedule (Flight Dates) ── */}
-                                        <div className={styles.row}>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="start_at">
-                                                    Start Date <span className={styles.requiredIndicator}>*Required</span>
-                                                </label>
-                                                <DatePicker
-                                                    value={formData.start_at}
-                                                    onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
-                                                    placeholder="dd/mm/yyyy"
-                                                    className={errors.start_at ? styles.inputError : ''}
-                                                />
-                                                {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
+                                        {/* ── Campaign Schedule (Flight Dates) — hidden for event sponsorship since the event timeline dictates flight dates ── */}
+                                        {formData.channel !== 'event_sponsorship' && (
+                                            <div className={styles.row}>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="start_at">
+                                                        Start Date <span className={styles.requiredIndicator}>*Required</span>
+                                                    </label>
+                                                    <DatePicker
+                                                        value={formData.start_at}
+                                                        onChange={(val) => handleInputChange({ target: { name: 'start_at', value: val } } as any)}
+                                                        placeholder="dd/mm/yyyy"
+                                                        className={errors.start_at ? styles.inputError : ''}
+                                                    />
+                                                    {errors.start_at && <p className={styles.errorMessage}>{errors.start_at}</p>}
+                                                </div>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="end_at">
+                                                        End Date <span className={styles.requiredIndicator}>*Required</span>
+                                                    </label>
+                                                    <DatePicker
+                                                        value={formData.end_at}
+                                                        onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
+                                                        placeholder="dd/mm/yyyy"
+                                                        className={errors.end_at ? styles.inputError : ''}
+                                                    />
+                                                    {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
+                                                </div>
                                             </div>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="end_at">
-                                                    End Date <span className={styles.requiredIndicator}>*Required</span>
-                                                </label>
-                                                <DatePicker
-                                                    value={formData.end_at}
-                                                    onChange={(val) => handleInputChange({ target: { name: 'end_at', value: val } } as any)}
-                                                    placeholder="dd/mm/yyyy"
-                                                    className={errors.end_at ? styles.inputError : ''}
-                                                />
-                                                {errors.end_at && <p className={styles.errorMessage}>{errors.end_at}</p>}
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Multi-Country & Tag Targeting (Network Auction only) */}
                                         {formData.channel !== 'event_sponsorship' ? (
@@ -1655,44 +1688,6 @@ export default function CreateCampaignForm({
                                                     value={activeCreative.headline}
                                                     onChange={(e) => updateCreative(activeCreativeIdx, { headline: e.target.value })}
                                                 />
-                                                <div className={styles.tagSuggestions} style={{ marginTop: '10px' }}>
-                                                    {suggestiveHeadlines.map((chip) => {
-                                                        const isSelected = activeCreative.headline === chip;
-                                                        return (
-                                                            <button
-                                                                key={chip}
-                                                                type="button"
-                                                                onClick={() => updateCreative(activeCreativeIdx, { headline: chip })}
-                                                                style={{
-                                                                    padding: '4px 12px',
-                                                                    fontSize: '12px',
-                                                                    borderRadius: '16px',
-                                                                    border: '1px solid',
-                                                                    borderColor: isSelected ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.1)',
-                                                                    background: isSelected ? 'var(--color-brand-primary)' : 'rgba(255, 255, 255, 0.02)',
-                                                                    color: isSelected ? '#000' : 'rgba(255, 255, 255, 0.7)',
-                                                                    fontWeight: isSelected ? '700' : 'normal',
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.2s ease'
-                                                                }}
-                                                                onMouseEnter={e => {
-                                                                    if (!isSelected) {
-                                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                                                                        e.currentTarget.style.color = '#fff';
-                                                                    }
-                                                                }}
-                                                                onMouseLeave={e => {
-                                                                    if (!isSelected) {
-                                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
-                                                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-                                                                    }
-                                                                }}
-                                                            >
-                                                                {chip}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
                                                 {errors[`creative.${activeCreativeIdx}.headline`] && <p className={styles.errorMessage}>{errors[`creative.${activeCreativeIdx}.headline`]}</p>}
                                             </div>
 
@@ -1900,7 +1895,11 @@ export default function CreateCampaignForm({
                                             </div>
                                             <div className={styles.reviewItem}>
                                                 <label>Timeline</label>
-                                                <div>{formData.start_at} – {formData.end_at}</div>
+                                                <div>
+                                                    {formData.channel === 'event_sponsorship'
+                                                        ? `Live upon approval – ${formData.end_at} (Includes 48h post-event forum recap)`
+                                                        : `${formData.start_at} – ${formData.end_at}`}
+                                                </div>
                                             </div>
                                             <div className={styles.reviewItem}>
                                                 <label>Targeting</label>
