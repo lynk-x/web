@@ -41,6 +41,10 @@ export interface SponsorshipRosterItem {
     partner_name: string;
     tier_id: string;
     tier_name: string;
+    placement?: string;
+    slots?: number;
+    share_of_voice?: number;
+    revision_notes?: string;
     details: Record<string, unknown>;
     impressions: number;
     clicks: number;
@@ -57,6 +61,8 @@ export interface SponsorshipInviteItem {
     custom_price: number | null;
     currency: string;
     tier_id: string;
+    placement?: string;
+    slots?: number;
     tier_name: string;
     expires_at: string;
     created_at: string;
@@ -66,6 +72,8 @@ export interface SponsorshipKPIs {
     total_revenue: number;
     in_escrow: number;
     active_sponsors: number;
+    pending_reviews?: number;
+    revision_requests?: number;
     slot_utilization_pct: number;
     pipeline_invites: number;
     total_slots: number;
@@ -92,6 +100,37 @@ export interface ValuationResult {
     calculated_at: string;
 }
 
+export interface PlacementQuoteResult {
+    event_id: string;
+    placement: 'banner' | 'interstitial' | 'interstitial_video';
+    is_available: boolean;
+    reason?: string;
+    slots_requested: number;
+    available_slots: number;
+    max_slots: number;
+    occupied_slots: number;
+    share_of_voice_pct: number;
+    share_of_voice: number;
+    price_per_slot: number;
+    total_price: number;
+    currency: string;
+    is_exclusive_takeover: boolean;
+    calculated_at: string;
+}
+
+export interface ReviewSponsorshipParams {
+    campaignId: string;
+    decision: 'approve' | 'request_revision' | 'decline';
+    feedback?: string;
+}
+
+export interface ReviewSponsorshipResult {
+    success: boolean;
+    campaign_id: string;
+    status: string;
+    message: string;
+}
+
 export interface UpsertTierParams {
     eventId: string;
     tierId?: string;
@@ -106,7 +145,9 @@ export interface UpsertTierParams {
 
 export interface CreateInviteParams {
     eventId: string;
-    tierId: string;
+    tierId?: string | null;
+    placement?: 'banner' | 'interstitial' | 'interstitial_video';
+    slots?: number;
     companyName: string;
     inviteeEmail: string;
     inviteeName?: string;
@@ -309,14 +350,16 @@ export function createSponsorshipsRepository(client: DbClient) {
                 .schema('api')
                 .rpc('create_sponsorship_invite', {
                     p_event_id: params.eventId,
-                    p_tier_id: params.tierId,
+                    p_tier_id: params.tierId ?? null,
                     p_company_name: params.companyName,
                     p_invitee_email: params.inviteeEmail,
                     p_invitee_name: params.inviteeName ?? null,
                     p_custom_price: params.customPrice ?? null,
                     p_currency: params.currency ?? null,
-                    p_expiry_days: params.expiryDays ?? 14,
+                    p_expiry_days: params.expiryDays ?? 7,
                     p_metadata: params.metadata ?? {},
+                    p_placement: params.placement ?? 'banner',
+                    p_slots: params.slots ?? 1,
                 });
 
             if (error) return { data: null, error: toError(error) };
@@ -386,6 +429,44 @@ export function createSponsorshipsRepository(client: DbClient) {
 
             if (error) return { data: null, error: toError(error) };
             return { data: Boolean(data), error: null };
+        },
+
+        /**
+         * Calculate real-time placement quote, remaining slots, and algorithmic pricing.
+         * Used by commercial dashboard sponsors during event campaign creation.
+         */
+        async getPlacementQuote(
+            eventId: string,
+            placement: 'banner' | 'interstitial' | 'interstitial_video',
+            slotsRequested: number = 1
+        ): Promise<RepoResult<PlacementQuoteResult>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('get_event_placement_quote', {
+                    p_event_id: eventId,
+                    p_placement: placement,
+                    p_slots_requested: slotsRequested,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as PlacementQuoteResult, error: null };
+        },
+
+        /**
+         * Organizer review action on an incoming commercial sponsorship campaign.
+         * Supports 'approve', 'request_revision' (Option 4.2), and 'decline'.
+         */
+        async reviewCampaign(params: ReviewSponsorshipParams): Promise<RepoResult<ReviewSponsorshipResult>> {
+            const { data, error } = await client
+                .schema('api')
+                .rpc('review_sponsorship_campaign', {
+                    p_campaign_id: params.campaignId,
+                    p_decision: params.decision,
+                    p_feedback: params.feedback ?? null,
+                });
+
+            if (error) return { data: null, error: toError(error) };
+            return { data: data as ReviewSponsorshipResult, error: null };
         },
     };
 }

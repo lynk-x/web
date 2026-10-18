@@ -4,7 +4,7 @@
  */
 
 /** Matches `campaign_status` enum */
-export type CampaignStatus = 'draft' | 'pending_approval' | 'active' | 'paused' | 'completed' | 'rejected';
+export type CampaignStatus = 'draft' | 'pending_approval' | 'revision_requested' | 'active' | 'paused' | 'completed' | 'rejected';
 
 /** Matches `event_status` enum */
 export type EventStatus = 'draft' | 'published' | 'active' | 'completed' | 'archived' | 'postponed' | 'cancelled' | 'suspended';

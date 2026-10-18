@@ -10,7 +10,6 @@ import {
     createSponsorshipsRepository,
     createEventsRepository,
     type SponsorshipOverview,
-    type SponsorshipTierItem,
     type SponsorshipRosterItem,
     type SponsorshipInviteItem,
     type EventRow,
@@ -25,7 +24,7 @@ import FilterChips from '@/components/shared/FilterChips';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
 import Spinner from '@/components/shared/Spinner';
 import EmptyState from '@/components/shared/EmptyState';
-import TierBuilderModal from '@/components/dashboard/TierBuilderModal';
+import Modal from '@/components/shared/Modal';
 import DirectInviteModal from '@/components/dashboard/DirectInviteModal';
 
 const thStyle: React.CSSProperties = {
@@ -43,33 +42,40 @@ const tdStyle: React.CSSProperties = {
 };
 
 /**
- * Unified sponsor record representing contracted sponsors and pending invitations.
- * Inbound invitations carry status `pending`, merging the entire sponsor lifecycle
- * into a single unified status column.
+ * Unified sponsor record representing contracted sponsors, review requests, and invitations.
  */
 interface SponsorRowItem {
     id: string;
+    campaign_id?: string;
     sponsor_name: string;
+    title: string;
     contact_info: string;
     tier_name: string;
+    placement?: string;
+    slots?: number;
     amount: number | null;
     currency: string;
-    status: 'active' | 'pending' | 'completed' | 'paused' | 'expired' | 'declined' | 'draft';
+    status: 'active' | 'pending_approval' | 'revision_requested' | 'pending' | 'completed' | 'paused' | 'expired' | 'declined' | 'draft';
     impressions: number | null;
     clicks: number | null;
     invite_token: string | null;
     expires_at?: string;
     reference: string | null;
+    revision_notes?: string;
     created_at: string;
 }
 
-/** Resolves semantic badge presentation for sponsor status, including pending invitations. */
+/** Resolves semantic badge presentation for sponsor status. */
 function getStatusBadge(status: SponsorRowItem['status']): { label: string; variant: BadgeVariant } {
     switch (status) {
         case 'active':
             return { label: 'Active', variant: 'success' };
+        case 'pending_approval':
+            return { label: 'Pending Review', variant: 'warning' };
+        case 'revision_requested':
+            return { label: 'Revision Requested', variant: 'warning' };
         case 'pending':
-            return { label: 'Pending', variant: 'warning' };
+            return { label: 'Direct Invite', variant: 'neutral' };
         case 'completed':
             return { label: 'Completed', variant: 'info' };
         case 'paused':
@@ -85,10 +91,19 @@ function getStatusBadge(status: SponsorRowItem['status']): { label: string; vari
     }
 }
 
+/** Format human-readable placement title */
+function getPlacementLabel(placement?: string): string {
+    if (placement === 'banner') return 'Forum Banner (16:9)';
+    if (placement === 'interstitial_video') return 'Video Interstitial (9:16)';
+    if (placement === 'interstitial') return 'Entry Interstitial (9:16)';
+    return 'Event Sponsorship';
+}
+
 /**
- * Sell-side event sponsorships dashboard for organizers.
- * Streamlined two-tab command center organizing sponsorship tiers inventory
- * and unified sponsors (Sponsors), where invitations appear as pending status.
+ * Sell-side event sponsorships dashboard for organizers (Single-table unified view - Option 3).
+ * Eliminates all tabs. Provides a single comprehensive table with status filter chips,
+ * inline Option 4.2 creative review actions (Approve, Request Changes, Decline),
+ * KPI financial telemetry, and direct 7-day reserve invite management.
  */
 export default function EventSponsorshipsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -105,18 +120,16 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
     const [event, setEvent] = useState<EventRow | null>(null);
     const [overview, setOverview] = useState<SponsorshipOverview | null>(null);
 
-    const [activeTab, setActiveTab] = useState<'tiers' | 'sponsors'>('tiers');
     const [searchQuery, setSearchQuery] = useState('');
-    const [tierFilter, setTierFilter] = useState('all');
     const [sponsorFilter, setSponsorFilter] = useState('all');
 
-    // [P2] Tier Builder modal state
-    const [isTierModalOpen, setIsTierModalOpen] = useState(false);
-    const [editingTier, setEditingTier] = useState<SponsorshipTierItem | null>(null);
-
-    // [P3] Direct Invite modal state
+    // Direct Invite modal state
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-    const [selectedTierForInvite, setSelectedTierForInvite] = useState<SponsorshipTierItem | null>(null);
+
+    // Option 4.2 Creative Revision Request state
+    const [revisionCampaignId, setRevisionCampaignId] = useState<string | null>(null);
+    const [revisionFeedback, setRevisionFeedback] = useState('');
+    const [isReviewing, setIsReviewing] = useState(false);
 
     const loadData = useCallback(async () => {
         if (!id || !activeAccount) return;
@@ -159,18 +172,7 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
         showToast('Direct invite link copied to clipboard.', 'success');
     }, [copyToClipboard, showToast]);
 
-    const handleOpenNewTier = useCallback(() => {
-        setEditingTier(null);
-        setIsTierModalOpen(true);
-    }, []);
-
-    const handleConfigureTier = useCallback((tier: SponsorshipTierItem) => {
-        setEditingTier(tier);
-        setIsTierModalOpen(true);
-    }, []);
-
-    const handleOpenNewInvite = useCallback((tier?: SponsorshipTierItem) => {
-        setSelectedTierForInvite(tier || null);
+    const handleOpenNewInvite = useCallback(() => {
         setIsInviteModalOpen(true);
     }, []);
 
@@ -191,20 +193,44 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
         }
     }, [id, sponsorshipsRepo, showToast, loadData]);
 
+    /** Process review action (approve, request_revision, decline) on incoming sponsor request */
+    const handleReview = useCallback(async (campaignId: string, decision: 'approve' | 'request_revision' | 'decline', feedback?: string) => {
+        setIsReviewing(true);
+        try {
+            const res = await sponsorshipsRepo.reviewCampaign({
+                campaignId,
+                decision,
+                feedback,
+            });
 
-    // Merge contracted sponsors and invitations into a unified sponsors list with status 'pending' for open invites
+            if (res.error || !res.data) {
+                showToast(res.error?.message || `Failed to process ${decision} action.`, 'error');
+                return;
+            }
+
+            showToast(res.data.message || 'Review decision processed successfully.', 'success');
+            setRevisionCampaignId(null);
+            setRevisionFeedback('');
+            loadData();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to submit review.', 'error');
+        } finally {
+            setIsReviewing(false);
+        }
+    }, [sponsorshipsRepo, showToast, loadData]);
+
+    // Merge contracted sponsors, review requests, and direct invites into a single unified list
     const allSponsors = useMemo((): SponsorRowItem[] => {
         if (!overview) return [];
 
         const rows: SponsorRowItem[] = [];
         const matchedInviteIds = new Set<string>();
 
-        // 1. Process contracted sponsors
+        // 1. Process commercial campaigns
         overview.sponsors.forEach((sponsor: SponsorshipRosterItem) => {
             const matchedInvite = overview.invites.find((inv: SponsorshipInviteItem) => {
                 if (matchedInviteIds.has(inv.id)) return false;
                 return (
-                    inv.tier_id === sponsor.tier_id &&
                     inv.company_name.trim().toLowerCase() === sponsor.partner_name.trim().toLowerCase()
                 );
             });
@@ -215,9 +241,13 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
 
             rows.push({
                 id: `sponsor-${sponsor.id}`,
+                campaign_id: sponsor.id,
                 sponsor_name: sponsor.partner_name,
+                title: sponsor.title,
                 contact_info: matchedInvite?.invitee_email || sponsor.title,
                 tier_name: sponsor.tier_name,
+                placement: sponsor.placement,
+                slots: sponsor.slots,
                 amount: sponsor.total_budget,
                 currency: sponsor.currency,
                 status: (sponsor.status as SponsorRowItem['status']) || 'active',
@@ -225,11 +255,12 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
                 clicks: sponsor.clicks,
                 invite_token: matchedInvite?.invite_token || null,
                 reference: sponsor.reference,
+                revision_notes: sponsor.revision_notes,
                 created_at: sponsor.created_at,
             });
         });
 
-        // 2. Append unmatched invitations with status 'pending' (or declined/expired)
+        // 2. Append unmatched direct invitations
         overview.invites.forEach((invite: SponsorshipInviteItem) => {
             if (matchedInviteIds.has(invite.id)) return;
 
@@ -243,8 +274,11 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
             rows.push({
                 id: `invite-${invite.id}`,
                 sponsor_name: invite.company_name,
+                title: 'Direct Invitation',
                 contact_info: invite.invitee_name ? `${invite.invitee_name} (${invite.invitee_email})` : invite.invitee_email,
                 tier_name: invite.tier_name,
+                placement: invite.placement,
+                slots: invite.slots,
                 amount: invite.custom_price,
                 currency: invite.currency,
                 status,
@@ -257,36 +291,31 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
             });
         });
 
-        return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }, [overview]);
-
-    // Filtered tiers
-    const filteredTiers = useMemo(() => {
-        if (!overview?.tiers) return [];
-        return overview.tiers.filter((tier: SponsorshipTierItem) => {
-            const matchesSearch = tier.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesFilter =
-                tierFilter === 'all' ||
-                (tierFilter === 'active' && tier.is_active) ||
-                (tierFilter === 'inactive' && !tier.is_active) ||
-                (tierFilter === 'available' && tier.claimed_slots < tier.max_slots) ||
-                (tierFilter === 'sold_out' && tier.claimed_slots >= tier.max_slots);
-            return matchesSearch && matchesFilter;
+        // Sort so urgent review requests float to the very top, followed by newest created
+        return rows.sort((a, b) => {
+            const isUrgentA = a.status === 'pending_approval' || a.status === 'revision_requested' ? 1 : 0;
+            const isUrgentB = b.status === 'pending_approval' || b.status === 'revision_requested' ? 1 : 0;
+            if (isUrgentA !== isUrgentB) return isUrgentB - isUrgentA;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
-    }, [overview?.tiers, searchQuery, tierFilter]);
+    }, [overview]);
 
     // Filtered sponsors
     const filteredSponsors = useMemo(() => {
         return allSponsors.filter((row: SponsorRowItem) => {
-            const query = searchQuery.toLowerCase();
             const matchesSearch =
-                row.sponsor_name.toLowerCase().includes(query) ||
-                row.tier_name.toLowerCase().includes(query) ||
-                row.contact_info.toLowerCase().includes(query);
+                row.sponsor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                row.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                row.contact_info.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesFilter =
-                sponsorFilter === 'all' ||
-                row.status === sponsorFilter;
+            let matchesFilter = true;
+            if (sponsorFilter === 'review') {
+                matchesFilter = row.status === 'pending_approval' || row.status === 'revision_requested';
+            } else if (sponsorFilter === 'invites') {
+                matchesFilter = row.status === 'pending' || row.status === 'expired';
+            } else if (sponsorFilter !== 'all') {
+                matchesFilter = row.status === sponsorFilter;
+            }
 
             return matchesSearch && matchesFilter;
         });
@@ -295,8 +324,8 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
     if (isLoading) {
         return (
             <div className={adminStyles.container}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', width: '100%' }}>
-                    <Spinner label="Loading sponsorships..." centered />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '380px' }}>
+                    <Spinner size={32} />
                 </div>
             </div>
         );
@@ -322,347 +351,352 @@ export default function EventSponsorshipsPage({ params }: { params: Promise<{ id
     }
 
     const { kpis } = overview;
-    const activeCount = kpis.active_sponsors;
+    const reviewCount = (kpis.pending_reviews || 0) + (kpis.revision_requests || 0);
+    const activeCount = kpis.active_sponsors || 0;
+    const inviteCount = kpis.pipeline_invites || 0;
 
     return (
         <div className={adminStyles.container}>
             {/* Page Header */}
             <PageHeader
                 title="Sponsorships"
-                subtitle={`Manage sponsorship tiers, sponsors and direct invites for "${event.title}"`}
+                subtitle={`Review commercial placement bookings and issue direct invites for "${event.title}"`}
                 badge={{
-                    label: activeCount === 1 ? '1 Active Sponsor' : `${activeCount} Active Sponsors`,
-                    variant: activeCount > 0 ? 'success' : 'neutral',
+                    label: reviewCount > 0 ? `${reviewCount} In Review Queue` : `${activeCount} Active Sponsors`,
+                    variant: reviewCount > 0 ? 'warning' : activeCount > 0 ? 'success' : 'neutral',
                 }}
                 primaryAction={{
                     label: '+ Direct Invite',
-                    onClick: () => handleOpenNewInvite(),
+                    onClick: handleOpenNewInvite,
                 }}
-                secondaryAction={{
-                    label: '+ New Tier',
-                    onClick: handleOpenNewTier,
-                }}
-
                 closeHref={`/dashboard/organize/events/${id}`}
             />
 
-            {/* Two-Tab Navigation Bar: Tiers & Sponsors */}
-            <div className={styles.tabBar} role="tablist" aria-label="Sponsorship management sections">
-                <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === 'tiers'}
-                    className={`${styles.tabItem} ${activeTab === 'tiers' ? styles.tabActive : ''}`}
-                    onClick={() => { setActiveTab('tiers'); setSearchQuery(''); }}
-                >
-                    <span>Tiers & Inventory</span>
-                    <span className={styles.tabBadge}>{overview.tiers.length}</span>
-                </button>
+            {/* KPI Summary Cards */}
+            <div className={adminStyles.grid}>
+                <div className={styles.kpiCard}>
+                    <div className={styles.kpiHeader}>
+                        <span className={styles.kpiLabel}>Total Revenue</span>
+                        <span style={{ fontSize: '18px' }}>💰</span>
+                    </div>
+                    <div className={styles.kpiValue}>
+                        {formatCurrency(kpis.total_revenue, overview.currency || event.currency || 'KES')}
+                    </div>
+                    <div className={styles.kpiSubtext}>
+                        Contracted across active sponsorships
+                    </div>
+                </div>
 
-                <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === 'sponsors'}
-                    className={`${styles.tabItem} ${activeTab === 'sponsors' ? styles.tabActive : ''}`}
-                    onClick={() => { setActiveTab('sponsors'); setSearchQuery(''); }}
-                >
-                    <span>Sponsors</span>
-                    <span className={styles.tabBadge}>{allSponsors.length}</span>
-                </button>
+                <div className={styles.kpiCard}>
+                    <div className={styles.kpiHeader}>
+                        <span className={styles.kpiLabel}>Held in Escrow</span>
+                        <span style={{ fontSize: '18px' }}>🔒</span>
+                    </div>
+                    <div className={styles.kpiValue}>
+                        {formatCurrency(kpis.in_escrow, overview.currency || event.currency || 'KES')}
+                    </div>
+                    <div className={styles.kpiSubtext}>
+                        Awaiting review clearance or completion
+                    </div>
+                </div>
+
+                <div className={styles.kpiCard}>
+                    <div className={styles.kpiHeader}>
+                        <span className={styles.kpiLabel}>Review Queue</span>
+                        <span style={{ fontSize: '18px' }}>⚡</span>
+                    </div>
+                    <div className={styles.kpiValue} style={{ color: reviewCount > 0 ? '#facc15' : undefined }}>
+                        {reviewCount}
+                    </div>
+                    <div className={styles.kpiSubtext}>
+                        {kpis.pending_reviews || 0} pending · {kpis.revision_requests || 0} in revision
+                    </div>
+                </div>
+
+                <div className={styles.kpiCard}>
+                    <div className={styles.kpiHeader}>
+                        <span className={styles.kpiLabel}>Slot Utilization</span>
+                        <span style={{ fontSize: '18px' }}>📊</span>
+                    </div>
+                    <div className={styles.kpiValue}>
+                        {kpis.slot_utilization_pct}%
+                    </div>
+                    <div className={styles.progressTrack}>
+                        <div
+                            className={`${styles.progressFill} ${kpis.slot_utilization_pct >= 90 ? styles.progressFillWarning : ''}`}
+                            style={{ width: `${Math.min(kpis.slot_utilization_pct, 100)}%` }}
+                        />
+                    </div>
+                </div>
             </div>
 
-            {/* Search & Filter Toolbar */}
+            {/* Unified Search & Filter Toolbar */}
             <TableToolbar
-                searchPlaceholder={
-                    activeTab === 'tiers'
-                        ? 'Search tiers by name...'
-                        : 'Search sponsors by name, tier or contact...'
-                }
+                searchPlaceholder="Search sponsorships by brand name, campaign, or contact..."
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
             >
-                {activeTab === 'tiers' && (
-                    <FilterChips
-                        options={[
-                            { value: 'all', label: 'All Tiers' },
-                            { value: 'active', label: 'Active' },
-                            { value: 'available', label: 'Available Slots' },
-                            { value: 'sold_out', label: 'Sold Out' },
-                            { value: 'inactive', label: 'Paused' },
-                        ]}
-                        currentValue={tierFilter}
-                        onChange={setTierFilter}
-                    />
-                )}
-                {activeTab === 'sponsors' && (
-                    <FilterChips
-                        options={[
-                            { value: 'all', label: 'All Sponsors' },
-                            { value: 'active', label: 'Active' },
-                            { value: 'pending', label: 'Pending' },
-                            { value: 'completed', label: 'Completed' },
-                            { value: 'expired', label: 'Expired' },
-                        ]}
-                        currentValue={sponsorFilter}
-                        onChange={setSponsorFilter}
-                    />
-                )}
+                <FilterChips
+                    options={[
+                        { value: 'all', label: `All (${allSponsors.length})` },
+                        ...(reviewCount > 0 ? [{ value: 'review', label: `Pending Review (${reviewCount})` }] : []),
+                        { value: 'active', label: `Active (${activeCount})` },
+                        { value: 'invites', label: `Direct Invites (${inviteCount})` },
+                        { value: 'completed', label: 'Completed' },
+                        { value: 'declined', label: 'Declined' },
+                    ]}
+                    currentValue={sponsorFilter}
+                    onChange={setSponsorFilter}
+                />
             </TableToolbar>
 
-            {/* ─── TAB 1: Tiers & Inventory ─────────────────────────────────── */}
-            {activeTab === 'tiers' && (
-                <div>
-                    {filteredTiers.length === 0 ? (
-                        <EmptyState
-                            message={
-                                searchQuery || tierFilter !== 'all'
-                                    ? 'No tiers match your search filter criteria.'
-                                    : 'You have not configured sponsorship tiers for this event yet. Create tiers to attract sponsors.'
-                            }
-                            action={
-                                searchQuery || tierFilter !== 'all' ? undefined : (
-                                    <button
-                                        type="button"
-                                        className={adminStyles.btnPrimary}
-                                        onClick={handleOpenNewTier}
-                                    >
-                                        + New Tier
-                                    </button>
+            {/* Unified Single Table View (Option 3) */}
+            {filteredSponsors.length === 0 ? (
+                <EmptyState
+                    message={
+                        searchQuery || sponsorFilter !== 'all'
+                            ? 'No sponsorships match your filter criteria.'
+                            : 'No active sponsorships or direct invitations configured for this event yet.'
+                    }
+                    action={
+                        searchQuery || sponsorFilter !== 'all' ? undefined : (
+                            <button
+                                type="button"
+                                className={adminStyles.btnPrimary}
+                                onClick={handleOpenNewInvite}
+                            >
+                                + Issue Direct Invite
+                            </button>
+                        )
+                    }
+                />
+            ) : (
+                <div className={adminStyles.pageCard} style={{ padding: 0, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="stack-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
+                                    <th style={thStyle}>Sponsor & Campaign</th>
+                                    <th style={thStyle}>Placement</th>
+                                    <th style={thStyle}>Contract Value</th>
+                                    <th style={thStyle}>Status</th>
+                                    <th style={thStyle}>Performance / Status Detail</th>
+                                    <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredSponsors.map((row: SponsorRowItem) => {
+                                    const statusBadge = getStatusBadge(row.status);
+                                    const isReviewActionable = (row.status === 'pending_approval' || row.status === 'revision_requested') && !!row.campaign_id;
 
-                                )
-                            }
-                        />
-                    ) : (
-                        <div className={styles.tiersGrid}>
-                            {filteredTiers.map((tier: SponsorshipTierItem) => {
-                                const fillPct = tier.max_slots > 0 ? Math.round((tier.claimed_slots / tier.max_slots) * 100) : 0;
-                                const isSoldOut = tier.claimed_slots >= tier.max_slots;
-                                const sov = tier.perks?.share_of_voice;
-                                const passes = tier.perks?.ticket_passes;
-                                const questSlots = tier.perks?.quest_slots;
-
-                                return (
-                                    <div key={tier.id} className={styles.tierCard}>
-                                        <div>
-                                            <div className={styles.tierHeader}>
-                                                <div>
-                                                    <div className={styles.tierRank}>Tier #{tier.rank}</div>
-                                                    <h3 className={styles.tierTitle}>{tier.name}</h3>
+                                    return (
+                                        <tr key={row.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
+                                            <td data-title style={tdStyle}>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontWeight: 600 }}>{row.sponsor_name}</span>
+                                                    <span style={{ fontSize: '12px', opacity: 0.7 }}>{row.title}</span>
+                                                    <span style={{ fontSize: '11px', opacity: 0.45 }}>{row.contact_info}</span>
                                                 </div>
+                                            </td>
+                                            <td data-label="Placement" style={tdStyle}>
+                                                <span style={{ fontWeight: 500 }}>
+                                                    {getPlacementLabel(row.placement)}
+                                                    {row.slots && ` (${row.slots} ${row.slots === 1 ? 'Slot' : 'Slots'})`}
+                                                </span>
+                                            </td>
+                                            <td data-label="Contract Value" style={tdStyle}>
+                                                <span style={{ fontWeight: 600 }}>
+                                                    {row.amount !== null
+                                                        ? Number(row.amount) === 0
+                                                            ? '$0 (Offline)'
+                                                            : formatCurrency(row.amount, row.currency)
+                                                        : 'Standard'}
+                                                </span>
+                                            </td>
+                                            <td data-label="Status" style={tdStyle}>
                                                 <Badge
-                                                    label={isSoldOut ? 'Sold Out' : tier.is_active ? 'Active' : 'Paused'}
-                                                    variant={isSoldOut ? 'error' : tier.is_active ? 'success' : 'neutral'}
+                                                    label={statusBadge.label}
+                                                    variant={statusBadge.variant}
+                                                    showDot
                                                 />
-                                            </div>
-
-                                            <div className={styles.tierPrice}>
-                                                {formatCurrency(tier.price, tier.currency)}
-                                            </div>
-
-                                            <div style={{ marginTop: '14px' }}>
-                                                <div className={styles.tierSlotLabel}>
-                                                    <span>Slot Allocation</span>
-                                                    <span style={{ fontWeight: 600 }}>
-                                                        {tier.claimed_slots} / {tier.max_slots} Claimed
-                                                    </span>
-                                                </div>
-                                                <div className={styles.progressTrack}>
-                                                    <div
-                                                        className={`${styles.progressFill} ${fillPct >= 100 ? styles.progressFillFull : ''}`}
-                                                        style={{ width: `${fillPct}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className={styles.perksList}>
-                                                {sov !== undefined && (
-                                                    <span className={styles.perkBadge}>
-                                                        {Number(sov) * 100}% Share of Voice
-                                                    </span>
-                                                )}
-                                                {passes !== undefined && passes > 0 && (
-                                                    <span className={styles.perkBadge}>
-                                                        {passes} VIP Pass{passes === 1 ? '' : 'es'}
-                                                    </span>
-                                                )}
-                                                {questSlots !== undefined && questSlots > 0 && (
-                                                    <span className={styles.perkBadge}>
-                                                        {questSlots} Quest Slot{questSlots === 1 ? '' : 's'}
-                                                    </span>
-                                                )}
-                                                {Array.isArray(tier.perks?.formats) && tier.perks.formats.map((fmt: string) => (
-                                                    <span key={fmt} className={styles.perkBadge}>
-                                                        {fmt.replace(/_/g, ' ')}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--color-interface-outline)' }}>
-                                            <button
-                                                type="button"
-                                                className={styles.actionBtn}
-                                                style={{ flex: 1, justifyContent: 'center' }}
-                                                onClick={() => handleConfigureTier(tier)}
-                                            >
-                                                Configure Tier
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={styles.actionBtn}
-                                                style={{ flex: 1, justifyContent: 'center' }}
-                                                onClick={() => handleOpenNewInvite(tier)}
-                                            >
-                                                Invite Sponsor
-                                            </button>
-                                        </div>
-
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ─── TAB 2: Sponsors (Unified Roster & Pending Invitations) ──────── */}
-            {activeTab === 'sponsors' && (
-                <div>
-                    {filteredSponsors.length === 0 ? (
-                        <EmptyState
-                            message={
-                                searchQuery || sponsorFilter !== 'all'
-                                    ? 'No sponsors match your search criteria.'
-                                    : 'No sponsors or pending invitations configured for this event yet.'
-                            }
-                            action={
-                                searchQuery || sponsorFilter !== 'all' ? undefined : (
-                                    <button
-                                        type="button"
-                                        className={adminStyles.btnPrimary}
-                                        onClick={() => handleOpenNewInvite()}
-                                    >
-                                        + Invite Sponsor
-                                    </button>
-                                )
-                            }
-                        />
-                    ) : (
-                        <div className={adminStyles.pageCard} style={{ padding: 0, overflow: 'hidden' }}>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="stack-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                                    <thead>
-                                        <tr style={{ borderBottom: '1px solid var(--color-interface-outline)', textAlign: 'left' }}>
-                                            <th style={thStyle}>Sponsor</th>
-                                            <th style={thStyle}>Tier</th>
-                                            <th style={thStyle}>Agreed Value</th>
-                                            <th style={thStyle}>Status</th>
-                                            <th style={thStyle}>Performance / Expiry</th>
-                                            <th style={thStyle}></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredSponsors.map((row: SponsorRowItem) => {
-                                            const statusBadge = getStatusBadge(row.status);
-
-                                            return (
-                                                <tr key={row.id} style={{ borderBottom: '1px solid var(--color-interface-outline)' }}>
-                                                    <td data-title style={tdStyle}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                             <span style={{ fontWeight: 600 }}>{row.sponsor_name}</span>
-                                                            <span style={{ fontSize: '12px', opacity: 0.55 }}>{row.contact_info}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td data-label="Tier" style={tdStyle}>
-                                                        <span style={{ fontWeight: 500 }}>{row.tier_name}</span>
-                                                    </td>
-                                                    <td data-label="Agreed Value" style={tdStyle}>
-                                                        <span style={{ fontWeight: 600 }}>
-                                                            {row.amount !== null
-                                                                ? formatCurrency(row.amount, row.currency)
-                                                                : 'Standard Tier Price'}
-                                                        </span>
-                                                    </td>
-                                                    <td data-label="Status" style={tdStyle}>
-                                                        <Badge
-                                                            label={statusBadge.label}
-                                                            variant={statusBadge.variant}
-                                                        />
-                                                    </td>
-                                                    <td data-label="Performance" style={tdStyle}>
-                                                        {row.impressions !== null ? (
-                                                            <div style={{ fontSize: '13px' }}>
-                                                                <span>{formatNumber(row.impressions)} imps</span>
-                                                                <span style={{ opacity: 0.5, margin: '0 4px' }}>•</span>
-                                                                <span>{formatNumber(row.clicks || 0)} clicks</span>
-                                                            </div>
-                                                        ) : row.expires_at ? (
-                                                            <span style={{ fontSize: '13px', opacity: 0.75 }}>
-                                                                Expires {formatDate(row.expires_at)}
+                                            </td>
+                                            <td data-label="Performance / Detail" style={tdStyle}>
+                                                {isReviewActionable ? (
+                                                    <div style={{ fontSize: '12px' }}>
+                                                        {row.status === 'revision_requested' ? (
+                                                            <span style={{ color: '#facc15' }}>
+                                                                Revision pending: {row.revision_notes ? `"${row.revision_notes.slice(0, 40)}..."` : 'Waiting on sponsor upload'}
                                                             </span>
                                                         ) : (
-                                                            <span style={{ opacity: 0.4 }}>—</span>
-                                                        )}
-                                                    </td>
-                                                    <td data-actions style={tdStyle}>
-                                                        {row.invite_token ? (
-                                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                                <button
-                                                                    type="button"
-                                                                    className={styles.actionBtn}
-                                                                    onClick={() => handleCopyInviteLink(row.invite_token!)}
-                                                                >
-                                                                    Copy Link
-                                                                </button>
-                                                                {row.status === 'pending' && (
-                                                                    <button
-                                                                        type="button"
-                                                                        className={styles.actionBtn}
-                                                                        style={{ color: 'var(--color-interface-error)' }}
-                                                                        onClick={() => handleRevokeInvite(row.id)}
-                                                                    >
-                                                                        Revoke
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        ) : row.reference ? (
-                                                            <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.65 }}>
-                                                                {row.reference}
+                                                            <span style={{ color: 'var(--color-brand-primary)' }}>
+                                                                ⚡ 48h Escrow Reservation Hold
                                                             </span>
-                                                        ) : null}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+                                                        )}
+                                                    </div>
+                                                ) : row.impressions !== null ? (
+                                                    <div style={{ fontSize: '13px' }}>
+                                                        <span>{formatNumber(row.impressions)} imps</span>
+                                                        <span style={{ opacity: 0.5, margin: '0 4px' }}>•</span>
+                                                        <span>{formatNumber(row.clicks || 0)} clicks</span>
+                                                    </div>
+                                                ) : row.expires_at ? (
+                                                    <span style={{ fontSize: '13px', opacity: 0.75 }}>
+                                                        Expires {formatDate(row.expires_at)}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ opacity: 0.4 }}>—</span>
+                                                )}
+                                            </td>
+                                            <td data-actions style={tdStyle}>
+                                                {isReviewActionable ? (
+                                                    /* Option 4.2 Inline Review Actions */
+                                                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                        <button
+                                                            type="button"
+                                                            className={styles.btnApprove}
+                                                            style={{ padding: '6px 12px', fontSize: '12px', flex: 'none' }}
+                                                            onClick={() => handleReview(row.campaign_id!, 'approve')}
+                                                            disabled={isReviewing}
+                                                            title="Approve sponsorship & activate Category Sponsor Shield"
+                                                        >
+                                                            ✓ Approve
+                                                        </button>
+                                                        {row.status === 'pending_approval' && (
+                                                            <button
+                                                                type="button"
+                                                                className={styles.btnRequestRevision}
+                                                                style={{ padding: '6px 12px', fontSize: '12px', flex: 'none' }}
+                                                                onClick={() => {
+                                                                    setRevisionCampaignId(row.campaign_id!);
+                                                                    setRevisionFeedback('');
+                                                                }}
+                                                                disabled={isReviewing}
+                                                                title="Request creative asset changes from the sponsor"
+                                                            >
+                                                                ✎ Changes
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            className={styles.btnDecline}
+                                                            style={{ padding: '6px 12px', fontSize: '12px' }}
+                                                            onClick={() => {
+                                                                if (window.confirm('Are you sure you want to decline this sponsorship? Escrow funds will be immediately refunded to the sponsor wallet and the slot will be released.')) {
+                                                                    handleReview(row.campaign_id!, 'decline');
+                                                                }
+                                                            }}
+                                                            disabled={isReviewing}
+                                                            title="Decline sponsorship & refund escrow"
+                                                        >
+                                                            ✕ Decline
+                                                        </button>
+                                                    </div>
+                                                ) : row.invite_token ? (
+                                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                        <button
+                                                            type="button"
+                                                            className={styles.actionBtn}
+                                                            onClick={() => handleCopyInviteLink(row.invite_token!)}
+                                                        >
+                                                            Copy Link
+                                                        </button>
+                                                        {row.status === 'pending' && (
+                                                            <button
+                                                                type="button"
+                                                                className={styles.actionBtn}
+                                                                style={{ color: 'var(--color-interface-error)' }}
+                                                                onClick={() => handleRevokeInvite(row.id.replace('invite-', ''))}
+                                                            >
+                                                                Revoke
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ) : row.reference ? (
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.65 }}>
+                                                            {row.reference}
+                                                        </span>
+                                                    </div>
+                                                ) : null}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
-            {/* [P2] Sponsorship Tier Builder Modal */}
-            <TierBuilderModal
-                isOpen={isTierModalOpen}
-                onClose={() => setIsTierModalOpen(false)}
-                eventId={id}
-                currency={event?.currency || 'KES'}
-                tier={editingTier}
-                onSuccess={loadData}
-            />
-
-            {/* [P3] Tokenized Direct Invite Modal */}
+            {/* ─── Modal 1: Tokenized Direct Invite Modal (7-Day Reservation Hold) ─── */}
             <DirectInviteModal
                 isOpen={isInviteModalOpen}
                 onClose={() => setIsInviteModalOpen(false)}
                 eventId={id}
                 currency={event?.currency || 'KES'}
-                tiers={overview?.tiers || []}
-                initialTier={selectedTierForInvite}
                 onSuccess={loadData}
             />
+
+            {/* ─── Modal 2: Creative Revision Request (Option 4.2) ─────────────────── */}
+            <Modal
+                isOpen={revisionCampaignId !== null}
+                onClose={() => { setRevisionCampaignId(null); setRevisionFeedback(''); }}
+                title="Request Creative Changes"
+                size="medium"
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', width: '100%' }}>
+                        <button
+                            type="button"
+                            className={adminStyles.btnSecondary}
+                            onClick={() => { setRevisionCampaignId(null); setRevisionFeedback(''); }}
+                            disabled={isReviewing}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            className={adminStyles.btnPrimary}
+                            onClick={() => {
+                                if (!revisionFeedback.trim()) {
+                                    showToast('Please provide feedback explaining the requested changes.', 'error');
+                                    return;
+                                }
+                                handleReview(revisionCampaignId!, 'request_revision', revisionFeedback.trim());
+                            }}
+                            disabled={isReviewing || !revisionFeedback.trim()}
+                        >
+                            {isReviewing ? <Spinner size={16} /> : 'Send Feedback & Hold Slot (48h)'}
+                        </button>
+                    </div>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '4px 0' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--color-utility-secondaryText)', lineHeight: 1.5 }}>
+                        Requesting changes moves this campaign to <strong>Revision Requested</strong>. The sponsor&apos;s funds remain held safely in escrow and their requested slot stays reserved for <strong>48 hours</strong> while they upload updated creative assets.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-utility-primaryText)' }}>
+                            Feedback & Instructions for the Sponsor <span style={{ color: 'var(--color-brand-primary)' }}>*Required</span>
+                        </label>
+                        <textarea
+                            style={{
+                                width: '100%',
+                                minHeight: '100px',
+                                padding: '10px 14px',
+                                background: 'rgba(255, 255, 255, 0.04)',
+                                border: '1px solid var(--color-interface-outline)',
+                                borderRadius: 'var(--radius-md)',
+                                color: 'var(--color-utility-primaryText)',
+                                fontSize: '14px',
+                            }}
+                            placeholder="e.g. Please provide a high-resolution PNG with a transparent background, or adjust the call to action."
+                            value={revisionFeedback}
+                            onChange={e => setRevisionFeedback(e.target.value)}
+                            required
+                        />
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }
-

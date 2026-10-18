@@ -15,6 +15,8 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { generateCampaignEmbedding, preloadEmbeddingModel } from '@/utils/embedding';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
+import { createSponsorshipsRepository, type PlacementQuoteResult } from '@/lib/repositories/sponsorships.repository';
+import { formatCurrency } from '@/utils/format';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,6 +36,8 @@ export interface CampaignData {
     title: string;
     description: string;
     type: 'banner' | 'interstitial' | 'interstitial_video';
+    channel?: 'network' | 'event_sponsorship';
+    slots?: number;
     total_budget: string;
     daily_limit: string;
     start_at: string;
@@ -194,11 +198,14 @@ export default function CreateCampaignForm({
         title: '',
         description: '',
         type: 'banner',
+        channel: 'network',
+        slots: 1,
         total_budget: '',
         daily_limit: '',
         start_at: '',
         end_at: '',
         destination_url: '',
+        target_event_id: '',
         account_id: initialAccountId ?? '',
 
         target_countries: [],
@@ -324,9 +331,101 @@ export default function CreateCampaignForm({
         fetchPricing();
     }, [formData.type, supabase]);
 
+    const sponsorshipsRepo = useMemo(() => createSponsorshipsRepository(supabase), [supabase]);
 
+    // ── Sponsorable Events & Live Quote State (for Event Sponsorship channel) ──
+    const [sponsorableEvents, setSponsorableEvents] = useState<{ id: string; title: string; currency: string; start_datetime: string; end_datetime: string }[]>([]);
+    const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+    const [placementQuote, setPlacementQuote] = useState<PlacementQuoteResult | null>(null);
+    const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+    const [quoteError, setQuoteError] = useState<string | null>(null);
 
+    // ── Fetch Sponsorable Events ─────────────────────────────────────────────
+    useEffect(() => {
+        if (formData.channel !== 'event_sponsorship') return;
+        let isCancelled = false;
 
+        const loadEvents = async () => {
+            setIsLoadingEvents(true);
+            try {
+                const { data, error } = await supabase
+                    .schema('api')
+                    .from('v1_events')
+                    .select('id, title, currency, start_datetime, end_datetime')
+                    .eq('status', 'published')
+                    .eq('is_sponsorship_enabled', true)
+                    .order('start_datetime', { ascending: true })
+                    .limit(50);
+
+                if (!isCancelled && data && !error) {
+                    setSponsorableEvents(data as any);
+                }
+            } catch (err) {
+                console.error('Failed to fetch sponsorable events', err);
+            } finally {
+                if (!isCancelled) setIsLoadingEvents(false);
+            }
+        };
+
+        loadEvents();
+        return () => {
+            isCancelled = true;
+        };
+    }, [formData.channel, supabase]);
+
+    // ── Fetch Placement Quote on Event / Type / Slots Change ──────────────────
+    useEffect(() => {
+        if (formData.channel !== 'event_sponsorship' || !formData.target_event_id) {
+            setPlacementQuote(null);
+            setQuoteError(null);
+            return;
+        }
+
+        let isCancelled = false;
+
+        const fetchQuote = async () => {
+            setIsQuoteLoading(true);
+            setQuoteError(null);
+
+            const { data, error } = await sponsorshipsRepo.getPlacementQuote(
+                formData.target_event_id!,
+                formData.type,
+                formData.slots || 1
+            );
+
+            if (isCancelled) return;
+            setIsQuoteLoading(false);
+
+            if (error || !data) {
+                setQuoteError(error?.message || 'Failed to calculate placement quote.');
+                setPlacementQuote(null);
+            } else {
+                setPlacementQuote(data);
+                if (!data.is_available) {
+                    setQuoteError(data.reason || 'Placement is not available for requested slots.');
+                }
+                // Auto-sync currency, fixed contract budget, and timeline from quote & event
+                setFormData(prev => {
+                    const selectedEv = sponsorableEvents.find(e => e.id === prev.target_event_id);
+                    const formattedStart = selectedEv?.start_datetime ? new Date(selectedEv.start_datetime).toISOString().split('T')[0] : prev.start_at;
+                    const formattedEnd = selectedEv?.end_datetime ? new Date(selectedEv.end_datetime).toISOString().split('T')[0] : prev.end_at;
+                    return {
+                        ...prev,
+                        currency: data.currency || prev.currency,
+                        total_budget: data.total_price ? String(data.total_price) : prev.total_budget,
+                        daily_limit: data.total_price ? String(data.total_price) : prev.daily_limit,
+                        start_at: prev.start_at || formattedStart,
+                        end_at: prev.end_at || formattedEnd,
+                    };
+                });
+            }
+        };
+
+        fetchQuote();
+        return () => {
+            isCancelled = true;
+        };
+    }, [formData.channel, formData.target_event_id, formData.type, formData.slots, sponsorshipsRepo, sponsorableEvents]);
 
     // ── Persistent Draft Check ───────────────────────────────────────────────
     useEffect(() => {
@@ -444,9 +543,32 @@ export default function CreateCampaignForm({
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
+    const getMaxSlotsForType = (type: string) => (type === 'banner' ? 8 : 2);
+
+    const handleChannelChange = (channel: 'network' | 'event_sponsorship') => {
+        setFormData(prev => ({
+            ...prev,
+            channel,
+            ...(channel === 'network' ? { target_event_id: '' } : {})
+        }));
+    };
+
+    const handleSlotsChange = (slots: number) => {
+        setFormData(prev => ({ ...prev, slots }));
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'type') {
+            const maxAllowed = getMaxSlotsForType(value);
+            setFormData(prev => ({
+                ...prev,
+                type: value as any,
+                slots: Math.min(prev.slots || 1, maxAllowed),
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
         if (!touched[name]) setTouched(prev => ({ ...prev, [name]: true }));
     };
 
@@ -660,19 +782,28 @@ export default function CreateCampaignForm({
         if (isNaN(budget) || budget <= 0) newErrors.total_budget = 'Valid positive total budget is required.';
 
         const limit = parseFloat(formData.daily_limit);
-        if (formData.daily_limit && (isNaN(limit) || limit <= 0 || limit > budget)) {
+        if (formData.channel !== 'event_sponsorship' && formData.daily_limit && (isNaN(limit) || limit <= 0 || limit > budget)) {
             newErrors.daily_limit = 'Daily limit must be a positive number and cannot exceed total budget.';
         }
 
-        const bid = parseFloat(formData.max_bid_amount);
-        if (isNaN(bid) || bid <= 0) {
-            newErrors.max_bid_amount = 'Valid positive max bid amount is required.';
-        } else {
-            if (formData.daily_limit && !isNaN(limit) && (bid > limit)) {
-                newErrors.max_bid_amount = `Max bid (${bid}) cannot be higher than the daily limit (${limit}).`;
+        if (formData.channel === 'event_sponsorship') {
+            if (!formData.target_event_id) {
+                newErrors.target_event_id = 'Please select a target event for sponsorship.';
             }
-            if (!isNaN(budget) && bid > budget) {
-                newErrors.max_bid_amount = `Max bid (${bid}) cannot exceed the total campaign budget (${budget}).`;
+            if (placementQuote && !placementQuote.is_available) {
+                newErrors.slots = placementQuote.reason || 'Requested slots are not available.';
+            }
+        } else {
+            const bid = parseFloat(formData.max_bid_amount);
+            if (isNaN(bid) || bid <= 0) {
+                newErrors.max_bid_amount = 'Valid positive max bid amount is required.';
+            } else {
+                if (formData.daily_limit && !isNaN(limit) && (bid > limit)) {
+                    newErrors.max_bid_amount = `Max bid (${bid}) cannot be higher than the daily limit (${limit}).`;
+                }
+                if (!isNaN(budget) && bid > budget) {
+                    newErrors.max_bid_amount = `Max bid (${bid}) cannot exceed the total campaign budget (${budget}).`;
+                }
             }
         }
 
@@ -788,9 +919,19 @@ export default function CreateCampaignForm({
                     title: formData.title,
                     description: formData.description,
                     type: formData.type,
+                    channel: formData.channel || 'network',
+                    ...(formData.channel === 'event_sponsorship' ? {
+                        target_event_id: formData.target_event_id,
+                        sponsorship_details: {
+                            slots: formData.slots || 1,
+                            share_of_voice: placementQuote?.share_of_voice || ((formData.slots || 1) / (formData.type === 'banner' ? 8 : 2)),
+                            price_per_slot: placementQuote?.price_per_slot || 0,
+                            quote_total: placementQuote?.total_price || parseFloat(formData.total_budget),
+                        }
+                    } : {}),
                     total_budget: parseFloat(formData.total_budget),
                     daily_limit: formData.daily_limit ? parseFloat(formData.daily_limit) : null,
-                    max_bid_amount: parseFloat(formData.max_bid_amount),
+                    max_bid_amount: formData.channel === 'event_sponsorship' ? 1.0 : parseFloat(formData.max_bid_amount),
                     currency: formData.currency,
                     start_at: new Date(formData.start_at).toISOString(),
                     end_at: new Date(formData.end_at).toISOString(),
@@ -940,6 +1081,93 @@ export default function CreateCampaignForm({
                                 {activeTab === 'details' && (
                                     <div className={styles.formSection}>
 
+                                        {/* ── Channel Selector: Network vs Event Sponsorship ── */}
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label}>
+                                                Campaign Channel <span className={styles.requiredIndicator}>*Required</span>
+                                            </label>
+                                            <div className={styles.channelToggleGrid}>
+                                                <button
+                                                    type="button"
+                                                    className={`${styles.channelCard} ${formData.channel !== 'event_sponsorship' ? styles.channelCardActive : ''}`}
+                                                    onClick={() => handleChannelChange('network')}
+                                                >
+                                                    <div className={styles.channelCardHeader}>
+                                                        <span className={styles.channelCardTitle}>Network Auction</span>
+                                                        {formData.channel !== 'event_sponsorship' && <span className={styles.channelBadge}>Selected</span>}
+                                                    </div>
+                                                    <p className={styles.channelCardDesc}>
+                                                        Algorithmically distributed across all forums, public feeds, and sessions using programmatic bidding.
+                                                    </p>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className={`${styles.channelCard} ${formData.channel === 'event_sponsorship' ? styles.channelCardActive : ''}`}
+                                                    onClick={() => handleChannelChange('event_sponsorship')}
+                                                >
+                                                    <div className={styles.channelCardHeader}>
+                                                        <span className={styles.channelCardTitle}>Event Sponsorship</span>
+                                                        {formData.channel === 'event_sponsorship' && <span className={styles.channelBadge}>Selected</span>}
+                                                    </div>
+                                                    <p className={styles.channelCardDesc}>
+                                                        Guaranteed placement within a specific event forum with Category Sponsor Shield protection.
+                                                    </p>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* ── Event Sponsorship: Event Picker & Slot Count ── */}
+                                        {formData.channel === 'event_sponsorship' && (
+                                            <div className={styles.row}>
+                                                <div className={styles.inputGroup} style={{ flex: 2 }}>
+                                                    <label className={styles.label} htmlFor="target_event_id">
+                                                        Target Event <span className={styles.requiredIndicator}>*Required</span>
+                                                    </label>
+                                                    <select
+                                                        id="target_event_id"
+                                                        name="target_event_id"
+                                                        className={`${styles.select} ${errors.target_event_id ? styles.inputError : ''}`}
+                                                        value={formData.target_event_id || ''}
+                                                        onChange={handleInputChange}
+                                                        disabled={isEditing}
+                                                        required
+                                                    >
+                                                        <option value="" disabled>
+                                                            {isLoadingEvents ? 'Loading sponsorable events...' : 'Select an event to sponsor'}
+                                                        </option>
+                                                        {sponsorableEvents.map(ev => (
+                                                            <option key={ev.id} value={ev.id}>
+                                                                {ev.title} ({ev.currency || 'KES'}) — {new Date(ev.start_datetime).toLocaleDateString()}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.target_event_id && <p className={styles.errorMessage}>{errors.target_event_id}</p>}
+                                                </div>
+
+                                                <div className={styles.inputGroup} style={{ flex: 1 }}>
+                                                    <label className={styles.label} htmlFor="slots">
+                                                        Slot Allocation ({formData.slots || 1} of {formData.type === 'banner' ? 8 : 2} max)
+                                                        <span className={styles.infoIcon} title="Number of guaranteed rotation slots booked in this event forum">ⓘ</span>
+                                                    </label>
+                                                    <select
+                                                        id="slots"
+                                                        name="slots"
+                                                        className={styles.select}
+                                                        value={formData.slots || 1}
+                                                        onChange={(e) => handleSlotsChange(parseInt(e.target.value, 10))}
+                                                    >
+                                                        {Array.from({ length: formData.type === 'banner' ? 8 : 2 }, (_, i) => i + 1).map(slotNum => (
+                                                            <option key={slotNum} value={slotNum}>
+                                                                {slotNum} {slotNum === 1 ? 'Slot' : 'Slots'} ({((slotNum / (formData.type === 'banner' ? 8 : 2)) * 100).toFixed(1)}% SOV)
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.slots && <p className={styles.errorMessage}>{errors.slots}</p>}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label} htmlFor="title">
                                                 Title <span className={styles.requiredIndicator}>*Required</span>
@@ -1000,7 +1228,7 @@ export default function CreateCampaignForm({
                                                     <option value="interstitial_video">Interstitial Video (9:16 – Auto-play)</option>
                                                 </select>
                                                 {/* #3 CPM/CPC Estimator */}
-                                                {pricing.impression > 0 && (
+                                                {formData.channel !== 'event_sponsorship' && pricing.impression > 0 && (
                                                     <div className={`${styles.pricingHint} tour-partners-pricing-hint`}>
                                                         <span>Starting at</span>
                                                         <strong>${pricing.impression.toFixed(3)}</strong> / impression
@@ -1015,7 +1243,7 @@ export default function CreateCampaignForm({
                                                     <span className={styles.infoIcon} title="the currency this campaign's budget, bids and spend are denominated in — fixed once the campaign is created">ⓘ</span>
                                                 </label>
                                                 <select id="currency" name="currency" className={`${styles.select} ${errors.currency ? styles.inputError : ''}`}
-                                                    value={formData.currency} onChange={handleInputChange} disabled={isEditing} required>
+                                                    value={formData.currency} onChange={handleInputChange} disabled={isEditing || formData.channel === 'event_sponsorship'} required>
                                                     {!formData.currency && <option value="" disabled>Select a currency</option>}
                                                     {walletCurrencies.map(c => (
                                                         <option key={c} value={c}>{c}</option>
@@ -1023,12 +1251,72 @@ export default function CreateCampaignForm({
                                                 </select>
                                                 {isEditing ? (
                                                     <p className={styles.pricingHint}>Currency can&apos;t be changed after a campaign is created.</p>
+                                                ) : formData.channel === 'event_sponsorship' ? (
+                                                    <p className={styles.pricingHint}>Locked to target event currency ({formData.currency || 'KES'}).</p>
                                                 ) : walletCurrencies.length === 0 ? (
                                                     <p className={styles.pricingHint}>No wallet found for this account yet — top up a wallet first.</p>
                                                 ) : null}
                                                 {errors.currency && <p className={styles.errorMessage}>{errors.currency}</p>}
                                             </div>
                                         </div>
+
+                                        {/* ── Dynamic Placement Quote Card for Event Sponsorship ── */}
+                                        {formData.channel === 'event_sponsorship' && formData.target_event_id && (
+                                            <div className={styles.placementQuoteCard}>
+                                                <div className={styles.quoteHeader}>
+                                                    <span className={styles.quoteHeaderTitle}>
+                                                        {isQuoteLoading ? 'Calculating Placement Quote...' : 'Live Placement Quote & Inventory'}
+                                                    </span>
+                                                    {placementQuote?.is_exclusive_takeover && (
+                                                        <span className={styles.quoteExclusiveBadge}>★ 100% Exclusive Takeover</span>
+                                                    )}
+                                                </div>
+
+                                                {quoteError ? (
+                                                    <div className={styles.quoteWarningBox}>
+                                                        <span>⚠️ {quoteError}</span>
+                                                    </div>
+                                                ) : placementQuote ? (
+                                                    <>
+                                                        <div className={styles.quoteMetricsGrid}>
+                                                            <div className={styles.quoteMetricItem}>
+                                                                <span className={styles.quoteMetricLabel}>Total Contract</span>
+                                                                <span className={`${styles.quoteMetricValue} ${styles.quoteMetricHighlight}`}>
+                                                                    {formatCurrency(placementQuote.total_price, placementQuote.currency)}
+                                                                </span>
+                                                            </div>
+                                                            <div className={styles.quoteMetricItem}>
+                                                                <span className={styles.quoteMetricLabel}>Price per Slot</span>
+                                                                <span className={styles.quoteMetricValue}>
+                                                                    {formatCurrency(placementQuote.price_per_slot, placementQuote.currency)}
+                                                                </span>
+                                                            </div>
+                                                            <div className={styles.quoteMetricItem}>
+                                                                <span className={styles.quoteMetricLabel}>Share of Voice (SOV)</span>
+                                                                <span className={styles.quoteMetricValue}>
+                                                                    {(placementQuote.share_of_voice * 100).toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                            <div className={styles.quoteMetricItem}>
+                                                                <span className={styles.quoteMetricLabel}>Available Slots</span>
+                                                                <span className={styles.quoteMetricValue}>
+                                                                    {placementQuote.available_slots} / {placementQuote.max_slots}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className={styles.quoteShieldBox}>
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                                            </svg>
+                                                            <span>
+                                                                <strong>Category Sponsor Shield Active:</strong> Competing sponsors in your event category are automatically locked out for this placement.
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                ) : null}
+                                            </div>
+                                        )}
 
                                         <div className={styles.row}>
                                             <div className={styles.inputGroup}>
@@ -1037,31 +1325,36 @@ export default function CreateCampaignForm({
                                                     <span className={styles.infoIcon} title="the maximum amount of money you are willing to spend on an entire campaign over its lifetime">ⓘ</span>
                                                 </label>
                                                 <input id="total_budget" name="total_budget" type="number" className={styles.input}
-                                                    placeholder="1000" value={formData.total_budget} onChange={handleInputChange} required />
+                                                    placeholder="1000" value={formData.total_budget} onChange={handleInputChange} readOnly={formData.channel === 'event_sponsorship'} required />
+                                                {formData.channel === 'event_sponsorship' && (
+                                                    <p className={styles.pricingHint}>Fixed contract price determined by event placement quote.</p>
+                                                )}
                                             </div>
                                         </div>
 
-                                        {/* Budget & Bidding */}
-                                        <div className={styles.row}>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="daily_limit">
-                                                    Daily Limit ({formData.currency || 'USD'})
-                                                    <span className={styles.infoIcon} title="the maximum amount you want to spend on the campaign in a single day">ⓘ</span>
-                                                </label>
-                                                <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
-                                                    placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
-                                                {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
+                                        {/* Budget & Bidding (Network Auction only) */}
+                                        {formData.channel !== 'event_sponsorship' && (
+                                            <div className={styles.row}>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="daily_limit">
+                                                        Daily Limit ({formData.currency || 'USD'})
+                                                        <span className={styles.infoIcon} title="the maximum amount you want to spend on the campaign in a single day">ⓘ</span>
+                                                    </label>
+                                                    <input id="daily_limit" name="daily_limit" type="number" className={`${styles.input} ${errors.daily_limit ? styles.inputError : ''}`}
+                                                        placeholder="50" value={formData.daily_limit} onChange={handleInputChange} />
+                                                    {errors.daily_limit && <p className={styles.errorMessage}>{errors.daily_limit}</p>}
+                                                </div>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label} htmlFor="max_bid_amount">
+                                                        Max Bid ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
+                                                        <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
+                                                    </label>
+                                                    <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
+                                                        placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
+                                                    {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
+                                                </div>
                                             </div>
-                                            <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="max_bid_amount">
-                                                    Max Bid ({formData.currency || 'USD'}) <span className={styles.requiredIndicator}>*Required</span>
-                                                    <span className={styles.infoIcon} title="the highest amount you are willing to pay for a single action">ⓘ</span>
-                                                </label>
-                                                <input id="max_bid_amount" name="max_bid_amount" type="number" step="0.001" className={`${styles.input} ${errors.max_bid_amount ? styles.inputError : ''}`}
-                                                    placeholder="0.01" value={formData.max_bid_amount} onChange={handleInputChange} required />
-                                                {errors.max_bid_amount && <p className={styles.errorMessage}>{errors.max_bid_amount}</p>}
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -1399,13 +1692,28 @@ export default function CreateCampaignForm({
                                     <div className={styles.formSection}>
                                         <div className={styles.reviewGrid}>
                                             <div className={styles.reviewItem}>
+                                                <label>Channel</label>
+                                                <div>{formData.channel === 'event_sponsorship' ? 'Event Sponsorship' : 'Network Auction'}</div>
+                                            </div>
+                                            {formData.channel === 'event_sponsorship' && (
+                                                <div className={styles.reviewItem}>
+                                                    <label>Target Event & Slots</label>
+                                                    <div>
+                                                        {sponsorableEvents.find(e => e.id === formData.target_event_id)?.title || 'Selected Event'}
+                                                        {' '}• {formData.slots || 1} of {formData.type === 'banner' ? 8 : 2} Slots
+                                                        {placementQuote && ` (${(placementQuote.share_of_voice * 100).toFixed(1)}% SOV)`}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className={styles.reviewItem}>
                                                 <label>Title</label>
                                                 <div>{formData.title}</div>
                                             </div>
                                             <div className={styles.reviewItem}>
                                                 <label>Budget</label>
                                                 <div>
-                                                    {formData.currency || 'USD'} {formData.total_budget} Total ({formData.currency || 'USD'} {formData.max_bid_amount} Max Bid)
+                                                    {formData.currency || 'USD'} {formData.total_budget} Total
+                                                    {formData.channel !== 'event_sponsorship' && ` (${formData.currency || 'USD'} ${formData.max_bid_amount} Max Bid)`}
                                                 </div>
                                             </div>
                                             <div className={styles.reviewItem}>
@@ -1415,8 +1723,10 @@ export default function CreateCampaignForm({
                                             <div className={styles.reviewItem}>
                                                 <label>Targeting</label>
                                                 <div>
-                                                    {formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Anywhere'}
-                                                    {formData.target_tags.length > 0 && ` • ${formData.target_tags.join(', ')}`}
+                                                    {formData.channel === 'event_sponsorship'
+                                                        ? 'Locked to event attendees & forum audience'
+                                                        : (formData.target_countries.length > 0 ? formData.target_countries.join(', ') : 'Anywhere') +
+                                                          (formData.target_tags.length > 0 ? ` • ${formData.target_tags.join(', ')}` : '')}
                                                 </div>
                                             </div>
                                             <div className={styles.reviewItem}>
@@ -1427,7 +1737,9 @@ export default function CreateCampaignForm({
 
 
                                         <div className={styles.launchNote}>
-                                            By launching, your campaign will be submitted for approval before going live.
+                                            {formData.channel === 'event_sponsorship'
+                                                ? 'By booking, slots are soft-reserved for 48 hours while the event organizer reviews your creative. Full refund if declined or expired.'
+                                                : 'By launching, your campaign will be submitted for approval before going live.'}
                                         </div>
 
                                         {formError && (

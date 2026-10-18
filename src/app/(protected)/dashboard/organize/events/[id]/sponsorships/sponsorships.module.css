@@ -239,3 +239,144 @@
     border-color: var(--color-brand-primary);
     color: #fff;
 }
+
+/* ─── Review Queue Grid & Cards ────────────────────────────── */
+
+.reviewGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.reviewCard {
+    background: var(--color-interface-surface);
+    border: 1px solid var(--color-interface-outline);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    transition: all 0.2s ease;
+}
+
+.reviewCard:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.reviewCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.reviewCardBrand {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+}
+
+.reviewCardTitle {
+    font-size: 13px;
+    color: var(--color-utility-secondaryText);
+    margin-top: 2px;
+}
+
+.reviewCardMetrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    padding: 12px;
+}
+
+.reviewMetricItem {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.reviewMetricLabel {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-utility-secondaryText);
+}
+
+.reviewMetricValue {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-utility-primaryText);
+}
+
+.revisionNotesBox {
+    background: rgba(234, 179, 8, 0.08);
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #fde047;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reviewActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btnApprove {
+    flex: 1;
+    background: rgba(32, 249, 40, 0.15);
+    border: 1px solid rgba(32, 249, 40, 0.4);
+    color: var(--color-brand-primary);
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnApprove:hover {
+    background: rgba(32, 249, 40, 0.25);
+    border-color: var(--color-brand-primary);
+}
+
+.btnRequestRevision {
+    flex: 1;
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.35);
+    color: #facc15;
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnRequestRevision:hover {
+    background: rgba(234, 179, 8, 0.22);
+}
+
+.btnDecline {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnDecline:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: #ef4444;
+}

@@ -21,23 +21,22 @@ interface DirectInviteModalProps {
     onClose: () => void;
     eventId: string;
     currency: string;
-    tiers: SponsorshipTierItem[];
-    initialTier: SponsorshipTierItem | null;
     onSuccess: () => void;
+    tiers?: SponsorshipTierItem[];
+    initialTier?: SponsorshipTierItem | null;
 }
 
 /**
- * Tokenized direct sponsorship invitation generator modal ([P3]).
- * Enables event organizers to configure bespoke corporate invitations with custom negotiated pricing,
- * designated expiration windows, and instant cryptographic claim links.
+ * Tokenized direct sponsorship invitation generator modal.
+ * Enables event organizers to configure bespoke corporate invitations targeting standardized
+ * placements (Banner, Interstitial, Video) with custom negotiated pricing ($0 for offline settlement),
+ * a 7-day soft-reservation hold, and instant cryptographic claim links.
  */
 export default function DirectInviteModal({
     isOpen,
     onClose,
     eventId,
     currency,
-    tiers,
-    initialTier,
     onSuccess,
 }: DirectInviteModalProps) {
     const { showToast } = useToast();
@@ -46,40 +45,33 @@ export default function DirectInviteModal({
     const sponsorshipsRepo = useMemo(() => createSponsorshipsRepository(supabase), [supabase]);
 
     // Form inputs state
-    const [selectedTierId, setSelectedTierId] = useState('');
+    const [placement, setPlacement] = useState<'banner' | 'interstitial' | 'interstitial_video'>('banner');
+    const [slots, setSlots] = useState(1);
     const [companyName, setCompanyName] = useState('');
     const [inviteeEmail, setInviteeEmail] = useState('');
     const [inviteeName, setInviteeName] = useState('');
     const [customPrice, setCustomPrice] = useState<number | ''>('');
-    const [expiryDays, setExpiryDays] = useState(14);
+    const [expiryDays, setExpiryDays] = useState(7);
     const [notes, setNotes] = useState('');
 
     // Submission & Success state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [generatedInvite, setGeneratedInvite] = useState<SponsorshipInviteItem | null>(null);
 
-    // Sync selected tier when modal opens or initialTier changes
+    // Reset when modal opens
     useEffect(() => {
         if (isOpen) {
             setGeneratedInvite(null);
+            setPlacement('banner');
+            setSlots(1);
             setCompanyName('');
             setInviteeEmail('');
             setInviteeName('');
             setCustomPrice('');
-            setExpiryDays(14);
+            setExpiryDays(7);
             setNotes('');
-
-            if (initialTier) {
-                setSelectedTierId(initialTier.id);
-            } else if (tiers.length > 0) {
-                setSelectedTierId(tiers[0].id);
-            }
         }
-    }, [isOpen, initialTier, tiers]);
-
-    const activeTier = useMemo(() => {
-        return tiers.find(t => t.id === selectedTierId) || initialTier || tiers[0];
-    }, [tiers, selectedTierId, initialTier]);
+    }, [isOpen]);
 
     const claimUrl = useMemo(() => {
         if (!generatedInvite) return '';
@@ -96,11 +88,6 @@ export default function DirectInviteModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!selectedTierId) {
-            showToast('Please select a sponsorship tier.', 'error');
-            return;
-        }
 
         if (!companyName.trim()) {
             showToast('Company name is required.', 'error');
@@ -122,12 +109,13 @@ export default function DirectInviteModal({
         try {
             const res = await sponsorshipsRepo.createInvite({
                 eventId,
-                tierId: selectedTierId,
+                placement,
+                slots,
                 companyName: companyName.trim(),
                 inviteeEmail: inviteeEmail.trim(),
                 inviteeName: inviteeName.trim() || undefined,
                 customPrice: priceOverride,
-                currency: activeTier?.currency || currency || 'KES',
+                currency: currency || 'KES',
                 expiryDays,
                 metadata: notes.trim() ? { notes: notes.trim() } : {},
             });
@@ -154,6 +142,12 @@ export default function DirectInviteModal({
         setInviteeName('');
         setCustomPrice('');
         setNotes('');
+    };
+
+    const formatPlacementName = (p: string) => {
+        if (p === 'banner') return 'Forum Banner Carousel';
+        if (p === 'interstitial_video') return 'Video Interstitial';
+        return 'Entry Interstitial';
     };
 
     return (
@@ -197,7 +191,7 @@ export default function DirectInviteModal({
                             type="button"
                             className={adminStyles.btnPrimary}
                             onClick={handleSubmit}
-                            disabled={isSubmitting || tiers.length === 0}
+                            disabled={isSubmitting}
                         >
                             {isSubmitting ? <Spinner size={16} /> : 'Generate Tokenized Link'}
                         </button>
@@ -213,7 +207,7 @@ export default function DirectInviteModal({
                         <h3 className={styles.successTitle}>Private Invitation Ready</h3>
                         <p className={styles.successSubtitle}>
                             Share this private tokenized link with <strong>{generatedInvite.company_name}</strong>.
-                            Opening the link locks the agreed package terms and initiates funds escrow.
+                            Opening the link locks the agreed package terms and initiates funds escrow with a 7-day hold.
                         </p>
                     </div>
 
@@ -235,23 +229,25 @@ export default function DirectInviteModal({
 
                     <div className={styles.summaryCard}>
                         <div className={styles.summaryItem}>
-                            <span className={styles.summaryLabel}>Package Tier</span>
-                            <span className={styles.summaryValue}>{generatedInvite.tier_name}</span>
+                            <span className={styles.summaryLabel}>Placement Format</span>
+                            <span className={styles.summaryValue}>
+                                {formatPlacementName(generatedInvite.placement || placement)} ({generatedInvite.slots || slots} Slots)
+                            </span>
                         </div>
                         <div className={styles.summaryItem}>
                             <span className={styles.summaryLabel}>Agreed Value</span>
                             <span className={styles.summaryValue}>
                                 {generatedInvite.custom_price !== null
-                                    ? formatCurrency(generatedInvite.custom_price, generatedInvite.currency)
-                                    : activeTier
-                                    ? formatCurrency(activeTier.price, activeTier.currency)
-                                    : 'Standard'}
+                                    ? Number(generatedInvite.custom_price) === 0
+                                        ? '$0 (Settled Offline)'
+                                        : formatCurrency(generatedInvite.custom_price, generatedInvite.currency)
+                                    : 'Algorithmic Rate'}
                             </span>
                         </div>
                         <div className={styles.summaryItem}>
-                            <span className={styles.summaryLabel}>Expires On</span>
+                            <span className={styles.summaryLabel}>Reservation Hold</span>
                             <span className={styles.summaryValue}>
-                                {formatDate(generatedInvite.expires_at)}
+                                Expires {formatDate(generatedInvite.expires_at)}
                             </span>
                         </div>
                     </div>
@@ -259,30 +255,45 @@ export default function DirectInviteModal({
             ) : (
                 /* ─── Generator Form View ─────────────────────────────────────── */
                 <form onSubmit={handleSubmit} className={styles.formContainer}>
-                    {/* Target Tier Selection */}
-                    <div className={styles.field}>
-                        <label className={styles.label} htmlFor="invite-tier">
-                            Select Sponsorship Tier
-                        </label>
-                        {tiers.length === 0 ? (
-                            <p className={styles.hint} style={{ color: 'var(--color-interface-error)' }}>
-                                No sponsorship tiers configured. Please create a tier before sending an invite.
-                            </p>
-                        ) : (
+                    {/* Placement Format & Slot Count */}
+                    <div className={styles.rowGroup}>
+                        <div className={styles.field}>
+                            <label className={styles.label} htmlFor="invite-placement">
+                                Placement Format
+                            </label>
                             <select
-                                id="invite-tier"
+                                id="invite-placement"
                                 className={styles.select}
-                                value={selectedTierId}
-                                onChange={e => setSelectedTierId(e.target.value)}
-                                required
+                                value={placement}
+                                onChange={e => {
+                                    const nextPlacement = e.target.value as 'banner' | 'interstitial' | 'interstitial_video';
+                                    setPlacement(nextPlacement);
+                                    const maxAllowed = nextPlacement === 'banner' ? 8 : 2;
+                                    setSlots(prev => Math.min(prev, maxAllowed));
+                                }}
                             >
-                                {tiers.map(t => (
-                                    <option key={t.id} value={t.id}>
-                                        {t.name} — {formatCurrency(t.price, t.currency)} ({t.claimed_slots}/{t.max_slots} slots filled)
+                                <option value="banner">Forum Banner (16:9 Carousel – Max 8)</option>
+                                <option value="interstitial">Entry Interstitial (9:16 Full Screen – Max 2)</option>
+                                <option value="interstitial_video">Video Interstitial (9:16 Auto-play – Max 2)</option>
+                            </select>
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label} htmlFor="invite-slots">
+                                Slot Allocation ({slots} of {placement === 'banner' ? 8 : 2} max)
+                            </label>
+                            <select
+                                id="invite-slots"
+                                className={styles.select}
+                                value={slots}
+                                onChange={e => setSlots(parseInt(e.target.value, 10))}
+                            >
+                                {Array.from({ length: placement === 'banner' ? 8 : 2 }, (_, i) => i + 1).map(n => (
+                                    <option key={n} value={n}>
+                                        {n} {n === 1 ? 'Slot' : 'Slots'} ({((n / (placement === 'banner' ? 8 : 2)) * 100).toFixed(1)}% SOV)
                                     </option>
                                 ))}
                             </select>
-                        )}
+                        </div>
                     </div>
 
                     {/* Invitee Brand & Email */}
@@ -334,7 +345,7 @@ export default function DirectInviteModal({
                         </div>
                         <div className={styles.field}>
                             <label className={styles.label} htmlFor="invite-custom-price">
-                                Negotiated Price Override (Optional)
+                                Negotiated Price Override ({currency || 'KES'})
                             </label>
                             <input
                                 id="invite-custom-price"
@@ -342,17 +353,17 @@ export default function DirectInviteModal({
                                 min={0}
                                 step="any"
                                 className={styles.input}
-                                placeholder={activeTier ? `Default: ${formatCurrency(activeTier.price, activeTier.currency)}` : '0.00'}
+                                placeholder="e.g. 0.00 for offline settlement"
                                 value={customPrice}
                                 onChange={e => setCustomPrice(e.target.value === '' ? '' : parseFloat(e.target.value))}
                             />
-                            <span className={styles.hint}>Leave blank to apply standard tier price</span>
+                            <span className={styles.hint}>Enter 0 if payment was settled offline via wire/bank transfer</span>
                         </div>
                     </div>
 
                     {/* Link Expiration Window */}
                     <div className={styles.field}>
-                        <label className={styles.label}>Link Validity Window</label>
+                        <label className={styles.label}>Reservation Hold Window</label>
                         <div className={styles.pillsGroup}>
                             {[7, 14, 30].map(days => (
                                 <button
@@ -366,7 +377,7 @@ export default function DirectInviteModal({
                             ))}
                         </div>
                         <span className={styles.hint}>
-                            Unclaimed reservation expires automatically after {expiryDays} days, releasing slot capacity back to inventory.
+                            Holds 1 placement slot in soft-reservation for {expiryDays} days. If unclaimed, it returns to the public inventory.
                         </span>
                     </div>
 
