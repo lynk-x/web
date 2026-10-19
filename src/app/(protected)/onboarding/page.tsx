@@ -60,9 +60,9 @@ function OnboardingFlow() {
     const { profile, isLoading: isLoadingAuth } = useAuth();
     const { countries, isLoading: isLoadingCountries } = useCountries();
 
-    // Query params support ?type=ads|commercial|organizer and ?create=true (adding a new workspace)
+    // Query params support ?type=ads|organizer and ?create=true (adding a new workspace)
     const rawType = searchParams.get('type');
-    const resolvedAccountType: AccountType = (rawType === 'commercial' || rawType === 'ads') ? 'advertiser' : 'organizer';
+    const resolvedAccountType: AccountType = rawType === 'ads' ? 'advertiser' : 'organizer';
     const isCreatingNew = searchParams.get('create') === 'true';
 
     const draft = typeof window !== 'undefined' ? loadDraft(resolvedAccountType) : null;

@@ -10,7 +10,7 @@ export const MOBILE_DASHBOARD_ENABLED = false;
 
 /** True when [mode] gets the mobile shell below 1024 px. Only the events and ads workspaces have one. */
 export function usesMobileShell(mode: DashboardMode): boolean {
-    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'ads' || mode === 'commercial');
+    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'ads');
 }
 
 /**

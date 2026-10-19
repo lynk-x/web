@@ -11,7 +11,6 @@ import type { DashboardMode } from '@/types/shared';
 const MODE_LABEL: Record<DashboardMode, string> = {
     events: 'Events',
     ads: 'Ads Manager',
-    commercial: 'Ads Manager',
     pulse: 'Pulse',
     admin: 'Admin',
     system: 'System',
@@ -120,7 +119,7 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
                                 return true;
                             })
                             .filter(a => {
-                                if (filterMode === 'ads' || filterMode === 'commercial') return a.type === 'advertiser';
+                                if (filterMode === 'ads') return a.type === 'advertiser';
                                 if (filterMode === 'system') return a.type === 'platform' || a.type === 'system';
                                 if (filterMode === 'events') return a.type === 'organizer' || a.type === 'platform' || a.type === 'system';
                                 return true; // Show all for admin or others

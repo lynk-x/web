@@ -19,15 +19,15 @@ function DashboardRoot() {
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
-    // Query params support ?type=ads|commercial|organizer
+    // Query params support ?type=ads|organizer
     const rawType = searchParams.get('type');
-    const normalizedType: 'organizer' | 'advertiser' | null = (rawType === 'commercial' || rawType === 'ads')
+    const normalizedType: 'organizer' | 'advertiser' | null = rawType === 'ads'
         ? 'advertiser'
         : rawType === 'organizer'
             ? 'organizer'
             : null;
 
-    // Non-attendee accounts, optionally filtered by typeParam. Organizer/commercial/
+    // Non-attendee accounts, optionally filtered by typeParam. Organizer/ads/
     // pulse_user accounts use an open-ended, admin-configurable role-builder (role_slug
     // is plain text, not a fixed enum), so any membership role counts as a real
     // workspace — `allAccounts` is already scoped to genuine memberships. Platform/

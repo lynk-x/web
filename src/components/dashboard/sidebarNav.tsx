@@ -181,10 +181,6 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             ]
         },
     ],
-    // Deprecated alias for backward compatibility
-    get commercial() {
-        return this.ads;
-    },
 
     // ── Admin ────────────────────────────────────────────────────────────
     admin: [
@@ -447,7 +443,6 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
 const MODE_BY_SEGMENT: Record<string, DashboardMode> = {
     admin: 'admin',
     ads: 'ads',
-    commercial: 'ads',
     pulse: 'pulse',
     organize: 'events',
     system: 'system',
