@@ -8,9 +8,9 @@ import type { DashboardMode } from '@/types/shared';
  */
 export const MOBILE_DASHBOARD_ENABLED = false;
 
-/** True when [mode] gets the mobile shell below 1024 px. Only the events and commercial workspaces have one. */
+/** True when [mode] gets the mobile shell below 1024 px. Only the events and ads workspaces have one. */
 export function usesMobileShell(mode: DashboardMode): boolean {
-    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'commercial');
+    return MOBILE_DASHBOARD_ENABLED && (mode === 'events' || mode === 'ads' || mode === 'commercial');
 }
 
 /**
@@ -21,15 +21,15 @@ export function usesMobileShell(mode: DashboardMode): boolean {
  */
 export const MOBILE_READY_PATHS: readonly string[] = [
     '/dashboard/organize', // overview
-    '/dashboard/commercial', // overview
+    '/dashboard/ads', // overview
     '/dashboard/organize/events', // events list
-    '/dashboard/commercial/campaigns', // campaigns list
+    '/dashboard/ads/campaigns', // campaigns list
     '/dashboard/organize/revenue', // revenue and payouts
-    '/dashboard/commercial/finance', // finance and commercial spend
+    '/dashboard/ads/finance', // finance and ad spend
     '/dashboard/organize/settings', // organizer settings
-    '/dashboard/commercial/settings', // commercial settings
+    '/dashboard/ads/settings', // ads settings
     '/dashboard/organize/analytics', // organizer analytics
-    '/dashboard/commercial/analytics', // commercial analytics
+    '/dashboard/ads/analytics', // ads analytics
 ];
 
 /**
@@ -39,14 +39,16 @@ export const MOBILE_READY_PATHS: readonly string[] = [
 const MOBILE_READY_PATTERNS: readonly RegExp[] = [
     /^\/dashboard\/organize\/events\/(?!create$)[^/]+(\/(tiers|attendees|check-ins|promo-codes|refunds|waitlist))?$/,
     /^\/dashboard\/organize\/analytics\/event\/[^/]+$/,
-    /^\/dashboard\/commercial\/analytics\/campaign\/[^/]+$/,
+    /^\/dashboard\/ads\/analytics\/campaign\/[^/]+$/,
 ];
 
 /** True when [pathname] has been redesigned for small screens. */
 export function isMobileReady(pathname: string): boolean {
+    const normalized = pathname
+        .replace(/^\/ads/, '/dashboard/ads');
     return (
         MOBILE_READY_PATHS.some((entry) =>
-            entry.endsWith('*') ? pathname.startsWith(entry.slice(0, -1)) : pathname === entry,
-        ) || MOBILE_READY_PATTERNS.some((pattern) => pattern.test(pathname))
+            entry.endsWith('*') ? normalized.startsWith(entry.slice(0, -1)) : normalized === entry,
+        ) || MOBILE_READY_PATTERNS.some((pattern) => pattern.test(normalized))
     );
 }

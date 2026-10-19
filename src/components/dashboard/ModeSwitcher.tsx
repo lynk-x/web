@@ -16,7 +16,7 @@ interface ModeSwitcherProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
- * Pill switcher for toggling between Events, Partners and Admin workspace modes.
+ * Pill switcher for toggling between Events, Ads Manager and Admin workspace modes.
  *
  * Uses styles from the parent `Sidebar.module.css` so there's no visual
  * change — the component is purely a structural extraction.
@@ -24,7 +24,7 @@ interface ModeSwitcherProps {
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ mode, onModeChange }) => {
     const modes: { key: DashboardMode; label: string }[] = [
         { key: 'events', label: 'Events' },
-        { key: 'commercial', label: 'Commercial' },
+        { key: 'ads', label: 'Ads Manager' },
         { key: 'admin', label: 'Admin' },
     ];
 

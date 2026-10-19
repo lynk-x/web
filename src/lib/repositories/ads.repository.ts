@@ -2,7 +2,7 @@
  * Campaigns repository — wraps queries against:
  *   api.v1_campaigns, api.v1_campaign_media, api.v1_campaign_regions, api.v1_campaign_tags
  *
- * Used by partner dashboard campaign management, event sponsorships, and admin campaign review.
+ * Used by ads manager campaign management, event sponsorships and admin campaign review.
  */
 
 import type { DbClient, ListOptions, RepoResult, RepoListResult } from './types';

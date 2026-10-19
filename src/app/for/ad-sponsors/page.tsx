@@ -48,7 +48,7 @@ export default function CommercialLandingPage() {
                         No more hoping your message lands in front of the right person on a feed full of strangers. Lynk-X puts your brand inside the events people already showed up for — a crowd that&apos;s already interested, not a scroll you&apos;re interrupting.
                     </motion.p>
                     <motion.div className={styles.ctaBox} variants={fadeInUp}>
-                        <Link href="/dashboard/commercial" className={styles.btnPrimary}>Create Campaign</Link>
+                        <Link href="/dashboard/ads" className={styles.btnPrimary}>Create Campaign</Link>
                     </motion.div>
                 </motion.section>
 

@@ -12,7 +12,7 @@ interface AppDrawerProps {
 
 /**
  * Public navigation drawer providing quick portal access to the organizer and
- * commercial dashboards, PWA mobile forum app download and user locale preferences.
+ * ads manager dashboards, PWA mobile forum app download and user locale preferences.
  */
 const AppDrawer: React.FC<AppDrawerProps> = ({
     isOpen,
@@ -46,7 +46,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
         }
     }, [isLoadingCurrencies, currencies]);
 
-    const handlePortalClick = (type: 'organizer' | 'commercial') => {
+    const handlePortalClick = (type: 'organizer' | 'ads') => {
         onClose();
         // Route directly to dashboard portal. Middleware automatically guards unauthenticated users.
         router.push(`/dashboard?type=${type}`);
@@ -88,7 +88,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                 </div>
                             </button>
 
-                            <button className={styles.portalItem} onClick={() => handlePortalClick('commercial')}>
+                            <button className={styles.portalItem} onClick={() => handlePortalClick('ads')}>
                                 <div className={`${styles.portalIcon} ${styles.adsIcon}`}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -97,7 +97,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                                     </svg>
                                 </div>
                                 <div className={styles.portalText}>
-                                    <span className={styles.portalTitle}>Commercial Center(S&A)</span>
+                                    <span className={styles.portalTitle}>Ads Manager</span>
                                     <span className={styles.portalDesc}>Manage campaigns</span>
                                 </div>
                             </button>

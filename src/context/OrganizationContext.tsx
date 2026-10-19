@@ -8,7 +8,7 @@
  * Design decisions:
  *   - Uses the same module-level Supabase client singleton as AuthContext
  *     to ensure cookie/auth state is always in sync.
- *   - Business accounts (organizer, partner, platform) are preferred
+ *   - Business accounts (organizer, advertiser or platform) are preferred
  *     over attendee accounts when selecting a default active workspace.
  */
 

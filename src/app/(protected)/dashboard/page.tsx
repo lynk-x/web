@@ -10,7 +10,7 @@ import styles from './page.module.css';
  * Root workspace selector for authenticated users.
  *
  * Evaluates account memberships to display available workspaces (organizer,
- * commercial, platform or system) or prompts users to create their first account.
+ * ads, platform or system) or prompts users to create their first account.
  */
 function DashboardRoot() {
     const router = useRouter();
@@ -19,9 +19,9 @@ function DashboardRoot() {
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
-    // Query params support ?type=commercial|organizer
+    // Query params support ?type=ads|commercial|organizer
     const rawType = searchParams.get('type');
-    const normalizedType: 'organizer' | 'advertiser' | null = rawType === 'commercial'
+    const normalizedType: 'organizer' | 'advertiser' | null = (rawType === 'commercial' || rawType === 'ads')
         ? 'advertiser'
         : rawType === 'organizer'
             ? 'organizer'
@@ -53,7 +53,7 @@ function DashboardRoot() {
             : account.type === 'pulse_user'
                 ? '/dashboard/pulse'
                 : account.type === 'advertiser'
-                    ? '/dashboard/commercial'
+                    ? '/dashboard/ads'
                     : '/dashboard/organize';
 
         if (!isProfileComplete) {
@@ -111,8 +111,8 @@ function DashboardRoot() {
         );
     }
 
-    const typeLabel = normalizedType === 'advertiser' ? 'Commercial Center' : normalizedType === 'organizer' ? 'Organizer' : null;
-    const createUrl = normalizedType === 'advertiser' ? '/onboarding?type=commercial' : normalizedType === 'organizer' ? '/onboarding?type=organizer' : '/onboarding';
+    const typeLabel = normalizedType === 'advertiser' ? 'Ads Manager' : normalizedType === 'organizer' ? 'Organizer' : null;
+    const createUrl = normalizedType === 'advertiser' ? '/onboarding?type=ads' : normalizedType === 'organizer' ? '/onboarding?type=organizer' : '/onboarding';
 
     if (displayAccounts.length > 0) {
         return (
@@ -144,7 +144,7 @@ function DashboardRoot() {
                                     </div>
                                     <div className={styles.orgInfo}>
                                         <h3 className={styles.orgName}>{acc.name}</h3>
-                                        <span className={styles.orgType}>{acc.type === 'advertiser' ? 'commercial' : acc.type}</span>
+                                        <span className={styles.orgType}>{acc.type === 'advertiser' ? 'ads' : acc.type}</span>
                                     </div>
                                 </div>
 

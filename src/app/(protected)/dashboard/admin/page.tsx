@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     const [isActivityLoading, setIsActivityLoading] = useState(true);
     const [stats, setStats] = useState({
         organizers: 0,
-        partners: 0,
+        advertisers: 0,
         pulseUsers: 0,
         teamSize: 0
     });
@@ -61,16 +61,16 @@ export default function AdminDashboard() {
             }
             const { count: orgs } = await orgQuery;
 
-            // Count partners in the active country
-            let partnerQuery = supabase
+            // Count advertisers in the active country
+            let advertiserQuery = supabase
                 .schema('api' as any)
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'advertiser');
             if (country !== 'all') {
-                partnerQuery = partnerQuery.eq('country_code', country);
+                advertiserQuery = advertiserQuery.eq('country_code', country);
             }
-            const { count: partnersCount } = await partnerQuery;
+            const { count: advertisersCount } = await advertiserQuery;
 
             let pulseQuery = supabase
                 .schema('api' as any)
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
             setStats({
                 organizers: orgs || 0,
-                partners: partnersCount || 0,
+                advertisers: advertisersCount || 0,
                 pulseUsers: pulses || 0,
                 teamSize: team || 0
             });
@@ -205,9 +205,9 @@ export default function AdminDashboard() {
                     href="/dashboard/admin/users?type=organizer"
                 />
                 <StatCard 
-                    label="Local Partners" 
-                    value={stats.partners} 
-                    change="Brand partners" 
+                    label="Local Advertisers" 
+                    value={stats.advertisers} 
+                    change="Brand advertisers" 
                     trend="neutral"
                     isLoading={isStatsLoading}
                     href="/dashboard/admin/users?type=advertiser"

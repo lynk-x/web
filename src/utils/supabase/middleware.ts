@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // ── Protect authenticated routes ───────────────────────────────────────
-    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile', '/account']
+    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile', '/account', '/ads']
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
     if (!user && isProtectedRoute) {
@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
     // A brand-new sign-up must set up their profile (full_name) before doing
     // anything else — including creating a workspace — so this runs ahead of
     // the onboarding guard below and also covers /onboarding itself.
-    if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding'))) {
+    if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding') || pathname.startsWith('/ads'))) {
         const { data: hasProfile, error } = await supabase.schema('api').rpc('user_has_complete_profile')
 
         if (error) {
@@ -68,7 +68,7 @@ export async function updateSession(request: NextRequest) {
     // A session with no account yet (e.g. signed up via login/OAuth, which
     // no longer auto-provisions an attendee account) must finish onboarding
     // before reaching the dashboard.
-    if (user && pathname.startsWith('/dashboard')) {
+    if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/ads'))) {
         const { data: hasAccount, error } = await supabase.schema('api').rpc('user_has_any_account')
 
         if (error) {

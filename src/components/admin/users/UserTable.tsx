@@ -35,7 +35,7 @@ interface UserTableProps {
 
 /**
  * Maps `user_type` schema enum values to badge colour variants.
- * Covers: admin | organizer | partner | attendee | platform
+ * Covers: admin | organizer | advertiser | attendee | platform
  */
 const getRoleVariant = (role: string): BadgeVariant => {
     switch (role) {

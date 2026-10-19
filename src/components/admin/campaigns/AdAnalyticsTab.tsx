@@ -142,7 +142,7 @@ export default function AdAnalyticsTab({ search, countryCode }: AdAnalyticsTabPr
                     currentPage={currentPage}
                     totalPages={Math.ceil(totalCount / itemsPerPage)}
                     onPageChange={setCurrentPage}
-                    emptyMessage="No partner data found."
+                    emptyMessage="No advertiser data found."
                 />
             </div>
         </div>

@@ -115,12 +115,12 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
         },
     ],
 
-    // ── Sponsor & Advertise (Commercial) ──────────────────────────────────
-    commercial: [
+    // ── Ads Manager ────────────────────────────────────────────────────────
+    ads: [
         {
             items: [
                 {
-                    name: 'Overview', href: '/dashboard/commercial', mobileLabel: 'Home', icon: (
+                    name: 'Overview', href: '/dashboard/ads', mobileLabel: 'Home', icon: (
                         <svg {...svgProps}>
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -132,7 +132,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Campaigns',
             items: [
                 {
-                    name: 'Campaigns', href: '/dashboard/commercial/campaigns', permission: 'can_manage_ad_campaigns', icon: (
+                    name: 'Campaigns', href: '/dashboard/ads/campaigns', permission: 'can_manage_ad_campaigns', icon: (
                         <svg {...svgProps}>
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -144,7 +144,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Finance',
             items: [
                 {
-                    name: 'Finance', href: '/dashboard/commercial/finance', mobileLabel: 'Finance', permission: 'can_view_finance', icon: (
+                    name: 'Finance', href: '/dashboard/ads/finance', mobileLabel: 'Finance', permission: 'can_view_finance', icon: (
                         <svg {...svgProps}>
                             <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -158,7 +158,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Analytics',
             items: [
                 {
-                    name: 'Analytics', href: '/dashboard/commercial/analytics', mobileLabel: 'Analytics', permission: 'can_view_analytics', icon: (
+                    name: 'Analytics', href: '/dashboard/ads/analytics', mobileLabel: 'Analytics', permission: 'can_view_analytics', icon: (
                         <svg {...svgProps}>
                             <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -171,7 +171,7 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             title: 'Configuration',
             items: [
                 {
-                    name: 'Settings', href: '/dashboard/commercial/settings', permission: 'can_manage_members', icon: (
+                    name: 'Settings', href: '/dashboard/ads/settings', permission: 'can_manage_members', icon: (
                         <svg {...svgProps}>
                             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -181,6 +181,10 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
             ]
         },
     ],
+    // Deprecated alias for backward compatibility
+    get commercial() {
+        return this.ads;
+    },
 
     // ── Admin ────────────────────────────────────────────────────────────
     admin: [
@@ -442,7 +446,8 @@ export const navGroups: Record<DashboardMode, NavGroup[]> = {
 /** Maps the second URL segment under /dashboard to its mode; unknown segments fall back to the organizer workspace. */
 const MODE_BY_SEGMENT: Record<string, DashboardMode> = {
     admin: 'admin',
-    commercial: 'commercial',
+    ads: 'ads',
+    commercial: 'ads',
     pulse: 'pulse',
     organize: 'events',
     system: 'system',
@@ -454,5 +459,8 @@ const MODE_BY_SEGMENT: Record<string, DashboardMode> = {
  * Shared by the sidebar, the shell and the mobile navigation so they always agree on which workspace is open.
  */
 export function modeFromPathname(pathname: string): DashboardMode {
+    if (pathname === '/ads' || pathname.startsWith('/ads/')) {
+        return 'ads';
+    }
     return MODE_BY_SEGMENT[pathname.split('/')[2]] || 'events';
 }

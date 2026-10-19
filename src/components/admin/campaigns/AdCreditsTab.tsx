@@ -139,7 +139,7 @@ export default function AdCreditsTab({
 
     const handleIssue = async () => {
         const amount = parseFloat(issueAmount);
-        if (!issueAccountId) { showToast('Select a partner account', 'error'); return; }
+        if (!issueAccountId) { showToast('Select an advertiser account', 'error'); return; }
         if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
 
         setIsSubmitting(true);
@@ -293,7 +293,7 @@ export default function AdCreditsTab({
 
             {!hideToolbar && (
                 <TableToolbar
-                    searchPlaceholder="Search by partner..."
+                    searchPlaceholder="Search by advertiser..."
                     searchValue={searchTerm}
                     onSearchChange={setInternalSearchTerm}
                 >

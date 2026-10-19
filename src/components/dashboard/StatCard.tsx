@@ -17,7 +17,7 @@ interface StatCardProps {
 
 /**
  * A single metric tile (label + value + optional change indicator) used across
- * every dashboard role — admin, organizer, partner and Pulse. Renders as a
+ * every dashboard role — admin, organizer, ads and Pulse. Renders as a
  * link when `href` is given, otherwise a static card. `null`/`undefined` value
  * or `isLoading` both render a loading placeholder instead of the value.
  */

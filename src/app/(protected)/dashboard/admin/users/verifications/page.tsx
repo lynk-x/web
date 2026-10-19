@@ -127,7 +127,7 @@ function KycVerificationsContent() {
         <div className={sharedStyles.container}>
             <PageHeader 
                 title="Identity Verification"
-                subtitle="Review and manage KYC submissions from organizers and partners."
+                subtitle="Review and manage KYC submissions from organizers and advertisers."
             />
 
             <TableToolbar

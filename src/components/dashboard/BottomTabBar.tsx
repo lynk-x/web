@@ -19,9 +19,9 @@ const BottomTabBar = () => {
     return (
         <nav className={styles.bar} aria-label="Dashboard">
             {items.map((item, index) => {
-                // The first item is the workspace root, so it only matches exactly; the rest also match
-                // their sub-pages (an event's check-ins keeps "Events" lit).
-                const isActive = index === 0 ? pathname === item.href : pathname.startsWith(item.href);
+                const normalizedPath = pathname.replace(/^\/ads/, '/dashboard/ads');
+                const normalizedHref = item.href.replace(/^\/ads/, '/dashboard/ads');
+                const isActive = index === 0 ? normalizedPath === normalizedHref : normalizedPath.startsWith(normalizedHref);
                 return (
                     <Link
                         key={item.href}

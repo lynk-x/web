@@ -327,7 +327,7 @@ function CampaignsContent() {
             {ConfirmDialog}
             <PageHeader
                 title="Campaign Moderation" 
-                subtitle="Manage partner visibility and campaign revenue distribution."
+                subtitle="Manage advertiser visibility and campaign revenue distribution."
                 actionLabel="+ Create Campaign"
                 actionHref="/dashboard/admin/campaigns/create"
             />
@@ -365,7 +365,7 @@ function CampaignsContent() {
 
             <TableToolbar
                 searchPlaceholder={
-                    activeTab === 'analytics' ? "Search by partner..." : "Search campaigns or clients..."
+                    activeTab === 'analytics' ? "Search by advertiser..." : "Search campaigns or clients..."
                 }
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}

@@ -74,7 +74,7 @@ const Sidebar = () => {
             <div className={styles.modeContextSection}>
                 <span className={styles.modeContextLabel}>
                     {mode === 'admin' ? 'Admin Dashboard' : 
-                     mode === 'commercial' ? 'Commercial Dashboard' : 
+                     (mode === 'ads' || mode === 'commercial') ? 'Ads Manager' : 
                      mode === 'pulse' ? 'Pulse Dashboard' :
                      mode === 'system' ? 'System Control' :
                      'Events Dashboard'}
@@ -86,7 +86,9 @@ const Sidebar = () => {
             <nav className={styles.nav}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const normalizedPath = pathname.replace(/^\/ads/, '/dashboard/ads');
+                        const normalizedHref = item.href.replace(/^\/ads/, '/dashboard/ads');
+                        const isActive = normalizedPath === normalizedHref;
                         return (
                             <Link
                                 key={item.href}

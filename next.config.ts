@@ -39,17 +39,15 @@ const nextConfig: NextConfig = {
             },
         ];
     },
-    async redirects() {
+    async rewrites() {
         return [
             {
-                source: '/dashboard/ads',
-                destination: '/dashboard/partners',
-                permanent: true,
+                source: '/ads',
+                destination: '/dashboard/ads',
             },
             {
-                source: '/dashboard/ads/:path*',
-                destination: '/dashboard/partners/:path*',
-                permanent: true,
+                source: '/ads/:path*',
+                destination: '/dashboard/ads/:path*',
             },
         ];
     },

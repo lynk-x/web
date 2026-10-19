@@ -60,9 +60,9 @@ function OnboardingFlow() {
     const { profile, isLoading: isLoadingAuth } = useAuth();
     const { countries, isLoading: isLoadingCountries } = useCountries();
 
-    // Query params support ?type=commercial|organizer and ?create=true (adding a new workspace)
+    // Query params support ?type=ads|commercial|organizer and ?create=true (adding a new workspace)
     const rawType = searchParams.get('type');
-    const resolvedAccountType: AccountType = rawType === 'commercial' ? 'advertiser' : 'organizer';
+    const resolvedAccountType: AccountType = (rawType === 'commercial' || rawType === 'ads') ? 'advertiser' : 'organizer';
     const isCreatingNew = searchParams.get('create') === 'true';
 
     const draft = typeof window !== 'undefined' ? loadDraft(resolvedAccountType) : null;
@@ -98,7 +98,7 @@ function OnboardingFlow() {
         // If they already have an account of this type, redirect to its dashboard
         const existingAccount = existingAccounts.find(a => a.type === accountType);
         if (existingAccount) {
-            const dashType = accountType === 'advertiser' ? 'commercial' : 'organize';
+            const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
             router.push(`/dashboard/${dashType}`);
         }
     }, [isCreatingNew, existingAccounts, accountType, router, isLoadingAuth]);
@@ -241,7 +241,7 @@ function OnboardingFlow() {
             // Redirect to the dashboard for the new account type. A client-side
             // push (not a full reload) since refreshAccounts() above already
             // re-hydrated OrganizationContext with the new membership.
-            const dashType = accountType === 'advertiser' ? 'commercial' : 'organize';
+            const dashType = accountType === 'advertiser' ? 'ads' : 'organize';
             router.push(`/dashboard/${dashType}`);
         } catch (err: unknown) {
             console.error('Error creating organization:', err);
@@ -250,9 +250,9 @@ function OnboardingFlow() {
         }
     };
 
-    const isPartner = accountType === 'advertiser';
-    const accentColor = isPartner ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
-    const accentBg = isPartner ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)';
+    const isAdvertiser = accountType === 'advertiser';
+    const accentColor = isAdvertiser ? 'var(--color-brand-secondary)' : 'var(--color-brand-primary)';
+    const accentBg = isAdvertiser ? 'rgba(249, 201, 32, 0.1)' : 'rgba(32, 249, 40, 0.1)';
 
     return (
         <div className={styles.container}>
@@ -260,7 +260,7 @@ function OnboardingFlow() {
                 <div className={styles.header}>
                     <h1 className={styles.title}>Set Up Your Workspace</h1>
                     <p className={styles.subtitle}>
-                        Let&apos;s get your {isPartner ? 'Partner' : 'Organiser'} brand ready.
+                        Let&apos;s get your {isAdvertiser ? 'Advertiser' : 'Organiser'} brand ready.
                     </p>
                 </div>
 
@@ -306,7 +306,7 @@ function OnboardingFlow() {
                                 type="text"
                                 value={orgName}
                                 onChange={(e) => setOrgName(e.target.value)}
-                                placeholder={isPartner ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
+                                placeholder={isAdvertiser ? 'e.g. Acme Media' : 'e.g. Electric Vibes Events'}
                                 className={styles.input}
                                 required
                             />
@@ -344,7 +344,7 @@ function OnboardingFlow() {
 }
 
 /**
- * Workspace onboarding page that guides new organizers and partners through
+ * Workspace onboarding page that guides new organizers and advertisers through
  * initial organization setup, country selection and branding asset uploads.
  */
 export default function OnboardingPage() {

@@ -105,7 +105,7 @@ function VerifyFlow() {
     };
 
     const handleContinue = () => {
-        const dashType = activeAccount?.type === 'advertiser' ? 'commercial' : 'organize';
+        const dashType = activeAccount?.type === 'advertiser' ? 'ads' : 'organize';
         window.location.href = `/dashboard/${dashType}/settings`;
     };
 

@@ -101,7 +101,7 @@ export function useAccountTypeGuard(allowedTypes: AccountType[], allowedRoles?: 
 
         // 4. Case: wrong account type or role is active, but they DO have a matching one
         // User has matching accounts, force them to pick one from the picker.
-        const defaultType = allowedTypes.includes('advertiser') ? 'commercial' : 'organizer';
+        const defaultType = allowedTypes.includes('advertiser') ? 'ads' : 'organizer';
         router.replace(`/dashboard?type=${defaultType}`);
 
         setIsAuthorized(false);
