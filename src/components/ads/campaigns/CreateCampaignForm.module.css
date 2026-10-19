@@ -1044,6 +1044,12 @@
     gap: 2px;
 }
 
+.channelTitleRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .channelCardTitle {
     font-size: 15px;
     font-weight: 700;
@@ -1071,14 +1077,18 @@
 }
 
 .channelBadge {
+    display: inline-flex;
+    align-items: center;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 999px;
     background: rgba(32, 249, 40, 0.15);
+    border: 1px solid rgba(32, 249, 40, 0.35);
     color: var(--color-brand-primary);
+    line-height: 1.2;
 }
 
 /* ── Placement Quote Card ──────────────────────────────────────────────────── */

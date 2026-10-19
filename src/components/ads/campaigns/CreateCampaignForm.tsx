@@ -1307,7 +1307,10 @@ export default function CreateCampaignForm({
                                                             </svg>
                                                         </div>
                                                         <div className={styles.channelTitleGroup}>
-                                                            <span className={styles.channelCardTitle}>Event Sponsorship</span>
+                                                            <div className={styles.channelTitleRow}>
+                                                                <span className={styles.channelCardTitle}>Event Sponsorship</span>
+                                                                <span className={styles.channelBadge}>NEW</span>
+                                                            </div>
                                                             <span className={styles.channelCardSubtitle}>Dedicated Event Placement</span>
                                                         </div>
                                                     </div>

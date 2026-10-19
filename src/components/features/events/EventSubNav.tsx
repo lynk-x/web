@@ -17,7 +17,8 @@ const EventSubNav = () => {
             tabs={[
                 { label: 'Overview', href: base, exact: true },
                 { label: 'Tiers', href: `${base}/tiers` },
-                { label: 'Sponsorships', href: `${base}/sponsorships` },
+                // Re-enable when introducing sell-side event sponsorships:
+                // { label: 'Sponsorships', href: `${base}/sponsorships` },
                 { label: 'Attendees', href: `${base}/attendees` },
                 { label: 'Check-ins', href: `${base}/check-ins` },
                 { label: 'Promo codes', href: `${base}/promo-codes` },
