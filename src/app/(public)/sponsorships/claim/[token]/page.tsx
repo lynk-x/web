@@ -22,8 +22,8 @@ export async function generateMetadata({ params }: ClaimPageProps): Promise<Meta
     }
 
     const title = `${invite.company_name} — ${invite.tier.name} Sponsorship for ${invite.event.title} | Lynk-X`;
-    const description = `Review guaranteed deliverables, share of voice, VIP pass allocations, and exclusive sponsorship terms for ${invite.event.title}.`;
-    const image = invite.event.media?.hero || invite.event.media?.poster || '/lynk-x-combined-logo.png';
+    const description = `Review guaranteed deliverables, brand showcasing and exclusive sponsorship terms for ${invite.event.title}.`;
+    const image = invite.event.media?.hero || invite.event.media?.poster || '/og-sponsor.png';
 
     return {
         title,
@@ -39,6 +39,7 @@ export async function generateMetadata({ params }: ClaimPageProps): Promise<Meta
                     width: 1200,
                     height: 630,
                     alt: `${invite.event.title} Sponsorship`,
+                    type: 'image/png',
                 },
             ],
             type: 'website',
@@ -47,6 +48,8 @@ export async function generateMetadata({ params }: ClaimPageProps): Promise<Meta
             card: 'summary_large_image',
             title,
             description,
+            site: '@lynkxapp',
+            creator: '@lynkxapp',
             images: [String(image)],
         },
     };

@@ -30,16 +30,17 @@ export const metadata: Metadata = {
     icon: "/lynk-x_logo.svg",
   },
   openGraph: {
-    title: 'Lynk-x — The Ultimate Event App',
-    description: "The ultimate event app \— create events, buy tickets and join event forums.",
+    title: 'Lynk-X — The Ultimate Event App',
+    description: "The ultimate event app — create events, buy tickets and join event forums.",
     url: 'https://lynk-x.app',
     siteName: 'Lynk-X',
     images: [
       {
-        url: '/lynk-x-combined-logo.png',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Lynk-X Logo',
+        alt: 'Lynk-X',
+        type: 'image/png',
       },
     ],
     locale: 'en_GB',
@@ -56,9 +57,10 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Lynk-X — The Ultimate Event App',
-    description: "The ultimate event app \— create events, buy tickets and join event forums.",
+    description: "The ultimate event app — create events, buy tickets and join event forums.",
     site: '@lynkxapp',
-    images: ['/lynk-x-combined-logo.png'],
+    creator: '@lynkxapp',
+    images: ['/og-image.png'],
   },
 };
 

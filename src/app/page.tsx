@@ -15,12 +15,24 @@ export const metadata: Metadata = {
     description: 'The ultimate event app — create events, buy tickets and join event forums.',
     url: '/',
     siteName: 'Lynk-X',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Lynk-X',
+        type: 'image/png',
+      },
+    ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Lynk-X — The Ultimate Event App',
     description: 'The ultimate event app — create events, buy tickets and join event forums.',
+    site: '@lynkxapp',
+    creator: '@lynkxapp',
+    images: ['/og-image.png'],
   },
 };
 
