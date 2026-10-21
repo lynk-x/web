@@ -1,15 +1,26 @@
-# Llms.txt for Lynk-X
+# Lynk-X
 
-Lynk-X is a real-time event discovery and community platform built for Sub-Saharan Africa.
+> Lynk-X is an all-in-one event discovery, ticketing and community platform built for Sub-Saharan Africa and global event-goers. It pairs zero-friction mobile ticketing with automated private event forums, eliminating fragmented WhatsApp groups and manual attendee spreadsheets.
 
-## Products
-- **Organizer Dashboard**: Web app for event creation, attendee management and analytics.
-- **Attendee PWA**: Progressive web app for event discovery, ticketing and event forums.
+## Core Products & Roles
 
-## Key Systems
-- **Ticketing**: Ticket tiers, M-Pesa STK push checkout, reservation countdown, P2P resale, QR redemption.
-- **Forums**: Real-time chat, polls, media wall, attendee bridging from checkout to app.
+- [For Organizers](https://lynk-x.app/for/organizers): Event creation, automated ticketing tiers, instant payouts, gate check-in scanners and attendee broadcast forums in a single dashboard.
+- [For Attendees](https://lynk-x.app/for/attendees): Progressive Web App (PWA) for event discovery, instant checkout, ticket management and private event forums with live chat and shared media walls. No app store download required.
+- [For Sponsors & Advertisers](https://lynk-x.app/for/ad-sponsors): Targeted sponsor placements and brand campaigns reaching verified event attendees directly inside event forums with automatic creative optimization.
+
+## Key Capabilities
+
+- **Frictionless Ticketing**: Multiple ticket tiers, instant M-Pesa STK push, credit/debit cards, reservation countdown timers and secure QR code gate redemption.
+- **Private Event Forums**: Every ticket automatically unlocks a private event forum containing organizer announcements, attendee live chat and a shared media wall.
+- **Zero App Barrier**: Built as a Progressive Web App (PWA) running seamlessly across iOS, Android and desktop browsers without requiring app store installation.
+- **Brand Sponsorships**: Native in-forum sponsor banners and campaign slots delivering targeted reach to verified ticket holders.
 
 ## Canonical URLs
-- Landing: `https://lynk-x.app/`
-- Events: `https://lynk-x.app/event/{reference}`
+
+- Homepage & Event Discovery: https://lynk-x.app/
+- Organizers Hub: https://lynk-x.app/for/organizers
+- Attendees Hub: https://lynk-x.app/for/attendees
+- Sponsors Hub: https://lynk-x.app/for/ad-sponsors
+- Resource Center & Guides: https://lynk-x.app/resources
+- Contact & Support: https://lynk-x.app/contact
+- Full LLM Documentation: https://lynk-x.app/llms-full.txt

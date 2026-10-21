@@ -24,6 +24,29 @@ export async function generateMetadata(
 
     const previousImages = (await parent).openGraph?.images || [];
     const eventImage = getEventImage(event);
+    const dynamicOgUrl = `/api/og/event?reference=${encodeURIComponent(reference)}`;
+
+    const ogImages = [
+        {
+            url: dynamicOgUrl,
+            width: 1200,
+            height: 630,
+            alt: event.title,
+            type: 'image/png',
+        },
+        ...(eventImage ? [{ url: eventImage, alt: event.title }] : []),
+        ...previousImages,
+    ];
+
+    const twitterImages = [
+        {
+            url: dynamicOgUrl,
+            width: 1200,
+            height: 630,
+            alt: event.title,
+        },
+        ...(eventImage ? [{ url: eventImage, alt: event.title }] : []),
+    ];
 
     return {
         title: `${event.title} | Lynk-X`,
@@ -33,14 +56,14 @@ export async function generateMetadata(
             description: event.description,
             url: `/event/${reference}`,
             siteName: 'Lynk-X',
-            images: eventImage ? [eventImage, ...previousImages] : previousImages,
+            images: ogImages,
             type: 'website',
         },
         twitter: {
             card: 'summary_large_image',
             title: event.title,
             description: event.description,
-            images: eventImage ? [eventImage] : previousImages,
+            images: twitterImages,
         },
         alternates: {
             canonical: `/event/${reference}`,

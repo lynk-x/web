@@ -111,6 +111,47 @@ export default function RootLayout({
     },
   };
 
+  const softwareApplicationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    '@id': 'https://lynk-x.app/#software',
+    'name': 'Lynk-X',
+    'alternateName': brandAlternateNames,
+    'applicationCategory': 'BusinessApplication',
+    'applicationSubCategory': 'Event Management & Ticketing',
+    'operatingSystem': 'Web, iOS, Android (Progressive Web App)',
+    'url': 'https://lynk-x.app',
+    'image': 'https://lynk-x.app/og-image.png',
+    'description': 'All-in-one event ticketing and community platform. Zero-friction mobile ticketing, private event forums, live attendee chat and shared media walls.',
+    'offers': [
+      {
+        '@type': 'Offer',
+        'name': 'Attendee PWA Access',
+        'price': '0',
+        'priceCurrency': 'KES',
+        'description': 'Free access for event discovery, ticket holding and event forum participation',
+      },
+      {
+        '@type': 'Offer',
+        'name': 'Organizer Self-Serve Hosting',
+        'price': '0',
+        'priceCurrency': 'KES',
+        'description': 'Free event creation and forum management with pay-as-you-sell ticketing',
+      },
+    ],
+    'featureList': [
+      'Mobile ticketing with instant M-Pesa STK push and card payments',
+      'Automated private event forums for ticket holders',
+      'Real-time attendee live chat and announcements',
+      'Shared photo and video media wall',
+      'Fast QR ticket check-in scanning',
+      'Native sponsor placements with automatic creative optimization',
+    ],
+    'author': {
+      '@id': 'https://lynk-x.app/#organization',
+    },
+  };
+
   return (
     <html lang="en-GB" className={`${inter.variable} ${interTight.variable}`} suppressHydrationWarning>
       <body>
@@ -121,6 +162,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
         />
         <QueryProvider>
           <AuthProvider>
