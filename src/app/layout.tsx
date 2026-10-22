@@ -36,10 +36,10 @@ export const metadata: Metadata = {
     siteName: 'Lynk-X',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-image.png?v=2',
         width: 1200,
         height: 630,
-        alt: 'Lynk-X',
+        alt: 'Lynk-X — The Ultimate Event App',
         type: 'image/png',
       },
     ],
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     description: "The ultimate event app — create events, buy tickets and join event forums.",
     site: '@lynkxapp',
     creator: '@lynkxapp',
-    images: ['/og-image.png'],
+    images: ['/og-image.png?v=2'],
   },
 };
 
