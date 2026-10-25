@@ -125,7 +125,7 @@ export default function AdminDashboard() {
             if (recentAccounts) {
                 recentAccounts.forEach(acc => {
                     const profileLabel = acc.type === 'organizer' ? 'Organizer'
-                        : acc.type === 'advertiser' ? 'Partner'
+                        : acc.type === 'advertiser' ? 'Advertiser'
                         : acc.type === 'pulse_user' ? 'Pulse User'
                         : 'Attendee';
                     logList.push({

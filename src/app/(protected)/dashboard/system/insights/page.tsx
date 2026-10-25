@@ -522,7 +522,7 @@ function InsightsContent() {
                         <TabsTrigger value="demographics">Demographics</TabsTrigger>
                         <TabsTrigger value="events">Events</TabsTrigger>
                         <TabsTrigger value="forums">Forums</TabsTrigger>
-                        <TabsTrigger value="advertising">Partners</TabsTrigger>
+                        <TabsTrigger value="advertising">Advertisers</TabsTrigger>
                     </TabsList>
                 </div>
             </Tabs>

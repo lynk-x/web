@@ -30,23 +30,14 @@ interface TicketTier {
     max_per_order: number | null;
 }
 
-interface EventDetail {
-    id: string;
-    title: string;
-    description: string;
-    status: string;
-    starts_at: string;
+import { SharedEventDetail } from '@/types/event';
+
+interface EventDetail extends SharedEventDetail {
     ends_at: string;
-    timezone: string | null;
     location: any;
     media: any;
-    is_private: boolean;
-    currency: string;
-    reference: string;
     forum_reference: string | null;
-    created_at: string;
     ticket_tiers: TicketTier[];
-    cancellation_reason: string | null;
 }
 
 

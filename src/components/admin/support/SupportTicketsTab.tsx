@@ -5,6 +5,7 @@ import DataTable, { Column } from '@/components/shared/DataTable';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import { useToast } from '@/components/ui/Toast';
+import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { createClient } from '@/utils/supabase/client';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import type { ActionItem } from '@/components/shared/TableRowActions';
@@ -55,6 +56,7 @@ interface SupportTicketsTabProps {
     statusFilter?: string;
     startDate?: string;
     endDate?: string;
+    refreshKey?: number;
 }
 
 export default function SupportTicketsTab({
@@ -62,6 +64,7 @@ export default function SupportTicketsTab({
     statusFilter = 'all',
     startDate = '',
     endDate = '',
+    refreshKey = 0,
 }: SupportTicketsTabProps) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
@@ -70,6 +73,7 @@ export default function SupportTicketsTab({
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const itemsPerPage = 15;
 
     // ─── Ticket Thread Modal ────────────────────────────────────────────
@@ -126,7 +130,9 @@ export default function SupportTicketsTab({
     }, [supabase, showToast, currentPage, statusFilter, searchQuery, startDate, endDate]);
 
     useEffect(() => { fetchTickets(); }, [fetchTickets]);
+    useEffect(() => { fetchTickets(); }, [refreshKey]);
     useEffect(() => { setCurrentPage(1); }, [statusFilter, searchQuery, startDate, endDate]);
+    useEffect(() => { setSelectedIds(new Set()); }, [currentPage, statusFilter, searchQuery, startDate, endDate]);
 
     const handleStatusChange = async (id: string, newStatus: string) => {
         try {
@@ -246,10 +252,45 @@ export default function SupportTicketsTab({
         { label: 'Close', variant: 'danger', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>, onClick: () => handleStatusChange(t.id, 'closed') },
     ];
 
-    const isTicketClosed = selectedTicket?.status === 'resolved' || selectedTicket?.status === 'closed';
+    const handleBulkStatusChange = async (newStatus: string) => {
+        if (selectedIds.size === 0) return;
+        try {
+            const results = await Promise.all(Array.from(selectedIds).map(id =>
+                supabase.schema('api').rpc('admin_update_support_status', {
+                    p_tab: 'tickets',
+                    p_id: id,
+                    p_status: newStatus
+                })
+            ));
+            const failed = results.filter(r => r.error);
+            if (failed.length > 0) {
+                showToast(getErrorMessage(failed[0].error), 'error');
+                return;
+            }
+            setItems(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status: newStatus as SupportTicket['status'] } : t));
+            setSelectedIds(new Set());
+            showToast(`Updated ${selectedIds.size} tickets to ${newStatus}`, 'success');
+            fetchTickets();
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const bulkActions: BulkAction[] = selectedIds.size > 0 ? [
+        { label: 'Mark Open', onClick: () => handleBulkStatusChange('open') },
+        { label: 'Resolve Selected', onClick: () => handleBulkStatusChange('resolved') },
+        { label: 'Close Selected', onClick: () => handleBulkStatusChange('closed'), variant: 'danger' },
+    ] : [];
 
     return (
         <>
+            <BulkActionsBar
+                selectedCount={selectedIds.size}
+                actions={bulkActions}
+                onCancel={() => setSelectedIds(new Set())}
+                itemTypeLabel="tickets"
+            />
+
             <DataTable<SupportTicket>
                 data={items}
                 columns={columns}
@@ -259,6 +300,13 @@ export default function SupportTicketsTab({
                 totalPages={Math.ceil(totalCount / itemsPerPage)}
                 onPageChange={setCurrentPage}
                 emptyMessage="No support tickets found."
+                selectedIds={selectedIds}
+                onSelect={(id: string) => {
+                    const next = new Set(selectedIds);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    setSelectedIds(next);
+                }}
+                onSelectAll={() => setSelectedIds(selectedIds.size === items.length ? new Set() : new Set(items.map(t => t.id)))}
             />
 
             <Modal

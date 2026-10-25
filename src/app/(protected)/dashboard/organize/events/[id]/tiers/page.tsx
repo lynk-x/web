@@ -36,14 +36,9 @@ const toDateOnlyValue = (iso: string | null): string => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-interface EventDetail {
-    id: string;
-    title: string;
-    currency: string;
-    reference: string;
-    created_at: string;
-    starts_at: string;
-}
+import { SharedEventDetail } from '@/types/event';
+
+type EventDetail = SharedEventDetail;
 
 /**
  * Ticket tiers management view for a specific event in the organizer dashboard.

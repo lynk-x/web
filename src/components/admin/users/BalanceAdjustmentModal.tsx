@@ -45,11 +45,12 @@ const BalanceAdjustmentModal: React.FC<BalanceAdjustmentModalProps> = ({
         setIsLoading(true);
         try {
             const finalAmount = action === 'add' ? Number(amount) : -Number(amount);
+            const rpcName = finalAmount >= 0 ? 'admin_credit_wallet_balance' : 'admin_debit_wallet_balance';
             
-            const { error } = await supabase.schema('api').rpc('admin_adjust_wallet_balance', {
+            const { error } = await supabase.schema('api').rpc(rpcName, {
                 p_account_id: account.id,
                 p_currency: account.country_code === 'KE' ? 'KES' : 'USD', // Defaulting based on country, or we could fetch existing wallets
-                p_amount: finalAmount,
+                p_amount: Math.abs(finalAmount),
                 p_balance_type: balanceType,
                 p_reason: reason,
                 p_notes: notes

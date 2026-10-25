@@ -4,13 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client';
 import styles from './AccountSearchInput.module.css';
 
-export interface AccountOption {
-    id: string;
-    reference: string;
-    display_name: string;
-    type: string;
-    country_code: string | null;
-}
+import { AccountOption } from '@/types/account';
 
 export interface AccountSearchInputProps {
     value: string;                     // Currently selected account UUID

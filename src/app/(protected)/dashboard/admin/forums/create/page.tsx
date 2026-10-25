@@ -186,7 +186,7 @@ export default function CreateForumPage() {
                                             checked={formData.hasAds}
                                             onChange={handleInputChange}
                                         />
-                                        <span>Enable In-Forum Partner Placements</span>
+                                        <span>Enable In-Forum Advertiser Placements</span>
                                     </label>
                                 </div>
                             </div>

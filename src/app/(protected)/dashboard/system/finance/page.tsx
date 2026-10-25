@@ -240,10 +240,11 @@ function GlobalFinanceContent() {
         setShowAdjustWalletModal(false);
         showToast('Adjusting wallet balance…', 'info');
         try {
-            const { error } = await supabase.schema('api').rpc('admin_adjust_wallet_balance', {
+            const rpcName = amount >= 0 ? 'admin_credit_wallet_balance' : 'admin_debit_wallet_balance';
+            const { error } = await supabase.schema('api').rpc(rpcName, {
                 p_account_id: accountId,
                 p_currency: currency,
-                p_amount: amount,
+                p_amount: Math.abs(amount),
                 p_balance_type: adjustBalanceType,
                 p_reason: reason,
                 p_notes: `system_finance_page`
@@ -470,7 +471,7 @@ function GlobalFinanceContent() {
                             onChange={e => setTaxForm({ ...taxForm, applicable_reason: e.target.value })}
                         >
                             <option value="ticket_sale">Ticket Sale</option>
-                            <option value="ad_campaign_payment">Partner Campaign</option>
+                            <option value="ad_campaign_payment">Advertiser Campaign</option>
                             <option value="subscription_payment">Subscription</option>
                             <option value="wallet_top_up">Wallet Top-up</option>
                             <option value="organizer_payout">Organizer Payout</option>

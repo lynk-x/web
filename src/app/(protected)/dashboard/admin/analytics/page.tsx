@@ -461,7 +461,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
         }
     );
 
-    if (isLoading) return <div className={styles.loading}>Loading Partners...</div>;
+    if (isLoading) return <div className={styles.loading}>Loading Advertisers...</div>;
 
     const timeline = data?.timeline || [];
     const adTypes = (data?.ad_types || []).map(t => ({
@@ -778,7 +778,7 @@ function AnalyticsContent() {
                         <TabsList>
                             <TabsTrigger value="demographics">Demographics</TabsTrigger>
                             <TabsTrigger value="events">Events</TabsTrigger>
-                            <TabsTrigger value="advertising">Partners</TabsTrigger>
+                            <TabsTrigger value="advertising">Advertisers</TabsTrigger>
                             <TabsTrigger value="community">Community</TabsTrigger>
                             <TabsTrigger value="finance">Finance</TabsTrigger>
                         </TabsList>

@@ -27,7 +27,7 @@ export default function CreateCampaignPage() {
                     <AccountSearchInput
                         value={accountId}
                         onChange={setAccountId}
-                        label="Partner Account"
+                        label="Advertiser Account"
                         placeholder="Search accounts by name or reference…"
                         countryCode={activeAccount?.country_code || null}
                     />

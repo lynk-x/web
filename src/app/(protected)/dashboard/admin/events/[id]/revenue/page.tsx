@@ -1,3 +1,4 @@
+import { TransactionRow } from '@/types/transaction';
 "use client";
 
 import { getErrorMessage } from '@/utils/error';
@@ -36,18 +37,7 @@ interface RevenueSummary {
     payout_amount: number | null;
 }
 
-interface TransactionRow {
-    id: string;
-    amount: number;
-    currency: string;
-    status: string;
-    category: string;
-    reason: string;
-    reference: string;
-    created_at: string;
-    sender_name: string | null;
-    recipient_name: string | null;
-}
+
 
 interface RefundRow {
     id: string;

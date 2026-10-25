@@ -98,7 +98,7 @@ export default function CreateAccountPage() {
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                             >
                                 <option value="organizer">Organizer</option>
-                                <option value="advertiser">Partner</option>
+                                <option value="advertiser">Advertiser</option>
                                 <option value="attendee">Attendee</option>
                                 <option value="pulse_user">Pulse User</option>
                             </select>

@@ -3,7 +3,6 @@ import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
-import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
 import Modal from '@/components/shared/Modal';
 import Button from '@/components/shared/Button';
@@ -14,45 +13,34 @@ import styles from './ForumMembersTab.module.css';
 
 const ASSIGNABLE_ROLES = ['member', 'organizer'];
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { ForumMember } from '@/lib/repositories/forum.repository';
 
-/** Mirrors api.v1_forum_members (forum_members joined with public profile info). */
-interface ForumMember {
-    forum_id: string;
+interface MemberSummary {
     user_id: string;
-    user_name: string | null;
     full_name: string | null;
+    user_name: string | null;
     avatar_url: string | null;
     is_premium: boolean;
-    role_id: string;
-    is_muted: boolean;
-    has_muted_live_chats_media: boolean;
-    joined_at: string;
-    last_read_at: string | null;
+    forums: number;
+    organizer_count: number;
+    member_count: number;
+    messages: number;
+    media: number;
+    first_joined: string;
+    last_active: string | null;
 }
 
-const roleVariant: Record<string, BadgeVariant> = {
-    organizer: 'primary',
-    member: 'neutral',
-};
-
-/**
- * Members tab for admin forum management.
- * Reads api.v1_forum_members (forum_members joined with profile info), scoped
- * to a single forum when forumId is given, otherwise platform-wide.
- * Lets admins change a member's role or remove them from the forum.
- * startDate/endDate (joined_at range) are controlled by the page's tab row,
- * not owned here — see admin/forums/page.tsx's "members" tab-row filter.
- */
 export default function ForumMembersTab({ forumId, startDate = '', endDate = '' }: { forumId?: string, startDate?: string, endDate?: string }) {
     const { showToast } = useToast();
     const supabase = useMemo(() => createClient(), []);
 
     const [members, setMembers] = useState<ForumMember[]>([]);
+    const [messageCounts, setMessageCounts] = useState<Record<string, number>>({});
+    const [mediaCounts, setMediaCounts] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [roleFilter, setRoleFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+    const [viewUser, setViewUser] = useState<MemberSummary | null>(null);
     const [roleModalMember, setRoleModalMember] = useState<ForumMember | null>(null);
     const [pendingRole, setPendingRole] = useState('member');
     const [isSavingRole, setIsSavingRole] = useState(false);
@@ -71,9 +59,35 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
                 query = query.eq('forum_id', forumId);
             }
 
-            const { data, error } = await query.limit(500);
+            const { data, error } = await query.limit(1000);
             if (error) throw error;
-            setMembers((data || []) as ForumMember[]);
+            const rows = (data || []) as ForumMember[];
+            setMembers(rows);
+
+            // Aggregate message/media counts per user (best-effort).
+            const userIds = Array.from(new Set(rows.map(m => m.user_id)));
+            if (userIds.length > 0) {
+                try {
+                    const { data: msgData } = await supabase
+                        .schema('social')
+                        .from('forum_messages')
+                        .select('author_id')
+                        .in('author_id', userIds);
+                    const mc: Record<string, number> = {};
+                    (msgData || []).forEach((r: { author_id: string }) => { mc[r.author_id] = (mc[r.author_id] || 0) + 1; });
+                    setMessageCounts(mc);
+                } catch { /* ignore */ }
+                try {
+                    const { data: mediaData } = await supabase
+                        .schema('social')
+                        .from('forum_media')
+                        .select('uploader_id')
+                        .in('uploader_id', userIds);
+                    const mdc: Record<string, number> = {};
+                    (mediaData || []).forEach((r: { uploader_id: string }) => { mdc[r.uploader_id] = (mdc[r.uploader_id] || 0) + 1; });
+                    setMediaCounts(mdc);
+                } catch { /* ignore */ }
+            }
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load forum members', 'error');
         } finally {
@@ -83,13 +97,8 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
 
     useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
-    // Reset to page 1 whenever the tab row's date range (owned by the parent
-    // page) or the local search/role filters change.
-    useEffect(() => { setCurrentPage(1); }, [startDate, endDate, searchTerm, roleFilter]);
+    useEffect(() => { setCurrentPage(1); }, [startDate, endDate, searchTerm]);
 
-    // Writes go through the plain public.forum_members passthrough (RLS-gated,
-    // admin-writable) rather than api.v1_forum_members, which is a read-only
-    // joined view with no INSTEAD OF rules.
     const handleRemove = async (member: ForumMember) => {
         try {
             const { error } = await supabase
@@ -153,20 +162,61 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
         }
     };
 
-    const filtered = members.filter(m => {
-        const matchSearch =
-            (m.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (m.user_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchRole = roleFilter === 'all' || m.role_id === roleFilter;
-        const matchStart = !startDate || new Date(m.joined_at).getTime() >= new Date(startDate).getTime();
-        const matchEnd = !endDate || new Date(m.joined_at).getTime() <= new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
-        return matchSearch && matchRole && matchStart && matchEnd;
-    });
+    const summary: MemberSummary[] = useMemo(() => {
+        const map = new Map<string, MemberSummary & { forumSet: Set<string>; joinedDates: string[]; lastRead: string | null }>();
+        members.forEach(m => {
+            if (!map.has(m.user_id)) {
+                map.set(m.user_id, {
+                    user_id: m.user_id,
+                    full_name: m.full_name,
+                    user_name: m.user_name,
+                    avatar_url: m.avatar_url,
+                    is_premium: m.is_premium,
+                    forums: 0,
+                    organizer_count: 0,
+                    member_count: 0,
+                    messages: messageCounts[m.user_id] || 0,
+                    media: mediaCounts[m.user_id] || 0,
+                    first_joined: m.joined_at,
+                    last_active: m.last_read_at,
+                    forumSet: new Set(),
+                    joinedDates: [],
+                    lastRead: m.last_read_at,
+                });
+            }
+            const u = map.get(m.user_id)!;
+            u.forumSet.add(m.forum_id);
+            if (m.role_id === 'organizer') u.organizer_count++; else u.member_count++;
+            u.joinedDates.push(m.joined_at);
+            if (!u.first_joined || new Date(m.joined_at) < new Date(u.first_joined)) u.first_joined = m.joined_at;
+            if (m.last_read_at && (!u.lastRead || new Date(m.last_read_at) > new Date(u.lastRead))) u.lastRead = m.last_read_at;
+        });
+        return Array.from(map.values()).map(u => ({
+            user_id: u.user_id,
+            full_name: u.full_name,
+            user_name: u.user_name,
+            avatar_url: u.avatar_url,
+            is_premium: u.is_premium,
+            forums: u.forumSet.size,
+            organizer_count: u.organizer_count,
+            member_count: u.member_count,
+            messages: u.messages,
+            media: u.media,
+            first_joined: u.first_joined,
+            last_active: u.lastRead,
+        })).filter(u => {
+            const matchSearch = (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (u.user_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchStart = !startDate || new Date(u.first_joined).getTime() >= new Date(startDate).getTime();
+            const matchEnd = !endDate || new Date(u.first_joined).getTime() <= new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
+            return matchSearch && matchStart && matchEnd;
+        });
+    }, [members, messageCounts, mediaCounts, searchTerm, startDate, endDate]);
 
-    const totalPages = Math.ceil(filtered.length / itemsPerPage);
-    const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const totalPages = Math.ceil(summary.length / itemsPerPage);
+    const paginated = summary.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    const columns: Column<ForumMember & { id: string }>[] = [
+    const columns: Column<MemberSummary & { id: string }>[] = [
         {
             header: 'Member',
             render: (m) => (
@@ -183,68 +233,50 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
                         <div style={{ fontWeight: 600, fontSize: '13px' }}>{m.full_name || 'Deleted User'}</div>
                         {m.user_name && <div style={{ fontSize: '11px', opacity: 0.5 }}>@{m.user_name}</div>}
                     </div>
-                    {m.is_premium && <Badge label="Premium" variant="warning" />}
                 </div>
             ),
         },
         {
-            header: 'Role',
-            render: (m) => <Badge label={m.role_id} variant={roleVariant[m.role_id] ?? 'neutral'} />,
+            header: 'Role Ratio (Org/Member)',
+            render: (m) => <span style={{ fontSize: '12px' }}>{m.organizer_count}/{m.member_count}</span>,
         },
         {
-            header: 'Status',
-            render: (m) => (
-                <div style={{ display: 'flex', gap: 6 }}>
-                    {m.is_muted && <Badge label="Muted" variant="error" />}
-                    {m.has_muted_live_chats_media && <Badge label="Live Muted" variant="neutral" />}
-                    {!m.is_muted && !m.has_muted_live_chats_media && <span style={{ fontSize: 12, opacity: 0.5 }}>—</span>}
-                </div>
-            ),
+            header: 'Forums',
+            render: (m) => <span style={{ fontSize: '12px' }}>{m.forums}</span>,
         },
         {
-            header: 'Joined',
-            render: (m) => <div style={{ fontSize: '12px', opacity: 0.6 }}>{formatRelativeTime(m.joined_at)}</div>,
+            header: 'Messages',
+            render: (m) => <span style={{ fontSize: '12px' }}>{m.messages}</span>,
+        },
+        {
+            header: 'Media',
+            render: (m) => <span style={{ fontSize: '12px' }}>{m.media}</span>,
+        },
+        {
+            header: 'First Joined',
+            render: (m) => <div style={{ fontSize: '12px', opacity: 0.6 }}>{formatRelativeTime(m.first_joined)}</div>,
         },
         {
             header: 'Last Active',
-            render: (m) => (
-                <div style={{ fontSize: '12px', opacity: 0.6 }}>
-                    {m.last_read_at ? formatRelativeTime(m.last_read_at) : 'Never'}
-                </div>
-            ),
+            render: (m) => <div style={{ fontSize: '12px', opacity: 0.6 }}>{m.last_active ? formatRelativeTime(m.last_active) : 'Never'}</div>,
         },
     ];
 
-    const getActions = (m: ForumMember) => [
+    const getActions = (m: MemberSummary) => [
         {
-            label: 'Change Role',
-            onClick: () => openRoleModal(m),
-        },
-        {
-            label: m.is_muted ? 'Unmute' : 'Mute',
-            onClick: () => handleToggleMute(m),
-        },
-        {
-            label: 'Remove from Forum',
-            variant: 'danger' as const,
-            onClick: () => handleRemove(m),
+            label: 'View Forums',
+            onClick: () => setViewUser(m),
         },
     ];
+
+    const viewMembers = members.filter(m => m.user_id === viewUser?.user_id);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-            <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {['all', 'member', 'organizer'].map(r => (
-                        <button key={r} className={roleFilter === r ? styles.chipActive : styles.chip} onClick={() => { setRoleFilter(r); setCurrentPage(1); }}>
-                            {r === 'all' ? 'All Roles' : r.charAt(0).toUpperCase() + r.slice(1)}
-                        </button>
-                    ))}
-                </div>
-            </TableToolbar>
+            <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }} />
 
-            <DataTable<ForumMember & { id: string }>
-                data={paginated.map(m => ({ ...m, id: `${m.forum_id}-${m.user_id}` }))}
+            <DataTable<MemberSummary & { id: string }>
+                data={paginated.map(m => ({ ...m, id: m.user_id }))}
                 columns={columns}
                 getActions={getActions}
                 isLoading={isLoading}
@@ -253,6 +285,27 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
                 onPageChange={setCurrentPage}
                 emptyMessage="No forum members found."
             />
+
+            <Modal
+                isOpen={!!viewUser}
+                onClose={() => setViewUser(null)}
+                title={`Forums: ${viewUser?.full_name || viewUser?.user_name || 'Member'}`}
+                size="large"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {viewMembers.map(m => (
+                        <div key={`${m.forum_id}-${m.user_id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--color-border)' }}>
+                            <span style={{ fontSize: 13 }}>{m.forum_id}</span>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                                <Button variant="secondary" onClick={() => handleToggleMute(m)}>{m.is_muted ? 'Unmute' : 'Mute'}</Button>
+                                <Button variant="secondary" onClick={() => openRoleModal(m)}>Change Role</Button>
+                                <Button variant="danger" onClick={() => handleRemove(m)}>Remove</Button>
+                            </div>
+                        </div>
+                    ))}
+                    {viewMembers.length === 0 && <div style={{ opacity: 0.6 }}>No forums.</div>}
+                </div>
+            </Modal>
 
             <Modal
                 isOpen={!!roleModalMember}

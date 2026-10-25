@@ -154,7 +154,7 @@ export default function EditSpotlightPage() {
                                 >
                                     <option value="all">Everywhere</option>
                                     <option value="organizer_dashboard">Organizer Dashboard</option>
-                                    <option value="ads_dashboard">Partner Dashboard</option>
+                                    <option value="ads_dashboard">Advertiser Dashboard</option>
                                     <option value="discovery_page">Discovery Page (Home)</option>
                                 </select>
                             </FormRow>

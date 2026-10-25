@@ -1,5 +1,6 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
+import { AccountOption } from '@/types/account';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
@@ -32,10 +33,6 @@ interface AdCredit {
 
 export type CampaignCredit = AdCredit;
 
-interface AccountOption {
-    id: string;
-    display_name: string;
-}
 
 function creditStatus(c: AdCredit): { label: string; variant: BadgeVariant } {
     if (c.revoked_at) return { label: 'Revoked', variant: 'error' };

@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Ta
 import FilterChips from '@/components/shared/FilterChips';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import { useToast } from '@/components/ui/Toast';
+import Modal from '@/components/shared/Modal';
 import { createClient } from '@/utils/supabase/client';
 import { useUrlTab } from '@/hooks/useUrlTab';
 type SupportTab = 'queue' | 'tickets';
@@ -31,6 +32,10 @@ function SupportContent() {
     const [activeTab, handleTabChange] = useUrlTab('tab', 'tickets', { validValues: ['tickets', 'queue'] }) as [SupportTab, (value: SupportTab) => void];
     const [isLoading, setIsLoading] = useState(true);
     const [summary, setSummary] = useState<any>(null);
+    const [showNewTicket, setShowNewTicket] = useState(false);
+    const [newTicket, setNewTicket] = useState({ email: '', subject: '', message: '', priority: 'normal' });
+    const [isCreating, setIsCreating] = useState(false);
+    const [ticketRefresh, setTicketRefresh] = useState(0);
 
     // ── Filtering State ───────────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
@@ -53,12 +58,38 @@ function SupportContent() {
         fetchSummary();
     }, [fetchSummary]);
 
+    const handleCreateTicket = async () => {
+        if (!newTicket.email || !newTicket.subject || !newTicket.message) {
+            showToast('Email, subject, and message are required.', 'error');
+            return;
+        }
+        setIsCreating(true);
+        try {
+            const { error } = await supabase.schema('reports').from('support_tickets').insert({
+                email: newTicket.email,
+                subject: newTicket.subject,
+                message: newTicket.message,
+                priority: newTicket.priority,
+            });
+            if (error) throw error;
+            showToast('Ticket created', 'success');
+            setShowNewTicket(false);
+            setNewTicket({ email: '', subject: '', message: '', priority: 'normal' });
+            setTicketRefresh(k => k + 1);
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err) || 'Failed to create ticket', 'error');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
 
     return (
         <div className={sharedStyles.container}>
             <PageHeader
                 title="Support & Safety"
                 subtitle="Platform-wide moderation and user assistance."
+                primaryAction={{ label: '+ New Ticket', onClick: () => setShowNewTicket(true) }}
             />
 
             <div className={sharedStyles.statsGrid}>
@@ -146,6 +177,7 @@ function SupportContent() {
                         statusFilter={feedbackStatusFilter}
                         startDate={startDate}
                         endDate={endDate}
+                        refreshKey={ticketRefresh}
                     />
                 </TabsContent>
 
@@ -154,6 +186,21 @@ function SupportContent() {
                 </TabsContent>
             </Tabs>
 
+
+            <Modal isOpen={showNewTicket} onClose={() => setShowNewTicket(false)} title="New Support Ticket" size="medium">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <input className={adminStyles.input} placeholder="Email" value={newTicket.email} onChange={e => setNewTicket({ ...newTicket, email: e.target.value })} />
+                    <input className={adminStyles.input} placeholder="Subject" value={newTicket.subject} onChange={e => setNewTicket({ ...newTicket, subject: e.target.value })} />
+                    <textarea className={adminStyles.input} placeholder="Message" value={newTicket.message} onChange={e => setNewTicket({ ...newTicket, message: e.target.value })} />
+                    <select className={adminStyles.select} value={newTicket.priority} onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}>
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                    <button className={adminStyles.btnPrimary} onClick={handleCreateTicket} disabled={isCreating}>{isCreating ? 'Creating...' : 'Create'}</button>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -386,7 +386,7 @@ export default function SubscriptionPlansPage() {
                                 <select className={adminStyles.select} value={productType} onChange={e => setProductType(e.target.value)}>
                                     <option value="attendee_premium">Attendee Premium</option>
                                     <option value="business_pulse">Business Pulse</option>
-                                    <option value="advertiser_boost">Partner Boost</option>
+                                    <option value="advertiser_boost">Advertiser Boost</option>
                                 </select>
                             </label>
                             {productType === 'business_pulse' && (

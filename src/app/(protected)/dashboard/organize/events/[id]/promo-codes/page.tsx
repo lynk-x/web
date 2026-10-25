@@ -19,11 +19,9 @@ import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import formStyles from '@/components/admin/finance/PromoCodeForm.module.css';
 
-interface EventDetail {
-    id: string;
-    title: string;
-    created_at: string;
-}
+import { SharedEventDetail } from '@/types/event';
+
+type EventDetail = Pick<SharedEventDetail, 'id' | 'title' | 'created_at'>;
 
 interface PromoFormState {
     id: string | null;

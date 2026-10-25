@@ -1,5 +1,6 @@
 "use client";
 import { getErrorMessage } from '@/utils/error';
+import { TransactionRow } from '@/types/transaction';
 
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
@@ -194,19 +195,7 @@ function FinanceContent() {
                 const total = data?.[0]?.total_count || 0;
                 setTotalCount(total);
 
-                interface TransactionRow {
-                    id: string;
-                    reason: string;
-                    event_title: string | null;
-                    amount: number;
-                    currency: string;
-                    created_at: string;
-                    status: string;
-                    category: string;
-                    reference: string;
-                    sender_name: string | null;
-                    recipient_name: string | null;
-                }
+                
 
                 setTransactions((data || []).map((tx: TransactionRow) => ({
                     id: tx.id,
@@ -462,10 +451,10 @@ function FinanceContent() {
 
         setShowAdjustWalletModal(false);
         await runAction(
-            () => supabase.schema('api').rpc('admin_adjust_wallet_balance', {
+            () => supabase.schema('api').rpc(amount >= 0 ? 'admin_credit_wallet_balance' : 'admin_debit_wallet_balance', {
                 p_account_id: accountId,
                 p_currency: currency,
-                p_amount: amount,
+                p_amount: Math.abs(amount),
                 p_balance_type: adjustBalanceType,
                 p_reason: reason,
                 p_notes: `admin_finance_page`
