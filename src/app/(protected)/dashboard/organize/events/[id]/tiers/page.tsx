@@ -38,7 +38,7 @@ const toDateOnlyValue = (iso: string | null): string => {
 
 import { SharedEventDetail } from '@/types/event';
 
-type EventDetail = SharedEventDetail;
+type EventDetail = SharedEventDetail & { status: string; currency: string; reference: string; created_at: string; starts_at: string };
 
 /**
  * Ticket tiers management view for a specific event in the organizer dashboard.
