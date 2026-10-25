@@ -1,7 +1,7 @@
-import { TransactionRow } from '@/types/transaction';
 "use client";
 
 import { getErrorMessage } from '@/utils/error';
+import { TransactionRow } from '@/types/transaction';
 import { useState, useEffect, useCallback, useMemo, use, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
