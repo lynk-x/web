@@ -20,6 +20,7 @@ import { getForumUrl } from '@/components/features/events/EventTable';
 import { SharedEventDetail } from '@/types/event';
 
 interface EventDetail extends SharedEventDetail {
+    status: string;
     tags: string[];
 }
 

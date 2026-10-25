@@ -33,6 +33,7 @@ interface TicketTier {
 import { SharedEventDetail } from '@/types/event';
 
 interface EventDetail extends SharedEventDetail {
+    status: string;
     ends_at: string;
     location: any;
     media: any;
