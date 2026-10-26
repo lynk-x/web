@@ -347,7 +347,7 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                                     <DetailRow label="Start" value={`${formatDate(event.starts_at)} at ${formatTime(event.starts_at)}`} />
                                     <DetailRow label="End" value={event.ends_at ? `${formatDate(event.ends_at)} at ${formatTime(event.ends_at)}` : 'Not set'} />
                                     <DetailRow label="Timezone" value={event.timezone || 'Etc/UTC'} />
-                                    <DetailRow label="Currency" value={event.currency} />
+                                    <DetailRow label="Currency" value={event.currency || "USD"} />
                                     <DetailRow label="Created" value={formatDate(event.created_at)} />
                                     {event.cancellation_reason && (
                                         <DetailRow label="Cancellation Reason" value={event.cancellation_reason} />
