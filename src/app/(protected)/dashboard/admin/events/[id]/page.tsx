@@ -21,6 +21,8 @@ import { SharedEventDetail } from '@/types/event';
 
 interface EventDetail extends SharedEventDetail {
     status: string;
+    reference: string;
+    organizer: string;
     tags: string[];
 }
 
