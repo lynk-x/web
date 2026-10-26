@@ -4,6 +4,8 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import DataTable, { Column } from '@/components/shared/DataTable';
 import TableToolbar from '@/components/shared/TableToolbar';
+import FilterChips from '@/components/shared/FilterChips';
+import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import Modal from '@/components/shared/Modal';
 import Button from '@/components/shared/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -52,6 +54,8 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
     const [mediaCounts, setMediaCounts] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [premiumFilter, setPremiumFilter] = useState('all');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const [viewUser, setViewUser] = useState<MemberSummary | null>(null);
     const [roleModalMember, setRoleModalMember] = useState<ForumMember | null>(null);
@@ -111,6 +115,7 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
     useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
     useEffect(() => { setCurrentPage(1); }, [startDate, endDate, searchTerm]);
+    useEffect(() => { setSelectedIds(new Set()); }, [searchTerm, startDate, endDate]);
 
     const handleRemove = async (member: ForumMember) => {
         try {
@@ -175,6 +180,26 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
         }
     };
 
+
+    const handleBulkRemove = async () => {
+        if (selectedIds.size === 0) return;
+        try {
+            const toRemove = members.filter(m => selectedIds.has(m.user_id));
+            await Promise.all(toRemove.map(m =>
+                supabase.from('forum_members').delete().eq('forum_id', m.forum_id).eq('user_id', m.user_id)
+            ));
+            setMembers(prev => prev.filter(m => !selectedIds.has(m.user_id)));
+            setSelectedIds(new Set());
+            showToast(`Removed ${toRemove.length} memberships`, 'success');
+        } catch (err: unknown) {
+            showToast(getErrorMessage(err), 'error');
+        }
+    };
+
+    const bulkActions: BulkAction[] = selectedIds.size > 0 ? [
+        { label: 'Remove Selected', onClick: handleBulkRemove, variant: 'danger' },
+    ] : [];
+
     const summary: MemberSummary[] = useMemo(() => {
         const map = new Map<string, MemberSummary & { forumSet: Set<string>; joinedDates: string[]; lastRead: string | null }>();
         members.forEach(m => {
@@ -220,11 +245,12 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
         })).filter(u => {
             const matchSearch = (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (u.user_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchPremium = premiumFilter === 'all' || (premiumFilter === 'premium' ? u.is_premium : !u.is_premium);
             const matchStart = !startDate || new Date(u.first_joined).getTime() >= new Date(startDate).getTime();
             const matchEnd = !endDate || new Date(u.first_joined).getTime() <= new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
-            return matchSearch && matchStart && matchEnd;
+            return matchSearch && matchPremium && matchStart && matchEnd;
         });
-    }, [members, messageCounts, mediaCounts, searchTerm, startDate, endDate]);
+    }, [members, messageCounts, mediaCounts, searchTerm, premiumFilter, startDate, endDate]);
 
     const totalPages = Math.ceil(summary.length / itemsPerPage);
     const paginated = summary.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -286,7 +312,11 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-            <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }} />
+            <TableToolbar searchPlaceholder="Search by name or username..." searchValue={searchTerm} onSearchChange={v => { setSearchTerm(v); setCurrentPage(1); }}>
+                <FilterChips options={[{ value: 'all', label: 'All' }, { value: 'premium', label: 'Premium' }, { value: 'free', label: 'Free' }]} currentValue={premiumFilter} onChange={v => { setPremiumFilter(v); setCurrentPage(1); }} />
+            </TableToolbar>
+
+            <BulkActionsBar selectedCount={selectedIds.size} actions={bulkActions} onCancel={() => setSelectedIds(new Set())} itemTypeLabel="members" />
 
             <DataTable<MemberSummary & { id: string }>
                 data={paginated.map(m => ({ ...m, id: m.user_id }))}
@@ -297,6 +327,13 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
                 emptyMessage="No forum members found."
+                selectedIds={selectedIds}
+                onSelect={(id: string) => {
+                    const next = new Set(selectedIds);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    setSelectedIds(next);
+                }}
+                onSelectAll={() => setSelectedIds(selectedIds.size === paginated.length ? new Set() : new Set(paginated.map(m => m.user_id)))}
             />
 
             <Modal
