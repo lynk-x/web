@@ -77,6 +77,7 @@ export default function EventTiersPage({ params }: { params: Promise<{ id: strin
             setEvent({
                 id: data.event.id,
                 title: data.event.title,
+                status: data.event.status,
                 currency: data.event.currency,
                 reference: data.event.reference,
                 created_at: data.event.created_at,
