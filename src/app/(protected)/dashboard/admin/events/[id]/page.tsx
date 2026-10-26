@@ -20,11 +20,23 @@ import { getForumUrl } from '@/components/features/events/EventTable';
 import { SharedEventDetail } from '@/types/event';
 
 interface EventDetail extends SharedEventDetail {
-    status: string;
+    id: string;
+    title: string;
     reference: string;
+    status: string;
+    account_id: string;
     organizer: string;
     starts_at: string;
+    ends_at: string | null;
+    location: Record<string, unknown> | null;
+    media: Record<string, unknown> | null;
+    description: string;
+    timezone: string | null;
+    is_private: boolean;
+    currency: string;
+    cancellation_reason: string | null;
     tags: string[];
+    created_at: string;
 }
 
 interface TierRow {
