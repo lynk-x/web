@@ -23,6 +23,7 @@ interface EventDetail extends SharedEventDetail {
     status: string;
     reference: string;
     organizer: string;
+    starts_at: string;
     tags: string[];
 }
 
