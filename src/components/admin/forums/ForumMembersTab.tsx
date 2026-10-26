@@ -11,9 +11,22 @@ import { createClient } from '@/utils/supabase/client';
 import { formatRelativeTime } from '@/utils/format';
 import styles from './ForumMembersTab.module.css';
 
+interface ForumMember {
+    forum_id: string;
+    user_id: string;
+    user_name: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+    is_premium: boolean;
+    role_id: string;
+    is_muted: boolean;
+    has_muted_live_chats_media: boolean;
+    joined_at: string;
+    last_read_at: string | null;
+}
+
 const ASSIGNABLE_ROLES = ['member', 'organizer'];
 
-import { ForumMember } from '@/lib/repositories/forum.repository';
 
 interface MemberSummary {
     user_id: string;

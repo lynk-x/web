@@ -276,6 +276,8 @@ export default function SupportTicketsTab({
         }
     };
 
+    const isTicketClosed = selectedTicket?.status === 'resolved' || selectedTicket?.status === 'closed';
+
     const bulkActions: BulkAction[] = selectedIds.size > 0 ? [
         { label: 'Mark Open', onClick: () => handleBulkStatusChange('open') },
         { label: 'Resolve Selected', onClick: () => handleBulkStatusChange('resolved') },
