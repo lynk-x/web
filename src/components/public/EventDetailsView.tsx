@@ -122,41 +122,27 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
+            const email = (user?.email || waitlistEmail.trim()).trim();
 
-            if (user) {
-                const { error } = await supabase.schema('api').rpc('join_waitlist', {
-                    p_event_id: event.id,
-                });
+            if (!email) {
+                setWaitlistError('Please enter your email address.');
+                setWaitlistStatus('error');
+                setShowWaitlistEmailForm(true);
+                return;
+            }
 
-                if (error) {
-                    if (error.message?.includes('already on the waitlist')) {
-                        setWaitlistStatus('joined');
-                        setShowWaitlistEmailForm(false);
-                        return;
-                    }
-                    throw error;
-                }
-            } else {
-                const email = waitlistEmail.trim();
-                if (!email) {
-                    setWaitlistError('Please enter your email address.');
-                    setWaitlistStatus('error');
+            const { error } = await supabase.schema('api').rpc('join_waitlist', {
+                p_event_id: event.id,
+                p_email: email,
+            });
+
+            if (error) {
+                if (error.message?.includes('already on the waitlist')) {
+                    setWaitlistStatus('joined');
+                    setShowWaitlistEmailForm(false);
                     return;
                 }
-
-                const { error } = await supabase.schema('api').rpc('join_waitlist_anonymous', {
-                    p_event_id: event.id,
-                    p_email: email,
-                });
-
-                if (error) {
-                    if (error.message?.includes('already on the waitlist')) {
-                        setWaitlistStatus('joined');
-                        setShowWaitlistEmailForm(false);
-                        return;
-                    }
-                    throw error;
-                }
+                throw error;
             }
 
             setWaitlistStatus('joined');
@@ -166,6 +152,33 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
             setWaitlistStatus('error');
         }
     };
+
+    // Check on mount whether the user is already on the waitlist so the
+    // joined state survives page reloads instead of resetting to 'idle'.
+    useEffect(() => {
+        if (!event?.id) return;
+
+        const checkExistingWaitlist = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user?.email) return;
+
+            try {
+                const { error } = await supabase.schema('api').rpc('join_waitlist', {
+                    p_event_id: event.id,
+                    p_email: user.email,
+                });
+
+                if (error?.message?.includes('already on the waitlist')) {
+                    setWaitlistStatus('joined');
+                    setShowWaitlistEmailForm(false);
+                }
+            } catch {
+                // Ignore other errors — the join form will still be shown.
+            }
+        };
+
+        checkExistingWaitlist();
+    }, [event?.id]);
 
     // Format the event date/time in the event's canonical timezone
     const start = event.start_datetime;
