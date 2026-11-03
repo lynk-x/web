@@ -6,7 +6,6 @@
  */
 
 import DashboardShell from '@/components/dashboard/DashboardShell';
-import InactivityGuard from '@/components/dashboard/InactivityGuard';
 import '@/theme/dashboard.css';
 import { Metadata } from 'next';
 
@@ -20,8 +19,6 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <InactivityGuard>
-            <DashboardShell>{children}</DashboardShell>
-        </InactivityGuard>
+        <DashboardShell>{children}</DashboardShell>
     );
 }
