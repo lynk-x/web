@@ -28,6 +28,7 @@ export default function ReportIssueModal({ isOpen, onClose, identifier, subject 
     const [message, setMessage] = useState('');
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState<string | null>(null);
+    const [honeypot, setHoneypot] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
@@ -49,6 +50,13 @@ export default function ReportIssueModal({ isOpen, onClose, identifier, subject 
 
     const handleSubmit = async () => {
         setError(null);
+
+        // Honeypot check — if filled, it's almost certainly a bot.
+        // Silently pretend success so the bot gets no signal.
+        if (honeypot.trim()) {
+            setSubmitted(true);
+            return;
+        }
 
         const resolvedEmail = isEmail ? identifier! : email.trim();
         if (needsEmailField) {
@@ -98,6 +106,23 @@ export default function ReportIssueModal({ isOpen, onClose, identifier, subject 
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Honeypot — invisible to humans, filled by bots. */}
+                    <input
+                        type="text"
+                        name="website_url"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        style={{
+                            position: 'absolute',
+                            left: '-9999px',
+                            width: '1px',
+                            height: '1px',
+                            opacity: 0,
+                            overflow: 'hidden',
+                        }}
+                    />
                     {identifier && (
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, margin: 0 }}>
                             We&apos;ll include {identifier} so our team can look into your account.
