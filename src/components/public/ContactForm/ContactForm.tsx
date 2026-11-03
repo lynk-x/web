@@ -16,12 +16,42 @@ export default function ContactForm() {
         message: ''
     });
     const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+    const [honeypot, setHoneypot] = useState('');
 
     useEffect(() => {
         if (user && user.email) {
             setFormData(prev => ({ ...prev, email: user.email || '' }));
         }
     }, [user]);
+
+    // Content filtering: reject messages that look like bot spam
+    // (base64-like garbage, excessive special characters, URL spam)
+    const looksLikeSpam = (text: string): boolean => {
+        if (!text || text.trim().length === 0) return false;
+
+        const stripped = text.replace(/\s/g, '');
+        if (stripped.length === 0) return false;
+
+        // Ratio of non-alphanumeric characters
+        const nonAlphaNum = stripped.replace(/[a-zA-Z0-9]/g, '').length;
+        if (stripped.length > 10 && nonAlphaNum / stripped.length > 0.45) {
+            return true;
+        }
+
+        // Long base64-like tokens (no vowels, no spaces)
+        const tokens = stripped.split(/[^a-zA-Z0-9]+/);
+        for (const token of tokens) {
+            if (token.length >= 12 && !/[aeiouAEIOU]/.test(token)) {
+                return true;
+            }
+        }
+
+        // Too many URLs
+        const urlCount = (text.match(/https?:\/\/[^\s]+/gi) || []).length;
+        if (urlCount > 2) return true;
+
+        return false;
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -31,7 +61,19 @@ export default function ContactForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('sending');
-        
+
+        // Honeypot check — silently discard bot submissions
+        if (honeypot.trim()) {
+            setStatus('sent');
+            return;
+        }
+
+        // Content filtering
+        if (looksLikeSpam(formData.subject) || looksLikeSpam(formData.message)) {
+            setStatus('error');
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .schema('api')
@@ -61,7 +103,7 @@ export default function ContactForm() {
                         <path d="M22 4L12 14.01l-3-3" />
                     </svg>
                     <h3>Message Sent!</h3>
-                    <p>We've received your inquiry and will get back to you shortly.</p>
+                    <p>We&apos;ve received your inquiry and will get back to you shortly.</p>
                     <button className={styles.secondaryBtn} onClick={() => setStatus('idle')}>Send another message</button>
                 </div>
             </div>
@@ -71,14 +113,31 @@ export default function ContactForm() {
     return (
         <section className={styles.contactSection}>
             <h2 className={styles.contactTitle}>Write to us</h2>
-            <p className={styles.contactDesc}>If you couldn't find what you were looking for, our support team is available 24/7 to help you out.</p>
+            <p className={styles.contactDesc}>If you couldn&apos;t find what you were looking for, our support team is available 24/7 to help you out.</p>
             
-            <form className={styles.contactForm} onSubmit={handleSubmit}>
-                {status === 'error' && (
-                    <p style={{ color: 'var(--color-interface-error)', marginBottom: '16px' }}>
-                        Something went wrong. Please try again later.
-                    </p>
-                )}
+                <form className={styles.contactForm} onSubmit={handleSubmit}>
+                    {/* Honeypot — invisible to humans, filled by bots. */}
+                    <input
+                        type="text"
+                        name="website_url"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        style={{
+                            position: 'absolute',
+                            left: '-9999px',
+                            width: '1px',
+                            height: '1px',
+                            opacity: 0,
+                            overflow: 'hidden'
+                        }}
+                    />
+                    {status === 'error' && (
+                        <p style={{ color: 'var(--color-interface-error)', marginBottom: '16px' }}>
+                            Something went wrong. Please try again later.
+                        </p>
+                    )}
                 <div className={styles.formGrid}>
                     <div className={styles.formGroup}>
                         <label htmlFor="name">Name</label>
