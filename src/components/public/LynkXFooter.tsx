@@ -17,6 +17,22 @@ const LynkXFooter: React.FC = () => {
                 <div className={styles.topRow}>
 
                     <div className={styles.column}>
+                        <a
+                            href="https://www.producthunt.com/products/lynk-x?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-lynk-x"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.productHuntBadge}
+                        >
+                            <img
+                                alt="Lynk-X - A ticketing and community platform focused on interactions. | Product Hunt"
+                                width="250"
+                                height="54"
+                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1313189&amp;theme=light&amp;t=1794422562494"
+                            />
+                        </a>
+                    </div>
+
+                    <div className={styles.column}>
                         <h4 className={styles.columnTitle}>Product</h4>
                         <ul className={styles.linkList}>
                             <li><Link href="/for/organizers" className={styles.link}>For Organizers</Link></li>

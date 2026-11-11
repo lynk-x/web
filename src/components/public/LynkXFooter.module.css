@@ -89,6 +89,16 @@
     opacity: 0.4;
 }
 
+.productHuntBadge {
+    flex-shrink: 0;
+}
+
+.productHuntBadge img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
 .socialLinks {
     display: flex;
     gap: 20px;
