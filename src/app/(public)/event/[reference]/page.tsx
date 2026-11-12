@@ -13,12 +13,65 @@ export async function generateMetadata(
     const supabase = await createClient();
     const { reference } = await params;
 
-    const { data: event } = await supabase
-        .schema('api')
-        .from('v1_event_detail')
-        .select('title, description, media, cover_image_url')
-        .eq('reference', reference)
-        .single();
+    let event: any = null;
+    try {
+        const { data, error } = await supabase
+            .schema('api')
+            .from('v1_event_detail')
+            .select('title, description, media, cover_image_url')
+            .eq('reference', reference)
+            .single();
+
+        event = data;
+        if (error && !data) {
+            return {
+                title: 'Event | Lynk-X',
+                description: 'An event on Lynk-X.',
+                openGraph: {
+                    title: 'Event | Lynk-X',
+                    description: 'An event on Lynk-X.',
+                    url: `/event/${reference}`,
+                    siteName: 'Lynk-X',
+                    type: 'website',
+                },
+            };
+        }
+    } catch {
+        const { reference } = await params;
+        return {
+            title: 'Event | Lynk-X',
+            description: 'An event on Lynk-X.',
+            openGraph: {
+                title: 'Event | Lynk-X',
+                description: 'An event on Lynk-X.',
+                url: `/event/${reference}`,
+                siteName: 'Lynk-X',
+                images: [
+                    {
+                        url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                        width: 1200,
+                        height: 630,
+                        alt: 'Event | Lynk-X',
+                        type: 'image/png',
+                    },
+                ],
+                type: 'website',
+            },
+            twitter: {
+                card: 'summary_large_image',
+                title: 'Event | Lynk-X',
+                description: 'An event on Lynk-X.',
+                images: [
+                    {
+                        url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                        width: 1200,
+                        height: 630,
+                        alt: 'Event | Lynk-X',
+                    },
+                ],
+            },
+        };
+    }
 
     if (!event) return {};
 
@@ -34,7 +87,7 @@ export async function generateMetadata(
             alt: event.title,
             type: 'image/png',
         },
-        ...(eventImage ? [{ url: eventImage, alt: event.title }] : []),
+        ...(eventImage ? [{ url: eventImage, alt: event.title, width: 1200, height: 630, type: 'image/png' }] : []),
         ...previousImages,
     ];
 
@@ -46,6 +99,7 @@ export async function generateMetadata(
             alt: event.title,
         },
         ...(eventImage ? [{ url: eventImage, alt: event.title }] : []),
+        ...previousImages,
     ];
 
     return {
