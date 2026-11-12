@@ -11,6 +11,7 @@ export const metadata: Metadata = {
     description: 'Your brand inside the events people already showed up for.',
     url: 'https://lynk-x.app/for/ad-sponsors',
     siteName: 'Lynk-X',
+    locale: 'en_GB',
     images: [
       {
         url: '/og-sponsor.png',

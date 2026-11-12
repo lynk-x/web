@@ -10,6 +10,7 @@ export const metadata: Metadata = {
         title: 'Refund Policy | Lynk-X',
         description: 'Refund policy for ticket purchases on Lynk-X.',
         type: 'website',
+        locale: 'en_GB',
     },
 };
 

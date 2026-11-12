@@ -11,6 +11,7 @@ export const metadata: Metadata = {
         title: 'Privacy Policy | Lynk-X',
         description: 'Learn how Lynk-X collects, uses, and protects your personal information.',
         type: 'website',
+        locale: 'en_GB',
     },
 };
 

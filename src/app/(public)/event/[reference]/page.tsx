@@ -32,7 +32,31 @@ export async function generateMetadata(
                     description: 'An event on Lynk-X.',
                     url: `/event/${reference}`,
                     siteName: 'Lynk-X',
+                    locale: 'en_GB',
                     type: 'website',
+                    images: [
+                        {
+                            url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                            width: 1200,
+                            height: 630,
+                            alt: 'Event | Lynk-X',
+                            type: 'image/png',
+                        },
+                    ],
+                },
+                twitter: {
+                    card: 'summary_large_image',
+                    site: '@lynkxapp',
+                    title: 'Event | Lynk-X',
+                    description: 'An event on Lynk-X.',
+                    images: [
+                        {
+                            url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                            width: 1200,
+                            height: 630,
+                            alt: 'Event | Lynk-X',
+                        },
+                    ],
                 },
             };
         }
@@ -46,6 +70,8 @@ export async function generateMetadata(
                 description: 'An event on Lynk-X.',
                 url: `/event/${reference}`,
                 siteName: 'Lynk-X',
+                locale: 'en_GB',
+                type: 'website',
                 images: [
                     {
                         url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
@@ -55,12 +81,12 @@ export async function generateMetadata(
                         type: 'image/png',
                     },
                 ],
-                type: 'website',
             },
             twitter: {
                 card: 'summary_large_image',
                 title: 'Event | Lynk-X',
                 description: 'An event on Lynk-X.',
+                site: '@lynkxapp',
                 images: [
                     {
                         url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
@@ -114,11 +140,13 @@ export async function generateMetadata(
             description: plainDescription,
             url: `/event/${reference}`,
             siteName: 'Lynk-X',
-            images: ogImages,
+            locale: 'en_GB',
             type: 'website',
+            images: ogImages,
         },
         twitter: {
             card: 'summary_large_image',
+            site: '@lynkxapp',
             title: event.title,
             description: plainDescription,
             images: twitterImages,

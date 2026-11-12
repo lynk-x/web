@@ -11,6 +11,7 @@ export const metadata: Metadata = {
         title: 'Cookie Policy | Lynk-X',
         description: 'Manage your cookie preferences on Lynk-X.',
         type: 'website',
+        locale: 'en_GB',
     },
 };
 

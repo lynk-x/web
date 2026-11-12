@@ -11,6 +11,7 @@ export const metadata: Metadata = {
     description: 'Give your event a forum alongside your ticketing. Set up your event in minutes. Free to start.',
     url: 'https://lynk-x.app/for/organizers',
     siteName: 'Lynk-X',
+    locale: 'en_GB',
     images: [
       {
         url: '/og-organizer.png',

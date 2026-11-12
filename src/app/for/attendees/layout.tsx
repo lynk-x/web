@@ -11,6 +11,7 @@ export const metadata: Metadata = {
     description: 'Join the event forum for organizer updates, live chat and the shared media wall.',
     url: 'https://lynk-x.app/for/attendees',
     siteName: 'Lynk-X',
+    locale: 'en_GB',
     images: [
       {
         url: '/og-attendee.png',

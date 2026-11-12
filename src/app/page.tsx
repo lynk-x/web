@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: 'The ultimate event app — create events, buy tickets and join event forums.',
     url: '/',
     siteName: 'Lynk-X',
+    locale: 'en_GB',
     images: [
       {
         url: '/og-image.png?v=2',

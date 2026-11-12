@@ -11,6 +11,7 @@ export const metadata: Metadata = {
         title: 'Terms & Conditions | Lynk-X',
         description: 'Terms and conditions for using the Lynk-X platform.',
         type: 'website',
+        locale: 'en_GB',
     },
 };
 

@@ -33,6 +33,7 @@ export async function generateMetadata({ params }: ClaimPageProps): Promise<Meta
             description,
             url: `/sponsorships/claim/${token}`,
             siteName: 'Lynk-X',
+            locale: 'en_GB',
             images: [
                 {
                     url: String(image),

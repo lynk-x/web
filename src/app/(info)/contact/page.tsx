@@ -14,6 +14,7 @@ export const metadata: Metadata = {
         description: 'Have a question or need assistance? Reach out to the Lynk-X team and we will get back to you as soon as possible.',
         url: 'https://lynk-x.app/contact',
         siteName: 'Lynk-X',
+        locale: 'en_GB',
         images: [
             {
                 url: '/og-image.png',
