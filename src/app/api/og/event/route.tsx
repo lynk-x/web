@@ -1,6 +1,10 @@
 /**
  * Dynamic Event Open Graph Image Generator — generates 1200 × 630 px branded
- * social share cards for public Lynk-X events using next/og (Satori).
+ * social share cards for public Lynk-X events using sharp (SVG → JPEG).
+ *
+ * Replaces the previous next/og (Satori + resvg) pipeline so output is a
+ * compressed JPEG (~200–400 KB) instead of an uncompressed PNG (~1.9 MB),
+ * keeping it under WhatsApp's 600 KB link-preview limit.
  *
  * Query parameters:
  *   reference - Unique event reference code (e.g. 'SUMMIT26'). When present,
@@ -17,29 +21,28 @@
  * previews across WhatsApp, X (Twitter), Facebook, LinkedIn and iMessage.
  */
 
-import { ImageResponse } from 'next/og';
-import { NextRequest } from 'next/server';
+import sharp from 'sharp';
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@/utils/supabase/server';
 import { getEventImage } from '@/utils/eventImage';
-export const runtime = 'nodejs';
 
-// Load transparent combined logo for high-speed local node rendering
-let COMBINED_LOGO_DATA_URI = '';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// ── Logo data URI ──────────────────────────────────────────────────────────
+let COMBINED_LOGO_SVG = '';
 try {
     const logoFilePath = path.join(process.cwd(), 'public', 'lynk-x_combined_logo.svg');
     if (fs.existsSync(logoFilePath)) {
-        const svgContent = fs.readFileSync(logoFilePath, 'utf8');
-        COMBINED_LOGO_DATA_URI = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+        COMBINED_LOGO_SVG = fs.readFileSync(logoFilePath, 'utf8');
     }
 } catch {
-    COMBINED_LOGO_DATA_URI = '/lynk-x_combined_logo.svg';
+    COMBINED_LOGO_SVG = '';
 }
 
-/**
- * Format ISO datetime string into a readable date label (e.g. "Sat, 24 Oct 2026").
- */
+// ── Formatters ─────────────────────────────────────────────────────────────
 function formatEventDate(dateStr?: string | null): string {
     if (!dateStr) return 'Upcoming Date';
     try {
@@ -56,9 +59,6 @@ function formatEventDate(dateStr?: string | null): string {
     }
 }
 
-/**
- * Format ISO datetime string into a 12-hour time string (e.g. "7:00 PM").
- */
 function formatEventTime(dateStr?: string | null): string {
     if (!dateStr) return '';
     try {
@@ -74,9 +74,6 @@ function formatEventTime(dateStr?: string | null): string {
     }
 }
 
-/**
- * Parse location JSON or string into a clean display venue.
- */
 function formatLocation(location: unknown): string {
     if (!location) return 'Venue Announced Soon';
     if (typeof location === 'string') {
@@ -96,9 +93,6 @@ function formatLocation(location: unknown): string {
     return 'Venue Announced Soon';
 }
 
-/**
- * Formats starting price or RSVP status for display badge.
- */
 function formatPriceBadge(lowPrice?: number | null, currency?: string | null): string {
     if (lowPrice === 0) return 'Free RSVP';
     if (typeof lowPrice === 'number' && lowPrice > 0) {
@@ -106,6 +100,164 @@ function formatPriceBadge(lowPrice?: number | null, currency?: string | null): s
         return `From ${curr} ${lowPrice.toLocaleString()}`;
     }
     return 'Tickets on Lynk-X';
+}
+
+// ── SVG builder ────────────────────────────────────────────────────────────
+function buildSvg(params: {
+    title: string;
+    dateStr: string;
+    timeStr: string;
+    venueStr: string;
+    priceStr: string;
+    categoryStr: string;
+    coverUrl: string;
+    organizerStr: string;
+    displayUrl: string;
+    hasCover: boolean;
+    coverBuffer?: Buffer;
+}): string {
+    const {
+        title,
+        dateStr,
+        timeStr,
+        venueStr,
+        priceStr,
+        categoryStr,
+        coverUrl,
+        organizerStr,
+        displayUrl,
+        hasCover,
+        coverBuffer,
+    } = params;
+
+    const W = 1200;
+    const H = 630;
+    const pad = 60;
+    const innerW = W - pad * 2;
+    const titleFontSize = title.length > 45 ? 42 : 48;
+    const titleMaxW = hasCover ? 560 : innerW;
+
+    // Escape text for SVG
+    const esc = (s: string) =>
+        s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // Cover image embedded as base64 data URI if we fetched it
+    const coverImgUri = coverBuffer
+        ? `data:image/jpeg;base64,${coverBuffer.toString('base64')}`
+        : coverUrl;
+
+    const logoMarkup = COMBINED_LOGO_SVG
+        ? `<image href="data:image/svg+xml;utf8,${encodeURIComponent(COMBINED_LOGO_SVG)}" x="0" y="0" width="76" height="76" preserveAspectRatio="xMidYMid meet"/>`
+        : `<rect x="0" y="0" width="76" height="76" rx="16" fill="#1C1D24"/><text x="38" y="48" font-family="sans-serif" font-size="24" font-weight="800" fill="#20F928" text-anchor="middle">LX</text>`;
+
+    const svg = `
+<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="g1" cx="85%" cy="15%" r="45%">
+      <stop offset="0%" stop-color="#20F928" stop-opacity="0.12"/>
+      <stop offset="45%" stop-color="#20F928" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g2" cx="15%" cy="90%" r="40%">
+      <stop offset="0%" stop-color="#F9C920" stop-opacity="0.08"/>
+      <stop offset="40%" stop-color="#F9C920" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="${W}" height="${H}" fill="#09090B"/>
+  <rect width="${W}" height="${H}" fill="url(#g1)"/>
+  <rect width="${W}" height="${H}" fill="url(#g2)"/>
+
+  <!-- Header -->
+  <g transform="translate(${pad}, ${pad})">
+    ${logoMarkup}
+    ${organizerStr ? `<text x="100" y="56" font-family="sans-serif" font-size="18" font-weight="500" fill="#A1A1AA">${esc(organizerStr)} presents</text>` : ''}
+    <g transform="translate(${innerW - 220}, 0)">
+      <rect x="0" y="12" rx="24" fill="rgba(32, 249, 40, 0.12)" stroke="rgba(32, 249, 40, 0.35)" stroke-width="1"/>
+      <text x="16" y="44" font-family="sans-serif" font-size="15" font-weight="800" fill="#20F928" letter-spacing="0.08em" text-transform="uppercase">${esc(categoryStr)}</text>
+    </g>
+  </g>
+
+  <!-- Body -->
+  <g transform="translate(${pad}, ${pad + 112})">
+    <!-- Left text column -->
+    <g transform="translate(0, 0)">
+      <text x="0" y="0" font-family="sans-serif" font-size="${titleFontSize}" font-weight="800" fill="#FFFFFF" letter-spacing="-0.025em" dominant-baseline="hanging" style="overflow:hidden;">
+        <tspan x="0" dy="0" max-width="${titleMaxW}">${esc(title)}</tspan>
+      </text>
+      <g transform="translate(0, 76)">
+        <!-- Date & Time Row -->
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="32" height="32" rx="8" fill="#1C1D24"/>
+          <g transform="translate(7, 7)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="#20F928" stroke-width="2"/>
+              <path d="M16 2V6M8 2V6M3 10H21" stroke="#20F928" stroke-width="2"/>
+            </svg>
+          </g>
+          <text x="52" y="24" font-family="sans-serif" font-size="20" font-weight="600" fill="#E4E4E7" dominant-baseline="middle">${esc(dateStr)}</text>
+          ${timeStr ? `<text x="72" y="24" font-family="sans-serif" font-size="18" fill="#71717A" dominant-baseline="middle">•</text>` : ''}
+          ${timeStr ? `<text x="90" y="24" font-family="sans-serif" font-size="18" fill="#A1A1AA" dominant-baseline="middle">${esc(timeStr)}</text>` : ''}
+        </g>
+        <!-- Venue Row -->
+        <g transform="translate(0, 52)">
+          <rect x="0" y="0" width="32" height="32" rx="8" fill="#1C1D24"/>
+          <g transform="translate(7, 7)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 21C16 17 20 13.4183 20 9C20 4.58172 16.4183 1 12 1C7.58172 1 4 4.58172 4 9C4 13.4183 8 17 12 21Z" stroke="#F9C920" stroke-width="2"/>
+              <circle cx="12" cy="9" r="3" stroke="#F9C920" stroke-width="2"/>
+            </svg>
+          </g>
+          <text x="52" y="24" font-family="sans-serif" font-size="20" font-weight="600" fill="#E4E4E7" dominant-baseline="middle" style="overflow:hidden;" max-width="400">${esc(venueStr)}</text>
+        </g>
+        <!-- Price Pill -->
+        <g transform="translate(0, 104)">
+          <rect x="0" y="0" rx="8" fill="#181922" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1"/>
+          <g transform="translate(14, 12)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M3 9V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V9C19.8954 9 19 9.89543 19 11C19 12.1046 19.8954 13 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C4.10457 13 5 12.1046 5 11C5 9.89543 4.10457 9 3 9Z" stroke="#20F928" stroke-width="2"/>
+            </svg>
+          </g>
+          <text x="38" y="20" font-family="sans-serif" font-size="17" font-weight="700" fill="#20F928" dominant-baseline="middle">${esc(priceStr)}</text>
+          <rect x="${38 + 10 + esc(priceStr).length * 9}" y="0" width="1" height="44" fill="rgba(255,255,255,0.12)"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Right column: Cover or decorative frame -->
+    <g transform="translate(${hasCover ? 620 : 600}, 0)">
+      ${hasCover ? `
+        <rect x="0" y="0" width="480" height="270" rx="18" fill="#13141C" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <image href="${coverImgUri}" x="0" y="0" width="480" height="270" preserveAspectRatio="xMidYMid slice"/>
+      ` : `
+        <rect x="0" y="0" width="440" height="260" rx="18" fill="#12131C" stroke="rgba(32,249,40,0.35)" stroke-width="1" stroke-dasharray="6,6"/>
+        <g transform="translate(190, 30)">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+            <path d="M4 4L20 20M20 4L4 20" stroke="#20F928" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </g>
+        <text x="220" y="318" font-family="sans-serif" font-size="18" font-weight="700" fill="#FFFFFF" text-anchor="middle">Event on Lynk-X</text>
+        <text x="220" y="342" font-family="sans-serif" font-size="14" fill="#A1A1AA" text-anchor="middle">RSVP · Chat · Media Wall</text>
+      `}
+    </g>
+  </g>
+
+  <!-- Footer -->
+  <g transform="translate(${pad}, ${H - pad - 56})">
+    <line x1="0" y1="0" x2="${innerW}" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <text x="0" y="32" font-family="sans-serif" font-size="16" font-weight="500" fill="#A1A1AA">
+      <tspan fill="#20F928">✓</tspan> Notified updates
+      <tspan x="0" dy="0" fill="#52525B"> • </tspan>
+      <tspan fill="#20F928">✓</tspan> Dedicated live chat
+      <tspan x="0" dy="0" fill="#52525B"> • </tspan>
+      <tspan fill="#20F928">✓</tspan> Shared media wall
+    </text>
+    <text x="${innerW}" y="32" font-family="sans-serif" font-size="18" font-weight="700" fill="#E4E4E7" text-anchor="end" letter-spacing="0.01em">${esc(displayUrl)}</text>
+  </g>
+</svg>
+    `.trim();
+
+    return svg;
 }
 
 export async function GET(request: NextRequest) {
@@ -121,6 +273,7 @@ export async function GET(request: NextRequest) {
     let categoryStr = searchParams.get('category') || 'EVENT';
     let coverUrl = searchParams.get('cover') || '';
     let organizerStr = '';
+    let coverBuffer: Buffer | undefined;
 
     // If an event reference was supplied, hydrate from Supabase
     if (reference) {
@@ -146,6 +299,16 @@ export async function GET(request: NextRequest) {
                 const resolvedImage = getEventImage(event);
                 if (resolvedImage) {
                     coverUrl = resolvedImage;
+                    // Fetch cover image to embed in SVG
+                    try {
+                        const imgResp = await fetch(coverUrl, { cache: 'force-cache' });
+                        if (imgResp.ok) {
+                            const arrBuf = await imgResp.arrayBuffer();
+                            coverBuffer = Buffer.from(arrBuf);
+                        }
+                    } catch {
+                        // proceed without embedded cover
+                    }
                 }
             }
         } catch {
@@ -160,355 +323,29 @@ export async function GET(request: NextRequest) {
     const displayUrl = reference ? `lynk-x.app/event/${reference.toLowerCase()}` : 'lynk-x.app';
     const hasCover = Boolean(coverUrl);
 
-    return new ImageResponse(
-        (
-            <div
-                style={{
-                    height: '100%',
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    backgroundColor: '#09090B',
-                    backgroundImage:
-                        'radial-gradient(circle at 85% 15%, rgba(32, 249, 40, 0.12) 0%, transparent 45%), radial-gradient(circle at 15% 90%, rgba(249, 201, 32, 0.08) 0%, transparent 40%)',
-                    padding: '52px 60px',
-                    fontFamily: 'sans-serif',
-                    color: '#FFFFFF',
-                    boxSizing: 'border-box',
-                }}
-            >
-                {/* Header row: Brand mark + Category pill */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        {/* Lynk-X Combined Brand Logo */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={COMBINED_LOGO_DATA_URI || '/lynk-x_combined_logo.svg'}
-                            alt="Lynk-X"
-                            height="76"
-                            style={{
-                                height: '76px',
-                                objectFit: 'contain',
-                            }}
-                        />
-                        {organizerStr ? (
-                            <span
-                                style={{
-                                    fontSize: '18px',
-                                    color: '#A1A1AA',
-                                    fontWeight: 500,
-                                }}
-                            >
-                                presents
-                            </span>
-                        ) : null}
-                    </div>
+    const svg = buildSvg({
+        title,
+        dateStr,
+        timeStr,
+        venueStr,
+        priceStr,
+        categoryStr,
+        coverUrl,
+        organizerStr,
+        displayUrl,
+        hasCover,
+        coverBuffer,
+    });
 
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            backgroundColor: 'rgba(32, 249, 40, 0.12)',
-                            border: '1px solid rgba(32, 249, 40, 0.35)',
-                            padding: '8px 18px',
-                            borderRadius: '9999px',
-                            fontSize: '15px',
-                            fontWeight: 700,
-                            letterSpacing: '0.08em',
-                            color: '#20F928',
-                            textTransform: 'uppercase',
-                        }}
-                    >
-                        <span>{categoryStr}</span>
-                    </div>
-                </div>
+    const jpegBuffer = await sharp(Buffer.from(svg, 'utf8'))
+        .jpeg({ quality: 85 })
+        .toBuffer();
 
-                {/* Main Body: Event Content & Visual */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '40px',
-                        width: '100%',
-                        flex: 1,
-                        margin: '28px 0',
-                    }}
-                >
-                    {/* Left text column */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            flex: 1,
-                            maxWidth: hasCover ? '560px' : '100%',
-                        }}
-                    >
-                        {/* Title */}
-                        <div
-                            style={{
-                                fontSize: title.length > 45 ? '42px' : '48px',
-                                fontWeight: 800,
-                                lineHeight: 1.15,
-                                color: '#FFFFFF',
-                                letterSpacing: '-0.025em',
-                                marginBottom: '24px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                            }}
-                        >
-                            {title}
-                        </div>
-
-                        {/* Metadata pills stack */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {/* Date & Time Row */}
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    fontSize: '20px',
-                                    color: '#E4E4E7',
-                                    fontWeight: 600,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: '32px',
-                                        height: '32px',
-                                        borderRadius: '8px',
-                                        backgroundColor: '#1C1D24',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                        <rect
-                                            x="3"
-                                            y="4"
-                                            width="18"
-                                            height="18"
-                                            rx="2"
-                                            stroke="#20F928"
-                                            strokeWidth="2"
-                                        />
-                                        <path d="M16 2V6M8 2V6M3 10H21" stroke="#20F928" strokeWidth="2" />
-                                    </svg>
-                                </div>
-                                <span>{dateStr}</span>
-                                {timeStr ? <span style={{ color: '#71717A' }}>•</span> : null}
-                                {timeStr ? <span style={{ color: '#A1A1AA' }}>{timeStr}</span> : null}
-                            </div>
-
-                            {/* Venue / City Row */}
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    fontSize: '20px',
-                                    color: '#E4E4E7',
-                                    fontWeight: 600,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: '32px',
-                                        height: '32px',
-                                        borderRadius: '8px',
-                                        backgroundColor: '#1C1D24',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                        <path
-                                            d="M12 21C16 17 20 13.4183 20 9C20 4.58172 16.4183 1 12 1C7.58172 1 4 4.58172 4 9C4 13.4183 8 17 12 21Z"
-                                            stroke="#F9C920"
-                                            strokeWidth="2"
-                                        />
-                                        <circle cx="12" cy="9" r="3" stroke="#F9C920" strokeWidth="2" />
-                                    </svg>
-                                </div>
-                                <span
-                                    style={{
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
-                                    {venueStr}
-                                </span>
-                            </div>
-
-                            {/* Price / RSVP Pill */}
-                            <div style={{ display: 'flex', marginTop: '6px' }}>
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        backgroundColor: '#181922',
-                                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                                        padding: '6px 14px',
-                                        borderRadius: '8px',
-                                        fontSize: '17px',
-                                        fontWeight: 700,
-                                        color: '#20F928',
-                                    }}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                        <path
-                                            d="M3 9V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V9C19.8954 9 19 9.89543 19 11C19 12.1046 19.8954 13 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C4.10457 13 5 12.1046 5 11C5 9.89543 4.10457 9 3 9Z"
-                                            stroke="#20F928"
-                                            strokeWidth="2"
-                                        />
-                                    </svg>
-                                    <span>{priceStr}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right column: Event Cover Image (or decorative frame) */}
-                    {hasCover ? (
-                        <div
-                            style={{
-                                display: 'flex',
-                                width: '480px',
-                                height: '270px',
-                                borderRadius: '18px',
-                                overflow: 'hidden',
-                                border: '2px solid rgba(255, 255, 255, 0.15)',
-                                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
-                                backgroundColor: '#13141C',
-                            }}
-                        >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src={coverUrl}
-                                alt={title}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <div
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '440px',
-                                height: '260px',
-                                borderRadius: '18px',
-                                backgroundColor: '#12131C',
-                                border: '1px dashed rgba(32, 249, 40, 0.35)',
-                                padding: '24px',
-                                textAlign: 'center',
-                            }}
-                        >
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                                <path
-                                    d="M4 4L20 20M20 4L4 20"
-                                    stroke="#20F928"
-                                    strokeWidth="3"
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            <div
-                                style={{
-                                    marginTop: '16px',
-                                    fontSize: '18px',
-                                    fontWeight: 700,
-                                    color: '#FFFFFF',
-                                }}
-                            >
-                                Event on Lynk-X
-                            </div>
-                            <div
-                                style={{
-                                    marginTop: '6px',
-                                    fontSize: '14px',
-                                    color: '#A1A1AA',
-                                }}
-                            >
-                                RSVP · Chat · Media Wall
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer bar: Benefits strip + Canonical brand domain */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        paddingTop: '20px',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                        width: '100%',
-                    }}
-                >
-                    {/* Benefits text — Strictly NO Oxford commas */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            fontSize: '16px',
-                            color: '#A1A1AA',
-                            fontWeight: 500,
-                        }}
-                    >
-                        <span style={{ color: '#20F928' }}>✓</span>
-                        <span>Notified updates</span>
-                        <span style={{ color: '#52525B' }}>•</span>
-                        <span style={{ color: '#20F928' }}>✓</span>
-                        <span>Dedicated live chat</span>
-                        <span style={{ color: '#52525B' }}>•</span>
-                        <span style={{ color: '#20F928' }}>✓</span>
-                        <span>Shared media wall</span>
-                    </div>
-
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            fontSize: '18px',
-                            fontWeight: 700,
-                            color: '#E4E4E7',
-                            letterSpacing: '0.01em',
-                        }}
-                    >
-                        <span>{displayUrl}</span>
-                    </div>
-                </div>
-            </div>
-        ),
-        {
-            width: 1200,
-            height: 630,
-            headers: {
-                // Cache dynamic OG cards on edge CDN for 1 hour, stale-while-revalidate for 1 day
-                'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
-            },
-        }
-    );
+    return new NextResponse(jpegBuffer, {
+        status: 200,
+        headers: {
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+        },
+    });
 }
