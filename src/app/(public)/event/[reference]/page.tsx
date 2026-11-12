@@ -10,11 +10,13 @@ export async function generateMetadata(
     { params }: { params: { reference: string } },
     parent: ResolvingMetadata
 ): Promise<Metadata> {
-    const supabase = await createClient();
-    const { reference } = await params;
-
     let event: any = null;
+    let reference = '';
     try {
+        const supabase = await createClient();
+        const paramsRef = await params;
+        reference = paramsRef.reference;
+
         const { data, error } = await supabase
             .schema('api')
             .from('v1_event_detail')
@@ -99,7 +101,44 @@ export async function generateMetadata(
         };
     }
 
-    if (!event) return {};
+    if (!event) {
+        const dynamicOgUrl = `/api/og/event?reference=${encodeURIComponent(reference)}`;
+        return {
+            title: 'Event | Lynk-X',
+            description: 'An event on Lynk-X.',
+            openGraph: {
+                title: 'Event | Lynk-X',
+                description: 'An event on Lynk-X.',
+                url: `/event/${reference}`,
+                siteName: 'Lynk-X',
+                locale: 'en_GB',
+                type: 'website',
+                images: [
+                    {
+                        url: dynamicOgUrl,
+                        width: 1200,
+                        height: 630,
+                        alt: 'Event | Lynk-X',
+                        type: 'image/png',
+                    },
+                ],
+            },
+            twitter: {
+                card: 'summary_large_image',
+                site: '@lynkxapp',
+                title: 'Event | Lynk-X',
+                description: 'An event on Lynk-X.',
+                images: [
+                    {
+                        url: dynamicOgUrl,
+                        width: 1200,
+                        height: 630,
+                        alt: 'Event | Lynk-X',
+                    },
+                ],
+            },
+        };
+    }
 
     const previousImages = (await parent).openGraph?.images || [];
     const eventImage = getEventImage(event);
