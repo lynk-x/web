@@ -108,21 +108,6 @@ function formatPriceBadge(lowPrice?: number | null, currency?: string | null): s
     return 'Tickets on Lynk-X';
 }
 
-/**
- * Proxy external image URLs through the link-preview edge function so
- * next/og can fetch them server-side regardless of CORS on the origin host.
- */
-async function proxyImage(url: string): Promise<string> {
-    try {
-        const proxyUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://lynk-x.app'}/api/link-preview?proxy=${encodeURIComponent(url)}`;
-        const resp = await fetch(proxyUrl, { cache: 'force-cache' });
-        if (resp.ok) return proxyUrl;
-    } catch {
-        // fall through to original
-    }
-    return url;
-}
-
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const reference = searchParams.get('reference');
@@ -160,7 +145,7 @@ export async function GET(request: NextRequest) {
 
                 const resolvedImage = getEventImage(event);
                 if (resolvedImage) {
-                    coverUrl = await proxyImage(resolvedImage);
+                    coverUrl = resolvedImage;
                 }
             }
         } catch {

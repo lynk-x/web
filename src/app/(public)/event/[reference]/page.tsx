@@ -79,6 +79,10 @@ export async function generateMetadata(
     const eventImage = getEventImage(event);
     const dynamicOgUrl = `/api/og/event?reference=${encodeURIComponent(reference)}`;
 
+    const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    const plainDescription = stripHtml(event.description || '');
+    const shortDescription = plainDescription.substring(0, 160) || "Experience this amazing event on Lynk-X.";
+
     const ogImages = [
         {
             url: dynamicOgUrl,
@@ -104,10 +108,10 @@ export async function generateMetadata(
 
     return {
         title: `${event.title} | Lynk-X`,
-        description: event.description?.substring(0, 160) || "Experience this amazing event on Lynk-X.",
+        description: shortDescription,
         openGraph: {
             title: event.title,
-            description: event.description,
+            description: plainDescription,
             url: `/event/${reference}`,
             siteName: 'Lynk-X',
             images: ogImages,
@@ -116,7 +120,7 @@ export async function generateMetadata(
         twitter: {
             card: 'summary_large_image',
             title: event.title,
-            description: event.description,
+            description: plainDescription,
             images: twitterImages,
         },
         alternates: {
