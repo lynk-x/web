@@ -26,6 +26,7 @@ export async function generateMetadata(
 
         event = data;
         if (error && !data) {
+            const dynamicOgUrl = `https://lynk-x.app/api/og/event?reference=${encodeURIComponent(reference)}`;
             return {
                 title: 'Event | Lynk-X',
                 description: 'An event on Lynk-X.',
@@ -38,7 +39,7 @@ export async function generateMetadata(
                     type: 'website',
                     images: [
                         {
-                            url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                            url: dynamicOgUrl,
                             width: 1200,
                             height: 630,
                             alt: 'Event | Lynk-X',
@@ -53,7 +54,7 @@ export async function generateMetadata(
                     description: 'An event on Lynk-X.',
                     images: [
                         {
-                            url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                            url: dynamicOgUrl,
                             width: 1200,
                             height: 630,
                             alt: 'Event | Lynk-X',
@@ -64,6 +65,7 @@ export async function generateMetadata(
         }
     } catch {
         const { reference } = await params;
+        const dynamicOgUrl = `https://lynk-x.app/api/og/event?reference=${encodeURIComponent(reference)}`;
         return {
             title: 'Event | Lynk-X',
             description: 'An event on Lynk-X.',
@@ -76,7 +78,7 @@ export async function generateMetadata(
                 type: 'website',
                 images: [
                     {
-                        url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                        url: dynamicOgUrl,
                         width: 1200,
                         height: 630,
                         alt: 'Event | Lynk-X',
@@ -86,12 +88,12 @@ export async function generateMetadata(
             },
             twitter: {
                 card: 'summary_large_image',
+                site: '@lynkxapp',
                 title: 'Event | Lynk-X',
                 description: 'An event on Lynk-X.',
-                site: '@lynkxapp',
                 images: [
                     {
-                        url: `/api/og/event?reference=${encodeURIComponent(reference)}`,
+                        url: dynamicOgUrl,
                         width: 1200,
                         height: 630,
                         alt: 'Event | Lynk-X',
@@ -102,7 +104,7 @@ export async function generateMetadata(
     }
 
     if (!event) {
-        const dynamicOgUrl = `/api/og/event?reference=${encodeURIComponent(reference)}`;
+        const dynamicOgUrl = `https://lynk-x.app/api/og/event?reference=${encodeURIComponent(reference)}`;
         return {
             title: 'Event | Lynk-X',
             description: 'An event on Lynk-X.',
@@ -140,9 +142,8 @@ export async function generateMetadata(
         };
     }
 
-    const previousImages = (await parent).openGraph?.images || [];
     const eventImage = getEventImage(event);
-    const dynamicOgUrl = `/api/og/event?reference=${encodeURIComponent(reference)}`;
+    const dynamicOgUrl = `https://lynk-x.app/api/og/event?reference=${encodeURIComponent(reference)}`;
 
     const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
     const plainDescription = stripHtml(event.description || '');
@@ -157,7 +158,6 @@ export async function generateMetadata(
             type: 'image/png',
         },
         ...(eventImage ? [{ url: eventImage, alt: event.title, width: 1200, height: 630, type: 'image/png' }] : []),
-        ...previousImages,
     ];
 
     const twitterImages = [
@@ -168,7 +168,6 @@ export async function generateMetadata(
             alt: event.title,
         },
         ...(eventImage ? [{ url: eventImage, alt: event.title }] : []),
-        ...previousImages,
     ];
 
     return {
