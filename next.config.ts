@@ -59,6 +59,10 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: 'cdn.lynk-x.app',
             },
+            {
+                protocol: 'https',
+                hostname: '*.r2.cloudflarestorage.com',
+            },
         ],
     },
 };

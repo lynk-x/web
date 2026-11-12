@@ -147,6 +147,7 @@ const CreateEventForm = () => {
                     is_online: isOnline,
                     virtual_link: isOnline ? location : null,
                     location: !isOnline ? { name: location } : null,
+                    media: coverUrl ? { thumbnail: coverUrl } : {},
                     is_private: isPrivate,
                     currency: activeAccount.wallet_currency || 'KES',
                     status: 'published', // Default to published for now
