@@ -104,3 +104,8 @@
     background: transparent;
     padding: 0;
 }
+
+.prose s,
+.prose strike {
+    text-decoration: underline;
+}

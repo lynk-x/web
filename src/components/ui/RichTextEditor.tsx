@@ -34,12 +34,12 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
                 I
             </button>
             <button
-                onClick={() => editor.chain().focus().toggleStrike().run()}
-                className={`${styles.menuButton} ${editor.isActive('strike') ? styles.isActive : ''}`}
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={`${styles.menuButton} ${editor.isActive('underline') ? styles.isActive : ''}`}
                 type="button"
-                title="Strikethrough"
+                title="Underline"
             >
-                S
+                U
             </button>
             <div className={styles.divider} />
             <button

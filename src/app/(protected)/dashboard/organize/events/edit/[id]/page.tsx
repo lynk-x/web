@@ -186,6 +186,7 @@ export default function EditEventPage() {
                     media: uploadedThumbnailUrl ? { thumbnail: uploadedThumbnailUrl } : {},
                     currency: 'KES', // Defaulting to KES as per initial state
                     is_private: data.isPrivate,
+                    is_online: data.isOnline,
                     status: data.status || undefined
                 },
 

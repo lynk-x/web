@@ -80,6 +80,7 @@ export default function CreateEventPage() {
                     media: uploadedThumbnailUrl ? { thumbnail: uploadedThumbnailUrl } : {},
                     currency: data.currency,
                     is_private: data.isPrivate,
+                    is_online: data.isOnline,
                     status: data.status || 'published'
                 },
                 p_tiers: data.tickets.map(t => ({
