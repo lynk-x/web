@@ -237,7 +237,7 @@ export interface AdminAccount {
     id: string;
     reference: string;
     display_name: string;
-    type: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'pulse_user';
+    type: 'attendee' | 'organizer' | 'advertiser' | 'platform';
     status: 'active' | 'pending_activation' | 'suspended' | 'temporarily_suspended' | 'permanently_suspended' | 'frozen' | 'deleted';
     country_code: string;
     member_count: number;
@@ -277,7 +277,7 @@ export interface FXRate {
 export interface KycLimit {
     id: string;
     country_code: string;
-    account_type: 'attendee' | 'organizer' | 'advertiser' | 'pulse_user' | 'platform' | 'system';
+    account_type: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'system';
     tier_slug: string;
     currency: string;
     daily_transfer: number | null;
@@ -293,7 +293,7 @@ export interface KycLimit {
 export interface KycRequirement {
     id: string;
     country_code: string;
-    account_type: 'attendee' | 'organizer' | 'advertiser' | 'pulse_user' | 'platform' | 'system';
+    account_type: 'attendee' | 'organizer' | 'advertiser' | 'platform' | 'system';
     tier_slug: string;
     required_steps: Array<{
         id?: string;

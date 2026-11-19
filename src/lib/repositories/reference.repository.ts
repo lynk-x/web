@@ -76,8 +76,7 @@ export type SystemBannerTarget =
     | 'wallet'
     | 'profile'
     | 'organizer_dashboard'
-    | 'advertiser_dashboard'
-    | 'pulse_dashboard';
+    | 'advertiser_dashboard';
 
 export interface SystemBanner {
     id: string;

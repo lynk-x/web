@@ -122,7 +122,6 @@ export default function SubscriptionPlansPage() {
         setDisplayName('');
         setDescription('');
         setProductType('attendee_premium');
-        setPulseTier(null);
         setInterval('month');
         setIsActive(true);
         setSelectedFeatureIds([]);
