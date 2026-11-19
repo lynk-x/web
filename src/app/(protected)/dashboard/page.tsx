@@ -50,9 +50,7 @@ function DashboardRoot() {
         setActiveAccountId(account.id);
         const path = (account.type === 'platform' || account.type === 'system')
             ? (account.role === 'super_admin' ? '/dashboard/system' : '/dashboard/admin')
-            : account.type === 'pulse_user'
-                ? '/dashboard/pulse'
-                : account.type === 'advertiser'
+            : account.type === 'advertiser'
                     ? '/dashboard/ads'
                     : '/dashboard/organize';
 

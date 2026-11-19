@@ -11,7 +11,6 @@ import type { DashboardMode } from '@/types/shared';
 const MODE_LABEL: Record<DashboardMode, string> = {
     events: 'Events',
     ads: 'Ads Manager',
-    pulse: 'Pulse',
     admin: 'Admin',
     system: 'System',
 };
@@ -40,7 +39,6 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
     useEffect(() => {
         if (pathname.startsWith('/dashboard/admin')) setCurrentMode('admin');
         else if (pathname.startsWith('/dashboard/ads') || pathname.startsWith('/ads')) setCurrentMode('ads');
-        else if (pathname.startsWith('/dashboard/pulse')) setCurrentMode('pulse');
         else if (pathname.startsWith('/dashboard/system')) setCurrentMode('system');
         else setCurrentMode('events');
     }, [pathname]);
@@ -133,10 +131,8 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
                                     setIsOpen(false);
                                     // Ensure we go to the correct root if switching types
                                     if (account.type === 'advertiser') {
-                                        router.push('/dashboard/ads');
-                                    } else if (account.type === 'pulse_user') {
-                                        router.push('/dashboard/pulse');
-                                    } else if (account.type === 'platform' || account.type === 'system') {
+                                         router.push('/dashboard/ads');
+                                     } else if (account.type === 'platform' || account.type === 'system') {
                                         if (account.role === 'super_admin') {
                                             router.push('/dashboard/system');
                                         } else {

@@ -20,7 +20,6 @@ interface SubscriptionPlan {
     display_name: string;
     description: string | null;
     product_type: string;
-    pulse_tier: string | null;
     interval: string;
     is_active: boolean;
     metadata: Record<string, any>;
@@ -63,7 +62,6 @@ export default function SubscriptionPlansPage() {
     const [displayName, setDisplayName] = useState('');
     const [description, setDescription] = useState('');
     const [productType, setProductType] = useState('attendee_premium');
-    const [pulseTier, setPulseTier] = useState<string | null>(null);
     const [interval, setInterval] = useState('month');
     const [isActive, setIsActive] = useState(true);
     const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>([]);
@@ -137,7 +135,6 @@ export default function SubscriptionPlansPage() {
         setDisplayName(plan.display_name);
         setDescription(plan.description || '');
         setProductType(plan.product_type);
-        setPulseTier(plan.pulse_tier);
         setInterval(plan.interval);
         setIsActive(plan.is_active);
         setSelectedFeatureIds(plan.plan_features?.map(pf => pf.feature_id) || []);
@@ -160,7 +157,6 @@ export default function SubscriptionPlansPage() {
                 p_product_type: productType,
                 p_interval: interval,
                 p_is_active: isActive,
-                p_pulse_tier: productType === 'business_pulse' ? pulseTier : null,
                 p_feature_ids: selectedFeatureIds,
             });
             if (error) throw error;
@@ -385,21 +381,9 @@ export default function SubscriptionPlansPage() {
                                 Product Type
                                 <select className={adminStyles.select} value={productType} onChange={e => setProductType(e.target.value)}>
                                     <option value="attendee_premium">Attendee Premium</option>
-                                    <option value="business_pulse">Business Pulse</option>
                                     <option value="advertiser_boost">Advertiser Boost</option>
                                 </select>
                             </label>
-                            {productType === 'business_pulse' && (
-                                <label className={adminStyles.fieldLabel}>
-                                    Pulse Tier
-                                    <select className={adminStyles.select} value={pulseTier || ''} onChange={e => setPulseTier(e.target.value || null)}>
-                                        <option value="">None</option>
-                                        <option value="free">Discovery (Free)</option>
-                                        <option value="industry">Industry</option>
-                                        <option value="global">Global</option>
-                                    </select>
-                                </label>
-                            )}
                             <label className={adminStyles.fieldLabel}>
                                 Billing Interval
                                 <select className={adminStyles.select} value={interval} onChange={e => setInterval(e.target.value)}>

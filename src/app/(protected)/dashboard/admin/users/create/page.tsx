@@ -100,7 +100,6 @@ export default function CreateAccountPage() {
                                 <option value="organizer">Organizer</option>
                                 <option value="advertiser">Advertiser</option>
                                 <option value="attendee">Attendee</option>
-                                <option value="pulse_user">Pulse User</option>
                             </select>
                         </FormRow>
 

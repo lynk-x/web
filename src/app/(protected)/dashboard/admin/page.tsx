@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState({
         organizers: 0,
         advertisers: 0,
-        pulseUsers: 0,
+        attendees: 0,
         teamSize: 0
     });
     const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -72,15 +72,16 @@ export default function AdminDashboard() {
             }
             const { count: advertisersCount } = await advertiserQuery;
 
-            let pulseQuery = supabase
+            // Count attendees in the active country
+            let attendeeQuery = supabase
                 .schema('api' as any)
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'attendee');
             if (country !== 'all') {
-                pulseQuery = pulseQuery.eq('country_code', country);
+                attendeeQuery = attendeeQuery.eq('country_code', country);
             }
-            const { count: pulses } = await pulseQuery;
+            const { count: attendeesCount } = await attendeeQuery;
 
             // Count local administration team members
             const { count: team } = await supabase
@@ -92,7 +93,7 @@ export default function AdminDashboard() {
             setStats({
                 organizers: orgs || 0,
                 advertisers: advertisersCount || 0,
-                pulseUsers: pulses || 0,
+                attendees: attendeesCount || 0,
                 teamSize: team || 0
             });
         } catch (err) {
@@ -126,7 +127,6 @@ export default function AdminDashboard() {
                 recentAccounts.forEach(acc => {
                     const profileLabel = acc.type === 'organizer' ? 'Organizer'
                         : acc.type === 'advertiser' ? 'Advertiser'
-                        : acc.type === 'pulse_user' ? 'Pulse User'
                         : 'Attendee';
                     logList.push({
                         id: `acc-${acc.id}`,
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
                 />
                 <StatCard
                     label="Local Attendees"
-                    value={stats.pulseUsers}
+                    value={stats.attendees}
                     change="Active social community"
                     trend="neutral"
                     isLoading={isStatsLoading}

@@ -182,7 +182,6 @@ function AccountsContent() {
                                 { value: 'all', label: 'All Types' },
                                 { value: 'organizer', label: 'Organizers' },
                                 { value: 'advertiser', label: 'Advertisers' },
-                                { value: 'pulse_user', label: 'Pulse Users' },
                                 { value: 'attendee', label: 'Attendees' }
                             ]}
                         />

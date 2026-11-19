@@ -222,7 +222,7 @@ async function backfillTopics() {
   console.log('\n--- Starting Topics Backfill ---');
   
   const supabasePulse = createClient(supabaseUrl, supabaseServiceRoleKey, {
-    db: { schema: 'pulse' },
+    db: { schema: 'insights' },
     auth: { persistSession: false }
   });
 

@@ -75,7 +75,6 @@ const Sidebar = () => {
                 <span className={styles.modeContextLabel}>
                     {mode === 'admin' ? 'Admin Dashboard' : 
                      mode === 'ads' ? 'Ads Manager' : 
-                     mode === 'pulse' ? 'Pulse Dashboard' :
                      mode === 'system' ? 'System Control' :
                      'Events Dashboard'}
                 </span>

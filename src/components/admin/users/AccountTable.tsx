@@ -33,7 +33,6 @@ const getRoleVariant = (type: string): BadgeVariant => {
         case 'platform': return 'primary';
         case 'organizer': return 'success';
         case 'advertiser': return 'info';
-        case 'pulse_user': return 'warning';
         default: return 'neutral';
     }
 };

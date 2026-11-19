@@ -37,7 +37,26 @@ interface SearchQueryRow {
 
 interface SearchData {
     top_queries: SearchQueryRow[];
-    zero_result_queries: SearchQueryRow[];
+}
+
+interface InsightTopicRow {
+    id: string;
+    slug: string;
+    display_name: string;
+    description: string | null;
+    keywords: string[] | null;
+    category_id: string | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+interface TagSuggestionRow {
+    id: string;
+    suggested_tag_name: string;
+    source_topic_id: string | null;
+    occurrence_count: number;
+    status: string;
+    created_at: string;
 }
 
 interface GeoDemographicRow {
@@ -167,12 +186,11 @@ function SearchTab() {
                 p_category: 'search'
             });
             if (error) throw error;
-            return (res as any as SearchData | null) || { top_queries: [], zero_result_queries: [] };
+            return (res as any as SearchData | null) || { top_queries: [] };
         }
     );
 
     const [topPage, setTopPage] = useReactState(1);
-    const [gapPage, setGapPage] = useReactState(1);
     const PAGE_SIZE = 10;
 
     const topColumns: Column<SearchQueryRow>[] = [
@@ -182,14 +200,7 @@ function SearchTab() {
         { header: 'Last Seen', render: (r) => new Date(r.last_attempt_at).toLocaleDateString() }
     ];
 
-    const gapColumns: Column<SearchQueryRow>[] = [
-        { header: 'Query', render: (r) => <div style={{ fontWeight: 600 }}>{r.search_query}</div> },
-        { header: 'Attempts (90d)', render: (r) => r.attempt_count },
-        { header: 'Last Seen', render: (r) => new Date(r.last_attempt_at).toLocaleDateString() }
-    ];
-
     const topQueries = data?.top_queries ?? [];
-    const zeroResultQueries = data?.zero_result_queries ?? [];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xl)' }}>
@@ -203,21 +214,6 @@ function SearchTab() {
                     currentPage={topPage}
                     totalPages={Math.max(1, Math.ceil(topQueries.length / PAGE_SIZE))}
                     onPageChange={setTopPage}
-                />
-            </div>
-            <div>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 600 }}>Search Gaps (queries returning zero results)</h3>
-                <p style={{ margin: '0 0 12px 0', fontSize: '13px', opacity: 0.6 }}>
-                    Recurring zero-result queries indicate missing content, tags, or events worth adding.
-                </p>
-                <DataTable
-                    data={zeroResultQueries.slice((gapPage - 1) * PAGE_SIZE, gapPage * PAGE_SIZE).map(r => ({ ...r, id: r.search_query }))}
-                    columns={gapColumns}
-                    isLoading={isLoading}
-                    emptyMessage="No zero-result search gaps in the last 90 days."
-                    currentPage={gapPage}
-                    totalPages={Math.max(1, Math.ceil(zeroResultQueries.length / PAGE_SIZE))}
-                    onPageChange={setGapPage}
                 />
             </div>
         </div>
