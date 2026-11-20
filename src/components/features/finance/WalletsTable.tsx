@@ -118,14 +118,17 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
         const pinHash = await requestPinHash();
         if (!pinHash) return;
 
+        const idempotencyKey = crypto.randomUUID();
+
         setIsWithdrawing(true);
         try {
             const { data, error } = await supabase.schema('api').rpc('request_account_withdrawal', {
+                p_idempotency_key: idempotencyKey,
                 p_account_id: accountId,
                 p_amount: Number(withdrawAmount),
                 p_currency: selectedWallet.currency,
                 p_payout_method_id: selectedPayoutMethod,
-                p_pin_hash: pinHash
+                p_pin_hash: pinHash,
             });
             if (error) throw error;
             const netSettlement = data?.net_settlement;
@@ -159,12 +162,14 @@ export default function WalletsTable({ data, isLoading, accountId, onRefresh }: 
 
         setIsToppingUp(true);
         try {
+            const idempotencyKey = crypto.randomUUID();
             const { error } = await supabase.schema('api').rpc('initiate_wallet_topup', {
+                p_idempotency_key: idempotencyKey,
                 p_account_id: accountId,
                 p_amount: Number(topupAmount),
                 p_currency: selectedWallet.currency,
                 p_provider_name: selectedProvider,
-                p_payer_identity: payerIdentity
+                p_payer_identity: payerIdentity,
             });
             if (error) throw error;
             showToast("Top-up initiated successfully. Check your provider for payment prompt.", "success");

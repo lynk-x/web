@@ -135,12 +135,14 @@ export default function WalletPage() {
 
         setIsSubmitting(true);
         try {
+            const idempotencyKey = crypto.randomUUID();
             const { data, error } = await supabase.schema('api').rpc('initiate_wallet_topup', {
+                p_idempotency_key: idempotencyKey,
                 p_account_id: activeAccount!.id,
                 p_amount: numAmount,
                 p_currency: currency,
                 p_provider_name: selectedProvider,
-                p_payer_identity: 'dashboard_user'
+                p_payer_identity: 'dashboard_user',
             });
 
             if (error) throw error;

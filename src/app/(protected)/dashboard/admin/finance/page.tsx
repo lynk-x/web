@@ -452,6 +452,7 @@ function FinanceContent() {
         setShowAdjustWalletModal(false);
         await runAction(
             () => supabase.schema('api').rpc(amount >= 0 ? 'admin_credit_wallet_balance' : 'admin_debit_wallet_balance', {
+                p_idempotency_key: crypto.randomUUID(),
                 p_account_id: accountId,
                 p_currency: currency,
                 p_amount: Math.abs(amount),

@@ -175,8 +175,10 @@ export function createFinanceRepository(client: DbClient) {
             payoutMethodId: string;
             currency: string;
             pinHash: string;
+            idempotencyKey?: string;
         }): Promise<RepoResult<RequestPayoutResult>> {
             const { data, error } = await client.schema('api').rpc('request_account_withdrawal', {
+                p_idempotency_key: params.idempotencyKey ?? crypto.randomUUID(),
                 p_account_id: params.accountId,
                 p_amount: params.amount,
                 p_currency: params.currency,
@@ -213,8 +215,10 @@ export function createFinanceRepository(client: DbClient) {
             currency: string;
             providerName: string;
             payerIdentity: string;
+            idempotencyKey?: string;
         }): Promise<RepoResult<{ top_up_id: string; provider_ref: string | null }>> {
             const { data, error } = await client.schema('api').rpc('initiate_wallet_topup', {
+                p_idempotency_key: params.idempotencyKey ?? crypto.randomUUID(),
                 p_account_id: params.accountId,
                 p_amount: params.amount,
                 p_currency: params.currency,

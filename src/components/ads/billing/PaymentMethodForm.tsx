@@ -112,6 +112,7 @@ export default function PaymentMethodForm({ accountId, supabase, onSuccess, onCa
             // 'card' provider row in finance.platform_payment_providers;
             // until one is seeded the RPC rejects with a clear error.
             const { error } = await supabase.schema('api').rpc('add_payout_method', {
+                p_idempotency_key: crypto.randomUUID(),
                 p_provider_name: 'card',
                 p_identity: last4,
                 p_label: `Card ending in ${last4}`,

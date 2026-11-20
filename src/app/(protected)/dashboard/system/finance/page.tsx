@@ -241,13 +241,15 @@ function GlobalFinanceContent() {
         showToast('Adjusting wallet balance…', 'info');
         try {
             const rpcName = amount >= 0 ? 'admin_credit_wallet_balance' : 'admin_debit_wallet_balance';
+            const idempotencyKey = crypto.randomUUID();
             const { error } = await supabase.schema('api').rpc(rpcName, {
+                p_idempotency_key: idempotencyKey,
                 p_account_id: accountId,
                 p_currency: currency,
                 p_amount: Math.abs(amount),
                 p_balance_type: adjustBalanceType,
                 p_reason: reason,
-                p_notes: `system_finance_page`
+                p_notes: `system_finance_page`,
             });
             if (error) throw error;
             showToast(`Wallet ${adjustBalanceType} adjusted by ${formatCurrency(amount, currency)}.`, 'success');
