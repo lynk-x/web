@@ -326,7 +326,11 @@ export const SubscriptionCheckoutView: React.FC = () => {
     // ── Form Input Handlers ───────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+            ...(name === 'phone' && (!prev.mpesaNumber || prev.mpesaNumber === prev.phone) ? { mpesaNumber: value } : {}),
+        }));
         if (formErrors[name as keyof typeof formErrors]) {
             setFormErrors(prev => ({ ...prev, [name]: '' }));
         }
@@ -604,28 +608,14 @@ export const SubscriptionCheckoutView: React.FC = () => {
                                 </>
                             ) : (
                                 <>
-                                    <div style={{
-                                        background: 'rgba(255, 255, 255, 0.04)',
-                                        borderRadius: 12,
-                                        padding: 16,
-                                        marginBottom: 16,
-                                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                                    }}>
-                                        <h3 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 6px' }}>Attendee Premium</h3>
-                                        <p style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.6)', margin: '0 0 12px' }}>
-                                            Full premium privileges across the Lynk-X ecosystem.
-                                        </p>
-                                        <ul style={{ margin: 0, paddingLeft: 18, color: 'rgba(255, 255, 255, 0.8)', fontSize: 13, lineHeight: 1.8 }}>
-                                            <li>Ad-free forum discussions</li>
-                                            <li>Exclusive VIP attendee badge</li>
-                                            <li>Early access to high-demand ticket drops</li>
-                                            <li>Cancel anytime before next billing cycle</li>
-                                        </ul>
+                                    <div className={styles.summaryItem}>
+                                        <span>Plan</span>
+                                        <span style={{ fontWeight: 600 }}>{activePlan?.display_name || 'Attendee Premium'}</span>
                                     </div>
 
                                     <div className={styles.summaryItem}>
-                                        <span>Billing Cycle</span>
-                                        <span style={{ textTransform: 'capitalize' }}>{selectedInterval}ly</span>
+                                        <span>Subtotal</span>
+                                        <span>{activePrice ? `${activePrice.currency} ${baseAmount.toLocaleString()}` : '—'}</span>
                                     </div>
 
                                     {/* ── Promo Code Section ────────────────────────── */}
@@ -667,7 +657,7 @@ export const SubscriptionCheckoutView: React.FC = () => {
                                     )}
 
                                     <div className={styles.total}>
-                                        <span>Total Due Today</span>
+                                        <span>Total</span>
                                         <span>
                                             {activePrice ? `${activePrice.currency} ${finalAmount.toLocaleString()}` : '—'}
                                         </span>
@@ -681,101 +671,104 @@ export const SubscriptionCheckoutView: React.FC = () => {
                     <div className={styles.formsColumn}>
                         {/* Contact Information */}
                         <section className={styles.section}>
-                            <h2 className={styles.sectionTitle}>Account & Delivery</h2>
-                            <p style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.6)', margin: '0 0 16px' }}>
-                                Your premium subscription will automatically attach to this phone number and email address.
+                            <h2 className={styles.sectionTitle}>Contact Information</h2>
+                            <p style={{ fontSize: '13px', opacity: 0.6, marginBottom: '16px' }}>
+                                Your subscription will be linked to this email and phone number. Please ensure they are correct.
                             </p>
 
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Email Address</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`}
-                                    placeholder="you@example.com"
-                                />
-                                {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
-                            </div>
+                            {isLoading ? (
+                                <>
+                                    <Skeleton width="100%" height="56px" style={{ marginBottom: 16 }} />
+                                    <Skeleton width="100%" height="56px" style={{ marginBottom: 16 }} />
+                                    <Skeleton width="100%" height="56px" />
+                                </>
+                            ) : (
+                                <>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Country</label>
+                                        <CountryPhoneSelect
+                                            value={contactPhoneCountry.code}
+                                            onChange={setContactPhoneCountry}
+                                            className={styles.select}
+                                        />
+                                    </div>
 
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Full Name (Optional)</label>
-                                <input
-                                    type="text"
-                                    name="fullName"
-                                    value={formData.fullName}
-                                    onChange={handleInputChange}
-                                    className={styles.input}
-                                    placeholder="Your name"
-                                />
-                            </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Email Address</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            className={`${styles.input} ${formErrors.email ? styles.inputError : ''}`}
+                                            placeholder="john@example.com"
+                                            autoFocus
+                                        />
+                                        {formErrors.email && <span className={styles.errorText}>{formErrors.email}</span>}
+                                    </div>
 
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Contact Phone Number</label>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <CountryPhoneSelect
-                                        value={contactPhoneCountry.code}
-                                        onChange={setContactPhoneCountry}
-                                    />
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleInputChange}
-                                        className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`}
-                                        placeholder={contactPhoneCountry.code === 'KE' ? '07XXXXXXXX' : 'Phone digits'}
-                                        style={{ flex: 1 }}
-                                    />
-                                </div>
-                                {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
-                            </div>
+                                    <div className={styles.formGroup} id="checkout-phone-field">
+                                        <label className={styles.label}>Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleInputChange}
+                                            className={`${styles.input} ${formErrors.phone ? styles.inputError : ''}`}
+                                            placeholder="700 000 000"
+                                        />
+                                        {formErrors.phone && <span className={styles.errorText}>{formErrors.phone}</span>}
+                                    </div>
+                                </>
+                            )}
                         </section>
 
-                        {/* Payment Method */}
+                        {/* Payment */}
                         <section className={styles.section}>
-                            <h2 className={styles.sectionTitle}>Payment Method</h2>
+                            <h2 className={styles.sectionTitle}>Payment</h2>
 
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Choose Provider</label>
-                                <select
-                                    className={styles.select}
-                                    value={paymentMethod}
-                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                >
-                                    {availableProviders.length > 0 ? (
-                                        availableProviders
-                                            // Ensure in-app wallet is filtered out for unauthenticated guests
-                                            .filter(p => p.provider_name !== 'in-app' && p.provider_name !== 'wallet')
-                                            .map(p => (
-                                                <option key={p.provider_name} value={p.provider_name}>
-                                                    {p.display_name}
-                                                </option>
-                                            ))
-                                    ) : (
-                                        <option value="mpesa">M-Pesa</option>
+                            {isLoading ? (
+                                <Skeleton width="100%" height="56px" style={{ marginBottom: 16 }} />
+                            ) : (
+                                <>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Payment Method</label>
+                                        <select
+                                            className={styles.select}
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                        >
+                                            {availableProviders.length > 0 ? (
+                                                availableProviders
+                                                    // Ensure in-app wallet is filtered out for unauthenticated guests
+                                                    .filter(p => p.provider_name !== 'in-app' && p.provider_name !== 'wallet')
+                                                    .map(p => (
+                                                        <option key={p.provider_name} value={p.provider_name}>
+                                                            {p.display_name}
+                                                        </option>
+                                                    ))
+                                            ) : (
+                                                <option value="mpesa">M-Pesa</option>
+                                            )}
+                                        </select>
+                                    </div>
+
+                                    {paymentMethod === 'mpesa' && (
+                                        <div className={styles.formGroup}>
+                                            <label className={styles.label}>M-Pesa Number</label>
+                                            <input
+                                                type="tel"
+                                                name="mpesaNumber"
+                                                value={formData.mpesaNumber}
+                                                onChange={handleInputChange}
+                                                className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`}
+                                                placeholder="0712 345 678"
+                                            />
+                                            {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
+                                            <p className={styles.helperText}>* An STK push prompt will be sent to this number to authorize payment.</p>
+                                        </div>
                                     )}
-                                </select>
-                            </div>
-
-                            {paymentMethod === 'mpesa' && (
-                                <div className={styles.formGroup}>
-                                    <label className={styles.label}>M-Pesa Number for Payment</label>
-                                    <input
-                                        type="tel"
-                                        name="mpesaNumber"
-                                        value={formData.mpesaNumber}
-                                        onChange={handleInputChange}
-                                        className={`${styles.input} ${formErrors.mpesaNumber ? styles.inputError : ''}`}
-                                        placeholder="07XXXXXXXX"
-                                    />
-                                    {formErrors.mpesaNumber && <span className={styles.errorText}>{formErrors.mpesaNumber}</span>}
-                                    <p className={styles.helperText}>* An STK push prompt will be sent to this number to authorize payment.</p>
-                                </div>
-                            )}
-
-                            {paymentMethod !== 'mpesa' && (
-                                <p className={styles.helperText}>* You will be prompted to complete payment via {paymentMethod}.</p>
+                                </>
                             )}
                         </section>
 
