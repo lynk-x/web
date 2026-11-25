@@ -17,7 +17,7 @@ interface FaqSectionProps {
 }
 
 export default function FaqSection({
-    badge = 'FAQ',
+    badge,
     title = 'Frequently Asked Questions',
     subtitle = 'Everything you need to know about getting started.',
     items,

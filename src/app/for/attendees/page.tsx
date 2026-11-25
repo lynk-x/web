@@ -14,7 +14,7 @@ import FaqSection, { FaqItem } from '@/components/public/FaqSection';
 const attendeeFaqs: FaqItem[] = [
     {
         question: "How do I buy tickets?",
-        answer: "Buying tickets on Lynk-X takes less than a minute. Simply browse events, choose your preferred ticket and complete checkout. Your ticket will immediately appear in your ticket page inside the event forum.",
+        answer: "Buying tickets on Lynk-X takes less than a minute. Simply browse events, choose your preferred ticket and complete checkout. Your ticket will appear in your ticket page inside the event forum.",
     },
     {
         question: "What is an event forum and who can join it?",
@@ -115,7 +115,6 @@ export default function AttendeesLandingPage() {
                 <EcosystemTicker variant="attendees" />
 
                 <FaqSection
-                    badge="Attendee FAQ"
                     title="Frequently Asked Questions"
                     subtitle="Everything you need to know about discovering events and getting your tickets."
                     items={attendeeFaqs}
