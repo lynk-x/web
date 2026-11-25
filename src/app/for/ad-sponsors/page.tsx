@@ -9,6 +9,22 @@ import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
 import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
 import EcosystemTicker from '@/components/public/EcosystemTicker';
+import FaqSection, { FaqItem } from '@/components/public/FaqSection';
+
+const sponsorFaqs: FaqItem[] = [
+    {
+        question: "How do I create a campaign?",
+        answer: "From your advertiser dashboard, set your total campaign budget, define your target event categories and upload your creative assets. Once submitted, your campaign goes live immediately across matching event forums.",
+    },
+    {
+        question: "What types of ad formats are supported?",
+        answer: "You can run sponsored forum posts, interactive partner polls, banner placements and pinned highlights designed to fit the natural flow of community event discussions.",
+    },
+    {
+        question: "Why advertise inside events rather than standard social media feeds?",
+        answer: "Social media feeds interrupt people scrolling through unrelated posts. On Lynk-X, your campaigns appear inside curated event forums where attendees are actively participating in a specific topic, community or shared experience.",
+    },
+];
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -77,10 +93,10 @@ export default function CommercialLandingPage() {
                         </motion.div>
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                             </div>
-                            <h3 className={styles.cardTitle}>Your Budget Finds What Works</h3>
-                            <p className={styles.cardDesc}>Set your campaign once and Lynk-X keeps shifting your spend toward whatever&apos;s actually converting — no daily babysitting, no guessing which creative variant is pulling its weight.</p>
+                            <h3 className={styles.cardTitle}>Verified Attendee Reach</h3>
+                            <p className={styles.cardDesc}>Unlike social feeds flooded with bots and accidental scrolls, every impression is delivered to a verified ticket holder or active forum member genuinely invested in the experience.</p>
                         </motion.div>
                         <motion.div className={styles.card} variants={fadeInUp}>
                             <div className={styles.cardIcon}>
@@ -101,6 +117,13 @@ export default function CommercialLandingPage() {
                 </section>
 
                 <EcosystemTicker variant="commercial" />
+
+                <FaqSection
+                    badge="Sponsor FAQ"
+                    title="Frequently Asked Questions"
+                    subtitle="Everything you need to know about sponsoring events and reaching verified attendees."
+                    items={sponsorFaqs}
+                />
 
                 <LynkXFooter />
             </div>

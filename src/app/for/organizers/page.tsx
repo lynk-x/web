@@ -9,6 +9,22 @@ import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
 import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
 import EcosystemTicker from '@/components/public/EcosystemTicker';
+import FaqSection, { FaqItem } from '@/components/public/FaqSection';
+
+const organizerFaqs: FaqItem[] = [
+    {
+        question: "How do I create an event?",
+        answer: "Setting up an event takes just a few clicks. Sign in to your organizer dashboard, enter your event details and venue, create your custom ticket tiers and publish. Your event landing page and private forum are instantly generated and ready for ticket sales.",
+    },
+    {
+        question: "How much does it cost to host an event on Lynk-X?",
+        answer: "Creating an account, publishing event pages and setting up ticket tiers is completely free. We charge a simple, transparent fee only when paid tickets are sold. The event forum is never charged for either free or paid events and comes included automatically.",
+    },
+    {
+        question: "How does the built-in event forum help my event?",
+        answer: "Unlike traditional ticketing platforms where attendee contact ends at checkout, Lynk-X gives you a direct communication channel. You can send push announcements, run audience polls, answer attendee questions and host live audio stages to build anticipation and loyalty.",
+    },
+];
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -115,6 +131,13 @@ export default function OrganizersLandingPage() {
                 </section>
 
                 <EcosystemTicker variant="organizers" />
+
+                <FaqSection
+                    badge="Organizer FAQ"
+                    title="Frequently Asked Questions"
+                    subtitle="Everything you need to know about publishing events, selling tickets and engaging your crowd."
+                    items={organizerFaqs}
+                />
 
                 <LynkXFooter />
             </div>

@@ -9,6 +9,22 @@ import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
 import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
 import EcosystemTicker from '@/components/public/EcosystemTicker';
+import FaqSection, { FaqItem } from '@/components/public/FaqSection';
+
+const attendeeFaqs: FaqItem[] = [
+    {
+        question: "How do I buy tickets?",
+        answer: "Buying tickets on Lynk-X takes less than a minute. Simply browse events, choose your preferred ticket and complete checkout. Your ticket will immediately appear in your ticket page inside the event forum.",
+    },
+    {
+        question: "What is an event forum and who can join it?",
+        answer: "Every event has a dedicated community space for ticket holders and organizers. You can chat with other attendees, check announcements and share photos before, during and after the event.",
+    },
+    {
+        question: "Do I need to download an app from Google Play or Apple App Store?",
+        answer: "Not at all. Lynk-X works directly in your web browser on any phone, tablet or computer. You just open the link, sign in and your tickets and event communities are right there ready to go.",
+    },
+];
 
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -97,6 +113,13 @@ export default function AttendeesLandingPage() {
                 </section>
 
                 <EcosystemTicker variant="attendees" />
+
+                <FaqSection
+                    badge="Attendee FAQ"
+                    title="Frequently Asked Questions"
+                    subtitle="Everything you need to know about discovering events and getting your tickets."
+                    items={attendeeFaqs}
+                />
 
                 <LynkXFooter />
             </div>
