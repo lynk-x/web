@@ -2,19 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import {
-    CheckCircle2,
-    Megaphone,
-    QrCode,
-    Radio,
-    ShieldCheck,
-    Ticket,
-    Users,
-    Wallet,
-} from 'lucide-react';
 import styles from './HomeAudienceSwitcher.module.css';
 
 type AudienceKey = 'attendees' | 'organizers' | 'sponsors';
+type HighlightIcon = 'ticket' | 'qr' | 'radio' | 'wallet' | 'users' | 'shield' | 'megaphone';
+
+interface AudienceHighlight {
+    step: string;
+    icon: HighlightIcon;
+    title: string;
+    desc: string;
+}
 
 interface AudienceConfig {
     key: AudienceKey;
@@ -24,7 +22,7 @@ interface AudienceConfig {
     summary: string;
     primaryCta: { label: string; href: string };
     secondaryCta: { label: string; href: string };
-    highlights: { icon: 'ticket' | 'radio' | 'qr' | 'wallet' | 'megaphone' | 'users' | 'shield'; title: string; desc: string }[];
+    highlights: AudienceHighlight[];
 }
 
 const AUDIENCES: AudienceConfig[] = [
@@ -33,24 +31,28 @@ const AUDIENCES: AudienceConfig[] = [
         tabLabel: 'For Attendees',
         eyebrow: 'Zero App Download',
         headline: 'Every Ticket Unlocks the Live Event Community',
-        summary: 'Discover upcoming events, pay in seconds with M-Pesa or card and jump straight into live event updates, chat and media walls from your browser.',
+        summary:
+            'Discover upcoming events, pay in seconds with M-Pesa or card and jump straight into live event updates, chat and media walls right from your browser.',
         primaryCta: { label: 'Browse Events', href: '/events' },
         secondaryCta: { label: 'See Attendee Experience', href: '/for/attendees' },
         highlights: [
             {
+                step: '01',
                 icon: 'ticket',
                 title: 'Fast Mobile Checkout',
-                desc: 'Reserve your spot with instant M-Pesa STK push or card checkout in under 30 seconds.',
+                desc: 'Reserve your spot with instant M-Pesa STK push or card checkout in seconds.',
             },
             {
+                step: '02',
                 icon: 'qr',
-                title: 'Instant QR Pass',
-                desc: 'Keep your scannable pass in the browser with no app store download required.',
+                title: 'Browser QR Pass',
+                desc: 'Keep your scannable pass ready in any mobile browser with zero app download.',
             },
             {
+                step: '03',
                 icon: 'radio',
-                title: 'Live Forum & Audio Rooms',
-                desc: 'Follow organizer announcements, vote in polls and join live audio rooms before and during the event.',
+                title: 'Updates, Chat & Media',
+                desc: 'Follow organizer announcements, vote in polls and share photos with the whole crowd.',
             },
         ],
     },
@@ -59,24 +61,28 @@ const AUDIENCES: AudienceConfig[] = [
         tabLabel: 'For Organizers',
         eyebrow: 'Ticketing + Community',
         headline: 'Sell Tickets, Scan Gates & Own Your Crowd',
-        summary: 'Launch multi-tier ticketing in minutes, monitor real-time gate check-ins and broadcast directly to verified attendees in a dedicated forum.',
+        summary:
+            'Launch multi-tier ticketing in minutes, monitor real-time gate check-ins and broadcast directly to verified attendees in one dedicated forum.',
         primaryCta: { label: 'Host an Event Free', href: '/dashboard/organize' },
         secondaryCta: { label: 'Explore Organizer Tools', href: '/for/organizers' },
         highlights: [
             {
+                step: '01',
                 icon: 'wallet',
-                title: 'Transparent Payouts',
-                desc: 'Track M-Pesa and card ticket sales in real time with automated settlement status.',
+                title: 'Transparent Sales & Payouts',
+                desc: 'Track M-Pesa and card ticket sales in real time with clear settlement tracking.',
             },
             {
+                step: '02',
                 icon: 'qr',
-                title: 'Multi-Gate QR Check-In',
-                desc: 'Verify passes at the door in milliseconds and watch live attendance capacity update.',
+                title: 'Fast Gate Check-In',
+                desc: 'Verify passes at the door across multiple gates and watch live attendance update.',
             },
             {
+                step: '03',
                 icon: 'users',
-                title: 'Direct Audience Channel',
-                desc: 'Post pinned updates, run live polls and host audio or video stages without third-party group chats.',
+                title: 'Direct Crowd Channel',
+                desc: 'Post pinned updates, run live polls and manage your crowd without third-party group chats.',
             },
         ],
     },
@@ -85,45 +91,126 @@ const AUDIENCES: AudienceConfig[] = [
         tabLabel: 'For Sponsors',
         eyebrow: 'Verified Event Reach',
         headline: 'Put Your Brand Inside Active Event Forums',
-        summary: 'Reach confirmed ticket holders inside the event forum while they are actively checking schedules, live chat and stage updates.',
+        summary:
+            'Reach confirmed ticket holders inside the event forum while they check schedules, live chat and stage updates.',
         primaryCta: { label: 'Launch a Campaign', href: '/for/ad-sponsors' },
         secondaryCta: { label: 'View Sponsor Placements', href: '/for/ad-sponsors' },
         highlights: [
             {
+                step: '01',
                 icon: 'shield',
-                title: '100% Real Attendees',
-                desc: 'Every forum member holds a verified ticket or invite for that specific event.',
+                title: 'Verified Ticket Holders',
+                desc: 'Every forum member holds a confirmed ticket or invite for that specific event.',
             },
             {
+                step: '02',
                 icon: 'megaphone',
-                title: 'Clean 50px Banner Slot',
-                desc: 'High-visibility sponsor carousel pinned cleanly above the forum tabs without blocking content.',
+                title: 'Non-Intrusive Placement',
+                desc: 'Clean banner placements sit above the forum tabs so attendees see offers without feed clutter.',
             },
             {
+                step: '03',
                 icon: 'ticket',
-                title: 'Measurable Engagement',
-                desc: 'Track impressions and click-throughs from high-intent local event communities.',
+                title: 'Measurable Reach',
+                desc: 'Track impressions and clicks from high-intent local event communities in real time.',
             },
         ],
     },
 ];
 
-function renderHighlightIcon(icon: AudienceConfig['highlights'][number]['icon']) {
+function renderHighlightIcon(icon: HighlightIcon) {
     switch (icon) {
         case 'ticket':
-            return <Ticket size={18} aria-hidden="true" />;
-        case 'radio':
-            return <Radio size={18} aria-hidden="true" />;
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                        d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    <path d="M13 5v14" stroke="currentColor" strokeWidth="1.9" strokeDasharray="3 3" />
+                </svg>
+            );
         case 'qr':
-            return <QrCode size={18} aria-hidden="true" />;
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.9" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.9" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.9" />
+                    <path d="M14 14h3v3h-3zM20 14v3M14 20h7" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+            );
+        case 'radio':
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="2" fill="currentColor" />
+                    <path
+                        d="M16.24 7.76a6 6 0 0 1 0 8.48M7.76 16.24a6 6 0 0 1 0-8.48M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                    />
+                </svg>
+            );
         case 'wallet':
-            return <Wallet size={18} aria-hidden="true" />;
-        case 'megaphone':
-            return <Megaphone size={18} aria-hidden="true" />;
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                        d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    <circle cx="16.5" cy="13" r="1.25" fill="currentColor" />
+                </svg>
+            );
         case 'users':
-            return <Users size={18} aria-hidden="true" />;
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                        d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                    />
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.9" />
+                    <path
+                        d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                    />
+                </svg>
+            );
         case 'shield':
-            return <ShieldCheck size={18} aria-hidden="true" />;
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                        d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            );
+        case 'megaphone':
+            return (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                        d="M3 11l14-5v12L3 13v-2zM11.6 16.8a3 3 0 1 1-5.8-1.6"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                    <path d="M17 9.5a4 4 0 0 1 0 5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                </svg>
+            );
     }
 }
 
@@ -164,11 +251,12 @@ export default function HomeAudienceSwitcher() {
                 </div>
             </div>
 
-            <div className={styles.panel} role="tabpanel">
+            <div key={current.key} className={styles.panel} role="tabpanel">
                 <div className={styles.panelIntro}>
                     <span className={styles.eyebrow}>{current.eyebrow}</span>
                     <h3 className={styles.panelHeadline}>{current.headline}</h3>
                     <p className={styles.panelSummary}>{current.summary}</p>
+
                     <div className={styles.ctaGroup}>
                         <Link href={current.primaryCta.href} className={styles.primaryBtn}>
                             {current.primaryCta.label}
@@ -184,7 +272,7 @@ export default function HomeAudienceSwitcher() {
                         <div key={item.title} className={styles.highlightCard}>
                             <div className={styles.highlightIconRow}>
                                 <span className={styles.highlightIcon}>{renderHighlightIcon(item.icon)}</span>
-                                <CheckCircle2 size={15} className={styles.checkIcon} aria-hidden="true" />
+                                <span className={styles.stepNum}>{item.step}</span>
                             </div>
                             <h4 className={styles.highlightTitle}>{item.title}</h4>
                             <p className={styles.highlightDesc}>{item.desc}</p>

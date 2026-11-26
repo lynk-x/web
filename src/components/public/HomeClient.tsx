@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import SearchBar from "./SearchBar";
 import HeroSection from "./HeroSection";
@@ -11,7 +10,6 @@ import { Event } from '@/types';
 import LynkXFooter from "./LynkXFooter";
 import { useFilters } from '@/context/FilterContext';
 import { createClient } from '@/utils/supabase/client';
-import { slugifyCategory } from '@/utils/categories';
 
 interface CategoryItem {
     id: string;
@@ -52,14 +50,11 @@ interface HomeClientProps {
     tags?: TagItem[];
     categoryTags?: CategoryTagItem[];
     basePath?: string;
-    headingTitle?: string;
-    headingSubtitle?: string;
 }
 
 /**
  * Interactive event discovery shell for `/events`. Syncs `?q=` and `?page=` URL
- * parameters with search/pagination state and renders crawlable category links
- * above the paginated event grid.
+ * parameters with search/pagination state and renders the filtered event grid.
  */
 const HomeClient: React.FC<HomeClientProps> = ({
     carouselEvents,
@@ -68,8 +63,6 @@ const HomeClient: React.FC<HomeClientProps> = ({
     tags,
     categoryTags,
     basePath = '/events',
-    headingTitle = 'Upcoming Events on Lynk-X',
-    headingSubtitle = 'Browse concerts, conferences, workshops and community gatherings — buy tickets and unlock every event forum.',
 }) => {
     const searchParams = useSearchParams();
     const urlQ = searchParams.get('q') ?? '';
@@ -243,29 +236,6 @@ const HomeClient: React.FC<HomeClientProps> = ({
             <div className={styles.heroWrapper}>
                 <HeroSection featuredEvents={finalCarouselEvents} />
             </div>
-
-            <section className={styles.discoveryHeader} aria-labelledby="events-discovery-heading">
-                <h1 id="events-discovery-heading" className={styles.discoveryTitle}>
-                    {headingTitle}
-                </h1>
-                <p className={styles.discoverySubtitle}>
-                    {headingSubtitle}
-                </p>
-                <nav className={styles.categoryPillBar} aria-label="Event categories">
-                    <Link href="/events" className={styles.categoryPill}>
-                        All Events
-                    </Link>
-                    {(categories ?? []).map((cat) => (
-                        <Link
-                            key={cat.id}
-                            href={`/events/${slugifyCategory(cat.display_name)}`}
-                            className={styles.categoryPill}
-                        >
-                            {cat.display_name}
-                        </Link>
-                    ))}
-                </nav>
-            </section>
 
             <div className={styles.container}>
                 <EventGrid

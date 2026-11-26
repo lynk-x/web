@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createPublicClient } from '@/utils/supabase/public';
 import HomeLayout from '@/components/public/HomeLayout';
 import EventCard from '@/components/public/EventCard';
-import HomeBentoShowcase from '@/components/public/HomeBentoShowcase';
+import ForumDevicePreview from '@/components/public/ForumDevicePreview';
 import HomeAudienceSwitcher from '@/components/public/HomeAudienceSwitcher';
 import LynkXFooter from '@/components/public/LynkXFooter';
 import SoftwareAppJsonLd from '@/components/public/SoftwareAppJsonLd';
@@ -143,7 +143,7 @@ export default async function Home() {
                     </div>
                 </section>
 
-                <HomeBentoShowcase />
+                <ForumDevicePreview />
 
                 <section className={styles.section} aria-labelledby="upcoming-preview-heading">
                     <div className={styles.sectionHeaderRow}>
