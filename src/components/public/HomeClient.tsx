@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import SearchBar from "./SearchBar";
 import HeroSection from "./HeroSection";
@@ -10,6 +11,7 @@ import { Event } from '@/types';
 import LynkXFooter from "./LynkXFooter";
 import { useFilters } from '@/context/FilterContext';
 import { createClient } from '@/utils/supabase/client';
+import { slugifyCategory } from '@/utils/categories';
 
 interface CategoryItem {
     id: string;
@@ -263,6 +265,21 @@ const HomeClient: React.FC<HomeClientProps> = ({
                     </div>
                 )}
             </div>
+            {(categories ?? []).length > 0 && (
+                <section className={styles.discoveryHeader} aria-label="Browse events by category">
+                    <nav className={styles.categoryPillBar} aria-label="Event categories">
+                        {(categories ?? []).map((cat) => (
+                            <Link
+                                key={cat.id}
+                                href={`/events/${slugifyCategory(cat.display_name)}`}
+                                className={styles.categoryPill}
+                            >
+                                {cat.display_name}
+                            </Link>
+                        ))}
+                    </nav>
+                </section>
+            )}
             <LynkXFooter />
         </>
     );

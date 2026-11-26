@@ -21,6 +21,7 @@ const MEDIA_TILES: { src: string; isVideo?: boolean }[] = [
     { src: '/forum-demo/media-6.webp' },
     { src: '/forum-demo/media-7.webp' },
     { src: '/forum-demo/media-4.webp' },
+    { src: '/forum-demo/media-8.webp', isVideo: true },
 ];
 
 const REACTIONS = ['❤️', '🔥', '😂', '🎉', '👍', '👎', '🥁'];
@@ -321,10 +322,6 @@ export default function ForumDevicePreview() {
     return (
         <section className={styles.section} aria-labelledby="forum-preview-heading">
             <div className={styles.header}>
-                <span className={styles.eyebrow}>Inside Every Lynk-X Event</span>
-                <h2 id="forum-preview-heading" className={styles.title}>
-                    One Forum. <span className={styles.accent}>Every Screen.</span>
-                </h2>
                 <p className={styles.sub}>
                     Every ticket unlocks a live event forum for organizer updates, crowd chat and a shared media wall. It opens instantly in any phone or laptop browser with no app download.
                 </p>

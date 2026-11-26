@@ -635,6 +635,16 @@
     overflow: hidden;
 }
 
+.desktopForum .mediaGrid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.9em;
+    padding: 1.1em 1.4em;
+}
+
+.desktopForum .tile {
+    aspect-ratio: 1.35;
+}
+
 .tile {
     position: relative;
     aspect-ratio: 1.3;
