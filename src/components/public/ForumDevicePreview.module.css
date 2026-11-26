@@ -205,9 +205,8 @@
     position: relative;
     z-index: 5;
     margin-top: -90px;
-    opacity: var(--phone-p, 1);
     transform: translateY(calc((1 - var(--phone-p, 1)) * 56px));
-    will-change: transform, opacity;
+    will-change: transform;
 }
 
 @media (min-width: 1024px) {

@@ -4,7 +4,6 @@
     background: linear-gradient(180deg,
             var(--color-utility-primaryBackground) 0%,
             var(--color-interface-surface) 100%);
-    border-top: 1px solid var(--color-interface-outline);
     margin-top: auto;
     position: relative;
     overflow: hidden;

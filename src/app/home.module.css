@@ -21,7 +21,7 @@
     z-index: 1;
     max-width: 1100px;
     margin: 0 auto;
-    padding: 52px 20px 32px;
+    padding: 56px 20px 64px;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -71,7 +71,7 @@
     border-radius: var(--radius-full);
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.14);
-    margin-bottom: 14px;
+    margin-bottom: 28px;
 }
 
 .searchForm:focus-within {
@@ -107,23 +107,6 @@
 
 .searchBtn:hover {
     opacity: 0.9;
-}
-
-.heroHostLink {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.65);
-    transition: color 0.2s;
-}
-
-.heroHostLink:hover {
-    color: var(--color-brand-primary);
-}
-
-.midCtaBand {
-    position: relative;
-    z-index: 1;
-    padding: 8px 20px 16px;
 }
 
 .ctaRow {

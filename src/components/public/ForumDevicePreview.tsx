@@ -397,9 +397,9 @@ export default function ForumDevicePreview() {
             rafId = 0;
             const rect = stage.getBoundingClientRect();
             const vh = window.innerHeight || 800;
-            const raw = clamp01((vh * 0.92 - rect.top) / (vh * 0.68));
-            const laptopP = easeOutCubic(clamp01(raw / 0.62));
-            const phoneP = easeOutCubic(clamp01((raw - 0.32) / 0.68));
+            const raw = clamp01((vh * 0.72 - rect.top) / (vh * 0.58));
+            const laptopP = easeOutCubic(clamp01(raw / 0.58));
+            const phoneP = easeOutCubic(clamp01((raw - 0.35) / 0.65));
 
             stage.style.setProperty('--laptop-p', laptopP.toFixed(4));
             stage.style.setProperty('--phone-p', phoneP.toFixed(4));
