@@ -21,7 +21,7 @@ const organizerFaqs: FaqItem[] = [
         answer: "Creating an account, publishing event pages and setting up ticket tiers is completely free. We charge a simple, transparent fee only when paid tickets are sold. The event forum is never charged for either free or paid events and comes included automatically.",
     },
     {
-        question: "How does the built-in forum help my event?",
+        question: "How does the forum help my event?",
         answer: "Unlike traditional ticketing platforms where attendee contact ends at checkout, Lynk-X gives you a direct communication channel. You can send push announcements, answer attendee questions, run polls and host audio rooms to build anticipation and engage with them.",
     },
         {

@@ -26,7 +26,7 @@ const attendeeFaqs: FaqItem[] = [
     },
     {
         question: "Do I need to download an app from Google Play or Apple App Store?",
-        answer: "Not at all. Lynk-X works directly in your web browser on any phone, tablet or computer. You just open the link, sign in and your tickets and event communities are right there ready to go.",
+        answer: "Not at all. The forum app works directly in your web browser on any phone, tablet or computer. You just open the link, sign in and your tickets and event communities are right there ready to go.",
     },
 ];
 
