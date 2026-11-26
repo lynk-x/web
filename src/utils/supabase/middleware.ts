@@ -2,6 +2,17 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+    const { pathname } = request.nextUrl
+    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile', '/account', '/ads']
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+    const hasAuthCookie = request.cookies.getAll().some(cookie => cookie.name.startsWith('sb-'))
+
+    // Fast-path anonymous requests on public pages (including crawlers) so we
+    // skip creating an SSR Supabase client and calling getUser() on every hit.
+    if (!isProtectedRoute && !hasAuthCookie) {
+        return NextResponse.next({ request })
+    }
+
     let supabaseResponse = NextResponse.next({ request })
 
     const supabase = createServerClient(
@@ -26,12 +37,7 @@ export async function updateSession(request: NextRequest) {
     // issues with users being randomly logged out.
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { pathname } = request.nextUrl
-
     // ── Protect authenticated routes ───────────────────────────────────────
-    const protectedRoutes = ['/dashboard', '/onboarding', '/setup-profile', '/account', '/ads']
-    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
-
     if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'

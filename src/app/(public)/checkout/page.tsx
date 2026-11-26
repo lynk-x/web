@@ -5,7 +5,7 @@ import { Metadata } from 'next';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Secure Checkout | Lynk-X',
+  title: 'Secure Checkout',
   description: 'Complete your ticket purchase securely on Lynk-X.',
   robots: { index: false, follow: false },
 };

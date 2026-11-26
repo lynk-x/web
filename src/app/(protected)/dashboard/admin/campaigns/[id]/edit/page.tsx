@@ -24,7 +24,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
 
     const [campaign, setCampaign] = useState<CampaignData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [, setIsSubmitting] = useState(false);
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
@@ -97,10 +97,11 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                 target_countries: regions.map(r => r.country_code),
                 target_tags: tagNames,
                 creatives: assets.map(a => {
-                    const resolvedMediaUrl = (a as any).media_url || a.url || '';
+                    const assetWithMeta = a as typeof a & { media_url?: string; destination_url?: string };
+                    const resolvedMediaUrl = assetWithMeta.media_url || a.url || '';
                     return {
                         headline: a.call_to_action || '',
-                        destination_url: (a as any).destination_url || campaignData.destination_url || '',
+                        destination_url: assetWithMeta.destination_url || campaignData.destination_url || '',
                         media_url: resolvedMediaUrl,
                         imageUrl: resolvedMediaUrl,
                         preview: resolvedMediaUrl,
@@ -108,7 +109,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
                     };
                 }),
                 adHeadline: assets.find(a => a.is_primary)?.call_to_action || '',
-                adImageUrl: (assets.find(a => a.is_primary) as any)?.media_url || assets.find(a => a.is_primary)?.url || '',
+                adImageUrl: (assets.find(a => a.is_primary) as (typeof assets[number] & { media_url?: string }) | undefined)?.media_url || assets.find(a => a.is_primary)?.url || '',
                 account_id: campaignData.account_id
             });
             setIsLoading(false);
@@ -117,7 +118,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
         fetchCampaign();
     }, [id, supabase, createdAt]);
 
-    const handleAdminSubmit = async (formData: CampaignData, isEditing: boolean) => {
+    const handleAdminSubmit = async (formData: CampaignData) => {
         setIsSubmitting(true);
         showToast('Saving campaign changes...', 'info');
         try {
@@ -196,7 +197,7 @@ export default function AdminEditCampaignPage({ params }: { params: Promise<{ id
             if (error) throw error;
 
             // Generate and update campaign embedding client-side
-            const campaignId = (data as any)?.campaign_id;
+            const campaignId = (data as { campaign_id?: string } | null)?.campaign_id;
             if (campaignId) {
                 try {
                     const vector = await generateCampaignEmbedding(

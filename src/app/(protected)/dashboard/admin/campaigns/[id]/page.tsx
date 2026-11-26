@@ -67,7 +67,23 @@ export default function AdminCampaignDetailPage() {
                 const { data: rawData, error } = await query.single();
 
                 if (error) throw error;
-                const data = rawData as any;
+                const data = rawData as {
+                    id: string;
+                    created_at: string;
+                    reference: string;
+                    title: string;
+                    account_id: string;
+                    type: string;
+                    total_budget: string;
+                    spent_amount?: string | null;
+                    currency?: string | null;
+                    status: string;
+                    start_at: string;
+                    end_at: string;
+                    description?: string | null;
+                    destination_url?: string | null;
+                    target_event_id?: string | null;
+                };
 
                 // Fetch account display name from api.v1_accounts
                 const { data: accountData } = await supabase
@@ -123,13 +139,13 @@ export default function AdminCampaignDetailPage() {
                     campaignRef: data.reference,
                     name: data.title,
                     client: accountData?.display_name || 'Unknown Client',
-                    adType: data.type,
+                    adType: data.type as 'banner' | 'interstitial' | 'interstitial_video',
                     budget: parseFloat(data.total_budget),
-                    spend: parseFloat(data.spent_amount) || parseFloat(perf.total_spend) || 0,
+                    spend: parseFloat(data.spent_amount || '0') || parseFloat(perf.total_spend) || 0,
                     currency: data.currency || 'USD',
                     impressions: parseInt(perf.total_impressions) || 0,
                     clicks: parseInt(perf.total_clicks) || 0,
-                    status: data.status,
+                    status: data.status as Campaign['status'],
                     startDate: new Date(data.start_at).toLocaleDateString(),
                     endDate: new Date(data.end_at).toLocaleDateString(),
                     description: data.description || '',
@@ -137,7 +153,7 @@ export default function AdminCampaignDetailPage() {
                     targetEventId: data.target_event_id || undefined,
                     targetCountries: regionsData?.map(r => r.country_code) || [],
                     targetTags: tagNames,
-                    mediaUrl: (primaryMedia as any)?.media_url || primaryMedia?.url || '',
+                    mediaUrl: (primaryMedia as { media_url?: string; url?: string } | undefined)?.media_url || primaryMedia?.url || '',
                     mediaType: primaryMedia?.media_type || '',
                     callToAction: primaryMedia?.call_to_action || '',
                 });
@@ -150,7 +166,7 @@ export default function AdminCampaignDetailPage() {
         };
 
         if (id) fetchCampaign();
-    }, [id, supabase, showToast, router]);
+    }, [id, createdAt, supabase, showToast, router]);
 
     const handleStatusChange = async (campaignId: string, newStatus: string) => {
         try {

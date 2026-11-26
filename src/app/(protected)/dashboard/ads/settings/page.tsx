@@ -22,7 +22,6 @@ import WalletManager from '@/components/features/finance/WalletManager';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
-import Textarea from '@/components/shared/Textarea';
 import type { AccountWallet } from '@/types/organize';
 import Spinner from '@/components/shared/Spinner';
 import ProductTour from '@/components/dashboard/ProductTour';

@@ -30,12 +30,12 @@ import ForumTable from '@/components/admin/forums/ForumTable';
 import type { ForumThread } from '@/types/admin';
 import Modal from '@/components/shared/Modal';
 import PayoutTable, { Payout } from '@/components/admin/finance/PayoutTable';
-import { formatRelativeTime, formatCurrency } from '@/utils/format';
+import { formatCurrency } from '@/utils/format';
 import Badge from '@/components/shared/Badge';
 import Button from '@/components/shared/Button';
 
 export default function AdminEventsPage() {
-    const supabase = useMemo(() => createClient().schema('api' as any), []);
+    const supabase = useMemo(() => createClient().schema('api'), []);
     const publicSupabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
@@ -54,12 +54,12 @@ export default function AdminEventsPage() {
     const [endDate, setEndDate] = useState('');
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
     const [selectedForumIds, setSelectedForumIds] = useState<Set<string>>(new Set());
-    const [summary, setSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<{ total?: number; total_30d?: number; published?: number; active_30d?: number; pending?: number; flagged?: number; total_payouts?: number; pending_payouts?: number } | null>(null);
 
     // Payouts State
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [selectedPayoutIds, setSelectedPayoutIds] = useState<Set<string>>(new Set());
-    const [isPayoutRejectModalOpen, setIsPayoutRejectModalOpen] = useState(false);
+    const [, setIsPayoutRejectModalOpen] = useState(false);
     const [pendingRejectPayout, setPendingRejectPayout] = useState<Payout | null>(null);
     const [selectedPayoutForReview, setSelectedPayoutForReview] = useState<Payout | null>(null);
     const [isPayoutReviewModalOpen, setIsPayoutReviewModalOpen] = useState(false);
@@ -96,7 +96,7 @@ export default function AdminEventsPage() {
     const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
     const resolvedPayoutCountryFilter = useResolvedCountryFilter(activeAccount, payoutCountryFilter);
 
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(
         itemsPerPage,
         [debouncedSearch, statusFilter, forumStatusFilter, payoutStatusFilter, activeTab, startDate, endDate, resolvedPayoutCountryFilter, itemsPerPage]
     );
@@ -126,7 +126,23 @@ export default function AdminEventsPage() {
             const total = data?.[0]?.total_count || 0;
             setTotalCount(total);
 
-            setPayouts((data || []).map((p: any) => ({
+            setPayouts((data || []).map((p: {
+                id: string;
+                recipient_name: string;
+                amount: number;
+                currency: string;
+                status: Payout['status'];
+                created_at: string;
+                processed_at?: string | null;
+                reference: string;
+                wallet_reference?: string | null;
+                kyc_tier?: number | null;
+                is_verified?: boolean | null;
+                reporting_amount?: number | null;
+                reporting_currency?: string | null;
+                event_title?: string | null;
+                event_reference?: string | null;
+            }) => ({
                 id: p.id,
                 recipient: p.recipient_name,
                 amount: p.amount,
@@ -166,7 +182,14 @@ export default function AdminEventsPage() {
 
                 setTotalCount(data?.[0]?.total_count || 0);
 
-                const mappedDeleted: Event[] = (data || []).map((e: any) => ({
+                const mappedDeleted: Event[] = (data || []).map((e: {
+                    id: string;
+                    event_title: string;
+                    account_name?: string | null;
+                    deleted_at: string;
+                    reference: string;
+                    created_at: string;
+                }) => ({
                     id: e.id,
                     title: e.event_title,
                     organizer: e.account_name || 'Unknown',
@@ -200,7 +223,33 @@ export default function AdminEventsPage() {
 
             setTotalCount(data?.[0]?.total_count || 0);
 
-            const mappedEvents: Event[] = (data || []).map((e: any) => ({
+            type AdminEventRpcRow = {
+                id: string;
+                event_title: string;
+                account_name?: string | null;
+                starts_at: string;
+                ends_at?: string | null;
+                timezone?: string | null;
+                location_name?: string | null;
+                is_private?: boolean;
+                status: Event['status'];
+                attendee_count?: number;
+                capacity?: number;
+                revenue?: number | string | null;
+                reference: string;
+                thumbnail?: string | null;
+                reports_count?: number;
+                forum_id?: string | null;
+                forum_reference?: string | null;
+                created_at: string;
+                message_count?: number;
+                media_count?: number;
+                channels_count?: number;
+                escalated_reports_count?: number;
+                forum_status?: string | null;
+            };
+            const rows = (data || []) as AdminEventRpcRow[];
+            const mappedEvents: Event[] = rows.map((e) => ({
                 id: e.id,
                 title: e.event_title,
                 organizer: e.account_name || 'Unknown',
@@ -208,7 +257,7 @@ export default function AdminEventsPage() {
                 endDate: e.ends_at ? formatDate(e.ends_at) : undefined,
                 time: formatTime(e.starts_at),
                 endTime: e.ends_at ? formatTime(e.ends_at) : undefined,
-                timezone: e.timezone,
+                timezone: e.timezone ?? undefined,
                 location: e.location_name || (e.is_private ? 'Private' : 'TBA'),
                 status: e.status,
                 attendees: e.attendee_count || 0,
@@ -216,17 +265,17 @@ export default function AdminEventsPage() {
                 revenue: Number(e.revenue) || 0,
                 eventReference: e.reference,
                 isPrivate: e.is_private,
-                thumbnailUrl: e.thumbnail,
+                thumbnailUrl: e.thumbnail ?? undefined,
                 reportsCount: e.reports_count || 0,
-                forum_id: e.forum_id,
-                forumReference: e.forum_reference,
+                forum_id: e.forum_id ?? undefined,
+                forumReference: e.forum_reference ?? undefined,
                 createdAt: e.created_at
             }));
 
-            const mappedThreads: ForumThread[] = (data || [])
-                .filter((e: any) => !!e.forum_id)
-                .map((e: any) => ({
-                    id: e.forum_id,
+            const mappedThreads: ForumThread[] = rows
+                .filter((e) => Boolean(e.forum_id))
+                .map((e) => ({
+                    id: e.forum_id as string,
                     reference: e.reference,
                     title: `${e.event_title} Forum`,
                     eventName: e.event_title,
@@ -236,7 +285,7 @@ export default function AdminEventsPage() {
                     reportsCount: Number(e.reports_count || 0),
                     escalatedCount: Number(e.escalated_reports_count || 0),
                     oldestReportAt: undefined, // Would need joining in RPC for exact date
-                    status: (e.forum_status || 'open') as any,
+                    status: (e.forum_status || 'open') as ForumThread['status'],
                     createdAt: e.starts_at // Approximation
                 }));
 
@@ -347,40 +396,6 @@ export default function AdminEventsPage() {
         }
     };
 
-    const handleRejectPayout = async (reason: string) => {
-        const isBulk = !pendingRejectPayout;
-        const count = isBulk ? selectedPayoutIds.size : 1;
-        
-        showToast(`Rejecting ${count} payout(s)...`, 'info');
-        try {
-            if (isBulk) {
-                const selectedPayoutsList = payouts.filter(p => selectedPayoutIds.has(p.id));
-                const { error } = await supabase.schema('api').rpc('bulk_reject_payouts', {
-                    p_payout_ids: Array.from(selectedPayoutIds),
-                    p_created_at_list: selectedPayoutsList.map(p => p.createdAt),
-                    p_reason: reason
-                });
-                if (error) throw error;
-                setSelectedPayoutIds(new Set());
-            } else if (pendingRejectPayout) {
-                const { error } = await supabase.schema('api').rpc('reject_payout', {
-                    p_payout_id: pendingRejectPayout.id,
-                    p_created_at: pendingRejectPayout.createdAt,
-                    p_reason: reason
-                });
-                if (error) throw error;
-            }
-
-            showToast(`${count > 1 ? 'Payouts' : 'Payout'} rejected and funds returned to escrow.`, 'success');
-            setIsPayoutRejectModalOpen(false);
-            setPendingRejectPayout(null);
-            fetchPayouts();
-            fetchDashboardSummary();
-        } catch (err: unknown) {
-            showToast(getErrorMessage(err), 'error');
-        }
-    };
-
     // --- Global Actions ---
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
@@ -464,7 +479,7 @@ export default function AdminEventsPage() {
             showToast(`Successfully updated ${selectedForumIds.size} forums.`, 'success');
             fetchEvents();
             setSelectedForumIds(new Set());
-        } catch (err) {
+        } catch {
             showToast('Failed to perform bulk forum update.', 'error');
         }
     };

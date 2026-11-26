@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import SoftwareAppJsonLd from '@/components/public/SoftwareAppJsonLd';
 
 export const metadata: Metadata = {
-  title: 'For Organizers | Lynk-X',
+  title: 'For Organizers — Event Ticketing & Private Forums',
   description: 'Create, promote and manage your events with Lynk-X (Lynk) — ticketing, payouts, attendee management and event forums in one dashboard.',
   alternates: {
     canonical: '/for/organizers',
@@ -33,6 +34,14 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Metadata layout shell for the organizers marketing landing page.
+ */
 export default function OrganizersLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <SoftwareAppJsonLd />
+      {children}
+    </>
+  );
 }

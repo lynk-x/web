@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import styles from './FaqSection.module.css';
 
 export interface FaqItem {
@@ -16,6 +15,11 @@ interface FaqSectionProps {
     items: FaqItem[];
 }
 
+/**
+ * Renders an accessible FAQ accordion paired with matching `FAQPage` JSON-LD.
+ * Answers stay mounted in SSR HTML and expand via CSS grid-row transitions so
+ * structured data matches visible/DOM page content.
+ */
 export default function FaqSection({
     badge,
     title = 'Frequently Asked Questions',
@@ -28,7 +32,6 @@ export default function FaqSection({
         setOpenIndex((prev) => (prev === index ? null : index));
     };
 
-    // JSON-LD structured data for Google FAQPage rich snippets
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
@@ -87,37 +90,19 @@ export default function FaqSection({
                                 </svg>
                             </button>
 
-                            <AnimatePresence initial={false}>
-                                {isOpen && (
-                                    <motion.div
-                                        id={`faq-answer-${index}`}
-                                        role="region"
-                                        aria-labelledby={`faq-question-${index}`}
-                                        className={styles.answerWrapper}
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{
-                                            height: 'auto',
-                                            opacity: 1,
-                                            transition: {
-                                                height: { duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] },
-                                                opacity: { duration: 0.25, delay: 0.05 },
-                                            },
-                                        }}
-                                        exit={{
-                                            height: 0,
-                                            opacity: 0,
-                                            transition: {
-                                                height: { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] },
-                                                opacity: { duration: 0.15 },
-                                            },
-                                        }}
-                                    >
-                                        <div className={styles.answerContent}>
-                                            {item.answer}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                            <div
+                                id={`faq-answer-${index}`}
+                                role="region"
+                                aria-labelledby={`faq-question-${index}`}
+                                aria-hidden={!isOpen}
+                                className={`${styles.answerWrapper} ${isOpen ? styles.answerWrapperOpen : ''}`}
+                            >
+                                <div className={styles.answerInner}>
+                                    <div className={styles.answerContent}>
+                                        {item.answer}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     );
                 })}

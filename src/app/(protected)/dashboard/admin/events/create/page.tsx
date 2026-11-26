@@ -129,7 +129,7 @@ export default function AdminCreateEventPage() {
                 if (tagUpsertError) throw tagUpsertError;
 
                 if (resolvedTags && Array.isArray(resolvedTags)) {
-                    const eventTagsToInsert = resolvedTags.map((tag: any) => ({
+                    const eventTagsToInsert = (resolvedTags as Array<{ id: string }>).map((tag) => ({
                         event_id: newEvent.id,
                         event_created_at: newEvent.created_at,
                         tag_id: tag.id

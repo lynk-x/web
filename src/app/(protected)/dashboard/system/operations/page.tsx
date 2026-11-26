@@ -7,8 +7,6 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import styles from '../admin/audit-logs/page.module.css';
 import adminStyles from '../page.module.css';
 import AuditTable, { AuditLog } from '@/components/system/audit/AuditTable';
 import TableToolbar from '@/components/shared/TableToolbar';
@@ -26,12 +24,11 @@ import { usePagination } from '@/hooks/usePagination';
 
 function JobsOperationsContent() {
     const { showToast } = useToast();
-    const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [actionTypes, setActionTypes] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [, setIsLoading] = useState(true);
     const [isStatsLoading, setIsStatsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [actionFilter, setActionFilter] = useState('all');
@@ -39,9 +36,18 @@ function JobsOperationsContent() {
     const [activeTab, handleTabChange] = useUrlTab('tab', 'audit', { mode: 'push' });
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [stats, setStats] = useState<any>(null);
+    const [stats, setStats] = useState<{
+        total_actions?: number;
+        active_admins?: number;
+        critical_events?: number;
+        top_action?: string;
+        total_logs_24h?: number;
+        unique_actors_24h?: number;
+        critical_events_24h?: number;
+        failed_jobs?: number;
+    } | null>(null);
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(
         itemsPerPage,
         [searchTerm, actionFilter, startDate, endDate, itemsPerPage]
     );
@@ -61,8 +67,16 @@ function JobsOperationsContent() {
 
             if (error) throw error;
 
-            const logsData = data.logs || [];
-            setLogs(logsData.map((l: any) => ({
+            const logsData = (data.logs || []) as Array<{
+                id: string;
+                action: string;
+                actor?: { full_name?: string; user_name?: string; email?: string } | null;
+                target_id?: string | null;
+                target_type?: string | null;
+                created_at: string;
+                details?: { old_value?: unknown; new_value?: unknown } | null;
+            }>;
+            setLogs(logsData.map((l) => ({
                 id: l.id,
                 action: l.action,
                 actor: {
@@ -101,7 +115,7 @@ function JobsOperationsContent() {
             const { data, error } = await supabase.schema('api').rpc('get_admin_audit_stats');
             if (error) throw error;
             setStats(data);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to fetch audit stats', err);
         } finally {
             setIsStatsLoading(false);
@@ -135,30 +149,30 @@ function JobsOperationsContent() {
             <div className={adminStyles.statsGrid}>
                 <StatCard 
                     label="Actions (24h)" 
-                    value={stats?.total_logs_24h} 
+                    value={stats?.total_logs_24h ?? null} 
                     change="System events"
                     trend="neutral"
                     isLoading={isStatsLoading}
                 />
                 <StatCard 
                     label="Unique Actors" 
-                    value={stats?.unique_actors_24h} 
+                    value={stats?.unique_actors_24h ?? null} 
                     change="Active administrators"
                     trend="neutral"
                     isLoading={isStatsLoading}
                 />
                 <StatCard 
                     label="Critical Events" 
-                    value={stats?.critical_events_24h} 
+                    value={stats?.critical_events_24h ?? null} 
                     change="Deletions & config"
-                    trend={stats?.critical_events_24h > 10 ? "negative" : "positive"}
+                    trend={(stats?.critical_events_24h ?? 0) > 10 ? "negative" : "positive"}
                     isLoading={isStatsLoading}
                 />
                 <StatCard 
                     label="Failed Jobs" 
-                    value={stats?.failed_jobs} 
+                    value={stats?.failed_jobs ?? null} 
                     change="Requires attention"
-                    trend={stats?.failed_jobs > 0 ? "negative" : "positive"}
+                    trend={(stats?.failed_jobs ?? 0) > 0 ? "negative" : "positive"}
                     isLoading={isStatsLoading}
                 />
             </div>

@@ -1,11 +1,18 @@
 import type { Metadata } from 'next';
-import { createClient } from '@/utils/supabase/server';
+import { Suspense } from 'react';
+import { createPublicClient } from '@/utils/supabase/public';
 import HomeLayout from "@/components/public/HomeLayout";
 import { Event } from "@/types";
 import HomeClient from "@/components/public/HomeClient";
+import SoftwareAppJsonLd from "@/components/public/SoftwareAppJsonLd";
+import { getEventImage } from "@/utils/eventImage";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Lynk-X — The Ultimate Event App',
+  title: {
+    absolute: 'Lynk-X — The Ultimate Event App',
+  },
   description: 'The ultimate event app — create events, buy tickets and join event forums.',
   alternates: {
     canonical: '/',
@@ -13,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Lynk-X — The Ultimate Event App',
     description: 'The ultimate event app — create events, buy tickets and join event forums.',
-    url: '/',
+    url: 'https://lynk-x.app',
     siteName: 'Lynk-X',
     locale: 'en_GB',
     images: [
@@ -37,8 +44,12 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Public event discovery homepage cached with 60-second ISR. Fetches upcoming
+ * public events, categories and tags via the cookie-free Supabase client.
+ */
 export default async function Home() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const [
     { data: rawEvents, error: eventsError },
@@ -80,8 +91,8 @@ export default async function Home() {
     end_datetime: event.ends_at,
     // Ensure media object has cover_image_url for component compatibility
     media: {
-      ...(event.media as any || {}),
-      cover_image_url: event.cover_image_url || (event.media as any)?.thumbnail || (event.media as any)?.cover_image_url
+      ...((event.media as Record<string, unknown>) || {}),
+      cover_image_url: getEventImage(event),
     }
   })) as Event[];
 
@@ -91,19 +102,40 @@ export default async function Home() {
   // Grid: All remaining events (exclude those already in the carousel)
   const allEvents = processedEvents.filter(e => !e.is_featured);
 
+  const itemListSchema = processedEvents.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Upcoming Events on Lynk-X',
+    itemListElement: processedEvents.slice(0, 20).map((event, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `https://lynk-x.app/event/${event.reference}`,
+      name: event.title,
+    })),
+  } : null;
+
   return (
     <HomeLayout
       categories={categories || []}
       tags={tags || []}
       categoryTags={categoryTags || []}
     >
-      <HomeClient
-        carouselEvents={carouselEvents}
-        allEvents={allEvents}
-        categories={categories || []}
-        tags={tags || []}
-        categoryTags={categoryTags || []}
-      />
+      <SoftwareAppJsonLd />
+      {itemListSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        />
+      )}
+      <Suspense fallback={null}>
+        <HomeClient
+          carouselEvents={carouselEvents}
+          allEvents={allEvents}
+          categories={categories || []}
+          tags={tags || []}
+          categoryTags={categoryTags || []}
+        />
+      </Suspense>
     </HomeLayout>
   );
 }

@@ -5,10 +5,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 
-import DataTable, { Column } from '@/components/shared/DataTable';
-import Badge, { BadgeVariant } from '@/components/shared/Badge';
 import TableToolbar from '@/components/shared/TableToolbar';
-import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
@@ -31,7 +28,7 @@ function SupportContent() {
 
     const [activeTab, handleTabChange] = useUrlTab('tab', 'tickets', { validValues: ['tickets', 'queue'] }) as [SupportTab, (value: SupportTab) => void];
     const [isLoading, setIsLoading] = useState(true);
-    const [summary, setSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<{ total_reports?: number; pending?: number; resolved_30d?: number; max_toxicity?: number; open_tickets?: number; pending_reviews?: number; avg_response?: string; resolved_today?: number; total_tickets?: number; open?: number; in_progress?: number; resolved?: number; pending_feedback?: number } | null>(null);
     const [showNewTicket, setShowNewTicket] = useState(false);
     const [newTicket, setNewTicket] = useState({ email: '', subject: '', message: '', priority: 'normal' });
     const [isCreating, setIsCreating] = useState(false);

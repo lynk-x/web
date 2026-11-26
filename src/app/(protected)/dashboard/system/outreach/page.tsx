@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import ContentTable, { ContentItem } from '@/components/admin/content/ContentTable';
-import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { LegalDocument, SystemBanner, BroadcastLog, Spotlight } from '@/types/admin';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
@@ -50,7 +49,7 @@ function CommunicationsContent() {
     // ─── Content State & Search ──────────────────────────────────────────
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [statusFilter] = useState('all');
     const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = useResponsivePageSize();
@@ -80,7 +79,14 @@ function CommunicationsContent() {
             ]);
 
             if (contentRes.data) {
-                setContents((contentRes.data.items || []).map((item: any) => ({
+                setContents((contentRes.data.items || []).map((item: {
+                    id: string;
+                    title: string;
+                    slug: string;
+                    type: ContentItem['type'];
+                    updated_at: string;
+                    status: ContentItem['status'];
+                }) => ({
                     id: item.id,
                     title: item.title,
                     slug: item.slug,
@@ -286,7 +292,7 @@ function CommunicationsContent() {
         },
         {
             header: 'Visual Type',
-            render: (banner) => <Badge label={banner.type.toUpperCase()} variant={banner.type as any} />,
+            render: (banner) => <Badge label={banner.type.toUpperCase()} variant={banner.type} />,
         },
         {
             header: 'Status',

@@ -62,7 +62,7 @@ export default function EventInsightsPage() {
             if (eventData) {
                 setEventTitle(eventData.title);
                 setCurrency(eventData.currency || 'KES');
-                const tiers = (eventData.ticket_tiers || []).map((t: any) => ({
+                const tiers = (eventData.ticket_tiers || []).map((t: { id: string; display_name: string; capacity?: number | null; tickets_sold?: number | null }) => ({
                     id: t.id,
                     display_name: t.display_name,
                     capacity: t.capacity || 0,
@@ -86,7 +86,7 @@ export default function EventInsightsPage() {
             if (analyticsErr) throw analyticsErr;
 
             if (analytics) {
-                const tierSlices: TierSlice[] = (analytics.tier_distribution || []).map((t: any) => ({
+                const tierSlices: TierSlice[] = (analytics.tier_distribution || []).map((t: { name: string; value: number }) => ({
                     name: t.name,
                     value: t.value,
                 }));
@@ -323,7 +323,7 @@ export default function EventInsightsPage() {
                                 />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: 'var(--color-interface-surface)', border: '1px solid var(--color-interface-outline)', borderRadius: '8px' }}
-                                    formatter={(value: any, name: any) => [
+                                    formatter={(value, name) => [
                                         name === 'cumulativeSold' ? `${formatNumber(Number(value))} tickets` : formatCurrency(Number(value), currency),
                                         name === 'cumulativeSold' ? 'Tickets Sold' : 'Gross Revenue'
                                     ]}

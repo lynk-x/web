@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import { Joyride, EventData, STATUS, Step } from 'react-joyride';
 
 interface ProductTourProps {
@@ -9,12 +9,13 @@ interface ProductTourProps {
     runOnMount?: boolean;
 }
 
+const emptySubscribe = () => () => {};
+
 const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount = true }) => {
     const [run, setRun] = useState(false);
-    const [mounted, setMounted] = useState(false);
+    const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
     useEffect(() => {
-        setMounted(true);
         if (!runOnMount) return;
 
         // Check if user has already seen this tour
@@ -22,8 +23,8 @@ const ProductTour: React.FC<ProductTourProps> = ({ storageKey, steps, runOnMount
         
         if (!hasSeen) {
             // Wait for the DOM to fully paint before starting the tour
-            let raf1: number, raf2: number;
-            raf1 = requestAnimationFrame(() => {
+            let raf2 = 0;
+            const raf1 = requestAnimationFrame(() => {
                 raf2 = requestAnimationFrame(() => setRun(true));
             });
             return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };

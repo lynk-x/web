@@ -7,7 +7,6 @@ import { createClient } from '@/utils/supabase/client';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useToast } from '@/components/ui/Toast';
 import { toUtcIso } from '@/utils/format';
-import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 
 import type { OrganizerEventFormData } from '@/types/organize';
 

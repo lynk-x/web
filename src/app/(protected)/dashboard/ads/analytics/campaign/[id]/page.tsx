@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { use, useState, useEffect, useMemo, useCallback } from 'react';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -19,7 +19,12 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
     const { showToast } = useToast();
 
     const [isLoading, setIsLoading] = useState(true);
-    const [performanceData, setPerformanceData] = useState<any[]>([]);
+    const [performanceData, setPerformanceData] = useState<Array<{
+        name: string;
+        impressions: number;
+        clicks: number;
+        sortKey: number;
+    }>>([]);
     const [campaignTitle, setCampaignTitle] = useState('Campaign');
 
     const fetchAnalytics = useCallback(async () => {
@@ -52,8 +57,12 @@ export default function CampaignAnalyticsPage({ params }: { params: Promise<{ id
 
             if (error) throw error;
 
-            const results = Array.isArray(data) ? data : [];
-            const formatted = results.map((r: any) => {
+            const results = (Array.isArray(data) ? data : []) as Array<{
+                day: string;
+                impressions?: number | string | null;
+                clicks?: number | string | null;
+            }>;
+            const formatted = results.map((r) => {
                 const date = new Date(r.day);
                 const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 return {

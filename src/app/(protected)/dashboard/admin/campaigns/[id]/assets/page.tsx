@@ -72,7 +72,7 @@ export default function CampaignAssetsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [campaignId, supabase, showToast]);
+    }, [campaignId, campaignCreatedAt, supabase, showToast]);
 
     useEffect(() => { fetchAssets(); }, [fetchAssets]);
 
@@ -168,7 +168,7 @@ export default function CampaignAssetsPage() {
                                     </div>
                                 ) : (
                                     <div className={styles.textPreview}>
-                                        <p>"{asset.call_to_action || asset.media_url || asset.url}"</p>
+                                        <p>&quot;{asset.call_to_action || asset.media_url || asset.url}&quot;</p>
                                     </div>
                                 )}
 

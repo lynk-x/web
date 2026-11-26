@@ -3,10 +3,11 @@
  * for search engines, generative AI answer engines and social media scrapers.
  *
  * Rules:
- *   1. Global fallback (*) - allows public crawling, protects private apps and APIs.
+ *   1. Global fallback (*) - allows public crawling and dynamic OG cards (/api/og/),
+ *      while protecting private apps, auth endpoints and internal APIs.
  *   2. AI & Search Crawlers - explicitly permits full public indexing of marketing,
- *      event detail pages and structured LLM context (/llms.txt, /llms-full.txt),
- *      while safeguarding dashboard, checkout, cart and onboarding workflows.
+ *      category discovery, event detail pages and structured LLM context,
+ *      while safeguarding dashboard, checkout, sponsorship invite and auth workflows.
  */
 
 import { MetadataRoute } from 'next';
@@ -14,32 +15,48 @@ import { MetadataRoute } from 'next';
 export default function robots(): MetadataRoute.Robots {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lynk-x.app';
 
-    // Disallowed private application and transaction routes
+    // Disallowed private application, auth and transaction routes
     const privateRoutes = [
         '/dashboard/',
+        '/ads',
+        '/ads/',
         '/api/',
         '/checkout/',
         '/cart/',
         '/onboarding/',
+        '/setup-profile/',
+        '/account/',
+        '/verify/',
         '/verify-success/',
         '/callback/',
         '/invite/',
+        '/sponsorships/',
+        '/login',
+        '/signup',
+        '/recover',
+        '/mfa-challenge',
     ];
 
     // Allowed public discovery and documentation routes for AI engines
     const publicDiscoveryRoutes = [
         '/',
+        '/events',
+        '/events/',
         '/for/',
         '/event/',
+        '/resources',
         '/resources/',
         '/contact',
         '/privacy',
         '/terms',
+        '/refund',
+        '/cookies',
+        '/api/og/',
         '/llms.txt',
         '/llms-full.txt',
     ];
 
-    // Targeted AI, search, social and archive crawlers
+    // Targeted AI, search, social and archive crawlers (valid RFC 9309 user-agent tokens)
     const aiAndSearchCrawlers = [
         // OpenAI & ChatGPT
         'GPTBot',
@@ -61,7 +78,6 @@ export default function robots(): MetadataRoute.Robots {
         'Google-CloudVertexBot',
 
         // Microsoft & Bing
-        'BingBot',
         'bingbot',
 
         // Apple
@@ -79,29 +95,24 @@ export default function robots(): MetadataRoute.Robots {
 
         // DuckDuckGo & Baidu
         'DuckAssistBot',
-        'Baidu',
         'Baiduspider',
 
         // ByteDance & TikTok
         'Bytespider',
-        'TikTok Spider',
         'TikTokSpider',
 
         // Cloudflare & Specialized Crawlers
-        'Cloudflare Crawler',
+        'Cloudflare-Crawler',
         'Cloudflare-Evergreen',
-        'Anchor Browser',
         'AnchorBrowser',
         'PetalBot',
         'ProRataInc',
         'Timpibot',
-        'Novellum AI Crawl',
         'Novellum',
 
         // Web Archives & Common Crawl
         'CCBot',
         'archive.org_bot',
-        'Arquivo Web Crawler',
         'Arquivo-Web-Crawler',
     ];
 
@@ -109,7 +120,7 @@ export default function robots(): MetadataRoute.Robots {
         rules: [
             {
                 userAgent: '*',
-                allow: '/',
+                allow: ['/', '/api/og/'],
                 disallow: privateRoutes,
             },
             {

@@ -1,21 +1,49 @@
 import HomeLayout from "@/components/public/HomeLayout";
-import { createClient } from '@/utils/supabase/server';
+import LynkXFooter from "@/components/public/LynkXFooter";
+import { createPublicClient } from '@/utils/supabase/public';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
-    title: 'Refund Policy | Lynk-X',
-    description: 'Understand the Lynk-X refund policy for ticket purchases, including eligibility windows, cancellation rules, and how to request a refund.',
+    title: 'Refund Policy',
+    description: 'Understand the Lynk-X refund policy for ticket purchases, including eligibility windows, cancellation rules and how to request a refund.',
+    alternates: {
+        canonical: '/refund',
+    },
     openGraph: {
         title: 'Refund Policy | Lynk-X',
         description: 'Refund policy for ticket purchases on Lynk-X.',
-        type: 'website',
+        url: 'https://lynk-x.app/refund',
+        siteName: 'Lynk-X',
         locale: 'en_GB',
+        images: [
+            {
+                url: '/og-image.png?v=2',
+                width: 1200,
+                height: 630,
+                alt: 'Lynk-X Refund Policy',
+                type: 'image/png',
+            },
+        ],
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Refund Policy | Lynk-X',
+        description: 'Refund policy for ticket purchases on Lynk-X.',
+        site: '@lynkxapp',
+        creator: '@lynkxapp',
+        images: ['/og-image.png?v=2'],
     },
 };
 
+/**
+ * Public Refund Policy page loaded from active legal documents via ISR.
+ */
 export default async function RefundPolicyPage() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data: doc } = await supabase
         .schema('api')
@@ -64,6 +92,7 @@ export default async function RefundPolicyPage() {
                     <RichTextRenderer content={content} />
                 </div>
             </div>
+            <LynkXFooter />
         </HomeLayout>
     );
 }

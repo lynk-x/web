@@ -4,7 +4,7 @@ import ContactForm from "@/components/public/ContactForm/ContactForm";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Contact Us | Lynk-X',
+    title: 'Contact Us',
     description: 'Have a question or need assistance? Reach out to the Lynk-X team and we will get back to you as soon as possible.',
     alternates: {
         canonical: '/contact',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
         locale: 'en_GB',
         images: [
             {
-                url: '/og-image.png',
+                url: '/og-image.png?v=2',
                 width: 1200,
                 height: 630,
                 alt: 'Contact Lynk-X Team',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
         description: 'Have a question or need assistance? Reach out to the Lynk-X team and we will get back to you as soon as possible.',
         site: '@lynkxapp',
         creator: '@lynkxapp',
-        images: ['/og-image.png'],
+        images: ['/og-image.png?v=2'],
     },
 };
 
@@ -60,7 +60,7 @@ export default function ContactPage() {
                     maxWidth: '600px',
                     margin: '0 auto 64px'
                 }}>
-                    Whether you're an organizer needing support or an attendee with a question, our team is here to help you make the most of Lynk-X.
+                    Whether you&apos;re an organizer needing support or an attendee with a question, our team is here to help you make the most of Lynk-X.
                 </p>
 
                 <div style={{ textAlign: 'left' }}>

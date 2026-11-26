@@ -9,7 +9,7 @@ import adminStyles from '@/components/dashboard/DashboardShared.module.css';
  * Renders the multi-step form to launch new campaigns and event sponsorships.
  */
 export default function CreateCampaignPage() {
-    const [isDirty, setIsDirty] = useState(false);
+    const [, setIsDirty] = useState(false);
 
     return (
         <div className={adminStyles.container}>

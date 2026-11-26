@@ -1,22 +1,49 @@
-import Link from 'next/link';
 import HomeLayout from "@/components/public/HomeLayout";
-import { createClient } from '@/utils/supabase/server';
+import LynkXFooter from "@/components/public/LynkXFooter";
+import { createPublicClient } from '@/utils/supabase/public';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
-    title: 'Privacy Policy | Lynk-X',
-    description: 'Learn how Lynk-X collects, uses, and protects your personal information when you use our event ticketing and social platform.',
+    title: 'Privacy Policy',
+    description: 'Learn how Lynk-X collects, uses and protects your personal information when you use our event ticketing and community platform.',
+    alternates: {
+        canonical: '/privacy',
+    },
     openGraph: {
         title: 'Privacy Policy | Lynk-X',
-        description: 'Learn how Lynk-X collects, uses, and protects your personal information.',
-        type: 'website',
+        description: 'Learn how Lynk-X collects, uses and protects your personal information.',
+        url: 'https://lynk-x.app/privacy',
+        siteName: 'Lynk-X',
         locale: 'en_GB',
+        images: [
+            {
+                url: '/og-image.png?v=2',
+                width: 1200,
+                height: 630,
+                alt: 'Lynk-X Privacy Policy',
+                type: 'image/png',
+            },
+        ],
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Privacy Policy | Lynk-X',
+        description: 'Learn how Lynk-X collects, uses and protects your personal information.',
+        site: '@lynkxapp',
+        creator: '@lynkxapp',
+        images: ['/og-image.png?v=2'],
     },
 };
 
+/**
+ * Public Privacy Policy page loaded from active legal documents via ISR.
+ */
 export default async function PrivacyPage() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data: doc } = await supabase
         .schema('api')
@@ -65,6 +92,7 @@ export default async function PrivacyPage() {
                     <RichTextRenderer content={content} />
                 </div>
             </div>
+            <LynkXFooter />
         </HomeLayout>
     );
 }

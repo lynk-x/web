@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import SearchBar from "./SearchBar";
 import HeroSection from "./HeroSection";
 import EventGrid from "./EventGrid";
@@ -9,32 +11,82 @@ import { Event } from '@/types';
 import LynkXFooter from "./LynkXFooter";
 import { useFilters } from '@/context/FilterContext';
 import { createClient } from '@/utils/supabase/client';
+import { slugifyCategory } from '@/utils/categories';
 
+interface CategoryItem {
+    id: string;
+    display_name: string;
+    name?: string;
+}
 
+interface TagItem {
+    id: string;
+    name: string;
+    type_id?: string | null;
+}
+
+interface CategoryTagItem {
+    category_id: string;
+    tag_id: string;
+}
+
+interface SearchEventRpcRow {
+    id: string;
+    title: string;
+    description: string;
+    start_datetime: string;
+    end_datetime: string;
+    timezone?: string;
+    location: Record<string, unknown>;
+    media: Record<string, unknown>;
+    category_name?: string;
+    account_id?: string;
+    currency?: string;
+    reference: string;
+}
 
 interface HomeClientProps {
     carouselEvents: Event[];
     allEvents: Event[];
-    categories?: any[];
-    tags?: any[];
-    categoryTags?: any[];
+    categories?: CategoryItem[];
+    tags?: TagItem[];
+    categoryTags?: CategoryTagItem[];
 }
 
+/**
+ * Interactive discovery shell for the homepage. Syncs `?q=` and `?page=` URL
+ * parameters with search/pagination state and renders crawlable category links
+ * above the paginated event grid.
+ */
 const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, categories, tags, categoryTags }) => {
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const searchParams = useSearchParams();
+    const urlQ = searchParams.get('q') ?? '';
+    const rawPage = Number(searchParams.get('page') || '1');
+    const parsedPage = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
+
     const [rpcEvents, setRpcEvents] = useState<Event[] | null>(null);
     const [isSearching, setIsSearching] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prevUrlQRef = useRef<string | null>(null);
     const supabase = React.useMemo(() => createClient(), []);
 
-    const { searchTerm, selectedCategories, selectedDates, selectedTags, userLocation } = useFilters();
+    const { searchTerm, setSearchTerm, selectedCategories, selectedDates, selectedTags, userLocation } = useFilters();
+
+    useEffect(() => {
+        if (prevUrlQRef.current !== urlQ) {
+            prevUrlQRef.current = urlQ;
+            if (urlQ) {
+                setSearchTerm(urlQ);
+            }
+        }
+    }, [urlQ, setSearchTerm]);
 
     const isRpcActive = searchTerm.trim() !== '' || selectedCategories.length > 0 || userLocation !== null;
     const hasActiveFilters = isRpcActive || selectedDates.length > 0 || selectedTags.length > 0;
 
     // Resolve category display name → UUID for the RPC
     const resolveCategoryId = (name: string): string | null =>
-        (categories ?? []).find((c: any) => c.display_name === name || c.name === name)?.id ?? null;
+        (categories ?? []).find((c) => c.display_name === name || c.name === name)?.id ?? null;
 
     useEffect(() => {
         if (!isRpcActive) {
@@ -53,7 +105,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                     ? resolveCategoryId(selectedCategories[0])
                     : null;
 
-                const params: Record<string, any> = { p_limit: 40 };
+                const params: Record<string, string | number> = { p_limit: 40 };
                 if (searchTerm.trim()) params.p_query = searchTerm.trim();
                 if (userLocation) {
                     params.p_lat = userLocation.lat;
@@ -65,7 +117,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 const { data, error } = await supabase.schema('api').rpc('search_events', params);
                 if (error) throw error;
 
-                let mapped: Event[] = (data ?? []).map((r: any) => ({
+                const mapped: Event[] = ((data ?? []) as SearchEventRpcRow[]).map((r) => ({
                     id: r.id,
                     title: r.title,
                     description: r.description,
@@ -79,10 +131,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                     currency: r.currency,
                     is_featured: false,
                     reference: r.reference,
-                    // distance_km available for future "X km away" badge
                 }));
-
-
 
                 // If multiple categories selected, client-filter the RPC results
                 const filtered = selectedCategories.length > 1
@@ -151,8 +200,6 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 );
             }
 
-
-
             return base.filter(event => {
                 if (selectedTags.length > 0) {
                     if (!event.tags || !selectedTags.some(tag => event.tags?.includes(tag))) return false;
@@ -175,8 +222,6 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
         <>
             <div className={styles.searchWrapper}>
                 <SearchBar
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
                     categories={categories}
                     tags={tags}
                     categoryTags={categoryTags}
@@ -187,8 +232,38 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 <HeroSection featuredEvents={finalCarouselEvents} />
             </div>
 
+            <section className={styles.discoveryHeader} aria-labelledby="home-discovery-heading">
+                <h1 id="home-discovery-heading" className={styles.discoveryTitle}>
+                    Discover Events &amp; Join the Community
+                </h1>
+                <p className={styles.discoverySubtitle}>
+                    Find upcoming concerts, tech meetups and local experiences — buy tickets and unlock every event forum.
+                </p>
+                <nav className={styles.categoryPillBar} aria-label="Event categories">
+                    <Link href="/events" className={styles.categoryPill}>
+                        All Events
+                    </Link>
+                    {(categories ?? []).map((cat) => (
+                        <Link
+                            key={cat.id}
+                            href={`/events/${slugifyCategory(cat.display_name)}`}
+                            className={styles.categoryPill}
+                        >
+                            {cat.display_name}
+                        </Link>
+                    ))}
+                </nav>
+            </section>
+
             <div className={styles.container}>
-                <EventGrid events={displayEvents} itemsPerPage={8} isLoading={isSearching} />
+                <EventGrid
+                    events={displayEvents}
+                    itemsPerPage={12}
+                    isLoading={isSearching}
+                    basePath="/"
+                    initialPage={parsedPage}
+                    useUrlPagination={!hasActiveFilters}
+                />
 
                 {!isSearching && displayEvents.length === 0 && (
                     <div style={{

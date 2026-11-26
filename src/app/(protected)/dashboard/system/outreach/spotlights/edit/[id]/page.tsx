@@ -67,7 +67,7 @@ export default function EditSpotlightPage() {
         if (id) fetchSpotlight();
     }, [id, supabase, router, showToast]);
 
-    const handleChange = (setter: any, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setIsDirty(true);
     };
@@ -150,7 +150,7 @@ export default function EditSpotlightPage() {
                                 <select
                                     className={adminStyles.select}
                                     value={target}
-                                    onChange={(e) => handleChange(setTarget, e.target.value as 'event' | 'url' | 'profile')}
+                                    onChange={(e) => handleChange(setTarget, e.target.value as 'all' | 'organizer_dashboard' | 'ads_dashboard' | 'discovery_page')}
                                 >
                                     <option value="all">Everywhere</option>
                                     <option value="organizer_dashboard">Organizer Dashboard</option>

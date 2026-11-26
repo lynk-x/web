@@ -29,7 +29,7 @@ export default function CreateBannerPage() {
     const [endsAt, setEndsAt] = useState('');
     const [actionUrl, setActionUrl] = useState('');
 
-    const handleChange = (setter: any, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setIsDirty(true);
     };
@@ -97,7 +97,7 @@ export default function CreateBannerPage() {
                                 <select
                                     className={adminStyles.select}
                                     value={type}
-                                    onChange={(e) => handleChange(setType, e.target.value)}
+                                    onChange={(e) => handleChange(setType, e.target.value as 'info' | 'warning' | 'error' | 'success')}
                                 >
                                     <option value="info">Information (Blue)</option>
                                     <option value="success">Success (Green)</option>
@@ -210,8 +210,8 @@ export default function CreateBannerPage() {
                         <h2 className={adminStyles.sectionTitle}>Deployment Logic</h2>
                         <ul style={{ paddingLeft: '20px', fontSize: '14px', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--color-utility-primaryText)' }}>
                             <li>Banners are global and visible to all users.</li>
-                            <li>Only one "info" banner is shown at a time (stack priority).</li>
-                            <li>Banners automatically expire after the "Ends At" date.</li>
+                            <li>Only one &quot;info&quot; banner is shown at a time (stack priority).</li>
+                            <li>Banners automatically expire after the &quot;Ends At&quot; date.</li>
                             <li>Scheduled banners will go live automatically.</li>
                         </ul>
                     </div>

@@ -50,11 +50,8 @@ function AccessContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // Default schema client for standard tables
-    const supabase = useMemo(() => createClient(), []);
-
     // Custom API schema client for IAM RPCs
-    const supabaseApi = useMemo(() => createClient().schema('api' as any), []);
+    const supabaseApi = useMemo(() => createClient().schema('api'), []);
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'accounts');
     const [searchTerm, setSearchTerm] = useState('');

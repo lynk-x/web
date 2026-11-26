@@ -30,7 +30,6 @@ export default function AdminDashboard() {
     const { activeAccount } = useOrganization();
     const router = useRouter();
 
-    const [isMounted, setIsMounted] = useState(false);
     const [isStatsLoading, setIsStatsLoading] = useState(true);
     const [isActivityLoading, setIsActivityLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -52,7 +51,7 @@ export default function AdminDashboard() {
 
             // Count organizers in the active country
             let orgQuery = supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'organizer');
@@ -63,7 +62,7 @@ export default function AdminDashboard() {
 
             // Count advertisers in the active country
             let advertiserQuery = supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'advertiser');
@@ -74,7 +73,7 @@ export default function AdminDashboard() {
 
             // Count attendees in the active country
             let attendeeQuery = supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_accounts')
                 .select('*', { count: 'exact', head: true })
                 .eq('type', 'attendee');
@@ -85,7 +84,7 @@ export default function AdminDashboard() {
 
             // Count local administration team members
             const { count: team } = await supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_account_memberships')
                 .select('*', { count: 'exact', head: true })
                 .eq('account_id', activeAccount.id);
@@ -113,7 +112,7 @@ export default function AdminDashboard() {
 
             // A. Fetch recent account signups in this country
             let accQuery = supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_accounts')
                 .select('id, name:display_name, type, created_at')
                 .order('created_at', { ascending: false })
@@ -176,7 +175,6 @@ export default function AdminDashboard() {
     }, [activeAccount, supabase, activeCountryCode]);
 
     useEffect(() => {
-        setIsMounted(true);
         if (activeAccount) {
             fetchStats();
             fetchActivityLog();

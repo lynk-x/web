@@ -41,7 +41,6 @@ export default function NotificationsPage() {
             }
         };
         init();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [supabase, fetchNotifications, activeAccount?.id]);
 
     // Idempotent (set-to-value / delete-by-id) — safe to retry on a transient failure.

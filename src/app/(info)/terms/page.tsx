@@ -1,22 +1,49 @@
-import Link from 'next/link';
 import HomeLayout from "@/components/public/HomeLayout";
-import { createClient } from '@/utils/supabase/server';
+import LynkXFooter from "@/components/public/LynkXFooter";
+import { createPublicClient } from '@/utils/supabase/public';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
-    title: 'Terms & Conditions | Lynk-X',
+    title: 'Terms & Conditions',
     description: 'Read the terms and conditions governing use of the Lynk-X event ticketing platform, including organizer obligations and attendee rights.',
+    alternates: {
+        canonical: '/terms',
+    },
     openGraph: {
         title: 'Terms & Conditions | Lynk-X',
         description: 'Terms and conditions for using the Lynk-X platform.',
-        type: 'website',
+        url: 'https://lynk-x.app/terms',
+        siteName: 'Lynk-X',
         locale: 'en_GB',
+        images: [
+            {
+                url: '/og-image.png?v=2',
+                width: 1200,
+                height: 630,
+                alt: 'Lynk-X Terms & Conditions',
+                type: 'image/png',
+            },
+        ],
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Terms & Conditions | Lynk-X',
+        description: 'Terms and conditions for using the Lynk-X platform.',
+        site: '@lynkxapp',
+        creator: '@lynkxapp',
+        images: ['/og-image.png?v=2'],
     },
 };
 
+/**
+ * Public Terms & Conditions page loaded from active legal documents via ISR.
+ */
 export default async function TermsPage() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data: doc } = await supabase
         .schema('api')
@@ -65,6 +92,7 @@ export default async function TermsPage() {
                     <RichTextRenderer content={content} />
                 </div>
             </div>
+            <LynkXFooter />
         </HomeLayout>
     );
 }

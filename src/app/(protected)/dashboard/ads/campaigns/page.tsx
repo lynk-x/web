@@ -28,13 +28,13 @@ export default function CampaignsPage() {
     const supabase = useMemo(() => createClient(), []);
 
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const itemsPerPage = useResponsivePageSize();
 
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     const fetchCampaigns = useCallback(async () => {
         if (!activeAccount) return;

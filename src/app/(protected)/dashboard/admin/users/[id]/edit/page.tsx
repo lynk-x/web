@@ -40,10 +40,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     name: data.full_name,
                     email: data.email,
                     phone: data.phone_number ?? '',
-                    role: data.role as any,
-                    status: data.status as any,
+                    role: data.role as UserFormData['role'],
+                    status: data.status as UserFormData['status'],
                     countryCode: data.country_code,
-                    kycTier: data.kyc_tier as any,
+                    kycTier: data.kyc_tier as UserFormData['kycTier'],
                     bio: data.bio
                 });
             } catch (err: unknown) {

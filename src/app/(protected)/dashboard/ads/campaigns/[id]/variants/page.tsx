@@ -2,6 +2,7 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -187,9 +188,9 @@ export default function CampaignVariantsPage() {
                                                 <div style={{ width: '56px', height: '56px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
                                                     {v.media_type === 'video' ? (
                                                         <video src={v.media_url || v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
-                                                    ) : (
-                                                        <img src={v.media_url || v.url} alt="Creative variant" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    )}
+                                                    ) : (v.media_url || v.url) ? (
+                                                        <Image src={v.media_url || v.url || ''} alt="Creative variant" width={56} height={56} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    ) : null}
                                                 </div>
                                             </td>
                                             <td style={{ ...tdStyle, opacity: 0.85 }}>

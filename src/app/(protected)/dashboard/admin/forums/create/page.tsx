@@ -7,7 +7,6 @@ import styles from './CreateForum.module.css';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import Link from 'next/link';
 
 import PageHeader from '@/components/dashboard/PageHeader';
 
@@ -55,10 +54,10 @@ export default function CreateForumPage() {
                 if (eventsRes.error) throw eventsRes.error;
                 if (forumsRes.error) throw forumsRes.error;
 
-                const withForum = new Set((forumsRes.data || []).map((f: any) => f.event_id));
-                const candidates = (eventsRes.data || []).filter((e: any) => !withForum.has(e.id));
+                const withForum = new Set((forumsRes.data || []).map((f: { event_id: string }) => f.event_id));
+                const candidates = ((eventsRes.data || []) as Array<{ id: string; title: string; account_id: string }>).filter((e) => !withForum.has(e.id));
 
-                const accountIds = [...new Set(candidates.map((e: any) => e.account_id))];
+                const accountIds = [...new Set(candidates.map((e) => e.account_id))];
                 const organizerById = new Map<string, string>();
                 if (accountIds.length > 0) {
                     const { data: accounts } = await supabase
@@ -66,10 +65,10 @@ export default function CreateForumPage() {
                         .from('v1_accounts')
                         .select('id, display_name')
                         .in('id', accountIds);
-                    (accounts || []).forEach((a: any) => organizerById.set(a.id, a.display_name));
+                    ((accounts || []) as Array<{ id: string; display_name: string }>).forEach((a) => organizerById.set(a.id, a.display_name));
                 }
 
-                setEvents(candidates.map((e: any) => ({
+                setEvents(candidates.map((e) => ({
                     id: e.id,
                     title: e.title,
                     organizer: organizerById.get(e.account_id) || 'Unknown Organizer'

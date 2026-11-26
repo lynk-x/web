@@ -1,38 +1,35 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './EventCard.module.css';
 
 interface EventCardProps {
-    /** The unique identifier of the event. */
     id: string | number;
-    /** The human-readable reference of the event. */
     reference: string;
-    /** The name of the event. */
     name: string;
-    /** The date of the event. */
     date: string;
-    /** The category of the event. */
     category: string;
-    /** Whether the event card is currently active or selected. */
     isActive?: boolean;
-    /** The price of the event (formatted string). */
     price?: string;
-    /** The URL of the event cover image. */
     image?: string;
 }
 
 /**
- * EventCard component representing a single event in a grid or list.
- * Displays the event's image, details, and price.
- *
- * @param {EventCardProps} props - Component properties.
+ * Renders a single event summary card for public discovery grids and related
+ * event recommendations, using Next.js Image optimization and Cloudflare resizing.
  */
-const EventCard: React.FC<EventCardProps> = ({ id, reference, name, date, category, isActive, price, image }) => {
+const EventCard: React.FC<EventCardProps> = ({ reference, name, date, category, isActive, image }) => {
     return (
         <Link href={`/event/${reference}`} className={`event-card ${styles.card} ${isActive ? styles.active : ''}`} data-title={reference}>
             <div className={styles.imagePlaceholder}>
                 {image ? (
-                    <img src={image} alt={name} className={styles.coverImage} />
+                    <Image
+                        src={image}
+                        alt={name}
+                        fill
+                        sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 25vw"
+                        className={styles.coverImage}
+                    />
                 ) : (
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.placeholderIcon}>
                         <path d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16M14 14L15.586 12.414C15.9611 12.0391 16.4697 11.8284 17 11.8284C17.5303 11.8284 18.0389 12.0391 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

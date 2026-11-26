@@ -50,23 +50,18 @@ export default function OrganizersLandingPage() {
             <div className={styles.landingPage}>
                 <div className={styles.backgroundGlow} />
                 
-                <motion.section 
-                    className={styles.hero}
-                    initial="initial"
-                    animate="animate"
-                    variants={staggerContainer}
-                >
-                    <motion.div className={styles.badge} variants={fadeInUp}>For Organizers</motion.div>
-                    <motion.h1 className={styles.title} variants={fadeInUp}>
+                <section className={styles.hero}>
+                    <div className={styles.badge}>For Organizers</div>
+                    <h1 className={styles.title}>
                         <SlotCounterText text="Dominate the Event Lifecycle" delay={0.5} />
-                    </motion.h1>
-                    <motion.p className={styles.subtitle} variants={fadeInUp}>
+                    </h1>
+                    <p className={styles.subtitle}>
                         The all-in-one platform designed for organizers who care about meaningful engagement. Give your event a forum alongside your ticketing.
-                    </motion.p>
-                    <motion.div className={styles.ctaBox} variants={fadeInUp}>
+                    </p>
+                    <div className={styles.ctaBox}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Start Hosting Free</Link>
-                    </motion.div>
-                </motion.section>
+                    </div>
+                </section>
 
                 <section id="features" className={styles.section}>
                     <motion.h2 

@@ -58,6 +58,7 @@ Lynk-X (also known as Lynk-x.app) is an event ticketing, engagement and communit
 
 ## Canonical Web Endpoints
 - **Homepage**: https://lynk-x.app/
+- **All Upcoming Events Directory**: https://lynk-x.app/events
 - **Organizer Hub**: https://lynk-x.app/for/organizers
 - **Attendee Hub**: https://lynk-x.app/for/attendees
 - **Sponsor Hub**: https://lynk-x.app/for/ad-sponsors

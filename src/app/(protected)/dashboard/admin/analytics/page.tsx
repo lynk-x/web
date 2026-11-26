@@ -3,7 +3,6 @@
 import { useState, Suspense } from 'react';
 import styles from './page.module.css';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
-import StatCard from '@/components/dashboard/StatCard';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
@@ -179,7 +178,20 @@ const formatXAxisDate = (tickItem: string) => {
     }
 };
 
-const renderTooltipContent = (props: any) => {
+interface TooltipPayloadEntry {
+    name?: string | number;
+    value?: string | number;
+    color?: string;
+    fill?: string;
+}
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: readonly TooltipPayloadEntry[];
+    label?: string | number;
+}
+
+const renderTooltipContent = (props: CustomTooltipProps) => {
     const { active, payload, label } = props;
     if (active && payload && payload.length) {
         return (
@@ -193,12 +205,12 @@ const renderTooltipContent = (props: any) => {
                 backdropFilter: 'blur(8px)'
             }}>
                 <p style={{ margin: 0, fontWeight: 'bold', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>
-                    {label ? formatXAxisDate(label) : ''}
+                    {label ? formatXAxisDate(String(label)) : ''}
                 </p>
-                {payload.map((pld: any, index: number) => (
+                {payload.map((pld, index: number) => (
                     <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: pld.color || pld.fill }} />
-                        <span>{pld.name}: {pld.value.toLocaleString()}</span>
+                        <span>{pld.name}: {Number(pld.value ?? 0).toLocaleString()}</span>
                     </div>
                 ))}
             </div>
@@ -223,7 +235,7 @@ function DemographicTab({ countryFilter }: { countryFilter: string }) {
                     p_params: { country_code: countryFilter }
                 });
                 if (error) throw error;
-                return (res as any as DemographicData | null) || { account_types: [], account_creation: [], churn_risk: [] };
+                return (res as unknown as DemographicData | null) || { account_types: [], account_creation: [], churn_risk: [] };
             } catch (err) {
                 throw err;
             }
@@ -346,7 +358,7 @@ function EventTab({ countryFilter }: { countryFilter: string }) {
                     p_params: { country_code: countryFilter }
                 });
                 if (error) throw error;
-                return (res as any as EventData | null) || { 
+                return (res as unknown as EventData | null) || { 
                     timeline: [], 
                     categories: [], 
                     tags: [] 
@@ -450,7 +462,7 @@ function AdvertisingTab({ countryFilter }: { countryFilter: string }) {
                     p_params: { country_code: countryFilter }
                 });
                 if (error) throw error;
-                return (res as any as AdvertisingData | null) || { 
+                return (res as unknown as AdvertisingData | null) || { 
                     timeline: [], 
                     ad_types: [], 
                     tags: [] 
@@ -562,7 +574,7 @@ function CommunityTab({ countryFilter }: { countryFilter: string }) {
                     p_params: { country_code: countryFilter }
                 });
                 if (error) throw error;
-                return (res as any as CommunityData | null) || { 
+                return (res as unknown as CommunityData | null) || { 
                     by_members: [], 
                     by_messages: [], 
                     by_media: [] 
@@ -652,7 +664,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                     p_params: { country_code: countryFilter }
                 });
                 if (error) throw error;
-                return (res as any as RevenueData | null) || { 
+                return (res as unknown as RevenueData | null) || { 
                     by_reason: [], 
                     by_provider: [], 
                     subscriptions_by_plan: [] 
@@ -705,7 +717,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                                             <Cell key={`cell-${index}`} fill={PIE_PALETTES.providers[index % PIE_PALETTES.providers.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
+                                    <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -724,7 +736,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                     <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
                                     <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                    <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
+                                    <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Gross Volume']} {...TOOLTIP_STYLE} />
                                     <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -744,7 +756,7 @@ function FinanceTab({ countryFilter }: { countryFilter: string }) {
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                                 <XAxis type="number" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} tickFormatter={formatCurrency} />
                                 <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '11px' }} />
-                                <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Volume']} {...TOOLTIP_STYLE} />
+                                <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Volume']} {...TOOLTIP_STYLE} />
                                 <Bar dataKey="amount" name="Volume" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>

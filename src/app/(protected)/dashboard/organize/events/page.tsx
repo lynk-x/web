@@ -2,11 +2,11 @@
 import { getErrorMessage } from '@/utils/error';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import styles from './page.module.css';
-import EventTable, { Event } from '@/components/features/events/EventTable';
+import EventTable from '@/components/features/events/EventTable';
 import TableToolbar from '@/components/shared/TableToolbar';
-import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
+import BulkActionsBar from '@/components/shared/BulkActionsBar';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import EventCancellationModal from '@/components/features/events/EventCancellationModal';
 import { useToast } from '@/components/ui/Toast';
@@ -54,10 +54,10 @@ export default function OrganizerEventsPage() {
 
     // Filter States
     const [statusFilter, setStatusFilter] = useState<'all' | OrganizerEvent['status']>('all');
-    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [categoryFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = useResponsivePageSize();
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(itemsPerPage);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
@@ -176,7 +176,7 @@ export default function OrganizerEventsPage() {
     const handleDuplicate = async (event: OrganizerEvent) => {
         showToast('Cloning event...', 'info');
         try {
-            const { data: newId, error } = await supabase.schema('api').rpc('duplicate_event', {
+            const { error } = await supabase.schema('api').rpc('duplicate_event', {
                 p_event_id: event.id,
                 p_created_at: event.createdAt
             });
@@ -446,7 +446,7 @@ export default function OrganizerEventsPage() {
                 uploadedImageUrl = signData.fileUrl;
             }
 
-            const eventData: Record<string, any> = {
+            const eventData: Record<string, unknown> = {
                 title: formData.title,
                 status: 'published',
                 location: { venue: formData.location || 'External' },
@@ -631,7 +631,7 @@ export default function OrganizerEventsPage() {
                             </button>
                         </div>
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-                            Create a minimal Lynk-X event to host your forum. You can send the forum link to attendees through email invites to ensure they don't miss out and join.
+                            Create a minimal Lynk-X event to host your forum. You can send the forum link to attendees through email invites to ensure they don&apos;t miss out and join.
                         </p>
                         <form onSubmit={(e) => {
                             e.preventDefault();
@@ -675,7 +675,7 @@ export default function OrganizerEventsPage() {
                                     />
                                     {forumImagePreview && (
                                         <div style={{ marginTop: '8px', position: 'relative', display: 'inline-block' }}>
-                                            <img src={forumImagePreview} alt="Preview" style={{ maxHeight: '120px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.2)' }} />
+                                            <Image src={forumImagePreview} alt="Preview" width={200} height={120} unoptimized style={{ maxHeight: '120px', width: 'auto', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.2)' }} />
                                             <button
                                                 type="button"
                                                 onClick={() => {

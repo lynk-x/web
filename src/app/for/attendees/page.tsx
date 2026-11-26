@@ -50,23 +50,18 @@ export default function AttendeesLandingPage() {
             <div className={styles.landingPage}>
                 <div className={styles.backgroundGlow} />
                 
-                <motion.section 
-                    className={styles.hero}
-                    initial="initial"
-                    animate="animate"
-                    variants={staggerContainer}
-                >
-                    <motion.div className={styles.badge} variants={fadeInUp}>For Attendees</motion.div>
-                    <motion.h1 className={styles.title} variants={fadeInUp}>
+                <section className={styles.hero}>
+                    <div className={styles.badge}>For Attendees</div>
+                    <h1 className={styles.title}>
                         <SlotCounterText text="Every Event. Every Connection." delay={0.5} />
-                    </motion.h1>
-                    <motion.p className={styles.subtitle} variants={fadeInUp}>
+                    </h1>
+                    <p className={styles.subtitle}>
                         Discover the events you love and the communities that make them special. From ticket to the connection to the community — all in one place.
-                    </motion.p>
-                    <motion.div className={styles.ctaBox} variants={fadeInUp}>
+                    </p>
+                    <div className={styles.ctaBox}>
                         <Link href="/" className={styles.btnPrimary}>Browse Events</Link>
-                    </motion.div>
-                </motion.section>
+                    </div>
+                </section>
 
                 <section id="why-lynk-x" className={styles.section}>
                     <motion.h2 

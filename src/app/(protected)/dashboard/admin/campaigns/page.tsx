@@ -15,7 +15,6 @@ import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import StatCard from '@/components/dashboard/StatCard';
-import RejectionModal from '@/components/shared/RejectionModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -23,7 +22,6 @@ import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 import { usePagination } from '@/hooks/usePagination';
 import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
-import { formatCurrency } from '@/utils/format';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import { useUrlTab } from '@/hooks/useUrlTab';
 
@@ -31,7 +29,7 @@ function CampaignsContent() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
-    const { executeAction } = useModerationAction();
+    useModerationAction();
     const { activeAccount } = useOrganization();
 
     const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
@@ -42,22 +40,30 @@ function CampaignsContent() {
     ];
 
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [internalSearchTerm, setInternalSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
-    const [summary, setSummary] = useState<any>(null);
-    const [campaignPerf, setCampaignPerf] = useState<{ avgCtr: string; avgCpc: string } | null>(null);
-
-    const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+    const [summary, setSummary] = useState<{
+        total?: number;
+        total_30d?: number;
+        active?: number;
+        active_30d?: number;
+        pending?: number;
+        flagged?: number;
+        total_budget?: number;
+        total_spend?: number;
+        total_impressions?: number;
+        total_clicks?: number;
+    } | null>(null);
+    const [, setCampaignPerf] = useState<{ avgCtr: string; avgCpc: string } | null>(null);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(
+    const { currentPage, setCurrentPage, totalCount, setTotalCount } = usePagination(
         itemsPerPage,
         [debouncedSearch, statusFilter, adTypeFilter, startDate, endDate, itemsPerPage]
     );
@@ -102,7 +108,23 @@ function CampaignsContent() {
             const total = data?.[0]?.total_count || 0;
             setTotalCount(total);
 
-            setCampaigns((data || []).map((c: any) => ({
+            setCampaigns((data || []).map((c: {
+                id: string;
+                created_at: string;
+                reference?: string | null;
+                title: string;
+                account_name: string;
+                type: Campaign['adType'];
+                total_budget: string;
+                spent_amount?: string | null;
+                currency?: string | null;
+                total_impressions?: string | null;
+                total_clicks?: string | null;
+                status: Campaign['status'];
+                start_at: string;
+                end_at: string;
+                moderation_id?: string | null;
+            }) => ({
                 id: c.id,
                 createdAt: c.created_at,
                 campaignRef: c.reference || `CAM-${c.id.slice(0, 8).toUpperCase()}`,
@@ -110,14 +132,14 @@ function CampaignsContent() {
                 client: c.account_name,
                 adType: c.type,
                 budget: parseFloat(c.total_budget),
-                spend: parseFloat(c.spent_amount) || 0,
+                spend: parseFloat(c.spent_amount || '0') || 0,
                 currency: c.currency || 'USD',
-                impressions: parseInt(c.total_impressions) || 0,
-                clicks: parseInt(c.total_clicks) || 0,
+                impressions: parseInt(c.total_impressions || '0', 10) || 0,
+                clicks: parseInt(c.total_clicks || '0', 10) || 0,
                 status: c.status,
                 startDate: new Date(c.start_at).toLocaleDateString(),
                 endDate: new Date(c.end_at).toLocaleDateString(),
-                moderationId: c.moderation_id
+                moderationId: c.moderation_id ?? undefined
             })));
         } catch (err: unknown) {
             showToast(getErrorMessage(err) || 'Failed to load campaigns.', 'error');
@@ -134,105 +156,6 @@ function CampaignsContent() {
         fetchDashboardSummary();
         fetchCampaignPerf();
     }, [fetchDashboardSummary, fetchCampaignPerf]);
-
-    const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
-    const [pendingModerationItem, setPendingModerationItem] = useState<{ id: string, moderationId?: string, title: string, status: string } | null>(null);
-
-    const handleSingleStatusUpdate = async (campaign: Campaign, newStatus: string, reason?: string) => {
-        // If it's a rejection, we need the modal first.
-        if (newStatus === 'rejected' && !reason) {
-            setPendingModerationItem({ id: campaign.id, moderationId: campaign.moderationId, title: campaign.name, status: newStatus });
-            setIsRejectionModalOpen(true);
-            return;
-        }
-
-        await executeAction(
-            () => {
-                const moderationId = campaign.moderationId;
-                if (!moderationId) throw new Error(`No moderation record found for ${campaign.name}.`);
-
-                return supabase.schema('api').rpc('moderate_item', {
-                    p_moderation_id: moderationId,
-                    p_status: newStatus === 'active' ? 'approved' : 'rejected',
-                    p_reason: reason || 'Status updated via Admin Campaigns dashboard.'
-                });
-            },
-            {
-                loadingMessage: `Updating ${campaign.name} to ${newStatus}...`,
-                successMessage: `${campaign.name} updated`,
-                onSuccess: () => {
-                    fetchCampaigns();
-                    fetchDashboardSummary();
-                    setIsRejectionModalOpen(false);
-                }
-            }
-        );
-    };
-
-    const handleFlag = async (campaign: Campaign) => {
-        const isFlagging = !campaign.isFlagged;
-        await executeAction(
-            () => {
-                const moderationId = campaign.moderationId;
-                if (!moderationId) throw new Error('Moderation record missing.');
-
-                return supabase.schema('api').rpc('moderate_item', {
-                    p_moderation_id: moderationId,
-                    p_status: isFlagging ? 'flagged' : 'pending_review',
-                    p_reason: `${isFlagging ? 'Flagged' : 'Unflagged'} via Admin Campaigns dashboard.`
-                });
-            },
-            {
-                loadingMessage: `${isFlagging ? 'Flagging' : 'Unflagging'} ${campaign.name}...`,
-                successMessage: `${campaign.name} flag updated`,
-                onSuccess: fetchCampaigns
-            }
-        );
-    };
-
-    const handleSaveCampaign = async (campaignId: string, updates: any) => {
-        if (!campaignId) return;
-        const campaign = campaigns.find(c => c.id === campaignId);
-        if (!campaign) return;
-
-        showToast(`Saving changes...`, 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_update_campaign', {
-                p_campaign_id: campaignId,
-                p_created_at: campaign.createdAt,
-                p_title: updates.name,
-                p_total_budget: updates.budget,
-                p_start_at: updates.startDate,
-                p_end_at: updates.endDate
-            });
-
-            if (error) throw error;
-
-            showToast(`Campaign updated successfully.`, 'success');
-            fetchCampaigns();
-        } catch (err) {
-            showToast('Failed to update campaign.', 'error');
-        }
-    };
-
-    const handleSingleDelete = async (campaign: Campaign) => {
-        if (!await confirm(`Are you sure you want to delete ${campaign.name}?`)) return;
-        showToast(`Deleting ${campaign.name}...`, 'info');
-        try {
-            const { error } = await supabase.schema('api').rpc('admin_bulk_delete_campaigns', {
-                p_ids: [campaign.id],
-                p_created_ats: [campaign.createdAt]
-            });
-
-            if (error) throw error;
-
-            showToast(`${campaign.name} deleted.`, 'success');
-            fetchCampaigns();
-            fetchDashboardSummary();
-        } catch (err) {
-            showToast('Failed to delete campaign.', 'error');
-        }
-    };
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
         showToast(`Updating ${selectedCampaignIds.size} campaigns to ${newStatus}...`, 'info');
@@ -270,7 +193,7 @@ function CampaignsContent() {
             fetchCampaigns();
             fetchDashboardSummary();
             setSelectedCampaignIds(new Set());
-        } catch (err) {
+        } catch {
             showToast('Failed to update campaign status.', 'error');
         }
     };
@@ -293,26 +216,8 @@ function CampaignsContent() {
             fetchCampaigns();
             fetchDashboardSummary();
             setSelectedCampaignIds(new Set());
-        } catch (err) {
+        } catch {
             showToast('Failed to delete campaigns.', 'error');
-        }
-    };
-
-    const handleSelectCampaign = (id: string) => {
-        const newSelected = new Set(selectedCampaignIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedCampaignIds(newSelected);
-    };
-
-    const handleSelectAll = (ids: string[]) => {
-        if (selectedCampaignIds.size === ids.length) {
-            setSelectedCampaignIds(new Set());
-        } else {
-            setSelectedCampaignIds(new Set(ids));
         }
     };
 
@@ -432,7 +337,8 @@ function CampaignsContent() {
                         selectedIds={selectedCampaignIds}
                         onSelect={(id) => {
                             const next = new Set(selectedCampaignIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
                             setSelectedCampaignIds(next);
                         }}
                         onSelectAll={() => setSelectedCampaignIds(selectedCampaignIds.size === campaigns.length ? new Set() : new Set(campaigns.map(c => c.id)))}

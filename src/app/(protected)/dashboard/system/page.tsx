@@ -6,7 +6,7 @@
  * and a 90-day event-activity heatmap calendar.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import PageHeader from '@/components/dashboard/PageHeader';
 import WorldClock from '@/components/system/overview/WorldClock';
@@ -23,14 +23,17 @@ export default function SystemDashboardPage() {
     const [heatmapData, setHeatmapData] = useState<DayCount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchHeatmap = useCallback(async () => {
-        setIsLoading(true);
-        const { data, error } = await supabase.schema('api').rpc('get_events_daily_heatmap');
-        if (!error && data) setHeatmapData(data as DayCount[]);
-        setIsLoading(false);
+    useEffect(() => {
+        let active = true;
+        const load = async () => {
+            const { data, error } = await supabase.schema('api').rpc('get_events_daily_heatmap');
+            if (!active) return;
+            if (!error && data) setHeatmapData(data as DayCount[]);
+            setIsLoading(false);
+        };
+        load();
+        return () => { active = false; };
     }, [supabase]);
-
-    useEffect(() => { fetchHeatmap(); }, [fetchHeatmap]);
 
     return (
         <div className={sharedStyles.container}>

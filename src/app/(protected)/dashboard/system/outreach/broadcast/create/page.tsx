@@ -31,9 +31,9 @@ export default function CreateBroadcastPage() {
     const [message, setMessage] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [fcmTokens, setFcmTokens] = useState('');
-    const [notificationType, setNotificationType] = useState<any>('system');
+    const [notificationType, setNotificationType] = useState<'system' | 'marketing' | 'alert'>('system');
 
-    const handleChange = (setter: any, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setIsDirty(true);
     };
@@ -112,7 +112,7 @@ export default function CreateBroadcastPage() {
                             <select
                                 className={adminStyles.select}
                                 value={notificationType}
-                                onChange={(e) => handleChange(setNotificationType, e.target.value)}
+                                onChange={(e) => handleChange(setNotificationType, e.target.value as 'system' | 'marketing' | 'alert')}
                             >
                                 <option value="system">System Notification</option>
                                 <option value="social">Social Interaction</option>

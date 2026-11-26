@@ -27,13 +27,13 @@ function KycVerificationsContent() {
     
     // Pagination
     const itemsPerPage = useResponsivePageSize();
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     // Modals
     const [selectedVerification, setSelectedVerification] = useState<KycVerification | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-    const debouncedSearch = useDebounce(searchTerm, 500);
+    useDebounce(searchTerm, 500);
 
     const fetchVerifications = useCallback(async () => {
         setIsLoading(true);
@@ -63,13 +63,13 @@ function KycVerificationsContent() {
 
             // Fetch accounts from api.v1_accounts for mapping
             const { data: accountsData } = await supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_accounts')
                 .select('id, display_name');
 
-            const accountsMap = new Map((accountsData || []).map((a: any) => [a.id, a.display_name]));
+            const accountsMap = new Map((accountsData || []).map((a: { id: string; display_name: string }) => [a.id, a.display_name]));
 
-            const mapped: KycVerification[] = (data || []).map((v: any) => ({
+            const mapped: KycVerification[] = (data || []).map((v: Omit<KycVerification, 'account_name' | 'provider_name'> & { provider_display_name: string }) => ({
                 ...v,
                 account_name: accountsMap.get(v.account_id) ?? 'Unknown',
                 provider_name: v.provider_display_name

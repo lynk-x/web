@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
@@ -10,22 +10,23 @@ import QueryProvider from "@/context/QueryProvider";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-primary",
+  // Distinct variable name so theme.css's `--font-primary` cannot shadow next/font.
+  variable: "--font-inter",
 });
 
 const interTight = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-heading",
+  // Distinct variable name so theme.css's `--font-heading` cannot shadow next/font.
+  variable: "--font-inter-tight",
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://lynk-x.app'),
   title: {
-    template: '%s',
-    default: 'Lynk-x — The Ultimate Event App',
+    template: '%s | Lynk-X',
+    default: 'Lynk-X — The Ultimate Event App',
   },
   description: "The ultimate event app — create events, buy tickets and join event forums.",
-  keywords: ['Lynk-X', 'Lynk X', 'Lynk', 'events app', 'event tickets', 'event discovery', 'event interactions', 'local events', 'event app for Africa', 'event community app', 'no app required event', 'offline event app', 'PWA event app', 'event organizer app', 'event check-in', 'QR ticket scanner', 'event forums', 'event live chat', 'event media wall'],
   icons: {
     icon: "/lynk-x_logo.svg",
   },
@@ -46,14 +47,6 @@ export const metadata: Metadata = {
     locale: 'en_GB',
     type: 'website',
   },
-  alternates: {
-    canonical: '/',
-    languages: {
-      'en-GB': '/',
-      'en': '/',
-      'x-default': '/',
-    },
-  },
   twitter: {
     card: 'summary_large_image',
     title: 'Lynk-X — The Ultimate Event App',
@@ -64,16 +57,18 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   themeColor: '#000000',
   colorScheme: 'dark',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
 };
 
+/**
+ * Root application layout configuring fonts, global providers, telemetry and
+ * site-wide Organization and WebSite structured data.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -92,63 +87,32 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'Organization',
     '@id': 'https://lynk-x.app/#organization',
-    'name': 'Lynk-X',
-    'alternateName': brandAlternateNames,
-    'url': 'https://lynk-x.app',
-    'logo': 'https://lynk-x.app/lynk-x-combined-logo.png',
+    name: 'Lynk-X',
+    alternateName: brandAlternateNames,
+    url: 'https://lynk-x.app',
+    logo: 'https://lynk-x.app/lynk-x-combined-logo.png',
+    sameAs: [
+      'https://x.com/lynkxapp',
+      'https://instagram.com/lynk_x.app',
+      'https://www.producthunt.com/products/lynk-x',
+    ],
   };
 
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    '@id': 'https://lynk-x.app',
-    'url': 'https://lynk-x.app',
-    'name': 'Lynk-X',
-    'alternateName': brandAlternateNames,
-    'description': 'Lynk-X (Lynk x) is the ultimate event app designed for seamless event interactions.',
-    'publisher': {
+    '@id': 'https://lynk-x.app/#website',
+    url: 'https://lynk-x.app',
+    name: 'Lynk-X',
+    alternateName: brandAlternateNames,
+    description: 'Lynk-X is an all-in-one event discovery, ticketing and community forum platform.',
+    publisher: {
       '@id': 'https://lynk-x.app/#organization',
     },
-  };
-
-  const softwareApplicationSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    '@id': 'https://lynk-x.app/#software',
-    'name': 'Lynk-X',
-    'alternateName': brandAlternateNames,
-    'applicationCategory': 'BusinessApplication',
-    'applicationSubCategory': 'Event Management & Ticketing',
-    'operatingSystem': 'Web, iOS, Android (Progressive Web App)',
-    'url': 'https://lynk-x.app',
-    'image': 'https://lynk-x.app/og-image.png',
-    'description': 'All-in-one event ticketing and community platform. Zero-friction mobile ticketing, private event forums, live attendee chat and shared media walls.',
-    'offers': [
-      {
-        '@type': 'Offer',
-        'name': 'Attendee PWA Access',
-        'price': '0',
-        'priceCurrency': 'KES',
-        'description': 'Free access for event discovery, ticket holding and event forum participation',
-      },
-      {
-        '@type': 'Offer',
-        'name': 'Organizer Self-Serve Hosting',
-        'price': '0',
-        'priceCurrency': 'KES',
-        'description': 'Free event creation and forum management with pay-as-you-sell ticketing',
-      },
-    ],
-    'featureList': [
-      'Mobile ticketing with instant M-Pesa STK push and card payments',
-      'Automated private event forums for ticket holders',
-      'Real-time attendee live chat and announcements',
-      'Shared photo and video media wall',
-      'Fast QR ticket check-in scanning',
-      'Native sponsor placements with automatic creative optimization',
-    ],
-    'author': {
-      '@id': 'https://lynk-x.app/#organization',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://lynk-x.app/?q={search_term_string}',
+      'query-input': 'required name=search_term_string',
     },
   };
 
@@ -162,10 +126,6 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
         />
         <QueryProvider>
           <AuthProvider>

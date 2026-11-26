@@ -18,7 +18,7 @@ const sponsorFaqs: FaqItem[] = [
     },
     {
         question: "Can I pause or edit a live campaign?",
-        answer: "Yes — pause, edit budget, or update creatives at any time from your dashboard. Changes apply within minutes and any unspent budget from a paused campaign stays in your account rather than being lost.",
+        answer: "Yes — pause, edit budget or update creatives at any time from your dashboard. Changes apply within minutes and any unspent budget from a paused campaign stays in your account rather than being lost.",
     },
     {
         question: "What types of ad formats are supported?",
@@ -54,23 +54,18 @@ export default function CommercialLandingPage() {
             <div className={styles.landingPage}>
                 <div className={styles.backgroundGlow} />
                 
-                <motion.section 
-                    className={styles.hero}
-                    initial="initial"
-                    animate="animate"
-                    variants={staggerContainer}
-                >
-                    <motion.div className={styles.badge} variants={fadeInUp}>For Sponsors & Advertisers</motion.div>
-                    <motion.h1 className={styles.title} variants={fadeInUp}>
+                <section className={styles.hero}>
+                    <div className={styles.badge}>For Sponsors &amp; Advertisers</div>
+                    <h1 className={styles.title}>
                         <SlotCounterText text="Sell to the right crowd." delay={0.5} />
-                    </motion.h1>
-                    <motion.p className={styles.subtitle} variants={fadeInUp}>
+                    </h1>
+                    <p className={styles.subtitle}>
                         No more hoping your message lands in front of the right person on a feed full of strangers. Lynk-X puts your brand inside the events people already showed up for — a crowd that&apos;s already interested, not a scroll you&apos;re interrupting.
-                    </motion.p>
-                    <motion.div className={styles.ctaBox} variants={fadeInUp}>
+                    </p>
+                    <div className={styles.ctaBox}>
                         <Link href="/dashboard/ads" className={styles.btnPrimary}>Create Campaign</Link>
-                    </motion.div>
-                </motion.section>
+                    </div>
+                </section>
 
                 <section id="how-it-works" className={styles.section}>
                     <motion.h2

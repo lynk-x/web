@@ -11,7 +11,6 @@ import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
 import adminStyles from '../../admin/page.module.css'; // Leverage utility styles for tabs/chips
 import ConfigTab from '@/components/system/settings/ConfigTab';
 import FeatureFlagTab from '@/components/system/settings/FeatureFlagTab';
-import PaymentProvidersTab from '@/components/system/settings/PaymentProvidersTab';
 import RegionsTab from '@/components/system/settings/RegionsTab';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/Tabs';
 import TableToolbar from '@/components/shared/TableToolbar';

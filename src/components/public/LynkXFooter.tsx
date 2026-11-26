@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './LynkXFooter.module.css';
 
 /**
@@ -22,17 +23,18 @@ const LynkXFooter: React.FC = () => {
                             rel="noopener noreferrer"
                             className={styles.productHuntBadge}
                         >
-                            <img
+                            <Image
                                 alt="Lynk-X - A ticketing and community platform focused on interactions. | Product Hunt"
-                                width="250"
-                                height="54"
-                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1313189&amp;theme=light&amp;t=1794423476783"
+                                width={250}
+                                height={54}
+                                unoptimized
+                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1313189&theme=light&t=1794423476783"
                             />
                         </a>
                     </div>
 
                     <div className={styles.column}>
-                        <h4 className={styles.columnTitle}>Product</h4>
+                        <p className={styles.columnTitle}>Product</p>
                         <ul className={styles.linkList}>
                             <li><Link href="/for/organizers" className={styles.link}>For Organizers</Link></li>
                             <li><Link href="/for/attendees" className={styles.link}>For Attendees</Link></li>
@@ -42,7 +44,7 @@ const LynkXFooter: React.FC = () => {
                     </div>
 
                     <div className={styles.column}>
-                        <h4 className={styles.columnTitle}>Resources</h4>
+                        <p className={styles.columnTitle}>Resources</p>
                         <ul className={styles.linkList}>
                             <li><Link href="/resources/help" className={styles.link}>Help Center</Link></li>
                             <li><Link href="/resources/guide" className={styles.link}>Hosting Guide</Link></li>
@@ -52,7 +54,7 @@ const LynkXFooter: React.FC = () => {
                     </div>
 
                     <div className={styles.column}>
-                        <h4 className={styles.columnTitle}>Legal</h4>
+                        <p className={styles.columnTitle}>Legal</p>
                         <ul className={styles.linkList}>
                             <li><Link href="/privacy" className={styles.link}>Privacy Policy</Link></li>
                             <li><Link href="/cookies" className={styles.link}>Cookie Policy</Link></li>
@@ -62,7 +64,7 @@ const LynkXFooter: React.FC = () => {
                     </div>
 
                     <div className={styles.column}>
-                        <h4 className={styles.columnTitle}>Company</h4>
+                        <p className={styles.columnTitle}>Company</p>
                         <ul className={styles.linkList}>
                             <li><Link href="/resources/brand" className={styles.link}>Brand Assets</Link></li>
                             <li><Link href="/resources/mission" className={styles.link}>Our Mission</Link></li>
@@ -72,7 +74,7 @@ const LynkXFooter: React.FC = () => {
                 </div>
 
                 <div className={styles.bottomRow}>
-                    <span className={styles.copyright}>© {new Date().getFullYear()} Lynk-x.app — All rights reserved.</span>
+                    <span className={styles.copyright}>© {new Date().getFullYear()} Lynk-X — All rights reserved.</span>
                     <div className={styles.socialLinks}>
                         <a href="https://x.com/lynkxapp" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="X (Twitter)">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,23 +1,51 @@
-import { createClient } from '@/utils/supabase/server';
+import { createPublicClient } from '@/utils/supabase/public';
 import HomeLayout from "@/components/public/HomeLayout";
+import LynkXFooter from "@/components/public/LynkXFooter";
 import CookieConsentManager from "@/components/public/CookieConsentManager";
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
-    title: 'Cookie Policy | Lynk-X',
+    title: 'Cookie Policy',
     description: 'Understand how Lynk-X uses cookies and manage your cookie preferences for analytics and personalisation.',
+    alternates: {
+        canonical: '/cookies',
+    },
     openGraph: {
         title: 'Cookie Policy | Lynk-X',
         description: 'Manage your cookie preferences on Lynk-X.',
-        type: 'website',
+        url: 'https://lynk-x.app/cookies',
+        siteName: 'Lynk-X',
         locale: 'en_GB',
+        images: [
+            {
+                url: '/og-image.png?v=2',
+                width: 1200,
+                height: 630,
+                alt: 'Lynk-X Cookie Policy',
+                type: 'image/png',
+            },
+        ],
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Cookie Policy | Lynk-X',
+        description: 'Manage your cookie preferences on Lynk-X.',
+        site: '@lynkxapp',
+        creator: '@lynkxapp',
+        images: ['/og-image.png?v=2'],
     },
 };
 
-
+/**
+ * Public Cookie Policy page loaded from active legal documents via ISR,
+ * paired with interactive cookie consent controls.
+ */
 export default async function CookiePolicyPage() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data: doc } = await supabase
         .schema('api')
@@ -72,7 +100,7 @@ export default async function CookiePolicyPage() {
                         borderRadius: 'var(--radius-xl)',
                         border: '1px solid var(--color-interface-outline)'
                     }}>
-                        <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Your Cookie Preferences</h3>
+                        <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Your Cookie Preferences</h2>
                         <p style={{ fontSize: '15px', opacity: 0.6, marginBottom: '24px', lineHeight: '1.5' }}>
                             You can manage your consent preferences for non-essential cookies below. Essential cookies are always active.
                         </p>
@@ -81,6 +109,7 @@ export default async function CookiePolicyPage() {
                     </div>
                 </div>
             </div>
+            <LynkXFooter />
         </HomeLayout>
     );
 }

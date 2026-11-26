@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -81,7 +82,7 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
                 <div className={styles.activeAccountInfo}>
                     <div className={`${styles.avatar} ${isCompact ? styles.avatarCompact : ''}`}>
                         {activeAccount.logoUrl ? (
-                            <img src={activeAccount.logoUrl} alt={activeAccount.name} />
+                            <Image src={activeAccount.logoUrl} alt={activeAccount.name} width={36} height={36} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                             <div className={styles.avatarFallback}>{isCompact ? initialsOf(activeAccount.name) : activeAccount.name.charAt(0)}</div>
                         )}
@@ -145,7 +146,7 @@ const OrganizationSwitcher = ({ pos = 'top', variant = 'sidebar' }: { pos?: 'top
                             >
                                 <div className={styles.avatarSmall}>
                                     {account.logoUrl ? (
-                                        <img src={account.logoUrl} alt={account.name} />
+                                        <Image src={account.logoUrl} alt={account.name} width={28} height={28} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
                                         <div className={styles.avatarFallback}>{account.name.charAt(0)}</div>
                                     )}

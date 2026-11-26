@@ -39,26 +39,6 @@ interface SearchData {
     top_queries: SearchQueryRow[];
 }
 
-interface InsightTopicRow {
-    id: string;
-    slug: string;
-    display_name: string;
-    description: string | null;
-    keywords: string[] | null;
-    category_id: string | null;
-    is_active: boolean;
-    created_at: string;
-}
-
-interface TagSuggestionRow {
-    id: string;
-    suggested_tag_name: string;
-    source_topic_id: string | null;
-    occurrence_count: number;
-    status: string;
-    created_at: string;
-}
-
 interface GeoDemographicRow {
     country: string;
     account_role: string;
@@ -186,7 +166,7 @@ function SearchTab() {
                 p_category: 'search'
             });
             if (error) throw error;
-            return (res as any as SearchData | null) || { top_queries: [] };
+            return (res as unknown as SearchData | null) || { top_queries: [] };
         }
     );
 
@@ -228,7 +208,7 @@ function DemographicsTab() {
                 p_category: 'demographics'
             });
             if (error) throw error;
-            return (res as any as DemographicsData | null) || { by_geo: [], by_age_gender: [] };
+            return (res as unknown as DemographicsData | null) || { by_geo: [], by_age_gender: [] };
         }
     );
 
@@ -297,7 +277,7 @@ function EventsTab() {
                 p_category: 'events'
             });
             if (error) throw error;
-            return (res as any as EventsData | null) || { top_events: [], flagged_events: [] };
+            return (res as unknown as EventsData | null) || { top_events: [], flagged_events: [] };
         }
     );
 
@@ -360,7 +340,7 @@ function ForumsTab() {
                 p_category: 'forums'
             });
             if (error) throw error;
-            return (res as any as ForumsData | null) || { most_active: [], flagged_forums: [] };
+            return (res as unknown as ForumsData | null) || { most_active: [], flagged_forums: [] };
         }
     );
 
@@ -426,7 +406,7 @@ function AdvertisingTab() {
                 p_category: 'advertising'
             });
             if (error) throw error;
-            return (res as any as AdvertisingData | null) || { daily_series: [], top_campaigns: [] };
+            return (res as unknown as AdvertisingData | null) || { daily_series: [], top_campaigns: [] };
         }
     );
 

@@ -71,7 +71,16 @@ export default function EditEventPage() {
 
                 const isPaid = tiers ? tiers.length > 0 : false;
 
-                const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => {
+                const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: {
+                    id: string;
+                    display_name: string;
+                    price: number;
+                    capacity: number;
+                    description?: string | null;
+                    sales_start?: string | null;
+                    sales_end?: string | null;
+                    max_per_order?: number | null;
+                }) => {
                     const tz = event.timezone || 'Etc/UTC';
                     const formatDateLocal = (d: Date) => {
                         const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d).split('-');
@@ -96,9 +105,9 @@ export default function EditEventPage() {
                     description: event.description,
                     category: event.category_id || '',
                     tags: mappedTags,
-                    thumbnailUrl: (event.media as any)?.thumbnail || '',
+                    thumbnailUrl: (event.media as { thumbnail?: string } | null)?.thumbnail || '',
                     isOnline: event.is_online ?? false,
-                    location: (event.location as any)?.name || '',
+                    location: (event.location as { name?: string } | null)?.name || '',
                     startDate: formatDate(startDt),
                     startTime: formatTime(startDt),
                     endDate: formatDate(endDt),
@@ -255,7 +264,7 @@ export default function EditEventPage() {
                 if (tagUpsertError) throw tagUpsertError;
 
                 if (resolvedTags && Array.isArray(resolvedTags)) {
-                    const eventTagsToInsert = resolvedTags.map((tag: any) => ({
+                    const eventTagsToInsert = (resolvedTags as Array<{ id: string }>).map((tag) => ({
                         event_id: eventId,
                         event_created_at: eventCreatedAt,
                         tag_id: tag.id

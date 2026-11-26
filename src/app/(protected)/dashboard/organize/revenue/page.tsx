@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { createClient } from '@/utils/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/shared/Tabs';
-import { formatString, formatDate } from '@/utils/format';
+import { formatDate } from '@/utils/format';
 import { exportToCSV } from '@/utils/export';
 import FilterChips from '@/components/shared/FilterChips';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -42,7 +42,7 @@ function RevenueContent() {
     );
 
     const [isSummaryLoading, setIsSummaryLoading] = useState(true);
-    const [wallets, setWallets] = useState<AccountWallet[]>([]);
+    const [, setWallets] = useState<AccountWallet[]>([]);
     const [selectedPayoutForInvoice, setSelectedPayoutForInvoice] = useState<Payout | null>(null);
     const [stats, setStats] = useState({
         payoutsCompleted: 0,
@@ -380,7 +380,8 @@ function RevenueContent() {
                         onSelect={(id) =>
                             setPayoutIds((prev) => {
                                 const next = new Set(prev);
-                                next.has(id) ? next.delete(id) : next.add(id);
+                                if (next.has(id)) next.delete(id);
+                                else next.add(id);
                                 return next;
                             })
                         }
@@ -402,7 +403,8 @@ function RevenueContent() {
                         onSelect={(id) =>
                             setRefundIds((prev) => {
                                 const next = new Set(prev);
-                                next.has(id) ? next.delete(id) : next.add(id);
+                                if (next.has(id)) next.delete(id);
+                                else next.add(id);
                                 return next;
                             })
                         }

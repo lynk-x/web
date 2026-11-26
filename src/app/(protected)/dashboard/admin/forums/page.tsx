@@ -2,16 +2,12 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import FilterChips from '@/components/shared/FilterChips';
 import { useModerationAction } from '@/hooks/useModerationAction';
 import styles from './page.module.css';
 import adminStyles from '../page.module.css';
 import ForumTable, { ForumThread } from '@/components/admin/forums/ForumTable';
-import ForumMessagesTab from '@/components/admin/forums/ForumMessagesTab';
-import ForumMediaTab from '@/components/admin/forums/ForumMediaTab';
 import ForumMembersTab from '@/components/admin/forums/ForumMembersTab';
-import Link from 'next/link';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Modal from '@/components/shared/Modal';
 import ReportTable from '@/components/admin/moderation/ReportTable';
@@ -24,9 +20,7 @@ import TableToolbar from '@/components/shared/TableToolbar';
 import DateRangeRow from '@/components/shared/DateRangeRow';
 import BulkActionsBar, { BulkAction } from '@/components/shared/BulkActionsBar';
 import { useToast } from '@/components/ui/Toast';
-import { exportToCSV } from '@/utils/export';
 import { createClient } from '@/utils/supabase/client';
-import { formatRelativeTime } from '@/utils/format';
 import StatCard from '@/components/dashboard/StatCard';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -34,14 +28,26 @@ import { useResponsivePageSize } from '@/hooks/useResponsivePageSize';
 import { usePagination } from '@/hooks/usePagination';
 import { useResolvedCountryFilter } from '@/hooks/useResolvedCountryFilter';
 
+interface ForumAnalyticsRow {
+    id: string;
+    created_at: string;
+    reference: string;
+    event_title: string;
+    event_id: string;
+    status: ForumThread['status'];
+    channels_count?: string | number | null;
+    message_count?: string | number | null;
+    media_count?: string | number | null;
+    reports_count?: string | number | null;
+    escalated_reports_count?: string | number | null;
+    oldest_report_at?: string | null;
+}
+
 function ForumsContent() {
     const supabase = useMemo(() => createClient(), []);
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const { executeAction } = useModerationAction();
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
     const { activeAccount } = useOrganization();
 
     const resolvedCountryFilter = useResolvedCountryFilter(activeAccount);
@@ -57,7 +63,7 @@ function ForumsContent() {
 
 
     const [threads, setThreads] = useState<ForumThread[]>([]);
-    const [summary, setSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<{ total?: number; total_30d?: number; active?: number; flagged?: number; messages?: number; open?: number; open_30d?: number; pending?: number; locked?: number; total_messages?: number } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -68,11 +74,11 @@ function ForumsContent() {
     const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState('forums');
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     // All forum data is loaded once via the secure RPC, then paginated/filtered client-side.
     // Direct reads of analytics.mv_forum_performance are blocked by REVOKE to authenticated.
-    const [allForums, setAllForums] = useState<any[]>([]);
+    const [allForums, setAllForums] = useState<ForumAnalyticsRow[]>([]);
 
     const fetchDashboardSummary = useCallback(async () => {
         const { data, error } = await supabase.schema('api').rpc('get_forums_stat_summary', {
@@ -97,7 +103,7 @@ function ForumsContent() {
                 });
                 if (error) throw error;
 
-                const rows: any[] = data || [];
+                const rows: ForumAnalyticsRow[] = (data || []) as ForumAnalyticsRow[];
                 setAllForums(rows);
             } catch (err) {
                 showToast(getErrorMessage(err) || 'Failed to load forum management data.', 'error');
@@ -113,27 +119,27 @@ function ForumsContent() {
     useEffect(() => {
         let filtered = allForums;
         if (searchTerm) {
-            filtered = filtered.filter((f: any) =>
+            filtered = filtered.filter((f) =>
                 f.event_title?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
         if (statusFilter !== 'all') {
-            filtered = filtered.filter((f: any) => f.status === statusFilter);
+            filtered = filtered.filter((f) => f.status === statusFilter);
         }
         if (startDate) {
             const from = new Date(startDate).getTime();
-            filtered = filtered.filter((f: any) => new Date(f.created_at).getTime() >= from);
+            filtered = filtered.filter((f) => new Date(f.created_at).getTime() >= from);
         }
         if (endDate) {
             const to = new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
-            filtered = filtered.filter((f: any) => new Date(f.created_at).getTime() <= to);
+            filtered = filtered.filter((f) => new Date(f.created_at).getTime() <= to);
         }
         setTotalCount(filtered.length);
 
         const from = (currentPage - 1) * itemsPerPage;
         const page = filtered.slice(from, from + itemsPerPage);
 
-        setThreads(page.map((f: any) => ({
+        setThreads(page.map((f) => ({
             id: f.id,
             createdAt: f.created_at,
             reference: f.reference,
@@ -141,12 +147,12 @@ function ForumsContent() {
             eventName: f.event_title,
             eventId: f.event_id,
             status: f.status,
-            channelsCount: parseInt(f.channels_count) || 0,
-            messageCount: parseInt(f.message_count) || 0,
-            mediaCount: parseInt(f.media_count) || 0,
-            reportsCount: parseInt(f.reports_count) || 0,
-            escalatedCount: parseInt(f.escalated_reports_count) || 0,
-            oldestReportAt: f.oldest_report_at,
+            channelsCount: parseInt(String(f.channels_count ?? 0), 10) || 0,
+            messageCount: parseInt(String(f.message_count ?? 0), 10) || 0,
+            mediaCount: parseInt(String(f.media_count ?? 0), 10) || 0,
+            reportsCount: parseInt(String(f.reports_count ?? 0), 10) || 0,
+            escalatedCount: parseInt(String(f.escalated_reports_count ?? 0), 10) || 0,
+            oldestReportAt: f.oldest_report_at ?? undefined,
         })));
     }, [allForums, searchTerm, statusFilter, startDate, endDate, currentPage, itemsPerPage, setTotalCount]);
 
@@ -425,7 +431,7 @@ function ForumReportsTab({ eventId }: { eventId: string }) {
                 targetType: 'event',
                 targetId: r.target_event_id,
                 title: `Report #${r.reference}`,
-                description: (r as any).info?.description || 'No description provided.',
+                description: (r as { info?: { description?: string } | null }).info?.description || 'No description provided.',
                 date: new Date(r.created_at).toLocaleDateString(),
                 createdAt: r.created_at,
                 reporter: r.reporter_username || 'Anonymous',

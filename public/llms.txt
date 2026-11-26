@@ -18,6 +18,7 @@
 ## Canonical URLs
 
 - Homepage & Event Discovery: https://lynk-x.app/
+- All Upcoming Events Directory: https://lynk-x.app/events
 - Organizers Hub: https://lynk-x.app/for/organizers
 - Attendees Hub: https://lynk-x.app/for/attendees
 - Sponsors Hub: https://lynk-x.app/for/ad-sponsors

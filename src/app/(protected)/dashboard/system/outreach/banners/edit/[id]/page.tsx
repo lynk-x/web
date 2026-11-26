@@ -64,7 +64,7 @@ export default function EditBannerPage() {
         if (id) fetchBanner();
     }, [id, supabase, router, showToast]);
 
-    const handleChange = (setter: any, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setIsDirty(true);
     };
@@ -137,7 +137,7 @@ export default function EditBannerPage() {
                                 <select
                                     className={adminStyles.select}
                                     value={type}
-                                    onChange={(e) => handleChange(setType, e.target.value as 'info' | 'warning' | 'success' | 'danger')}
+                                    onChange={(e) => handleChange(setType, e.target.value as 'info' | 'warning' | 'error' | 'success')}
                                 >
                                     <option value="info">Information (Blue)</option>
                                     <option value="success">Success (Green)</option>

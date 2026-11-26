@@ -65,7 +65,7 @@ export default function WalletPage() {
 
     const [balances, setBalances] = useState<WalletBalance[]>([]);
     const [topUps, setTopUps] = useState<TopUp[]>([]);
-    const [adCredits, setAdCredits] = useState<AdCredit[]>([]);
+    const [, setAdCredits] = useState<AdCredit[]>([]);
     const [creditTxns, setCreditTxns] = useState<CreditTransaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { currencies, isLoading: isLoadingCurrencies } = useCurrencies();
@@ -75,7 +75,7 @@ export default function WalletPage() {
     const [amount, setAmount] = useState('');
     const [currency, setCurrency] = useState('KES');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [providers, setProviders] = useState<any[]>([]);
+    const [providers, setProviders] = useState<Array<{ id?: string; code?: string; name?: string; provider_name?: string; display_name?: string }>>([]);
     const [selectedProvider, setSelectedProvider] = useState('mpesa');
 
     const fetchProviders = useCallback(async () => {

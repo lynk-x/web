@@ -58,7 +58,7 @@ function AnalyticsContent() {
         if (!activeAccount) return;
         setIsLoading(true);
         try {
-            const params: any = { p_account_id: activeAccount.id };
+            const params: Record<string, string> = { p_account_id: activeAccount.id };
             if (startDate) params.p_start_date = startDate;
             if (endDate) params.p_end_date = endDate;
 
@@ -66,14 +66,22 @@ function AnalyticsContent() {
 
             if (error) throw error;
 
-            const results = Array.isArray(data) ? data : [];
+            const results = (Array.isArray(data) ? data : []) as Array<{
+                campaign_id: string;
+                title: string;
+                status: string;
+                impressions: number;
+                clicks: number;
+                total_cost: number;
+                currency: string;
+            }>;
             const rateFor = (currency: string) =>
                 fxRates.find(r => r.currency === currency)?.rate_to_usd || 1.0;
 
-            const impressions = results.reduce((acc: number, r: any) => acc + Number(r.impressions || 0), 0);
-            const clicks = results.reduce((acc: number, r: any) => acc + Number(r.clicks || 0), 0);
+            const impressions = results.reduce((acc, r) => acc + Number(r.impressions || 0), 0);
+            const clicks = results.reduce((acc, r) => acc + Number(r.clicks || 0), 0);
             const totalCost = results.reduce(
-                (acc: number, r: any) => acc + (Number(r.total_cost || 0) / rateFor(r.currency || 'USD')),
+                (acc, r) => acc + (Number(r.total_cost || 0) / rateFor(r.currency || 'USD')),
                 0
             );
 

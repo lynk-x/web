@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/utils/supabase/client';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
-import Badge from '@/components/shared/Badge';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import { formatDate } from '@/utils/format';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -35,12 +34,11 @@ export default function NewLegalVersionPage() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [version, setVersion] = useState('');
-    const [type, setType] = useState<any>('terms_of_service');
+    const [type, setType] = useState<'terms_of_service' | 'privacy_policy' | 'organizer_agreement' | 'cookie_policy' | 'refund_policy'>('terms_of_service');
     const [is_active, setIsActive] = useState(false);
     const [effective_date, setEffectiveDate] = useState('');
-    const [focusedField, setFocusedField] = useState<string | null>(null);
 
-    const handleChange = (setter: any, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setIsDirty(true);
     };
@@ -107,7 +105,7 @@ export default function NewLegalVersionPage() {
                                 <select
                                     className={adminStyles.select}
                                     value={type}
-                                    onChange={(e) => handleChange(setType, e.target.value)}
+                                    onChange={(e) => handleChange(setType, e.target.value as 'terms_of_service' | 'privacy_policy' | 'organizer_agreement' | 'cookie_policy' | 'refund_policy')}
                                 >
                                     <option value="terms_of_service">Terms of Service</option>
                                     <option value="privacy_policy">Privacy Policy</option>

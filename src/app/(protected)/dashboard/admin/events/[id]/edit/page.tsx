@@ -26,7 +26,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     const [initialData, setInitialData] = useState<OrganizerEventFormData | null>(null);
     const [eventCreatedAt, setEventCreatedAt] = useState<string | null>(null);
     const [eventAccountId, setEventAccountId] = useState<string | null>(null);
-    const [eventCurrency, setEventCurrency] = useState<string>('KES');
+    const [, setEventCurrency] = useState<string>('KES');
     const [isLoading, setIsLoading] = useState(true);
 
     const [accountId, setAccountId] = useState<string>('');
@@ -81,7 +81,16 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
                 const isPaid = tiers ? tiers.length > 0 : false;
 
-                const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: any) => ({
+                const mappedTickets: OrganizerEventTicket[] = (tiers || []).map((t: {
+                    id: string;
+                    display_name: string;
+                    price: number;
+                    capacity: number;
+                    description?: string | null;
+                    sales_start?: string | null;
+                    sales_end?: string | null;
+                    max_per_order?: number | null;
+                }) => ({
                     id: t.id,
                     display_name: t.display_name,
                     price: t.price.toString(),
@@ -97,9 +106,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     description: event.description,
                     category: event.category_id || '',
                     tags: [],
-                    thumbnailUrl: (event.media as any)?.thumbnail || '',
+                    thumbnailUrl: (event.media as { thumbnail?: string } | null)?.thumbnail || '',
                     isOnline: event.is_online ?? false,
-                    location: (event.location as any)?.name || '',
+                    location: (event.location as { name?: string } | null)?.name || '',
                     coordinates: coords,
                     startDate: formatDate(startDt),
                     startTime: formatTime(startDt),
@@ -111,7 +120,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
                     currency: event.currency || 'KES'
                 });
 
-            } catch (error: unknown) {
+            } catch {
                 showToast("Failed to load event data. It may not exist.", "error");
                 router.push('/dashboard/admin/events');
             } finally {
@@ -120,7 +129,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
         };
 
         fetchEvent();
-    }, [eventId, router, showToast]);
+    }, [eventId, router, showToast, supabase]);
 
     const handleEdit = async (data: OrganizerEventFormData, file?: File | null) => {
         const resolvedAccountId = accountId || eventAccountId;

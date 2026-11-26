@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/context/OrganizationContext';
 import { formatDate, formatTime, formatCurrency, formatNumber } from '@/utils/format';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import Badge from '@/components/shared/Badge';
+import Image from 'next/image';
 import type { BadgeVariant } from '@/types/shared';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatCard from '@/components/dashboard/StatCard';
@@ -39,8 +39,9 @@ interface EventDetail extends SharedEventDetail {
     starts_at: string;
     ends_at: string;
     timezone: string | null;
-    location: any;
-    media: any;
+    location: { name?: string; venue?: string; address?: string; link?: string; is_online?: boolean } | null;
+    media: { cover_image_url?: string; thumbnail_url?: string; thumbnail?: string; poster?: string } | null;
+    cover_image_url?: string | null;
     is_private: boolean;
     currency: string;
     reference: string;
@@ -326,11 +327,11 @@ export default function EventDetailPage() {
     const badge = STATUS_BADGE_MAP[event.status] || { label: event.status, variant: 'neutral' as BadgeVariant };
     
     // Resolve event cover image URL from available media metadata
-    const eventImage = (event as any).cover_image_url || 
-                       (event.media as any)?.cover_image_url || 
-                       (event.media as any)?.thumbnail_url || 
-                       (event.media as any)?.thumbnail || 
-                       (event.media as any)?.poster;
+    const eventImage = event.cover_image_url ||
+                       event.media?.cover_image_url ||
+                       event.media?.thumbnail_url ||
+                       event.media?.thumbnail ||
+                       event.media?.poster;
 
     return (
         <div className={adminStyles.container}>
@@ -408,10 +409,13 @@ export default function EventDetailPage() {
                             {/* Left Side: Event Image */}
                             <div style={{ flex: '1 1 300px', maxWidth: '360px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
                                 {eventImage ? (
-                                    <img 
-                                        src={eventImage} 
-                                        alt={event.title} 
-                                        style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} 
+                                    <Image
+                                        src={eventImage}
+                                        alt={event.title}
+                                        width={360}
+                                        height={203}
+                                        unoptimized
+                                        style={{ width: '100%', height: 'auto', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }}
                                     />
                                 ) : (
                                     <div style={{ 
@@ -654,16 +658,3 @@ function DetailRow({ label, value }: { label: string; value: string }) {
         </div>
     );
 }
-
-const thStyle: React.CSSProperties = {
-    padding: '12px 16px',
-    fontSize: '12px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    opacity: 0.5,
-    fontWeight: 600,
-};
-
-const tdStyle: React.CSSProperties = {
-    padding: '14px 16px',
-};

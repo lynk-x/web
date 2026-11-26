@@ -11,7 +11,7 @@ export default function AdminCreateContentPage() {
     const router = useRouter();
     const { confirm, ConfirmDialog } = useConfirmModal();
     const [isDirty, setIsDirty] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
 
     const handleClose = async () => {
         if (isDirty) {

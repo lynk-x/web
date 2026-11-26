@@ -55,7 +55,7 @@ interface CampaignDetail {
     target_event_id: string | null;
     reviewed_at: string | null;
     reviewed_by: string | null;
-    metadata: any;
+    metadata: { revision_notes?: string; rejection_reason?: string; [key: string]: unknown } | null;
     created_at: string;
     reference: string;
     channel?: string;
@@ -248,7 +248,7 @@ export default function CampaignDetailPage() {
                                     Changes Requested by Event Organizer
                                 </div>
                                 <p style={{ fontSize: '14px', margin: 0, color: 'var(--color-text-primary)' }}>
-                                    {revisionNotes || 'The event organizer requested adjustments to your creative assets or placement details.'}
+                                    {typeof revisionNotes === 'string' && revisionNotes ? revisionNotes : 'The event organizer requested adjustments to your creative assets or placement details.'}
                                 </p>
                                 <p style={{ fontSize: '12px', opacity: 0.7, margin: 0 }}>
                                     Your placement slot reservation and escrow deposit remain held. Please update your creative assets and resubmit for approval.
@@ -278,7 +278,7 @@ export default function CampaignDetailPage() {
                                     Campaign Rejected
                                 </div>
                                 <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }}>
-                                    {rejectionReason || 'No reason provided. Contact support for more details.'}
+                                    {typeof rejectionReason === 'string' && rejectionReason ? rejectionReason : 'No reason provided. Contact support for more details.'}
                                 </p>
                                 {campaign.reviewed_at && (
                                     <p style={{ fontSize: '12px', opacity: 0.5, margin: 0 }}>Reviewed on {formatDate(campaign.reviewed_at)}</p>

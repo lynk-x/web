@@ -69,7 +69,7 @@ export default function AdsFinancePage() {
                 currency: string;
                 status: string;
                 reason: string;
-                metadata?: any;
+                metadata?: Record<string, unknown> | null;
             }
             const mapped: Invoice[] = (data.transactions || []).map((tx: TransactionItem) => ({
                 id: tx.id,

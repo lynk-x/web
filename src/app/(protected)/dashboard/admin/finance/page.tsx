@@ -3,15 +3,12 @@ import { getErrorMessage } from '@/utils/error';
 import { TransactionRow } from '@/types/transaction';
 
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useAction } from '@/hooks/useAction';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import styles from './page.module.css';
-import Link from 'next/link';
 import adminStyles from '../page.module.css';
 import { useOrganization } from '@/context/OrganizationContext';
 import FinanceTable from '@/components/features/finance/FinanceTable';
-import PromoCodeTable from '@/components/admin/finance/PromoCodeTable';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
 import WalletTable, { AdminWallet } from '@/components/admin/finance/WalletTable';
 import SubscriptionTable, { Subscription } from '@/components/admin/finance/SubscriptionTable';
@@ -36,14 +33,13 @@ import type { FinanceTransaction } from '@/types/organize';
 import type { PromoCode, TaxRate } from '@/types/admin';
 import { exportToCSV } from '@/utils/export';
 import { formatDate, formatCurrency } from '@/utils/format';
-import RejectionModal from '@/components/shared/RejectionModal';
 
 import { useDebounce } from '@/hooks/useDebounce';
 
 function FinanceContent() {
     const { showToast } = useToast();
     const { run: runAction } = useAction();
-    const { confirm, ConfirmDialog } = useConfirmModal();
+    const { confirm } = useConfirmModal();
     const { activeAccount } = useOrganization();
     const router = useRouter();
     const pathname = usePathname();
@@ -60,7 +56,7 @@ function FinanceContent() {
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage);
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(itemsPerPage);
 
     // Date range state
     const [startDate, setStartDate] = useState('');
@@ -72,7 +68,7 @@ function FinanceContent() {
 
     // State for different datasets
     const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
-    const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+    const [, setPromoCodes] = useState<PromoCode[]>([]);
     const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [wallets, setWallets] = useState<AdminWallet[]>([]);
@@ -149,7 +145,7 @@ function FinanceContent() {
                 .select('id, display_name, product_type')
                 .order('display_name');
             if (error) throw error;
-            setSubscriptionPlans((data || []) as any);
+            setSubscriptionPlans((data || []) as Array<{ id: string; display_name: string; product_type: string }>);
         } catch (err) {
             console.error('Failed to fetch subscription plans:', err);
         }
@@ -179,7 +175,7 @@ function FinanceContent() {
             
             // Merged transaction tabs: transactions, revenue, refunds, escrow
             if (activeTab === 'transactions') {
-                let p_category = categoryFilter;
+                const p_category = categoryFilter;
 
                 const { data, error } = await supabase.schema('api').rpc('get_admin_transactions', {
                     p_search: debouncedSearch,
@@ -204,7 +200,7 @@ function FinanceContent() {
                     currency: tx.currency,
                     date: tx.created_at,
                     status: tx.status,
-                    type: tx.reason as any,
+                    type: tx.reason as FinanceTransaction['type'],
                     category: tx.category,
                     reference: tx.reference,
                     event: tx.event_title,
@@ -224,7 +220,7 @@ function FinanceContent() {
                 });
 
                 if (error) throw error;
-                setSubscriptions((data || []).map((s: any) => ({
+                setSubscriptions((data || []).map((s: Subscription & { reporting_amount?: number; reporting_currency?: string }) => ({
                     ...s,
                     // Ensure reporting fields are included in the state
                     reporting_amount: s.reporting_amount,
@@ -275,7 +271,7 @@ function FinanceContent() {
                 setPromoCodes((data || []).map((p: PromoRow) => ({
                     id: p.id,
                     code: p.code,
-                    type: p.type as any,
+                    type: p.type as PromoCode['type'],
                     value: p.value,
                     uses_count: p.uses_count,
                     max_uses: p.max_uses,
@@ -298,7 +294,7 @@ function FinanceContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, supabase, showToast, startDate, endDate, minAmount, maxAmount, currentPage, itemsPerPage, debouncedSearch, categoryFilter, resolvedCountryFilter, activeAccount?.country_code, setTotalCount]);
+    }, [activeTab, supabase, showToast, startDate, endDate, minAmount, maxAmount, currentPage, itemsPerPage, debouncedSearch, categoryFilter, resolvedCountryFilter, setTotalCount]);
 
     // ── Realtime Listener for Financial Updates ──────────────────────────────
     // Use refs so the channel is only created once; callbacks always see latest state
@@ -338,8 +334,7 @@ function FinanceContent() {
     // Pagination    // Reset pagination and refresh when tab or filter changes
     useEffect(() => {
         setCurrentPage(1);
-        fetchData();
-    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, minAmount, maxAmount, itemsPerPage]);
+    }, [activeTab, debouncedSearch, startDate, endDate, categoryFilter, minAmount, maxAmount, itemsPerPage, setCurrentPage]);
 
     useEffect(() => {
         fetchData();
@@ -508,7 +503,7 @@ function FinanceContent() {
 
         if (activeTab === 'wallets' && selectedWalletIds.size > 0) {
             const allFrozen = selectedWalletIds.size === wallets.filter(
-                (w: any) => selectedWalletIds.has(`${w.account_id}_${w.currency}`) && w.status === 'frozen'
+                (w) => selectedWalletIds.has(`${w.account_id}_${w.currency}`) && w.status === 'frozen'
             ).length;
             const actionLabel = allFrozen ? 'Unfreeze Selected' : 'Freeze Selected';
             const newStatus = allFrozen ? 'active' : 'frozen';
@@ -523,7 +518,7 @@ function FinanceContent() {
                         // (public.account_wallets is retired); selection keys
                         // are account_id|currency composites already.
                         const targets = Array.from(selectedWalletIds)
-                            .map((key: string) => (wallets as any[]).find(w => `${w.account_id}_${w.currency}` === key))
+                            .map((key: string) => wallets.find(w => `${w.account_id}_${w.currency}` === key))
                             .filter(Boolean) as { account_id: string; currency: string }[];
                         if (targets.length === 0) { showToast('No matching wallets found.', 'error'); return; }
                         const results = await Promise.all(targets.map(w =>
@@ -755,7 +750,8 @@ function FinanceContent() {
                         selectedIds={selectedWalletIds}
                         onSelect={(id: string) => {
                             const next = new Set(selectedWalletIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
                             setSelectedWalletIds(next);
                         }}
                         onSelectAll={() => setSelectedWalletIds(selectedWalletIds.size === wallets.length ? new Set() : new Set(wallets.map(w => `${w.account_id}_${w.currency}`)))}
@@ -783,7 +779,8 @@ function FinanceContent() {
                         selectedIds={selectedSubIds}
                         onSelect={(id: string) => {
                             const next = new Set(selectedSubIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
                             setSelectedSubIds(next);
                         }}
                         onSelectAll={() => setSelectedSubIds(selectedSubIds.size === subscriptions.length ? new Set() : new Set(subscriptions.map(s => s.id)))}
@@ -796,7 +793,8 @@ function FinanceContent() {
                         selectedIds={selectedTxIds}
                         onSelect={(id) => {
                             const next = new Set(selectedTxIds);
-                            next.has(id) ? next.delete(id) : next.add(id);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
                             setSelectedTxIds(next);
                         }}
                         onSelectAll={() => setSelectedTxIds(selectedTxIds.size === transactions.length ? new Set() : new Set(transactions.map(t => t.id)))}
@@ -888,7 +886,7 @@ function FinanceContent() {
                                 <select
                                     className={adminStyles.select}
                                     value={adjustBalanceType}
-                                    onChange={e => setAdjustBalanceType(e.target.value as any)}
+                                    onChange={e => setAdjustBalanceType(e.target.value as 'cash' | 'credit' | 'escrow')}
                                 >
                                     <option value="cash">Cash</option>
                                     <option value="credit">Credit</option>

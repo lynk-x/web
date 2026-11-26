@@ -4,13 +4,11 @@ import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import { formatDate } from '@/utils/format';
 import PageHeader from '@/components/dashboard/PageHeader';
 import Badge from '@/components/shared/Badge';
 import Modal from '@/components/shared/Modal';
 import Spinner from '@/components/shared/Spinner';
 import adminStyles from '@/components/dashboard/DashboardShared.module.css';
-import type { BadgeVariant } from '@/types/shared';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import { useCountries } from '@/hooks/useCountries';
@@ -22,7 +20,7 @@ interface SubscriptionPlan {
     product_type: string;
     interval: string;
     is_active: boolean;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
     created_at: string;
     subscription_prices: SubscriptionPrice[];
     plan_features?: { feature_id: string }[];
@@ -84,9 +82,9 @@ export default function SubscriptionPlansPage() {
                 .rpc('get_subscription_catalog');
 
             if (error) throw error;
-            const mappedPlans = ((data || []) as any[]).map((plan: any) => ({
+            const mappedPlans = ((data || []) as SubscriptionPlan[]).map((plan) => ({
                 ...plan,
-                plan_features: (plan.plan_features || []).map((pf: any) => ({ feature_id: pf.feature_id })),
+                plan_features: (plan.plan_features || []).map((pf) => ({ feature_id: pf.feature_id })),
             }));
             setPlans(mappedPlans);
         } catch (e: unknown) {
@@ -287,7 +285,7 @@ export default function SubscriptionPlansPage() {
                             {/* Linked Features (New Normalized System) */}
                             {plan.plan_features && plan.plan_features.length > 0 && (
                                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                    {plan.plan_features.map((pf: any, i: number) => {
+                                    {plan.plan_features.map((pf, i: number) => {
                                         const feat = allFeatures.find(f => f.id === pf.feature_id);
                                         return (
                                             <span key={i} style={{ fontSize: 11, padding: '2px 8px', background: 'var(--color-brand-primary)', color: '#000', borderRadius: 12, fontWeight: 600 }}>

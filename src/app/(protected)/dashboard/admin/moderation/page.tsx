@@ -25,11 +25,11 @@ export default function AdminModerationPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
 
-    const [summary, setSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<{ total?: number; total_reports?: number; pending?: number; approved?: number; rejected?: number; flagged?: number; resolved_today?: number; resolved_30d?: number; max_toxicity?: number } | null>(null);
     const itemsPerPage = useResponsivePageSize({ chromeHeight: 560 });
 
     const debouncedSearch = useDebounce(searchTerm, 500);
-    const { currentPage, setCurrentPage, totalCount, setTotalCount, totalPages } = usePagination(itemsPerPage, [debouncedSearch, typeFilter]);
+    const { currentPage, setCurrentPage, setTotalCount, totalPages } = usePagination(itemsPerPage, [debouncedSearch, typeFilter]);
 
     // Selection for bulk actions
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

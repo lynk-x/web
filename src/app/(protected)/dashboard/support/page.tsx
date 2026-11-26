@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import sharedStyles from '@/components/dashboard/DashboardShared.module.css';
@@ -44,6 +44,17 @@ export default function SupportDashboard() {
         priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent'
     });
 
+    const fetchTickets = useCallback(async (uid: string) => {
+        setIsLoading(true);
+        const { data, error } = await supportRepo.getUserTickets(uid, { pageSize: 50 });
+        if (error) {
+            showToast('Failed to load tickets', 'error');
+        } else if (data) {
+            setTickets(data);
+        }
+        setIsLoading(false);
+    }, [supportRepo, showToast]);
+
     useEffect(() => {
         const init = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -54,24 +65,13 @@ export default function SupportDashboard() {
             }
         };
         init();
-    }, [supabase, supportRepo]);
+    }, [supabase, fetchTickets]);
 
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
-
-    const fetchTickets = async (uid: string) => {
-        setIsLoading(true);
-        const { data, error } = await supportRepo.getUserTickets(uid, { pageSize: 50 });
-        if (error) {
-            showToast('Failed to load tickets', 'error');
-        } else if (data) {
-            setTickets(data);
-        }
-        setIsLoading(false);
-    };
 
     const handleCreateTicket = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,7 +166,7 @@ export default function SupportDashboard() {
                                 <div className={sharedStyles.loadingContainer}>Loading messages...</div>
                             ) : messages.length === 0 ? (
                                 <div className={sharedStyles.emptyState}>
-                                    <p>No messages yet. We'll respond shortly.</p>
+                                    <p>No messages yet. We&apos;ll respond shortly.</p>
                                 </div>
                             ) : (
                                 messages.map(msg => {
@@ -286,7 +286,7 @@ export default function SupportDashboard() {
                             <Select
                                 label="Priority"
                                 value={newTicket.priority}
-                                onChange={e => setNewTicket({...newTicket, priority: e.target.value as any})}
+                                onChange={e => setNewTicket({...newTicket, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent'})}
                                 options={[
                                     { value: 'low', label: 'Low - General Question' },
                                     { value: 'normal', label: 'Normal - Issue / Bug' },

@@ -25,13 +25,14 @@ export default function CreateAccountPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        fetchCountries();
-    }, []);
-
-    const fetchCountries = async () => {
-        const { data } = await supabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
-        if (data) setCountries(data);
-    };
+        let active = true;
+        const loadCountries = async () => {
+            const { data } = await supabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
+            if (active && data) setCountries(data);
+        };
+        loadCountries();
+        return () => { active = false; };
+    }, [supabase]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

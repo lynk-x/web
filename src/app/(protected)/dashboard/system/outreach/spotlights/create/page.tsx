@@ -31,7 +31,7 @@ export default function CreateSpotlightPage() {
     const [backgroundUrl, setBackgroundUrl] = useState('');
     const [isActive, setIsActive] = useState(true);
 
-    const handleChange = (setter: any, value: any) => {
+    const handleChange = <T,>(setter: React.Dispatch<React.SetStateAction<T>>, value: T) => {
         setter(value);
         setIsDirty(true);
     };
@@ -109,7 +109,7 @@ export default function CreateSpotlightPage() {
                                 <select
                                     className={adminStyles.select}
                                     value={target}
-                                    onChange={(e) => handleChange(setTarget, e.target.value)}
+                                    onChange={(e) => handleChange(setTarget, e.target.value as 'all' | 'organizer_dashboard' | 'ads_dashboard' | 'discovery_page')}
                                 >
                                     <option value="all">Everywhere</option>
                                     <option value="organizer_dashboard">Organizer Dashboard</option>
@@ -207,9 +207,9 @@ export default function CreateSpotlightPage() {
                     <div className={adminStyles.pageCard}>
                         <h2 className={adminStyles.sectionTitle}>Targeting Rules</h2>
                         <ul style={{ paddingLeft: '20px', fontSize: '14px', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--color-utility-primaryText)' }}>
-                            <li>"Everywhere" shows on all hero-enabled dashboards.</li>
+                            <li>&quot;Everywhere&quot; shows on all hero-enabled dashboards.</li>
                             <li>Multiple spotlights on one target will alternate.</li>
-                            <li>Use "Display Order" to control the first-shown slide.</li>
+                            <li>Use &quot;Display Order&quot; to control the first-shown slide.</li>
                             <li>External links should include full protocol (https://).</li>
                         </ul>
                     </div>

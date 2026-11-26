@@ -8,8 +8,6 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import styles from './page.module.css';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import FXRateTable from '@/components/system/finance/FXRateTable';
 import TaxRateTable from '@/components/admin/finance/TaxRateTable';
@@ -45,7 +43,6 @@ interface SubscriptionPlan {
 function GlobalFinanceContent() {
     const { showToast } = useToast();
     const { confirm, ConfirmDialog } = useConfirmModal();
-    const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
     const [activeTab, handleTabChange] = useUrlTab('tab', 'wallets', { mode: 'push' });
@@ -126,7 +123,7 @@ function GlobalFinanceContent() {
                     country_name: countryNameByCode.get(t.country_code) || t.country_code
                 })));
             } else if (activeTab === 'fx-rates') {
-                const { data, error } = await supabase.schema('api' as any).from('v1_fx_rates').select('*').order('currency');
+                const { data, error } = await supabase.schema('api').from('v1_fx_rates').select('*').order('currency');
                 if (error) throw error;
                 setFxRates(data || []);
             } else if (activeTab === 'billing-constants') {
@@ -380,7 +377,8 @@ function GlobalFinanceContent() {
                             selectedIds={selectedWalletIds}
                             onSelect={(id: string) => {
                                 const next = new Set(selectedWalletIds);
-                                next.has(id) ? next.delete(id) : next.add(id);
+                                if (next.has(id)) next.delete(id);
+                                else next.add(id);
                                 setSelectedWalletIds(next);
                             }}
                             onSelectAll={() => setSelectedWalletIds(selectedWalletIds.size === wallets.length ? new Set() : new Set(wallets.map(w => `${w.account_id}_${w.currency}`)))}
@@ -533,7 +531,7 @@ function GlobalFinanceContent() {
                                 <select
                                     className={adminStyles.select}
                                     value={adjustBalanceType}
-                                    onChange={e => setAdjustBalanceType(e.target.value as any)}
+                                    onChange={e => setAdjustBalanceType(e.target.value as 'cash' | 'credit' | 'escrow')}
                                 >
                                     <option value="cash">Cash</option>
                                     <option value="credit">Credit</option>

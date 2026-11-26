@@ -1,5 +1,10 @@
 @import "./theme.css";
 
+html {
+  --font-primary: var(--font-inter), "Inter", sans-serif;
+  --font-heading: var(--font-inter-tight), "Inter Tight", sans-serif;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

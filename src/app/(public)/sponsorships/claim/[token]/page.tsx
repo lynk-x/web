@@ -16,20 +16,24 @@ export async function generateMetadata({ params }: ClaimPageProps): Promise<Meta
 
     if (!invite || !invite.found) {
         return {
-            title: 'Sponsorship Invitation | Lynk-X',
+            title: 'Sponsorship Invitation',
             description: 'Direct sponsor invitation on Lynk-X.',
+            robots: { index: false, follow: false },
+            alternates: { canonical: `/sponsorships/claim/${token}` },
         };
     }
 
-    const title = `${invite.company_name} — ${invite.tier.name} Sponsorship for ${invite.event.title} | Lynk-X`;
+    const title = `${invite.company_name} — ${invite.tier.name} Sponsorship for ${invite.event.title}`;
     const description = `Review guaranteed deliverables, brand showcasing and exclusive sponsorship terms for ${invite.event.title}.`;
     const image = invite.event.media?.hero || invite.event.media?.poster || '/og-sponsor.png';
 
     return {
         title,
         description,
+        robots: { index: false, follow: false },
+        alternates: { canonical: `/sponsorships/claim/${token}` },
         openGraph: {
-            title,
+            title: `${title} | Lynk-X`,
             description,
             url: `/sponsorships/claim/${token}`,
             siteName: 'Lynk-X',

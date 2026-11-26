@@ -2,6 +2,7 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, use, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -313,10 +314,13 @@ function AdminEventDetailContent({ params }: { params: Promise<{ id: string }> }
                         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                             <div style={{ flex: '1 1 300px', maxWidth: '360px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--color-interface-outline)' }}>
                                 {eventImage ? (
-                                    <img
+                                    <Image
                                         src={eventImage}
                                         alt={event.title}
-                                        style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }}
+                                        width={360}
+                                        height={203}
+                                        unoptimized
+                                        style={{ width: '100%', height: 'auto', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }}
                                     />
                                 ) : (
                                     <div style={{

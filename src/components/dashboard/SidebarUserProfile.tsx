@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './Sidebar.module.css';
 import { useAuth } from '@/context/AuthContext';
 
@@ -36,7 +37,7 @@ const SidebarUserProfile: React.FC = () => {
                 <Link href="/account" className={styles.userProfileLink} aria-label="Account settings">
                     <div className={styles.avatar}>
                         {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            <Image src={profile.avatar_url} alt={displayName} width={40} height={40} unoptimized style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                             initials
                         )}

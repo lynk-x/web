@@ -68,7 +68,16 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
             if (error) throw error;
 
-            const mapped: Attendee[] = (data?.items || []).map((row: any) => ({
+            const mapped: Attendee[] = (data?.items || []).map((row: {
+                ticket_id: string;
+                full_name?: string | null;
+                user_name?: string | null;
+                email?: string | null;
+                tier_name: string;
+                created_at: string;
+                status: Attendee['status'];
+                ticket_code?: string | null;
+            }) => ({
                 id: row.ticket_id,
                 name: row.full_name || 'Anonymous',
                 username: row.user_name || '',
@@ -113,7 +122,8 @@ export default function EventAttendeesPage({ params }: { params: Promise<{ id: s
 
     const handleSelect = (id: string) => {
         const next = new Set(selectedIds);
-        next.has(id) ? next.delete(id) : next.add(id);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
         setSelectedIds(next);
     };
 

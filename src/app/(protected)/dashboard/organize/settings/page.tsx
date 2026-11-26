@@ -24,9 +24,7 @@ import { useOrganizerOnboarding } from '@/hooks/useOrganizerOnboarding';
 import ProductTour from '@/components/dashboard/ProductTour';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Input from '@/components/shared/Input';
-import Select from '@/components/shared/Select';
 import Button from '@/components/shared/Button';
-import Textarea from '@/components/shared/Textarea';
 import type { AccountWallet } from '@/types/organize';
 
 function SettingsContent() {
@@ -229,7 +227,7 @@ function SettingsContent() {
         try {
             // 1. Deactivate the specific business account
             const { error: accountError } = await supabase
-                .schema('api' as any)
+                .schema('api')
                 .from('v1_accounts')
                 .delete()
                 .eq('id', activeAccount.id);
@@ -332,7 +330,7 @@ function SettingsContent() {
                                         <line x1="12" y1="8" x2="12" y2="12"></line>
                                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                     </svg>
-                                    <span>You do not have permission to modify this organization's profile settings.</span>
+                                    <span>You do not have permission to modify this organization&apos;s profile settings.</span>
                                 </div>
                             )}
                             <h2 className={adminStyles.sectionTitle}>Account Profile</h2>

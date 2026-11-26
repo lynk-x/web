@@ -10,8 +10,13 @@
  * handled by the proxy in src/proxy.ts.
  */
 
+import type { Metadata } from 'next';
 import { OrganizationProvider } from '@/context/OrganizationContext';
 import { ToastProvider } from '@/components/ui/Toast';
+
+export const metadata: Metadata = {
+    robots: { index: false, follow: false },
+};
 
 export default function ProtectedLayout({
     children,

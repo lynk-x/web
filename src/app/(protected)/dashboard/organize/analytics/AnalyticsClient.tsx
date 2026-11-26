@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import PerformanceTable, { type PerformanceEvent } from '@/components/features/analytics/PerformanceTable';
 import FilterChips from '@/components/shared/FilterChips';
@@ -71,10 +71,6 @@ export default function AnalyticsClient() {
         return filteredInsights.slice(start, start + itemsPerPage);
     }, [filteredInsights, currentPage, itemsPerPage]);
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, statusFilter, timeRange]);
-
     const handleExport = () => {
         if (filteredInsights.length === 0) {
             showToast('No data to export.', 'warning');
@@ -128,11 +124,11 @@ export default function AnalyticsClient() {
             </div>
 
             <div className="tour-analytics-range" style={{ marginTop: 'var(--spacing-md)' }}>
-                <TableToolbar searchPlaceholder="Filter by name..." searchValue={searchTerm} onSearchChange={setSearchTerm}>
+                <TableToolbar searchPlaceholder="Filter by name..." searchValue={searchTerm} onSearchChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}>
                     <select
                         className={adminStyles.select}
                         value={timeRange}
-                        onChange={(e) => setTimeRange(e.target.value)}
+                        onChange={(e) => { setTimeRange(e.target.value); setCurrentPage(1); }}
                         style={{ width: 'auto', minWidth: '160px' }}
                     >
                         <option value="7">Last 7 Days</option>

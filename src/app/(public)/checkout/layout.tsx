@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Checkout | Lynk-X",
+    title: "Checkout",
     description: "Securely complete your ticket purchase for the event.",
 };
 

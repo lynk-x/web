@@ -3,9 +3,13 @@
 import React, { useState } from 'react';
 import Navbar from "@/components/public/Navbar";
 import AppDrawer from "@/components/public/AppDrawer";
+import LynkXFooter from "@/components/public/LynkXFooter";
 import styles from "./layout.module.css";
 import { FilterProvider } from "@/context/FilterContext";
 
+/**
+ * Shared layout shell for the public Resource Hub and individual resource pages.
+ */
 export default function ResourceLayout({
     children,
 }: {
@@ -32,6 +36,7 @@ export default function ResourceLayout({
                         </div>
                     </main>
                 </div>
+                <LynkXFooter />
             </div>
         </FilterProvider>
     );

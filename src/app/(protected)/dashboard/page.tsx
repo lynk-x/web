@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useOrganization } from '@/context/OrganizationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -15,7 +16,7 @@ import styles from './page.module.css';
 function DashboardRoot() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, profile, isProfileComplete, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
+    const { user, isProfileComplete, isLoading: isLoadingAuth, isLoadingProfile, logout } = useAuth();
     const { accounts: allAccounts, setActiveAccountId, isLoading: isLoadingOrg } = useOrganization();
     const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -45,7 +46,7 @@ function DashboardRoot() {
         ? businessAccounts.filter(a => a.type === normalizedType)
         : businessAccounts;
 
-    const handleSelectWorkspace = useCallback((account: any) => {
+    const handleSelectWorkspace = useCallback((account: { id: string; type: string; role: string }) => {
         setIsRedirecting(true);
         setActiveAccountId(account.id);
         const path = (account.type === 'platform' || account.type === 'system')
@@ -137,7 +138,7 @@ function DashboardRoot() {
                                 <div className={styles.cardHeader}>
                                     <div className={styles.avatar}>
                                         {acc.logoUrl
-                                            ? <img src={acc.logoUrl} alt={acc.name} />
+                                            ? <Image src={acc.logoUrl} alt={acc.name} width={48} height={48} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             : acc.name.charAt(0)}
                                     </div>
                                     <div className={styles.orgInfo}>

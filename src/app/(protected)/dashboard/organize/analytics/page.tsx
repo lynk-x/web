@@ -32,7 +32,7 @@ export default async function Page() {
     if (user) {
         // Query the default primary account or active account for the user
         const { data: account } = await supabase
-            .schema('api' as any)
+            .schema('api')
             .from('v1_account_memberships')
             .select('account_id')
             .eq('user_id', user.id)

@@ -9,16 +9,32 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
-import { formatDateTimeInTimezone, formatEventDate, formatTime, formatTimeInTimezone } from '@/utils/format';
+import { formatEventDate, formatTimeInTimezone } from '@/utils/format';
 import { getEventImage } from '@/utils/eventImage';
 import styles from './EventDetailsView.module.css';
 import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
 import { useToast } from '@/components/ui/Toast';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
+import EventCard from './EventCard';
+import LynkXFooter from './LynkXFooter';
+import { formatDateInTimezone } from '@/utils/format';
+
+export interface TicketTierItem {
+    id: string;
+    display_name?: string;
+    name?: string;
+    description?: string | null;
+    price: number;
+    capacity: number | null;
+    tickets_sold?: number | null;
+    tickets_available: number | null;
+    sales_start?: string | null;
+    sales_end?: string | null;
+}
 
 interface EventDetailsViewProps {
     event: Event;
-    ticketTiers?: any[];
+    ticketTiers?: TicketTierItem[];
     /** Active disclaimers loaded from the DB via event_tags → tags → disclaimers */
     disclaimers?: Disclaimer[];
     /** True when every ticket tier has reached its capacity */
@@ -27,12 +43,18 @@ interface EventDetailsViewProps {
     isEventEnded?: boolean;
     /** Official tag names linked to the event, via api.v1_tags (public/anon-safe). */
     tags?: string[];
+    relatedEvents?: Event[];
+    categorySlug?: string;
 }
 
 const stripHtml = (html: string) => {
     return html.replace(/<[^>]*>/g, '');
 };
 
+/**
+ * Interactive event detail view displaying event info, live ticket availability,
+ * waitlist signup, checkout handoff, related events and the global footer.
+ */
 const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     event,
     ticketTiers = [],
@@ -40,17 +62,64 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     isSoldOut = false,
     isEventEnded = false,
     tags = [],
+    relatedEvents = [],
+    categorySlug,
 }) => {
     const plainText = stripHtml(event.description || '');
     const router = useRouter();
     const { addToCart } = useCart();
-    const supabase = createClient();
+    const supabase = React.useMemo(() => createClient(), []);
     const { showToast } = useToast();
 
+    const [liveTiers, setLiveTiers] = useState<TicketTierItem[]>(ticketTiers);
+    const [liveIsSoldOut, setLiveIsSoldOut] = useState<boolean>(isSoldOut);
     const [isAboutExpanded, setIsAboutExpanded] = useState(true);
     const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+
+    // Refresh live ticket availability client-side so 60s ISR caching on the
+    // page shell never surfaces stale remaining counts during busy sales.
+    useEffect(() => {
+        if (isEventEnded || !event?.id) return;
+        let cancelled = false;
+
+        const refreshAvailability = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('event_ticket_tiers')
+                    .select('id, capacity, tickets_sold, tickets_available, sales_start, sales_end')
+                    .eq('event_id', event.id)
+                    .eq('is_hidden', false);
+
+                if (error || !data || cancelled) return;
+
+                const byId = new Map(
+                    (data as Partial<TicketTierItem>[]).map((row) => [row.id, row])
+                );
+                setLiveTiers((prev) => {
+                    const merged = prev.map((tier) => {
+                        const fresh = byId.get(tier.id);
+                        return fresh ? { ...tier, ...fresh } : tier;
+                    });
+                    const nowTs = Date.now();
+                    const allSoldOut = merged.length > 0 && merged.every(
+                        (t) => (t.capacity !== null && (t.tickets_available ?? 0) <= 0)
+                            || (t.sales_end && new Date(t.sales_end).getTime() < nowTs)
+                    );
+                    setLiveIsSoldOut(allSoldOut);
+                    return merged;
+                });
+            } catch {
+                // Keep ISR-hydrated tier state on network failure.
+            }
+        };
+
+        refreshAvailability();
+        return () => {
+            cancelled = true;
+        };
+    }, [event?.id, isEventEnded, supabase]);
 
     // Ticket tier availability (isTierPresale/isTierClosed below) is a
     // one-shot Date.now() comparison against sales_start/sales_end — without
@@ -94,7 +163,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
         setIsDisclaimerOpen(false);
 
         const eventImage = getEventImage(event);
-        const selectedTier = ticketTiers.find(t => t.id === selectedTicket);
+        const selectedTier = liveTiers.find(t => t.id === selectedTicket);
 
         if (selectedTier) {
             addToCart({
@@ -104,7 +173,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 tierId: selectedTier.id,
                 eventTitle: event.title,
                 eventReference: event.reference,
-                ticketType: selectedTier.display_name || selectedTier.name,
+                ticketType: selectedTier.display_name || selectedTier.name || 'General Admission',
                 price: selectedTier.price,
                 quantity,
                 currency: event.currency || 'KES',
@@ -178,7 +247,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
         };
 
         checkExistingWaitlist();
-    }, [event?.id]);
+    }, [event?.id, supabase]);
 
     // Format the event date/time in the event's canonical timezone
     const start = event.start_datetime;
@@ -218,7 +287,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         text: `Check out ${event.title} on Lynk-X!`,
                         url: window.location.href,
                     });
-                } catch (error) {
+                } catch {
                     // navigator.share throws AbortError when user dismisses — ignore
                 }
             } else {
@@ -228,21 +297,17 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
         }
     };
 
+    const heroImageUrl = getEventImage(event);
+
     return (
-        <motion.div
-            className={styles.container}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-        >
+        <div className={styles.container}>
             <header className={styles.header}>
                 <Link href="/" className={styles.backBtn} aria-label="Back to events">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </Link>
-                <div className={styles.logoWrapper}>
+                <Link href="/" className={styles.logoWrapper} aria-label="Lynk-X Home">
                     <Image
                         src="/lynk-x_combined_logo.svg"
                         alt="Lynk-X"
@@ -251,7 +316,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                         style={{ objectFit: 'cover' }}
                         priority
                     />
-                </div>
+                </Link>
                 <button className={styles.shareBtn} onClick={handleShare} aria-label="Share event">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M8.59 13.51L15.42 17.49M15.41 6.51L8.59 10.49M21 5C21 6.65685 19.6569 8 18 8C16.3431 8 15 6.65685 15 5C15 3.34315 16.3431 2 18 2C19.6569 2 21 3.34315 21 5ZM9 12C9 13.6569 7.65685 15 6 15C4.34315 15 3 13.6569 3 12C3 10.3431 4.34315 9 6 9C7.65685 9 9 10.3431 9 12ZM21 19C21 20.6569 19.6569 22 18 22C16.3431 22 15 20.6569 15 19C15 17.3431 16.3431 16 18 16C19.6569 16 21 17.3431 21 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -259,41 +324,41 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 </button>
             </header>
 
-            <div className={styles.layoutGrid}>
-                <motion.div
-                    className={styles.heroColumn}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                    <div className={styles.hero}>
-                        {getEventImage(event) ? (
-                            <img
-                                src={getEventImage(event)}
-                                alt={event.title}
-                                className={styles.heroImage}
-                            />
-                        ) : (
-                            <svg role="img" aria-label="No event image available" width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.heroIcon}>
-                                <path d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16M14 14L15.586 12.414C15.9611 12.0391 16.4697 11.8284 17 11.8284C17.5303 11.8284 18.0389 12.0391 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        )}
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    className={styles.detailsColumn}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                >
-                    <div className={styles.detailsContent}>
-                        <div className={styles.titleRow}>
-                            <h1 className={styles.title}>{event.title}</h1>
-                            <div className={styles.tagGrid} style={{ marginBottom: 0, marginTop: '8px' }}>
-                                <span className={styles.tag}>{event.category || 'Event'}</span>
-                            </div>
+            <main>
+                <div className={styles.layoutGrid}>
+                    <div className={styles.heroColumn}>
+                        <div className={styles.hero}>
+                            {heroImageUrl ? (
+                                <Image
+                                    src={heroImageUrl}
+                                    alt={event.title}
+                                    fill
+                                    priority
+                                    sizes="(max-width: 768px) 100vw, 35vw"
+                                    className={styles.heroImage}
+                                />
+                            ) : (
+                                <svg role="img" aria-label="No event image available" width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.heroIcon}>
+                                    <path d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16M14 14L15.586 12.414C15.9611 12.0391 16.4697 11.8284 17 11.8284C17.5303 11.8284 18.0389 12.0391 18.414 12.414L20 14M14 8H14.01M6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            )}
                         </div>
+                    </div>
+
+                    <div className={styles.detailsColumn}>
+                        <div className={styles.detailsContent}>
+                            <div className={styles.titleRow}>
+                                <h1 className={styles.title}>{event.title}</h1>
+                                <div className={styles.tagGrid} style={{ marginBottom: 0, marginTop: '8px' }}>
+                                    {categorySlug ? (
+                                        <Link href={`/events/${categorySlug}`} className={styles.tag}>
+                                            {event.category || 'Event'}
+                                        </Link>
+                                    ) : (
+                                        <span className={styles.tag}>{event.category || 'Event'}</span>
+                                    )}
+                                </div>
+                            </div>
                         <p style={{ opacity: 0.8, fontSize: '15px', marginTop: '12px' }}>
                             Buy tickets to {event.title} on Lynk-X. Join the event forum for updates, live chat and shared media.
                         </p>
@@ -321,9 +386,9 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                     </svg>
                                 </div>
                                 <div className={styles.metaText}>
-                                    <span className={styles.metaLabel}>{(event.location as any)?.name || 'TBD'}</span>
+                                    <span className={styles.metaLabel}>{(event.location as { name?: string } | null)?.name || 'TBD'}</span>
                                     <span className={styles.metaSublabel}>
-                                        {(event as any).is_online ? 'Online Event' : 'Physical Event'}
+                                        {(event as Event & { is_online?: boolean }).is_online ? 'Online Event' : 'Physical Event'}
                                     </span>
                                 </div>
                             </div>
@@ -375,7 +440,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                     This event has already taken place.
                                 </p>
                             </div>
-                        ) : isSoldOut ? (
+                        ) : liveIsSoldOut ? (
                             <div style={{ padding: '20px 0' }}>
                                 <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '12px' }}>
                                     All tickets for this event are sold out.
@@ -431,10 +496,10 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                     </>
                                 )}
                             </div>
-                        ) : ticketTiers.length === 0 ? (
+                        ) : liveTiers.length === 0 ? (
                             <p>No tickets currently available for this event.</p>
                         ) : (
-                            ticketTiers.map(tier => {
+                            liveTiers.map(tier => {
                                 // tickets_available is server-computed as capacity - tickets_sold -
                                 // tickets_reserved, so it reflects tickets other buyers currently have
                                 // locked in checkout — not just what's already sold.
@@ -516,13 +581,8 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                     </div>
 
                     {/* ── Ticket action footer (hidden when sold out or ended) ── */}
-                    {!isSoldOut && !isEventEnded && (
-                        <motion.div 
-                            className={styles.footerActions}
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                        >
+                    {!liveIsSoldOut && !isEventEnded && (
+                        <div className={styles.footerActions}>
                             <button
                                 id="buy-tickets-btn"
                                 onClick={handleGetTicketClick}
@@ -530,18 +590,47 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                             >
                                 {selectedTicket !== null
                                     ? (() => {
-                                        const total = (ticketTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity;
+                                        const total = (liveTiers.find(t => t.id === selectedTicket)?.price || 0) * quantity;
                                         return total > 0
                                             ? `Proceed to Checkout — ${event.currency || 'KES'} ${total.toLocaleString()}`
                                             : 'Proceed to Checkout — Free';
                                     })()
                                     : 'Select a ticket'}
                             </button>
-                        </motion.div>
+                        </div>
                     )}
 
-                </motion.div>
-            </div>
+                    </div>
+                </div>
+
+                {relatedEvents.length > 0 && (
+                    <section className={styles.relatedSection} aria-labelledby="related-events-heading">
+                        <h2 id="related-events-heading" className={styles.relatedHeading}>
+                            {event.category ? `More Upcoming ${event.category} Events` : 'More Upcoming Events'}
+                        </h2>
+                        <div className={styles.relatedGrid}>
+                            {relatedEvents.map((rel) => {
+                                const relDate = formatDateInTimezone(rel.start_datetime, rel.timezone);
+                                const relTime = formatTimeInTimezone(rel.start_datetime, rel.timezone);
+                                return (
+                                    <EventCard
+                                        key={rel.id}
+                                        id={rel.id}
+                                        reference={rel.reference}
+                                        name={rel.title}
+                                        date={`${relDate} • ${relTime}`}
+                                        category={rel.category || 'Event'}
+                                        price={(rel.low_price && rel.currency) ? `${rel.currency} ${rel.low_price}` : 'Free'}
+                                        image={getEventImage(rel)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </section>
+                )}
+            </main>
+
+            <LynkXFooter />
 
             {/* Disclaimer modal — uses real DB data, shown only if disclaimers exist */}
             {disclaimers.length > 0 && (
@@ -552,7 +641,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                     onClose={() => setIsDisclaimerOpen(false)}
                 />
             )}
-        </motion.div>
+        </div>
     );
 };
 

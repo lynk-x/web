@@ -9,7 +9,6 @@
 
 import { getErrorMessage } from '@/utils/error';
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import adminStyles from '@/app/(protected)/dashboard/admin/page.module.css';
 import KycLimitsTable from '@/components/system/compliance/KycLimitsTable';
 import KycRequirementsTable from '@/components/system/compliance/KycRequirementsTable';
@@ -88,7 +87,6 @@ function newStepDraft(): KycRequirementStepDraft {
 
 function GlobalComplianceContent() {
     const { showToast } = useToast();
-    const searchParams = useSearchParams();
     const supabase = useMemo(() => createClient(), []);
 
     const [activeTab, handleTabChange] = useUrlTab('tab', 'kyc-limits', { mode: 'push' });
@@ -186,7 +184,7 @@ function GlobalComplianceContent() {
     useEffect(() => {
         const fetchCountries = async () => {
             const { data } = await supabase.schema('api').from('v1_countries').select('code, display_name').order('display_name');
-            if (data) setCountries(data.map((c: any) => ({ code: c.code, name: c.display_name })));
+            if (data) setCountries(data.map((c: { code: string; display_name: string }) => ({ code: c.code, name: c.display_name })));
         };
         fetchCountries();
     }, [supabase]);
