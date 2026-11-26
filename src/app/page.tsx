@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { createPublicClient } from '@/utils/supabase/public';
 import HomeLayout from '@/components/public/HomeLayout';
 import EventCard from '@/components/public/EventCard';
+import HomeBentoShowcase from '@/components/public/HomeBentoShowcase';
+import HomeAudienceSwitcher from '@/components/public/HomeAudienceSwitcher';
 import LynkXFooter from '@/components/public/LynkXFooter';
 import SoftwareAppJsonLd from '@/components/public/SoftwareAppJsonLd';
 import { getEventImage } from '@/utils/eventImage';
@@ -115,7 +117,7 @@ export default async function Home() {
                         Ticketing Meets Community. Every Event Has a Forum.
                     </h1>
                     <p className={styles.subtitle}>
-                        Create events, sell tickets with instant Moile money and card checkout and connect attendees in private event forums — all in the browser with no app download required.
+                        Create events, sell tickets with instant mobile money and card checkout and connect attendees in private event forums — all in the browser with no app download required.
                     </p>
 
                     <form action="/events" method="GET" className={styles.searchForm} role="search">
@@ -141,47 +143,7 @@ export default async function Home() {
                     </div>
                 </section>
 
-                <section className={styles.section} aria-labelledby="roles-heading">
-                    <div className={styles.sectionHeaderRow}>
-                        <div>
-                            <h2 id="roles-heading" className={styles.sectionTitle}>
-                                Built for Everyone in the Room
-                            </h2>
-                            <p className={styles.sectionSub}>
-                                One connected experience for hosts, ticket holders and brand partners.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className={styles.rolesGrid}>
-                        <Link href="/for/organizers" className={styles.roleCard}>
-                            <span className={styles.roleLabel}>For Organizers</span>
-                            <h3 className={styles.roleTitle}>Sell Tickets &amp; Own Your Crowd</h3>
-                            <p className={styles.roleDesc}>
-                                Launch ticket tiers in minutes, track gate check-ins and broadcast updates inside a dedicated event forum.
-                            </p>
-                            <span className={styles.roleCta}>Explore Organizer Tools →</span>
-                        </Link>
-
-                        <Link href="/for/attendees" className={styles.roleCard}>
-                            <span className={styles.roleLabel}>For Attendees</span>
-                            <h3 className={styles.roleTitle}>Every Ticket Unlocks the Community</h3>
-                            <p className={styles.roleDesc}>
-                                Discover local events, check out fast without an app store download and join live attendee chat and media walls.
-                            </p>
-                            <span className={styles.roleCta}>See Attendee Experience →</span>
-                        </Link>
-
-                        <Link href="/for/ad-sponsors" className={styles.roleCard}>
-                            <span className={styles.roleLabel}>For Sponsors &amp; Advertisers</span>
-                            <h3 className={styles.roleTitle}>Reach Verified Event Audiences</h3>
-                            <p className={styles.roleDesc}>
-                                Place your brand inside active event forums where confirmed attendees are already engaged.
-                            </p>
-                            <span className={styles.roleCta}>Launch a Campaign →</span>
-                        </Link>
-                    </div>
-                </section>
+                <HomeBentoShowcase />
 
                 <section className={styles.section} aria-labelledby="upcoming-preview-heading">
                     <div className={styles.sectionHeaderRow}>
@@ -235,42 +197,7 @@ export default async function Home() {
                     )}
                 </section>
 
-                <section className={styles.section} aria-labelledby="pillars-heading">
-                    <div className={styles.sectionHeaderRow}>
-                        <div>
-                            <h2 id="pillars-heading" className={styles.sectionTitle}>
-                                Why Organizers &amp; Attendees Choose Lynk-X
-                            </h2>
-                        </div>
-                    </div>
-
-                    <div className={styles.pillarsGrid}>
-                        <div className={styles.pillarCard}>
-                            <h3 className={styles.pillarTitle}>Zero-Friction Ticketing</h3>
-                            <p className={styles.pillarDesc}>
-                                Instant M-Pesa STK push and card payments with timed reservations and fast QR code gate scanning.
-                            </p>
-                        </div>
-                        <div className={styles.pillarCard}>
-                            <h3 className={styles.pillarTitle}>Automated Event Forums</h3>
-                            <p className={styles.pillarDesc}>
-                                Every ticket opens a private room for organizer announcements, live chat and shared event media.
-                            </p>
-                        </div>
-                        <div className={styles.pillarCard}>
-                            <h3 className={styles.pillarTitle}>No App Store Barrier</h3>
-                            <p className={styles.pillarDesc}>
-                                Works directly in iOS, Android and desktop browsers as an installable Progressive Web App.
-                            </p>
-                        </div>
-                        <div className={styles.pillarCard}>
-                            <h3 className={styles.pillarTitle}>Built-In Sponsor Reach</h3>
-                            <p className={styles.pillarDesc}>
-                                Native in-forum sponsor placements with automatic creative optimization for verified crowds.
-                            </p>
-                        </div>
-                    </div>
-                </section>
+                <HomeAudienceSwitcher />
             </div>
 
             <LynkXFooter />

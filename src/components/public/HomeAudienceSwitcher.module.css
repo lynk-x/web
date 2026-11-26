@@ -1,0 +1,192 @@
+.switcherSection {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 20px 64px;
+}
+
+.headerBlock {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 28px;
+}
+
+.sectionTitle {
+    font-family: var(--font-heading);
+    font-size: clamp(24px, 3.2vw, 34px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-utility-primaryText);
+}
+
+.sectionSub {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.68);
+    margin-top: 8px;
+    margin-bottom: 22px;
+}
+
+.tabRow {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tabBtn {
+    padding: 10px 20px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.tabBtn:hover {
+    color: var(--color-utility-primaryText);
+}
+
+.tabBtnActive {
+    background: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    font-weight: 700;
+}
+
+.panel {
+    background: var(--color-interface-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+}
+
+@media (min-width: 1024px) {
+    .panel {
+        grid-template-columns: 0.95fr 1.25fr;
+        padding: 36px;
+        align-items: center;
+    }
+}
+
+.panelIntro {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-brand-primary);
+}
+
+.panelHeadline {
+    font-family: var(--font-heading);
+    font-size: clamp(22px, 2.8vw, 30px);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--color-utility-primaryText);
+}
+
+.panelSummary {
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.ctaGroup {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-top: 8px;
+}
+
+.primaryBtn {
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-primary);
+    color: var(--color-utility-secondaryText);
+    font-size: 14px;
+    font-weight: 700;
+    transition: opacity 0.2s;
+}
+
+.primaryBtn:hover {
+    opacity: 0.92;
+}
+
+.secondaryBtn {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-brand-primary);
+}
+
+.secondaryBtn:hover {
+    text-decoration: underline;
+}
+
+.highlightsGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+@media (min-width: 768px) {
+    .highlightsGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.highlightCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.highlightIconRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.highlightIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(32, 249, 40, 0.12);
+    color: var(--color-brand-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkIcon {
+    color: rgba(32, 249, 40, 0.6);
+}
+
+.highlightTitle {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-utility-primaryText);
+}
+
+.highlightDesc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.68);
+}
