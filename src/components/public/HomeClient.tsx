@@ -266,16 +266,23 @@ const HomeClient: React.FC<HomeClientProps> = ({
                 )}
             </div>
             {(categories ?? []).length > 0 && (
-                <section className={styles.discoveryHeader} aria-label="Browse events by category">
-                    <nav className={styles.categoryPillBar} aria-label="Event categories">
-                        {(categories ?? []).map((cat) => (
-                            <Link
-                                key={cat.id}
-                                href={`/events/${slugifyCategory(cat.display_name)}`}
-                                className={styles.categoryPill}
-                            >
-                                {cat.display_name}
-                            </Link>
+                <section className={styles.categoryDirectory} aria-label="Browse events by category">
+                    <span className={styles.categoryDirectoryLabel}>Browse by category:</span>
+                    <nav className={styles.categoryDirectoryList} aria-label="Event categories">
+                        {(categories ?? []).map((cat, idx) => (
+                            <React.Fragment key={cat.id}>
+                                {idx > 0 && (
+                                    <span className={styles.categoryDot} aria-hidden="true">
+                                        ·
+                                    </span>
+                                )}
+                                <Link
+                                    href={`/events/${slugifyCategory(cat.display_name)}`}
+                                    className={styles.categoryLink}
+                                >
+                                    {cat.display_name}
+                                </Link>
+                            </React.Fragment>
                         ))}
                     </nav>
                 </section>

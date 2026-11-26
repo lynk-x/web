@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './ForumDevicePreview.module.css';
 
 type ForumTab = 'updates' | 'chat' | 'media';
+
+interface ReactionBurst {
+    id: number;
+    emoji: string;
+    leftPct: number;
+}
 
 const TABS: { key: ForumTab; label: string; blurb: string }[] = [
     { key: 'updates', label: 'Updates', blurb: 'Pinned organizer announcements with push alerts.' },
@@ -116,6 +122,8 @@ function VideoUploadIcon() {
 interface ForumScreenProps {
     activeTab: ForumTab;
     onTabChange: (tab: ForumTab) => void;
+    bursts: ReactionBurst[];
+    onReact: (emoji: string) => void;
     /** When false the tab buttons are removed from keyboard focus (duplicate desktop copy). */
     focusable: boolean;
 }
@@ -125,7 +133,7 @@ interface ForumScreenProps {
  * and the active tab body). Shared by the phone and desktop frames so both
  * always show the same state.
  */
-function ForumScreen({ activeTab, onTabChange, focusable }: ForumScreenProps) {
+function ForumScreen({ activeTab, onTabChange, bursts, onReact, focusable }: ForumScreenProps) {
     return (
         <>
             <div className={styles.appBar}>
@@ -166,17 +174,29 @@ function ForumScreen({ activeTab, onTabChange, focusable }: ForumScreenProps) {
             {/* Keyed so the entrance animations replay whenever the tab changes. */}
             <div key={activeTab} className={styles.tabBody}>
                 {activeTab === 'updates' && <UpdatesBody />}
-                {activeTab === 'chat' && <LiveChatBody />}
+                {activeTab === 'chat' && <LiveChatBody bursts={bursts} onReact={onReact} focusable={focusable} />}
                 {activeTab === 'media' && <MediaBody />}
             </div>
         </>
     );
 }
 
-/** Updates tab: category chips, pinned banner and organizer-only feed. */
+/** Updates tab: slide-down push alert, category chips, pinned banner and organizer feed. */
 function UpdatesBody() {
     return (
         <>
+            <div className={styles.pushNotif} aria-hidden="true">
+                <span className={styles.pushIcon}>🔔</span>
+                <div className={styles.pushText}>
+                    <div className={styles.pushMeta}>
+                        <span>LYNK-X</span>
+                        <span>now</span>
+                    </div>
+                    <div className={styles.pushTitle}>Afrofest Squad • #Urgent</div>
+                    <div className={styles.pushBody}>Last call for the rooftop shuttle — final pickup at 18:40.</div>
+                </div>
+            </div>
+
             <div className={styles.categoryFilter}>
                 <span className={`${styles.chip} ${styles.chipActive}`}>All</span>
                 <span className={styles.chip}>Urgent</span>
@@ -219,13 +239,30 @@ function UpdatesBody() {
     );
 }
 
-/** Live chat tab: reaction strip, chat bubbles, typing loop and composer. */
-function LiveChatBody() {
+/** Live chat tab: interactive reaction strip, chat bubbles, typing loop and composer. */
+function LiveChatBody({
+    bursts,
+    onReact,
+    focusable,
+}: {
+    bursts: ReactionBurst[];
+    onReact: (emoji: string) => void;
+    focusable: boolean;
+}) {
     return (
         <>
-            <div className={styles.reactionStrip} aria-hidden="true">
+            <div className={styles.reactionStrip}>
                 {REACTIONS.map((emoji) => (
-                    <span key={emoji}>{emoji}</span>
+                    <button
+                        key={emoji}
+                        type="button"
+                        tabIndex={focusable ? 0 : -1}
+                        aria-label={focusable ? `React with ${emoji}` : undefined}
+                        className={styles.reactionBtn}
+                        onClick={() => onReact(emoji)}
+                    >
+                        {emoji}
+                    </button>
                 ))}
             </div>
 
@@ -271,6 +308,17 @@ function LiveChatBody() {
                         {emoji}
                     </span>
                 ))}
+
+                {bursts.map((burst) => (
+                    <span
+                        key={burst.id}
+                        className={styles.burstEmoji}
+                        style={{ left: `${burst.leftPct}%` }}
+                        aria-hidden="true"
+                    >
+                        {burst.emoji}
+                    </span>
+                ))}
             </div>
 
             <div className={styles.composerRow}>
@@ -289,8 +337,8 @@ function MediaBody() {
                 {MEDIA_TILES.map((tile, i) => (
                     <div
                         key={`${tile.src}-${i}`}
-                        className={`${styles.tile} ${tile.isVideo ? styles.tileVideo : ''}`}
-                        style={{ backgroundImage: `url('${tile.src}')`, animationDelay: `${i * 0.08}s` }}
+                        className={`${styles.tile} ${tile.isVideo ? styles.tileVideo : ''} ${i === 0 ? styles.tileNew : ''}`}
+                        style={{ backgroundImage: `url('${tile.src}')`, animationDelay: i === 0 ? '0s' : `${i * 0.08}s` }}
                     >
                         {tile.isVideo && <PlayIcon />}
                     </div>
@@ -318,16 +366,48 @@ function MediaBody() {
  */
 export default function ForumDevicePreview() {
     const [activeTab, setActiveTab] = useState<ForumTab>('chat');
+    const [inView, setInView] = useState(false);
+    const [bursts, setBursts] = useState<ReactionBurst[]>([]);
+    const sectionRef = useRef<HTMLElement | null>(null);
+    const burstCounterRef = useRef(0);
+
+    useEffect(() => {
+        const node = sectionRef.current;
+        if (!node || typeof IntersectionObserver === 'undefined') {
+            setInView(true);
+            return;
+        }
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setInView(true);
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.15 },
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, []);
+
+    const handleReact = (emoji: string) => {
+        const id = ++burstCounterRef.current;
+        const leftPct = 15 + ((id * 23) % 70);
+        setBursts((prev) => [...prev.slice(-8), { id, emoji, leftPct }]);
+        setTimeout(() => {
+            setBursts((prev) => prev.filter((item) => item.id !== id));
+        }, 1800);
+    };
 
     return (
-        <section className={styles.section} aria-labelledby="forum-preview-heading">
+        <section ref={sectionRef} className={styles.section} aria-label="Event forum device preview">
             <div className={styles.header}>
                 <p className={styles.sub}>
                     Every ticket unlocks a live event forum for organizer updates, crowd chat and a shared media wall. It opens instantly in any phone or laptop browser with no app download.
                 </p>
             </div>
 
-            <div className={styles.stage}>
+            <div className={`${styles.stage} ${inView ? styles.stageVisible : ''}`}>
                 {/* Desktop browser preview (decorative duplicate of the phone screen). */}
                 <div className={styles.laptop} aria-hidden="true">
                     <div className={styles.bezel}>
@@ -345,7 +425,13 @@ export default function ForumDevicePreview() {
                                     <span className={styles.urlBar}>lynk-x.app/forum/afrofest-squad</span>
                                 </div>
                                 <div className={styles.desktopForum}>
-                                    <ForumScreen activeTab={activeTab} onTabChange={setActiveTab} focusable={false} />
+                                    <ForumScreen
+                                        activeTab={activeTab}
+                                        onTabChange={setActiveTab}
+                                        bursts={bursts}
+                                        onReact={handleReact}
+                                        focusable={false}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -363,7 +449,13 @@ export default function ForumDevicePreview() {
                                 <span>9:41</span>
                                 <span>●●●●</span>
                             </div>
-                            <ForumScreen activeTab={activeTab} onTabChange={setActiveTab} focusable />
+                            <ForumScreen
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                                bursts={bursts}
+                                onReact={handleReact}
+                                focusable
+                            />
                         </div>
                     </div>
                 </div>

@@ -9,14 +9,14 @@ import styles from './home.module.css';
 
 export const metadata: Metadata = {
     title: {
-        absolute: 'Lynk-X — The Ultimate Event App',
+        absolute: 'Lynk-X — Event Ticketing & Attendee Forums',
     },
     description: 'The ultimate event app — create events, buy tickets and join private event forums with zero app download required.',
     alternates: {
         canonical: '/',
     },
     openGraph: {
-        title: 'Lynk-X — The Ultimate Event App',
+        title: 'Lynk-X — Event Ticketing & Attendee Forums',
         description: 'The ultimate event app — create events, buy tickets and join private event forums.',
         url: 'https://lynk-x.app',
         siteName: 'Lynk-X',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
                 url: '/og-image.png?v=2',
                 width: 1200,
                 height: 630,
-                alt: 'Lynk-X — The Ultimate Event App',
+                alt: 'Lynk-X — Event Ticketing & Attendee Forums',
                 type: 'image/png',
             },
         ],
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Lynk-X — The Ultimate Event App',
+        title: 'Lynk-X — Event Ticketing & Attendee Forums',
         description: 'The ultimate event app — create events, buy tickets and join private event forums.',
         site: '@lynkxapp',
         creator: '@lynkxapp',
@@ -58,11 +58,11 @@ export default function Home() {
                 <section className={styles.hero}>
                     <div className={styles.badge}>Event Ticketing &amp; Community Platform</div>
                     <h1 className={styles.title}>
-                        Ticketing Meets Community. Every Event Has a Forum.
+                        Every event deserves a forum.
                     </h1>
-                    <p className={styles.subtitle}>
-                        Create events, sell tickets with instant mobile money and card checkout and connect attendees in private event forums — all in the browser with no app download required.
-                    </p>
+                        <p className={styles.subtitle}>
+                            Create events, sell tickets and connect attendees in private event forums — all in the browser with no app download required.
+                        </p>
 
                     <form action="/events" method="GET" className={styles.searchForm} role="search">
                         <input
@@ -72,8 +72,8 @@ export default function Home() {
                             aria-label="Search upcoming events"
                             className={styles.searchInput}
                         />
-                        <button type="submit" className={styles.searchBtn}>
-                            Find Events
+                        <button type="submit" className={styles.searchBtn} aria-label="Search">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </button>
                     </form>
 
@@ -82,7 +82,7 @@ export default function Home() {
                             Browse Events
                         </Link>
                         <Link href="/dashboard/organize" className={styles.btnSecondary}>
-                            Host an Event Free
+                            Create an Event
                         </Link>
                     </div>
                 </section>

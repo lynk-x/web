@@ -59,7 +59,7 @@ export default function OrganizersLandingPage() {
                         The all-in-one platform designed for organizers who care about meaningful engagement. Give your event a forum alongside your ticketing.
                     </p>
                     <div className={styles.ctaBox}>
-                        <Link href="/dashboard/organize" className={styles.btnPrimary}>Start Hosting Free</Link>
+                        <Link href="/dashboard/organize" className={styles.btnPrimary}>Create an Event</Link>
                     </div>
                 </section>
 
