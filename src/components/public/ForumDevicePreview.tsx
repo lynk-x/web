@@ -334,15 +334,18 @@ function MediaBody() {
     return (
         <>
             <div className={styles.mediaGrid}>
-                {MEDIA_TILES.map((tile, i) => (
-                    <div
-                        key={`${tile.src}-${i}`}
-                        className={`${styles.tile} ${tile.isVideo ? styles.tileVideo : ''} ${i === 0 ? styles.tileNew : ''}`}
-                        style={{ backgroundImage: `url('${tile.src}')`, animationDelay: i === 0 ? '0s' : `${i * 0.08}s` }}
-                    >
-                        {tile.isVideo && <PlayIcon />}
-                    </div>
-                ))}
+                {MEDIA_TILES.map((tile, i) => {
+                    const isLast = i === MEDIA_TILES.length - 1;
+                    return (
+                        <div
+                            key={`${tile.src}-${i}`}
+                            className={`${styles.tile} ${tile.isVideo ? styles.tileVideo : ''} ${isLast ? styles.tileNew : ''}`}
+                            style={{ backgroundImage: `url('${tile.src}')`, animationDelay: isLast ? '0s' : `${i * 0.08}s` }}
+                        >
+                            {tile.isVideo && <PlayIcon />}
+                        </div>
+                    );
+                })}
             </div>
 
             <div className={styles.uploadBar}>
@@ -359,6 +362,14 @@ function MediaBody() {
     );
 }
 
+function clamp01(value: number) {
+    return Math.min(1, Math.max(0, value));
+}
+
+function easeOutCubic(t: number) {
+    return 1 - Math.pow(1 - t, 3);
+}
+
 /**
  * Homepage showcase pairing a 1:1 phone mockup of the Lynk-X event forum
  * (matching the marketing device demos) with a laptop browser preview of the
@@ -366,28 +377,49 @@ function MediaBody() {
  */
 export default function ForumDevicePreview() {
     const [activeTab, setActiveTab] = useState<ForumTab>('chat');
-    const [inView, setInView] = useState(false);
     const [bursts, setBursts] = useState<ReactionBurst[]>([]);
-    const sectionRef = useRef<HTMLElement | null>(null);
+    const stageRef = useRef<HTMLDivElement | null>(null);
     const burstCounterRef = useRef(0);
 
     useEffect(() => {
-        const node = sectionRef.current;
-        if (!node || typeof IntersectionObserver === 'undefined') {
-            setInView(true);
+        const stage = stageRef.current;
+        if (!stage) return;
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            stage.style.setProperty('--laptop-p', '1');
+            stage.style.setProperty('--phone-p', '1');
             return;
         }
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries.some((entry) => entry.isIntersecting)) {
-                    setInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold: 0.15 },
-        );
-        observer.observe(node);
-        return () => observer.disconnect();
+
+        let rafId = 0;
+
+        const updateScrollProgress = () => {
+            rafId = 0;
+            const rect = stage.getBoundingClientRect();
+            const vh = window.innerHeight || 800;
+            const raw = clamp01((vh * 0.92 - rect.top) / (vh * 0.68));
+            const laptopP = easeOutCubic(clamp01(raw / 0.62));
+            const phoneP = easeOutCubic(clamp01((raw - 0.32) / 0.68));
+
+            stage.style.setProperty('--laptop-p', laptopP.toFixed(4));
+            stage.style.setProperty('--phone-p', phoneP.toFixed(4));
+        };
+
+        const onScroll = () => {
+            if (!rafId) {
+                rafId = window.requestAnimationFrame(updateScrollProgress);
+            }
+        };
+
+        updateScrollProgress();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+
+        return () => {
+            if (rafId) window.cancelAnimationFrame(rafId);
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onScroll);
+        };
     }, []);
 
     const handleReact = (emoji: string) => {
@@ -400,14 +432,14 @@ export default function ForumDevicePreview() {
     };
 
     return (
-        <section ref={sectionRef} className={styles.section} aria-label="Event forum device preview">
+        <section className={styles.section} aria-label="Event forum device preview">
             <div className={styles.header}>
                 <p className={styles.sub}>
                     Every ticket unlocks a live event forum for organizer updates, crowd chat and a shared media wall. It opens instantly in any phone or laptop browser with no app download.
                 </p>
             </div>
 
-            <div className={`${styles.stage} ${inView ? styles.stageVisible : ''}`}>
+            <div ref={stageRef} className={styles.stage}>
                 {/* Desktop browser preview (decorative duplicate of the phone screen). */}
                 <div className={styles.laptop} aria-hidden="true">
                     <div className={styles.bezel}>

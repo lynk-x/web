@@ -77,6 +77,14 @@ export default function Home() {
                         </button>
                     </form>
 
+                    <Link href="/dashboard/organize" className={styles.heroHostLink}>
+                        Or create an event →
+                    </Link>
+                </section>
+
+                <ForumDevicePreview />
+
+                <div className={styles.midCtaBand}>
                     <div className={styles.ctaRow}>
                         <Link href="/events" className={styles.btnPrimary}>
                             Browse Events
@@ -85,9 +93,7 @@ export default function Home() {
                             Create an Event
                         </Link>
                     </div>
-                </section>
-
-                <ForumDevicePreview />
+                </div>
 
                 <HomeAudienceSwitcher />
             </div>

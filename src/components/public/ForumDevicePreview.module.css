@@ -78,14 +78,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.stageVisible .laptop {
-    opacity: 1;
-    transform: translateY(0);
+    perspective: 1400px;
 }
 
 .bezel {
@@ -95,6 +88,10 @@
     border-radius: 20px 20px 6px 6px;
     padding: 12px 12px 10px;
     box-shadow: 0 40px 90px -20px rgba(0, 0, 0, 0.7);
+    transform-origin: bottom center;
+    transform: rotateX(calc((1 - var(--laptop-p, 1)) * -74deg));
+    opacity: calc(0.25 + var(--laptop-p, 1) * 0.75);
+    will-change: transform, opacity;
 }
 
 .cameraRow {
@@ -208,14 +205,9 @@
     position: relative;
     z-index: 5;
     margin-top: -90px;
-    opacity: 0;
-    transform: translateY(26px);
-    transition: opacity 0.65s ease 0.15s, transform 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
-}
-
-.stageVisible .phoneWrap {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: var(--phone-p, 1);
+    transform: translateY(calc((1 - var(--phone-p, 1)) * 56px));
+    will-change: transform, opacity;
 }
 
 @media (min-width: 1024px) {
@@ -234,14 +226,14 @@
     background: #0a0a0a;
     border: 8px solid #1a1a1c;
     border-radius: 38px;
-    box-shadow: 0 0 0 1px #2a2a2e, 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 60px rgba(32, 249, 40, 0.08);
+    box-shadow: 0 0 0 1px #2a2a2e, 0 30px 80px rgba(0, 0, 0, 0.75);
     overflow: hidden;
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
 }
 
 .phoneWrap:hover .phone {
     transform: translateY(-4px);
-    box-shadow: 0 0 0 1px rgba(32, 249, 40, 0.25), 0 36px 90px rgba(0, 0, 0, 0.8), 0 0 70px rgba(32, 249, 40, 0.14);
+    box-shadow: 0 0 0 1px #2a2a2e, 0 36px 90px rgba(0, 0, 0, 0.8);
 }
 
 .notch {
@@ -541,6 +533,7 @@
     padding: 1em;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: 0.8em;
     overflow: hidden;
 }
@@ -668,6 +661,23 @@
 
 .incomingSlot {
     position: relative;
+    overflow: hidden;
+    animation: slotExpand 6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes slotExpand {
+    0%, 10% {
+        max-height: 0;
+        margin-top: -0.8em;
+    }
+    18%, 92% {
+        max-height: 5.5em;
+        margin-top: 0;
+    }
+    100% {
+        max-height: 0;
+        margin-top: -0.8em;
+    }
 }
 
 .typingRow {
@@ -947,11 +957,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .laptop,
+    .bezel,
     .phoneWrap {
         opacity: 1;
         transform: none;
-        transition: none;
     }
 
     .slamIn,
@@ -961,6 +970,12 @@
         animation: none;
         opacity: 1;
         transform: none;
+    }
+
+    .incomingSlot {
+        animation: none;
+        max-height: none;
+        margin-top: 0;
     }
 
     .typingRow,
