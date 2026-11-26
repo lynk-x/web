@@ -51,14 +51,26 @@ interface HomeClientProps {
     categories?: CategoryItem[];
     tags?: TagItem[];
     categoryTags?: CategoryTagItem[];
+    basePath?: string;
+    headingTitle?: string;
+    headingSubtitle?: string;
 }
 
 /**
- * Interactive discovery shell for the homepage. Syncs `?q=` and `?page=` URL
+ * Interactive event discovery shell for `/events`. Syncs `?q=` and `?page=` URL
  * parameters with search/pagination state and renders crawlable category links
  * above the paginated event grid.
  */
-const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, categories, tags, categoryTags }) => {
+const HomeClient: React.FC<HomeClientProps> = ({
+    carouselEvents,
+    allEvents,
+    categories,
+    tags,
+    categoryTags,
+    basePath = '/events',
+    headingTitle = 'Upcoming Events on Lynk-X',
+    headingSubtitle = 'Browse concerts, conferences, workshops and community gatherings — buy tickets and unlock every event forum.',
+}) => {
     const searchParams = useSearchParams();
     const urlQ = searchParams.get('q') ?? '';
     const rawPage = Number(searchParams.get('page') || '1');
@@ -232,12 +244,12 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                 <HeroSection featuredEvents={finalCarouselEvents} />
             </div>
 
-            <section className={styles.discoveryHeader} aria-labelledby="home-discovery-heading">
-                <h1 id="home-discovery-heading" className={styles.discoveryTitle}>
-                    Discover Events &amp; Join the Community
+            <section className={styles.discoveryHeader} aria-labelledby="events-discovery-heading">
+                <h1 id="events-discovery-heading" className={styles.discoveryTitle}>
+                    {headingTitle}
                 </h1>
                 <p className={styles.discoverySubtitle}>
-                    Find upcoming concerts, tech meetups and local experiences — buy tickets and unlock every event forum.
+                    {headingSubtitle}
                 </p>
                 <nav className={styles.categoryPillBar} aria-label="Event categories">
                     <Link href="/events" className={styles.categoryPill}>
@@ -260,7 +272,7 @@ const HomeClient: React.FC<HomeClientProps> = ({ carouselEvents, allEvents, cate
                     events={displayEvents}
                     itemsPerPage={12}
                     isLoading={isSearching}
-                    basePath="/"
+                    basePath={basePath}
                     initialPage={parsedPage}
                     useUrlPagination={!hasActiveFilters}
                 />

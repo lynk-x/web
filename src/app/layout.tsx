@@ -111,7 +111,7 @@ export default function RootLayout({
     },
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://lynk-x.app/?q={search_term_string}',
+      target: 'https://lynk-x.app/events?q={search_term_string}',
       'query-input': 'required name=search_term_string',
     },
   };

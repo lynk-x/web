@@ -1,13 +1,10 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { Suspense } from 'react';
 import { createPublicClient } from '@/utils/supabase/public';
 import HomeLayout from '@/components/public/HomeLayout';
-import EventGrid from '@/components/public/EventGrid';
-import LynkXFooter from '@/components/public/LynkXFooter';
-import { slugifyCategory } from '@/utils/categories';
+import HomeClient from '@/components/public/HomeClient';
 import { getEventImage } from '@/utils/eventImage';
 import { Event } from '@/types';
-import styles from './events.module.css';
 
 export const revalidate = 60;
 
@@ -45,13 +42,18 @@ export const metadata: Metadata = {
 };
 
 /**
- * Full public upcoming-events directory page with category navigation,
- * crawlable pagination and CollectionPage + BreadcrumbList structured data.
+ * Full public event discovery directory (`/events`) featuring search, date/tag
+ * filters, featured carousel, category navigation and CollectionPage JSON-LD.
  */
 export default async function AllEventsPage() {
     const supabase = createPublicClient();
 
-    const [{ data: rawEvents }, { data: categories }] = await Promise.all([
+    const [
+        { data: rawEvents },
+        { data: categories },
+        { data: tags },
+        { data: categoryTags },
+    ] = await Promise.all([
         supabase
             .from('vw_events')
             .select('id, title, description, starts_at, ends_at, timezone, location, media, category, organizer_name, account_id, is_featured, reference, low_price, currency, tags, cover_image_url')
@@ -64,9 +66,18 @@ export default async function AllEventsPage() {
             .from('v1_event_categories')
             .select('id, display_name')
             .order('display_name'),
+        supabase
+            .schema('api')
+            .from('v1_tags')
+            .select('id, name, type_id')
+            .order('name'),
+        supabase
+            .schema('api')
+            .from('v1_category_tags')
+            .select('*'),
     ]);
 
-    const events: Event[] = (rawEvents || []).map((event) => ({
+    const processedEvents: Event[] = (rawEvents || []).map((event) => ({
         ...event,
         start_datetime: event.starts_at,
         end_datetime: event.ends_at,
@@ -76,17 +87,20 @@ export default async function AllEventsPage() {
         },
     })) as Event[];
 
+    const carouselEvents = processedEvents.filter((e) => e.is_featured);
+    const allEvents = processedEvents.filter((e) => !e.is_featured);
+
     const collectionSchema = {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
         name: 'Upcoming Events on Lynk-X',
         url: 'https://lynk-x.app/events',
         description: 'Browse all upcoming public events and tickets on Lynk-X.',
-        ...(events.length > 0
+        ...(processedEvents.length > 0
             ? {
                 mainEntity: {
                     '@type': 'ItemList',
-                    itemListElement: events.slice(0, 24).map((event, index) => ({
+                    itemListElement: processedEvents.slice(0, 24).map((event, index) => ({
                         '@type': 'ListItem',
                         position: index + 1,
                         url: `https://lynk-x.app/event/${event.reference}`,
@@ -117,7 +131,11 @@ export default async function AllEventsPage() {
     };
 
     return (
-        <HomeLayout hideCart={false} showBack={true}>
+        <HomeLayout
+            categories={categories || []}
+            tags={tags || []}
+            categoryTags={categoryTags || []}
+        >
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
@@ -126,60 +144,16 @@ export default async function AllEventsPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
             />
-
-            <div className={styles.pageWrapper}>
-                <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
-                    <Link href="/" className={styles.breadcrumbLink}>Home</Link>
-                    <span className={styles.breadcrumbSeparator} aria-hidden="true">/</span>
-                    <span className={styles.breadcrumbCurrent} aria-current="page">Events</span>
-                </nav>
-
-                <header className={styles.header}>
-                    <h1 className={styles.title}>Upcoming Events on Lynk-X</h1>
-                    <p className={styles.intro}>
-                        Browse concerts, conferences, workshops and community gatherings across every category. Buy tickets in seconds and unlock each event&apos;s private attendee forum.
-                    </p>
-                    <p className={styles.countMeta}>
-                        {events.length} upcoming {events.length === 1 ? 'event' : 'events'}
-                    </p>
-                </header>
-
-                <nav className={styles.pillBar} aria-label="Event categories">
-                    <Link href="/events" className={`${styles.pill} ${styles.pillActive}`} aria-current="page">
-                        All Events
-                    </Link>
-                    {(categories || []).map((cat) => (
-                        <Link
-                            key={cat.id}
-                            href={`/events/${slugifyCategory(cat.display_name)}`}
-                            className={styles.pill}
-                        >
-                            {cat.display_name}
-                        </Link>
-                    ))}
-                </nav>
-
-                {events.length > 0 ? (
-                    <EventGrid events={events} itemsPerPage={24} basePath="/events" />
-                ) : (
-                    <div className={styles.emptyCard}>
-                        <h2 className={styles.emptyTitle}>No upcoming events listed yet</h2>
-                        <p className={styles.emptyText}>
-                            New events are published daily. Hosting your own event? Set up ticket tiers and a private attendee forum in minutes.
-                        </p>
-                        <div className={styles.emptyActions}>
-                            <Link href="/dashboard/organize" className={styles.primaryCta}>
-                                Host an Event Free
-                            </Link>
-                            <Link href="/for/organizers" className={styles.secondaryCta}>
-                                Learn More for Organizers
-                            </Link>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <LynkXFooter />
+            <Suspense fallback={null}>
+                <HomeClient
+                    carouselEvents={carouselEvents}
+                    allEvents={allEvents}
+                    categories={categories || []}
+                    tags={tags || []}
+                    categoryTags={categoryTags || []}
+                    basePath="/events"
+                />
+            </Suspense>
         </HomeLayout>
     );
 }
