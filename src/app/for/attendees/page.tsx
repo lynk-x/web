@@ -17,6 +17,10 @@ const attendeeFaqs: FaqItem[] = [
         answer: "Buying tickets on Lynk-X takes less than a minute. Simply browse events, choose your preferred ticket and complete checkout. Your ticket will appear in your ticket page inside the event forum.",
     },
     {
+        question: "Can I apply a discount code at checkout?",
+        answer: "Yes — there's a discount code field on the checkout page before you finalize payment. Simply enter the code and click apply to see the reduced total reflected immediately.",
+    },
+    {
         question: "What is an event forum and who can join it?",
         answer: "Every event has a dedicated community space for ticket holders and organizers. You can chat with other attendees, check announcements and share photos before, during and after the event.",
     },

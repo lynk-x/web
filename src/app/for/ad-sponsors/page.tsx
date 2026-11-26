@@ -17,6 +17,10 @@ const sponsorFaqs: FaqItem[] = [
         answer: "From your advertiser dashboard, set your total campaign budget, define your target event categories and upload your creative assets. Once submitted, your campaign goes live immediately across matching event forums.",
     },
     {
+        question: "Can I pause or edit a live campaign?",
+        answer: "Yes — pause, edit budget, or update creatives at any time from your dashboard. Changes apply within minutes and any unspent budget from a paused campaign stays in your account rather than being lost.",
+    },
+    {
         question: "What types of ad formats are supported?",
         answer: "You can run sponsored forum posts, interactive partner polls, banner placements and pinned highlights designed to fit the natural flow of community event discussions.",
     },

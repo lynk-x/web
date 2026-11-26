@@ -22,7 +22,11 @@ const organizerFaqs: FaqItem[] = [
     },
     {
         question: "How does the built-in forum help my event?",
-        answer: "Unlike traditional ticketing platforms where attendee contact ends at checkout, Lynk-X gives you a direct communication channel. You can send push announcements, run audience polls, answer attendee questions and host live audio stages to build anticipation and loyalty.",
+        answer: "Unlike traditional ticketing platforms where attendee contact ends at checkout, Lynk-X gives you a direct communication channel. You can send push announcements, answer attendee questions, run polls and host audio rooms to build anticipation and engage with them.",
+    },
+        {
+        question: "Why choose Lynk-X over traditional ticketing platforms?",
+        answer: "Traditional platforms take high fees and end their relationship with your attendees at checkout. Lynk-X keeps your community connected in a dedicated forum where you build lasting loyalty for future events.",
     },
 ];
 
