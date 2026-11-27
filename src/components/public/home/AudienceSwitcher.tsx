@@ -45,7 +45,7 @@ const AUDIENCES: AudienceConfig[] = [
             {
                 step: '02',
                 icon: 'users',
-                title: 'Direct Crowd Channel',
+                title: 'Engage Your Crowd',
                 desc: 'Post pinned updates, run live polls and manage your crowd without third-party group chats.',
             },
             {
