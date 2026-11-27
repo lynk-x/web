@@ -51,8 +51,9 @@ export function PaymentMethodSelector({ providers, selectedMethod, onChange }: P
             <div className="text-xs text-gray-500 mt-1">
               {provider.fee_percent > 0 ? `${provider.fee_percent}% fee` : 'Free'} · {provider.base_fee_usd > 0 ? `+$${provider.base_fee_usd}` : ''}
             </div>
-          </div>
-        )}
+          </button>
+          );
+        })}
       </div>
     </div>
   );

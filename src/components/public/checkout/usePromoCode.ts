@@ -118,6 +118,7 @@ export function usePromoCode(baseAmount: number, supabase: ReturnType<typeof cre
     promoCode,
     setPromoCode,
     appliedPromo,
+    setAppliedPromo,
     promoError,
     promoLoading,
     handleApplyPromo,

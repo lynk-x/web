@@ -32,18 +32,21 @@ export function CheckoutSupportModal({
     const supabase = createClient();
     const { user } = useAuth();
 
-    const [email, setEmail] = useState('');
-    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState(user?.email || '');
+    const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
+    const [prevUserId, setPrevUserId] = useState<string | null>(user?.id ?? null);
     const [userNote, setUserNote] = useState('');
     const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
     const [ticketRef, setTicketRef] = useState('');
 
-    useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    if (currentUserId !== prevUserId) {
+        setPrevUserId(currentUserId);
         if (user) {
             setEmail(user.email || '');
             setFullName(user.user_metadata?.full_name || '');
         }
-    }, [user]);
+    }
 
     if (!isOpen) return null;
 

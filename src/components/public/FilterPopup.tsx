@@ -4,12 +4,31 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styles from './FilterPopup.module.css';
 import { useFilters } from '@/context/FilterContext';
 
+interface FilterCategoryItem {
+    id?: string;
+    display_name?: string;
+    name?: string;
+    text?: string;
+}
+
+interface FilterTagItem {
+    id?: string;
+    name?: string;
+    type_id?: string | null;
+    is_official?: boolean;
+}
+
+interface FilterCategoryTagItem {
+    category_id?: string;
+    tag_id?: string;
+}
+
 interface FilterPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    categoriesData?: any[];
-    tagsData?: any[];
-    categoryTagsMap?: any[];
+    categoriesData?: (string | FilterCategoryItem)[];
+    tagsData?: (string | FilterTagItem)[];
+    categoryTagsMap?: FilterCategoryTagItem[];
 }
 
 const TwoWeekView: React.FC<{
@@ -110,22 +129,12 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
         selectedDates, setSelectedDates
     } = useFilters();
 
-    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        dates: false,
-        categories: true,
-        tags: true
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        return isMobile
+            ? { dates: false, categories: false, tags: true }
+            : { dates: false, categories: true, tags: true };
     });
-
-    // Close sections by default on mobile
-    useEffect(() => {
-        if (window.innerWidth < 768) {
-            setExpandedSections({
-                dates: false,
-                categories: false,
-                tags: true
-            });
-        }
-    }, []);
 
     const [viewDate, setViewDate] = useState<Date>(new Date());
     const [numMonths, setNumMonths] = useState(1);
@@ -142,13 +151,12 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
     }, []);
 
     // Also need two-week logic for mobile: most recent Sunday
-    const [twoWeekStart, setTwoWeekStart] = useState<Date>(new Date());
-    useEffect(() => {
+    const [twoWeekStart, setTwoWeekStart] = useState<Date>(() => {
         const today = new Date();
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - today.getDay());
-        setTwoWeekStart(sunday);
-    }, []);
+        return sunday;
+    });
 
     const toggleSection = (section: string) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -204,57 +212,53 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
         'Education & Training', 'Health & Wellness', 'Community & Social'
     ];
 
-    const allTagsNames = Array.from(new Set(
-        (tagsData || []).map(t => typeof t === 'string' ? t : t.name).filter(Boolean)
-    )) as string[];
+    const { utilityTagsDisplay, primaryTags } = useMemo(() => {
+        const tagObjects = (tagsData || []).filter((t): t is FilterTagItem => typeof t !== 'string');
+        const categoryObjects = (categoriesData || []).filter((c): c is FilterCategoryItem => typeof c !== 'string');
 
-    const _categoryTagMap: Record<string, string[]> = {};
-    categoryTagsMap.forEach(ct => {
-        const cat = categoriesData.find(c => c.id === ct.category_id);
-        const tag = tagsData.find(t => t.id === ct.tag_id);
-        if (cat && tag) {
-            const catName = cat.display_name || cat.name;
-            const tagName = tag.name;
-            if (catName && tagName) {
-                if (!_categoryTagMap[catName]) _categoryTagMap[catName] = [];
-                _categoryTagMap[catName].push(tagName);
+        const allTagsNames = Array.from(new Set(
+            (tagsData || []).map(t => typeof t === 'string' ? t : t.name).filter((n): n is string => Boolean(n))
+        ));
+
+        const categoryTagMap: Record<string, string[]> = {};
+        categoryTagsMap.forEach(ct => {
+            const cat = categoryObjects.find(c => c.id === ct.category_id);
+            const tag = tagObjects.find(t => t.id === ct.tag_id);
+            if (cat && tag) {
+                const catName = cat.display_name || cat.name;
+                const tagName = tag.name;
+                if (catName && tagName) {
+                    if (!categoryTagMap[catName]) categoryTagMap[catName] = [];
+                    categoryTagMap[catName].push(tagName);
+                }
             }
-        }
-    });
+        });
 
-    const utilityTagsNames = tagsData.filter(t => t.type_id === 'utility').map(t => t.name);
-    const globalTagsNames = tagsData.filter(t => t.is_official && t.type_id !== 'utility').map(t => t.name);
-    const utilityTagsDisplay: string[] = utilityTagsNames;
+        const utilityNames = tagObjects.filter(t => t.type_id === 'utility').map(t => t.name).filter((n): n is string => Boolean(n));
+        const globalNames = tagObjects.filter(t => t.is_official && t.type_id !== 'utility').map(t => t.name).filter((n): n is string => Boolean(n));
 
-    const primaryTags = useMemo(() => {
-        // 1. Get all tags that are NOT utility
-        const genericTags = allTagsNames.filter(tag => !utilityTagsNames.includes(tag));
-
-        // 2. Identify "Recommended" tags based on selected categories
+        const genericTags = allTagsNames.filter(tag => !utilityNames.includes(tag));
         const recommendedTags = new Set<string>();
         if (selectedCategories.length > 0) {
-            selectedCategories.forEach(cat => _categoryTagMap[cat]?.forEach(tag => recommendedTags.add(tag)));
+            selectedCategories.forEach(cat => categoryTagMap[cat]?.forEach(tag => recommendedTags.add(tag)));
         }
 
-        // 3. Sort logic:
-        // - Priority 1: Recommended tags (matching selected categories)
-        // - Priority 2: Global/Official tags
-        // - Priority 3: All other tags
-        // Within each priority, sort alphabetically.
-        return [...genericTags].sort((a, b) => {
+        const sortedPrimary = [...genericTags].sort((a, b) => {
             const aIsRec = recommendedTags.has(a);
             const bIsRec = recommendedTags.has(b);
             if (aIsRec && !bIsRec) return -1;
             if (!aIsRec && bIsRec) return 1;
 
-            const aIsGlobal = globalTagsNames.includes(a);
-            const bIsGlobal = globalTagsNames.includes(b);
+            const aIsGlobal = globalNames.includes(a);
+            const bIsGlobal = globalNames.includes(b);
             if (aIsGlobal && !bIsGlobal) return -1;
             if (!aIsGlobal && bIsGlobal) return 1;
 
             return a.localeCompare(b);
         });
-    }, [allTagsNames, selectedCategories, _categoryTagMap, globalTagsNames, utilityTagsNames]);
+
+        return { utilityTagsDisplay: utilityNames, primaryTags: sortedPrimary };
+    }, [tagsData, categoriesData, categoryTagsMap, selectedCategories]);
 
     const toggleCategory = (category: string) => {
         if (selectedCategories.includes(category)) setSelectedCategories(selectedCategories.filter(c => c !== category));

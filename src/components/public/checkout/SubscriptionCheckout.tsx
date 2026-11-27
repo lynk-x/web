@@ -115,11 +115,10 @@ export const SubscriptionCheckoutView: React.FC = () => {
 
     // Derived payment amounts with promo discount
     const baseAmount = activePrice?.amount || 0;
+    const { promoCode, setPromoCode, appliedPromo, setAppliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(baseAmount, supabase);
+    const { availableProviders: providers, loading: providersLoading } = usePaymentProviders('KES', supabase);
     const discountAmount = appliedPromo ? appliedPromo.discount : 0;
     const finalAmount = Math.max(0, baseAmount - discountAmount);
-
-    const { promoCode, setPromoCode, appliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(baseAmount, supabase);
-    const { availableProviders: providers, loading: providersLoading } = usePaymentProviders('KES', supabase);
 
     // Keep applied promo discount synced when interval or base price changes
     useEffect(() => {
@@ -326,9 +325,10 @@ export const SubscriptionCheckoutView: React.FC = () => {
 
             setCurrentCheckoutId(mpesaRes.checkoutRequestId);
             setPaymentStatus('waiting');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Subscription checkout error:', err);
-            setPaymentError(err?.message || 'Payment initiation failed. Please check your network and try again.');
+            const message = err instanceof Error ? err.message : 'Payment initiation failed. Please check your network and try again.';
+            setPaymentError(message);
             setIsSubmitting(false);
         }
     };

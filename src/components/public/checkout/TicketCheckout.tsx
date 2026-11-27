@@ -44,10 +44,6 @@ export const TicketCheckoutView: React.FC = () => {
     const [realtimeDisrupted, setRealtimeDisrupted] = useState(false);
 
     // Reservation state — set once tickets are locked, before payment is initiated
-    // rather than treating it as a failure.
-    const [realtimeDisrupted, setRealtimeDisrupted] = useState(false);
-
-    // Reservation state — set once tickets are locked, before payment is initiated
     const [reservationExpiresAt, setReservationExpiresAt] = useState<Date | null>(null);
     const [reservationSecondsLeft, setReservationSecondsLeft] = useState(0);
 
@@ -105,19 +101,13 @@ export const TicketCheckoutView: React.FC = () => {
         code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
     });
 
-    // Promo state (managed via usePromoCode hook)
-    const [contactPhoneCountry, setContactPhoneCountry] = useState<DialCodeCountry>({
-        code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
-    });
-
     // Derived totals
     const subtotal = getCartTotal();
+    const currency = items[0]?.currency || 'KES';
     const { promoCode, setPromoCode, appliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(subtotal, supabase);
     const { availableProviders: providers, loading: providersLoading } = usePaymentProviders(currency, supabase);
     const discountAmount = appliedPromo?.discount || 0;
     const total = Math.max(0, subtotal - discountAmount);
-
-    const currency = items[0]?.currency || 'KES';
 
     // ── Init: restore payment state + fetch available payment providers ─
     useEffect(() => {

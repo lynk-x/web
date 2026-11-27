@@ -56,4 +56,4 @@ const EventCard: React.FC<EventCardProps> = ({ reference, name, date, category, 
     );
 };
 
-export default Card;
+export default EventCard;

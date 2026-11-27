@@ -39,8 +39,9 @@ const AppDrawer: React.FC<AppDrawerProps> = ({
                     'GB': 'GBP',
                     'DE': 'EUR'
                 };
-                if (currencyMap[countryCode]) {
-                    setCurrency(currencyMap[countryCode]);
+                const targetCurrency = currencyMap[countryCode];
+                if (targetCurrency) {
+                    queueMicrotask(() => setCurrency(targetCurrency));
                 }
             }
         }

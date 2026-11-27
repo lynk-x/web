@@ -7,11 +7,30 @@ import PullToRefresh from "../nav/PullToRefresh";
 import styles from "@/app/page.module.css";
 import { FilterProvider } from "@/context/FilterContext";
 
+interface CategoryItem {
+    id?: string;
+    display_name?: string;
+    name?: string;
+    text?: string;
+}
+
+interface TagItem {
+    id?: string;
+    name?: string;
+    type_id?: string | null;
+    is_official?: boolean;
+}
+
+interface CategoryTagItem {
+    category_id?: string;
+    tag_id?: string;
+}
+
 interface HomeLayoutProps {
     children: React.ReactNode;
-    categories?: any[];
-    tags?: any[];
-    categoryTags?: any[];
+    categories?: (string | CategoryItem)[];
+    tags?: (string | TagItem)[];
+    categoryTags?: CategoryTagItem[];
     hideCart?: boolean;
     showBack?: boolean;
     hideMenu?: boolean;

@@ -19,11 +19,12 @@ interface DisclaimerModalProps {
 
 const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ isOpen, disclaimers, onAccept, onClose }) => {
     const [hasAgreed, setHasAgreed] = useState(false);
+    const [prevOpen, setPrevOpen] = useState(isOpen);
 
-    // Reset agreement state when opening
-    useEffect(() => {
+    if (isOpen !== prevOpen) {
+        setPrevOpen(isOpen);
         if (isOpen) setHasAgreed(false);
-    }, [isOpen]);
+    }
 
     // Close on Escape key
     useEffect(() => {

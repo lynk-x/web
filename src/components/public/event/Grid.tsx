@@ -215,4 +215,4 @@ const EventGrid: React.FC<EventGridProps> = ({
     );
 };
 
-export default Grid;
+export default EventGrid;

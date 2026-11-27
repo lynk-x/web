@@ -5,12 +5,31 @@ import styles from './SearchBar.module.css';
 import { useFilters } from '@/context/FilterContext';
 import FilterPopup from '../FilterPopup';
 
+interface CategoryItem {
+    id?: string;
+    display_name?: string;
+    name?: string;
+    text?: string;
+}
+
+interface TagItem {
+    id?: string;
+    name?: string;
+    type_id?: string | null;
+    is_official?: boolean;
+}
+
+interface CategoryTagItem {
+    category_id?: string;
+    tag_id?: string;
+}
+
 interface SearchBarProps {
     onFocus?: () => void;
     onBlur?: () => void;
-    categories?: any[];
-    tags?: any[];
-    categoryTags?: any[];
+    categories?: (string | CategoryItem)[];
+    tags?: (string | TagItem)[];
+    categoryTags?: CategoryTagItem[];
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onFocus, onBlur, categories, tags, categoryTags }) => {

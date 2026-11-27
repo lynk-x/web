@@ -41,12 +41,11 @@ export function PromoCodeInput({
           type="button"
           onClick={handleApplyPromo}
           disabled={promoLoading || !promoCode.trim()}
-          className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          className={`
-            ${promoLoading || !promoCode.trim()
+          className={`px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            promoLoading || !promoCode.trim()
               ? 'bg-gray-700 text-gray-400 border-gray-600/30'
-              : 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-[0_0_0_1px_rgba(32,249,40,0.3)]'}
-          `}
+              : 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-[0_0_0_1px_rgba(32,249,40,0.3)]'
+          }`}
         >
           {promoLoading ? 'Applying...' : 'Apply'}
         </button>

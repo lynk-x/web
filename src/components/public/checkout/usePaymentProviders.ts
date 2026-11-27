@@ -23,9 +23,10 @@ export function usePaymentProviders(currency: string, supabase: ReturnType<typeo
       });
 
       if (providers && providers.length > 0) {
-        setAvailableProviders(providers as PaymentProvider[]);
-        const hasMpesa = (providers as any[]).some(p => p.provider_name === 'mpesa');
-        setPaymentMethod(hasMpesa ? 'mpesa' : providers[0].provider_name);
+        const typedProviders = providers as PaymentProvider[];
+        setAvailableProviders(typedProviders);
+        const hasMpesa = typedProviders.some(p => p.provider_name === 'mpesa');
+        setPaymentMethod(hasMpesa ? 'mpesa' : typedProviders[0].provider_name);
       }
     } catch (err) {
       console.error('Failed to load payment providers:', err);
