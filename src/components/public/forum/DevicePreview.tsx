@@ -400,14 +400,14 @@ export default function DevicePreview() {
             const vh = window.innerHeight || 800;
             const visiblePx = Math.max(0, Math.min(rect.bottom, vh) - Math.max(rect.top, 0));
             const visibleRatio = rect.height > 0 ? visiblePx / rect.height : 0;
-            const isHalfVisible = visibleRatio >= 0.30 || rect.top <= vh * 0.5;
+            const isEnoughVisible = visibleRatio >= 0.30 || rect.top <= vh * 0.7;
 
-            const raw = clamp01((vh * 0.52 - rect.top) / (vh * 0.4));
+            const raw = clamp01((vh * 0.7 - rect.top) / (vh * 0.5));
             const stageP = easeOutCubic(clamp01(raw / 0.33));
             const laptopP = easeOutCubic(clamp01((raw - 0.33) / 0.33));
             const phoneP = easeOutCubic(clamp01((raw - 0.66) / 0.34));
 
-            stage.style.setProperty('--stage-opacity', isHalfVisible ? '1' : '0');
+            stage.style.setProperty('--stage-opacity', isEnoughVisible ? '1' : '0');
             stage.style.setProperty('--laptop-opacity', laptopP.toFixed(4));
             stage.style.setProperty('--phone-opacity', phoneP.toFixed(4));
             stage.style.setProperty('--laptop-p', laptopP.toFixed(4));
