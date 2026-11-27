@@ -403,10 +403,13 @@ export default function DevicePreview() {
             const isHalfVisible = visibleRatio >= 0.48 || rect.top <= vh * 0.5;
 
             const raw = clamp01((vh * 0.52 - rect.top) / (vh * 0.4));
-            const laptopP = easeOutCubic(clamp01(raw / 0.58));
-            const phoneP = easeOutCubic(clamp01((raw - 0.58) / 0.42));
+            const stageP = easeOutCubic(clamp01(raw / 0.33));
+            const laptopP = easeOutCubic(clamp01((raw - 0.33) / 0.33));
+            const phoneP = easeOutCubic(clamp01((raw - 0.55) / 0.33));
 
             stage.style.setProperty('--stage-opacity', isHalfVisible ? '1' : '0');
+            stage.style.setProperty('--laptop-opacity', laptopP.toFixed(4));
+            stage.style.setProperty('--phone-opacity', phoneP.toFixed(4));
             stage.style.setProperty('--laptop-p', laptopP.toFixed(4));
             stage.style.setProperty('--phone-p', phoneP.toFixed(4));
         };

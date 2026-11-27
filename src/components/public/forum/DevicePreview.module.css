@@ -81,6 +81,8 @@
     flex-direction: column;
     align-items: center;
     perspective: 1400px;
+    opacity: var(--laptop-opacity, 0);
+    transition: opacity 0.35s ease;
 }
 
 .bezel {
@@ -209,6 +211,8 @@
     margin-top: -90px;
     transform: translateY(calc((1 - var(--phone-p, 1)) * 56px));
     will-change: transform;
+    opacity: var(--phone-opacity, 0);
+    transition: opacity 0.35s ease;
 }
 
 @media (min-width: 1024px) {
