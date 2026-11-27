@@ -28,7 +28,7 @@ interface AudienceConfig {
 const AUDIENCES: AudienceConfig[] = [
     {
         key: 'organizers',
-        tabLabel: 'For Organizers',
+        tabLabel: 'Organizers',
         eyebrow: 'Ticketing + Community',
         headline: 'Sell Tickets, Scan Gates & Own Your Crowd',
         summary:
@@ -38,31 +38,31 @@ const AUDIENCES: AudienceConfig[] = [
         highlights: [
             {
                 step: '01',
-                icon: 'wallet',
-                title: 'Transparent Sales & Payouts',
-                desc: 'Track M-Pesa and card ticket sales in real time with clear settlement tracking.',
+                icon: 'ticket',
+                title: 'Launch in Minutes',
+                desc: 'Publish your event page, set ticket tiers and open sales with zero upfront fees.',
             },
             {
                 step: '02',
-                icon: 'qr',
-                title: 'Fast Gate Check-In',
-                desc: 'Verify passes at the door across multiple gates and watch live attendance update.',
-            },
-            {
-                step: '03',
                 icon: 'users',
                 title: 'Direct Crowd Channel',
                 desc: 'Post pinned updates, run live polls and manage your crowd without third-party group chats.',
+            },
+            {
+                step: '03',
+                icon: 'radio',
+                title: 'Add a Forum to Any Event',
+                desc: 'Already selling tickets elsewhere? Spin up a dedicated event forum and invite buyers in seconds.',
             },
         ],
     },
     {
         key: 'attendees',
-        tabLabel: 'For Attendees',
-        eyebrow: 'Zero App Download',
+        tabLabel: 'Attendees',
+        eyebrow: 'Tickets + Interactive Forums',
         headline: 'Every Ticket Unlocks the Live Event Community',
         summary:
-            'Discover upcoming events, pay in seconds with M-Pesa or card and jump straight into live event updates, chat and media walls right from your browser.',
+            'Discover upcoming events, pay in seconds with Mobile money or card and jump straight into live event updates, chat and media walls right from your browser.',
         primaryCta: { label: 'Browse Events', href: '/events' },
         secondaryCta: { label: 'See Attendee Experience', href: '/for/attendees' },
         highlights: [
@@ -70,13 +70,13 @@ const AUDIENCES: AudienceConfig[] = [
                 step: '01',
                 icon: 'ticket',
                 title: 'Fast Mobile Checkout',
-                desc: 'Reserve your spot with instant M-Pesa STK push or card checkout in seconds.',
+                desc: 'Reserve your spot with instant mobile money or card checkout in seconds.',
             },
             {
                 step: '02',
-                icon: 'qr',
-                title: 'Browser QR Pass',
-                desc: 'Keep your scannable pass ready in any mobile browser with zero app download.',
+                icon: 'users',
+                title: 'Instant Forum Entry',
+                desc: 'Your ticket unlocks the event forum right away so you never miss updates or pre-event chat.',
             },
             {
                 step: '03',
@@ -88,8 +88,8 @@ const AUDIENCES: AudienceConfig[] = [
     },
     {
         key: 'sponsors',
-        tabLabel: 'For Sponsors',
-        eyebrow: 'Verified Event Reach',
+        tabLabel: 'Sponsors',
+        eyebrow: 'Brand + Audience',
         headline: 'Put Your Brand Inside Active Event Forums',
         summary:
             'Reach confirmed ticket holders inside the event forum while they check schedules, live chat and stage updates.',
