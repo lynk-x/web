@@ -18,44 +18,26 @@ interface PaymentMethodSelectorProps {
 }
 
 /**
- * Renders selectable payment provider cards styled with the shared
- * CheckoutView CSS module design tokens.
+ * Renders the payment provider dropdown using the shared CheckoutView
+ * `.select` style.
  */
 export function PaymentMethodSelector({ providers, selectedMethod, onChange }: PaymentMethodSelectorProps) {
   return (
-    <div className={styles.paymentGrid}>
-      {providers.map((provider) => {
-        const isSelected = selectedMethod === provider.provider_name;
-        const hasBaseFee = provider.base_fee_usd > 0;
-        const feeText = provider.fee_percent > 0
-          ? `${provider.fee_percent}% fee${hasBaseFee ? ` +$${provider.base_fee_usd}` : ''}`
-          : hasBaseFee
-            ? `+$${provider.base_fee_usd} fee`
-            : 'No extra fee';
-
-        return (
-          <button
-            key={provider.provider_name}
-            type="button"
-            onClick={() => onChange(provider.provider_name)}
-            aria-pressed={isSelected}
-            className={`${styles.paymentOption} ${isSelected ? styles.paymentOptionSelected : ''}`}
-          >
-            <div className={styles.paymentOptionHeader}>
-              {provider.logo_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={provider.logo_url} alt={provider.display_name} className={styles.paymentOptionLogo} />
-              ) : (
-                <div className={styles.paymentOptionFallback}>
-                  {provider.provider_name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <span className={styles.paymentOptionName}>{provider.display_name}</span>
-            </div>
-            <span className={styles.paymentOptionFee}>{feeText}</span>
-          </button>
-        );
-      })}
-    </div>
+    <select
+      aria-label="Payment Method"
+      value={selectedMethod}
+      onChange={(e) => onChange(e.target.value)}
+      className={styles.select}
+    >
+      {providers.length === 0 ? (
+        <option value="mpesa">M-Pesa</option>
+      ) : (
+        providers.map((provider) => (
+          <option key={provider.provider_name} value={provider.provider_name}>
+            {provider.display_name}
+          </option>
+        ))
+      )}
+    </select>
   );
 }
