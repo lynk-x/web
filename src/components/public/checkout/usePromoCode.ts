@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { showToast } from '@/components/ui/Toast';
+import { useToast } from '@/components/ui/Toast';
 
 export interface PromoCodeState {
   code: string;
@@ -22,6 +22,7 @@ export function usePromoCode(baseAmount: number, supabase: ReturnType<typeof cre
   const [appliedPromo, setAppliedPromo] = useState<PromoCodeState['appliedPromo']>(null);
   const [promoError, setPromoError] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
+  const { showToast } = useToast();
 
   const handleApplyPromo = useCallback(async () => {
     const code = promoCode.trim().toUpperCase();

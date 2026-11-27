@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from '../checkout/CheckoutView.module.css';
+import styles from '../CheckoutView.module.css';
 
 interface CheckoutErrorViewProps {
     title?: string;
