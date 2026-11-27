@@ -42,7 +42,7 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 10px 20px;
+    padding: 10px 12px;
     border-radius: var(--radius-full);
     font-size: 14px;
     font-weight: 600;

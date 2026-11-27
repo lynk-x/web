@@ -404,7 +404,7 @@ export default function DevicePreview() {
 
             const raw = clamp01((vh * 0.52 - rect.top) / (vh * 0.4));
             const laptopP = easeOutCubic(clamp01(raw / 0.58));
-            const phoneP = easeOutCubic(clamp01((raw - 0.35) / 0.65));
+            const phoneP = easeOutCubic(clamp01((raw - 0.58) / 0.42));
 
             stage.style.setProperty('--stage-opacity', isHalfVisible ? '1' : '0');
             stage.style.setProperty('--laptop-p', laptopP.toFixed(4));
