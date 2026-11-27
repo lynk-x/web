@@ -139,7 +139,7 @@ function ForumScreen({ activeTab, onTabChange, bursts, onReact, focusable }: For
             <div className={styles.appBar}>
                 <BackIcon />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.wordmark} src="/lynk-x_combined_logo.svg" alt="" />
+                <img className={styles.wordmark} src="/lynk-x_combined_logo.svg" alt="Lynk-X logo" />
                 <AddMemberIcon />
             </div>
 

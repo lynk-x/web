@@ -29,14 +29,14 @@ export function PaymentMethodSelector({ providers, selectedMethod, onChange }: P
       onChange={(e) => onChange(e.target.value)}
       className={styles.select}
     >
-      {providers.length === 0 ? (
-        <option value="mpesa">M-Pesa</option>
-      ) : (
+      {providers.length > 0 ? (
         providers.map((provider) => (
           <option key={provider.provider_name} value={provider.provider_name}>
             {provider.display_name}
           </option>
         ))
+      ) : (
+        <option value="mpesa">M-Pesa</option>
       )}
     </select>
   );

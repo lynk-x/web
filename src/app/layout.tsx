@@ -24,15 +24,15 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://lynk-x.app'),
   title: {
     template: '%s | Lynk-X',
-    default: 'Lynk-X — The Ultimate Event App',
+    default: 'Lynk-X — Event Ticketing & Attendee Forums',
   },
-  description: "The ultimate event app — create events, buy tickets and join event forums.",
+  description: "Create events, buy tickets and join a dedicated attendee forum for every event.",
   icons: {
     icon: "/lynk-x_logo.svg",
   },
   openGraph: {
-    title: 'Lynk-X — The Ultimate Event App',
-    description: "The ultimate event app — create events, buy tickets and join event forums.",
+    title: 'Lynk-X — Event Ticketing & Attendee Forums',
+    description: "Create events, buy tickets and join a dedicated attendee forum for every event.",
     url: 'https://lynk-x.app',
     siteName: 'Lynk-X',
     images: [
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
         url: '/og-image.png?v=2',
         width: 1200,
         height: 630,
-        alt: 'Lynk-X — The Ultimate Event App',
+        alt: 'Lynk-X — Event Ticketing & Attendee Forums',
         type: 'image/png',
       },
     ],
@@ -49,8 +49,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Lynk-X — The Ultimate Event App',
-    description: "The ultimate event app — create events, buy tickets and join event forums.",
+    title: 'Lynk-X — Event Ticketing & Attendee Forums',
+    description: "Create events, buy tickets and join a dedicated attendee forum for every event.",
     site: '@lynkxapp',
     creator: '@lynkxapp',
     images: ['/og-image.png?v=2'],

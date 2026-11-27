@@ -378,7 +378,7 @@ export function SponsorshipClaimClient({ token, initialData }: SponsorshipClaimC
 
                             <span className={styles.organizerBadge}>
                                 {event.organizer_logo && (
-                                    <img src={event.organizer_logo} alt="" className={styles.organizerLogo} />
+                                    <img src={event.organizer_logo} alt={event.organizer_name || 'Organizer logo'} className={styles.organizerLogo} />
                                 )}
                                 By {event.organizer_name}
                             </span>

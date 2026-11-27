@@ -11,13 +11,13 @@ export const metadata: Metadata = {
     title: {
         absolute: 'Lynk-X — Event Ticketing & Attendee Forums',
     },
-    description: 'The ultimate event app — create events, buy tickets and join private event forums with zero app download required.',
+    description: 'Create events, buy tickets and join a dedicated attendee forum for every event with zero app download required.',
     alternates: {
         canonical: '/',
     },
     openGraph: {
         title: 'Lynk-X — Event Ticketing & Attendee Forums',
-        description: 'The ultimate event app — create events, buy tickets and join private event forums.',
+        description: 'Create events, buy tickets and join a dedicated attendee forum for every event.',
         url: 'https://lynk-x.app',
         siteName: 'Lynk-X',
         locale: 'en_GB',
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     twitter: {
         card: 'summary_large_image',
         title: 'Lynk-X — Event Ticketing & Attendee Forums',
-        description: 'The ultimate event app — create events, buy tickets and join private event forums.',
+        description: 'Create events, buy tickets and join a dedicated attendee forum for every event.',
         site: '@lynkxapp',
         creator: '@lynkxapp',
         images: ['/og-image.png?v=2'],

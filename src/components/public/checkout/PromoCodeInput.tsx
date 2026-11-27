@@ -37,16 +37,18 @@ export function PromoCodeInput({
           type="text"
           value={promoCode}
           onChange={(e) => setPromoCode(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
           placeholder="Promo code"
           className={styles.promoInput}
+          disabled={promoLoading}
         />
         <button
           type="button"
           onClick={handleApplyPromo}
           disabled={promoLoading || !promoCode.trim()}
-          className={styles.applyBtn}
+          className={styles.filledActionBtn}
         >
-          {promoLoading ? 'Applying...' : 'Apply'}
+          {promoLoading ? '…' : 'Apply'}
         </button>
       </div>
 
