@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import styles from './ResourceRenderer.module.css';
 
@@ -133,15 +133,30 @@ const getIcon = (name: string) => {
 };
 
 const ResourceSectionComponent: React.FC<ResourceSection> = ({ title, description, items }) => {
+    const [isOpen, setIsOpen] = useState(false);
     const hasOddItems = items.length % 2 === 1;
 
     return (
         <div className={styles.categorySection}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.categoryTitle}>{title}</h2>
-                <p className={styles.categoryDesc}>{description}</p>
-            </div>
-            <div className={styles.itemGrid}>
+            <button
+                type="button"
+                className={styles.sectionToggle}
+                onClick={() => setIsOpen((prev) => !prev)}
+                aria-expanded={isOpen}
+            >
+                <div className={styles.sectionHeaderText}>
+                    <h2 className={styles.categoryTitle}>{title}</h2>
+                    <p className={styles.categoryDesc}>{description}</p>
+                </div>
+                <span className={`${styles.sectionChevron} ${isOpen ? styles.sectionChevronOpen : ''}`} aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </span>
+            </button>
+            <div className={`${styles.collapsibleBody} ${isOpen ? styles.collapsibleOpen : ''}`}>
+                <div className={styles.collapsibleInner}>
+                    <div className={styles.itemGrid}>
                 {items.map((item, idx) => (
                     <div
                         key={idx}
@@ -192,6 +207,8 @@ const ResourceSectionComponent: React.FC<ResourceSection> = ({ title, descriptio
                         )}
                     </div>
                 ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

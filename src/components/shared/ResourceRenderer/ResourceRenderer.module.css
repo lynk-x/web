@@ -56,7 +56,7 @@
 .content {
     display: flex;
     flex-direction: column;
-    gap: 80px;
+    gap: 40px;
 }
 
 .categorySection {
@@ -64,8 +64,62 @@
     flex-direction: column;
 }
 
-.sectionHeader {
-    margin-bottom: 32px;
+.sectionToggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+}
+
+.sectionHeaderText {
+    min-width: 0;
+}
+
+.sectionChevron {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.75);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s ease, border-color 0.2s, color 0.2s;
+}
+
+.sectionToggle:hover .sectionChevron {
+    border-color: rgba(32, 249, 40, 0.45);
+}
+
+.sectionChevronOpen {
+    transform: rotate(180deg);
+    border-color: rgba(32, 249, 40, 0.45);
+}
+
+.collapsibleBody {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease, margin-top 0.28s ease;
+    margin-top: 0;
+}
+
+.collapsibleOpen {
+    grid-template-rows: 1fr;
+    margin-top: 28px;
+}
+
+.collapsibleInner {
+    overflow: hidden;
+    min-height: 0;
 }
 
 .categoryTitle {
@@ -94,10 +148,6 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-}
-
-.featuredCard {
-    grid-column: 1 / -1;
 }
 
 .cardHeader {
@@ -226,9 +276,9 @@
     height: 20px;
 }
 
-/* Handle lone items in a grid (e.g. 3rd item in a 2-column grid) */
+/* Handle lone items in a grid (first item spans full width when count is odd) */
 @media (min-width: 900px) {
-    .safetyCard:last-child:nth-child(odd) {
+    .featuredCard {
         grid-column: 1 / -1;
         display: flex;
         flex-direction: column;
@@ -237,33 +287,33 @@
         padding: 48px;
     }
 
-    .safetyCard:last-child:nth-child(odd) .cardHeader {
+    .featuredCard .cardHeader {
         flex-direction: column;
         align-items: center;
         gap: 20px;
     }
 
-    .safetyCard:last-child:nth-child(odd) .cardText {
+    .featuredCard .cardText {
         display: flex;
         flex-direction: column;
         align-items: center;
     }
 
-    .safetyCard:last-child:nth-child(odd) .cardContent {
+    .featuredCard .cardContent {
         max-width: 600px;
     }
 
-    .safetyCard:last-child:nth-child(odd) .cardDetails {
+    .featuredCard .cardDetails {
         width: 100%;
         max-width: 500px;
         margin: 0 auto;
     }
-    
-    .safetyCard:last-child:nth-child(odd) .detailsList {
+
+    .featuredCard .detailsList {
         align-items: center;
     }
-    
-    .safetyCard:last-child:nth-child(odd) .detailItem {
+
+    .featuredCard .detailItem {
         text-align: center;
         justify-content: center;
     }
