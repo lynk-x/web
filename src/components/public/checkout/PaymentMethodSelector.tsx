@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import styles from '@/components/public/CheckoutView.module.css';
 
 export interface PaymentProvider {
   provider_name: string;
@@ -16,45 +17,45 @@ interface PaymentMethodSelectorProps {
   onChange: (method: string) => void;
 }
 
+/**
+ * Renders selectable payment provider cards styled with the shared
+ * CheckoutView CSS module design tokens.
+ */
 export function PaymentMethodSelector({ providers, selectedMethod, onChange }: PaymentMethodSelectorProps) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-        Payment Method
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {providers.map((provider) => {
-          const isSelected = selectedMethod === provider.provider_name;
-          return (
-            <button
-              key={provider.provider_name}
-              type="button"
-              onClick={() => onChange(provider.provider_name)}
-              className={`
-                flex items-center gap-3 p-3 rounded-xl border transition-all
-                ${isSelected
-                  ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_0_1px_rgba(32,249,40,0.3)]'
-                  : 'border-gray-600/30 hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:text-emerald-300'
-              }
-            `}
+    <div className={styles.paymentGrid}>
+      {providers.map((provider) => {
+        const isSelected = selectedMethod === provider.provider_name;
+        const hasBaseFee = provider.base_fee_usd > 0;
+        const feeText = provider.fee_percent > 0
+          ? `${provider.fee_percent}% fee${hasBaseFee ? ` +$${provider.base_fee_usd}` : ''}`
+          : hasBaseFee
+            ? `+$${provider.base_fee_usd} fee`
+            : 'No extra fee';
+
+        return (
+          <button
+            key={provider.provider_name}
+            type="button"
+            onClick={() => onChange(provider.provider_name)}
+            aria-pressed={isSelected}
+            className={`${styles.paymentOption} ${isSelected ? styles.paymentOptionSelected : ''}`}
           >
-            <div className="flex items-center gap-2">
+            <div className={styles.paymentOptionHeader}>
               {provider.logo_url ? (
-                <img src={provider.logo_url} alt={provider.display_name} className="w-8 h-8 rounded object-cover" />
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={provider.logo_url} alt={provider.display_name} className={styles.paymentOptionLogo} />
               ) : (
-                <div className="w-8 h-8 rounded flex items-center justify-center bg-gray-700">
+                <div className={styles.paymentOptionFallback}>
                   {provider.provider_name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="text-sm font-medium">{provider.display_name}</span>
+              <span className={styles.paymentOptionName}>{provider.display_name}</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {provider.fee_percent > 0 ? `${provider.fee_percent}% fee` : 'Free'} · {provider.base_fee_usd > 0 ? `+$${provider.base_fee_usd}` : ''}
-            </div>
+            <span className={styles.paymentOptionFee}>{feeText}</span>
           </button>
-          );
-        })}
-      </div>
+        );
+      })}
     </div>
   );
 }
