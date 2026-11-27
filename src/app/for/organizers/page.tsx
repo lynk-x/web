@@ -59,6 +59,9 @@ export default function OrganizersLandingPage() {
                     <div className={styles.ctaBox}>
                         <Link href="/dashboard/organize" className={styles.btnPrimary}>Create an Event</Link>
                     </div>
+                    <div className={styles.readMoreDivider} aria-hidden="true">
+                        <span>Read more</span>
+                    </div>
                 </section>
 
                 <section id="features" className={styles.section}>

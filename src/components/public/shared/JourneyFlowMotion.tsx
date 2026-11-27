@@ -33,8 +33,10 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 desc: 'Flexible payment with instant reservation holds while people pay.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1v-20" />
-                        <path d="M16 6h4v4" />
+                        <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                        <path d="M13 5v2" />
+                        <path d="M13 17v2" />
+                        <path d="M13 11v2" />
                     </svg>
                 ),
             },
@@ -120,8 +122,10 @@ const STEPS: Record<ForVariant, { lynkx: Step[]; external: Step[] }> = {
                 desc: 'Reserve your spot and get instant confirmation.',
                 icon: (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1v-20" />
-                        <path d="M16 6h4v4" />
+                        <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                        <path d="M13 5v2" />
+                        <path d="M13 17v2" />
+                        <path d="M13 11v2" />
                     </svg>
                 ),
             },

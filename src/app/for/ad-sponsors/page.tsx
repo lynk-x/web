@@ -62,6 +62,9 @@ export default function CommercialLandingPage() {
                     <div className={styles.ctaBox}>
                         <Link href="/dashboard/ads" className={styles.btnPrimary}>Create Campaign</Link>
                     </div>
+                    <div className={styles.readMoreDivider} aria-hidden="true">
+                        <span>Read more</span>
+                    </div>
                 </section>
 
                 <section id="how-it-works" className={styles.section}>

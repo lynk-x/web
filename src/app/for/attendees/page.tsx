@@ -59,6 +59,9 @@ export default function AttendeesLandingPage() {
                     <div className={styles.ctaBox}>
                         <Link href="/" className={styles.btnPrimary}>Browse Events</Link>
                     </div>
+                    <div className={styles.readMoreDivider} aria-hidden="true">
+                        <span>Read more</span>
+                    </div>
                 </section>
 
                 <section id="why-lynk-x" className={styles.section}>

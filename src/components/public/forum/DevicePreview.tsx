@@ -378,16 +378,12 @@ function easeOutCubic(t: number) {
 export default function DevicePreview() {
     const [activeTab, setActiveTab] = useState<ForumTab>('chat');
     const [bursts, setBursts] = useState<ReactionBurst[]>([]);
-    const trackRef = useRef<HTMLDivElement | null>(null);
-    const pinRef = useRef<HTMLDivElement | null>(null);
     const stageRef = useRef<HTMLDivElement | null>(null);
     const burstCounterRef = useRef(0);
 
     useEffect(() => {
-        const track = trackRef.current;
-        const pin = pinRef.current;
         const stage = stageRef.current;
-        if (!track || !pin || !stage) return;
+        if (!stage) return;
 
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             stage.style.setProperty('--laptop-p', '1');
@@ -399,10 +395,9 @@ export default function DevicePreview() {
 
         const updateScrollProgress = () => {
             rafId = 0;
-            const trackRect = track.getBoundingClientRect();
-            const stickyTop = 84;
-            const scrollable = Math.max(1, track.offsetHeight - pin.offsetHeight);
-            const raw = clamp01((stickyTop - trackRect.top) / scrollable);
+            const rect = stage.getBoundingClientRect();
+            const vh = window.innerHeight || 800;
+            const raw = clamp01((vh * 0.72 - rect.top) / (vh * 0.58));
             const laptopP = easeOutCubic(clamp01(raw / 0.58));
             const phoneP = easeOutCubic(clamp01((raw - 0.35) / 0.65));
 
@@ -438,15 +433,13 @@ export default function DevicePreview() {
 
     return (
         <section className={styles.section} aria-label="Event forum device preview">
-            <div ref={trackRef} className={styles.scrollTrack}>
-                <div ref={pinRef} className={styles.stickyPin}>
-                    <div className={styles.header}>
-                        <p className={styles.sub}>
-                            Every ticket unlocks a live event forum for organizer updates, crowd chat and a shared media wall. It opens instantly in any phone or laptop browser with no app download.
-                        </p>
-                    </div>
+            <div className={styles.header}>
+                <p className={styles.sub}>
+                    Every ticket unlocks a live event forum for organizer updates, crowd chat and a shared media wall. It opens instantly in any phone or laptop browser with no app download.
+                </p>
+            </div>
 
-                    <div ref={stageRef} className={styles.stage}>
+            <div ref={stageRef} className={styles.stage}>
                 {/* Desktop browser preview (decorative duplicate of the phone screen). */}
                 <div className={styles.laptop} aria-hidden="true">
                     <div className={styles.bezel}>
@@ -513,8 +506,6 @@ export default function DevicePreview() {
                         <span className={styles.captionBlurb}>{tab.blurb}</span>
                     </button>
                 ))}
-            </div>
-                </div>
             </div>
         </section>
     );

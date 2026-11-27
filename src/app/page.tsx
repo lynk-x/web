@@ -83,6 +83,9 @@ export default function Home() {
                             Create an Event
                         </Link>
                     </div>
+                    <div className={styles.readMoreDivider} aria-hidden="true">
+                        <span>Read more</span>
+                    </div>
                 </section>
 
                 <DevicePreview />
