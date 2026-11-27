@@ -1,15 +1,11 @@
-import { Metadata } from 'next';
+'use client';
+
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { processAccountRecovery } from './actions';
 import styles from '../page.module.css';
-
-export const metadata: Metadata = {
-    title: 'Account Recovery',
-    robots: { index: false, follow: false },
-};
 
 export default function RecoverAccountPage() {
     const router = useRouter();

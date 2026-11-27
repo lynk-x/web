@@ -1,4 +1,5 @@
-import { Metadata } from 'next';
+'use client';
+
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,11 +11,6 @@ import ReportIssueModal from '../ReportIssueModal';
 import styles from '../page.module.css';
 
 type SignupStage = 'email' | 'email-code';
-
-export const metadata: Metadata = {
-    title: 'Create Account',
-    robots: { index: false, follow: false },
-};
 
 export default function SignupPage() {
     const router = useRouter();
