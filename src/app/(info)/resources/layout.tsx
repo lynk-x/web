@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import Navbar from "@/components/public/Navbar";
-import AppDrawer from "@/components/public/AppDrawer";
-import LynkXFooter from "@/components/public/LynkXFooter";
+import Navbar from "@/components/public/nav/Navbar";
+import AppDrawer from "@/components/public/nav/AppDrawer";
+import Footer from "@/components/public/shared/Footer";
 import styles from "./layout.module.css";
 import { FilterProvider } from "@/context/FilterContext";
 
@@ -36,7 +36,7 @@ export default function ResourceLayout({
                         </div>
                     </main>
                 </div>
-                <LynkXFooter />
+                <Footer />
             </div>
         </FilterProvider>
     );

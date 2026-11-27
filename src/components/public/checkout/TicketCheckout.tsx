@@ -7,14 +7,18 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import styles from '@/components/public/CheckoutView.module.css';
-import Skeleton from '@/components/public/Skeleton';
+import Skeleton from '@/components/public/shared/Skeleton';
 import Spinner from '@/components/shared/Spinner';
-import CheckoutErrorView from '@/components/public/CheckoutErrorView';
+import CheckoutErrorView from '@/components/public/modals/CheckoutErrorView';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/components/ui/Toast';
 import { validateKenyanPhone, normalizeToE164 } from '@/utils/phone';
 import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
-import { CheckoutSupportModal } from '@/components/public/CheckoutSupportModal';
+import { CheckoutSupportModal } from '@/components/public/modals/CheckoutSupportModal';
+import { usePromoCode } from './usePromoCode';
+import { usePaymentProviders } from './usePaymentProviders';
+import { PaymentMethodSelector } from './PaymentMethodSelector';
+import { PromoCodeInput } from './PromoCodeInput';
 
 /** Thrown only when the mpesa-stk-push invocation fails at the transport level (never got a response), not for business-logic rejections the function itself returns. */
 class FunctionTransportError extends Error {}
@@ -36,19 +40,10 @@ export const TicketCheckoutView: React.FC = () => {
     const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
     const [currentCheckoutId, setCurrentCheckoutId] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<string>('mpesa');
-    const [availableProviders, setAvailableProviders] = useState<Array<{
-        provider_name: string;
-        display_name: string;
-        logo_url?: string;
-        fee_percent: number;
-        base_fee_usd: number;
-    }>>([]);
-
-    // Manual confirmation state
     const [manualConfirming, setManualConfirming] = useState(false);
+    const [realtimeDisrupted, setRealtimeDisrupted] = useState(false);
 
-    // Set when the realtime payment-status channel drops mid-wait — the payment
-    // may still complete server-side, so this nudges toward manual confirmation
+    // Reservation state — set once tickets are locked, before payment is initiated
     // rather than treating it as a failure.
     const [realtimeDisrupted, setRealtimeDisrupted] = useState(false);
 
@@ -110,16 +105,15 @@ export const TicketCheckoutView: React.FC = () => {
         code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
     });
 
-    // Promo state
-    const [promoCode, setPromoCode] = useState('');
-    const [appliedPromo, setAppliedPromo] = useState<{
-        code: string; discount: number; promoId: string; type: string; value: number;
-    } | null>(null);
-    const [promoError, setPromoError] = useState('');
-    const [promoLoading, setPromoLoading] = useState(false);
+    // Promo state (managed via usePromoCode hook)
+    const [contactPhoneCountry, setContactPhoneCountry] = useState<DialCodeCountry>({
+        code: 'KE', display_name: 'Kenya', phone_prefix: '+254', phone_digits: 9,
+    });
 
     // Derived totals
     const subtotal = getCartTotal();
+    const { promoCode, setPromoCode, appliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(subtotal, supabase);
+    const { availableProviders: providers, loading: providersLoading } = usePaymentProviders(currency, supabase);
     const discountAmount = appliedPromo?.discount || 0;
     const total = Math.max(0, subtotal - discountAmount);
 
@@ -143,16 +137,7 @@ export const TicketCheckoutView: React.FC = () => {
                     }
                 }
 
-                // 2. Fetch available payment providers based on event currency
-                const { data: providers } = await supabase.schema('api').rpc('get_available_payment_providers', {
-                    p_currency: currency
-                });
-                if (providers && providers.length > 0) {
-                    setAvailableProviders(providers);
-                    // Default to first available, but prefer mpesa if it exists
-                    const hasMpesa = (providers as any[]).some(p => p.provider_name === 'mpesa');
-                    setPaymentMethod(hasMpesa ? 'mpesa' : providers[0].provider_name);
-                }
+                // Payment providers are loaded via usePaymentProviders hook
 
             } catch (err) {
                 console.error('Checkout init error:', err);
@@ -243,74 +228,6 @@ export const TicketCheckoutView: React.FC = () => {
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
     }, [reservationExpiresAt]);
-
-    // ── Real promo code lookup ────────────────────────────────────────────────
-    const handleApplyPromo = useCallback(async () => {
-        const code = promoCode.trim().toUpperCase();
-        if (!code) return;
-
-        setPromoLoading(true);
-        setPromoError('');
-
-        const reservations: Array<{ tierId: string; reservationId: string }> = [];
-        try {
-            const { data: promo, error } = await supabase
-                .schema('api')
-                .from('v1_promo_codes')
-                .select('id, type, value, max_uses, uses_count, valid_from, valid_until, is_active')
-                .eq('code', code)
-                .maybeSingle();
-
-            if (error || !promo) {
-                setPromoError('Promo code not found. Please check the code and try again.');
-                setAppliedPromo(null);
-                return;
-            }
-            if (!promo.is_active) {
-                setPromoError('This promo code is no longer active.');
-                setAppliedPromo(null);
-                return;
-            }
-            const now = new Date();
-            if (promo.valid_from && new Date(promo.valid_from) > now) {
-                setPromoError('This promo code is not yet active.');
-                setAppliedPromo(null);
-                return;
-            }
-            if (promo.valid_until && new Date(promo.valid_until) < now) {
-                setPromoError('This promo code has expired.');
-                setAppliedPromo(null);
-                return;
-            }
-            if (promo.max_uses !== null && promo.uses_count >= promo.max_uses) {
-                setPromoError('This promo code has reached its usage limit.');
-                setAppliedPromo(null);
-                return;
-            }
-
-            let discount: number;
-            if (promo.type === 'free_entry') {
-                discount = subtotal;
-            } else if (promo.type === 'percent') {
-                discount = (subtotal * promo.value) / 100;
-            } else {
-                // 'fixed'
-                discount = Math.min(promo.value, subtotal);
-            }
-
-            setAppliedPromo({ code, discount, promoId: promo.id, type: promo.type, value: promo.value });
-            setPromoCode('');
-        } catch {
-            setPromoError('Failed to validate promo code. Please try again.');
-        } finally {
-            setPromoLoading(false);
-        }
-    }, [promoCode, subtotal, supabase]);
-
-    const handleRemovePromo = () => {
-        setAppliedPromo(null);
-        showToast('Promo code removed.', 'info');
-    };
 
     // ── Form helpers ──────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -713,25 +630,15 @@ export const TicketCheckoutView: React.FC = () => {
                                         </div>
                                     ) : (
                                         <div className={styles.promoContainer}>
-                                            <div className={styles.promoInputWrapper}>
-                                                <input
-                                                    type="text"
-                                                    className={styles.promoInput}
-                                                    placeholder="Promo code"
-                                                    value={promoCode}
-                                                    onChange={(e) => setPromoCode(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
-                                                    disabled={promoLoading}
-                                                />
-                                                <button
-                                                    onClick={handleApplyPromo}
-                                                    className={styles.filledActionBtn} // Styled with a green background by default
-                                                    disabled={promoLoading || !promoCode.trim()}
-                                                >
-                                                    {promoLoading ? '…' : 'Apply'}
-                                                </button>
-                                            </div>
-                                            {promoError && <p className={styles.promoError}>{promoError}</p>}
+                                            <PromoCodeInput
+                                                promoCode={promoCode}
+                                                setPromoCode={setPromoCode}
+                                                appliedPromo={appliedPromo}
+                                                promoError={promoError}
+                                                promoLoading={promoLoading}
+                                                handleApplyPromo={handleApplyPromo}
+                                                handleRemovePromo={handleRemovePromo}
+                                            />
                                         </div>
                                     )}
 
@@ -807,21 +714,11 @@ export const TicketCheckoutView: React.FC = () => {
                                     <>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Payment Method</label>
-                                            <select 
-                                                className={styles.select}
-                                                value={paymentMethod}
-                                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                            >
-                                                {availableProviders.length > 0 ? (
-                                                    availableProviders.map(p => (
-                                                        <option key={p.provider_name} value={p.provider_name}>
-                                                            {p.display_name}
-                                                        </option>
-                                                    ))
-                                                ) : (
-                                                    <option value="mpesa">M-Pesa</option>
-                                                )}
-                                            </select>
+                                            <PaymentMethodSelector
+                                                providers={providers}
+                                                selectedMethod={paymentMethod}
+                                                onChange={setPaymentMethod}
+                                            />
                                         </div>
 
                                         {paymentMethod === 'mpesa' && (

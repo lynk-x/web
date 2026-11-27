@@ -2,18 +2,7 @@
     position: relative;
     width: 100%;
     color: var(--color-utility-primaryText);
-    overflow-x: hidden;
-}
-
-.backgroundGlow {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 50% -15%, rgba(32, 249, 40, 0.09), transparent 65%);
-    pointer-events: none;
-    z-index: 0;
+    overflow-x: clip;
 }
 
 .hero {
@@ -29,17 +18,24 @@
 }
 
 .badge {
-    display: inline-block;
-    padding: 6px 16px;
-    background: rgba(32, 249, 40, 0.1);
-    border: 1px solid rgba(32, 249, 40, 0.25);
-    border-radius: var(--radius-full);
-    color: var(--color-brand-primary);
-    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-bottom: 20px;
+}
+
+.badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-brand-primary);
+    flex-shrink: 0;
 }
 
 .title {

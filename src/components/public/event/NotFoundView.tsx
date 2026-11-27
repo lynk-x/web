@@ -3,9 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from './EventDetailsView.module.css';
+import styles from './DetailsView.module.css';
 
-const EventNotFoundView: React.FC = () => {
+const NotFoundView: React.FC = () => {
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -39,4 +39,4 @@ const EventNotFoundView: React.FC = () => {
     );
 };
 
-export default EventNotFoundView;
+export default NotFoundView;

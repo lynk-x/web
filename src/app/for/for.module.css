@@ -5,18 +5,6 @@
     overflow-x: hidden;
 }
 
-/* Background Effects */
-.backgroundGlow {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 50% -20%, rgba(32, 249, 40, 0.08), transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-}
-
 .hero {
     position: relative;
     padding: 120px 24px 80px;
@@ -27,17 +15,24 @@
 }
 
 .badge {
-    display: inline-block;
-    padding: 6px 16px;
-    background: rgba(32, 249, 40, 0.1);
-    border: 1px solid rgba(32, 249, 40, 0.2);
-    border-radius: var(--radius-full);
-    color: var(--color-brand-primary);
-    font-size: 14px;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 12px;
+    font-weight: 700;
     margin-bottom: 24px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-brand-primary);
+    flex-shrink: 0;
 }
 
 .title {

@@ -1,15 +1,15 @@
 "use client";
 
 import React from 'react';
-import HomeLayout from '@/components/public/HomeLayout';
-import LynkXFooter from '@/components/public/LynkXFooter';
+import HomeLayout from '@/components/public/home/HomeLayout';
+import Footer from '@/components/public/shared/Footer';
 import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
-import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
-import EcosystemTicker from '@/components/public/EcosystemTicker';
-import FaqSection, { FaqItem } from '@/components/public/FaqSection';
+import JourneyFlowMotion from '@/components/public/shared/JourneyFlowMotion';
+import EcosystemTicker from '@/components/public/shared/EcosystemTicker';
+import FaqSection, { FaqItem } from '@/components/public/shared/FaqSection';
 
 const attendeeFaqs: FaqItem[] = [
     {
@@ -48,8 +48,6 @@ export default function AttendeesLandingPage() {
     return (
         <HomeLayout hideCart={true} hideMenu={true}>
             <div className={styles.landingPage}>
-                <div className={styles.backgroundGlow} />
-                
                 <section className={styles.hero}>
                     <div className={styles.badge}>For Attendees</div>
                     <h1 className={styles.title}>
@@ -119,7 +117,7 @@ export default function AttendeesLandingPage() {
                     items={attendeeFaqs}
                 />
 
-                <LynkXFooter />
+                <Footer />
             </div>
         </HomeLayout>
     );

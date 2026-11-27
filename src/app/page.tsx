@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import HomeLayout from '@/components/public/HomeLayout';
-import ForumDevicePreview from '@/components/public/ForumDevicePreview';
-import HomeAudienceSwitcher from '@/components/public/HomeAudienceSwitcher';
-import LynkXFooter from '@/components/public/LynkXFooter';
-import SoftwareAppJsonLd from '@/components/public/SoftwareAppJsonLd';
+import HomeLayout from '@/components/public/home/HomeLayout';
+import DevicePreview from '@/components/public/forum/DevicePreview';
+import AudienceSwitcher from '@/components/public/home/AudienceSwitcher';
+import Footer from '@/components/public/shared/Footer';
+import SoftwareAppJsonLd from '@/components/public/shared/SoftwareAppJsonLd';
 import styles from './home.module.css';
 
 export const metadata: Metadata = {
@@ -53,10 +53,8 @@ export default function Home() {
             <SoftwareAppJsonLd />
 
             <div className={styles.brandPage}>
-                <div className={styles.backgroundGlow} />
-
                 <section className={styles.hero}>
-                    <div className={styles.badge}>Event Ticketing &amp; Community Platform</div>
+                    <div className={styles.badge}>Event Ticketing &amp; Attendee Forums</div>
                     <h1 className={styles.title}>
                         Every event deserves a forum.
                     </h1>
@@ -87,12 +85,12 @@ export default function Home() {
                     </div>
                 </section>
 
-                <ForumDevicePreview />
+                <DevicePreview />
 
-                <HomeAudienceSwitcher />
+                <AudienceSwitcher />
             </div>
 
-            <LynkXFooter />
+            <Footer />
         </HomeLayout>
     );
 }

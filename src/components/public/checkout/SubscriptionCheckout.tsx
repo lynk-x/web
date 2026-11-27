@@ -6,13 +6,17 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import styles from '@/components/public/CheckoutView.module.css';
-import Skeleton from '@/components/public/Skeleton';
+import Skeleton from '@/components/public/shared/Skeleton';
 import Spinner from '@/components/shared/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { validateKenyanPhone, normalizeToE164 } from '@/utils/phone';
 import CountryPhoneSelect, { DialCodeCountry } from '@/components/shared/CountryPhoneSelect';
-import { CheckoutSupportModal } from '@/components/public/CheckoutSupportModal';
+import { CheckoutSupportModal } from '@/components/public/modals/CheckoutSupportModal';
 import { SubscriptionPlan, SubscriptionPrice } from '@/components/public/checkout/types';
+import { usePromoCode } from './usePromoCode';
+import { usePaymentProviders } from './usePaymentProviders';
+import { PaymentMethodSelector } from './PaymentMethodSelector';
+import { PromoCodeInput } from './PromoCodeInput';
 
 /**
  * SubscriptionCheckoutView — Isolated checkout flow for Lynk-X Premium subscriptions.
@@ -47,18 +51,6 @@ export const SubscriptionCheckoutView: React.FC = () => {
     const [realtimeDisrupted, setRealtimeDisrupted] = useState(false);
     const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-    // Promo code state
-    const [promoCode, setPromoCode] = useState('');
-    const [appliedPromo, setAppliedPromo] = useState<{
-        code: string;
-        discount: number;
-        promoId: string;
-        type: string;
-        value: number;
-    } | null>(null);
-    const [promoError, setPromoError] = useState('');
-    const [promoLoading, setPromoLoading] = useState(false);
-
     // Form data
     const [formData, setFormData] = useState({
         email: initialEmail,
@@ -78,14 +70,6 @@ export const SubscriptionCheckoutView: React.FC = () => {
         phone_digits: 9,
     });
 
-    // Payment providers
-    const [availableProviders, setAvailableProviders] = useState<Array<{
-        provider_name: string;
-        display_name: string;
-        logo_url?: string;
-        fee_percent: number;
-        base_fee_usd: number;
-    }>>([]);
     const [paymentMethod, setPaymentMethod] = useState<string>('mpesa');
 
     // ── Load Catalog & Providers ──────────────────────────────────────────────
@@ -104,16 +88,8 @@ export const SubscriptionCheckoutView: React.FC = () => {
                     setPlans(catalogData as SubscriptionPlan[]);
                 }
 
-                // Fetch available payment providers (KES currency)
-                const { data: providers } = await supabase
-                    .schema('api')
-                    .rpc('get_available_payment_providers', { p_currency: 'KES' });
+                // Payment providers are loaded via usePaymentProviders hook
 
-                if (providers && providers.length > 0 && !isCancelled) {
-                    setAvailableProviders(providers);
-                    const hasMpesa = (providers as any[]).some(p => p.provider_name === 'mpesa');
-                    setPaymentMethod(hasMpesa ? 'mpesa' : providers[0].provider_name);
-                }
             } catch (err) {
                 console.error('Error initializing subscription checkout:', err);
             } finally {
@@ -142,6 +118,9 @@ export const SubscriptionCheckoutView: React.FC = () => {
     const discountAmount = appliedPromo ? appliedPromo.discount : 0;
     const finalAmount = Math.max(0, baseAmount - discountAmount);
 
+    const { promoCode, setPromoCode, appliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(baseAmount, supabase);
+    const { availableProviders: providers, loading: providersLoading } = usePaymentProviders('KES', supabase);
+
     // Keep applied promo discount synced when interval or base price changes
     useEffect(() => {
         if (!appliedPromo) return;
@@ -155,97 +134,6 @@ export const SubscriptionCheckoutView: React.FC = () => {
         }
         setAppliedPromo(prev => prev ? { ...prev, discount: newDiscount } : null);
     }, [baseAmount]);
-
-    // ── Promo Code Validation ─────────────────────────────────────────────────
-    const handleApplyPromo = useCallback(async () => {
-        const code = promoCode.trim().toUpperCase();
-        if (!code) return;
-
-        setPromoLoading(true);
-        setPromoError('');
-
-        try {
-            const { data: promo, error } = await supabase
-                .schema('api')
-                .from('v1_promo_codes')
-                .select('id, type, value, max_uses, uses_count, valid_from, valid_until, is_active')
-                .eq('code', code)
-                .maybeSingle();
-
-            if (error || !promo) {
-                setPromoError('Promo code not found. Please check the code and try again.');
-                setAppliedPromo(null);
-                return;
-            }
-            if (!promo.is_active) {
-                setPromoError('This promo code is no longer active.');
-                setAppliedPromo(null);
-                return;
-            }
-            const now = new Date();
-            if (promo.valid_from && new Date(promo.valid_from) > now) {
-                setPromoError('This promo code is not yet active.');
-                setAppliedPromo(null);
-                return;
-            }
-            if (promo.valid_until && new Date(promo.valid_until) < now) {
-                setPromoError('This promo code has expired.');
-                setAppliedPromo(null);
-                return;
-            }
-            if (promo.max_uses !== null && promo.uses_count >= promo.max_uses) {
-                setPromoError('This promo code has reached its usage limit.');
-                setAppliedPromo(null);
-                return;
-            }
-
-            // Verify the promo code is not restricted to specific event tickets
-            try {
-                const { data: eventLinks } = await supabase
-                    .schema('ticketing')
-                    .from('event_promos')
-                    .select('event_id')
-                    .eq('promo_code_id', promo.id)
-                    .limit(1);
-
-                if (eventLinks && eventLinks.length > 0) {
-                    setPromoError('This promo code is only valid for event tickets.');
-                    setAppliedPromo(null);
-                    return;
-                }
-            } catch {
-                // Ignore schema visibility fallback
-            }
-
-            let discount = 0;
-            if (promo.type === 'free_entry') {
-                discount = baseAmount;
-            } else if (promo.type === 'percent') {
-                discount = (baseAmount * promo.value) / 100;
-            } else {
-                discount = Math.min(promo.value, baseAmount);
-            }
-
-            setAppliedPromo({
-                code,
-                discount,
-                promoId: promo.id,
-                type: promo.type,
-                value: promo.value,
-            });
-            setPromoCode('');
-            showToast('Promo code applied successfully!', 'success');
-        } catch {
-            setPromoError('Failed to validate promo code. Please try again.');
-        } finally {
-            setPromoLoading(false);
-        }
-    }, [promoCode, baseAmount, supabase, showToast]);
-
-    const handleRemovePromo = () => {
-        setAppliedPromo(null);
-        showToast('Promo code removed.', 'info');
-    };
 
     // ── Realtime Listener for M-Pesa Completion ───────────────────────────────
     useEffect(() => {
@@ -634,25 +522,15 @@ export const SubscriptionCheckoutView: React.FC = () => {
                                         </div>
                                     ) : (
                                         <div className={styles.promoContainer}>
-                                            <div className={styles.promoInputWrapper}>
-                                                <input
-                                                    type="text"
-                                                    className={styles.promoInput}
-                                                    placeholder="Promo code"
-                                                    value={promoCode}
-                                                    onChange={(e) => setPromoCode(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
-                                                    disabled={promoLoading}
-                                                />
-                                                <button
-                                                    onClick={handleApplyPromo}
-                                                    className={styles.filledActionBtn}
-                                                    disabled={promoLoading || !promoCode.trim()}
-                                                >
-                                                    {promoLoading ? '…' : 'Apply'}
-                                                </button>
-                                            </div>
-                                            {promoError && <p className={styles.promoError}>{promoError}</p>}
+                                            <PromoCodeInput
+                                                promoCode={promoCode}
+                                                setPromoCode={setPromoCode}
+                                                appliedPromo={appliedPromo}
+                                                promoError={promoError}
+                                                promoLoading={promoLoading}
+                                                handleApplyPromo={handleApplyPromo}
+                                                handleRemovePromo={handleRemovePromo}
+                                            />
                                         </div>
                                     )}
 
@@ -733,24 +611,11 @@ export const SubscriptionCheckoutView: React.FC = () => {
                                 <>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Payment Method</label>
-                                        <select
-                                            className={styles.select}
-                                            value={paymentMethod}
-                                            onChange={(e) => setPaymentMethod(e.target.value)}
-                                        >
-                                            {availableProviders.length > 0 ? (
-                                                availableProviders
-                                                    // Ensure in-app wallet is filtered out for unauthenticated guests
-                                                    .filter(p => p.provider_name !== 'in-app' && p.provider_name !== 'wallet')
-                                                    .map(p => (
-                                                        <option key={p.provider_name} value={p.provider_name}>
-                                                            {p.display_name}
-                                                        </option>
-                                                    ))
-                                            ) : (
-                                                <option value="mpesa">M-Pesa</option>
-                                            )}
-                                        </select>
+                                        <PaymentMethodSelector
+                                            providers={providers}
+                                            selectedMethod={paymentMethod}
+                                            onChange={setPaymentMethod}
+                                        />
                                     </div>
 
                                     {paymentMethod === 'mpesa' && (

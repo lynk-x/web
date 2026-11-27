@@ -1,17 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import SearchBar from "./SearchBar";
-import HeroSection from "./HeroSection";
-import EventGrid from "./EventGrid";
+import SearchBar from "../nav/SearchBar";
+import HeroSection from "../shared/HeroSection";
+import EventGrid from "../event/Grid";
 import styles from '@/app/page.module.css';
 import { Event } from '@/types';
-import LynkXFooter from "./LynkXFooter";
+import Footer from "../shared/Footer";
 import { useFilters } from '@/context/FilterContext';
 import { createClient } from '@/utils/supabase/client';
-import { slugifyCategory } from '@/utils/categories';
 
 interface CategoryItem {
     id: string;
@@ -227,6 +225,7 @@ const HomeClient: React.FC<HomeClientProps> = ({
 
     return (
         <>
+            <h1 className={styles.srOnly}>Upcoming Events &amp; Tickets on Lynk-X</h1>
             <div className={styles.searchWrapper}>
                 <SearchBar
                     categories={categories}
@@ -265,29 +264,7 @@ const HomeClient: React.FC<HomeClientProps> = ({
                     </div>
                 )}
             </div>
-            {(categories ?? []).length > 0 && (
-                <section className={styles.categoryDirectory} aria-label="Browse events by category">
-                    <span className={styles.categoryDirectoryLabel}>Browse by category:</span>
-                    <nav className={styles.categoryDirectoryList} aria-label="Event categories">
-                        {(categories ?? []).map((cat, idx) => (
-                            <React.Fragment key={cat.id}>
-                                {idx > 0 && (
-                                    <span className={styles.categoryDot} aria-hidden="true">
-                                        ·
-                                    </span>
-                                )}
-                                <Link
-                                    href={`/events/${slugifyCategory(cat.display_name)}`}
-                                    className={styles.categoryLink}
-                                >
-                                    {cat.display_name}
-                                </Link>
-                            </React.Fragment>
-                        ))}
-                    </nav>
-                </section>
-            )}
-            <LynkXFooter />
+            <Footer />
         </>
     );
 };

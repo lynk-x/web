@@ -3,8 +3,8 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import EventCard from './EventCard';
-import styles from './EventGrid.module.css';
+import EventCard from './Card';
+import styles from './Grid.module.css';
 import { Event } from "@/types";
 import { formatDateInTimezone, formatTimeInTimezone } from '@/utils/format';
 import { getEventImage } from '@/utils/eventImage';
@@ -215,4 +215,4 @@ const EventGrid: React.FC<EventGridProps> = ({
     );
 };
 
-export default EventGrid;
+export default Grid;

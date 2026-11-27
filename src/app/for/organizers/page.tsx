@@ -1,15 +1,15 @@
 "use client";
 
 import React from 'react';
-import HomeLayout from '@/components/public/HomeLayout';
-import LynkXFooter from '@/components/public/LynkXFooter';
+import HomeLayout from '@/components/public/home/HomeLayout';
+import Footer from '@/components/public/shared/Footer';
 import styles from '../for.module.css';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { SlotCounterText } from '@/components/shared/SlotCounterText';
-import JourneyFlowMotion from '@/components/public/JourneyFlowMotion';
-import EcosystemTicker from '@/components/public/EcosystemTicker';
-import FaqSection, { FaqItem } from '@/components/public/FaqSection';
+import JourneyFlowMotion from '@/components/public/shared/JourneyFlowMotion';
+import EcosystemTicker from '@/components/public/shared/EcosystemTicker';
+import FaqSection, { FaqItem } from '@/components/public/shared/FaqSection';
 
 const organizerFaqs: FaqItem[] = [
     {
@@ -48,8 +48,6 @@ export default function OrganizersLandingPage() {
     return (
         <HomeLayout hideCart={true} hideMenu={true}>
             <div className={styles.landingPage}>
-                <div className={styles.backgroundGlow} />
-                
                 <section className={styles.hero}>
                     <div className={styles.badge}>For Organizers</div>
                     <h1 className={styles.title}>
@@ -137,7 +135,7 @@ export default function OrganizersLandingPage() {
                     items={organizerFaqs}
                 />
 
-                <LynkXFooter />
+                <Footer />
             </div>
         </HomeLayout>
     );

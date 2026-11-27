@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import styles from './SearchBar.module.css';
 import { useFilters } from '@/context/FilterContext';
-import FilterPopup from './FilterPopup';
+import FilterPopup from '../FilterPopup';
 
 interface SearchBarProps {
     onFocus?: () => void;

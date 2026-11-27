@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import SoftwareAppJsonLd from '@/components/public/SoftwareAppJsonLd';
+import SoftwareAppJsonLd from '@/components/public/shared/SoftwareAppJsonLd';
 
 export const metadata: Metadata = {
   title: 'For Sponsors & Advertisers — Reach Verified Event Attendees',

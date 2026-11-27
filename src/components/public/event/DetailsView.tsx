@@ -11,12 +11,12 @@ import { useCart } from '@/context/CartContext';
 import { Event } from '@/types';
 import { formatEventDate, formatTimeInTimezone } from '@/utils/format';
 import { getEventImage } from '@/utils/eventImage';
-import styles from './EventDetailsView.module.css';
-import DisclaimerModal, { Disclaimer } from './DisclaimerModal';
+import styles from './DetailsView.module.css';
+import DisclaimerModal, { Disclaimer } from '../modals/DisclaimerModal';
 import { useToast } from '@/components/ui/Toast';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
-import EventCard from './EventCard';
-import LynkXFooter from './LynkXFooter';
+import Card from './Card';
+import Footer from '../shared/Footer';
 import { formatDateInTimezone } from '@/utils/format';
 
 export interface TicketTierItem {
@@ -55,7 +55,7 @@ const stripHtml = (html: string) => {
  * Interactive event detail view displaying event info, live ticket availability,
  * waitlist signup, checkout handoff, related events and the global footer.
  */
-const EventDetailsView: React.FC<EventDetailsViewProps> = ({
+const DetailsView: React.FC<EventDetailsViewProps> = ({
     event,
     ticketTiers = [],
     disclaimers = [],
@@ -613,7 +613,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                                 const relDate = formatDateInTimezone(rel.start_datetime, rel.timezone);
                                 const relTime = formatTimeInTimezone(rel.start_datetime, rel.timezone);
                                 return (
-                                    <EventCard
+                                    <Card
                                         key={rel.id}
                                         id={rel.id}
                                         reference={rel.reference}
@@ -630,7 +630,7 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
                 )}
             </main>
 
-            <LynkXFooter />
+            <Footer />
 
             {/* Disclaimer modal — uses real DB data, shown only if disclaimers exist */}
             {disclaimers.length > 0 && (
@@ -645,4 +645,4 @@ const EventDetailsView: React.FC<EventDetailsViewProps> = ({
     );
 };
 
-export default EventDetailsView;
+export default DetailsView;

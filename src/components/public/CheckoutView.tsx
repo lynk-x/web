@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
-import { TicketCheckoutView } from '@/components/public/checkout/tickets/TicketCheckoutView';
-import { SubscriptionCheckoutView } from '@/components/public/checkout/subscription/SubscriptionCheckoutView';
+import { TicketCheckoutView } from '@/components/public/checkout/TicketCheckout';
+import { SubscriptionCheckoutView } from '@/components/public/checkout/SubscriptionCheckout';
 
 /**
  * CheckoutView — Unified dynamic checkout router.

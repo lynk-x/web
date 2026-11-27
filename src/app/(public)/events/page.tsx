@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { createPublicClient } from '@/utils/supabase/public';
-import HomeLayout from '@/components/public/HomeLayout';
-import HomeClient from '@/components/public/HomeClient';
+import HomeLayout from '@/components/public/home/HomeLayout';
+import HomeClient from '@/components/public/home/HomeClient';
 import { getEventImage } from '@/utils/eventImage';
 import { Event } from '@/types';
 

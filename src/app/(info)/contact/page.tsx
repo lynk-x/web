@@ -1,5 +1,5 @@
 import React from 'react';
-import HomeLayout from "@/components/public/HomeLayout";
+import HomeLayout from "@/components/public/home/HomeLayout";
 import ContactForm from "@/components/public/ContactForm/ContactForm";
 import type { Metadata } from 'next';
 

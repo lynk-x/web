@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import Navbar from "./Navbar";
-import AppDrawer from "./AppDrawer";
-import PullToRefresh from "./PullToRefresh";
+import Navbar from "../nav/Navbar";
+import AppDrawer from "../nav/AppDrawer";
+import PullToRefresh from "../nav/PullToRefresh";
 import styles from "@/app/page.module.css";
 import { FilterProvider } from "@/context/FilterContext";
 

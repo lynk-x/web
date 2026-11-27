@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from './EventCard.module.css';
+import styles from './Card.module.css';
 
 interface EventCardProps {
     id: string | number;
@@ -56,4 +56,4 @@ const EventCard: React.FC<EventCardProps> = ({ reference, name, date, category, 
     );
 };
 
-export default EventCard;
+export default Card;

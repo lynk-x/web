@@ -59,48 +59,14 @@
     margin-bottom: 0;
 }
 
-.categoryDirectory {
-    width: 100%;
-    max-width: 1200px;
-    margin: var(--spacing-md) auto var(--spacing-lg);
-    padding: 0 var(--spacing-sm);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 8px 12px;
-}
-
-.categoryDirectoryLabel {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.48);
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
-}
-
-.categoryDirectoryList {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-}
-
-.categoryDot {
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 13px;
-    user-select: none;
-}
-
-.categoryLink {
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.72);
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.18);
-    text-underline-offset: 3px;
-    transition: color 0.15s, text-decoration-color 0.15s;
-}
-
-.categoryLink:hover {
-    color: var(--color-brand-primary);
-    text-decoration-color: var(--color-brand-primary);
+    border: 0;
 }

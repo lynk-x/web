@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import HomeLayout from '@/components/public/HomeLayout';
-import LynkXFooter from '@/components/public/LynkXFooter';
+import HomeLayout from '@/components/public/home/HomeLayout';
+import Footer from '@/components/public/shared/Footer';
 
 /**
  * Branded 404 page keeping lost visitors and search crawlers connected to active
@@ -79,7 +79,7 @@ export default function NotFound() {
           </Link>
         </div>
       </div>
-      <LynkXFooter />
+      <Footer />
     </HomeLayout>
   );
 }

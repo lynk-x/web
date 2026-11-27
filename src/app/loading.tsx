@@ -1,7 +1,7 @@
-import HomeLayout from "@/components/public/HomeLayout";
-import SkeletonEventCard from "@/components/public/SkeletonEventCard";
+import HomeLayout from "@/components/public/home/HomeLayout";
+import SkeletonEventCard from "@/components/public/shared/SkeletonEventCard";
 import styles from "./page.module.css";
-import SearchBar from "@/components/public/SearchBar";
+import SearchBar from "@/components/public/nav/SearchBar";
 
 export default function Loading() {
     return (

@@ -3,13 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from './LynkXFooter.module.css';
+import styles from './Footer.module.css';
 
 /**
  * Global footer rendering product navigation, resource guides, legal policies
  * and social channels across public marketing pages.
  */
-const LynkXFooter: React.FC = () => {
+const Footer: React.FC = () => {
     return (
         <footer className={styles.footer}>
             <div className={styles.backgroundGlow} />
@@ -96,4 +96,4 @@ const LynkXFooter: React.FC = () => {
     );
 };
 
-export default LynkXFooter;
+export default Footer;

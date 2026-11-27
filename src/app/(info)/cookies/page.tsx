@@ -1,7 +1,7 @@
 import { createPublicClient } from '@/utils/supabase/public';
-import HomeLayout from "@/components/public/HomeLayout";
-import LynkXFooter from "@/components/public/LynkXFooter";
-import CookieConsentManager from "@/components/public/CookieConsentManager";
+import HomeLayout from "@/components/public/home/HomeLayout";
+import Footer from "@/components/public/shared/Footer";
+import CookieConsentManager from "@/components/public/modals/CookieConsentManager";
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
 
@@ -109,7 +109,7 @@ export default async function CookiePolicyPage() {
                     </div>
                 </div>
             </div>
-            <LynkXFooter />
+            <Footer />
         </HomeLayout>
     );
 }

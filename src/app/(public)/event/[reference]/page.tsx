@@ -1,5 +1,5 @@
 import { createPublicClient } from '@/utils/supabase/public';
-import EventDetailsView from '@/components/public/EventDetailsView';
+import DetailsView from '@/components/public/event/DetailsView';
 import { notFound } from 'next/navigation';
 import { Event } from '@/types';
 import { Metadata } from 'next';
@@ -362,7 +362,7 @@ export default async function EventPage({ params }: { params: Promise<{ referenc
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
             />
-            <EventDetailsView
+            <DetailsView
                 event={event}
                 ticketTiers={tiers}
                 disclaimers={disclaimers}

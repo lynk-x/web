@@ -18,7 +18,7 @@ type OtpStage = 'request' | 'verify';
  * Password sign-in was retired once every signup path started guaranteeing
  * an email on file, which is all OTP login needs. A legacy account still
  * missing email can add one voluntarily from /account. Sign-up lives at
- * /signup (see SignupPage.tsx).
+ * /signup (see signup/page.tsx).
  */
 export default function AuthPage() {
     const router = useRouter();

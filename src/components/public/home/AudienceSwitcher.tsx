@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import styles from './HomeAudienceSwitcher.module.css';
+import styles from './AudienceSwitcher.module.css';
 
 type AudienceKey = 'attendees' | 'organizers' | 'sponsors';
 type HighlightIcon = 'ticket' | 'qr' | 'radio' | 'wallet' | 'users' | 'shield' | 'megaphone';

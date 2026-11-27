@@ -1,5 +1,5 @@
-import HomeLayout from "@/components/public/HomeLayout";
-import LynkXFooter from "@/components/public/LynkXFooter";
+import HomeLayout from "@/components/public/home/HomeLayout";
+import Footer from "@/components/public/shared/Footer";
 import { createPublicClient } from '@/utils/supabase/public';
 import RichTextRenderer from '@/components/shared/RichTextRenderer/RichTextRenderer';
 import type { Metadata } from 'next';
@@ -92,7 +92,7 @@ export default async function PrivacyPage() {
                     <RichTextRenderer content={content} />
                 </div>
             </div>
-            <LynkXFooter />
+            <Footer />
         </HomeLayout>
     );
 }

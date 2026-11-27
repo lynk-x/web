@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicClient } from '@/utils/supabase/public';
-import HomeLayout from '@/components/public/HomeLayout';
-import EventGrid from '@/components/public/EventGrid';
-import FaqSection from '@/components/public/FaqSection';
-import LynkXFooter from '@/components/public/LynkXFooter';
+import HomeLayout from '@/components/public/home/HomeLayout';
+import EventGrid from '@/components/public/event/Grid';
+import FaqSection from '@/components/public/shared/FaqSection';
+import Footer from '@/components/public/shared/Footer';
 import {
     findCategoryBySlug,
     getCategorySeoProfile,
@@ -274,7 +274,7 @@ export default async function CategoryEventsPage({ params }: CategoryPageProps) 
                 items={profile.faqs}
             />
 
-            <LynkXFooter />
+            <Footer />
         </HomeLayout>
     );
 }
