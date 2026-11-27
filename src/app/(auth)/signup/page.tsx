@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getErrorMessage } from '@/utils/error';
 import { OTP_CODE_LENGTH } from '@/utils/otp';
-import ReportIssueModal from './ReportIssueModal';
-import styles from './page.module.css';
+import ReportIssueModal from '../ReportIssueModal';
+import styles from '../page.module.css';
 
 type SignupStage = 'email' | 'email-code';
 

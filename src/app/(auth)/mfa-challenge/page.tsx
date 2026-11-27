@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getSafeRedirect } from '@/utils/sanitization';
 import { isPasskeySupported, listPasskeys, verifyWithPasskey, type Passkey } from '@/utils/passkeys';
-import styles from './page.module.css';
+import styles from '../page.module.css';
 
 export const metadata: Metadata = {
     title: 'Two-Factor Authentication',

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { processAccountRecovery } from './actions';
-import styles from './page.module.css';
+import styles from '../page.module.css';
 
 export const metadata: Metadata = {
     title: 'Account Recovery',
