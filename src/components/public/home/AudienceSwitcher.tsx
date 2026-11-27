@@ -27,36 +27,6 @@ interface AudienceConfig {
 
 const AUDIENCES: AudienceConfig[] = [
     {
-        key: 'attendees',
-        tabLabel: 'For Attendees',
-        eyebrow: 'Zero App Download',
-        headline: 'Every Ticket Unlocks the Live Event Community',
-        summary:
-            'Discover upcoming events, pay in seconds with M-Pesa or card and jump straight into live event updates, chat and media walls right from your browser.',
-        primaryCta: { label: 'Browse Events', href: '/events' },
-        secondaryCta: { label: 'See Attendee Experience', href: '/for/attendees' },
-        highlights: [
-            {
-                step: '01',
-                icon: 'ticket',
-                title: 'Fast Mobile Checkout',
-                desc: 'Reserve your spot with instant M-Pesa STK push or card checkout in seconds.',
-            },
-            {
-                step: '02',
-                icon: 'qr',
-                title: 'Browser QR Pass',
-                desc: 'Keep your scannable pass ready in any mobile browser with zero app download.',
-            },
-            {
-                step: '03',
-                icon: 'radio',
-                title: 'Updates, Chat & Media',
-                desc: 'Follow organizer announcements, vote in polls and share photos with the whole crowd.',
-            },
-        ],
-    },
-    {
         key: 'organizers',
         tabLabel: 'For Organizers',
         eyebrow: 'Ticketing + Community',
@@ -83,6 +53,36 @@ const AUDIENCES: AudienceConfig[] = [
                 icon: 'users',
                 title: 'Direct Crowd Channel',
                 desc: 'Post pinned updates, run live polls and manage your crowd without third-party group chats.',
+            },
+        ],
+    },
+    {
+        key: 'attendees',
+        tabLabel: 'For Attendees',
+        eyebrow: 'Zero App Download',
+        headline: 'Every Ticket Unlocks the Live Event Community',
+        summary:
+            'Discover upcoming events, pay in seconds with M-Pesa or card and jump straight into live event updates, chat and media walls right from your browser.',
+        primaryCta: { label: 'Browse Events', href: '/events' },
+        secondaryCta: { label: 'See Attendee Experience', href: '/for/attendees' },
+        highlights: [
+            {
+                step: '01',
+                icon: 'ticket',
+                title: 'Fast Mobile Checkout',
+                desc: 'Reserve your spot with instant M-Pesa STK push or card checkout in seconds.',
+            },
+            {
+                step: '02',
+                icon: 'qr',
+                title: 'Browser QR Pass',
+                desc: 'Keep your scannable pass ready in any mobile browser with zero app download.',
+            },
+            {
+                step: '03',
+                icon: 'radio',
+                title: 'Updates, Chat & Media',
+                desc: 'Follow organizer announcements, vote in polls and share photos with the whole crowd.',
             },
         ],
     },
@@ -219,7 +219,7 @@ function renderHighlightIcon(icon: HighlightIcon) {
  * organizers and sponsors to inspect tailored workflows and CTAs.
  */
 export default function HomeAudienceSwitcher() {
-    const [activeKey, setActiveKey] = useState<AudienceKey>('attendees');
+    const [activeKey, setActiveKey] = useState<AudienceKey>('organizers');
     const current = AUDIENCES.find((item) => item.key === activeKey) ?? AUDIENCES[0];
 
     return (

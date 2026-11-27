@@ -386,6 +386,7 @@ export default function DevicePreview() {
         if (!stage) return;
 
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            stage.style.setProperty('--stage-opacity', '1');
             stage.style.setProperty('--laptop-p', '1');
             stage.style.setProperty('--phone-p', '1');
             return;
@@ -397,10 +398,15 @@ export default function DevicePreview() {
             rafId = 0;
             const rect = stage.getBoundingClientRect();
             const vh = window.innerHeight || 800;
-            const raw = clamp01((vh * 0.72 - rect.top) / (vh * 0.58));
+            const visiblePx = Math.max(0, Math.min(rect.bottom, vh) - Math.max(rect.top, 0));
+            const visibleRatio = rect.height > 0 ? visiblePx / rect.height : 0;
+            const isHalfVisible = visibleRatio >= 0.48 || rect.top <= vh * 0.5;
+
+            const raw = clamp01((vh * 0.52 - rect.top) / (vh * 0.4));
             const laptopP = easeOutCubic(clamp01(raw / 0.58));
             const phoneP = easeOutCubic(clamp01((raw - 0.35) / 0.65));
 
+            stage.style.setProperty('--stage-opacity', isHalfVisible ? '1' : '0');
             stage.style.setProperty('--laptop-p', laptopP.toFixed(4));
             stage.style.setProperty('--phone-p', phoneP.toFixed(4));
         };

@@ -16,23 +16,6 @@ const Footer: React.FC = () => {
 
             <div className={styles.content}>
                 <div className={styles.topRow}>
-                    <div className={styles.column} style={{ marginRight: 'auto' }}>
-                        <a
-                            href="https://www.producthunt.com/products/lynk-x?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-lynk-x"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.productHuntBadge}
-                        >
-                            <Image
-                                alt="Lynk-X - A ticketing and community platform focused on interactions. | Product Hunt"
-                                width={250}
-                                height={54}
-                                unoptimized
-                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1313189&theme=light&t=1794423476783"
-                            />
-                        </a>
-                    </div>
-
                     <div className={styles.column}>
                         <p className={styles.columnTitle}>Product</p>
                         <ul className={styles.linkList}>

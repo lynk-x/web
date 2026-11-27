@@ -89,7 +89,7 @@
     transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 
-.pill:hover {
+.pill:hover:not(.pillActive) {
     border-color: var(--color-brand-primary);
     background: rgba(32, 249, 40, 0.1);
     color: var(--color-utility-primaryText);
