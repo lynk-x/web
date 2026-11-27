@@ -15,10 +15,10 @@ Lynk-X (also known as Lynk-x.app) is an event ticketing, engagement and communit
 ## How Lynk-X Works
 
 ### 1. Zero-Friction Ticketing
-- **Mobile-Native Checkout**: Instant mobile money integration via M-Pesa STK push alongside credit and debit cards.
+- **Mobile-Native Checkout**: Instant mobile money integration alongside credit and debit cards.
 - **Dynamic Tiering**: Support for Early Bird, General Admission, VIP passes, speaker badges and free RSVPs.
 - **Reservation Lock**: Timed reservation countdowns prevent double-selling during high-demand on-sales.
-- **Gate Check-In**: High-speed offline-capable QR code scanning for physical access control.
+- **Gate Check-In**: High-speed offline-capable ticket barcode scanning for physical access control.
 
 ### 2. Automated Event Forums
 - **Instant Gate Entry**: Upon ticket purchase or RSVP confirmation, attendees receive immediate entry into that specific event's digital forum.
@@ -27,7 +27,7 @@ Lynk-X (also known as Lynk-x.app) is an event ticketing, engagement and communit
 - **Shared Media Wall**: Centralized photo and video stream where attendees upload memories, stage highlights and crowd moments in real time.
 
 ### 3. Progressive Web App (PWA) Architecture
-- **No App Store Download Required**: Opens directly from a shared link, QR code or browser URL on iOS, Android and desktop.
+- **No App Store Download Required**: Opens directly from a shared link or browser URL on iOS, Android and desktop.
 - **Installable Experience**: Can be saved directly to the device home screen as an icon with offline capabilities and push notifications.
 
 ### 4. Sponsor & Advertising Engine

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import styles from './ResourceRenderer.module.css';
 
 interface ResourceItem {
@@ -73,6 +74,8 @@ const getIcon = (name: string) => {
             return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
         case 'refresh-cw':
             return <svg {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>;
+        case 'repeat':
+            return <svg {...props}><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>;
         case 'link':
             return <svg {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
         case 'wifi-off':
@@ -130,6 +133,8 @@ const getIcon = (name: string) => {
 };
 
 const ResourceSectionComponent: React.FC<ResourceSection> = ({ title, description, items }) => {
+    const hasOddItems = items.length % 2 === 1;
+
     return (
         <div className={styles.categorySection}>
             <div className={styles.sectionHeader}>
@@ -138,7 +143,10 @@ const ResourceSectionComponent: React.FC<ResourceSection> = ({ title, descriptio
             </div>
             <div className={styles.itemGrid}>
                 {items.map((item, idx) => (
-                    <div key={idx} className={styles.safetyCard}>
+                    <div
+                        key={idx}
+                        className={`${styles.safetyCard} ${hasOddItems && idx === 0 ? styles.featuredCard : ''}`}
+                    >
                         <div className={styles.cardHeader}>
                             <div className={styles.cardIcon}>
                                 {getIcon(item.icon)}
@@ -194,6 +202,14 @@ export default function ResourceRenderer({ title, info }: ResourceRendererProps)
 
     return (
         <div className={styles.page}>
+            <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
+                <Link href="/" className={styles.breadcrumbLink}>Home</Link>
+                <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
+                <Link href="/resources" className={styles.breadcrumbLink}>Resources</Link>
+                <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
+                <span className={styles.breadcrumbCurrent} aria-current="page">{title}</span>
+            </nav>
+
             <header className={styles.header}>
                 <h1 className={styles.title}>{title}</h1>
                 {info.subtitle && <p className={styles.subtitle}>{info.subtitle}</p>}

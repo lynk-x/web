@@ -56,10 +56,20 @@ export default async function ResourceIndex() {
         .schema('api')
         .from('v1_cms_pages')
         .select('title, slug, content')
+        .eq('type', 'resource')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
 
     const displayResources = (resources as CmsResourceRow[] | null) || [];
+
+    // Sort so "Hosting guide" appears first
+    displayResources.sort((a, b) => {
+        const aIsHosting = a.title.toLowerCase().includes('hosting guide');
+        const bIsHosting = b.title.toLowerCase().includes('hosting guide');
+        if (aIsHosting && !bIsHosting) return -1;
+        if (!aIsHosting && bIsHosting) return 1;
+        return 0;
+    });
 
     const breadcrumbSchema = {
         '@context': 'https://schema.org',
@@ -87,14 +97,14 @@ export default async function ResourceIndex() {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
             />
             <h1 className={styles.title}>Welcome to the Resource Hub</h1>
-            <p className={styles.subtitle}>Our mission is to empower event organizers with the best tools, safety protocols and insights to build successful communities on Lynk-X.</p>
+            <p className={styles.subtitle}>Our mission is to empower event organizers with the best tools, safety protocols and insights to run smoother events and keep attendees connected on Lynk-X.</p>
             
             <div className={styles.categoryGrid}>
                 {displayResources.map((item, idx) => (
                     <Link key={idx} href={`/resources/${item.slug}`} className={styles.categoryCard}>
                         <h2 className={styles.cardTitle}>{item.title}</h2>
                         <p className={styles.cardDesc}>{item.content?.description}</p>
-                        <span className={styles.cardLink}>Learn More →</span>
+                        <span className={styles.cardLink}>Read Guide →</span>
                     </Link>
                 ))}
                 

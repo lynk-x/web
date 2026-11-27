@@ -33,11 +33,11 @@ export default function SoftwareAppJsonLd() {
             },
         ],
         featureList: [
-            'Mobile ticketing with instant M-Pesa STK push and card payments',
+            'Mobile ticketing with instant mobile money and card payments',
             'Automated private event forums for ticket holders',
             'Real-time attendee live chat and announcements',
             'Shared photo and video media wall',
-            'Fast QR ticket check-in scanning',
+            'Fast ticket barcode check-in scanning',
             'Native sponsor placements with automatic creative optimization',
         ],
         author: {

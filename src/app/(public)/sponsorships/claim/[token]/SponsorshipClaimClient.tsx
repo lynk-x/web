@@ -459,7 +459,7 @@ export function SponsorshipClaimClient({ token, initialData }: SponsorshipClaimC
                                 </div>
                                 <div className={styles.deliverableValue}>{ticketPasses} Passes</div>
                                 <span className={styles.deliverableDesc}>
-                                    Complimentary digital attendee passes with instant QR check-in credentials for your company team.
+                                    Complimentary digital attendee passes with instant barcode check-in credentials for your company team.
                                 </span>
                             </div>
 

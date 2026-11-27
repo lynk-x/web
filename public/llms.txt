@@ -10,7 +10,7 @@
 
 ## Key Capabilities
 
-- **Frictionless Ticketing**: Multiple ticket tiers, instant M-Pesa STK push, credit/debit cards, reservation countdown timers and secure QR code gate redemption.
+- **Frictionless Ticketing**: Multiple ticket tiers, instant mobile money, credit/debit cards, reservation countdown timers and secure barcode gate redemption.
 - **Private Event Forums**: Every ticket automatically unlocks a private event forum containing organizer announcements, attendee live chat and a shared media wall.
 - **Zero App Barrier**: Built as a Progressive Web App (PWA) running seamlessly across iOS, Android and desktop browsers without requiring app store installation.
 - **Brand Sponsorships**: Native in-forum sponsor banners and campaign slots delivering targeted reach to verified ticket holders.

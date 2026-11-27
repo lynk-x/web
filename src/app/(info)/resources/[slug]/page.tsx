@@ -134,15 +134,40 @@ export default async function ResourcePage({ params }: Props) {
         ],
     };
 
+    const content = page.content as CmsPageContent;
+
+    const faqSchema = slug === 'help' && content?.sections
+        ? {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: content.sections.flatMap((section) =>
+                (section.items || []).map((item) => ({
+                    '@type': 'Question',
+                    name: item.title,
+                    acceptedAnswer: {
+                        '@type': 'Answer',
+                        text: item.content,
+                    },
+                }))
+            ),
+        }
+        : null;
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
             />
+            {faqSchema && faqSchema.mainEntity.length > 0 && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+                />
+            )}
             <ResourceRenderer 
                 title={page.title} 
-                info={page.content as CmsPageContent} 
+                info={content} 
             />
         </div>
     );

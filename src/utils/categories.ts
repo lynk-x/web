@@ -64,11 +64,11 @@ const CURATED_PROFILES: Record<string, CategorySeoProfile> = {
     'music-nightlife': {
         headline: 'Music & Nightlife Events',
         intro: 'Find concerts, DJ sets, club nights and live music festivals happening near you. Secure your pass in seconds and connect with the crowd inside the dedicated event forum.',
-        metaDescription: 'Find upcoming concerts, DJ nights and live music events on Lynk-X. Fast mobile tickets with M-Pesa and cards plus private event forums.',
+        metaDescription: 'Find upcoming concerts, DJ nights and live music events on Lynk-X. Fast mobile tickets with mobile money and cards plus private event forums.',
         faqs: [
             {
                 question: 'How fast do I receive my concert or festival ticket?',
-                answer: 'Your ticket is issued right in the event forum after checkout via M-Pesa or card with no app store download needed.',
+                answer: 'Your ticket is issued right in the event forum after checkout via mobile money or card with no app store download needed.',
             },
             {
                 question: 'Can organizers share set times and lineup changes?',
@@ -198,7 +198,7 @@ export function getCategorySeoProfile(displayName: string, slug: string): Catego
         faqs: [
             {
                 question: `How do I book tickets for ${displayName} events on Lynk-X?`,
-                answer: `Choose any upcoming ${displayName} event, select your ticket tier and complete checkout with M-Pesa or card. Your QR pass and event forum unlock immediately.`,
+                answer: `Choose any upcoming ${displayName} event, select your ticket tier and complete checkout with mobile money or card. Your ticket and event forum unlock immediately.`,
             },
             {
                 question: `Can I host my own ${displayName} event on Lynk-X?`,
