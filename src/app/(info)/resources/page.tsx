@@ -62,12 +62,20 @@ export default async function ResourceIndex() {
 
     const displayResources = (resources as CmsResourceRow[] | null) || [];
 
-    // Sort so "Hosting guide" appears first
+    // Sort: "Hosting guide" first, "Our Mission" and "Brand Assets" last
     displayResources.sort((a, b) => {
-        const aIsHosting = a.title.toLowerCase().includes('hosting guide');
+        const aTitle = a.title.toLowerCase();
+        const bTitle = b.title.toLowerCase();
+
+        const aIsHosting = aTitle.includes('hosting guide');
         const bIsHosting = b.title.toLowerCase().includes('hosting guide');
+        const aIsLast = aTitle.includes('our mission') || aTitle.includes('brand assets');
+        const bIsLast = b.title.toLowerCase().includes('our mission') || b.title.toLowerCase().includes('brand assets');
+
         if (aIsHosting && !bIsHosting) return -1;
         if (!aIsHosting && bIsHosting) return 1;
+        if (aIsLast && !bIsLast) return 1;
+        if (!aIsLast && bIsLast) return -1;
         return 0;
     });
 
