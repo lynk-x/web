@@ -104,7 +104,8 @@ export const TicketCheckoutView: React.FC = () => {
     // Derived totals
     const subtotal = getCartTotal();
     const currency = items[0]?.currency || 'KES';
-    const { promoCode, setPromoCode, appliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(subtotal, supabase);
+    const cartEventIds = useMemo(() => Array.from(new Set(items.map(i => i.eventId))), [items]);
+    const { promoCode, setPromoCode, appliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(subtotal, supabase, { scope: 'ticket', eventIds: cartEventIds });
     const { availableProviders: providers, loading: providersLoading } = usePaymentProviders(currency, supabase);
     const discountAmount = appliedPromo?.discount || 0;
     const total = Math.max(0, subtotal - discountAmount);

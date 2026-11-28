@@ -115,7 +115,7 @@ export const SubscriptionCheckoutView: React.FC = () => {
 
     // Derived payment amounts with promo discount
     const baseAmount = activePrice?.amount || 0;
-    const { promoCode, setPromoCode, appliedPromo, setAppliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(baseAmount, supabase);
+    const { promoCode, setPromoCode, appliedPromo, setAppliedPromo, promoError, promoLoading, handleApplyPromo, handleRemovePromo } = usePromoCode(baseAmount, supabase, { scope: 'subscription' });
     const { availableProviders: providers, loading: providersLoading } = usePaymentProviders('KES', supabase);
     const discountAmount = appliedPromo ? appliedPromo.discount : 0;
     const finalAmount = Math.max(0, baseAmount - discountAmount);

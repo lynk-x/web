@@ -27,6 +27,7 @@
  * @example — Live ticket scan log during event
  * ```tsx
  * const { rows } = useRealtimeTable<ScanLog>({
+ *   schema: 'ticketing',
  *   table: 'ticket_scan_logs',
  *   filter: `event_id=eq.${eventId}`,
  *   event: '*',
@@ -41,6 +42,9 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 
 interface UseRealtimeTableOptions<T extends Record<string, unknown>> {
+  /** Postgres schema owning the table (non-`public` schemas must be passed explicitly). */
+  schema?: string;
+
   /** Supabase table name to subscribe to. */
   table: string;
 
@@ -82,6 +86,7 @@ export function useRealtimeTable<T extends Record<string, unknown>>(
   options: UseRealtimeTableOptions<T>
 ): UseRealtimeTableResult<T> {
   const {
+    schema = 'public',
     table,
     filter,
     event = '*',
@@ -100,7 +105,7 @@ export function useRealtimeTable<T extends Record<string, unknown>>(
   rowsRef.current = rows;
 
   // Derive a stable channel name from the subscription parameters
-  const channelName = `rt_${table}${filter ? `_${filter}` : ''}_${event}`;
+  const channelName = `rt_${schema}_${table}${filter ? `_${filter}` : ''}_${event}`;
 
   const handleChange = useCallback(
     (payload: RealtimePostgresChangesPayload<T>) => {
@@ -134,8 +139,8 @@ export function useRealtimeTable<T extends Record<string, unknown>>(
     setError(null);
 
     const channelConfig = filter
-      ? { event, schema: 'public', table, filter }
-      : { event, schema: 'public', table };
+      ? { event, schema, table, filter }
+      : { event, schema, table };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const channel = (supabase.channel(channelName) as any)
@@ -143,7 +148,7 @@ export function useRealtimeTable<T extends Record<string, unknown>>(
       .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') setIsConnecting(false);
         if (status === 'CHANNEL_ERROR') {
-          setError(`Realtime subscription failed for table "${table}"`);
+          setError(`Realtime subscription failed for table "${schema}.${table}"`);
           setIsConnecting(false);
         }
       });
@@ -151,7 +156,7 @@ export function useRealtimeTable<T extends Record<string, unknown>>(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [table, filter, event, channelName, handleChange]);
+  }, [schema, table, filter, event, channelName, handleChange]);
 
   return { rows, setRows, isConnecting, error };
 }

@@ -198,8 +198,9 @@ export function createNotificationsRepository(client: DbClient) {
         },
 
         /**
-         * Subscribe to new notifications for a user. Fires `onInsert` for each row
-         * inserted into `notifications.notifications` matching `user_id`.
+         * Subscribe to new notifications for a user via the private Realtime
+         * Broadcast topic `notifications:${userId}` emitted by
+         * `internal.fn_broadcast_notification_change`.
          *
          * Returns an unsubscribe function — caller should invoke it on unmount.
          */
@@ -208,28 +209,27 @@ export function createNotificationsRepository(client: DbClient) {
             onInsert: (n: Notification) => void
         ): () => void {
             const channel = client
-                .channel(`notifications:${userId}`)
+                .channel(`notifications:${userId}`, {
+                    config: { private: true },
+                })
                 .on(
-                    'postgres_changes' as never,
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'notifications',
-                        filter: `user_id=eq.${userId}`,
-                    } as never,
-                    (payload: { new: Record<string, unknown> }) => {
-                        const row = payload.new as any;
+                    'broadcast',
+                    { event: 'INSERT' },
+                    ({ payload }: { payload: { record?: Record<string, unknown> } }) => {
+                        const row = payload?.record;
+                        if (!row) return;
+
                         onInsert({
-                            id: row.id,
-                            user_id: row.user_id,
-                            type: row.type,
-                            title: row.title,
-                            body: row.body,
-                            action_url: row.action_url,
-                            data: row.data ?? {},
-                            metadata: row.metadata ?? {},
-                            is_read: row.is_read,
-                            created_at: row.created_at,
+                            id: String(row.id),
+                            user_id: String(row.user_id),
+                            type: row.type as NotificationType,
+                            title: String(row.title),
+                            body: (row.body as string | null) ?? null,
+                            action_url: (row.action_url as string | null) ?? null,
+                            data: (row.data as Record<string, unknown>) ?? {},
+                            metadata: (row.metadata as Record<string, unknown>) ?? {},
+                            is_read: Boolean(row.is_read),
+                            created_at: String(row.created_at),
                         });
                     }
                 )

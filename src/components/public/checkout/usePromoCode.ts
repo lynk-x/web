@@ -17,7 +17,24 @@ export interface PromoCodeState {
   promoLoading: boolean;
 }
 
-export function usePromoCode(baseAmount: number, supabase: ReturnType<typeof createClient>) {
+export interface UsePromoCodeOptions {
+  /** Checkout surface requesting validation; determines event_promos scope rules. */
+  scope?: 'ticket' | 'subscription';
+  /** Event IDs in the ticket cart when `scope === 'ticket'`. */
+  eventIds?: string[];
+}
+
+/**
+ * Manages promo-code entry, server-side validation via `api.validate_promo_code`,
+ * and discount calculation for ticket and subscription checkout flows.
+ */
+export function usePromoCode(
+  baseAmount: number,
+  supabase: ReturnType<typeof createClient>,
+  options: UsePromoCodeOptions = {}
+) {
+  const { scope = 'ticket', eventIds } = options;
+  const eventIdsKey = (eventIds ?? []).join(',');
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<PromoCodeState['appliedPromo']>(null);
   const [promoError, setPromoError] = useState('');
@@ -32,73 +49,41 @@ export function usePromoCode(baseAmount: number, supabase: ReturnType<typeof cre
     setPromoError('');
 
     try {
-      const { data: promo, error } = await supabase
+      // Server RPC checks active/date/usage limits and ticketing.event_promos scope
+      // without exposing the ticketing schema to browser clients.
+      const { data: result, error } = await supabase
         .schema('api')
-        .from('v1_promo_codes')
-        .select('id, type, value, max_uses, uses_count, valid_from, valid_until, is_active')
-        .eq('code', code)
-        .maybeSingle();
+        .rpc('validate_promo_code', {
+          p_code: code,
+          p_scope: scope,
+          p_event_ids: eventIds && eventIds.length > 0 ? eventIds : null,
+        });
 
-      if (error || !promo) {
-        setPromoError('Promo code not found. Please check the code and try again.');
-        setAppliedPromo(null);
-        return;
-      }
-      if (!promo.is_active) {
-        setPromoError('This promo code is no longer active.');
-        setAppliedPromo(null);
-        return;
-      }
-      const now = new Date();
-      if (promo.valid_from && new Date(promo.valid_from) > now) {
-        setPromoError('This promo code is not yet active.');
-        setAppliedPromo(null);
-        return;
-      }
-      if (promo.valid_until && new Date(promo.valid_until) < now) {
-        setPromoError('This promo code has expired.');
-        setAppliedPromo(null);
-        return;
-      }
-      if (promo.max_uses !== null && promo.uses_count >= promo.max_uses) {
-        setPromoError('This promo code has reached its usage limit.');
+      if (error || !result || !result.valid) {
+        setPromoError(
+          (result as { error?: string } | null)?.error ||
+            'Promo code not found. Please check the code and try again.'
+        );
         setAppliedPromo(null);
         return;
       }
 
-      // Verify the promo code is not restricted to specific event tickets
-      try {
-        const { data: eventLinks } = await supabase
-          .schema('ticketing')
-          .from('event_promos')
-          .select('event_id')
-          .eq('promo_code_id', promo.id)
-          .limit(1);
-
-        if (eventLinks && eventLinks.length > 0) {
-          setPromoError('This promo code is only valid for event tickets.');
-          setAppliedPromo(null);
-          return;
-        }
-      } catch {
-        // Ignore schema visibility fallback
-      }
-
+      const promoValue = Number(result.value ?? 0);
       let discount = 0;
-      if (promo.type === 'free_entry') {
+      if (result.type === 'free_entry') {
         discount = baseAmount;
-      } else if (promo.type === 'percent') {
-        discount = (baseAmount * promo.value) / 100;
+      } else if (result.type === 'percent') {
+        discount = (baseAmount * promoValue) / 100;
       } else {
-        discount = Math.min(promo.value, baseAmount);
+        discount = Math.min(promoValue, baseAmount);
       }
 
       setAppliedPromo({
-        code,
+        code: String(result.code ?? code),
         discount,
-        promoId: promo.id,
-        type: promo.type,
-        value: promo.value,
+        promoId: String(result.id),
+        type: String(result.type),
+        value: promoValue,
       });
       setPromoCode('');
       showToast('Promo code applied successfully!', 'success');
@@ -107,7 +92,7 @@ export function usePromoCode(baseAmount: number, supabase: ReturnType<typeof cre
     } finally {
       setPromoLoading(false);
     }
-  }, [promoCode, baseAmount, supabase, showToast]);
+  }, [promoCode, baseAmount, supabase, showToast, scope, eventIdsKey]);
 
   const handleRemovePromo = () => {
     setAppliedPromo(null);

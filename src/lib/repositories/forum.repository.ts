@@ -230,9 +230,9 @@ export function createForumRepository(client: DbClient) {
         },
 
         /**
-         * Subscribe to new messages in a channel. The handler receives the freshly
-         * inserted row (mapped to the `ForumMessage` shape — without joined author
-         * fields, since postgres_changes payloads do not include embeds).
+         * Subscribe to new messages in a forum channel via the multiplexed private
+         * Broadcast topic `forum:${forumId}` emitted by
+         * `internal.fn_broadcast_forum_message_change`.
          *
          * Returns an unsubscribe function — caller should invoke it on unmount.
          */
@@ -242,31 +242,37 @@ export function createForumRepository(client: DbClient) {
             onInsert: (msg: ForumMessage) => void
         ): () => void {
             const channel = client
-                .channel(`forum:${forumId}:channel:${channelId}`)
+                .channel(`forum:${forumId}`, {
+                    config: { private: true },
+                })
                 .on(
-                    'postgres_changes' as never,
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'forum_messages',
-                        filter: `channel_id=eq.${channelId}`,
-                    } as never,
-                    (payload: { new: Record<string, unknown> }) => {
-                        const row = payload.new as any;
-                        if (row.forum_id !== forumId) return;
+                    'broadcast',
+                    { event: 'forum_message_change' },
+                    ({
+                        payload,
+                    }: {
+                        payload: {
+                            operation?: string;
+                            record?: Record<string, unknown>;
+                        };
+                    }) => {
+                        if (payload?.operation !== 'INSERT') return;
+                        const row = payload.record;
+                        if (!row || row.channel_id !== channelId) return;
+
                         onInsert({
-                            id: row.id,
-                            forum_id: row.forum_id,
-                            channel_id: row.channel_id,
-                            author_id: row.author_id,
-                            content: row.content,
-                            title: row.title,
-                            message_type: row.message_type,
-                            is_pinned: row.is_pinned,
-                            is_hidden: row.is_hidden,
-                            edit_count: row.edit_count,
-                            created_at: row.created_at,
-                            updated_at: row.updated_at,
+                            id: String(row.id),
+                            forum_id: String(row.forum_id),
+                            channel_id: String(row.channel_id),
+                            author_id: String(row.author_id),
+                            content: String(row.content ?? ''),
+                            title: (row.title as string | null) ?? null,
+                            message_type: row.message_type as MessageType,
+                            is_pinned: Boolean(row.is_pinned),
+                            is_hidden: Boolean(row.is_hidden),
+                            edit_count: Number(row.edit_count ?? 0),
+                            created_at: String(row.created_at),
+                            updated_at: String(row.updated_at ?? row.created_at),
                         });
                     }
                 )
