@@ -86,8 +86,8 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
             if (userIds.length > 0) {
                 try {
                     const { data: msgData } = await supabase
-                        .schema('social')
-                        .from('forum_messages')
+                        .schema('api')
+                        .from('v1_forum_messages')
                         .select('author_id')
                         .in('author_id', userIds);
                     const mc: Record<string, number> = {};
@@ -96,8 +96,8 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
                 } catch { /* ignore */ }
                 try {
                     const { data: mediaData } = await supabase
-                        .schema('social')
-                        .from('forum_media')
+                        .schema('api')
+                        .from('v1_forum_media')
                         .select('uploader_id')
                         .in('uploader_id', userIds);
                     const mdc: Record<string, number> = {};
@@ -120,10 +120,12 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
     const handleRemove = async (member: ForumMember) => {
         try {
             const { error } = await supabase
-                .from('forum_members')
-                .delete()
-                .eq('forum_id', member.forum_id)
-                .eq('user_id', member.user_id);
+                .schema('api')
+                .rpc('manage_forum_member', {
+                    p_forum_id: member.forum_id,
+                    p_user_id: member.user_id,
+                    p_action: 'remove',
+                });
             if (error) throw error;
             setMembers(prev => prev.filter(m => !(m.forum_id === member.forum_id && m.user_id === member.user_id)));
             showToast('Member removed from forum', 'success');
@@ -135,10 +137,13 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
     const handleToggleMute = async (member: ForumMember) => {
         try {
             const { error } = await supabase
-                .from('forum_members')
-                .update({ is_muted: !member.is_muted })
-                .eq('forum_id', member.forum_id)
-                .eq('user_id', member.user_id);
+                .schema('api')
+                .rpc('manage_forum_member', {
+                    p_forum_id: member.forum_id,
+                    p_user_id: member.user_id,
+                    p_action: 'set_mute',
+                    p_is_muted: !member.is_muted,
+                });
             if (error) throw error;
             setMembers(prev => prev.map(m =>
                 m.forum_id === member.forum_id && m.user_id === member.user_id
@@ -161,10 +166,13 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
         setIsSavingRole(true);
         try {
             const { error } = await supabase
-                .from('forum_members')
-                .update({ role_id: pendingRole })
-                .eq('forum_id', roleModalMember.forum_id)
-                .eq('user_id', roleModalMember.user_id);
+                .schema('api')
+                .rpc('manage_forum_member', {
+                    p_forum_id: roleModalMember.forum_id,
+                    p_user_id: roleModalMember.user_id,
+                    p_action: 'set_role',
+                    p_role_id: pendingRole,
+                });
             if (error) throw error;
             setMembers(prev => prev.map(m =>
                 m.forum_id === roleModalMember.forum_id && m.user_id === roleModalMember.user_id
@@ -186,7 +194,11 @@ export default function ForumMembersTab({ forumId, startDate = '', endDate = '' 
         try {
             const toRemove = members.filter(m => selectedIds.has(m.user_id));
             await Promise.all(toRemove.map(m =>
-                supabase.from('forum_members').delete().eq('forum_id', m.forum_id).eq('user_id', m.user_id)
+                supabase.schema('api').rpc('manage_forum_member', {
+                    p_forum_id: m.forum_id,
+                    p_user_id: m.user_id,
+                    p_action: 'remove',
+                })
             ));
             setMembers(prev => prev.filter(m => !selectedIds.has(m.user_id)));
             setSelectedIds(new Set());

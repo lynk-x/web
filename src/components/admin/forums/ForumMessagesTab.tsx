@@ -59,13 +59,11 @@ export default function ForumMessagesTab({ forumId }: { forumId?: string }) {
         setIsLoading(true);
         try {
             let query = supabase
-                .from('forum_messages')
-                .select(`
-                    id, forum_id, message_type, content, is_pinned, is_hidden, edit_count, created_at,
-                    author:user_profile!author_id(full_name, user_name),
-                    channel:forum_channels(slug),
-                    forum:forums!forum_id(event:events!event_id(title))
-                `)
+                .schema('api')
+                .from('v1_forum_messages')
+                .select(
+                    'id, forum_id, message_type, content, is_pinned, is_hidden, edit_count, created_at, author_name, author_username, channel_slug, event_title'
+                )
                 .order('created_at', { ascending: false });
 
             if (forumId) {
@@ -77,11 +75,11 @@ export default function ForumMessagesTab({ forumId }: { forumId?: string }) {
             setMessages((data || []).map((m: any) => ({
                 id: m.id,
                 forum_id: m.forum_id,
-                event_title: m.forum?.event?.title ?? 'Unknown Event',
-                author_name: m.author?.full_name || 'Deleted User',
-                author_username: m.author?.user_name || '',
+                event_title: m.event_title ?? 'Unknown Event',
+                author_name: m.author_name || 'Deleted User',
+                author_username: m.author_username || '',
                 message_type: m.message_type,
-                sub_channel: m.channel?.slug || "general",
+                sub_channel: m.channel_slug || "general",
                 content: m.content,
                 is_pinned: m.is_pinned,
                 is_hidden: m.is_hidden,
@@ -100,9 +98,12 @@ export default function ForumMessagesTab({ forumId }: { forumId?: string }) {
     const handleToggleHide = async (msg: ForumMessage) => {
         try {
             const { error } = await supabase
-                .from('forum_messages')
-                .update({ is_hidden: !msg.is_hidden, updated_at: new Date().toISOString() })
-                .eq('id', msg.id);
+                .schema('api')
+                .rpc('set_forum_message_hidden', {
+                    p_message_id: msg.id,
+                    p_created_at: msg.created_at,
+                    p_is_hidden: !msg.is_hidden,
+                });
             if (error) throw error;
             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_hidden: !msg.is_hidden } : m));
             showToast(`Message ${!msg.is_hidden ? 'hidden' : 'made visible'}`, 'success');
@@ -114,9 +115,11 @@ export default function ForumMessagesTab({ forumId }: { forumId?: string }) {
     const handleUnpin = async (msg: ForumMessage) => {
         try {
             const { error } = await supabase
-                .from('forum_messages')
-                .update({ is_pinned: false, updated_at: new Date().toISOString() })
-                .eq('id', msg.id);
+                .schema('api')
+                .rpc('unpin_message', {
+                    p_message_id: msg.id,
+                    p_created_at: msg.created_at,
+                });
             if (error) throw error;
             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_pinned: false } : m));
             showToast('Message unpinned.', 'success');

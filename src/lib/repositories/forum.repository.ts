@@ -96,7 +96,8 @@ export function createForumRepository(client: DbClient) {
         /** Fetch all channels in a forum. */
         async getChannels(forumId: string): Promise<RepoResult<ForumChannel[]>> {
             const { data, error } = await client
-                .from('forum_channels')
+                .schema('api')
+                .from('v1_forum_channels')
                 .select('id, forum_id, slug, display_name, description, status, created_at')
                 .eq('forum_id', forumId)
                 .order('created_at', { ascending: true });
@@ -112,7 +113,8 @@ export function createForumRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('forum_members')
+                .schema('api')
+                .from('v1_forum_members')
                 .select('forum_id, user_id, role_id, joined_at')
                 .eq('forum_id', forumId)
                 .order('joined_at', { ascending: true })
@@ -138,12 +140,11 @@ export function createForumRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('forum_messages')
-                .select(`
-                    id, forum_id, channel_id, author_id, content, title, message_type,
-                    is_pinned, is_hidden, edit_count, created_at, updated_at,
-                    user_profile:author_id (full_name, avatar_url)
-                `)
+                .schema('api')
+                .from('v1_forum_messages')
+                .select(
+                    'id, forum_id, channel_id, author_id, content, message_type, is_pinned, is_hidden, edit_count, created_at, updated_at, author_name, author_avatar'
+                )
                 .eq('forum_id', forumId)
                 .eq('channel_id', channelId)
                 .is('deleted_at', null)
@@ -158,21 +159,20 @@ export function createForumRepository(client: DbClient) {
                 channel_id: row.channel_id,
                 author_id: row.author_id,
                 content: row.content,
-                title: row.title,
                 message_type: row.message_type,
                 is_pinned: row.is_pinned,
                 is_hidden: row.is_hidden,
                 edit_count: row.edit_count,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
-                author_name: row.user_profile?.full_name,
-                author_avatar: row.user_profile?.avatar_url,
+                author_name: row.author_name,
+                author_avatar: row.author_avatar,
             }));
 
             return { data: messages, error: null };
         },
 
-        /** Post a new message in a forum channel. */
+        /** Post a new message in a forum channel via `api.send_forum_message`. */
         async postMessage(params: {
             forumId: string;
             channelId: string;
@@ -181,16 +181,13 @@ export function createForumRepository(client: DbClient) {
             messageType?: MessageType;
         }): Promise<RepoResult<ForumMessage>> {
             const { data, error } = await client
-                .from('forum_messages')
-                .insert({
-                    forum_id: params.forumId,
-                    channel_id: params.channelId,
-                    content: params.content,
-                    title: params.title,
-                    message_type: params.messageType ?? 'chat',
-                })
-                .select()
-                .single();
+                .schema('api')
+                .rpc('send_forum_message', {
+                    p_forum_id: params.forumId,
+                    p_channel_id: params.channelId,
+                    p_content: params.content,
+                    p_message_type: params.messageType ?? 'chat',
+                });
 
             if (error) return { data: null, error: toError(error) };
             return { data: data as ForumMessage, error: null };
@@ -202,10 +199,11 @@ export function createForumRepository(client: DbClient) {
          */
         async deleteMessage(messageId: string, createdAt: string): Promise<RepoResult<null>> {
             const { error } = await client
-                .from('forum_messages')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', messageId)
-                .eq('created_at', createdAt);
+                .schema('api')
+                .rpc('delete_forum_message', {
+                    p_message_id: messageId,
+                    p_created_at: createdAt,
+                });
 
             if (error) return { data: null, error: toError(error) };
             return { data: null, error: null };
@@ -218,7 +216,8 @@ export function createForumRepository(client: DbClient) {
             const from = (page - 1) * size;
 
             const { data, error } = await client
-                .from('forum_media')
+                .schema('api')
+                .from('v1_forum_media')
                 .select('id, forum_id, uploader_id, media_type, media_url, metadata, caption, is_approved, created_at')
                 .eq('forum_id', forumId)
                 .eq('is_approved', true)

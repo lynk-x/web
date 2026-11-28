@@ -215,7 +215,7 @@ export default function EventDetailPage() {
                 throw new Error('This event doesn\'t have a forum yet — host one first.');
             }
 
-            const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
+            const { error: inviteError } = await supabase.schema('api').rpc('invite_to_forum', {
                 p_forum_id: forumRow.id,
                 p_email: email,
                 p_role_id: 'member',
@@ -280,7 +280,7 @@ export default function EventDetailPage() {
                 }
 
                 try {
-                    const { error: inviteError } = await supabase.schema('social').rpc('invite_to_forum', {
+                    const { error: inviteError } = await supabase.schema('api').rpc('invite_to_forum', {
                         p_forum_id: forumRow.id,
                         p_email: email,
                         p_role_id: 'member',
